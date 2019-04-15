@@ -51,7 +51,7 @@ public abstract class AbstractParentSoyNode<N extends SoyNode> extends AbstractS
    */
   protected AbstractParentSoyNode(AbstractParentSoyNode<N> orig, CopyState copyState) {
     super(orig, copyState);
-    this.parentMixin = new MixinParentNode<N>(orig.parentMixin, this, copyState);
+    this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
   }
 
   @Override

@@ -21,7 +21,6 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.SoyFileSetParserBuilder;
@@ -75,7 +74,7 @@ public final class TofuExceptionsTest {
         new BaseTofu(
             new NoOpScopedData(),
             SoyFileSetParserBuilder.forFileContents(SOY_FILE).parse().fileSet(),
-            ImmutableMap.<String, Supplier<Object>>of());
+            ImmutableMap.of());
   }
 
   @Test

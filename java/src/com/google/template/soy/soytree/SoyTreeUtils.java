@@ -356,7 +356,7 @@ public final class SoyTreeUtils {
   }
 
   public static String toSourceString(List<? extends Node> nodes) {
-    List<String> strings = new ArrayList<String>(nodes.size());
+    List<String> strings = new ArrayList<>(nodes.size());
     for (Node node : nodes) {
       strings.add(node.toSourceString());
     }

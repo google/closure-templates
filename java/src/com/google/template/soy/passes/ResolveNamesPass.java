@@ -96,7 +96,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
      * a matching call to {@link #exitScope()}.
      */
     void enterScope() {
-      currentScope.push(new LinkedHashMap<String, VarDefn>());
+      currentScope.push(new LinkedHashMap<>());
     }
 
     /**

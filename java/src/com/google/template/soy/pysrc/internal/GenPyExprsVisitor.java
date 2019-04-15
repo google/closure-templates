@@ -251,7 +251,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
           directive instanceof SoyPySrcPrintDirective,
           "Contextual autoescaping produced a bogus directive: %s",
           directive.getName());
-      msg = ((SoyPySrcPrintDirective) directive).applyForPySrc(msg, ImmutableList.<PyExpr>of());
+      msg = ((SoyPySrcPrintDirective) directive).applyForPySrc(msg, ImmutableList.of());
     }
     pyExprs.add(msg);
   }

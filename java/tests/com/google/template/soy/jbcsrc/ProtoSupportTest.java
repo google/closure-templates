@@ -151,7 +151,7 @@ public final class ProtoSupportTest {
             "{@param? proto : example.ExampleExtendable}",
             "{let $foo : $proto?.someEmbeddedMessage /}",
             "{$foo ? 'true' : 'false'}");
-    tester.rendersAs("false", ImmutableMap.<String, Object>of());
+    tester.rendersAs("false", ImmutableMap.of());
     tester.rendersAs("false", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
     tester.rendersAs(
         "true",
@@ -168,7 +168,7 @@ public final class ProtoSupportTest {
             "{@param? proto : example.ExampleExtendable}",
             "{let $foo : $proto?.someEmbeddedMessage?.someEmbeddedString /}",
             "{$foo}");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of());
+    tester.rendersAs("null", ImmutableMap.of());
     tester.rendersAs("null", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
     tester.rendersAs(
         "foo",
@@ -186,7 +186,7 @@ public final class ProtoSupportTest {
             "{@param? proto : example.ExampleExtendable}",
             "{let $foo : $proto?.someEmbeddedMessage?.someEmbeddedString /}",
             "{$foo}");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of());
+    tester.rendersAs("null", ImmutableMap.of());
     tester.rendersAs("null", ImmutableMap.of("proto", ExampleExtendable.getDefaultInstance()));
     tester.rendersAs(
         "foo",

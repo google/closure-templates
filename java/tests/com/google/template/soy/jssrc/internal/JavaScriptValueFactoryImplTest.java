@@ -145,11 +145,7 @@ public final class JavaScriptValueFactoryImplTest {
       SoyJsSrcOptions opts, SoyJavaScriptSourceFunction fn, Expression... args) {
     return new JavaScriptValueFactoryImpl(opts, BidiGlobalDir.LTR, ErrorReporter.exploding())
         .applyFunction(
-            SourceLocation.UNKNOWN,
-            "foo",
-            fn,
-            ImmutableList.<Expression>copyOf(args),
-            newGenerator());
+            SourceLocation.UNKNOWN, "foo", fn, ImmutableList.copyOf(args), newGenerator());
   }
 
   static CodeChunk.Generator newGenerator() {

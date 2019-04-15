@@ -68,7 +68,7 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   public void testApplyForJsSrc() {
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertThat(escapeHtmlDirective.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+    assertThat(escapeHtmlDirective.applyForJsSrc(dataRef, ImmutableList.of()).getText())
         .isEqualTo("soy.$$escapeHtml(opt_data.myKey)");
   }
 
@@ -76,7 +76,7 @@ public class EscapeHtmlDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   public void testApplyForPySrc() {
     EscapeHtmlDirective escapeHtmlDirective = new EscapeHtmlDirective();
     PyExpr data = new PyExpr("'data'", Integer.MAX_VALUE);
-    assertThat(escapeHtmlDirective.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())
+    assertThat(escapeHtmlDirective.applyForPySrc(data, ImmutableList.of()).getText())
         .isEqualTo("sanitize.escape_html('data')");
   }
 }

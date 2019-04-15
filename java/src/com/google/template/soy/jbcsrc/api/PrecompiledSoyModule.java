@@ -57,7 +57,7 @@ public final class PrecompiledSoyModule extends AbstractModule {
         .withScope(scopedData)
         .withFunctions(pluginFunctions)
         .withDirectives(pluginDirectives)
-        .withPluginInstances(pluginInstances.or(ImmutableMap.<String, Supplier<Object>>of()))
+        .withPluginInstances(pluginInstances.or(ImmutableMap.of()))
         .build();
   }
 

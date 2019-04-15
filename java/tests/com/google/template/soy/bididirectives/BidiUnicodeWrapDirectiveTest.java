@@ -106,19 +106,19 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
     assertThat(
             BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR
-                .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+                .applyForJsSrc(dataRef, ImmutableList.of())
                 .getText())
         .isEqualTo("soy.$$bidiUnicodeWrap(1, opt_data.myKey)");
     assertThat(
             BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL
-                .applyForJsSrc(dataRef, ImmutableList.<JsExpr>of())
+                .applyForJsSrc(dataRef, ImmutableList.of())
                 .getText())
         .isEqualTo("soy.$$bidiUnicodeWrap(-1, opt_data.myKey)");
 
     BidiUnicodeWrapDirective codeSnippet =
         new BidiUnicodeWrapDirective(
             SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
-    assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+    assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.of()).getText())
         .isEqualTo("soy.$$bidiUnicodeWrap(IS_RTL?-1:1, opt_data.myKey)");
   }
 
@@ -129,7 +129,7 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
             SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
 
     PyExpr data = new PyStringExpr("'data'");
-    assertThat(codeSnippet.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())
+    assertThat(codeSnippet.applyForPySrc(data, ImmutableList.of()).getText())
         .isEqualTo("bidi.unicode_wrap(-1 if IS_RTL else 1, 'data')");
   }
 }

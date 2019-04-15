@@ -32,7 +32,7 @@ import java.lang.reflect.Constructor;
 public final class ValidatedConformanceConfig {
   /** An empty configuration. */
   public static final ValidatedConformanceConfig EMPTY =
-      new ValidatedConformanceConfig(ImmutableList.<RuleWithWhitelists>of());
+      new ValidatedConformanceConfig(ImmutableList.of());
 
   private static final Escaper MESSAGE_FORMAT =
       Escapers.builder().addEscape('{', "'{").addEscape('}', "}'").build();

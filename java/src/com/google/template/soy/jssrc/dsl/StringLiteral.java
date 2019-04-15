@@ -30,8 +30,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 abstract class StringLiteral extends Expression {
 
   static Expression create(String literalValue) {
-    return new AutoValue_StringLiteral(
-        /* initialStatements= */ ImmutableList.<Statement>of(), literalValue);
+    return new AutoValue_StringLiteral(/* initialStatements= */ ImmutableList.of(), literalValue);
   }
 
   abstract String literalValue();

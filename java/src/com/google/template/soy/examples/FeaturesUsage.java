@@ -269,7 +269,7 @@ public class FeaturesUsage {
 
     writeExampleHeader("demoExpressions");
     ImmutableList<ImmutableMap<String, Object>> students =
-        ImmutableList.<ImmutableMap<String, Object>>of(
+        ImmutableList.of(
             ImmutableMap.of("name", "Rob", "major", "Physics", "year", 1999),
             ImmutableMap.of("name", "Sha", "major", "Finance", "year", 1980),
             ImmutableMap.of("name", "Tim", "major", "Engineering", "year", 2005),

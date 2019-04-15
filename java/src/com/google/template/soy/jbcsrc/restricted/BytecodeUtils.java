@@ -124,28 +124,27 @@ public final class BytecodeUtils {
                           objectTypeToClassCache.getUnchecked(key.getElementType());
                       if (elementType.isPresent()) {
                         // The easiest way to generically get an array class.
-                        return Optional.<Class<?>>of(
-                            Array.newInstance(elementType.get(), 0).getClass());
+                        return Optional.of(Array.newInstance(elementType.get(), 0).getClass());
                       }
                       return Optional.absent();
                     case Type.VOID:
-                      return Optional.<Class<?>>of(void.class);
+                      return Optional.of(void.class);
                     case Type.BOOLEAN:
-                      return Optional.<Class<?>>of(boolean.class);
+                      return Optional.of(boolean.class);
                     case Type.BYTE:
-                      return Optional.<Class<?>>of(byte.class);
+                      return Optional.of(byte.class);
                     case Type.CHAR:
-                      return Optional.<Class<?>>of(char.class);
+                      return Optional.of(char.class);
                     case Type.DOUBLE:
-                      return Optional.<Class<?>>of(double.class);
+                      return Optional.of(double.class);
                     case Type.INT:
-                      return Optional.<Class<?>>of(int.class);
+                      return Optional.of(int.class);
                     case Type.SHORT:
-                      return Optional.<Class<?>>of(short.class);
+                      return Optional.of(short.class);
                     case Type.LONG:
-                      return Optional.<Class<?>>of(long.class);
+                      return Optional.of(long.class);
                     case Type.FLOAT:
-                      return Optional.<Class<?>>of(float.class);
+                      return Optional.of(float.class);
                     case Type.OBJECT:
                       try {
                         String className = key.getClassName();
@@ -155,7 +154,7 @@ public final class BytecodeUtils {
                           // classpath already!
                           return Optional.absent();
                         }
-                        return Optional.<Class<?>>of(
+                        return Optional.of(
                             Class.forName(className, false, BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
                         return Optional.absent();

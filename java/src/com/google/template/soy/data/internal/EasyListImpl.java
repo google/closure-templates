@@ -41,7 +41,7 @@ public final class EasyListImpl extends ListBackedList implements SoyEasyList {
 
   /** Important: Do not use outside of Soy code (treat as superpackage-private). */
   public EasyListImpl() {
-    super(Lists.<SoyValueProvider>newArrayList());
+    super(Lists.newArrayList());
     this.isMutable = true;
   }
 

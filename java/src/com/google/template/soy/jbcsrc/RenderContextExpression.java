@@ -141,7 +141,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   }
 
   SoyExpression applyPrintDirective(SoyPrintDirective directive, SoyExpression value) {
-    return applyPrintDirective(directive, value, ImmutableList.<SoyExpression>of());
+    return applyPrintDirective(directive, value, ImmutableList.of());
   }
 
   SoyExpression applyPrintDirective(

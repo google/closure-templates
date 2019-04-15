@@ -205,7 +205,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       //     space character
       // 2. if the preceding node is a quoted attribute value
       //    -This would always work, but is technically out of spec so we should probably avoid it.
-      ImmutableList.Builder<StandaloneNode> builder = ImmutableList.<StandaloneNode>builder();
+      ImmutableList.Builder<StandaloneNode> builder = ImmutableList.builder();
       if (needsSpaceForAttribute) {
         // TODO(lukes): in this case, if the attribute is dynamic and ultimately renders the
         // empty string, we will render an extra space.

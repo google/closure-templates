@@ -184,8 +184,7 @@ final class FormattingContext implements AutoCloseable {
    * {@link FormattingContext#curScope} points to the current tip of the tree.
    */
   private static final class Scope {
-    final Set<CodeChunk> formatted =
-        Collections.<CodeChunk>newSetFromMap(new IdentityHashMap<CodeChunk, Boolean>());
+    final Set<CodeChunk> formatted = Collections.newSetFromMap(new IdentityHashMap<>());
     @Nullable
     final Scope parent;
     final boolean emitClosingBrace;

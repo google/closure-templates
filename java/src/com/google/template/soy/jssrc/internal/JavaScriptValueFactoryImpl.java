@@ -55,7 +55,7 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
                   "(function(){throw new Error('if you see this, the soy compiler has swallowed "
                       + "an error :-(');})()",
                   Integer.MAX_VALUE),
-              ImmutableList.<GoogRequire>of()));
+              ImmutableList.of()));
 
   private static final SoyErrorKind NULL_RETURN =
       SoyErrorKind.of(
@@ -193,7 +193,7 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   @Override
   public JavaScriptValueImpl unsafeUncheckedExpression(String expr) {
     return new JavaScriptValueImpl(
-        Expression.fromExpr(new JsExpr(expr, /*precedence=*/ 0), ImmutableList.<GoogRequire>of()));
+        Expression.fromExpr(new JsExpr(expr, /*precedence=*/ 0), ImmutableList.of()));
   }
 
   @Override

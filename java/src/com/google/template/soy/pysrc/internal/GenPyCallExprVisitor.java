@@ -290,8 +290,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
           "Autoescaping produced a bogus directive: %s",
           directive.getName());
       escapedExpr =
-          ((SoyPySrcPrintDirective) directive)
-              .applyForPySrc(escapedExpr, ImmutableList.<PyExpr>of());
+          ((SoyPySrcPrintDirective) directive).applyForPySrc(escapedExpr, ImmutableList.of());
     }
     return escapedExpr;
   }

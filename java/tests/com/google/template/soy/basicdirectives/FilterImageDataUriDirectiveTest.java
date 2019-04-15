@@ -44,14 +44,14 @@ public class FilterImageDataUriDirectiveTest extends AbstractSoyPrintDirectiveTe
   public void testApplyForJsSrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+    assertThat(cleanHtml.applyForJsSrc(dataRef, ImmutableList.of()).getText())
         .isEqualTo("soy.$$filterImageDataUri(opt_data.myKey)");
   }
   @Test
   public void testApplyForPySrc() {
     FilterImageDataUriDirective cleanHtml = new FilterImageDataUriDirective();
     PyExpr data = new PyExpr("'data'", Integer.MAX_VALUE);
-    assertThat(cleanHtml.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())
+    assertThat(cleanHtml.applyForPySrc(data, ImmutableList.of()).getText())
         .isEqualTo("sanitize.filter_image_data_uri('data')");
   }
 

@@ -29,7 +29,7 @@ abstract class VariableReference extends Expression {
   abstract VariableDeclaration declaration();
 
   static VariableReference of(VariableDeclaration declaration) {
-    return new AutoValue_VariableReference(ImmutableList.<Statement>of(declaration), declaration);
+    return new AutoValue_VariableReference(ImmutableList.of(declaration), declaration);
   }
 
   @Override

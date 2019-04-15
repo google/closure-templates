@@ -39,12 +39,12 @@ abstract class FunctionDeclaration extends Expression {
 
   static FunctionDeclaration create(JsDoc jsDoc, Statement body) {
     return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.<Statement>of(), jsDoc, body, false);
+        /* initialStatements= */ ImmutableList.of(), jsDoc, body, false);
   }
 
   static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
     return new AutoValue_FunctionDeclaration(
-        /* initialStatements= */ ImmutableList.<Statement>of(), jsDoc, body, true);
+        /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
   }
 
   @Override

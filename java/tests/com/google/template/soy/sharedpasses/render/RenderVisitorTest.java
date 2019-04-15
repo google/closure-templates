@@ -288,7 +288,7 @@ public class RenderVisitorTest {
         new RenderVisitor(
             new EvalVisitorFactoryImpl(),
             outputSb,
-            ImmutableMap.<String, TemplateNode>of(),
+            ImmutableMap.of(),
             new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
             data,
             TEST_IJ_DATA,

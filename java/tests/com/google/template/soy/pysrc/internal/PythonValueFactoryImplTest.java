@@ -55,7 +55,7 @@ public final class PythonValueFactoryImplTest {
 
   static PyExpr applyFunction(SoyPythonSourceFunction fn, PyExpr... args) {
     return createFactory()
-        .applyFunction(SourceLocation.UNKNOWN, "foo", fn, ImmutableList.<PyExpr>copyOf(args));
+        .applyFunction(SourceLocation.UNKNOWN, "foo", fn, ImmutableList.copyOf(args));
   }
 
   static PythonValueFactoryImpl createFactory() {

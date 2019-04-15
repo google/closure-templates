@@ -37,7 +37,7 @@ public abstract class ErrorReporter {
 
   /** Creates a new ErrorReporter suitable for asserting on messages in tests. */
   public static ErrorReporter createForTest() {
-    return new ErrorReporterImpl(ImmutableMap.<String, SoyFileSupplier>of());
+    return new ErrorReporterImpl(ImmutableMap.of());
   }
 
   /**

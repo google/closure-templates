@@ -92,20 +92,16 @@ public class SoyTypeRegistryTest {
   public void testCreateRecordType() {
     RecordType r1 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.<String, SoyType>of(
-                "a", IntType.getInstance(), "b", FloatType.getInstance()));
+            ImmutableMap.of("a", IntType.getInstance(), "b", FloatType.getInstance()));
     RecordType r2 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.<String, SoyType>of(
-                "a", IntType.getInstance(), "b", FloatType.getInstance()));
+            ImmutableMap.of("a", IntType.getInstance(), "b", FloatType.getInstance()));
     RecordType r3 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.<String, SoyType>of(
-                "a", IntType.getInstance(), "b", StringType.getInstance()));
+            ImmutableMap.of("a", IntType.getInstance(), "b", StringType.getInstance()));
     RecordType r4 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.<String, SoyType>of(
-                "a", IntType.getInstance(), "c", FloatType.getInstance()));
+            ImmutableMap.of("a", IntType.getInstance(), "c", FloatType.getInstance()));
 
     assertThat(r2).isSameAs(r1);
     assertThat(r3).isNotSameAs(r1);

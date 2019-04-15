@@ -41,12 +41,11 @@ public abstract class ClassExpression extends Expression {
   public static ClassExpression create(
       Expression baseClass, ImmutableList<MethodDeclaration> methods) {
     return new AutoValue_ClassExpression(
-        ImmutableList.<Statement>of() /* initialStatements */, baseClass, methods);
+        ImmutableList.of() /* initialStatements */, baseClass, methods);
   }
 
   public static ClassExpression create(ImmutableList<MethodDeclaration> methods) {
-    return new AutoValue_ClassExpression(
-        ImmutableList.<Statement>of() /* initialStatements */, null, methods);
+    return new AutoValue_ClassExpression(ImmutableList.of() /* initialStatements */, null, methods);
   }
 
   @Override
@@ -106,7 +105,7 @@ public abstract class ClassExpression extends Expression {
 
     public static MethodDeclaration create(String name, JsDoc jsDoc, Statement body) {
       return new AutoValue_ClassExpression_MethodDeclaration(
-          /* initialStatements= */ ImmutableList.<Statement>of(), name, jsDoc, body);
+          /* initialStatements= */ ImmutableList.of(), name, jsDoc, body);
     }
 
     @Override

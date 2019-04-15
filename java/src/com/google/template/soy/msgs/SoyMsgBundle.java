@@ -63,7 +63,7 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
    */
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     SoyMsg msg = getMsg(msgId);
-    return msg == null ? ImmutableList.<SoyMsgPart>of() : msg.getParts();
+    return msg == null ? ImmutableList.of() : msg.getParts();
   }
 
   /**

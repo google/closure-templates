@@ -129,20 +129,20 @@ public class TemplateNodeTest {
     TemplateNode node;
 
     node = parse("{namespace ns}\n{template .boo requirecss=\"foo.boo\"}{/template}");
-    assertEquals(ImmutableList.<String>of("foo.boo"), node.getRequiredCssNamespaces());
+    assertEquals(ImmutableList.of("foo.boo"), node.getRequiredCssNamespaces());
 
     node = parse("{namespace ns}\n{template .boo requirecss=\"foo, bar\"}{/template}");
-    assertEquals(ImmutableList.<String>of("foo", "bar"), node.getRequiredCssNamespaces());
+    assertEquals(ImmutableList.of("foo", "bar"), node.getRequiredCssNamespaces());
 
     node = parse("{namespace ns}\n{template .boo requirecss=\"foo.boo, foo.moo\"}{/template}");
-    assertEquals(ImmutableList.<String>of("foo.boo", "foo.moo"), node.getRequiredCssNamespaces());
+    assertEquals(ImmutableList.of("foo.boo", "foo.moo"), node.getRequiredCssNamespaces());
 
     // Now for deltemplates.
     node =
         parse(
             "{namespace ns}\n"
                 + "{deltemplate namespace.boo requirecss=\"foo.boo, moo.hoo\"}{/deltemplate}");
-    assertEquals(ImmutableList.<String>of("foo.boo", "moo.hoo"), node.getRequiredCssNamespaces());
+    assertEquals(ImmutableList.of("foo.boo", "moo.hoo"), node.getRequiredCssNamespaces());
   }
 
   @Test

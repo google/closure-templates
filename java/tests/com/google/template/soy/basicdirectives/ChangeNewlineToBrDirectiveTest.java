@@ -45,14 +45,14 @@ public class ChangeNewlineToBrDirectiveTest extends AbstractSoyPrintDirectiveTes
   public void testApplyForJsSrc() {
     ChangeNewlineToBrDirective directive = new ChangeNewlineToBrDirective();
     JsExpr dataRef = new JsExpr("opt_data.myKey", Integer.MAX_VALUE);
-    assertThat(directive.applyForJsSrc(dataRef, ImmutableList.<JsExpr>of()).getText())
+    assertThat(directive.applyForJsSrc(dataRef, ImmutableList.of()).getText())
         .isEqualTo("soy.$$changeNewlineToBr(opt_data.myKey)");
   }
   @Test
   public void testApplyForPySrc() {
     ChangeNewlineToBrDirective directive = new ChangeNewlineToBrDirective();
     PyExpr data = new PyExpr("'data'", Integer.MAX_VALUE);
-    assertThat(directive.applyForPySrc(data, ImmutableList.<PyExpr>of()).getText())
+    assertThat(directive.applyForPySrc(data, ImmutableList.of()).getText())
         .isEqualTo("sanitize.change_newline_to_br('data')");
   }
 }

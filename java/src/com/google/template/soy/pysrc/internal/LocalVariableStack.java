@@ -38,7 +38,7 @@ final class LocalVariableStack {
    * a function or loop.
    */
   void pushFrame() {
-    localVarExprs.push(new HashMap<String, PyExpr>());
+    localVarExprs.push(new HashMap<>());
   }
 
   /** Removes a reference frame from the stack, typically used when leaving some scope. */

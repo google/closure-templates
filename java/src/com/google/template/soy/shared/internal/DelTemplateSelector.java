@@ -111,8 +111,7 @@ public final class DelTemplateSelector<T> {
   /** A Builder for DelTemplateSelector. */
   public static final class Builder<T> {
     private final Table<String, String, Group.Builder<T>> nameAndVariantToGroup =
-        Tables.newCustomTable(
-            new LinkedHashMap<String, Map<String, Group.Builder<T>>>(), LinkedHashMap::new);
+        Tables.newCustomTable(new LinkedHashMap<>(), LinkedHashMap::new);
 
     /** Adds a template in the default delpackage. */
     public T addDefault(String delTemplateName, String variant, T value) {
@@ -135,7 +134,7 @@ public final class DelTemplateSelector<T> {
     }
 
     public DelTemplateSelector<T> build() {
-      return new DelTemplateSelector<T>(this);
+      return new DelTemplateSelector<>(this);
     }
   }
 

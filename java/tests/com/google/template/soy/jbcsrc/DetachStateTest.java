@@ -242,10 +242,7 @@ public final class DetachStateTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     List<SettableFuture<String>> futures =
-        ImmutableList.of(
-            SettableFuture.<String>create(),
-            SettableFuture.<String>create(),
-            SettableFuture.<String>create());
+        ImmutableList.of(SettableFuture.create(), SettableFuture.create(), SettableFuture.create());
     CompiledTemplate template =
         factory.create(asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
 

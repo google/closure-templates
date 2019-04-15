@@ -213,7 +213,7 @@ public final class GenCallCodeUtilsTest {
   }
 
   private static String getCallExprTextHelper(String... callSourceLines) {
-    return getCallExprTextHelper(Joiner.on('\n').join(callSourceLines), ImmutableList.<String>of());
+    return getCallExprTextHelper(Joiner.on('\n').join(callSourceLines), ImmutableList.of());
   }
 
   private static String getCallExprTextHelper(

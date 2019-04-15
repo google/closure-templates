@@ -86,7 +86,6 @@ import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
@@ -693,7 +692,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     JsExpr jsExpr =
         V1JsExprTranslator.translateToJsExpr(
             expr.getValue(), expr.getSourceLocation(), variableMappings, errorReporter);
-    return Expression.fromExpr(jsExpr, ImmutableList.<GoogRequire>of());
+    return Expression.fromExpr(jsExpr, ImmutableList.of());
   }
 
   private Expression visitVeDataFunction(FunctionNode node) {

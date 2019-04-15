@@ -105,7 +105,7 @@ public final class SharedTestUtils {
    * <p>To supply types, call {@link #createTemplateBodyForExpression} directly.
    */
   public static String untypedTemplateBodyForExpression(String soyExpr) {
-    return createTemplateBodyForExpression(soyExpr, ImmutableMap.<String, SoyType>of());
+    return createTemplateBodyForExpression(soyExpr, ImmutableMap.of());
   }
 
   /** Returns a template body for the given soy expression. With type specializations. */

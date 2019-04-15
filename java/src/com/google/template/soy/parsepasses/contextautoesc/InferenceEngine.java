@@ -47,7 +47,6 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
-import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -546,9 +545,7 @@ final class InferenceEngine {
         // getEscapingModes() itself throw the exception, but this requires some weeding out of
         // bad existing templates.
         inferences.setEscapingDirectives(
-            callNode,
-            startContext,
-            startContext.getEscapingModes(callNode, ImmutableList.<PrintDirectiveNode>of()));
+            callNode, startContext, startContext.getEscapingModes(callNode, ImmutableList.of()));
         return startContext.getContextAfterDynamicValue();
       }
     }

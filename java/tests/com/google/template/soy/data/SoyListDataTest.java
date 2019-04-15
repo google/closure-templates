@@ -122,7 +122,7 @@ public class SoyListDataTest {
   @Test
   public void testConstruction() {
 
-    List<Object> existingList = Lists.<Object>newArrayList(8, null, ImmutableList.of("blah", true));
+    List<Object> existingList = Lists.newArrayList(8, null, ImmutableList.of("blah", true));
     SoyListData sld = new SoyListData(existingList);
     sld.put("2.2", 2.71828);
     sld.add("bleh");
@@ -150,7 +150,7 @@ public class SoyListDataTest {
   public void testErrorDuringConstruction() {
 
     List<Object> existingList =
-        Lists.<Object>newArrayList(8, null, ImmutableList.of(new Object(), "blah", true));
+        Lists.newArrayList(8, null, ImmutableList.of(new Object(), "blah", true));
 
     try {
       new SoyListData(existingList);

@@ -181,9 +181,7 @@ public final class SoyGeneralOptions implements Cloneable {
 
   /** Returns the map from compile-time global name to value. */
   public ImmutableMap<String, PrimitiveData> getCompileTimeGlobals() {
-    return compileTimeGlobals == null
-        ? ImmutableMap.<String, PrimitiveData>of()
-        : compileTimeGlobals;
+    return compileTimeGlobals == null ? ImmutableMap.of() : compileTimeGlobals;
   }
 
   @Override

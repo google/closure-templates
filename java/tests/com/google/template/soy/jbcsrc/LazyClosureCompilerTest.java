@@ -159,7 +159,7 @@ public class LazyClosureCompilerTest {
             "{@param? param : bool}",
             "{let $paramWithDefault : $param ?: true /}",
             "{$paramWithDefault ? 'true' : 'false'}");
-    tester.rendersAs("true", ImmutableMap.<String, Object>of());
+    tester.rendersAs("true", ImmutableMap.of());
     tester.rendersAs("true", ImmutableMap.<String, Object>of("param", true));
     tester.rendersAs("false", ImmutableMap.<String, Object>of("param", false));
   }
@@ -172,7 +172,7 @@ public class LazyClosureCompilerTest {
             "{@param? param2 : string}",
             "{let $paramWithDefault : $param ?: $param2 /}",
             "{$paramWithDefault}");
-    tester.rendersAs("null", ImmutableMap.<String, Object>of());
+    tester.rendersAs("null", ImmutableMap.of());
     tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1"));
     tester.rendersAs("1", ImmutableMap.<String, Object>of("param", "1", "param2", "2"));
     tester.rendersAs("2", ImmutableMap.<String, Object>of("param2", "2"));

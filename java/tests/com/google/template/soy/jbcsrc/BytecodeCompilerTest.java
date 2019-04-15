@@ -741,9 +741,9 @@ public class BytecodeCompilerTest {
   @Test
   public void testInjectParam() {
     assertThatTemplateBody("{@inject foo : int }", "{$foo + 1}")
-        .rendersAs("2", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 1))
-        .rendersAs("3", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 2))
-        .rendersAs("4", ImmutableMap.<String, Object>of(), ImmutableMap.of("foo", 3));
+        .rendersAs("2", ImmutableMap.of(), ImmutableMap.of("foo", 1))
+        .rendersAs("3", ImmutableMap.of(), ImmutableMap.of("foo", 2))
+        .rendersAs("4", ImmutableMap.of(), ImmutableMap.of("foo", 3));
   }
 
   @Test

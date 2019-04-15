@@ -105,7 +105,7 @@ public abstract class Expression extends CodeChunk {
    * <p>Most dotted identifiers should be accessed via the {@link GoogRequire} api.
    */
   public static Expression dottedIdNoRequire(String dotSeparatedIdentifiers) {
-    return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.<GoogRequire>of());
+    return dottedIdWithRequires(dotSeparatedIdentifiers, ImmutableSet.of());
   }
 
   static Expression dottedIdWithRequires(

@@ -23,8 +23,7 @@ import com.google.common.collect.Iterables;
 /** Represents a sequence of statements. */
 @AutoValue
 abstract class StatementList extends Statement {
-  private static final StatementList EMPTY =
-      new AutoValue_StatementList(ImmutableList.<Statement>of());
+  private static final StatementList EMPTY = new AutoValue_StatementList(ImmutableList.of());
 
   abstract ImmutableList<? extends Statement> statements();
 

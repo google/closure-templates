@@ -201,8 +201,7 @@ final class PrintDirectives {
   @AutoValue
   abstract static class DirectiveWithArgs {
     static DirectiveWithArgs create(SoyJbcSrcPrintDirective.Streamable directive) {
-      return new AutoValue_PrintDirectives_DirectiveWithArgs(
-          directive, ImmutableList.<SoyExpression>of());
+      return new AutoValue_PrintDirectives_DirectiveWithArgs(directive, ImmutableList.of());
     }
 
     static DirectiveWithArgs create(

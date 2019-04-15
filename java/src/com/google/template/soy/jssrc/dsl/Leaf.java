@@ -34,15 +34,12 @@ abstract class Leaf extends Expression {
   }
 
   static Leaf create(String text, boolean isCheap) {
-    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.<GoogRequire>of());
+    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.of());
   }
 
   static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
     return new AutoValue_Leaf(
-        /* initialStatements= */ ImmutableList.<Statement>of(),
-        value,
-        ImmutableSet.copyOf(requires),
-        isCheap);
+        /* initialStatements= */ ImmutableList.of(), value, ImmutableSet.copyOf(requires), isCheap);
   }
 
   abstract JsExpr value();

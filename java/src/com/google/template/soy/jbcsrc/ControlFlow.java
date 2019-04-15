@@ -46,7 +46,7 @@ final class ControlFlow {
 
     /** Returns this single {@code if} as a standalone statement. */
     Statement asStatement() {
-      return ifElseChain(ImmutableList.of(this), Optional.<Statement>absent());
+      return ifElseChain(ImmutableList.of(this), Optional.absent());
     }
   }
 

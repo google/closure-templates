@@ -137,7 +137,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String __PARTIAL_NAME__ = ".demoComments";
 
     private DemoCommentsSoyTemplateInfo() {
-      super("soy.examples.features.demoComments", ImmutableMap.<String, ParamRequisiteness>of());
+      super("soy.examples.features.demoComments", ImmutableMap.of());
     }
 
     private static final DemoCommentsSoyTemplateInfo __INSTANCE__ =
@@ -164,7 +164,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String __PARTIAL_NAME__ = ".demoLineJoining";
 
     private DemoLineJoiningSoyTemplateInfo() {
-      super("soy.examples.features.demoLineJoining", ImmutableMap.<String, ParamRequisiteness>of());
+      super("soy.examples.features.demoLineJoining", ImmutableMap.of());
     }
 
     private static final DemoLineJoiningSoyTemplateInfo __INSTANCE__ =
@@ -191,9 +191,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String __PARTIAL_NAME__ = ".demoRawTextCommands";
 
     private DemoRawTextCommandsSoyTemplateInfo() {
-      super(
-          "soy.examples.features.demoRawTextCommands",
-          ImmutableMap.<String, ParamRequisiteness>of());
+      super("soy.examples.features.demoRawTextCommands", ImmutableMap.of());
     }
 
     private static final DemoRawTextCommandsSoyTemplateInfo __INSTANCE__ =
@@ -495,8 +493,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String __PARTIAL_NAME__ = ".demoCallOtherFile";
 
     private DemoCallOtherFileSoyTemplateInfo() {
-      super(
-          "soy.examples.features.demoCallOtherFile", ImmutableMap.<String, ParamRequisiteness>of());
+      super("soy.examples.features.demoCallOtherFile", ImmutableMap.of());
     }
 
     private static final DemoCallOtherFileSoyTemplateInfo __INSTANCE__ =
@@ -749,7 +746,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     public static final String __PARTIAL_NAME__ = ".bidiGlobalDir";
 
     private BidiGlobalDirSoyTemplateInfo() {
-      super("soy.examples.features.bidiGlobalDir", ImmutableMap.<String, ParamRequisiteness>of());
+      super("soy.examples.features.bidiGlobalDir", ImmutableMap.of());
     }
 
     private static final BidiGlobalDirSoyTemplateInfo __INSTANCE__ =
@@ -805,7 +802,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     super(
         "features.soy",
         "soy.examples.features",
-        ImmutableList.<SoyTemplateInfo>of(
+        ImmutableList.of(
             DEMO_COMMENTS,
             DEMO_LINE_JOINING,
             DEMO_RAW_TEXT_COMMANDS,
@@ -826,8 +823,8 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_BIDI_SUPPORT,
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
-        ImmutableMap.<String, CssTagsPrefixPresence>of(),
-        ImmutableMap.<String, String>of());
+        ImmutableMap.of(),
+        ImmutableMap.of());
   }
 
 

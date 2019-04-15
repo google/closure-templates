@@ -54,7 +54,7 @@ public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
   public void testApplyForJsSrc() {
     TextDirective textDirective = new TextDirective();
     JsExpr jsExpr = new JsExpr("whatever", Integer.MAX_VALUE);
-    assertThat(textDirective.applyForJsSrc(jsExpr, ImmutableList.<JsExpr>of()).getText())
+    assertThat(textDirective.applyForJsSrc(jsExpr, ImmutableList.of()).getText())
         .isEqualTo("'' + whatever");
   }
   @Test
@@ -62,11 +62,11 @@ public class TextDirectiveTest extends AbstractSoyPrintDirectiveTestCase {
     TextDirective textDirective = new TextDirective();
 
     PyExpr pyExpr = new PyExpr("whatever", Integer.MAX_VALUE);
-    assertThat(textDirective.applyForPySrc(pyExpr, ImmutableList.<PyExpr>of()).getText())
+    assertThat(textDirective.applyForPySrc(pyExpr, ImmutableList.of()).getText())
         .isEqualTo("str(whatever)");
 
     PyExpr stringExpr = new PyStringExpr("'string'", Integer.MAX_VALUE);
-    assertThat(textDirective.applyForPySrc(stringExpr, ImmutableList.<PyExpr>of()).getText())
+    assertThat(textDirective.applyForPySrc(stringExpr, ImmutableList.of()).getText())
         .isEqualTo("'string'");
   }
 }

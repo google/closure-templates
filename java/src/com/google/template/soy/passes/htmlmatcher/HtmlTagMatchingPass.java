@@ -430,10 +430,7 @@ public final class HtmlTagMatchingPass {
   }
 
   public void visit(HtmlMatcherGraphNode node) {
-    visit(
-        node,
-        new HashMap<Equivalence.Wrapper<ExprNode>, Boolean>(),
-        new HtmlStack(null, inForeignContent, null));
+    visit(node, new HashMap<>(), new HtmlStack(null, inForeignContent, null));
   }
 
   private void visit(

@@ -226,15 +226,15 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     // TODO(dcphillips): Add support for executing the sanitization call in Jython to verify it's
     // actual output. Currently the sanitization relies on integration tests for full verification.
     BasicEscapeDirective escapeJsString = new BasicEscapeDirective.EscapeJsString();
-    assertThat(escapeJsString.applyForPySrc(data, ImmutableList.<PyExpr>of()))
+    assertThat(escapeJsString.applyForPySrc(data, ImmutableList.of()))
         .isEqualTo(new PyExpr("sanitize.escape_js_string('data')", Integer.MAX_VALUE));
 
     BasicEscapeDirective escapeHtmlAttribute = new BasicEscapeDirective.EscapeHtmlAttribute();
-    assertThat(escapeHtmlAttribute.applyForPySrc(data, ImmutableList.<PyExpr>of()))
+    assertThat(escapeHtmlAttribute.applyForPySrc(data, ImmutableList.of()))
         .isEqualTo(new PyExpr("sanitize.escape_html_attribute('data')", Integer.MAX_VALUE));
 
     BasicEscapeDirective filterCssValue = new BasicEscapeDirective.FilterCssValue();
-    assertThat(filterCssValue.applyForPySrc(data, ImmutableList.<PyExpr>of()))
+    assertThat(filterCssValue.applyForPySrc(data, ImmutableList.of()))
         .isEqualTo(new PyExpr("sanitize.filter_css_value('data')", Integer.MAX_VALUE));
   }
 }

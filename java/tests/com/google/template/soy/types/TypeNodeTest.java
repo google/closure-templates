@@ -52,9 +52,7 @@ public final class TypeNodeTest {
   public void testGenericTypeToString() throws Exception {
     assertThat(
             GenericTypeNode.create(
-                    sourceLocation,
-                    Identifier.create("foo", sourceLocation),
-                    ImmutableList.<TypeNode>of())
+                    sourceLocation, Identifier.create("foo", sourceLocation), ImmutableList.of())
                 .toString())
         .isEqualTo("foo<>");
     assertThat(
@@ -75,7 +73,7 @@ public final class TypeNodeTest {
 
   @Test
   public void testRecordTypeToString() throws Exception {
-    assertThat(RecordTypeNode.create(sourceLocation, ImmutableList.<Property>of()).toString())
+    assertThat(RecordTypeNode.create(sourceLocation, ImmutableList.of()).toString())
         .isEqualTo("[]");
     assertThat(
             RecordTypeNode.create(
@@ -107,7 +105,7 @@ public final class TypeNodeTest {
 
   @Test
   public void testUnionTypeToString() throws Exception {
-    assertThat(UnionTypeNode.create(ImmutableList.<TypeNode>of(TYPE_ABC, TYPE_DEF)).toString())
+    assertThat(UnionTypeNode.create(ImmutableList.of(TYPE_ABC, TYPE_DEF)).toString())
         .isEqualTo("abc|def");
   }
 

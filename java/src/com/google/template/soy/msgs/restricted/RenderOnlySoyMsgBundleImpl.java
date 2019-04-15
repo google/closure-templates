@@ -135,7 +135,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   @Override
   public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
     int index = binarySearch(msgId);
-    return index >= 0 ? values.get(index) : ImmutableList.<SoyMsgPart>of();
+    return index >= 0 ? values.get(index) : ImmutableList.of();
   }
 
   private int binarySearch(long key) {

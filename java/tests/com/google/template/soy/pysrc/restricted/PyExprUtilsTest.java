@@ -44,7 +44,7 @@ public final class PyExprUtilsTest {
     assertThat(PyExprUtils.concatPyExprs(exprs).getText()).isEqualTo("foo");
 
     // Single unknown value.
-    exprs = new ArrayList<PyExpr>();
+    exprs = new ArrayList<>();
     foo = new PyExpr("foo", Integer.MAX_VALUE);
     exprs.add(foo);
     assertThat(PyExprUtils.concatPyExprs(exprs).getText()).isEqualTo("str(foo)");

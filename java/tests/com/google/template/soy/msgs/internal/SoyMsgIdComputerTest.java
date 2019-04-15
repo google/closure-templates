@@ -42,7 +42,7 @@ public class SoyMsgIdComputerTest {
   private static final Random RANDOM_GEN = new Random();
 
   private static final ImmutableList<SoyMsgPart> HELLO_WORLD_MSG_PARTS =
-      ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Hello world!"));
+      ImmutableList.of(SoyMsgRawTextPart.of("Hello world!"));
 
   private static final ImmutableList<SoyMsgPart> HELLO_NAME_MSG_PARTS =
       ImmutableList.of(
@@ -51,7 +51,7 @@ public class SoyMsgIdComputerTest {
           SoyMsgRawTextPart.of("!"));
 
   private static final ImmutableList<SoyMsgPart> PLURAL_MSG_PARTS =
-      ImmutableList.<SoyMsgPart>of(
+      ImmutableList.of(
           new SoyMsgPluralPart(
               "NUM_0",
               0,
@@ -61,7 +61,7 @@ public class SoyMsgIdComputerTest {
                       ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Once"))),
                   SoyMsgPluralPart.Case.create(
                       new SoyMsgPluralCaseSpec(SoyMsgPluralCaseSpec.Type.FEW),
-                      ImmutableList.<SoyMsgPart>of(
+                      ImmutableList.of(
                           new SoyMsgPlaceholderPart("NUM_1", /* placeholderExample= */ null),
                           SoyMsgRawTextPart.of(" times"))),
                   SoyMsgPluralPart.Case.create(
@@ -121,8 +121,7 @@ public class SoyMsgIdComputerTest {
     assertThat(SoyMsgIdComputer.computeMsgIdUsingBracedPhs(PLURAL_MSG_PARTS, null, null))
         .isEqualTo(1429579464553183506L);
 
-    ImmutableList<SoyMsgPart> archiveMsgParts =
-        ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Archive"));
+    ImmutableList<SoyMsgPart> archiveMsgParts = ImmutableList.of(SoyMsgRawTextPart.of("Archive"));
     assertThat(SoyMsgIdComputer.computeMsgId(archiveMsgParts, "noun", null))
         .isEqualTo(7224011416745566687L);
     assertThat(SoyMsgIdComputer.computeMsgId(archiveMsgParts, "verb", null))

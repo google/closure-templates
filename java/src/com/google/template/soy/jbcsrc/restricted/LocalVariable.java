@@ -129,7 +129,7 @@ public final class LocalVariable extends Expression {
    * Return a {@link Statement} that stores the value of the given expression into this variable.
    */
   public Statement store(final Expression expr) {
-    return store(expr, Optional.<Label>absent());
+    return store(expr, Optional.absent());
   }
 
   /**
@@ -139,7 +139,7 @@ public final class LocalVariable extends Expression {
    * @param firstVarInstruction A label to use to mark the store instruction
    */
   public Statement store(final Expression expr, Label firstVarInstruction) {
-    return store(expr, Optional.<Label>of(firstVarInstruction));
+    return store(expr, Optional.of(firstVarInstruction));
   }
 
   /** Writes the value at the top of the stack to the local variable. */

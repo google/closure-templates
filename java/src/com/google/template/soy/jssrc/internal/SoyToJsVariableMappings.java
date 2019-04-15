@@ -47,7 +47,7 @@ public final class SoyToJsVariableMappings {
 
   /** Returns a new {@link SoyToJsVariableMappings} suitable for translating an entire template. */
   public static SoyToJsVariableMappings forNewTemplate() {
-    return new SoyToJsVariableMappings(ImmutableMap.<String, Expression>of());
+    return new SoyToJsVariableMappings(ImmutableMap.of());
   }
 
   /** Returns a {@link SoyToJsVariableMappings} seeded with the given mappings. For testing only. */

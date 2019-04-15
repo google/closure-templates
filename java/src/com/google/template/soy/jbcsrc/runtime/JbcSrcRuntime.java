@@ -706,7 +706,7 @@ public final class JbcSrcRuntime {
                 ? StringData.forValue(buffer.toString())
                 : UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind);
         for (SoyJavaPrintDirective directive : directives) {
-          resultData = directive.applyForJava(resultData, ImmutableList.<SoyValue>of());
+          resultData = directive.applyForJava(resultData, ImmutableList.of());
         }
         appendable.append(resultData.coerceToString());
       }

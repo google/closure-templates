@@ -65,7 +65,7 @@ public class SoyMsgBundleImplTest {
             .setIsHidden(true)
             .setContentType("text/html")
             .setParts(
-                ImmutableList.<SoyMsgPart>of(
+                ImmutableList.of(
                     SoyMsgRawTextPart.of("Hello, "),
                     new SoyMsgPlaceholderPart("NAME", /* placeholderExample= */ null),
                     SoyMsgRawTextPart.of("!")))
@@ -120,10 +120,10 @@ public class SoyMsgBundleImplTest {
 
   @Test
   public void testIsRtl() {
-    assertThat(new SoyMsgBundleImpl("ar", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
-    assertThat(new SoyMsgBundleImpl("iw", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
-    assertThat(new SoyMsgBundleImpl("fr", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
-    assertThat(new SoyMsgBundleImpl("en", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
+    assertThat(new SoyMsgBundleImpl("ar", ImmutableList.of()).isRtl()).isTrue();
+    assertThat(new SoyMsgBundleImpl("iw", ImmutableList.of()).isRtl()).isTrue();
+    assertThat(new SoyMsgBundleImpl("fr", ImmutableList.of()).isRtl()).isFalse();
+    assertThat(new SoyMsgBundleImpl("en", ImmutableList.of()).isRtl()).isFalse();
   }
 
   @Test

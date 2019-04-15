@@ -58,7 +58,7 @@ public class EvalVisitorTest {
   protected static final SoyValueConverter CONVERTER = SoyValueConverter.INSTANCE;
 
   private static final ImmutableMap<String, SoyValueProvider> LOCALS =
-      ImmutableMap.<String, SoyValueProvider>of(
+      ImmutableMap.of(
           "zoo", StringData.forValue("loo"),
           "woo", FloatData.forValue(-1.618));
 

@@ -25,7 +25,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
-import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -54,7 +53,7 @@ public final class SoyAstCacheTest {
           "test.soy",
           new NamespaceDeclaration(
               Identifier.create("fake.namespace", SourceLocation.UNKNOWN),
-              ImmutableList.<CommandTagAttribute>of(),
+              ImmutableList.of(),
               ErrorReporter.exploding()),
           new TemplateNode.SoyFileHeaderInfo("fake.namespace"));
 

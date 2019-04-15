@@ -37,7 +37,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class ListImplTest {
 
-  private static final ImmutableList<SoyValueProvider> EMPTY = ImmutableList.<SoyValueProvider>of();
+  private static final ImmutableList<SoyValueProvider> EMPTY = ImmutableList.of();
 
   @Test
   public void testSoyValueMethods() {

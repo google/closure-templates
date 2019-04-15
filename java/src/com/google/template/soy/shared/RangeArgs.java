@@ -33,11 +33,9 @@ public abstract class RangeArgs {
   private static RangeArgs create(List<ExprNode> args) {
     switch (args.size()) {
       case 1:
-        return new AutoValue_RangeArgs(
-            Optional.<ExprNode>absent(), args.get(0), Optional.<ExprNode>absent());
+        return new AutoValue_RangeArgs(Optional.absent(), args.get(0), Optional.absent());
       case 2:
-        return new AutoValue_RangeArgs(
-            Optional.of(args.get(0)), args.get(1), Optional.<ExprNode>absent());
+        return new AutoValue_RangeArgs(Optional.of(args.get(0)), args.get(1), Optional.absent());
       case 3:
         return new AutoValue_RangeArgs(
             Optional.of(args.get(0)), args.get(1), Optional.of(args.get(2)));

@@ -97,7 +97,7 @@ final class BasicHtmlValidationPass extends CompilerFilePass {
     private final Set<String> foundSoFar;
 
     DuplicateAttributesVisitor() {
-      this(ImmutableSet.<String>of());
+      this(ImmutableSet.of());
     }
 
     DuplicateAttributesVisitor(Set<String> foundSoFar) {

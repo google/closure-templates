@@ -220,7 +220,7 @@ public final class TemplateTester {
     }
 
     CompiledTemplateSubject failsToRenderWith(Class<? extends Throwable> expected) {
-      return failsToRenderWith(expected, ImmutableMap.<String, Object>of());
+      return failsToRenderWith(expected, ImmutableMap.of());
     }
 
     CompiledTemplateSubject failsToRenderWith(

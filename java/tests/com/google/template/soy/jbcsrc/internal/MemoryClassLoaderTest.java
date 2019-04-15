@@ -46,7 +46,7 @@ public class MemoryClassLoaderTest {
     BooleanInvoker invoker = ExpressionEvaluator.createInvoker(BooleanInvoker.class, FALSE);
     assertThat(invoker.invoke()).isFalse(); // sanity, the invoker works
     MemoryClassLoader loader = (MemoryClassLoader) invoker.getClass().getClassLoader();
-    WeakReference<MemoryClassLoader> loaderRef = new WeakReference<MemoryClassLoader>(loader);
+    WeakReference<MemoryClassLoader> loaderRef = new WeakReference<>(loader);
     invoker = null; // unpin
     loader = null;
     GcFinalization.awaitClear(loaderRef);

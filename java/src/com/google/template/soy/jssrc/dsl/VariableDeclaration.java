@@ -29,7 +29,7 @@ public abstract class VariableDeclaration extends Statement {
   public static Builder builder(String name) {
     return new AutoValue_VariableDeclaration.Builder()
         .setVarName(name)
-        .setGoogRequires(ImmutableSet.<GoogRequire>of());
+        .setGoogRequires(ImmutableSet.of());
   }
 
   abstract String varName();

@@ -114,7 +114,7 @@ public class InternalValueUtilsTest {
   public void testConvertCompileTimeGlobalsMap() {
 
     Map<String, Object> compileTimeGlobalsMap =
-        ImmutableMap.<String, Object>of(
+        ImmutableMap.of(
             "IS_SLEEPY",
             true,
             "sleepy.SHEEP",

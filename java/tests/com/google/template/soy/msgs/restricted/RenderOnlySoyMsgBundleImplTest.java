@@ -111,10 +111,10 @@ public class RenderOnlySoyMsgBundleImplTest {
 
   @Test
   public void testIsRtl() {
-    assertThat(new RenderOnlySoyMsgBundleImpl("ar", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
-    assertThat(new RenderOnlySoyMsgBundleImpl("iw", ImmutableList.<SoyMsg>of()).isRtl()).isTrue();
-    assertThat(new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
-    assertThat(new RenderOnlySoyMsgBundleImpl("en", ImmutableList.<SoyMsg>of()).isRtl()).isFalse();
+    assertThat(new RenderOnlySoyMsgBundleImpl("ar", ImmutableList.of()).isRtl()).isTrue();
+    assertThat(new RenderOnlySoyMsgBundleImpl("iw", ImmutableList.of()).isRtl()).isTrue();
+    assertThat(new RenderOnlySoyMsgBundleImpl("fr", ImmutableList.of()).isRtl()).isFalse();
+    assertThat(new RenderOnlySoyMsgBundleImpl("en", ImmutableList.of()).isRtl()).isFalse();
   }
 
   @Test

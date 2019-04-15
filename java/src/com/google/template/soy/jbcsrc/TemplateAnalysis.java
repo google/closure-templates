@@ -784,7 +784,7 @@ final class TemplateAnalysis {
 
     /** Creates a copy of the block. Note, this does not clone the {@code #exprs}. */
     AccessGraph copy() {
-      Map<Block, Block> originalToCopy = new IdentityHashMap<Block, Block>();
+      Map<Block, Block> originalToCopy = new IdentityHashMap<>();
       Block newStart = shallowCopyBlock(start, originalToCopy);
       Block newEnd = originalToCopy.get(end);
       return new AccessGraph(newStart, newEnd);

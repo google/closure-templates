@@ -41,8 +41,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   // Synchronized hashmap is sufficient for our usecase since we are only calling remove(), CHM
   // would just use more memory.
-  private final Map<String, ClassData> classesByName =
-      Collections.synchronizedMap(new HashMap<String, ClassData>());
+  private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
   private final CompiledTemplateRegistry registry;
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;

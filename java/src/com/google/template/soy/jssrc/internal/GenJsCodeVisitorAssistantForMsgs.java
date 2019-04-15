@@ -171,7 +171,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
           SoyJsPluginUtils.applyDirective(
               msg,
               (SoyJsSrcPrintDirective) printDirective,
-              /* args= */ ImmutableList.<Expression>of(),
+              /* args= */ ImmutableList.of(),
               node.getSourceLocation(),
               errorReporter);
     }

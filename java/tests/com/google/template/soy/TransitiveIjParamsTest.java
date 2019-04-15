@@ -18,7 +18,6 @@ package com.google.template.soy;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -272,9 +271,7 @@ public final class TransitiveIjParamsTest {
       // parserBuilder.
       tofu =
           new BaseTofu(
-              new NoOpScopedData(),
-              result.fileSet(),
-              /*pluginInstances=*/ ImmutableMap.<String, Supplier<Object>>of());
+              new NoOpScopedData(), result.fileSet(), /*pluginInstances=*/ ImmutableMap.of());
       compiledTemplates =
           BytecodeCompiler.compile(
                   result.registry(),

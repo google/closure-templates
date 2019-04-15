@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -143,9 +142,7 @@ public final class RenderContext {
     // TODO(lukes): this adapter is lame.  there should just be a way to get the print directive to
     // hand us an escaper or a function rather than writing this adapter.
     return input ->
-        printDirective
-            .applyForJava(StringData.forValue(input), ImmutableList.<SoyValue>of())
-            .stringValue();
+        printDirective.applyForJava(StringData.forValue(input), ImmutableList.of()).stringValue();
   }
 
   /**

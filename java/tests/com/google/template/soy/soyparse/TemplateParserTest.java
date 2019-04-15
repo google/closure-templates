@@ -1897,7 +1897,7 @@ public final class TemplateParserTest {
    * @return The decl infos and parse tree nodes created.
    */
   private static TemplateNode parseTemplateContent(String input, ErrorReporter errorReporter) {
-    String soyFile = SharedTestUtils.buildTestSoyFileContent(ImmutableList.<String>of(), input);
+    String soyFile = SharedTestUtils.buildTestSoyFileContent(ImmutableList.of(), input);
 
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileContents(soyFile)

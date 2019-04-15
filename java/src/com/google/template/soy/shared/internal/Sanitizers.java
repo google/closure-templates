@@ -86,7 +86,7 @@ public final class Sanitizers {
    *     ContentKind#HTML}
    */
   public static SanitizedContent cleanHtml(SoyValue value) {
-    return cleanHtml(value, ImmutableSet.<OptionalSafeTag>of());
+    return cleanHtml(value, ImmutableSet.of());
   }
 
   /**
@@ -198,7 +198,7 @@ public final class Sanitizers {
    *     ContentKind#HTML}
    */
   public static SanitizedContent cleanHtml(String value) {
-    return cleanHtml(value, ImmutableSet.<OptionalSafeTag>of());
+    return cleanHtml(value, ImmutableSet.of());
   }
 
   /**

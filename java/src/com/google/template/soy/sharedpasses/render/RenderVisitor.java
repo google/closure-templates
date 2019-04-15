@@ -299,7 +299,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // Escape the entire message with the required directives.
       SoyValue wholeMsg = StringData.forValue(popOutputBuf().toString());
       for (SoyPrintDirective directive : node.getEscapingDirectives()) {
-        wholeMsg = applyDirective(directive, wholeMsg, ImmutableList.<SoyValue>of(), node);
+        wholeMsg = applyDirective(directive, wholeMsg, ImmutableList.of(), node);
       }
       append(currOutputBuf, wholeMsg.stringValue());
     }
@@ -573,7 +573,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
               ? UnsafeSanitizedContentOrdainer.ordainAsSafe(calleeBuilder.toString(), calleeKind)
               : StringData.forValue(calleeBuilder.toString());
       for (SoyPrintDirective directive : node.getEscapingDirectives()) {
-        resultData = applyDirective(directive, resultData, ImmutableList.<SoyValue>of(), node);
+        resultData = applyDirective(directive, resultData, ImmutableList.of(), node);
       }
       append(currOutputBuf, resultData, node);
     }

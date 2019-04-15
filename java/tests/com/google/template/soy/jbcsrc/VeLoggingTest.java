@@ -239,7 +239,7 @@ public final class VeLoggingTest {
 
   private void renderTemplate(OutputAppendable output, String... templateBodyLines)
       throws IOException {
-    renderTemplate(ImmutableMap.<String, Object>of(), output, templateBodyLines);
+    renderTemplate(ImmutableMap.of(), output, templateBodyLines);
   }
 
   private void renderTemplate(

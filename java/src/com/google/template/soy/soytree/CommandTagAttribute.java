@@ -187,7 +187,7 @@ public final class CommandTagAttribute {
         hasError = true;
       }
     }
-    return hasError ? ImmutableList.<String>of() : ImmutableList.copyOf(namespaces);
+    return hasError ? ImmutableList.of() : ImmutableList.copyOf(namespaces);
   }
 
   @Nullable

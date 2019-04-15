@@ -159,8 +159,7 @@ public class GenCallCodeUtils {
           "Contextual autoescaping produced a bogus directive: %s",
           directive.getName());
       callResult =
-          ((SoyJsSrcPrintDirective) directive)
-              .applyForJsSrc(callResult, ImmutableList.<JsExpr>of());
+          ((SoyJsSrcPrintDirective) directive).applyForJsSrc(callResult, ImmutableList.of());
       if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
         for (String name :
             ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {

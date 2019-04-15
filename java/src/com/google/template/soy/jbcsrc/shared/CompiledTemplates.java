@@ -239,7 +239,7 @@ public final class CompiledTemplates {
         delTemplateName = Optional.of(deltemplateMetadata.name());
         delPackage =
             deltemplateMetadata.delPackage().isEmpty()
-                ? Optional.<String>absent()
+                ? Optional.absent()
                 : Optional.of(deltemplateMetadata.delPackage());
       } else {
         this.delTemplateName = Optional.absent();
