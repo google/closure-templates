@@ -25,7 +25,6 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import org.objectweb.asm.Label;
@@ -165,21 +164,15 @@ public abstract class Expression extends BytecodeProducer {
   }
 
   /** Checks that the given expressions are compatible with the given types. */
-  public static void checkTypes(ImmutableList<Type> types, Expression... exprs) {
-    if (Flags.DEBUG) {
-      checkTypes(types, Arrays.asList(exprs));
-    }
-  }
-
-  /** Checks that the given expressions are compatible with the given types. */
   static void checkTypes(ImmutableList<Type> types, Iterable<? extends Expression> exprs) {
+    int size = Iterables.size(exprs);
+    checkArgument(
+        size == types.size(),
+        "Supplied the wrong number of parameters. Expected %s, got %s",
+        types.size(),
+        size);
+    // checkIsAssignableTo is an no-op if DEBUG is false
     if (Flags.DEBUG) {
-      int size = Iterables.size(exprs);
-      checkArgument(
-          size == types.size(),
-          "Supplied the wrong number of parameters. Expected %s, got %s",
-          types.size(),
-          size);
       int i = 0;
       for (Expression expr : exprs) {
         expr.checkAssignableTo(types.get(i), "Parameter %s", i);
