@@ -29,7 +29,6 @@ import com.google.template.soy.parsepasses.contextautoesc.Context.HtmlHtmlAttrib
 import com.google.template.soy.parsepasses.contextautoesc.Context.UriPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallBasicNode;
-import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
@@ -257,8 +256,8 @@ final class InferenceEngine {
     }
 
     /**
-     * {@link DerivedTemplateUtils Derive} a template from the given call's target if necessary, and
-     * figure out the template's end context.
+     * Derive a template from the given call's target if necessary, and figure out the template's
+     * end context.
      */
     @Override
     protected void visitCallNode(CallNode callNode) {
@@ -267,14 +266,7 @@ final class InferenceEngine {
 
       callNode.setHtmlContext(context.state);
 
-      String calleeName;
-      if (callNode instanceof CallBasicNode) {
-        calleeName = ((CallBasicNode) callNode).getCalleeName();
-      } else {
-        calleeName = ((CallDelegateNode) callNode).getDelCalleeName();
-      }
-
-      context = inferCallSite(callNode, context, calleeName, inferences);
+      context = inferCallSite(callNode, context, inferences);
 
       visitChildren(callNode);
     }
@@ -520,13 +512,11 @@ final class InferenceEngine {
      *
      * @param callNode The call node.
      * @param startContext The context before the call.
-     * @param templateName The name of the template being called.
      * @param inferences Contains a mapping of templates visible to the call site, prior typing
      *     decisions, and derived templates. Will receive any templates successfully derived as a
      *     side-effect of this call.
      */
-    private Context inferCallSite(
-        CallNode callNode, Context startContext, String templateName, Inferences inferences) {
+    private Context inferCallSite(CallNode callNode, Context startContext, Inferences inferences) {
       List<TemplateMetadata> targets = inferences.lookupTemplates(callNode);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
       // Check what kind of template is being called.
