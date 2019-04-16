@@ -1213,11 +1213,16 @@ public final class Context {
           elType = ElementType.BASE;
           break;
         case "link":
-          String rel = getStaticAttributeValue(node, "rel");
-          elType =
-              rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
-                  ? ElementType.NORMAL
-                  : ElementType.LINK_EXECUTABLE;
+          if (node.getDirectAttributeNamed("rel") == null
+              && node.getDirectAttributeNamed("itemprop") != null) {
+            elType = ElementType.NORMAL;
+          } else {
+            String rel = getStaticAttributeValue(node, "rel");
+            elType =
+                rel != null && REGULAR_LINK_PATTERN.matcher(rel).matches()
+                    ? ElementType.NORMAL
+                    : ElementType.LINK_EXECUTABLE;
+          }
           break;
         case "meta":
           String httpEquiv = getStaticAttributeValue(node, "http-equiv");
