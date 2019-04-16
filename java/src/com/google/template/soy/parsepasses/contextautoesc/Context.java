@@ -75,6 +75,7 @@ public final class Context {
           "alternate",
           "amphtml",
           "apple-touch-icon",
+          "apple-touch-icon-precomposed",
           "apple-touch-startup-image",
           "author",
           "bookmark",
