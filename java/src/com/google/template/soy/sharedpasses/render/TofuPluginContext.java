@@ -20,12 +20,14 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.ibm.icu.util.ULocale;
+import javax.annotation.Nullable;
 
 /** Exposes plugin context for Tofu, based on a SoyMsgBundle. */
 final class TofuPluginContext implements JavaPluginContext {
-  private final SoyMsgBundle msgBundle;
+  @Nullable private final SoyMsgBundle msgBundle;
 
-  public TofuPluginContext(SoyMsgBundle msgBundle) {
+  public TofuPluginContext(@Nullable SoyMsgBundle msgBundle) {
     this.msgBundle = msgBundle;
   }
 
@@ -37,6 +39,6 @@ final class TofuPluginContext implements JavaPluginContext {
 
   @Override
   public TofuJavaValue getULocale() {
-    return TofuJavaValue.forULocale(msgBundle.getLocale());
+    return TofuJavaValue.forULocale(msgBundle == null ? ULocale.ENGLISH : msgBundle.getLocale());
   }
 }
