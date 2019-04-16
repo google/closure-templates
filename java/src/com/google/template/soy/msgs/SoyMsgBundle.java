@@ -93,43 +93,46 @@ public abstract class SoyMsgBundle implements Iterable<SoyMsg> {
   // Null object.
 
   /** Null object for SoyMsgBundle, assumes English Locale. */
-  public static final SoyMsgBundle EMPTY =
-      new SoyMsgBundle() {
+  public static final SoyMsgBundle EMPTY = empty(ULocale.ENGLISH);
 
-        @Override
-        public String getLocaleString() {
-          return "en";
-        }
+  public static SoyMsgBundle empty(ULocale locale) {
+    return new SoyMsgBundle() {
 
-        @Override
-        @Nullable
-        public ULocale getLocale() {
-          return ULocale.ENGLISH;
-        }
+      @Override
+      public String getLocaleString() {
+        return locale.toString();
+      }
 
-        @Override
-        public SoyMsg getMsg(long msgId) {
-          return null;
-        }
+      @Override
+      @Nullable
+      public ULocale getLocale() {
+        return locale;
+      }
 
-        @Override
-        public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
-          return ImmutableList.of();
-        }
+      @Override
+      public SoyMsg getMsg(long msgId) {
+        return null;
+      }
 
-        @Override
-        public boolean isRtl() {
-          return false;
-        }
+      @Override
+      public ImmutableList<SoyMsgPart> getMsgParts(long msgId) {
+        return ImmutableList.of();
+      }
 
-        @Override
-        public int getNumMsgs() {
-          return 0;
-        }
+      @Override
+      public boolean isRtl() {
+        return false;
+      }
 
-        @Override
-        public Iterator<SoyMsg> iterator() {
-          return ImmutableList.<SoyMsg>of().iterator();
-        }
-      };
+      @Override
+      public int getNumMsgs() {
+        return 0;
+      }
+
+      @Override
+      public Iterator<SoyMsg> iterator() {
+        return ImmutableList.<SoyMsg>of().iterator();
+      }
+    };
+  }
 }
