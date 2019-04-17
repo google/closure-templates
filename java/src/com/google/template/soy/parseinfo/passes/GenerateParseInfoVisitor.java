@@ -406,11 +406,14 @@ public final class GenerateParseInfoVisitor
     }
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyFileInfo;");
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyTemplateInfo;");
+    ilb.appendLine("import javax.annotation.Generated;");
 
     // ------ Class start. ------
     ilb.appendLine();
     ilb.appendLine();
     appendJavadoc(ilb, "Soy parse info for " + node.getFileName() + ".", true, false);
+
+    ilb.appendLine("@Generated(\"com.google.template.soy.SoyParseInfoGenerator\")");
     ilb.appendLine("public final class ", javaClassName, " extends SoyFileInfo {");
     ilb.increaseIndent();
 
