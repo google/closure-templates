@@ -27,12 +27,20 @@ import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 import java.io.IOException;
 
 /** A collection of simple {@link Continuation} and {@link WriteContinuation} implementations. */
-final class Continuations {
+public final class Continuations {
   private Continuations() {}
 
   /** Return a constant done {@link WriteContinuation} for successfully completed renders. */
-  static WriteContinuation done() {
+  public static WriteContinuation done() {
     return FinalContinuation.INSTANCE;
+  }
+
+  public static Continuation<String> done(String value) {
+    return new ResultContinuation<>(value);
+  }
+
+  public static Continuation<SanitizedContent> done(SanitizedContent value) {
+    return new ResultContinuation<>(value);
   }
 
   /**
@@ -42,7 +50,7 @@ final class Continuations {
   static Continuation<String> stringContinuation(
       WriteContinuation delegate, final StringBuilder buffer) {
     if (delegate.result().isDone()) {
-      return new ResultContinuation<>(buffer.toString());
+      return done(buffer.toString());
     }
     return new AbstractContinuation<String>(delegate) {
       @Override

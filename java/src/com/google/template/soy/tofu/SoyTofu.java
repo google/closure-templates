@@ -34,7 +34,12 @@ import javax.annotation.Nullable;
  * <p>Important: If you're a user of Soy, you should use the methods here (on a SoyTofu object
  * created by Soy), but should not create your own implementations of this interface.
  *
+ * @deprecated Use SoySauce instead. Apps/framework users should follow this migration guide
+ *     go/af-soy-migration. All other users should be able to switch from SoyFileSet.compileToTofu()
+ *     to SoyFileSet.compileTemplates(). To use the support for precompilation (outside of
+ *     apps/framework) see PrecompiledSoyModule.
  */
+@Deprecated
 public interface SoyTofu {
 
   /**

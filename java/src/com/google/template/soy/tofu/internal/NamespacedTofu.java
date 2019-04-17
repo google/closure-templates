@@ -33,10 +33,10 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-class NamespacedTofu implements SoyTofu {
+public final class NamespacedTofu implements SoyTofu {
 
   /** The underlying Tofu object. */
-  private final BaseTofu baseTofu;
+  private final SoyTofu baseTofu;
 
   /** The namespace of this SoyTofu object. */
   private final String namespace;
@@ -45,7 +45,7 @@ class NamespacedTofu implements SoyTofu {
    * @param baseTofu The underlying Tofu object.
    * @param namespace The namespace for this SoyTofu object.
    */
-  NamespacedTofu(BaseTofu baseTofu, String namespace) {
+  public NamespacedTofu(SoyTofu baseTofu, String namespace) {
     Preconditions.checkNotNull(baseTofu);
     this.baseTofu = baseTofu;
     Preconditions.checkArgument(namespace != null && namespace.length() > 0);
