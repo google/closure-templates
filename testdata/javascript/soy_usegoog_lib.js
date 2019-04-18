@@ -8059,8 +8059,8 @@ goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
   return version;
 };
 
-//javascript/closure/string/string.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//javascript/closure/dom/asserts.js
+// Copyright 2017 The Closure Library Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -8074,1440 +8074,358 @@ goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
- * @fileoverview Utilities for string manipulation.
- * @author arv@google.com (Erik Arvidsson)
- */
+goog.provide('goog.dom.asserts');
 
+goog.require('goog.asserts');
 
 /**
- * Namespace for string utilities
- */
-goog.provide('goog.string');
-goog.provide('goog.string.Unicode');
-
-goog.require('goog.string.internal');
-
-
-/**
- * @define {boolean} Enables HTML escaping of lowercase letter "e" which helps
- * with detection of double-escaping as this letter is frequently used.
- */
-goog.string.DETECT_DOUBLE_ESCAPING =
-    goog.define('goog.string.DETECT_DOUBLE_ESCAPING', false);
-
-
-/**
- * @define {boolean} Whether to force non-dom html unescaping.
- */
-goog.string.FORCE_NON_DOM_HTML_UNESCAPING =
-    goog.define('goog.string.FORCE_NON_DOM_HTML_UNESCAPING', false);
-
-
-/**
- * Common Unicode string characters.
- * @enum {string}
- */
-goog.string.Unicode = {
-  NBSP: '\xa0'
-};
-
-
-/**
- * Fast prefix-checker.
- * @param {string} str The string to check.
- * @param {string} prefix A string to look for at the start of `str`.
- * @return {boolean} True if `str` begins with `prefix`.
- */
-goog.string.startsWith = goog.string.internal.startsWith;
-
-
-/**
- * Fast suffix-checker.
- * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of `str`.
- * @return {boolean} True if `str` ends with `suffix`.
- */
-goog.string.endsWith = goog.string.internal.endsWith;
-
-
-/**
- * Case-insensitive prefix-checker.
- * @param {string} str The string to check.
- * @param {string} prefix  A string to look for at the end of `str`.
- * @return {boolean} True if `str` begins with `prefix` (ignoring
- *     case).
- */
-goog.string.caseInsensitiveStartsWith =
-    goog.string.internal.caseInsensitiveStartsWith;
-
-
-/**
- * Case-insensitive suffix-checker.
- * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of `str`.
- * @return {boolean} True if `str` ends with `suffix` (ignoring
- *     case).
- */
-goog.string.caseInsensitiveEndsWith =
-    goog.string.internal.caseInsensitiveEndsWith;
-
-
-/**
- * Case-insensitive equality checker.
- * @param {string} str1 First string to check.
- * @param {string} str2 Second string to check.
- * @return {boolean} True if `str1` and `str2` are the same string,
- *     ignoring case.
- */
-goog.string.caseInsensitiveEquals = goog.string.internal.caseInsensitiveEquals;
-
-
-/**
- * Does simple python-style string substitution.
- * subs("foo%s hot%s", "bar", "dog") becomes "foobar hotdog".
- * @param {string} str The string containing the pattern.
- * @param {...*} var_args The items to substitute into the pattern.
- * @return {string} A copy of `str` in which each occurrence of
- *     {@code %s} has been replaced an argument from `var_args`.
- */
-goog.string.subs = function(str, var_args) {
-  var splitParts = str.split('%s');
-  var returnString = '';
-
-  var subsArguments = Array.prototype.slice.call(arguments, 1);
-  while (subsArguments.length &&
-         // Replace up to the last split part. We are inserting in the
-         // positions between split parts.
-         splitParts.length > 1) {
-    returnString += splitParts.shift() + subsArguments.shift();
-  }
-
-  return returnString + splitParts.join('%s');  // Join unused '%s'
-};
-
-
-/**
- * Converts multiple whitespace chars (spaces, non-breaking-spaces, new lines
- * and tabs) to a single space, and strips leading and trailing whitespace.
- * @param {string} str Input string.
- * @return {string} A copy of `str` with collapsed whitespace.
- */
-goog.string.collapseWhitespace = function(str) {
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return str.replace(/[\s\xa0]+/g, ' ').replace(/^\s+|\s+$/g, '');
-};
-
-
-/**
- * Checks if a string is empty or contains only whitespaces.
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty or whitespace only.
- */
-goog.string.isEmptyOrWhitespace = goog.string.internal.isEmptyOrWhitespace;
-
-
-/**
- * Checks if a string is empty.
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty.
- */
-goog.string.isEmptyString = function(str) {
-  return str.length == 0;
-};
-
-
-/**
- * Checks if a string is empty or contains only whitespaces.
+ * @fileoverview Custom assertions to ensure that an element has the appropriate
+ * type.
  *
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty or whitespace only.
- * @deprecated Use goog.string.isEmptyOrWhitespace instead.
- */
-goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
-
-
-/**
- * Checks if a string is null, undefined, empty or contains only whitespaces.
- * @param {*} str The string to check.
- * @return {boolean} Whether `str` is null, undefined, empty, or
- *     whitespace only.
- * @deprecated Use goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str))
- *     instead.
- */
-goog.string.isEmptyOrWhitespaceSafe = function(str) {
-  return goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str));
-};
-
-
-/**
- * Checks if a string is null, undefined, empty or contains only whitespaces.
+ * Using a goog.dom.safe wrapper on an object on the incorrect type (via an
+ * incorrect static type cast) can result in security bugs: For instance,
+ * g.d.s.setAnchorHref ensures that the URL assigned to the .href attribute
+ * satisfies the SafeUrl contract, i.e., is safe to dereference as a hyperlink.
+ * However, the value assigned to a HTMLLinkElement's .href property requires
+ * the stronger TrustedResourceUrl contract, since it can refer to a stylesheet.
+ * Thus, using g.d.s.setAnchorHref on an (incorrectly statically typed) object
+ * of type HTMLLinkElement can result in a security vulnerability.
+ * Assertions of the correct run-time type help prevent such incorrect use.
  *
- * @param {*} str The string to check.
- * @return {boolean} Whether `str` is null, undefined, empty, or
- *     whitespace only.
- * @deprecated Use goog.string.isEmptyOrWhitespace instead.
- */
-goog.string.isEmptySafe = goog.string.isEmptyOrWhitespaceSafe;
-
-
-/**
- * Checks if a string is all breaking whitespace.
- * @param {string} str The string to check.
- * @return {boolean} Whether the string is all breaking whitespace.
- */
-goog.string.isBreakingWhitespace = function(str) {
-  return !/[^\t\n\r ]/.test(str);
-};
-
-
-/**
- * Checks if a string contains all letters.
- * @param {string} str string to check.
- * @return {boolean} True if `str` consists entirely of letters.
- */
-goog.string.isAlpha = function(str) {
-  return !/[^a-zA-Z]/.test(str);
-};
-
-
-/**
- * Checks if a string contains only numbers.
- * @param {*} str string to check. If not a string, it will be
- *     casted to one.
- * @return {boolean} True if `str` is numeric.
- */
-goog.string.isNumeric = function(str) {
-  return !/[^0-9]/.test(str);
-};
-
-
-/**
- * Checks if a string contains only numbers or letters.
- * @param {string} str string to check.
- * @return {boolean} True if `str` is alphanumeric.
- */
-goog.string.isAlphaNumeric = function(str) {
-  return !/[^a-zA-Z0-9]/.test(str);
-};
-
-
-/**
- * Checks if a character is a space character.
- * @param {string} ch Character to check.
- * @return {boolean} True if `ch` is a space.
- */
-goog.string.isSpace = function(ch) {
-  return ch == ' ';
-};
-
-
-/**
- * Checks if a character is a valid unicode character.
- * @param {string} ch Character to check.
- * @return {boolean} True if `ch` is a valid unicode character.
- */
-goog.string.isUnicodeChar = function(ch) {
-  return ch.length == 1 && ch >= ' ' && ch <= '~' ||
-      ch >= '\u0080' && ch <= '\uFFFD';
-};
-
-
-/**
- * Takes a string and replaces newlines with a space. Multiple lines are
- * replaced with a single space.
- * @param {string} str The string from which to strip newlines.
- * @return {string} A copy of `str` stripped of newlines.
- */
-goog.string.stripNewlines = function(str) {
-  return str.replace(/(\r\n|\r|\n)+/g, ' ');
-};
-
-
-/**
- * Replaces Windows and Mac new lines with unix style: \r or \r\n with \n.
- * @param {string} str The string to in which to canonicalize newlines.
- * @return {string} `str` A copy of {@code} with canonicalized newlines.
- */
-goog.string.canonicalizeNewlines = function(str) {
-  return str.replace(/(\r\n|\r|\n)/g, '\n');
-};
-
-
-/**
- * Normalizes whitespace in a string, replacing all whitespace chars with
- * a space.
- * @param {string} str The string in which to normalize whitespace.
- * @return {string} A copy of `str` with all whitespace normalized.
- */
-goog.string.normalizeWhitespace = function(str) {
-  return str.replace(/\xa0|\s/g, ' ');
-};
-
-
-/**
- * Normalizes spaces in a string, replacing all consecutive spaces and tabs
- * with a single space. Replaces non-breaking space with a space.
- * @param {string} str The string in which to normalize spaces.
- * @return {string} A copy of `str` with all consecutive spaces and tabs
- *    replaced with a single space.
- */
-goog.string.normalizeSpaces = function(str) {
-  return str.replace(/\xa0|[ \t]+/g, ' ');
-};
-
-
-/**
- * Removes the breaking spaces from the left and right of the string and
- * collapses the sequences of breaking spaces in the middle into single spaces.
- * The original and the result strings render the same way in HTML.
- * @param {string} str A string in which to collapse spaces.
- * @return {string} Copy of the string with normalized breaking spaces.
- */
-goog.string.collapseBreakingSpaces = function(str) {
-  return str.replace(/[\t\r\n ]+/g, ' ')
-      .replace(/^[\t\r\n ]+|[\t\r\n ]+$/g, '');
-};
-
-
-/**
- * Trims white spaces to the left and right of a string.
- * @param {string} str The string to trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.trim = goog.string.internal.trim;
-
-
-/**
- * Trims whitespaces at the left end of a string.
- * @param {string} str The string to left trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.trimLeft = function(str) {
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return str.replace(/^[\s\xa0]+/, '');
-};
-
-
-/**
- * Trims whitespaces at the right end of a string.
- * @param {string} str The string to right trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.trimRight = function(str) {
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return str.replace(/[\s\xa0]+$/, '');
-};
-
-
-/**
- * A string comparator that ignores case.
- * -1 = str1 less than str2
- *  0 = str1 equals str2
- *  1 = str1 greater than str2
+ * In some cases, code using the DOM API is tested using mock objects (e.g., a
+ * plain object such as {'href': url} instead of an actual Location object).
+ * To allow such mocking, the assertions permit objects of types that are not
+ * relevant DOM API objects at all (for instance, not Element or Location).
  *
- * @param {string} str1 The string to compare.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} The comparator result, as described above.
+ * Note that instanceof checks don't work straightforwardly in older versions of
+ * IE, or across frames (see,
+ * http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object,
+ * http://stackoverflow.com/questions/26248599/instanceof-htmlelement-in-iframe-is-not-element-or-object).
+ *
+ * Hence, these assertions may pass vacuously in such scenarios. The resulting
+ * risk of security bugs is limited by the following factors:
+ *  - A bug can only arise in scenarios involving incorrect static typing (the
+ *    wrapper methods are statically typed to demand objects of the appropriate,
+ *    precise type).
+ *  - Typically, code is tested and exercised in multiple browsers.
  */
-goog.string.caseInsensitiveCompare =
-    goog.string.internal.caseInsensitiveCompare;
-
 
 /**
- * Compares two strings interpreting their numeric substrings as numbers.
+ * Asserts that a given object is a Location.
  *
- * @param {string} str1 First string.
- * @param {string} str2 Second string.
- * @param {!RegExp} tokenizerRegExp Splits a string into substrings of
- *     non-negative integers, non-numeric characters and optionally fractional
- *     numbers starting with a decimal point.
- * @return {number} Negative if str1 < str2, 0 is str1 == str2, positive if
- *     str1 > str2.
- * @private
+ * To permit this assertion to pass in the context of tests where DOM APIs might
+ * be mocked, also accepts any other type except for subtypes of {!Element}.
+ * This is to ensure that, for instance, HTMLLinkElement is not being used in
+ * place of a Location, since this could result in security bugs due to stronger
+ * contracts required for assignments to the href property of the latter.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!Location}
  */
-goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
-  if (str1 == str2) {
-    return 0;
-  }
-  if (!str1) {
-    return -1;
-  }
-  if (!str2) {
-    return 1;
-  }
-
-  // Using match to split the entire string ahead of time turns out to be faster
-  // for most inputs than using RegExp.exec or iterating over each character.
-  var tokens1 = str1.toLowerCase().match(tokenizerRegExp);
-  var tokens2 = str2.toLowerCase().match(tokenizerRegExp);
-
-  var count = Math.min(tokens1.length, tokens2.length);
-
-  for (var i = 0; i < count; i++) {
-    var a = tokens1[i];
-    var b = tokens2[i];
-
-    // Compare pairs of tokens, returning if one token sorts before the other.
-    if (a != b) {
-      // Only if both tokens are integers is a special comparison required.
-      // Decimal numbers are sorted as strings (e.g., '.09' < '.1').
-      var num1 = parseInt(a, 10);
-      if (!isNaN(num1)) {
-        var num2 = parseInt(b, 10);
-        if (!isNaN(num2) && num1 - num2) {
-          return num1 - num2;
-        }
+goog.dom.asserts.assertIsLocation = function(o) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var win = goog.dom.asserts.getWindow_(o);
+    if (typeof win.Location != 'undefined' &&
+        typeof win.Element != 'undefined') {
+      if (!o || (!(o instanceof win.Location) && o instanceof win.Element)) {
+        goog.asserts.fail(
+            'Argument is not a Location (or a non-Element mock); got: %s',
+            goog.dom.asserts.debugStringForType_(o));
       }
-      return a < b ? -1 : 1;
     }
   }
-
-  // If one string is a substring of the other, the shorter string sorts first.
-  if (tokens1.length != tokens2.length) {
-    return tokens1.length - tokens2.length;
-  }
-
-  // The two strings must be equivalent except for case (perfect equality is
-  // tested at the head of the function.) Revert to default ASCII string
-  // comparison to stabilize the sort.
-  return str1 < str2 ? -1 : 1;
+  return /** @type {!Location} */ (o);
 };
 
 
 /**
- * String comparison function that handles non-negative integer numbers in a
- * way humans might expect. Using this function, the string 'File 2.jpg' sorts
- * before 'File 10.jpg', and 'Version 1.9' before 'Version 1.10'. The comparison
- * is mostly case-insensitive, though strings that are identical except for case
- * are sorted with the upper-case strings before lower-case.
+ * Asserts that a given object is either the given subtype of Element
+ * or a non-Element, non-Location Mock.
  *
- * This comparison function is up to 50x slower than either the default or the
- * case-insensitive compare. It should not be used in time-critical code, but
- * should be fast enough to sort several hundred short strings (like filenames)
- * with a reasonable delay.
+ * To permit this assertion to pass in the context of tests where DOM
+ * APIs might be mocked, also accepts any other type except for
+ * subtypes of {!Element}.  This is to ensure that, for instance,
+ * HTMLScriptElement is not being used in place of a HTMLImageElement,
+ * since this could result in security bugs due to stronger contracts
+ * required for assignments to the src property of the latter.
  *
- * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
- *     0 if str1 > str2.
- */
-goog.string.intAwareCompare = function(str1, str2) {
-  return goog.string.numberAwareCompare_(str1, str2, /\d+|\D+/g);
-};
-
-
-/**
- * String comparison function that handles non-negative integer and fractional
- * numbers in a way humans might expect. Using this function, the string
- * 'File 2.jpg' sorts before 'File 10.jpg', and '3.14' before '3.2'. Equivalent
- * to {@link goog.string.intAwareCompare} apart from the way how it interprets
- * dots.
+ * The DOM type is looked up in the window the object belongs to.  In
+ * some contexts, this might not be possible (e.g. when running tests
+ * outside a browser, cross-domain lookup). In this case, the
+ * assertions are skipped.
  *
- * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
- *     0 if str1 > str2.
- */
-goog.string.floatAwareCompare = function(str1, str2) {
-  return goog.string.numberAwareCompare_(str1, str2, /\d+|\.\d+|\D+/g);
-};
-
-
-/**
- * Alias for {@link goog.string.floatAwareCompare}.
- *
- * @param {string} str1
- * @param {string} str2
- * @return {number}
- */
-goog.string.numerateCompare = goog.string.floatAwareCompare;
-
-
-/**
- * URL-encodes a string
- * @param {*} str The string to url-encode.
- * @return {string} An encoded copy of `str` that is safe for urls.
- *     Note that '#', ':', and other characters used to delimit portions
- *     of URLs *will* be encoded.
- */
-goog.string.urlEncode = function(str) {
-  return encodeURIComponent(String(str));
-};
-
-
-/**
- * URL-decodes the string. We need to specially handle '+'s because
- * the javascript library doesn't convert them to spaces.
- * @param {string} str The string to url decode.
- * @return {string} The decoded `str`.
- */
-goog.string.urlDecode = function(str) {
-  return decodeURIComponent(str.replace(/\+/g, ' '));
-};
-
-
-/**
- * Converts \n to <br>s or <br />s.
- * @param {string} str The string in which to convert newlines.
- * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} A copy of `str` with converted newlines.
- */
-goog.string.newLineToBr = goog.string.internal.newLineToBr;
-
-
-/**
- * Escapes double quote '"' and single quote '\'' characters in addition to
- * '&', '<', and '>' so that a string can be included in an HTML tag attribute
- * value within double or single quotes.
- *
- * It should be noted that > doesn't need to be escaped for the HTML or XML to
- * be valid, but it has been decided to escape it for consistency with other
- * implementations.
- *
- * With goog.string.DETECT_DOUBLE_ESCAPING, this function escapes also the
- * lowercase letter "e".
- *
- * NOTE(user):
- * HtmlEscape is often called during the generation of large blocks of HTML.
- * Using statics for the regular expressions and strings is an optimization
- * that can more than half the amount of time IE spends in this function for
- * large apps, since strings and regexes both contribute to GC allocations.
- *
- * Testing for the presence of a character before escaping increases the number
- * of function calls, but actually provides a speed increase for the average
- * case -- since the average case often doesn't require the escaping of all 4
- * characters and indexOf() is much cheaper than replace().
- * The worst case does suffer slightly from the additional calls, therefore the
- * opt_isLikelyToContainHtmlChars option has been included for situations
- * where all 4 HTML entities are very likely to be present and need escaping.
- *
- * Some benchmarks (times tended to fluctuate +-0.05ms):
- *                                     FireFox                     IE6
- * (no chars / average (mix of cases) / all 4 chars)
- * no checks                     0.13 / 0.22 / 0.22         0.23 / 0.53 / 0.80
- * indexOf                       0.08 / 0.17 / 0.26         0.22 / 0.54 / 0.84
- * indexOf + re test             0.07 / 0.17 / 0.28         0.19 / 0.50 / 0.85
- *
- * An additional advantage of checking if replace actually needs to be called
- * is a reduction in the number of object allocations, so as the size of the
- * application grows the difference between the various methods would increase.
- *
- * @param {string} str string to be escaped.
- * @param {boolean=} opt_isLikelyToContainHtmlChars Don't perform a check to see
- *     if the character needs replacing - use this option if you expect each of
- *     the characters to appear often. Leave false if you expect few html
- *     characters to occur in your strings, such as if you are escaping HTML.
- * @return {string} An escaped copy of `str`.
- */
-goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
-  str = goog.string.internal.htmlEscape(str, opt_isLikelyToContainHtmlChars);
-  if (goog.string.DETECT_DOUBLE_ESCAPING) {
-    str = str.replace(goog.string.E_RE_, '&#101;');
-  }
-  return str;
-};
-
-
-/**
- * Regular expression that matches a lowercase letter "e", for use in escaping.
- * @const {!RegExp}
+ * @param {?Object} o The object whose type to assert.
+ * @param {string} typename The name of the DOM type.
+ * @return {!Element} The object.
  * @private
  */
-goog.string.E_RE_ = /e/g;
-
-
-/**
- * Unescapes an HTML string.
- *
- * @param {string} str The string to unescape.
- * @return {string} An unescaped copy of `str`.
- */
-goog.string.unescapeEntities = function(str) {
-  if (goog.string.contains(str, '&')) {
-    // We are careful not to use a DOM if we do not have one or we explicitly
-    // requested non-DOM html unescaping.
-    if (!goog.string.FORCE_NON_DOM_HTML_UNESCAPING &&
-        'document' in goog.global) {
-      return goog.string.unescapeEntitiesUsingDom_(str);
-    } else {
-      // Fall back on pure XML entities
-      return goog.string.unescapePureXmlEntities_(str);
+// TODO(bangert): Make an analog of goog.dom.TagName to correctly handle casts?
+goog.dom.asserts.assertIsElementType_ = function(o, typename) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var win = goog.dom.asserts.getWindow_(o);
+    if (typeof win[typename] != 'undefined' &&
+        typeof win.Location != 'undefined' &&
+        typeof win.Element != 'undefined') {
+      if (!o ||
+          (!(o instanceof win[typename]) &&
+           (o instanceof win.Location || o instanceof win.Element))) {
+        goog.asserts.fail(
+            'Argument is not a %s (or a non-Element, non-Location mock); ' +
+                'got: %s',
+            typename, goog.dom.asserts.debugStringForType_(o));
+      }
     }
   }
-  return str;
+  return /** @type {!Element} */ (o);
 };
 
-
 /**
- * Unescapes a HTML string using the provided document.
+ * Asserts that a given object is a HTMLAnchorElement.
  *
- * @param {string} str The string to unescape.
- * @param {!Document} document A document to use in escaping the string.
- * @return {string} An unescaped copy of `str`.
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not of type Location nor a subtype
+ * of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLAnchorElement}
  */
-goog.string.unescapeEntitiesWithDocument = function(str, document) {
-  if (goog.string.contains(str, '&')) {
-    return goog.string.unescapeEntitiesUsingDom_(str, document);
-  }
-  return str;
+goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
+  return /** @type {!HTMLAnchorElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLAnchorElement'));
 };
 
+/**
+ * Asserts that a given object is a HTMLButtonElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLButtonElement}
+ */
+goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
+  return /** @type {!HTMLButtonElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLButtonElement'));
+};
 
 /**
- * Unescapes an HTML string using a DOM to resolve non-XML, non-numeric
- * entities. This function is XSS-safe and whitespace-preserving.
- * @private
- * @param {string} str The string to unescape.
- * @param {Document=} opt_document An optional document to use for creating
- *     elements. If this is not specified then the default window.document
- *     will be used.
- * @return {string} The unescaped `str` string.
+ * Asserts that a given object is a HTMLLinkElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLLinkElement}
  */
-goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
-  /** @type {!Object<string, string>} */
-  var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
-  /** @type {!Element} */
-  var div;
-  if (opt_document) {
-    div = opt_document.createElement('div');
+goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
+  return /** @type {!HTMLLinkElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLLinkElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLImageElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLImageElement}
+ */
+goog.dom.asserts.assertIsHTMLImageElement = function(o) {
+  return /** @type {!HTMLImageElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLImageElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLAudioElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLAudioElement}
+ */
+goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
+  return /** @type {!HTMLAudioElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLAudioElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLVideoElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLVideoElement}
+ */
+goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
+  return /** @type {!HTMLVideoElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLVideoElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLInputElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLInputElement}
+ */
+goog.dom.asserts.assertIsHTMLInputElement = function(o) {
+  return /** @type {!HTMLInputElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLInputElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLTextAreaElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLTextAreaElement}
+ */
+goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
+  return /** @type {!HTMLTextAreaElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLTextAreaElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLCanvasElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLCanvasElement}
+ */
+goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
+  return /** @type {!HTMLCanvasElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLCanvasElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLEmbedElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLEmbedElement}
+ */
+goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
+  return /** @type {!HTMLEmbedElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLEmbedElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLFormElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLFormElement}
+ */
+goog.dom.asserts.assertIsHTMLFormElement = function(o) {
+  return /** @type {!HTMLFormElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLFormElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLFrameElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLFrameElement}
+ */
+goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
+  return /** @type {!HTMLFrameElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLFrameElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLIFrameElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLIFrameElement}
+ */
+goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
+  return /** @type {!HTMLIFrameElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLIFrameElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLObjectElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLObjectElement}
+ */
+goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
+  return /** @type {!HTMLObjectElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLObjectElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLScriptElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLScriptElement}
+ */
+goog.dom.asserts.assertIsHTMLScriptElement = function(o) {
+  return /** @type {!HTMLScriptElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLScriptElement'));
+};
+
+/**
+ * Returns a string representation of a value's type.
+ *
+ * @param {*} value An object, or primitive.
+ * @return {string} The best display name for the value.
+ * @private
+ */
+goog.dom.asserts.debugStringForType_ = function(value) {
+  if (goog.isObject(value)) {
+    try {
+      return value.constructor.displayName || value.constructor.name ||
+          Object.prototype.toString.call(value);
+    } catch (e) {
+      return '<object could not be stringified>';
+    }
   } else {
-    div = goog.global.document.createElement('div');
+    return value === undefined ? 'undefined' :
+                                 value === null ? 'null' : typeof value;
   }
-  // Match as many valid entity characters as possible. If the actual entity
-  // happens to be shorter, it will still work as innerHTML will return the
-  // trailing characters unchanged. Since the entity characters do not include
-  // open angle bracket, there is no chance of XSS from the innerHTML use.
-  // Since no whitespace is passed to innerHTML, whitespace is preserved.
-  return str.replace(goog.string.HTML_ENTITY_PATTERN_, function(s, entity) {
-    // Check for cached entity.
-    var value = seen[s];
-    if (value) {
-      return value;
-    }
-    // Check for numeric entity.
-    if (entity.charAt(0) == '#') {
-      // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex numbers.
-      var n = Number('0' + entity.substr(1));
-      if (!isNaN(n)) {
-        value = String.fromCharCode(n);
-      }
-    }
-    // Fall back to innerHTML otherwise.
-    if (!value) {
-      // Append a non-entity character to avoid a bug in Webkit that parses
-      // an invalid entity at the end of innerHTML text as the empty string.
-      div.innerHTML = s + ' ';
-      // Then remove the trailing character from the result.
-      value = div.firstChild.nodeValue.slice(0, -1);
-    }
-    // Cache and return.
-    return seen[s] = value;
-  });
 };
 
-
 /**
- * Unescapes XML entities.
+ * Gets window of element.
+ * @param {?Object} o
+ * @return {!Window}
  * @private
- * @param {string} str The string to unescape.
- * @return {string} An unescaped copy of `str`.
+ * @suppress {strictMissingProperties} ownerDocument not defined on Object
  */
-goog.string.unescapePureXmlEntities_ = function(str) {
-  return str.replace(/&([^;]+);/g, function(s, entity) {
-    switch (entity) {
-      case 'amp':
-        return '&';
-      case 'lt':
-        return '<';
-      case 'gt':
-        return '>';
-      case 'quot':
-        return '"';
-      default:
-        if (entity.charAt(0) == '#') {
-          // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex.
-          var n = Number('0' + entity.substr(1));
-          if (!isNaN(n)) {
-            return String.fromCharCode(n);
-          }
-        }
-        // For invalid entities we just return the entity
-        return s;
-    }
-  });
+goog.dom.asserts.getWindow_ = function(o) {
+  var doc = o && o.ownerDocument;
+  var win = doc && /** @type {?Window} */ (doc.defaultView || doc.parentWindow);
+  return win || /** @type {!Window} */ (goog.global);
 };
 
-
-/**
- * Regular expression that matches an HTML entity.
- * See also HTML5: Tokenization / Tokenizing character references.
- * @private
- * @type {!RegExp}
- */
-goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
-
-
-/**
- * Do escaping of whitespace to preserve spatial formatting. We use character
- * entity #160 to make it safer for xml.
- * @param {string} str The string in which to escape whitespace.
- * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} An escaped copy of `str`.
- */
-goog.string.whitespaceEscape = function(str, opt_xml) {
-  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
-  return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml);
-};
-
-
-/**
- * Preserve spaces that would be otherwise collapsed in HTML by replacing them
- * with non-breaking space Unicode characters.
- * @param {string} str The string in which to preserve whitespace.
- * @return {string} A copy of `str` with preserved whitespace.
- */
-goog.string.preserveSpaces = function(str) {
-  return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
-};
-
-
-/**
- * Strip quote characters around a string.  The second argument is a string of
- * characters to treat as quotes.  This can be a single character or a string of
- * multiple character and in that case each of those are treated as possible
- * quote characters. For example:
- *
- * <pre>
- * goog.string.stripQuotes('"abc"', '"`') --> 'abc'
- * goog.string.stripQuotes('`abc`', '"`') --> 'abc'
- * </pre>
- *
- * @param {string} str The string to strip.
- * @param {string} quoteChars The quote characters to strip.
- * @return {string} A copy of `str` without the quotes.
- */
-goog.string.stripQuotes = function(str, quoteChars) {
-  var length = quoteChars.length;
-  for (var i = 0; i < length; i++) {
-    var quoteChar = length == 1 ? quoteChars : quoteChars.charAt(i);
-    if (str.charAt(0) == quoteChar && str.charAt(str.length - 1) == quoteChar) {
-      return str.substring(1, str.length - 1);
-    }
-  }
-  return str;
-};
-
-
-/**
- * Truncates a string to a certain length and adds '...' if necessary.  The
- * length also accounts for the ellipsis, so a maximum length of 10 and a string
- * 'Hello World!' produces 'Hello W...'.
- * @param {string} str The string to truncate.
- * @param {number} chars Max number of characters.
- * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
- *     characters from being cut off in the middle.
- * @return {string} The truncated `str` string.
- */
-goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.unescapeEntities(str);
-  }
-
-  if (str.length > chars) {
-    str = str.substring(0, chars - 3) + '...';
-  }
-
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.htmlEscape(str);
-  }
-
-  return str;
-};
-
-
-/**
- * Truncate a string in the middle, adding "..." if necessary,
- * and favoring the beginning of the string.
- * @param {string} str The string to truncate the middle of.
- * @param {number} chars Max number of characters.
- * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
- *     characters from being cutoff in the middle.
- * @param {number=} opt_trailingChars Optional number of trailing characters to
- *     leave at the end of the string, instead of truncating as close to the
- *     middle as possible.
- * @return {string} A truncated copy of `str`.
- */
-goog.string.truncateMiddle = function(
-    str, chars, opt_protectEscapedCharacters, opt_trailingChars) {
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.unescapeEntities(str);
-  }
-
-  if (opt_trailingChars && str.length > chars) {
-    if (opt_trailingChars > chars) {
-      opt_trailingChars = chars;
-    }
-    var endPoint = str.length - opt_trailingChars;
-    var startPoint = chars - opt_trailingChars;
-    str = str.substring(0, startPoint) + '...' + str.substring(endPoint);
-  } else if (str.length > chars) {
-    // Favor the beginning of the string:
-    var half = Math.floor(chars / 2);
-    var endPos = str.length - half;
-    half += chars % 2;
-    str = str.substring(0, half) + '...' + str.substring(endPos);
-  }
-
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.htmlEscape(str);
-  }
-
-  return str;
-};
-
-
-/**
- * Special chars that need to be escaped for goog.string.quote.
- * @private {!Object<string, string>}
- */
-goog.string.specialEscapeChars_ = {
-  '\0': '\\0',
-  '\b': '\\b',
-  '\f': '\\f',
-  '\n': '\\n',
-  '\r': '\\r',
-  '\t': '\\t',
-  '\x0B': '\\x0B',  // '\v' is not supported in JScript
-  '"': '\\"',
-  '\\': '\\\\',
-  // To support the use case of embedding quoted strings inside of script
-  // tags, we have to make sure HTML comments and opening/closing script tags do
-  // not appear in the resulting string. The specific strings that must be
-  // escaped are documented at:
-  // http://www.w3.org/TR/html51/semantics.html#restrictions-for-contents-of-script-elements
-  '<': '\x3c'
-};
-
-
-/**
- * Character mappings used internally for goog.string.escapeChar.
- * @private {!Object<string, string>}
- */
-goog.string.jsEscapeCache_ = {
-  '\'': '\\\''
-};
-
-
-/**
- * Encloses a string in double quotes and escapes characters so that the
- * string is a valid JS string. The resulting string is safe to embed in
- * `<script>` tags as "<" is escaped.
- * @param {string} s The string to quote.
- * @return {string} A copy of `s` surrounded by double quotes.
- */
-goog.string.quote = function(s) {
-  s = String(s);
-  var sb = ['"'];
-  for (var i = 0; i < s.length; i++) {
-    var ch = s.charAt(i);
-    var cc = ch.charCodeAt(0);
-    sb[i + 1] = goog.string.specialEscapeChars_[ch] ||
-        ((cc > 31 && cc < 127) ? ch : goog.string.escapeChar(ch));
-  }
-  sb.push('"');
-  return sb.join('');
-};
-
-
-/**
- * Takes a string and returns the escaped string for that input string.
- * @param {string} str The string to escape.
- * @return {string} An escaped string representing `str`.
- */
-goog.string.escapeString = function(str) {
-  var sb = [];
-  for (var i = 0; i < str.length; i++) {
-    sb[i] = goog.string.escapeChar(str.charAt(i));
-  }
-  return sb.join('');
-};
-
-
-/**
- * Takes a character and returns the escaped string for that character. For
- * example escapeChar(String.fromCharCode(15)) -> "\\x0E".
- * @param {string} c The character to escape.
- * @return {string} An escaped string representing `c`.
- */
-goog.string.escapeChar = function(c) {
-  if (c in goog.string.jsEscapeCache_) {
-    return goog.string.jsEscapeCache_[c];
-  }
-
-  if (c in goog.string.specialEscapeChars_) {
-    return goog.string.jsEscapeCache_[c] = goog.string.specialEscapeChars_[c];
-  }
-
-  var rv = c;
-  var cc = c.charCodeAt(0);
-  if (cc > 31 && cc < 127) {
-    rv = c;
-  } else {
-    // tab is 9 but handled above
-    if (cc < 256) {
-      rv = '\\x';
-      if (cc < 16 || cc > 256) {
-        rv += '0';
-      }
-    } else {
-      rv = '\\u';
-      if (cc < 4096) {  // \u1000
-        rv += '0';
-      }
-    }
-    rv += cc.toString(16).toUpperCase();
-  }
-
-  return goog.string.jsEscapeCache_[c] = rv;
-};
-
-
-/**
- * Determines whether a string contains a substring.
- * @param {string} str The string to search.
- * @param {string} subString The substring to search for.
- * @return {boolean} Whether `str` contains `subString`.
- */
-goog.string.contains = goog.string.internal.contains;
-
-
-/**
- * Determines whether a string contains a substring, ignoring case.
- * @param {string} str The string to search.
- * @param {string} subString The substring to search for.
- * @return {boolean} Whether `str` contains `subString`.
- */
-goog.string.caseInsensitiveContains =
-    goog.string.internal.caseInsensitiveContains;
-
-
-/**
- * Returns the non-overlapping occurrences of ss in s.
- * If either s or ss evalutes to false, then returns zero.
- * @param {string} s The string to look in.
- * @param {string} ss The string to look for.
- * @return {number} Number of occurrences of ss in s.
- */
-goog.string.countOf = function(s, ss) {
-  return s && ss ? s.split(ss).length - 1 : 0;
-};
-
-
-/**
- * Removes a substring of a specified length at a specific
- * index in a string.
- * @param {string} s The base string from which to remove.
- * @param {number} index The index at which to remove the substring.
- * @param {number} stringLength The length of the substring to remove.
- * @return {string} A copy of `s` with the substring removed or the full
- *     string if nothing is removed or the input is invalid.
- */
-goog.string.removeAt = function(s, index, stringLength) {
-  var resultStr = s;
-  // If the index is greater or equal to 0 then remove substring
-  if (index >= 0 && index < s.length && stringLength > 0) {
-    resultStr = s.substr(0, index) +
-        s.substr(index + stringLength, s.length - index - stringLength);
-  }
-  return resultStr;
-};
-
-
-/**
- * Removes the first occurrence of a substring from a string.
- * @param {string} str The base string from which to remove.
- * @param {string} substr The string to remove.
- * @return {string} A copy of `str` with `substr` removed or the
- *     full string if nothing is removed.
- */
-goog.string.remove = function(str, substr) {
-  return str.replace(substr, '');
-};
-
-
-/**
- *  Removes all occurrences of a substring from a string.
- *  @param {string} s The base string from which to remove.
- *  @param {string} ss The string to remove.
- *  @return {string} A copy of `s` with `ss` removed or the full
- *      string if nothing is removed.
- */
-goog.string.removeAll = function(s, ss) {
-  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
-  return s.replace(re, '');
-};
-
-
-/**
- *  Replaces all occurrences of a substring of a string with a new substring.
- *  @param {string} s The base string from which to remove.
- *  @param {string} ss The string to replace.
- *  @param {string} replacement The replacement string.
- *  @return {string} A copy of `s` with `ss` replaced by
- *      `replacement` or the original string if nothing is replaced.
- */
-goog.string.replaceAll = function(s, ss, replacement) {
-  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
-  return s.replace(re, replacement.replace(/\$/g, '$$$$'));
-};
-
-
-/**
- * Escapes characters in the string that are not safe to use in a RegExp.
- * @param {*} s The string to escape. If not a string, it will be casted
- *     to one.
- * @return {string} A RegExp safe, escaped copy of `s`.
- */
-goog.string.regExpEscape = function(s) {
-  return String(s)
-      .replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1')
-      .replace(/\x08/g, '\\x08');
-};
-
-
-/**
- * Repeats a string n times.
- * @param {string} string The string to repeat.
- * @param {number} length The number of times to repeat.
- * @return {string} A string containing `length` repetitions of
- *     `string`.
- */
-goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
-  // The native method is over 100 times faster than the alternative.
-  return string.repeat(length);
-} : function(string, length) {
-  return new Array(length + 1).join(string);
-};
-
-
-/**
- * Pads number to given length and optionally rounds it to a given precision.
- * For example:
- * <pre>padNumber(1.25, 2, 3) -> '01.250'
- * padNumber(1.25, 2) -> '01.25'
- * padNumber(1.25, 2, 1) -> '01.3'
- * padNumber(1.25, 0) -> '1.25'</pre>
- *
- * @param {number} num The number to pad.
- * @param {number} length The desired length.
- * @param {number=} opt_precision The desired precision.
- * @return {string} `num` as a string with the given options.
- */
-goog.string.padNumber = function(num, length, opt_precision) {
-  var s = goog.isDef(opt_precision) ? num.toFixed(opt_precision) : String(num);
-  var index = s.indexOf('.');
-  if (index == -1) {
-    index = s.length;
-  }
-  return goog.string.repeat('0', Math.max(0, length - index)) + s;
-};
-
-
-/**
- * Returns a string representation of the given object, with
- * null and undefined being returned as the empty string.
- *
- * @param {*} obj The object to convert.
- * @return {string} A string representation of the `obj`.
- */
-goog.string.makeSafe = function(obj) {
-  return obj == null ? '' : String(obj);
-};
-
-
-/**
- * Concatenates string expressions. This is useful
- * since some browsers are very inefficient when it comes to using plus to
- * concat strings. Be careful when using null and undefined here since
- * these will not be included in the result. If you need to represent these
- * be sure to cast the argument to a String first.
- * For example:
- * <pre>buildString('a', 'b', 'c', 'd') -> 'abcd'
- * buildString(null, undefined) -> ''
- * </pre>
- * @param {...*} var_args A list of strings to concatenate. If not a string,
- *     it will be casted to one.
- * @return {string} The concatenation of `var_args`.
- */
-goog.string.buildString = function(var_args) {
-  return Array.prototype.join.call(arguments, '');
-};
-
-
-/**
- * Returns a string with at least 64-bits of randomness.
- *
- * Doesn't trust JavaScript's random function entirely. Uses a combination of
- * random and current timestamp, and then encodes the string in base-36 to
- * make it shorter.
- *
- * @return {string} A random string, e.g. sn1s7vb4gcic.
- */
-goog.string.getRandomString = function() {
-  var x = 2147483648;
-  return Math.floor(Math.random() * x).toString(36) +
-      Math.abs(Math.floor(Math.random() * x) ^ goog.now()).toString(36);
-};
-
-
-/**
- * Compares two version numbers.
- *
- * @param {string|number} version1 Version of first item.
- * @param {string|number} version2 Version of second item.
- *
- * @return {number}  1 if `version1` is higher.
- *                   0 if arguments are equal.
- *                  -1 if `version2` is higher.
- */
-goog.string.compareVersions = goog.string.internal.compareVersions;
-
-
-/**
- * String hash function similar to java.lang.String.hashCode().
- * The hash code for a string is computed as
- * s[0] * 31 ^ (n - 1) + s[1] * 31 ^ (n - 2) + ... + s[n - 1],
- * where s[i] is the ith character of the string and n is the length of
- * the string. We mod the result to make it between 0 (inclusive) and 2^32
- * (exclusive).
- * @param {string} str A string.
- * @return {number} Hash value for `str`, between 0 (inclusive) and 2^32
- *  (exclusive). The empty string returns 0.
- */
-goog.string.hashCode = function(str) {
-  var result = 0;
-  for (var i = 0; i < str.length; ++i) {
-    // Normalize to 4 byte range, 0 ... 2^32.
-    result = (31 * result + str.charCodeAt(i)) >>> 0;
-  }
-  return result;
-};
-
-
-/**
- * The most recent unique ID. |0 is equivalent to Math.floor in this case.
- * @type {number}
- * @private
- */
-goog.string.uniqueStringCounter_ = Math.random() * 0x80000000 | 0;
-
-
-/**
- * Generates and returns a string which is unique in the current document.
- * This is useful, for example, to create unique IDs for DOM elements.
- * @return {string} A unique id.
- */
-goog.string.createUniqueString = function() {
-  return 'goog_' + goog.string.uniqueStringCounter_++;
-};
-
-
-/**
- * Converts the supplied string to a number, which may be Infinity or NaN.
- * This function strips whitespace: (toNumber(' 123') === 123)
- * This function accepts scientific notation: (toNumber('1e1') === 10)
- *
- * This is better than JavaScript's built-in conversions because, sadly:
- *     (Number(' ') === 0) and (parseFloat('123a') === 123)
- *
- * @param {string} str The string to convert.
- * @return {number} The number the supplied string represents, or NaN.
- */
-goog.string.toNumber = function(str) {
-  var num = Number(str);
-  if (num == 0 && goog.string.isEmptyOrWhitespace(str)) {
-    return NaN;
-  }
-  return num;
-};
-
-
-/**
- * Returns whether the given string is lower camel case (e.g. "isFooBar").
- *
- * Note that this assumes the string is entirely letters.
- * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
- *
- * @param {string} str String to test.
- * @return {boolean} Whether the string is lower camel case.
- */
-goog.string.isLowerCamelCase = function(str) {
-  return /^[a-z]+([A-Z][a-z]*)*$/.test(str);
-};
-
-
-/**
- * Returns whether the given string is upper camel case (e.g. "FooBarBaz").
- *
- * Note that this assumes the string is entirely letters.
- * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
- *
- * @param {string} str String to test.
- * @return {boolean} Whether the string is upper camel case.
- */
-goog.string.isUpperCamelCase = function(str) {
-  return /^([A-Z][a-z]*)+$/.test(str);
-};
-
-
-/**
- * Converts a string from selector-case to camelCase (e.g. from
- * "multi-part-string" to "multiPartString"), useful for converting
- * CSS selectors and HTML dataset keys to their equivalent JS properties.
- * @param {string} str The string in selector-case form.
- * @return {string} The string in camelCase form.
- */
-goog.string.toCamelCase = function(str) {
-  return String(str).replace(/\-([a-z])/g, function(all, match) {
-    return match.toUpperCase();
-  });
-};
-
-
-/**
- * Converts a string from camelCase to selector-case (e.g. from
- * "multiPartString" to "multi-part-string"), useful for converting JS
- * style and dataset properties to equivalent CSS selectors and HTML keys.
- * @param {string} str The string in camelCase form.
- * @return {string} The string in selector-case form.
- */
-goog.string.toSelectorCase = function(str) {
-  return String(str).replace(/([A-Z])/g, '-$1').toLowerCase();
-};
-
-
-/**
- * Converts a string into TitleCase. First character of the string is always
- * capitalized in addition to the first letter of every subsequent word.
- * Words are delimited by one or more whitespaces by default. Custom delimiters
- * can optionally be specified to replace the default, which doesn't preserve
- * whitespace delimiters and instead must be explicitly included if needed.
- *
- * Default delimiter => " ":
- *    goog.string.toTitleCase('oneTwoThree')    => 'OneTwoThree'
- *    goog.string.toTitleCase('one two three')  => 'One Two Three'
- *    goog.string.toTitleCase('  one   two   ') => '  One   Two   '
- *    goog.string.toTitleCase('one_two_three')  => 'One_two_three'
- *    goog.string.toTitleCase('one-two-three')  => 'One-two-three'
- *
- * Custom delimiter => "_-.":
- *    goog.string.toTitleCase('oneTwoThree', '_-.')       => 'OneTwoThree'
- *    goog.string.toTitleCase('one two three', '_-.')     => 'One two three'
- *    goog.string.toTitleCase('  one   two   ', '_-.')    => '  one   two   '
- *    goog.string.toTitleCase('one_two_three', '_-.')     => 'One_Two_Three'
- *    goog.string.toTitleCase('one-two-three', '_-.')     => 'One-Two-Three'
- *    goog.string.toTitleCase('one...two...three', '_-.') => 'One...Two...Three'
- *    goog.string.toTitleCase('one. two. three', '_-.')   => 'One. two. three'
- *    goog.string.toTitleCase('one-two.three', '_-.')     => 'One-Two.Three'
- *
- * @param {string} str String value in camelCase form.
- * @param {string=} opt_delimiters Custom delimiter character set used to
- *      distinguish words in the string value. Each character represents a
- *      single delimiter. When provided, default whitespace delimiter is
- *      overridden and must be explicitly included if needed.
- * @return {string} String value in TitleCase form.
- */
-goog.string.toTitleCase = function(str, opt_delimiters) {
-  var delimiters = goog.isString(opt_delimiters) ?
-      goog.string.regExpEscape(opt_delimiters) :
-      '\\s';
-
-  // For IE8, we need to prevent using an empty character set. Otherwise,
-  // incorrect matching will occur.
-  delimiters = delimiters ? '|[' + delimiters + ']+' : '';
-
-  var regexp = new RegExp('(^' + delimiters + ')([a-z])', 'g');
-  return str.replace(regexp, function(all, p1, p2) {
-    return p1 + p2.toUpperCase();
-  });
-};
-
-
-/**
- * Capitalizes a string, i.e. converts the first letter to uppercase
- * and all other letters to lowercase, e.g.:
- *
- * goog.string.capitalize('one')     => 'One'
- * goog.string.capitalize('ONE')     => 'One'
- * goog.string.capitalize('one two') => 'One two'
- *
- * Note that this function does not trim initial whitespace.
- *
- * @param {string} str String value to capitalize.
- * @return {string} String value with first letter in uppercase.
- */
-goog.string.capitalize = function(str) {
-  return String(str.charAt(0)).toUpperCase() +
-      String(str.substr(1)).toLowerCase();
-};
-
-
-/**
- * Parse a string in decimal or hexidecimal ('0xFFFF') form.
- *
- * To parse a particular radix, please use parseInt(string, radix) directly. See
- * https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/parseInt
- *
- * This is a wrapper for the built-in parseInt function that will only parse
- * numbers as base 10 or base 16.  Some JS implementations assume strings
- * starting with "0" are intended to be octal. ES3 allowed but discouraged
- * this behavior. ES5 forbids it.  This function emulates the ES5 behavior.
- *
- * For more information, see Mozilla JS Reference: http://goo.gl/8RiFj
- *
- * @param {string|number|null|undefined} value The value to be parsed.
- * @return {number} The number, parsed. If the string failed to parse, this
- *     will be NaN.
- */
-goog.string.parseInt = function(value) {
-  // Force finite numbers to strings.
-  if (isFinite(value)) {
-    value = String(value);
-  }
-
-  if (goog.isString(value)) {
-    // If the string starts with '0x' or '-0x', parse as hex.
-    return /^\s*-?0x/i.test(value) ? parseInt(value, 16) : parseInt(value, 10);
-  }
-
-  return NaN;
-};
-
-
-/**
- * Splits a string on a separator a limited number of times.
- *
- * This implementation is more similar to Python or Java, where the limit
- * parameter specifies the maximum number of splits rather than truncating
- * the number of results.
- *
- * See http://docs.python.org/2/library/stdtypes.html#str.split
- * See JavaDoc: http://goo.gl/F2AsY
- * See Mozilla reference: http://goo.gl/dZdZs
- *
- * @param {string} str String to split.
- * @param {string} separator The separator.
- * @param {number} limit The limit to the number of splits. The resulting array
- *     will have a maximum length of limit+1.  Negative numbers are the same
- *     as zero.
- * @return {!Array<string>} The string, split.
- */
-goog.string.splitLimit = function(str, separator, limit) {
-  var parts = str.split(separator);
-  var returnVal = [];
-
-  // Only continue doing this while we haven't hit the limit and we have
-  // parts left.
-  while (limit > 0 && parts.length) {
-    returnVal.push(parts.shift());
-    limit--;
-  }
-
-  // If there are remaining parts, append them to the end.
-  if (parts.length) {
-    returnVal.push(parts.join(separator));
-  }
-
-  return returnVal;
-};
-
-
-/**
- * Finds the characters to the right of the last instance of any separator
- *
- * This function is similar to goog.string.path.baseName, except it can take a
- * list of characters to split the string on. It will return the rightmost
- * grouping of characters to the right of any separator as a left-to-right
- * oriented string.
- *
- * @see goog.string.path.baseName
- * @param {string} str The string
- * @param {string|!Array<string>} separators A list of separator characters
- * @return {string} The last part of the string with respect to the separators
- */
-goog.string.lastComponent = function(str, separators) {
-  if (!separators) {
-    return str;
-  } else if (typeof separators == 'string') {
-    separators = [separators];
-  }
-
-  var lastSeparatorIndex = -1;
-  for (var i = 0; i < separators.length; i++) {
-    if (separators[i] == '') {
-      continue;
-    }
-    var currentSeparatorIndex = str.lastIndexOf(separators[i]);
-    if (currentSeparatorIndex > lastSeparatorIndex) {
-      lastSeparatorIndex = currentSeparatorIndex;
-    }
-  }
-  if (lastSeparatorIndex == -1) {
-    return str;
-  }
-  return str.slice(lastSeparatorIndex + 1);
-};
-
-
-/**
- * Computes the Levenshtein edit distance between two strings.
- * @param {string} a
- * @param {string} b
- * @return {number} The edit distance between the two strings.
- */
-goog.string.editDistance = function(a, b) {
-  var v0 = [];
-  var v1 = [];
-
-  if (a == b) {
-    return 0;
-  }
-
-  if (!a.length || !b.length) {
-    return Math.max(a.length, b.length);
-  }
-
-  for (var i = 0; i < b.length + 1; i++) {
-    v0[i] = i;
-  }
-
-  for (var i = 0; i < a.length; i++) {
-    v1[0] = i + 1;
-
-    for (var j = 0; j < b.length; j++) {
-      var cost = Number(a[i] != b[j]);
-      // Cost for the substring is the minimum of adding one character, removing
-      // one character, or a swap.
-      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
-    }
-
-    for (var j = 0; j < v0.length; j++) {
-      v0[j] = v1[j];
-    }
-  }
-
-  return v1[b.length];
-};
-
-//javascript/closure/labs/useragent/engine.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//javascript/closure/functions/functions.js
+// Copyright 2008 The Closure Library Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -9522,1757 +8440,499 @@ goog.string.editDistance = function(a, b) {
 // limitations under the License.
 
 /**
- * @fileoverview Closure user agent detection.
- * @see http://en.wikipedia.org/wiki/User_agent
- * For more information on browser brand, platform, or device see the other
- * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
+ * @fileoverview Utilities for creating functions. Loosely inspired by these
+ * java classes from the Guava library:
+ * com.google.common.base.Functions
+ * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Functions.html
  *
- */
-
-goog.provide('goog.labs.userAgent.engine');
-
-goog.require('goog.array');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.string');
-
-
-/**
- * @return {boolean} Whether the rendering engine is Presto.
- */
-goog.labs.userAgent.engine.isPresto = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Presto');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Trident.
- */
-goog.labs.userAgent.engine.isTrident = function() {
-  // IE only started including the Trident token in IE8.
-  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
-      goog.labs.userAgent.util.matchUserAgent('MSIE');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Edge.
- */
-goog.labs.userAgent.engine.isEdge = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Edge');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is WebKit.
- */
-goog.labs.userAgent.engine.isWebKit = function() {
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
-      !goog.labs.userAgent.engine.isEdge();
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Gecko.
- */
-goog.labs.userAgent.engine.isGecko = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
-      !goog.labs.userAgent.engine.isWebKit() &&
-      !goog.labs.userAgent.engine.isTrident() &&
-      !goog.labs.userAgent.engine.isEdge();
-};
-
-
-/**
- * @return {string} The rendering engine's version or empty string if version
- *     can't be determined.
- */
-goog.labs.userAgent.engine.getVersion = function() {
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  if (userAgentString) {
-    var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
-
-    var engineTuple = goog.labs.userAgent.engine.getEngineTuple_(tuples);
-    if (engineTuple) {
-      // In Gecko, the version string is either in the browser info or the
-      // Firefox version.  See Gecko user agent string reference:
-      // http://goo.gl/mULqa
-      if (engineTuple[0] == 'Gecko') {
-        return goog.labs.userAgent.engine.getVersionForKey_(tuples, 'Firefox');
-      }
-
-      return engineTuple[1];
-    }
-
-    // MSIE has only one version identifier, and the Trident version is
-    // specified in the parenthetical. IE Edge is covered in the engine tuple
-    // detection.
-    var browserTuple = tuples[0];
-    var info;
-    if (browserTuple && (info = browserTuple[2])) {
-      var match = /Trident\/([^\s;]+)/.exec(info);
-      if (match) {
-        return match[1];
-      }
-    }
-  }
-  return '';
-};
-
-
-/**
- * @param {!Array<!Array<string>>} tuples Extracted version tuples.
- * @return {!Array<string>|undefined} The engine tuple or undefined if not
- *     found.
- * @private
- */
-goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
-  if (!goog.labs.userAgent.engine.isEdge()) {
-    return tuples[1];
-  }
-  for (var i = 0; i < tuples.length; i++) {
-    var tuple = tuples[i];
-    if (tuple[0] == 'Edge') {
-      return tuple;
-    }
-  }
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the rendering engine version is higher or the same
- *     as the given version.
- */
-goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
-  return goog.string.compareVersions(
-             goog.labs.userAgent.engine.getVersion(), version) >= 0;
-};
-
-
-/**
- * @param {!Array<!Array<string>>} tuples Version tuples.
- * @param {string} key The key to look for.
- * @return {string} The version string of the given key, if present.
- *     Otherwise, the empty string.
- * @private
- */
-goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
-  // TODO(nnaze): Move to util if useful elsewhere.
-
-  var pair = goog.array.find(tuples, function(pair) { return key == pair[0]; });
-
-  return pair && pair[1] || '';
-};
-
-//javascript/closure/labs/useragent/platform.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Closure user agent platform detection.
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For more information on browser brand, rendering engine, or device see the
- * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
- * respectively).
+ * com.google.common.base.Predicates
+ * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Predicates.html
  *
- */
-
-goog.provide('goog.labs.userAgent.platform');
-
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.string');
-
-
-/**
- * @return {boolean} Whether the platform is Android.
- */
-goog.labs.userAgent.platform.isAndroid = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Android');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPod.
- */
-goog.labs.userAgent.platform.isIpod = function() {
-  return goog.labs.userAgent.util.matchUserAgent('iPod');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPhone.
- */
-goog.labs.userAgent.platform.isIphone = function() {
-  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
-      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
-      !goog.labs.userAgent.util.matchUserAgent('iPad');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPad.
- */
-goog.labs.userAgent.platform.isIpad = function() {
-  return goog.labs.userAgent.util.matchUserAgent('iPad');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iOS.
- */
-goog.labs.userAgent.platform.isIos = function() {
-  return goog.labs.userAgent.platform.isIphone() ||
-      goog.labs.userAgent.platform.isIpad() ||
-      goog.labs.userAgent.platform.isIpod();
-};
-
-
-/**
- * @return {boolean} Whether the platform is Mac.
- */
-goog.labs.userAgent.platform.isMacintosh = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
-};
-
-
-/**
- * Note: ChromeOS is not considered to be Linux as it does not report itself
- * as Linux in the user agent string.
- * @return {boolean} Whether the platform is Linux.
- */
-goog.labs.userAgent.platform.isLinux = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Linux');
-};
-
-
-/**
- * @return {boolean} Whether the platform is Windows.
- */
-goog.labs.userAgent.platform.isWindows = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Windows');
-};
-
-
-/**
- * @return {boolean} Whether the platform is ChromeOS.
- */
-goog.labs.userAgent.platform.isChromeOS = function() {
-  return goog.labs.userAgent.util.matchUserAgent('CrOS');
-};
-
-/**
- * @return {boolean} Whether the platform is Chromecast.
- */
-goog.labs.userAgent.platform.isChromecast = function() {
-  return goog.labs.userAgent.util.matchUserAgent('CrKey');
-};
-
-/**
- * @return {boolean} Whether the platform is KaiOS.
- */
-goog.labs.userAgent.platform.isKaiOS = function() {
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
-};
-
-/**
- * @return {boolean} Whether the platform is Go2Phone.
- */
-goog.labs.userAgent.platform.isGo2Phone = function() {
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('GAFP');
-};
-
-/**
- * The version of the platform. We only determine the version for Windows,
- * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
- * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
- * version 0.0.
+ * More about these can be found at
+ * https://github.com/google/guava/wiki/FunctionalExplained
  *
- * @return {string} The platform version or empty string if version cannot be
- *     determined.
+ * @author nicksantos@google.com (Nick Santos)
  */
-goog.labs.userAgent.platform.getVersion = function() {
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  var version = '', re;
-  if (goog.labs.userAgent.platform.isWindows()) {
-    re = /Windows (?:NT|Phone) ([0-9.]+)/;
-    var match = re.exec(userAgentString);
-    if (match) {
-      version = match[1];
-    } else {
-      version = '0.0';
-    }
-  } else if (goog.labs.userAgent.platform.isIos()) {
-    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
-    var match = re.exec(userAgentString);
-    // Report the version as x.y.z and not x_y_z
-    version = match && match[1].replace(/_/g, '.');
-  } else if (goog.labs.userAgent.platform.isMacintosh()) {
-    re = /Mac OS X ([0-9_.]+)/;
-    var match = re.exec(userAgentString);
-    // Note: some old versions of Camino do not report an OSX version.
-    // Default to 10.
-    version = match ? match[1].replace(/_/g, '.') : '10';
-  } else if (goog.labs.userAgent.platform.isKaiOS()) {
-    re = /(?:KaiOS)\/(\S+)/i;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  } else if (goog.labs.userAgent.platform.isAndroid()) {
-    re = /Android\s+([^\);]+)(\)|;)/;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  } else if (goog.labs.userAgent.platform.isChromeOS()) {
-    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  }
-  return version || '';
-};
+
+
+goog.provide('goog.functions');
 
 
 /**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the browser version is higher or the same as the
- *     given version.
- */
-goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
-  return goog.string.compareVersions(
-             goog.labs.userAgent.platform.getVersion(), version) >= 0;
-};
-
-//javascript/closure/reflect/reflect.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Useful compiler idioms.
- *
- * @author johnlenz@google.com (John Lenz)
- */
-
-goog.provide('goog.reflect');
-
-
-/**
- * Syntax for object literal casts.
- * @see http://go/jscompiler-renaming
- * @see https://goo.gl/CRs09P
- *
- * Use this if you have an object literal whose keys need to have the same names
- * as the properties of some class even after they are renamed by the compiler.
- *
- * @param {!Function} type Type to cast to.
- * @param {Object} object Object literal to cast.
- * @return {Object} The object literal.
- */
-goog.reflect.object = function(type, object) {
-  return object;
-};
-
-/**
- * Syntax for renaming property strings.
- * @see http://go/jscompiler-renaming
- * @see https://goo.gl/CRs09P
- *
- * Use this if you have an need to access a property as a string, but want
- * to also have the property renamed by the compiler. In contrast to
- * goog.reflect.object, this method takes an instance of an object.
- *
- * Properties must be simple names (not qualified names).
- *
- * @param {string} prop Name of the property
- * @param {!Object} object Instance of the object whose type will be used
- *     for renaming
- * @return {string} The renamed property.
- */
-goog.reflect.objectProperty = function(prop, object) {
-  return prop;
-};
-
-/**
- * To assert to the compiler that an operation is needed when it would
- * otherwise be stripped. For example:
- * <code>
- *     // Force a layout
- *     goog.reflect.sinkValue(dialog.offsetHeight);
- * </code>
- * @param {T} x
- * @return {T}
+ * Creates a function that always returns the same value.
+ * @param {T} retValue The value to return.
+ * @return {function():T} The new function.
  * @template T
  */
-goog.reflect.sinkValue = function(x) {
-  goog.reflect.sinkValue[' '](x);
-  return x;
+goog.functions.constant = function(retValue) {
+  return function() { return retValue; };
 };
 
 
 /**
- * The compiler should optimize this function away iff no one ever uses
- * goog.reflect.sinkValue.
+ * Always returns false.
+ * @type {function(...): boolean}
  */
-goog.reflect.sinkValue[' '] = goog.nullFunction;
-
-
-/**
- * Check if a property can be accessed without throwing an exception.
- * @param {Object} obj The owner of the property.
- * @param {string} prop The property name.
- * @return {boolean} Whether the property is accessible. Will also return true
- *     if obj is null.
- */
-goog.reflect.canAccessProperty = function(obj, prop) {
-
-  try {
-    goog.reflect.sinkValue(obj[prop]);
-    return true;
-  } catch (e) {
-  }
+goog.functions.FALSE = function() {
   return false;
 };
 
 
 /**
- * Retrieves a value from a cache given a key. The compiler provides special
- * consideration for this call such that it is generally considered side-effect
- * free. However, if the `opt_keyFn` or `valueFn` have side-effects
- * then the entire call is considered to have side-effects.
- *
- * Conventionally storing the value on the cache would be considered a
- * side-effect and preclude unused calls from being pruned, ie. even if
- * the value was never used, it would still always be stored in the cache.
- *
- * Providing a side-effect free `valueFn` and `opt_keyFn`
- * allows unused calls to `goog.reflect.cache` to be pruned.
- *
- * @param {!Object<K, V>} cacheObj The object that contains the cached values.
- * @param {?} key The key to lookup in the cache. If it is not string or number
- *     then a `opt_keyFn` should be provided. The key is also used as the
- *     parameter to the `valueFn`.
- * @param {function(?):V} valueFn The value provider to use to calculate the
- *     value to store in the cache. This function should be side-effect free
- *     to take advantage of the optimization.
- * @param {function(?):K=} opt_keyFn The key provider to determine the cache
- *     map key. This should be used if the given key is not a string or number.
- *     If not provided then the given key is used. This function should be
- *     side-effect free to take advantage of the optimization.
- * @return {V} The cached or calculated value.
- * @template K
- * @template V
+ * Always returns true.
+ * @type {function(...): boolean}
  */
-goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
-  var storedKey = opt_keyFn ? opt_keyFn(key) : key;
-
-  if (Object.prototype.hasOwnProperty.call(cacheObj, storedKey)) {
-    return cacheObj[storedKey];
-  }
-
-  return (cacheObj[storedKey] = valueFn(key));
-};
-
-//javascript/closure/useragent/useragent.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Rendering engine detection.
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For information on the browser brand (such as Safari versus Chrome), see
- * goog.userAgent.product.
- * @author arv@google.com (Erik Arvidsson)
- * @see ../demos/useragent.html
- */
-
-goog.provide('goog.userAgent');
-
-goog.require('goog.labs.userAgent.browser');
-goog.require('goog.labs.userAgent.engine');
-goog.require('goog.labs.userAgent.platform');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.reflect');
-goog.require('goog.string');
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is IE.
- */
-goog.userAgent.ASSUME_IE = goog.define('goog.userAgent.ASSUME_IE', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is EDGE.
- */
-goog.userAgent.ASSUME_EDGE = goog.define('goog.userAgent.ASSUME_EDGE', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is GECKO.
- */
-goog.userAgent.ASSUME_GECKO = goog.define('goog.userAgent.ASSUME_GECKO', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is WEBKIT.
- */
-goog.userAgent.ASSUME_WEBKIT =
-    goog.define('goog.userAgent.ASSUME_WEBKIT', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is a
- *     mobile device running WebKit e.g. iPhone or Android.
- */
-goog.userAgent.ASSUME_MOBILE_WEBKIT =
-    goog.define('goog.userAgent.ASSUME_MOBILE_WEBKIT', false);
-
-
-/**
- * @define {boolean} Whether we know at compile-time that the browser is OPERA.
- */
-goog.userAgent.ASSUME_OPERA = goog.define('goog.userAgent.ASSUME_OPERA', false);
-
-
-/**
- * @define {boolean} Whether the
- *     `goog.userAgent.isVersionOrHigher`
- *     function will return true for any version.
- */
-goog.userAgent.ASSUME_ANY_VERSION =
-    goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
-
-
-/**
- * Whether we know the browser engine at compile-time.
- * @type {boolean}
- * @private
- */
-goog.userAgent.BROWSER_KNOWN_ = goog.userAgent.ASSUME_IE ||
-    goog.userAgent.ASSUME_EDGE || goog.userAgent.ASSUME_GECKO ||
-    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.ASSUME_WEBKIT ||
-    goog.userAgent.ASSUME_OPERA;
-
-
-/**
- * Returns the userAgent string for the current browser.
- *
- * @return {string} The userAgent string.
- */
-goog.userAgent.getUserAgentString = function() {
-  return goog.labs.userAgent.util.getUserAgent();
+goog.functions.TRUE = function() {
+  return true;
 };
 
 
 /**
- * @return {?Navigator} The native navigator object.
+ * Always returns NULL.
+ * @type {function(...): null}
  */
-goog.userAgent.getNavigatorTyped = function() {
-  // Need a local navigator reference instead of using the global one,
-  // to avoid the rare case where they reference different objects.
-  // (in a WorkerPool, for example).
-  return goog.global['navigator'] || null;
-};
-
-
-/**
- * TODO(nnaze): Change type to "Navigator" and update compilation targets.
- * @return {?Object} The native navigator object.
- */
-goog.userAgent.getNavigator = function() {
-  return goog.userAgent.getNavigatorTyped();
-};
-
-
-/**
- * Whether the user agent is Opera.
- * @type {boolean}
- */
-goog.userAgent.OPERA = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_OPERA :
-    goog.labs.userAgent.browser.isOpera();
-
-
-/**
- * Whether the user agent is Internet Explorer.
- * @type {boolean}
- */
-goog.userAgent.IE = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_IE :
-    goog.labs.userAgent.browser.isIE();
-
-
-/**
- * Whether the user agent is Microsoft Edge.
- * @type {boolean}
- */
-goog.userAgent.EDGE = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_EDGE :
-    goog.labs.userAgent.engine.isEdge();
-
-
-/**
- * Whether the user agent is MS Internet Explorer or MS Edge.
- * @type {boolean}
- */
-goog.userAgent.EDGE_OR_IE = goog.userAgent.EDGE || goog.userAgent.IE;
-
-
-/**
- * Whether the user agent is Gecko. Gecko is the rendering engine used by
- * Mozilla, Firefox, and others.
- * @type {boolean}
- */
-goog.userAgent.GECKO = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_GECKO :
-    goog.labs.userAgent.engine.isGecko();
-
-
-/**
- * Whether the user agent is WebKit. WebKit is the rendering engine that
- * Safari, Android and others use.
- * @type {boolean}
- */
-goog.userAgent.WEBKIT = goog.userAgent.BROWSER_KNOWN_ ?
-    goog.userAgent.ASSUME_WEBKIT || goog.userAgent.ASSUME_MOBILE_WEBKIT :
-    goog.labs.userAgent.engine.isWebKit();
-
-
-/**
- * Whether the user agent is running on a mobile device.
- *
- * This is a separate function so that the logic can be tested.
- *
- * TODO(nnaze): Investigate swapping in goog.labs.userAgent.device.isMobile().
- *
- * @return {boolean} Whether the user agent is running on a mobile device.
- * @private
- */
-goog.userAgent.isMobile_ = function() {
-  return goog.userAgent.WEBKIT &&
-      goog.labs.userAgent.util.matchUserAgent('Mobile');
-};
-
-
-/**
- * Whether the user agent is running on a mobile device.
- *
- * TODO(nnaze): Consider deprecating MOBILE when labs.userAgent
- *   is promoted as the gecko/webkit logic is likely inaccurate.
- *
- * @type {boolean}
- */
-goog.userAgent.MOBILE =
-    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.isMobile_();
-
-
-/**
- * Used while transitioning code to use WEBKIT instead.
- * @type {boolean}
- * @deprecated Use {@link goog.userAgent.product.SAFARI} instead.
- * TODO(nicksantos): Delete this from goog.userAgent.
- */
-goog.userAgent.SAFARI = goog.userAgent.WEBKIT;
-
-
-/**
- * @return {string} the platform (operating system) the user agent is running
- *     on. Default to empty string because navigator.platform may not be defined
- *     (on Rhino, for example).
- * @private
- */
-goog.userAgent.determinePlatform_ = function() {
-  var navigator = goog.userAgent.getNavigatorTyped();
-  return navigator && navigator.platform || '';
-};
-
-
-/**
- * The platform (operating system) the user agent is running on. Default to
- * empty string because navigator.platform may not be defined (on Rhino, for
- * example).
- * @type {string}
- */
-goog.userAgent.PLATFORM = goog.userAgent.determinePlatform_();
-
-
-/**
- * @define {boolean} Whether the user agent is running on a Macintosh operating
- *     system.
- */
-goog.userAgent.ASSUME_MAC = goog.define('goog.userAgent.ASSUME_MAC', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on a Windows operating
- *     system.
- */
-goog.userAgent.ASSUME_WINDOWS =
-    goog.define('goog.userAgent.ASSUME_WINDOWS', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on a Linux operating
- *     system.
- */
-goog.userAgent.ASSUME_LINUX = goog.define('goog.userAgent.ASSUME_LINUX', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on a X11 windowing
- *     system.
- */
-goog.userAgent.ASSUME_X11 = goog.define('goog.userAgent.ASSUME_X11', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on Android.
- */
-goog.userAgent.ASSUME_ANDROID =
-    goog.define('goog.userAgent.ASSUME_ANDROID', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on an iPhone.
- */
-goog.userAgent.ASSUME_IPHONE =
-    goog.define('goog.userAgent.ASSUME_IPHONE', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on an iPad.
- */
-goog.userAgent.ASSUME_IPAD = goog.define('goog.userAgent.ASSUME_IPAD', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on an iPod.
- */
-goog.userAgent.ASSUME_IPOD = goog.define('goog.userAgent.ASSUME_IPOD', false);
-
-
-/**
- * @define {boolean} Whether the user agent is running on KaiOS.
- */
-goog.userAgent.ASSUME_KAIOS = goog.define('goog.userAgent.ASSUME_KAIOS', false);
-
-/**
- * @define {boolean} Whether the user agent is running on Go2Phone.
- */
-goog.userAgent.ASSUME_GO2PHONE =
-    goog.define('goog.userAgent.ASSUME_GO2PHONE', false);
-
-
-/**
- * @type {boolean}
- * @private
- */
-goog.userAgent.PLATFORM_KNOWN_ = goog.userAgent.ASSUME_MAC ||
-    goog.userAgent.ASSUME_WINDOWS || goog.userAgent.ASSUME_LINUX ||
-    goog.userAgent.ASSUME_X11 || goog.userAgent.ASSUME_ANDROID ||
-    goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
-    goog.userAgent.ASSUME_IPOD;
-
-
-/**
- * Whether the user agent is running on a Macintosh operating system.
- * @type {boolean}
- */
-goog.userAgent.MAC = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_MAC :
-    goog.labs.userAgent.platform.isMacintosh();
-
-
-/**
- * Whether the user agent is running on a Windows operating system.
- * @type {boolean}
- */
-goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_WINDOWS :
-    goog.labs.userAgent.platform.isWindows();
-
-
-/**
- * Whether the user agent is Linux per the legacy behavior of
- * goog.userAgent.LINUX, which considered ChromeOS to also be
- * Linux.
- * @return {boolean}
- * @private
- */
-goog.userAgent.isLegacyLinux_ = function() {
-  return goog.labs.userAgent.platform.isLinux() ||
-      goog.labs.userAgent.platform.isChromeOS();
-};
-
-
-/**
- * Whether the user agent is running on a Linux operating system.
- *
- * Note that goog.userAgent.LINUX considers ChromeOS to be Linux,
- * while goog.labs.userAgent.platform considers ChromeOS and
- * Linux to be different OSes.
- *
- * @type {boolean}
- */
-goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_LINUX :
-    goog.userAgent.isLegacyLinux_();
-
-
-/**
- * @return {boolean} Whether the user agent is an X11 windowing system.
- * @private
- */
-goog.userAgent.isX11_ = function() {
-  var navigator = goog.userAgent.getNavigatorTyped();
-  return !!navigator &&
-      goog.string.contains(navigator['appVersion'] || '', 'X11');
-};
-
-
-/**
- * Whether the user agent is running on a X11 windowing system.
- * @type {boolean}
- */
-goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_X11 :
-    goog.userAgent.isX11_();
-
-
-/**
- * Whether the user agent is running on Android.
- * @type {boolean}
- */
-goog.userAgent.ANDROID = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_ANDROID :
-    goog.labs.userAgent.platform.isAndroid();
-
-
-/**
- * Whether the user agent is running on an iPhone.
- * @type {boolean}
- */
-goog.userAgent.IPHONE = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPHONE :
-    goog.labs.userAgent.platform.isIphone();
-
-
-/**
- * Whether the user agent is running on an iPad.
- * @type {boolean}
- */
-goog.userAgent.IPAD = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPAD :
-    goog.labs.userAgent.platform.isIpad();
-
-
-/**
- * Whether the user agent is running on an iPod.
- * @type {boolean}
- */
-goog.userAgent.IPOD = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_IPOD :
-    goog.labs.userAgent.platform.isIpod();
-
-
-/**
- * Whether the user agent is running on iOS.
- * @type {boolean}
- */
-goog.userAgent.IOS = goog.userAgent.PLATFORM_KNOWN_ ?
-    (goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
-     goog.userAgent.ASSUME_IPOD) :
-    goog.labs.userAgent.platform.isIos();
-
-/**
- * Whether the user agent is running on KaiOS.
- */
-goog.userAgent.KAIOS = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_KAIOS :
-    goog.labs.userAgent.platform.isKaiOS();
-
-/**
- * Whether the user agent is running on Go2Phone.
- */
-goog.userAgent.GO2PHONE = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_GO2PHONE :
-    goog.labs.userAgent.platform.isGo2Phone();
-
-
-/**
- * @return {string} The string that describes the version number of the user
- *     agent.
- * @private
- */
-goog.userAgent.determineVersion_ = function() {
-  // All browsers have different ways to detect the version and they all have
-  // different naming schemes.
-  // version is a string rather than a number because it may contain 'b', 'a',
-  // and so on.
-  var version = '';
-  var arr = goog.userAgent.getVersionRegexResult_();
-  if (arr) {
-    version = arr ? arr[1] : '';
-  }
-
-  if (goog.userAgent.IE) {
-    // IE9 can be in document mode 9 but be reporting an inconsistent user agent
-    // version.  If it is identifying as a version lower than 9 we take the
-    // documentMode as the version instead.  IE8 has similar behavior.
-    // It is recommended to set the X-UA-Compatible header to ensure that IE9
-    // uses documentMode 9.
-    var docMode = goog.userAgent.getDocumentMode_();
-    if (docMode != null && docMode > parseFloat(version)) {
-      return String(docMode);
-    }
-  }
-
-  return version;
-};
-
-
-/**
- * @return {?IArrayLike<string>|undefined} The version regex matches from
- *     parsing the user
- *     agent string. These regex statements must be executed inline so they can
- *     be compiled out by the closure compiler with the rest of the useragent
- *     detection logic when ASSUME_* is specified.
- * @private
- */
-goog.userAgent.getVersionRegexResult_ = function() {
-  var userAgent = goog.userAgent.getUserAgentString();
-  if (goog.userAgent.GECKO) {
-    return /rv\:([^\);]+)(\)|;)/.exec(userAgent);
-  }
-  if (goog.userAgent.EDGE) {
-    return /Edge\/([\d\.]+)/.exec(userAgent);
-  }
-  if (goog.userAgent.IE) {
-    return /\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/.exec(userAgent);
-  }
-  if (goog.userAgent.WEBKIT) {
-    // WebKit/125.4
-    return /WebKit\/(\S+)/.exec(userAgent);
-  }
-  if (goog.userAgent.OPERA) {
-    // If none of the above browsers were detected but the browser is Opera, the
-    // only string that is of interest is 'Version/<number>'.
-    return /(?:Version)[ \/]?(\S+)/.exec(userAgent);
-  }
-  return undefined;
-};
-
-
-/**
- * @return {number|undefined} Returns the document mode (for testing).
- * @private
- */
-goog.userAgent.getDocumentMode_ = function() {
-  // NOTE(user): goog.userAgent may be used in context where there is no DOM.
-  var doc = goog.global['document'];
-  return doc ? doc['documentMode'] : undefined;
-};
-
-
-/**
- * The version of the user agent. This is a string because it might contain
- * 'b' (as in beta) as well as multiple dots.
- * @type {string}
- */
-goog.userAgent.VERSION = goog.userAgent.determineVersion_();
-
-
-/**
- * Compares two version numbers.
- *
- * @param {string} v1 Version of first item.
- * @param {string} v2 Version of second item.
- *
- * @return {number}  1 if first argument is higher
- *                   0 if arguments are equal
- *                  -1 if second argument is higher.
- * @deprecated Use goog.string.compareVersions.
- */
-goog.userAgent.compare = function(v1, v2) {
-  return goog.string.compareVersions(v1, v2);
-};
-
-
-/**
- * Cache for {@link goog.userAgent.isVersionOrHigher}.
- * Calls to compareVersions are surprisingly expensive and, as a browser's
- * version number is unlikely to change during a session, we cache the results.
- * @const
- * @private
- */
-goog.userAgent.isVersionOrHigherCache_ = {};
-
-
-/**
- * Whether the user agent version is higher or the same as the given version.
- * NOTE: When checking the version numbers for Firefox and Safari, be sure to
- * use the engine's version, not the browser's version number.  For example,
- * Firefox 3.0 corresponds to Gecko 1.9 and Safari 3.0 to Webkit 522.11.
- * Opera and Internet Explorer versions match the product release number.<br>
- * @see <a href="http://en.wikipedia.org/wiki/Safari_version_history">
- *     Webkit</a>
- * @see <a href="http://en.wikipedia.org/wiki/Gecko_engine">Gecko</a>
- *
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the user agent version is higher or the same as
- *     the given version.
- */
-goog.userAgent.isVersionOrHigher = function(version) {
-  return goog.userAgent.ASSUME_ANY_VERSION ||
-      goog.reflect.cache(
-          goog.userAgent.isVersionOrHigherCache_, version, function() {
-            return goog.string.compareVersions(
-                       goog.userAgent.VERSION, version) >= 0;
-          });
-};
-
-
-/**
- * Deprecated alias to `goog.userAgent.isVersionOrHigher`.
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the user agent version is higher or the same as
- *     the given version.
- * @deprecated Use goog.userAgent.isVersionOrHigher().
- */
-goog.userAgent.isVersion = goog.userAgent.isVersionOrHigher;
-
-
-/**
- * Whether the IE effective document mode is higher or the same as the given
- * document mode version.
- * NOTE: Only for IE, return false for another browser.
- *
- * @param {number} documentMode The document mode version to check.
- * @return {boolean} Whether the IE effective document mode is higher or the
- *     same as the given version.
- */
-goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
-  return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
-};
-
-
-/**
- * Deprecated alias to `goog.userAgent.isDocumentModeOrHigher`.
- * @param {number} version The version to check.
- * @return {boolean} Whether the IE effective document mode is higher or the
- *      same as the given version.
- * @deprecated Use goog.userAgent.isDocumentModeOrHigher().
- */
-goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-
-
-/**
- * For IE version < 7, documentMode is undefined, so attempt to use the
- * CSS1Compat property to see if we are in standards mode. If we are in
- * standards mode, treat the browser version as the document mode. Otherwise,
- * IE is emulating version 5.
- * @type {number|undefined}
- * @const
- */
-goog.userAgent.DOCUMENT_MODE = (function() {
-  var doc = goog.global['document'];
-  var mode = goog.userAgent.getDocumentMode_();
-  if (!doc || !goog.userAgent.IE) {
-    return undefined;
-  }
-  return mode || (doc['compatMode'] == 'CSS1Compat' ?
-                      parseInt(goog.userAgent.VERSION, 10) :
-                      5);
-})();
-
-//javascript/closure/debug/debug.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Logging and debugging utilities.
- *
- * @see ../demos/debug.html
- */
-
-goog.provide('goog.debug');
-
-goog.require('goog.array');
-goog.require('goog.debug.errorcontext');
-goog.require('goog.userAgent');
-
-
-/** @define {boolean} Whether logging should be enabled. */
-goog.debug.LOGGING_ENABLED =
-    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
-
-
-/** @define {boolean} Whether to force "sloppy" stack building. */
-goog.debug.FORCE_SLOPPY_STACKS =
-    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
-
-
-/**
- * Catches onerror events fired by windows and similar objects.
- * @param {function(Object)} logFunc The function to call with the error
- *    information.
- * @param {boolean=} opt_cancel Whether to stop the error from reaching the
- *    browser.
- * @param {Object=} opt_target Object that fires onerror events.
- * @suppress {strictMissingProperties} onerror is not defined as a property
- *    on Object.
- */
-goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
-  var target = opt_target || goog.global;
-  var oldErrorHandler = target.onerror;
-  var retVal = !!opt_cancel;
-
-  // Chrome interprets onerror return value backwards (http://crbug.com/92062)
-  // until it was fixed in webkit revision r94061 (Webkit 535.3). This
-  // workaround still needs to be skipped in Safari after the webkit change
-  // gets pushed out in Safari.
-  // See https://bugs.webkit.org/show_bug.cgi?id=67119
-  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher('535.3')) {
-    retVal = !retVal;
-  }
-
-  /**
-   * New onerror handler for this target. This onerror handler follows the spec
-   * according to
-   * http://www.whatwg.org/specs/web-apps/current-work/#runtime-script-errors
-   * The spec was changed in August 2013 to support receiving column information
-   * and an error object for all scripts on the same origin or cross origin
-   * scripts with the proper headers. See
-   * https://mikewest.org/2013/08/debugging-runtime-errors-with-window-onerror
-   *
-   * @param {string} message The error message. For cross-origin errors, this
-   *     will be scrubbed to just "Script error.". For new browsers that have
-   *     updated to follow the latest spec, errors that come from origins that
-   *     have proper cross origin headers will not be scrubbed.
-   * @param {string} url The URL of the script that caused the error. The URL
-   *     will be scrubbed to "" for cross origin scripts unless the script has
-   *     proper cross origin headers and the browser has updated to the latest
-   *     spec.
-   * @param {number} line The line number in the script that the error
-   *     occurred on.
-   * @param {number=} opt_col The optional column number that the error
-   *     occurred on. Only browsers that have updated to the latest spec will
-   *     include this.
-   * @param {Error=} opt_error The optional actual error object for this
-   *     error that should include the stack. Only browsers that have updated
-   *     to the latest spec will inlude this parameter.
-   * @return {boolean} Whether to prevent the error from reaching the browser.
-   */
-  target.onerror = function(message, url, line, opt_col, opt_error) {
-    if (oldErrorHandler) {
-      oldErrorHandler(message, url, line, opt_col, opt_error);
-    }
-    logFunc({
-      message: message,
-      fileName: url,
-      line: line,
-      lineNumber: line,
-      col: opt_col,
-      error: opt_error
-    });
-    return retVal;
-  };
-};
-
-
-/**
- * Creates a string representing an object and all its properties.
- * @param {Object|null|undefined} obj Object to expose.
- * @param {boolean=} opt_showFn Show the functions as well as the properties,
- *     default is false.
- * @return {string} The string representation of `obj`.
- */
-goog.debug.expose = function(obj, opt_showFn) {
-  if (typeof obj == 'undefined') {
-    return 'undefined';
-  }
-  if (obj == null) {
-    return 'NULL';
-  }
-  var str = [];
-
-  for (var x in obj) {
-    if (!opt_showFn && goog.isFunction(obj[x])) {
-      continue;
-    }
-    var s = x + ' = ';
-
-    try {
-      s += obj[x];
-    } catch (e) {
-      s += '*** ' + e + ' ***';
-    }
-    str.push(s);
-  }
-  return str.join('\n');
-};
-
-
-/**
- * Creates a string representing a given primitive or object, and for an
- * object, all its properties and nested objects. NOTE: The output will include
- * Uids on all objects that were exposed. Any added Uids will be removed before
- * returning.
- * @param {*} obj Object to expose.
- * @param {boolean=} opt_showFn Also show properties that are functions (by
- *     default, functions are omitted).
- * @return {string} A string representation of `obj`.
- */
-goog.debug.deepExpose = function(obj, opt_showFn) {
-  var str = [];
-
-  // Track any objects where deepExpose added a Uid, so they can be cleaned up
-  // before return. We do this globally, rather than only on ancestors so that
-  // if the same object appears in the output, you can see it.
-  var uidsToCleanup = [];
-  var ancestorUids = {};
-
-  var helper = function(obj, space) {
-    var nestspace = space + '  ';
-
-    var indentMultiline = function(str) {
-      return str.replace(/\n/g, '\n' + space);
-    };
-
-
-    try {
-      if (!goog.isDef(obj)) {
-        str.push('undefined');
-      } else if (goog.isNull(obj)) {
-        str.push('NULL');
-      } else if (goog.isString(obj)) {
-        str.push('"' + indentMultiline(obj) + '"');
-      } else if (goog.isFunction(obj)) {
-        str.push(indentMultiline(String(obj)));
-      } else if (goog.isObject(obj)) {
-        // Add a Uid if needed. The struct calls implicitly adds them.
-        if (!goog.hasUid(obj)) {
-          uidsToCleanup.push(obj);
-        }
-        var uid = goog.getUid(obj);
-        if (ancestorUids[uid]) {
-          str.push('*** reference loop detected (id=' + uid + ') ***');
-        } else {
-          ancestorUids[uid] = true;
-          str.push('{');
-          for (var x in obj) {
-            if (!opt_showFn && goog.isFunction(obj[x])) {
-              continue;
-            }
-            str.push('\n');
-            str.push(nestspace);
-            str.push(x + ' = ');
-            helper(obj[x], nestspace);
-          }
-          str.push('\n' + space + '}');
-          delete ancestorUids[uid];
-        }
-      } else {
-        str.push(obj);
-      }
-    } catch (e) {
-      str.push('*** ' + e + ' ***');
-    }
-  };
-
-  helper(obj, '');
-
-  // Cleanup any Uids that were added by the deepExpose.
-  for (var i = 0; i < uidsToCleanup.length; i++) {
-    goog.removeUid(uidsToCleanup[i]);
-  }
-
-  return str.join('');
-};
-
-
-/**
- * Recursively outputs a nested array as a string.
- * @param {Array<?>} arr The array.
- * @return {string} String representing nested array.
- */
-goog.debug.exposeArray = function(arr) {
-  var str = [];
-  for (var i = 0; i < arr.length; i++) {
-    if (goog.isArray(arr[i])) {
-      str.push(goog.debug.exposeArray(arr[i]));
-    } else {
-      str.push(arr[i]);
-    }
-  }
-  return '[ ' + str.join(', ') + ' ]';
-};
-
-
-/**
- * Normalizes the error/exception object between browsers.
- * @param {*} err Raw error object.
- * @return {{
- *    message: (?|undefined),
- *    name: (?|undefined),
- *    lineNumber: (?|undefined),
- *    fileName: (?|undefined),
- *    stack: (?|undefined)
- * }} Normalized error object.
- * @suppress {strictMissingProperties} properties not defined on err
- */
-goog.debug.normalizeErrorObject = function(err) {
-  var href = goog.getObjectByName('window.location.href');
-  if (err == null) {
-    err = 'Unknown Error of type "null/undefined"';
-  }
-  if (goog.isString(err)) {
-    return {
-      'message': err,
-      'name': 'Unknown error',
-      'lineNumber': 'Not available',
-      'fileName': href,
-      'stack': 'Not available'
-    };
-  }
-
-  var lineNumber, fileName;
-  var threwError = false;
-
-  try {
-    lineNumber = err.lineNumber || err.line || 'Not available';
-  } catch (e) {
-    // Firefox 2 sometimes throws an error when accessing 'lineNumber':
-    // Message: Permission denied to get property UnnamedClass.lineNumber
-    lineNumber = 'Not available';
-    threwError = true;
-  }
-
-  try {
-    fileName = err.fileName || err.filename || err.sourceURL ||
-        // $googDebugFname may be set before a call to eval to set the filename
-        // that the eval is supposed to present.
-        goog.global['$googDebugFname'] || href;
-  } catch (e) {
-    // Firefox 2 may also throw an error when accessing 'filename'.
-    fileName = 'Not available';
-    threwError = true;
-  }
-
-  // The IE Error object contains only the name and the message.
-  // The Safari Error object uses the line and sourceURL fields.
-  if (threwError || !err.lineNumber || !err.fileName || !err.stack ||
-      !err.message || !err.name) {
-    var message = err.message;
-    if (message == null) {
-      if (err.constructor && err.constructor instanceof Function) {
-        var ctorName = err.constructor.name ?
-            err.constructor.name :
-            goog.debug.getFunctionName(err.constructor);
-        message = 'Unknown Error of type "' + ctorName + '"';
-      } else {
-        message = 'Unknown Error of unknown type';
-      }
-    }
-    return {
-      'message': message,
-      'name': err.name || 'UnknownError',
-      'lineNumber': lineNumber,
-      'fileName': fileName,
-      'stack': err.stack || 'Not available'
-    };
-  }
-
-  // Standards error object
-  // Typed !Object. Should be a subtype of the return type, but it's not.
-  return /** @type {?} */ (err);
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * an extra message.
- * @param {*} err The original thrown error, object, or string.
- * @param {string=} opt_message  optional additional message to add to the
- *     error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceError = function(err, opt_message) {
-  var error;
-  if (!(err instanceof Error)) {
-    error = Error(err);
-    if (Error.captureStackTrace) {
-      // Trim this function off the call stack, if we can.
-      Error.captureStackTrace(error, goog.debug.enhanceError);
-    }
-  } else {
-    error = err;
-  }
-
-  if (!error.stack) {
-    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
-  }
-  if (opt_message) {
-    // find the first unoccupied 'messageX' property
-    var x = 0;
-    while (error['message' + x]) {
-      ++x;
-    }
-    error['message' + x] = String(opt_message);
-  }
-  return error;
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * context to the Error, which is reported by the closure error reporter.
- * @param {*} err The original thrown error, object, or string.
- * @param {!Object<string, string>=} opt_context Key-value context to add to the
- *     Error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceErrorWithContext = function(err, opt_context) {
-  var error = goog.debug.enhanceError(err);
-  if (opt_context) {
-    for (var key in opt_context) {
-      goog.debug.errorcontext.addErrorContext(error, key, opt_context[key]);
-    }
-  }
-  return error;
-};
-
-
-/**
- * Gets the current stack trace. Simple and iterative - doesn't worry about
- * catching circular references or getting the args.
- * @param {number=} opt_depth Optional maximum depth to trace back to.
- * @return {string} A string with the function names of all functions in the
- *     stack, separated by \n.
- * @suppress {es5Strict}
- */
-goog.debug.getStacktraceSimple = function(opt_depth) {
-  if (!goog.debug.FORCE_SLOPPY_STACKS) {
-    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
-    if (stack) {
-      return stack;
-    }
-    // NOTE: browsers that have strict mode support also have native "stack"
-    // properties.  Fall-through for legacy browser support.
-  }
-
-  var sb = [];
-  var fn = arguments.callee.caller;
-  var depth = 0;
-
-  while (fn && (!opt_depth || depth < opt_depth)) {
-    sb.push(goog.debug.getFunctionName(fn));
-    sb.push('()\n');
-
-    try {
-      fn = fn.caller;
-    } catch (e) {
-      sb.push('[exception trying to get caller]\n');
-      break;
-    }
-    depth++;
-    if (depth >= goog.debug.MAX_STACK_DEPTH) {
-      sb.push('[...long stack...]');
-      break;
-    }
-  }
-  if (opt_depth && depth >= opt_depth) {
-    sb.push('[...reached max depth limit...]');
-  } else {
-    sb.push('[end]');
-  }
-
-  return sb.join('');
-};
-
-
-/**
- * Max length of stack to try and output
- * @type {number}
- */
-goog.debug.MAX_STACK_DEPTH = 50;
-
-
-/**
- * @param {Function} fn The function to start getting the trace from.
- * @return {?string}
- * @private
- */
-goog.debug.getNativeStackTrace_ = function(fn) {
-  var tempErr = new Error();
-  if (Error.captureStackTrace) {
-    Error.captureStackTrace(tempErr, fn);
-    return String(tempErr.stack);
-  } else {
-    // IE10, only adds stack traces when an exception is thrown.
-    try {
-      throw tempErr;
-    } catch (e) {
-      tempErr = e;
-    }
-    var stack = tempErr.stack;
-    if (stack) {
-      return String(stack);
-    }
-  }
+goog.functions.NULL = function() {
   return null;
 };
 
 
 /**
- * Gets the current stack trace, either starting from the caller or starting
- * from a specified function that's currently on the call stack.
- * @param {?Function=} fn If provided, when collecting the stack trace all
- *     frames above the topmost call to this function, including that call,
- *     will be left out of the stack trace.
- * @return {string} Stack trace.
- * @suppress {es5Strict}
+ * A simple function that returns the first argument of whatever is passed
+ * into it.
+ * @param {T=} opt_returnValue The single value that will be returned.
+ * @param {...*} var_args Optional trailing arguments. These are ignored.
+ * @return {T} The first argument passed in, or undefined if nothing was passed.
+ * @template T
  */
-goog.debug.getStacktrace = function(fn) {
-  var stack;
-  if (!goog.debug.FORCE_SLOPPY_STACKS) {
-    // Try to get the stack trace from the environment if it is available.
-    var contextFn = fn || goog.debug.getStacktrace;
-    stack = goog.debug.getNativeStackTrace_(contextFn);
-  }
-  if (!stack) {
-    // NOTE: browsers that have strict mode support also have native "stack"
-    // properties. This function will throw in strict mode.
-    stack = goog.debug.getStacktraceHelper_(fn || arguments.callee.caller, []);
-  }
-  return stack;
+goog.functions.identity = function(opt_returnValue, var_args) {
+  return opt_returnValue;
 };
 
 
 /**
- * Private helper for getStacktrace().
- * @param {?Function} fn If provided, when collecting the stack trace all
- *     frames above the topmost call to this function, including that call,
- *     will be left out of the stack trace.
- * @param {Array<!Function>} visited List of functions visited so far.
- * @return {string} Stack trace starting from function fn.
- * @suppress {es5Strict}
- * @private
+ * Creates a function that always throws an error with the given message.
+ * @param {string} message The error message.
+ * @return {!Function} The error-throwing function.
  */
-goog.debug.getStacktraceHelper_ = function(fn, visited) {
-  var sb = [];
-
-  // Circular reference, certain functions like bind seem to cause a recursive
-  // loop so we need to catch circular references
-  if (goog.array.contains(visited, fn)) {
-    sb.push('[...circular reference...]');
-
-    // Traverse the call stack until function not found or max depth is reached
-  } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
-    sb.push(goog.debug.getFunctionName(fn) + '(');
-    var args = fn.arguments;
-    // Args may be null for some special functions such as host objects or eval.
-    for (var i = 0; args && i < args.length; i++) {
-      if (i > 0) {
-        sb.push(', ');
-      }
-      var argDesc;
-      var arg = args[i];
-      switch (typeof arg) {
-        case 'object':
-          argDesc = arg ? 'object' : 'null';
-          break;
-
-        case 'string':
-          argDesc = arg;
-          break;
-
-        case 'number':
-          argDesc = String(arg);
-          break;
-
-        case 'boolean':
-          argDesc = arg ? 'true' : 'false';
-          break;
-
-        case 'function':
-          argDesc = goog.debug.getFunctionName(arg);
-          argDesc = argDesc ? argDesc : '[fn]';
-          break;
-
-        case 'undefined':
-        default:
-          argDesc = typeof arg;
-          break;
-      }
-
-      if (argDesc.length > 40) {
-        argDesc = argDesc.substr(0, 40) + '...';
-      }
-      sb.push(argDesc);
-    }
-    visited.push(fn);
-    sb.push(')\n');
-
-    try {
-      sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
-    } catch (e) {
-      sb.push('[exception trying to get caller]\n');
-    }
-
-  } else if (fn) {
-    sb.push('[...long stack...]');
-  } else {
-    sb.push('[end]');
-  }
-  return sb.join('');
+goog.functions.error = function(message) {
+  return function() {
+    throw new Error(message);
+  };
 };
 
 
 /**
- * Gets a function name
- * @param {Function} fn Function to get name of.
- * @return {string} Function's name.
+ * Creates a function that throws the given object.
+ * @param {*} err An object to be thrown.
+ * @return {!Function} The error-throwing function.
  */
-goog.debug.getFunctionName = function(fn) {
-  if (goog.debug.fnNameCache_[fn]) {
-    return goog.debug.fnNameCache_[fn];
-  }
-
-  // Heuristically determine function name based on code.
-  var functionSource = String(fn);
-  if (!goog.debug.fnNameCache_[functionSource]) {
-    var matches = /function\s+([^\(]+)/m.exec(functionSource);
-    if (matches) {
-      var method = matches[1];
-      goog.debug.fnNameCache_[functionSource] = method;
-    } else {
-      goog.debug.fnNameCache_[functionSource] = '[Anonymous]';
-    }
-  }
-
-  return goog.debug.fnNameCache_[functionSource];
+goog.functions.fail = function(err) {
+  return function() { throw err; };
 };
 
 
 /**
- * Makes whitespace visible by replacing it with printable characters.
- * This is useful in finding diffrences between the expected and the actual
- * output strings of a testcase.
- * @param {string} string whose whitespace needs to be made visible.
- * @return {string} string whose whitespace is made visible.
+ * Given a function, create a function that keeps opt_numArgs arguments and
+ * silently discards all additional arguments.
+ * @param {Function} f The original function.
+ * @param {number=} opt_numArgs The number of arguments to keep. Defaults to 0.
+ * @return {!Function} A version of f that only keeps the first opt_numArgs
+ *     arguments.
  */
-goog.debug.makeWhitespaceVisible = function(string) {
-  return string.replace(/ /g, '[_]')
-      .replace(/\f/g, '[f]')
-      .replace(/\n/g, '[n]\n')
-      .replace(/\r/g, '[r]')
-      .replace(/\t/g, '[t]');
+goog.functions.lock = function(f, opt_numArgs) {
+  opt_numArgs = opt_numArgs || 0;
+  return function() {
+    var self = /** @type {*} */ (this);
+    return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
+  };
 };
 
 
 /**
- * Returns the type of a value. If a constructor is passed, and a suitable
- * string cannot be found, 'unknown type name' will be returned.
+ * Creates a function that returns its nth argument.
+ * @param {number} n The position of the return argument.
+ * @return {!Function} A new function.
+ */
+goog.functions.nth = function(n) {
+  return function() { return arguments[n]; };
+};
+
+
+/**
+ * Like goog.partial(), except that arguments are added after arguments to the
+ * returned function.
  *
- * <p>Forked rather than moved from {@link goog.asserts.getType_}
- * to avoid adding a dependency to goog.asserts.
- * @param {*} value A constructor, object, or primitive.
- * @return {string} The best display name for the value, or 'unknown type name'.
+ * Usage:
+ * function f(arg1, arg2, arg3, arg4) { ... }
+ * var g = goog.functions.partialRight(f, arg3, arg4);
+ * g(arg1, arg2);
+ *
+ * @param {!Function} fn A function to partially apply.
+ * @param {...*} var_args Additional arguments that are partially applied to fn
+ *     at the end.
+ * @return {!Function} A partially-applied form of the function goog.partial()
+ *     was invoked as a method of.
  */
-goog.debug.runtimeType = function(value) {
-  if (value instanceof Function) {
-    return value.displayName || value.name || 'unknown type name';
-  } else if (value instanceof Object) {
-    return /** @type {string} */ (value.constructor.displayName) ||
-        value.constructor.name || Object.prototype.toString.call(value);
-  } else {
-    return value === null ? 'null' : typeof value;
-  }
+goog.functions.partialRight = function(fn, var_args) {
+  var rightArgs = Array.prototype.slice.call(arguments, 1);
+  return function() {
+    var self = /** @type {*} */ (this);
+    var newArgs = Array.prototype.slice.call(arguments);
+    newArgs.push.apply(newArgs, rightArgs);
+    return fn.apply(self, newArgs);
+  };
 };
 
 
 /**
- * Hash map for storing function names that have already been looked up.
- * @type {Object}
- * @private
- */
-goog.debug.fnNameCache_ = {};
-
-
-/**
- * Private internal function to support goog.debug.freeze.
- * @param {T} arg
- * @return {T}
+ * Given a function, create a new function that swallows its return value
+ * and replaces it with a new one.
+ * @param {Function} f A function.
+ * @param {T} retValue A new return value.
+ * @return {function(...?):T} A new function.
  * @template T
- * @private
  */
-goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
-  return arg;
+goog.functions.withReturnValue = function(f, retValue) {
+  return goog.functions.sequence(f, goog.functions.constant(retValue));
 };
 
 
 /**
- * Freezes the given object, but only in debug mode (and in browsers that
- * support it).  Note that this is a shallow freeze, so for deeply nested
- * objects it must be called at every level to ensure deep immutability.
- * @param {T} arg
- * @return {T}
+ * Creates a function that returns whether its argument equals the given value.
+ *
+ * Example:
+ * var key = goog.object.findKey(obj, goog.functions.equalTo('needle'));
+ *
+ * @param {*} value The value to compare to.
+ * @param {boolean=} opt_useLooseComparison Whether to use a loose (==)
+ *     comparison rather than a strict (===) one. Defaults to false.
+ * @return {function(*):boolean} The new function.
+ */
+goog.functions.equalTo = function(value, opt_useLooseComparison) {
+  return function(other) {
+    return opt_useLooseComparison ? (value == other) : (value === other);
+  };
+};
+
+
+/**
+ * Creates the composition of the functions passed in.
+ * For example, (goog.functions.compose(f, g))(a) is equivalent to f(g(a)).
+ * @param {function(...?):T} fn The final function.
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):T} The composition of all inputs.
  * @template T
  */
-goog.debug.freeze = function(arg) {
-  // NOTE: this compiles to nothing, but hides the possible side effect of
-  // freezeInternal_ from the compiler so that the entire call can be
-  // removed if the result is not used.
-  return {
-    valueOf: function() {
-      return goog.debug.freezeInternal_(arg);
+goog.functions.compose = function(fn, var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    var result;
+    if (length) {
+      result = functions[length - 1].apply(self, arguments);
     }
-  }.valueOf();
+
+    for (var i = length - 2; i >= 0; i--) {
+      result = functions[i].call(self, result);
+    }
+    return result;
+  };
+};
+
+
+/**
+ * Creates a function that calls the functions passed in in sequence, and
+ * returns the value of the last function. For example,
+ * (goog.functions.sequence(f, g))(x) is equivalent to f(x),g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {!Function} A function that calls all inputs in sequence.
+ */
+goog.functions.sequence = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    var result;
+    for (var i = 0; i < length; i++) {
+      result = functions[i].apply(self, arguments);
+    }
+    return result;
+  };
+};
+
+
+/**
+ * Creates a function that returns true if each of its components evaluates
+ * to true. The components are evaluated in order, and the evaluation will be
+ * short-circuited as soon as a function returns false.
+ * For example, (goog.functions.and(f, g))(x) is equivalent to f(x) && g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):boolean} A function that ANDs its component
+ *      functions.
+ */
+goog.functions.and = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    for (var i = 0; i < length; i++) {
+      if (!functions[i].apply(self, arguments)) {
+        return false;
+      }
+    }
+    return true;
+  };
+};
+
+
+/**
+ * Creates a function that returns true if any of its components evaluates
+ * to true. The components are evaluated in order, and the evaluation will be
+ * short-circuited as soon as a function returns true.
+ * For example, (goog.functions.or(f, g))(x) is equivalent to f(x) || g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):boolean} A function that ORs its component
+ *    functions.
+ */
+goog.functions.or = function(var_args) {
+  var functions = arguments;
+  var length = functions.length;
+  return function() {
+    var self = /** @type {*} */ (this);
+    for (var i = 0; i < length; i++) {
+      if (functions[i].apply(self, arguments)) {
+        return true;
+      }
+    }
+    return false;
+  };
+};
+
+
+/**
+ * Creates a function that returns the Boolean opposite of a provided function.
+ * For example, (goog.functions.not(f))(x) is equivalent to !f(x).
+ * @param {!Function} f The original function.
+ * @return {function(...?):boolean} A function that delegates to f and returns
+ * opposite.
+ */
+goog.functions.not = function(f) {
+  return function() {
+    var self = /** @type {*} */ (this);
+    return !f.apply(self, arguments);
+  };
+};
+
+
+/**
+ * Generic factory function to construct an object given the constructor
+ * and the arguments. Intended to be bound to create object factories.
+ *
+ * Example:
+ *
+ * var factory = goog.partial(goog.functions.create, Class);
+ *
+ * @param {function(new:T, ...)} constructor The constructor for the Object.
+ * @param {...*} var_args The arguments to be passed to the constructor.
+ * @return {T} A new instance of the class given in `constructor`.
+ * @template T
+ */
+goog.functions.create = function(constructor, var_args) {
+  /**
+   * @constructor
+   * @final
+   */
+  var temp = function() {};
+  temp.prototype = constructor.prototype;
+
+  // obj will have constructor's prototype in its chain and
+  // 'obj instanceof constructor' will be true.
+  var obj = new temp();
+
+  // obj is initialized by constructor.
+  // arguments is only array-like so lacks shift(), but can be used with
+  // the Array prototype function.
+  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
+  return obj;
+};
+
+
+/**
+ * @define {boolean} Whether the return value cache should be used.
+ *    This should only be used to disable caches when testing.
+ */
+goog.functions.CACHE_RETURN_VALUE =
+    goog.define('goog.functions.CACHE_RETURN_VALUE', true);
+
+
+/**
+ * Gives a wrapper function that caches the return value of a parameterless
+ * function when first called.
+ *
+ * When called for the first time, the given function is called and its
+ * return value is cached (thus this is only appropriate for idempotent
+ * functions).  Subsequent calls will return the cached return value. This
+ * allows the evaluation of expensive functions to be delayed until first used.
+ *
+ * To cache the return values of functions with parameters, see goog.memoize.
+ *
+ * @param {function():T} fn A function to lazily evaluate.
+ * @return {function():T} A wrapped version the function.
+ * @template T
+ */
+goog.functions.cacheReturnValue = function(fn) {
+  var called = false;
+  var value;
+
+  return function() {
+    if (!goog.functions.CACHE_RETURN_VALUE) {
+      return fn();
+    }
+
+    if (!called) {
+      value = fn();
+      called = true;
+    }
+
+    return value;
+  };
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once. All
+ * additional calls are no-ops.
+ *
+ * This is particularly useful for initialization functions
+ * that should be called, at most, once.
+ *
+ * @param {function():*} f Function to call.
+ * @return {function():undefined} Wrapped function.
+ */
+goog.functions.once = function(f) {
+  // Keep a reference to the function that we null out when we're done with
+  // it -- that way, the function can be GC'd when we're done with it.
+  var inner = f;
+  return function() {
+    if (inner) {
+      var tmp = inner;
+      inner = null;
+      tmp();
+    }
+  };
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times within
+ * that interval, only the Nth call will go through.
+ *
+ * This is particularly useful for batching up repeated actions where the
+ * last action should win. This can be used, for example, for refreshing an
+ * autocomplete pop-up every so often rather than updating with every keystroke,
+ * since the final text typed by the user is the one that should produce the
+ * final autocomplete results. For more stateful debouncing with support for
+ * pausing, resuming, and canceling debounced actions, use
+ * `goog.async.Debouncer`.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to debounce. The function will
+ *     only be called after the full interval has elapsed since the last call.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.debounce = function(f, interval, opt_scope) {
+  var timeout = 0;
+  return /** @type {function(...?)} */ (function(var_args) {
+    goog.global.clearTimeout(timeout);
+    var args = arguments;
+    timeout = goog.global.setTimeout(function() {
+      f.apply(opt_scope, args);
+    }, interval);
+  });
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times in
+ * that interval, both the 1st and the Nth calls will go through.
+ *
+ * This is particularly useful for limiting repeated user requests where the
+ * the last action should win, but you also don't want to wait until the end of
+ * the interval before sending a request out, as it leads to a perception of
+ * slowness for the user.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to throttle. The function can
+ *     only be called once per interval.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.throttle = function(f, interval, opt_scope) {
+  var timeout = 0;
+  var shouldFire = false;
+  var args = [];
+
+  var handleTimeout = function() {
+    timeout = 0;
+    if (shouldFire) {
+      shouldFire = false;
+      fire();
+    }
+  };
+
+  var fire = function() {
+    timeout = goog.global.setTimeout(handleTimeout, interval);
+    f.apply(opt_scope, args);
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    args = arguments;
+    if (!timeout) {
+      fire();
+    } else {
+      shouldFire = true;
+    }
+  });
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times within
+ * that interval, only the 1st call will go through.
+ *
+ * This is particularly useful for limiting repeated user requests where the
+ * first request is guaranteed to have all the data required to perform the
+ * final action, so there's no need to wait until the end of the interval before
+ * sending the request out.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to rate-limit. The function will
+ *     only be called once per interval, and ignored for the remainer of the
+ *     interval.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.rateLimit = function(f, interval, opt_scope) {
+  var timeout = 0;
+
+  var handleTimeout = function() {
+    timeout = 0;
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    if (!timeout) {
+      timeout = goog.global.setTimeout(handleTimeout, interval);
+      f.apply(opt_scope, arguments);
+    }
+  });
 };
 
 //javascript/closure/dom/htmlelement.js
@@ -11929,2033 +9589,6 @@ goog.dom.tags.isVoidTag = function(tagName) {
   return goog.dom.tags.VOID_TAGS_[tagName] === true;
 };
 
-//javascript/closure/i18n/uchar.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Collection of utility functions for Unicode character.
- *
- */
-
-goog.provide('goog.i18n.uChar');
-
-
-// Constants for handling Unicode supplementary characters (surrogate pairs).
-
-
-/**
- * The minimum value for Supplementary code points.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
-
-
-/**
- * The highest Unicode code point value (scalar value) according to the Unicode
- * Standard.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
-
-
-/**
- * Lead surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
-
-
-/**
- * Lead surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
-
-
-/**
- * Trail surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
-
-
-/**
- * Trail surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
-
-
-/**
- * The number of least significant bits of a supplementary code point that in
- * UTF-16 become the least significant bits of the trail surrogate. The rest of
- * the in-use bits of the supplementary code point become the least significant
- * bits of the lead surrogate.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
-
-
-/**
- * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
- * @param {string} ch The given character.
- * @return {string} The U+ notation of the given character.
- */
-goog.i18n.uChar.toHexString = function(ch) {
-  var chCode = goog.i18n.uChar.toCharCode(ch);
-  var chCodeStr = 'U+' +
-      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
-
-  return chCodeStr;
-};
-
-
-/**
- * Gets a string padded with given character to get given size.
- * @param {string} str The given string to be padded.
- * @param {number} length The target size of the string.
- * @param {string} ch The character to be padded with.
- * @return {string} The padded string.
- * @private
- */
-goog.i18n.uChar.padString_ = function(str, length, ch) {
-  while (str.length < length) {
-    str = ch + str;
-  }
-  return str;
-};
-
-
-/**
- * Gets Unicode value of the given character.
- * @param {string} ch The given character, which in the case of a supplementary
- * character is actually a surrogate pair. The remainder of the string is
- * ignored.
- * @return {number} The Unicode value of the character.
- */
-goog.i18n.uChar.toCharCode = function(ch) {
-  return goog.i18n.uChar.getCodePointAround(ch, 0);
-};
-
-
-/**
- * Gets a character from the given Unicode value. If the given code point is not
- * a valid Unicode code point, null is returned.
- * @param {number} code The Unicode value of the character.
- * @return {?string} The character corresponding to the given Unicode value.
- */
-goog.i18n.uChar.fromCharCode = function(code) {
-  if (!goog.isDefAndNotNull(code) ||
-      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
-    return null;
-  }
-  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
-    // First, we split the code point into the trail surrogate part (the
-    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
-    // part (the rest of the bits, shifted down; note that for now this includes
-    // the supplementary offset, also shifted down, to be subtracted off below).
-    var leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
-    var trailBits = code &
-        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
-        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
-        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
-
-    // Now we calculate the code point of each surrogate by adding each offset
-    // to the corresponding base code point.
-    var leadCodePoint = leadBits +
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
-         // Subtract off the supplementary offset, which had been shifted down
-         // with the rest of leadBits. We do this here instead of before the
-         // shift in order to save a separate subtraction step.
-         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
-          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
-    var trailCodePoint = trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
-
-    // Convert the code points into a 2-character long string.
-    return String.fromCharCode(leadCodePoint) +
-        String.fromCharCode(trailCodePoint);
-  }
-  return String.fromCharCode(code);
-};
-
-
-/**
- * Returns the Unicode code point at the specified index.
- *
- * If the char value specified at the given index is in the leading-surrogate
- * range, and the following index is less than the length of `string`, and
- * the char value at the following index is in the trailing-surrogate range,
- * then the supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * If the char value specified at the given index is in the trailing-surrogate
- * range, and the preceding index is not before the start of `string`, and
- * the char value at the preceding index is in the leading-surrogate range, then
- * the negated supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * The negation allows the caller to differentiate between the case where the
- * given index is at the leading surrogate and the one where it is at the
- * trailing surrogate, and thus deduce where the next character starts and
- * preceding character ends.
- *
- * Otherwise, the char value at the given index is returned. Thus, a leading
- * surrogate is returned when it is not followed by a trailing surrogate, and a
- * trailing surrogate is returned when it is not preceded by a leading
- * surrogate.
- *
- * @param {string} string The string.
- * @param {number} index The index from which the code point is to be retrieved.
- * @return {number} The code point at the given index. If the given index is
- * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
- * point encoded by the pair. If the given index is that of the end (i.e. trail
- * surrogate) of a surrogate pair, returns the negated code pointed encoded by
- * the pair.
- */
-goog.i18n.uChar.getCodePointAround = function(string, index) {
-  var charCode = string.charCodeAt(index);
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
-      index + 1 < string.length) {
-    var trail = string.charCodeAt(index + 1);
-    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-      // Part of a surrogate pair.
-      return /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
-    }
-  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
-    var lead = string.charCodeAt(index - 1);
-    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
-      // Part of a surrogate pair.
-      var codepoint = /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
-      return -codepoint;
-    }
-  }
-  return charCode;
-};
-
-
-/**
- * Determines the length of the string needed to represent the specified
- * Unicode code point.
- * @param {number} codePoint
- * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
- */
-goog.i18n.uChar.charCount = function(codePoint) {
-  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
-};
-
-
-/**
- * Determines whether the specified Unicode code point is in the supplementary
- * Unicode characters range.
- * @param {number} codePoint
- * @return {boolean} Whether then given code point is a supplementary character.
- */
-goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a leading surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a leading surrogate
- * character.
- */
-goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a trailing surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a trailing surrogate
- * character.
- */
-goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Composes a supplementary Unicode code point from the given UTF-16 surrogate
- * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
- * isn't a trailing surrogate code point, null is returned.
- * @param {number} lead The leading surrogate code point.
- * @param {number} trail The trailing surrogate code point.
- * @return {?number} The supplementary Unicode code point obtained by decoding
- * the given UTF-16 surrogate pair.
- */
-goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
-      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-    var shiftedLeadOffset =
-        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
-         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
-    var trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
-        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
-    return shiftedLeadOffset + trailOffset;
-  }
-  return null;
-};
-
-//javascript/closure/structs/inversionmap.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides inversion and inversion map functionality for storing
- * integer ranges and corresponding values.
- *
- */
-
-goog.provide('goog.structs.InversionMap');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-
-
-
-/**
- * Maps ranges to values.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @constructor
- * @template T
- */
-goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
-  /**
-   * @protected {?Array<number>}
-   */
-  this.rangeArray = null;
-
-  goog.asserts.assert(
-      rangeArray.length == valueArray.length,
-      'rangeArray and valueArray must have the same length.');
-  this.storeInversion_(rangeArray, opt_delta);
-
-  /** @protected {Array<T>} */
-  this.values = valueArray;
-};
-
-
-/**
- * Stores the integers as ranges (half-open).
- * If delta is true, the integers are delta from the previous value and
- * will be restored to the absolute value.
- * When used as a set, even indices are IN, and odd are OUT.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @private
- */
-goog.structs.InversionMap.prototype.storeInversion_ = function(
-    rangeArray, opt_delta) {
-  this.rangeArray = rangeArray;
-
-  for (var i = 1; i < rangeArray.length; i++) {
-    if (rangeArray[i] == null) {
-      rangeArray[i] = rangeArray[i - 1] + 1;
-    } else if (opt_delta) {
-      rangeArray[i] += rangeArray[i - 1];
-    }
-  }
-};
-
-
-/**
- * Splices a range -> value map into this inversion map.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- */
-goog.structs.InversionMap.prototype.spliceInversion = function(
-    rangeArray, valueArray, opt_delta) {
-  // By building another inversion map, we build the arrays that we need
-  // to splice in.
-  var otherMap =
-      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
-
-  // Figure out where to splice those arrays.
-  var startRange = otherMap.rangeArray[0];
-  var endRange =
-      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
-  var startSplice = this.getLeast(startRange);
-  var endSplice = this.getLeast(endRange);
-
-  // The inversion map works by storing the start points of ranges...
-  if (startRange != this.rangeArray[startSplice]) {
-    // ...if we're splicing in a start point that isn't already here,
-    // then we need to insert it after the insertion point.
-    startSplice++;
-  }  // otherwise we overwrite the insertion point.
-
-  this.rangeArray = this.rangeArray.slice(0, startSplice)
-                        .concat(otherMap.rangeArray)
-                        .concat(this.rangeArray.slice(endSplice + 1));
-  this.values = this.values.slice(0, startSplice)
-                    .concat(otherMap.values)
-                    .concat(this.values.slice(endSplice + 1));
-};
-
-
-/**
- * Gets the value corresponding to a number from the inversion map.
- * @param {number} intKey The number for which value needs to be retrieved
- *     from inversion map.
- * @return {T|null} Value retrieved from inversion map; null if not found.
- */
-goog.structs.InversionMap.prototype.at = function(intKey) {
-  var index = this.getLeast(intKey);
-  if (index < 0) {
-    return null;
-  }
-  return this.values[index];
-};
-
-
-/**
- * Gets the largest index such that rangeArray[index] <= intKey from the
- * inversion map.
- * @param {number} intKey The probe for which rangeArray is searched.
- * @return {number} Largest index such that rangeArray[index] <= intKey.
- * @protected
- */
-goog.structs.InversionMap.prototype.getLeast = function(intKey) {
-  var arr = this.rangeArray;
-  var low = 0;
-  var high = arr.length;
-  while (high - low > 8) {
-    var mid = (high + low) >> 1;
-    if (arr[mid] <= intKey) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  for (; low < high; ++low) {
-    if (intKey < arr[low]) {
-      break;
-    }
-  }
-  return low - 1;
-};
-
-//javascript/closure/i18n/graphemebreak.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
- * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
- *
- * Reference: http://unicode.org/reports/tr29
- *
- */
-
-goog.provide('goog.i18n.GraphemeBreak');
-
-goog.require('goog.asserts');
-goog.require('goog.i18n.uChar');
-goog.require('goog.structs.InversionMap');
-
-/**
- * Enum for all Grapheme Cluster Break properties.
- * These enums directly corresponds to Grapheme_Cluster_Break property values
- * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
- * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
- *
- * @protected @enum {number}
- */
-goog.i18n.GraphemeBreak.property = {
-  OTHER: 0,
-  CONTROL: 1,
-  EXTEND: 2,
-  PREPEND: 3,
-  SPACING_MARK: 4,
-  INDIC_LETTER: 5,
-  VIRAMA: 6,
-  L: 7,
-  V: 8,
-  T: 9,
-  LV: 10,
-  LVT: 11,
-  CR: 12,
-  LF: 13,
-  REGIONAL_INDICATOR: 14,
-  ZWJ: 15,
-  E_BASE: 16,
-  GLUE_AFTER_ZWJ: 17,
-  E_MODIFIER: 18,
-  E_BASE_GAZ: 19
-};
-
-
-/**
- * Grapheme Cluster Break property values for all codepoints as inversion map.
- * Constructed lazily.
- *
- * @private {?goog.structs.InversionMap}
- */
-goog.i18n.GraphemeBreak.inversions_ = null;
-
-
-/**
- * Indicates if a and b form a grapheme cluster.
- *
- * This implements the rules in:
- * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
- *
- * @param {number|string} a Code point or string with the first side of
- *     grapheme cluster.
- * @param {number|string} b Code point or string with the second side of
- *     grapheme cluster.
- * @param {boolean} extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
- * @private
- */
-goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
-  var prop = goog.i18n.GraphemeBreak.property;
-
-  var aCode = goog.isString(a) ?
-      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
-      a;
-  var bCode =
-      goog.isString(b) ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
-
-  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
-  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
-
-  var isString = goog.isString(a);
-
-  // GB3.
-  if (aProp === prop.CR && bProp === prop.LF) {
-    return false;
-  }
-
-  // GB4.
-  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
-    return true;
-  }
-
-  // GB5.
-  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
-    return true;
-  }
-
-  // GB6.
-  if (aProp === prop.L &&
-      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
-       bProp === prop.LVT)) {
-    return false;
-  }
-
-  // GB7.
-  if ((aProp === prop.LV || aProp === prop.V) &&
-      (bProp === prop.V || bProp === prop.T)) {
-    return false;
-  }
-
-  // GB8.
-  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
-    return false;
-  }
-
-  // GB9.
-  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
-    return false;
-  }
-
-  // GB9a, GB9b.
-  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
-    return false;
-  }
-
-  // Tailorings for basic aksara support.
-  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
-    return false;
-  }
-
-  var aStr, index, codePoint, codePointProp;
-
-  // GB10.
-  if (isString) {
-    if (bProp === prop.E_MODIFIER) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.EXTEND) {
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing:
-    // (E_Base | EBG) × E_Modifier.
-    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
-        bProp === prop.E_MODIFIER) {
-      return false;
-    }
-  }
-
-  // GB11.
-  if (aProp === prop.ZWJ &&
-      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
-    return false;
-  }
-
-  // GB12, GB13.
-  if (isString) {
-    if (bProp === prop.REGIONAL_INDICATOR) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of these rules:
-      // - sot (RI RI)* RI × RI
-      // - [^RI] (RI RI)* RI × RI.
-      var numberOfRi = 0;
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-      }
-      if (numberOfRi % 2 === 1) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing: RI × RI.
-    if (aProp === prop.REGIONAL_INDICATOR &&
-        bProp === prop.REGIONAL_INDICATOR) {
-      return false;
-    }
-  }
-
-  // GB999.
-  return true;
-};
-
-
-/**
- * Method to return property enum value of the code point. If it is Hangul LV or
- * LVT, then it is computed; for the rest it is picked from the inversion map.
- *
- * @param {number} codePoint The code point value of the character.
- * @return {number} Property enum value of code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
-  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
-    var prop = goog.i18n.GraphemeBreak.property;
-    if (codePoint % 0x1C === 0x10) {
-      return prop.LV;
-    }
-    return prop.LVT;
-  } else {
-    if (!goog.i18n.GraphemeBreak.inversions_) {
-      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
-          [
-            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
-            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
-            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
-            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
-            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
-            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
-            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
-            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
-            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
-            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
-            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
-            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
-            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
-            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
-            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
-            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
-            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
-            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
-            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
-            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
-            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
-            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
-            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
-            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
-            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
-            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
-            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
-            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
-            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
-            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
-            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
-            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
-            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
-            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
-            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
-            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
-            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
-            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
-            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
-            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
-            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
-            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
-            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
-            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
-            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
-            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
-            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
-            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
-            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
-            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
-            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
-            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
-            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
-            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
-            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
-            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
-            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
-            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
-            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
-            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
-            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
-            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
-            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
-            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
-            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
-            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
-            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
-            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
-            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
-            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
-            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
-            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
-            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
-            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
-            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
-            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
-            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
-            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
-            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
-            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
-            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
-            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
-            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
-            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
-            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
-            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
-            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
-            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
-            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
-            788162, 31
-          ],
-          [
-            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
-            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
-            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
-            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
-            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
-            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
-            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
-            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
-            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
-            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
-            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
-            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
-            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
-            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
-            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
-            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
-            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
-            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
-            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
-            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
-            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
-            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
-            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
-            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
-            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
-            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
-            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
-            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
-            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
-            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
-            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
-            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
-            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
-            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
-            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
-            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
-          ],
-          true);
-    }
-    return /** @type {number} */ (
-        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
-  }
-};
-
-/**
- * Extracts a code point from a string at the specified index.
- *
- * @param {string} str
- * @param {number} index
- * @return {number} Extracted code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
-  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
-  return (codePoint < 0) ? -codePoint : codePoint;
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * Legacy function. Does not cover cases where a sequence of code points is
- * required in order to decide if there is a grapheme cluster boundary, such as
- * emoji modifier sequences and emoji flag sequences. To cover all cases please
- * use `hasGraphemeBreakStrings`.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {number} a The code point value of the first character.
- * @param {number} b The code point value of the second character.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {string} a String with the first sequence of characters.
- * @param {string} b String with the second sequence of characters.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
-  goog.asserts.assert(goog.isDef(a), 'First string should be defined.');
-  goog.asserts.assert(goog.isDef(b), 'Second string should be defined.');
-
-  // Break if any of the strings is empty.
-  if (a.length === 0 || b.length === 0) {
-    return true;
-  }
-
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-//javascript/closure/format/format.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides utility functions for formatting strings, numbers etc.
- *
- */
-
-goog.provide('goog.format');
-
-goog.require('goog.i18n.GraphemeBreak');
-goog.require('goog.string');
-goog.require('goog.userAgent');
-
-
-/**
- * Formats a number of bytes in human readable form.
- * 54, 450K, 1.3M, 5G etc.
- * @param {number} bytes The number of bytes to show.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} The human readable form of the byte size.
- */
-goog.format.fileSize = function(bytes, opt_decimals) {
-  return goog.format.numBytesToString(bytes, opt_decimals, false);
-};
-
-
-/**
- * Checks whether string value containing scaling units (K, M, G, T, P, m,
- * u, n) can be converted to a number.
- *
- * Where there is a decimal, there must be a digit to the left of the
- * decimal point.
- *
- * Negative numbers are valid.
- *
- * Examples:
- *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
- *
- * @param {string} val String value to check.
- * @return {boolean} True if string could be converted to a numeric value.
- */
-goog.format.isConvertableScaledNumber = function(val) {
-  return goog.format.SCALED_NUMERIC_RE_.test(val);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * If string ends in 'B', use binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumericValue = function(stringValue) {
-  if (goog.string.endsWith(stringValue, 'B')) {
-    return goog.format.stringToNumericValue_(
-        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-  }
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_SI_);
-};
-
-
-/**
- * Converts a string to number of bytes, taking into account the units.
- * Binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumBytes = function(stringValue) {
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-};
-
-
-/**
- * Converts a numeric value to string representation. SI conversion.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} String representation of number.
- */
-goog.format.numericValueToString = function(val, opt_decimals) {
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
-};
-
-
-/**
- * Converts number of bytes to string representation. Binary conversion.
- * Default is to return the additional 'B' suffix only for scales greater than
- * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
- * of 1000. Otherwise, suffix is empty string.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
- *     string.  Default is true.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a no break space. Default is false.
- * @return {string} String representation of number of bytes.
- */
-goog.format.numBytesToString = function(
-    val, opt_decimals, opt_suffix, opt_useSeparator) {
-  var suffix = '';
-  if (!goog.isDef(opt_suffix) || opt_suffix) {
-    suffix = 'B';
-  }
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
-      opt_useSeparator);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * @param {string} stringValue String to be converted to numeric value.
- * @param {Object} conversion Dictionary of conversion scales.
- * @return {number} Numeric value for string.  If it cannot be converted,
- *    returns NaN.
- * @private
- */
-goog.format.stringToNumericValue_ = function(stringValue, conversion) {
-  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
-  if (!match) {
-    return NaN;
-  }
-  var val = Number(match[1]) * conversion[match[2]];
-  return val;
-};
-
-
-/**
- * Converts a numeric value to string, using specified conversion
- * scales.
- * @param {number} val Value to be converted.
- * @param {Object} conversion Dictionary of scaling factors.
- * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
- * @param {string=} opt_suffix Optional suffix to append.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a space. Default is false.
- * @return {string} The human readable form of the byte size.
- * @private
- */
-goog.format.numericValueToString_ = function(
-    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
-  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
-  var orig_val = val;
-  var symbol = '';
-  var separator = '';
-  var scale = 1;
-  if (val < 0) {
-    val = -val;
-  }
-  for (var i = 0; i < prefixes.length; i++) {
-    var unit = prefixes[i];
-    scale = conversion[unit];
-    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
-      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
-      // than "500m"
-      symbol = unit;
-      break;
-    }
-  }
-  if (!symbol) {
-    scale = 1;
-  } else {
-    if (opt_suffix) {
-      symbol += opt_suffix;
-    }
-    if (opt_useSeparator) {
-      separator = ' ';
-    }
-  }
-  var ex = Math.pow(10, goog.isDef(opt_decimals) ? opt_decimals : 2);
-  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
-};
-
-
-/**
- * Regular expression for detecting scaling units, such as K, M, G, etc. for
- * converting a string representation to a numeric value.
- *
- * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
- * of 1000) or Binary (powers of 1024) conversions.
- *
- * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
- * binary conversion (e.g., '10.2MB').
- *
- * @type {RegExp}
- * @private
- */
-goog.format.SCALED_NUMERIC_RE_ =
-    /^([-]?\d+\.?\d*)([K,M,G,T,P,E,Z,Y,k,m,u,n]?)[B]?$/;
-
-
-/**
- * Ordered list of scaling prefixes in decreasing order.
- * @private {Array<string>}
- */
-goog.format.NUMERIC_SCALE_PREFIXES_ =
-    ['Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  SI conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_SI_ = {
-  '': 1,
-  'n': 1e-9,
-  'u': 1e-6,
-  'm': 1e-3,
-  'k': 1e3,
-  'K': 1e3,
-  'M': 1e6,
-  'G': 1e9,
-  'T': 1e12,
-  'P': 1e15,
-  'E': 1e18,
-  'Z': 1e21,
-  'Y': 1e24
-};
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  Binary
- * conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_BINARY_ = {
-  '': 1,
-  'n': Math.pow(1024, -3),
-  'u': Math.pow(1024, -2),
-  'm': 1.0 / 1024,
-  'k': 1024,
-  'K': 1024,
-  'M': Math.pow(1024, 2),
-  'G': Math.pow(1024, 3),
-  'T': Math.pow(1024, 4),
-  'P': Math.pow(1024, 5),
-  'E': Math.pow(1024, 6),
-  'Z': Math.pow(1024, 7),
-  'Y': Math.pow(1024, 8)
-};
-
-
-/**
- * First Unicode code point that has the Mark property.
- * @type {number}
- * @private
- */
-goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
-
-
-/**
- * Returns true if and only if given character should be treated as a breaking
- * space. All ASCII control characters, the main Unicode range of spacing
- * characters (U+2000 to U+200B inclusive except for U+2007), and several other
- * Unicode space characters are treated as breaking spaces.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is a breaking space.
- * @private
- */
-goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
-  return (charCode <= goog.format.WbrToken_.SPACE) ||
-      (charCode >= 0x1000 &&
-       ((charCode >= 0x2000 && charCode <= 0x2006) ||
-        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
-        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
-        charCode == 0x205f || charCode == 0x3000));
-};
-
-
-/**
- * Returns true if and only if given character is an invisible formatting
- * character.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is an invisible formatting character.
- * @private
- */
-goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
-  // See: http://unicode.org/charts/PDF/U2000.pdf
-  return (charCode >= 0x200C && charCode <= 0x200F) ||
-      (charCode >= 0x202A && charCode <= 0x202E);
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.  The counter is
- * reset if a space or a character which behaves like a space is encountered,
- * but it isn't incremented if an invisible formatting character is encountered.
- * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
- * character count, HTML tags do not.
- *
- * With common strings aliased, objects allocations are constant based on the
- * length of the string: N + 3. This guarantee does not hold if the string
- * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
- *     function determining if there is a grapheme break between two characters,
- *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
- * @param {number=} opt_maxlen Maximum length after which to ensure
- *     there is a break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @private
- */
-goog.format.insertWordBreaksGeneric_ = function(
-    str, hasGraphemeBreak, opt_maxlen) {
-  var maxlen = opt_maxlen || 10;
-  if (maxlen > str.length) return str;
-
-  var rv = [];
-  var n = 0;  // The length of the current token
-
-  // This will contain the ampersand or less-than character if one of the
-  // two has been seen; otherwise, the value is zero.
-  var nestingCharCode = 0;
-
-  // First character position from input string that has not been outputted.
-  var lastDumpPosition = 0;
-
-  var charCode = 0;
-  for (var i = 0; i < str.length; i++) {
-    // Using charCodeAt versus charAt avoids allocating new string objects.
-    var lastCharCode = charCode;
-    charCode = str.charCodeAt(i);
-
-    // Don't add a WBR before characters that might be grapheme extending.
-    var isPotentiallyGraphemeExtending =
-        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
-        !hasGraphemeBreak(lastCharCode, charCode, true);
-
-    // Don't add a WBR at the end of a word. For the purposes of determining
-    // work breaks, all ASCII control characters and some commonly encountered
-    // Unicode spacing characters are treated as breaking spaces.
-    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
-        !isPotentiallyGraphemeExtending) {
-      // Flush everything seen so far, and append a word break.
-      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
-      lastDumpPosition = i;
-      n = 0;
-    }
-
-    if (!nestingCharCode) {
-      // Not currently within an HTML tag or entity
-
-      if (charCode == goog.format.WbrToken_.LT ||
-          charCode == goog.format.WbrToken_.AMP) {
-        // Entering an HTML Entity '&' or open tag '<'
-        nestingCharCode = charCode;
-      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
-        // A space or control character -- reset the token length
-        n = 0;
-      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
-        // A normal flow character - increment.  For grapheme extending
-        // characters, this is not *technically* a new character.  However,
-        // since the grapheme break detector might be overly conservative,
-        // we have to continue incrementing, or else we won't even be able
-        // to add breaks when we get to things like punctuation.  For the
-        // case where we have a full grapheme break detector, it is okay if
-        // we occasionally break slightly early.
-        n++;
-      }
-    } else if (
-        charCode == goog.format.WbrToken_.GT &&
-        nestingCharCode == goog.format.WbrToken_.LT) {
-      // Leaving an HTML tag, treat the tag as zero-length
-      nestingCharCode = 0;
-    } else if (
-        charCode == goog.format.WbrToken_.SEMI_COLON &&
-        nestingCharCode == goog.format.WbrToken_.AMP) {
-      // Leaving an HTML entity, treat it as length one
-      nestingCharCode = 0;
-      n++;
-    }
-  }
-
-  // Take care of anything we haven't flushed so far.
-  rv.push(str.substr(lastDumpPosition));
-
-  return rv.join('');
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is as aggressive as possible, using a full table of Unicode
- * characters where it is legal to insert word breaks; however, this table
- * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
- * insertWordBreaksBasic to minimize the size impact.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaks = function(str, opt_maxlen) {
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
-};
-
-
-/**
- * Determines conservatively if a character has a Grapheme break.
- *
- * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
- * conservative, returning true only for characters in common scripts that
- * are simple to account for.
- *
- * @param {number} lastCharCode The previous character code.  Ignored.
- * @param {number} charCode The character code under consideration.  It must be
- *     at least \u0300 as a precondition -- this case is covered by
- *     insertWordBreaksGeneric_.
- * @param {boolean=} opt_extended Ignored, to conform with the interface.
- * @return {boolean} Whether it is one of the recognized subsets of characters
- *     with a grapheme break.
- * @private
- */
-goog.format.conservativelyHasGraphemeBreak_ = function(
-    lastCharCode, charCode, opt_extended) {
-  // Return false for everything except the most common Cyrillic characters.
-  // Don't worry about Latin characters, because insertWordBreaksGeneric_
-  // itself already handles those.
-  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
-  // simple to do so.
-  return charCode >= 0x400 && charCode < 0x523;
-};
-
-
-// TODO(gboyer): Consider using a compile-time flag to switch implementations
-// rather than relying on the developers to toggle implementations.
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is less aggressive than insertWordBreaks, only inserting
- * breaks next to punctuation and between Latin or Cyrillic characters.
- * However, this is good enough for the common case of URLs.  It also
- * works for all Latin and Cyrillic languages, plus CJK has no need for word
- * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
- * code eliminated.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
-};
-
-
-/**
- * True iff the current userAgent is IE8 or above.
- * @type {boolean}
- * @private
- */
-goog.format.IS_IE8_OR_ABOVE_ =
-    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
-
-
-/**
- * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
- * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
- * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
- * use &lt;wbr&gt;.
- * @type {string}
- */
-goog.format.WORD_BREAK_HTML =
-    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
-                            '&shy;' :
-                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
-
-
-/**
- * Tokens used within insertWordBreaks.
- * @private
- * @enum {number}
- */
-goog.format.WbrToken_ = {
-  LT: 60,          // '<'.charCodeAt(0)
-  GT: 62,          // '>'.charCodeAt(0)
-  AMP: 38,         // '&'.charCodeAt(0)
-  SEMI_COLON: 59,  // ';'.charCodeAt(0)
-  SPACE: 32        // ' '.charCodeAt(0)
-};
-
-//javascript/closure/fs/url.js
-// Copyright 2015 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Wrapper for URL and its createObjectUrl and revokeObjectUrl
- * methods that are part of the HTML5 File API.
- */
-
-goog.provide('goog.fs.url');
-
-
-/**
- * Creates a blob URL for a blob object.
- * Throws an error if the browser does not support Object Urls.
- *
- * @param {!Blob} blob The object for which to create the URL.
- * @return {string} The URL for the object.
- */
-goog.fs.url.createObjectUrl = function(blob) {
-  return goog.fs.url.getUrlObject_().createObjectURL(blob);
-};
-
-
-/**
- * Revokes a URL created by {@link goog.fs.url.createObjectUrl}.
- * Throws an error if the browser does not support Object Urls.
- *
- * @param {string} url The URL to revoke.
- */
-goog.fs.url.revokeObjectUrl = function(url) {
-  goog.fs.url.getUrlObject_().revokeObjectURL(url);
-};
-
-
-/**
- * @typedef {{createObjectURL: (function(!Blob): string),
- *            revokeObjectURL: function(string): void}}
- */
-goog.fs.url.UrlObject_;
-
-
-/**
- * Get the object that has the createObjectURL and revokeObjectURL functions for
- * this browser.
- *
- * @return {goog.fs.url.UrlObject_} The object for this browser.
- * @private
- */
-goog.fs.url.getUrlObject_ = function() {
-  var urlObject = goog.fs.url.findUrlObject_();
-  if (urlObject != null) {
-    return urlObject;
-  } else {
-    throw new Error('This browser doesn\'t seem to support blob URLs');
-  }
-};
-
-
-/**
- * Finds the object that has the createObjectURL and revokeObjectURL functions
- * for this browser.
- *
- * @return {?goog.fs.url.UrlObject_} The object for this browser or null if the
- *     browser does not support Object Urls.
- * @private
- */
-goog.fs.url.findUrlObject_ = function() {
-  // This is what the spec says to do
-  // http://dev.w3.org/2006/webapi/FileAPI/#dfn-createObjectURL
-  if (goog.isDef(goog.global.URL) &&
-      goog.isDef(goog.global.URL.createObjectURL)) {
-    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.URL);
-    // This is what Chrome does (as of 10.0.648.6 dev)
-  } else if (
-      goog.isDef(goog.global.webkitURL) &&
-      goog.isDef(goog.global.webkitURL.createObjectURL)) {
-    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.webkitURL);
-    // This is what the spec used to say to do
-  } else if (goog.isDef(goog.global.createObjectURL)) {
-    return /** @type {goog.fs.url.UrlObject_} */ (goog.global);
-  } else {
-    return null;
-  }
-};
-
-
-/**
- * Checks whether this browser supports Object Urls. If not, calls to
- * createObjectUrl and revokeObjectUrl will result in an error.
- *
- * @return {boolean} True if this browser supports Object Urls.
- */
-goog.fs.url.browserSupportsObjectUrls = function() {
-  return goog.fs.url.findUrlObject_() != null;
-};
-
-//javascript/closure/functions/functions.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities for creating functions. Loosely inspired by these
- * java classes from the Guava library:
- * com.google.common.base.Functions
- * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Functions.html
- *
- * com.google.common.base.Predicates
- * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Predicates.html
- *
- * More about these can be found at
- * https://github.com/google/guava/wiki/FunctionalExplained
- *
- * @author nicksantos@google.com (Nick Santos)
- */
-
-
-goog.provide('goog.functions');
-
-
-/**
- * Creates a function that always returns the same value.
- * @param {T} retValue The value to return.
- * @return {function():T} The new function.
- * @template T
- */
-goog.functions.constant = function(retValue) {
-  return function() { return retValue; };
-};
-
-
-/**
- * Always returns false.
- * @type {function(...): boolean}
- */
-goog.functions.FALSE = function() {
-  return false;
-};
-
-
-/**
- * Always returns true.
- * @type {function(...): boolean}
- */
-goog.functions.TRUE = function() {
-  return true;
-};
-
-
-/**
- * Always returns NULL.
- * @type {function(...): null}
- */
-goog.functions.NULL = function() {
-  return null;
-};
-
-
-/**
- * A simple function that returns the first argument of whatever is passed
- * into it.
- * @param {T=} opt_returnValue The single value that will be returned.
- * @param {...*} var_args Optional trailing arguments. These are ignored.
- * @return {T} The first argument passed in, or undefined if nothing was passed.
- * @template T
- */
-goog.functions.identity = function(opt_returnValue, var_args) {
-  return opt_returnValue;
-};
-
-
-/**
- * Creates a function that always throws an error with the given message.
- * @param {string} message The error message.
- * @return {!Function} The error-throwing function.
- */
-goog.functions.error = function(message) {
-  return function() {
-    throw new Error(message);
-  };
-};
-
-
-/**
- * Creates a function that throws the given object.
- * @param {*} err An object to be thrown.
- * @return {!Function} The error-throwing function.
- */
-goog.functions.fail = function(err) {
-  return function() { throw err; };
-};
-
-
-/**
- * Given a function, create a function that keeps opt_numArgs arguments and
- * silently discards all additional arguments.
- * @param {Function} f The original function.
- * @param {number=} opt_numArgs The number of arguments to keep. Defaults to 0.
- * @return {!Function} A version of f that only keeps the first opt_numArgs
- *     arguments.
- */
-goog.functions.lock = function(f, opt_numArgs) {
-  opt_numArgs = opt_numArgs || 0;
-  return function() {
-    var self = /** @type {*} */ (this);
-    return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
-  };
-};
-
-
-/**
- * Creates a function that returns its nth argument.
- * @param {number} n The position of the return argument.
- * @return {!Function} A new function.
- */
-goog.functions.nth = function(n) {
-  return function() { return arguments[n]; };
-};
-
-
-/**
- * Like goog.partial(), except that arguments are added after arguments to the
- * returned function.
- *
- * Usage:
- * function f(arg1, arg2, arg3, arg4) { ... }
- * var g = goog.functions.partialRight(f, arg3, arg4);
- * g(arg1, arg2);
- *
- * @param {!Function} fn A function to partially apply.
- * @param {...*} var_args Additional arguments that are partially applied to fn
- *     at the end.
- * @return {!Function} A partially-applied form of the function goog.partial()
- *     was invoked as a method of.
- */
-goog.functions.partialRight = function(fn, var_args) {
-  var rightArgs = Array.prototype.slice.call(arguments, 1);
-  return function() {
-    var self = /** @type {*} */ (this);
-    var newArgs = Array.prototype.slice.call(arguments);
-    newArgs.push.apply(newArgs, rightArgs);
-    return fn.apply(self, newArgs);
-  };
-};
-
-
-/**
- * Given a function, create a new function that swallows its return value
- * and replaces it with a new one.
- * @param {Function} f A function.
- * @param {T} retValue A new return value.
- * @return {function(...?):T} A new function.
- * @template T
- */
-goog.functions.withReturnValue = function(f, retValue) {
-  return goog.functions.sequence(f, goog.functions.constant(retValue));
-};
-
-
-/**
- * Creates a function that returns whether its argument equals the given value.
- *
- * Example:
- * var key = goog.object.findKey(obj, goog.functions.equalTo('needle'));
- *
- * @param {*} value The value to compare to.
- * @param {boolean=} opt_useLooseComparison Whether to use a loose (==)
- *     comparison rather than a strict (===) one. Defaults to false.
- * @return {function(*):boolean} The new function.
- */
-goog.functions.equalTo = function(value, opt_useLooseComparison) {
-  return function(other) {
-    return opt_useLooseComparison ? (value == other) : (value === other);
-  };
-};
-
-
-/**
- * Creates the composition of the functions passed in.
- * For example, (goog.functions.compose(f, g))(a) is equivalent to f(g(a)).
- * @param {function(...?):T} fn The final function.
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):T} The composition of all inputs.
- * @template T
- */
-goog.functions.compose = function(fn, var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    var result;
-    if (length) {
-      result = functions[length - 1].apply(self, arguments);
-    }
-
-    for (var i = length - 2; i >= 0; i--) {
-      result = functions[i].call(self, result);
-    }
-    return result;
-  };
-};
-
-
-/**
- * Creates a function that calls the functions passed in in sequence, and
- * returns the value of the last function. For example,
- * (goog.functions.sequence(f, g))(x) is equivalent to f(x),g(x).
- * @param {...Function} var_args A list of functions.
- * @return {!Function} A function that calls all inputs in sequence.
- */
-goog.functions.sequence = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    var result;
-    for (var i = 0; i < length; i++) {
-      result = functions[i].apply(self, arguments);
-    }
-    return result;
-  };
-};
-
-
-/**
- * Creates a function that returns true if each of its components evaluates
- * to true. The components are evaluated in order, and the evaluation will be
- * short-circuited as soon as a function returns false.
- * For example, (goog.functions.and(f, g))(x) is equivalent to f(x) && g(x).
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):boolean} A function that ANDs its component
- *      functions.
- */
-goog.functions.and = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    for (var i = 0; i < length; i++) {
-      if (!functions[i].apply(self, arguments)) {
-        return false;
-      }
-    }
-    return true;
-  };
-};
-
-
-/**
- * Creates a function that returns true if any of its components evaluates
- * to true. The components are evaluated in order, and the evaluation will be
- * short-circuited as soon as a function returns true.
- * For example, (goog.functions.or(f, g))(x) is equivalent to f(x) || g(x).
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):boolean} A function that ORs its component
- *    functions.
- */
-goog.functions.or = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
-  return function() {
-    var self = /** @type {*} */ (this);
-    for (var i = 0; i < length; i++) {
-      if (functions[i].apply(self, arguments)) {
-        return true;
-      }
-    }
-    return false;
-  };
-};
-
-
-/**
- * Creates a function that returns the Boolean opposite of a provided function.
- * For example, (goog.functions.not(f))(x) is equivalent to !f(x).
- * @param {!Function} f The original function.
- * @return {function(...?):boolean} A function that delegates to f and returns
- * opposite.
- */
-goog.functions.not = function(f) {
-  return function() {
-    var self = /** @type {*} */ (this);
-    return !f.apply(self, arguments);
-  };
-};
-
-
-/**
- * Generic factory function to construct an object given the constructor
- * and the arguments. Intended to be bound to create object factories.
- *
- * Example:
- *
- * var factory = goog.partial(goog.functions.create, Class);
- *
- * @param {function(new:T, ...)} constructor The constructor for the Object.
- * @param {...*} var_args The arguments to be passed to the constructor.
- * @return {T} A new instance of the class given in `constructor`.
- * @template T
- */
-goog.functions.create = function(constructor, var_args) {
-  /**
-   * @constructor
-   * @final
-   */
-  var temp = function() {};
-  temp.prototype = constructor.prototype;
-
-  // obj will have constructor's prototype in its chain and
-  // 'obj instanceof constructor' will be true.
-  var obj = new temp();
-
-  // obj is initialized by constructor.
-  // arguments is only array-like so lacks shift(), but can be used with
-  // the Array prototype function.
-  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
-  return obj;
-};
-
-
-/**
- * @define {boolean} Whether the return value cache should be used.
- *    This should only be used to disable caches when testing.
- */
-goog.functions.CACHE_RETURN_VALUE =
-    goog.define('goog.functions.CACHE_RETURN_VALUE', true);
-
-
-/**
- * Gives a wrapper function that caches the return value of a parameterless
- * function when first called.
- *
- * When called for the first time, the given function is called and its
- * return value is cached (thus this is only appropriate for idempotent
- * functions).  Subsequent calls will return the cached return value. This
- * allows the evaluation of expensive functions to be delayed until first used.
- *
- * To cache the return values of functions with parameters, see goog.memoize.
- *
- * @param {function():T} fn A function to lazily evaluate.
- * @return {function():T} A wrapped version the function.
- * @template T
- */
-goog.functions.cacheReturnValue = function(fn) {
-  var called = false;
-  var value;
-
-  return function() {
-    if (!goog.functions.CACHE_RETURN_VALUE) {
-      return fn();
-    }
-
-    if (!called) {
-      value = fn();
-      called = true;
-    }
-
-    return value;
-  };
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once. All
- * additional calls are no-ops.
- *
- * This is particularly useful for initialization functions
- * that should be called, at most, once.
- *
- * @param {function():*} f Function to call.
- * @return {function():undefined} Wrapped function.
- */
-goog.functions.once = function(f) {
-  // Keep a reference to the function that we null out when we're done with
-  // it -- that way, the function can be GC'd when we're done with it.
-  var inner = f;
-  return function() {
-    if (inner) {
-      var tmp = inner;
-      inner = null;
-      tmp();
-    }
-  };
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times within
- * that interval, only the Nth call will go through.
- *
- * This is particularly useful for batching up repeated actions where the
- * last action should win. This can be used, for example, for refreshing an
- * autocomplete pop-up every so often rather than updating with every keystroke,
- * since the final text typed by the user is the one that should produce the
- * final autocomplete results. For more stateful debouncing with support for
- * pausing, resuming, and canceling debounced actions, use
- * `goog.async.Debouncer`.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to debounce. The function will
- *     only be called after the full interval has elapsed since the last call.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.debounce = function(f, interval, opt_scope) {
-  var timeout = 0;
-  return /** @type {function(...?)} */ (function(var_args) {
-    goog.global.clearTimeout(timeout);
-    var args = arguments;
-    timeout = goog.global.setTimeout(function() {
-      f.apply(opt_scope, args);
-    }, interval);
-  });
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times in
- * that interval, both the 1st and the Nth calls will go through.
- *
- * This is particularly useful for limiting repeated user requests where the
- * the last action should win, but you also don't want to wait until the end of
- * the interval before sending a request out, as it leads to a perception of
- * slowness for the user.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to throttle. The function can
- *     only be called once per interval.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.throttle = function(f, interval, opt_scope) {
-  var timeout = 0;
-  var shouldFire = false;
-  var args = [];
-
-  var handleTimeout = function() {
-    timeout = 0;
-    if (shouldFire) {
-      shouldFire = false;
-      fire();
-    }
-  };
-
-  var fire = function() {
-    timeout = goog.global.setTimeout(handleTimeout, interval);
-    f.apply(opt_scope, args);
-  };
-
-  return /** @type {function(...?)} */ (function(var_args) {
-    args = arguments;
-    if (!timeout) {
-      fire();
-    } else {
-      shouldFire = true;
-    }
-  });
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times within
- * that interval, only the 1st call will go through.
- *
- * This is particularly useful for limiting repeated user requests where the
- * first request is guaranteed to have all the data required to perform the
- * final action, so there's no need to wait until the end of the interval before
- * sending the request out.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to rate-limit. The function will
- *     only be called once per interval, and ignored for the remainer of the
- *     interval.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.rateLimit = function(f, interval, opt_scope) {
-  var timeout = 0;
-
-  var handleTimeout = function() {
-    timeout = 0;
-  };
-
-  return /** @type {function(...?)} */ (function(var_args) {
-    if (!timeout) {
-      timeout = goog.global.setTimeout(handleTimeout, interval);
-      f.apply(opt_scope, arguments);
-    }
-  });
-};
-
 //javascript/closure/html/trustedtypes.js
 // Copyright 2018 The Closure Library Authors. All Rights Reserved.
 //
@@ -14533,6 +10166,114 @@ goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
  */
 goog.html.SafeScript.EMPTY =
     goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse('');
+
+//javascript/closure/fs/url.js
+// Copyright 2015 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Wrapper for URL and its createObjectUrl and revokeObjectUrl
+ * methods that are part of the HTML5 File API.
+ */
+
+goog.provide('goog.fs.url');
+
+
+/**
+ * Creates a blob URL for a blob object.
+ * Throws an error if the browser does not support Object Urls.
+ *
+ * @param {!Blob} blob The object for which to create the URL.
+ * @return {string} The URL for the object.
+ */
+goog.fs.url.createObjectUrl = function(blob) {
+  return goog.fs.url.getUrlObject_().createObjectURL(blob);
+};
+
+
+/**
+ * Revokes a URL created by {@link goog.fs.url.createObjectUrl}.
+ * Throws an error if the browser does not support Object Urls.
+ *
+ * @param {string} url The URL to revoke.
+ */
+goog.fs.url.revokeObjectUrl = function(url) {
+  goog.fs.url.getUrlObject_().revokeObjectURL(url);
+};
+
+
+/**
+ * @typedef {{createObjectURL: (function(!Blob): string),
+ *            revokeObjectURL: function(string): void}}
+ */
+goog.fs.url.UrlObject_;
+
+
+/**
+ * Get the object that has the createObjectURL and revokeObjectURL functions for
+ * this browser.
+ *
+ * @return {goog.fs.url.UrlObject_} The object for this browser.
+ * @private
+ */
+goog.fs.url.getUrlObject_ = function() {
+  var urlObject = goog.fs.url.findUrlObject_();
+  if (urlObject != null) {
+    return urlObject;
+  } else {
+    throw new Error('This browser doesn\'t seem to support blob URLs');
+  }
+};
+
+
+/**
+ * Finds the object that has the createObjectURL and revokeObjectURL functions
+ * for this browser.
+ *
+ * @return {?goog.fs.url.UrlObject_} The object for this browser or null if the
+ *     browser does not support Object Urls.
+ * @private
+ */
+goog.fs.url.findUrlObject_ = function() {
+  // This is what the spec says to do
+  // http://dev.w3.org/2006/webapi/FileAPI/#dfn-createObjectURL
+  if (goog.isDef(goog.global.URL) &&
+      goog.isDef(goog.global.URL.createObjectURL)) {
+    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.URL);
+    // This is what Chrome does (as of 10.0.648.6 dev)
+  } else if (
+      goog.isDef(goog.global.webkitURL) &&
+      goog.isDef(goog.global.webkitURL.createObjectURL)) {
+    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.webkitURL);
+    // This is what the spec used to say to do
+  } else if (goog.isDef(goog.global.createObjectURL)) {
+    return /** @type {goog.fs.url.UrlObject_} */ (goog.global);
+  } else {
+    return null;
+  }
+};
+
+
+/**
+ * Checks whether this browser supports Object Urls. If not, calls to
+ * createObjectUrl and revokeObjectUrl will result in an error.
+ *
+ * @return {boolean} True if this browser supports Object Urls.
+ */
+goog.fs.url.browserSupportsObjectUrls = function() {
+  return goog.fs.url.findUrlObject_() != null;
+};
 
 //javascript/closure/i18n/bidi.js
 // Copyright 2007 The Closure Library Authors. All Rights Reserved.
@@ -18952,6 +14693,5438 @@ goog.html.uncheckedconversions
       .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
+//javascript/closure/dom/safe.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Type-safe wrappers for unsafe DOM APIs.
+ *
+ * This file provides type-safe wrappers for DOM APIs that can result in
+ * cross-site scripting (XSS) vulnerabilities, if the API is supplied with
+ * untrusted (attacker-controlled) input.  Instead of plain strings, the type
+ * safe wrappers consume values of types from the goog.html package whose
+ * contract promises that values are safe to use in the corresponding context.
+ *
+ * Hence, a program that exclusively uses the wrappers in this file (i.e., whose
+ * only reference to security-sensitive raw DOM APIs are in this file) is
+ * guaranteed to be free of XSS due to incorrect use of such DOM APIs (modulo
+ * correctness of code that produces values of the respective goog.html types,
+ * and absent code that violates type safety).
+ *
+ * For example, assigning to an element's .innerHTML property a string that is
+ * derived (even partially) from untrusted input typically results in an XSS
+ * vulnerability. The type-safe wrapper goog.dom.safe.setInnerHtml consumes a
+ * value of type goog.html.SafeHtml, whose contract states that using its values
+ * in a HTML context will not result in XSS. Hence a program that is free of
+ * direct assignments to any element's innerHTML property (with the exception of
+ * the assignment to .innerHTML in this file) is guaranteed to be free of XSS
+ * due to assignment of untrusted strings to the innerHTML property.
+ */
+
+goog.provide('goog.dom.safe');
+goog.provide('goog.dom.safe.InsertAdjacentHtmlPosition');
+
+goog.require('goog.asserts');
+goog.require('goog.dom.asserts');
+goog.require('goog.functions');
+goog.require('goog.html.SafeHtml');
+goog.require('goog.html.SafeScript');
+goog.require('goog.html.SafeStyle');
+goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
+goog.require('goog.html.uncheckedconversions');
+goog.require('goog.string.Const');
+goog.require('goog.string.internal');
+
+
+/** @enum {string} */
+goog.dom.safe.InsertAdjacentHtmlPosition = {
+  AFTERBEGIN: 'afterbegin',
+  AFTEREND: 'afterend',
+  BEFOREBEGIN: 'beforebegin',
+  BEFOREEND: 'beforeend'
+};
+
+
+/**
+ * Inserts known-safe HTML into a Node, at the specified position.
+ * @param {!Node} node The node on which to call insertAdjacentHTML.
+ * @param {!goog.dom.safe.InsertAdjacentHtmlPosition} position Position where
+ *     to insert the HTML.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to insert.
+ */
+goog.dom.safe.insertAdjacentHtml = function(node, position, html) {
+  node.insertAdjacentHTML(position, goog.html.SafeHtml.unwrapTrustedHTML(html));
+};
+
+
+/**
+ * Tags not allowed in goog.dom.safe.setInnerHtml.
+ * @private @const {!Object<string, boolean>}
+ */
+goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_ = {
+  'MATH': true,
+  'SCRIPT': true,
+  'STYLE': true,
+  'SVG': true,
+  'TEMPLATE': true
+};
+
+
+/**
+ * Whether assigning to innerHTML results in a non-spec-compliant clean-up. Used
+ * to define goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse.
+ *
+ * <p>As mentioned in https://stackoverflow.com/questions/28741528, re-rendering
+ * an element in IE by setting innerHTML causes IE to recursively disconnect all
+ * parent/children connections that were in the previous contents of the
+ * element. Unfortunately, this can unexpectedly result in confusing cases where
+ * a function is run (typically asynchronously) on element that has since
+ * disconnected from the DOM but assumes the presence of its children. A simple
+ * workaround is to remove all children first. Testing on IE11 via
+ * https://jsperf.com/innerhtml-vs-removechild/239, removeChild seems to be
+ * ~10x faster than innerHTML='' for a large number of children (perhaps due
+ * to the latter's recursive behavior), implying that this workaround would
+ * not hurt performance and might actually improve it.
+ * @return {boolean}
+ * @private
+ */
+goog.dom.safe.isInnerHtmlCleanupRecursive_ =
+    goog.functions.cacheReturnValue(function() {
+      // `document` missing in some test frameworks.
+      if (goog.DEBUG && typeof document === 'undefined') {
+        return false;
+      }
+      // Create 3 nested <div>s without using innerHTML.
+      // We're not chaining the appendChilds in one call,  as this breaks
+      // in a DocumentFragment.
+      var div = document.createElement('div');
+      var childDiv = document.createElement('div');
+      childDiv.appendChild(document.createElement('div'));
+      div.appendChild(childDiv);
+      // `firstChild` is null in Google Js Test.
+      if (goog.DEBUG && !div.firstChild) {
+        return false;
+      }
+      var innerChild = div.firstChild.firstChild;
+      div.innerHTML =
+          goog.html.SafeHtml.unwrapTrustedHTML(goog.html.SafeHtml.EMPTY);
+      return !innerChild.parentElement;
+    });
+
+
+/**
+ * Assigns HTML to an element's innerHTML property. Helper to use only here and
+ * in soy.js.
+ * @param {?Element} elem The element whose innerHTML is to be assigned to.
+ * @param {!goog.html.SafeHtml} html
+ */
+goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse = function(elem, html) {
+  // See comment above goog.dom.safe.isInnerHtmlCleanupRecursive_.
+  if (goog.dom.safe.isInnerHtmlCleanupRecursive_()) {
+    while (elem.lastChild) {
+      elem.removeChild(elem.lastChild);
+    }
+  }
+  elem.innerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
+};
+
+
+/**
+ * Assigns known-safe HTML to an element's innerHTML property.
+ * @param {!Element} elem The element whose innerHTML is to be assigned to.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
+ * @throws {Error} If called with one of these tags: math, script, style, svg,
+ *     template.
+ */
+goog.dom.safe.setInnerHtml = function(elem, html) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var tagName = elem.tagName.toUpperCase();
+    if (goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_[tagName]) {
+      throw new Error(
+          'goog.dom.safe.setInnerHtml cannot be used to set content of ' +
+          elem.tagName + '.');
+    }
+  }
+
+  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(elem, html);
+};
+
+
+/**
+ * Assigns known-safe HTML to an element's outerHTML property.
+ * @param {!Element} elem The element whose outerHTML is to be assigned to.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
+ */
+goog.dom.safe.setOuterHtml = function(elem, html) {
+  elem.outerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
+};
+
+
+/**
+ * Safely assigns a URL a form element's action property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * anchor's href property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setFormElementAction(formEl, url);
+ * which is a safe alternative to
+ *   formEl.action = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Element} form The form element whose action property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setFormElementAction = function(form, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  goog.dom.asserts.assertIsHTMLFormElement(form).action =
+      goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to a button element's formaction property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * anchor's href property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setButtonFormAction(buttonEl, url);
+ * which is a safe alternative to
+ *   buttonEl.action = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Element} button The button element whose action property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setButtonFormAction = function(button, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  goog.dom.asserts.assertIsHTMLButtonElement(button).formAction =
+      goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+/**
+ * Safely assigns a URL to an input element's formaction property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * anchor's href property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setInputFormAction(inputEl, url);
+ * which is a safe alternative to
+ *   inputEl.action = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Element} input The input element whose action property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setInputFormAction = function(input, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  goog.dom.asserts.assertIsHTMLInputElement(input).formAction =
+      goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+/**
+ * Sets the given element's style property to the contents of the provided
+ * SafeStyle object.
+ * @param {!Element} elem
+ * @param {!goog.html.SafeStyle} style
+ */
+goog.dom.safe.setStyle = function(elem, style) {
+  elem.style.cssText = goog.html.SafeStyle.unwrap(style);
+};
+
+
+/**
+ * Writes known-safe HTML to a document.
+ * @param {!Document} doc The document to be written to.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
+ */
+goog.dom.safe.documentWrite = function(doc, html) {
+  doc.write(goog.html.SafeHtml.unwrapTrustedHTML(html));
+};
+
+
+/**
+ * Safely assigns a URL to an anchor element's href property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * anchor's href property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setAnchorHref(anchorEl, url);
+ * which is a safe alternative to
+ *   anchorEl.href = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!HTMLAnchorElement} anchor The anchor element whose href property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setAnchorHref = function(anchor, url) {
+  goog.dom.asserts.assertIsHTMLAnchorElement(anchor);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  anchor.href = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+
+/**
+ * Safely assigns a URL to an image element's src property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * image's src property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * @param {!HTMLImageElement} imageElement The image element whose src property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setImageSrc = function(imageElement, url) {
+  goog.dom.asserts.assertIsHTMLImageElement(imageElement);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    var allowDataUrl = /^data:image\//i.test(url);
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
+  }
+  imageElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to a audio element's src property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * audio's src property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * @param {!HTMLAudioElement} audioElement The audio element whose src property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setAudioSrc = function(audioElement, url) {
+  goog.dom.asserts.assertIsHTMLAudioElement(audioElement);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    var allowDataUrl = /^data:audio\//i.test(url);
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
+  }
+  audioElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to a video element's src property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * video's src property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * @param {!HTMLVideoElement} videoElement The video element whose src property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setVideoSrc = function(videoElement, url) {
+  goog.dom.asserts.assertIsHTMLVideoElement(videoElement);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    var allowDataUrl = /^data:video\//i.test(url);
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
+  }
+  videoElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to an embed element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setEmbedSrc(embedEl, url);
+ * which is a safe alternative to
+ *   embedEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLEmbedElement} embed The embed element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setEmbedSrc = function(embed, url) {
+  goog.dom.asserts.assertIsHTMLEmbedElement(embed);
+  embed.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
+};
+
+
+/**
+ * Safely assigns a URL to a frame element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setFrameSrc(frameEl, url);
+ * which is a safe alternative to
+ *   frameEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLFrameElement} frame The frame element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setFrameSrc = function(frame, url) {
+  goog.dom.asserts.assertIsHTMLFrameElement(frame);
+  frame.src = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+};
+
+
+/**
+ * Safely assigns a URL to an iframe element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setIframeSrc(iframeEl, url);
+ * which is a safe alternative to
+ *   iframeEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLIFrameElement} iframe The iframe element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setIframeSrc = function(iframe, url) {
+  goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
+  iframe.src = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+};
+
+
+/**
+ * Safely assigns HTML to an iframe element's srcdoc property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setIframeSrcdoc(iframeEl, safeHtml);
+ * which is a safe alternative to
+ *   iframeEl.srcdoc = html;
+ * The latter can result in loading untrusted code.
+ *
+ * @param {!HTMLIFrameElement} iframe The iframe element whose srcdoc property
+ *     is to be assigned to.
+ * @param {!goog.html.SafeHtml} html The HTML to assign.
+ */
+goog.dom.safe.setIframeSrcdoc = function(iframe, html) {
+  goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
+  iframe.srcdoc = goog.html.SafeHtml.unwrapTrustedHTML(html);
+};
+
+
+/**
+ * Safely sets a link element's href and rel properties. Whether or not
+ * the URL assigned to href has to be a goog.html.TrustedResourceUrl
+ * depends on the value of the rel property. If rel contains "stylesheet"
+ * then a TrustedResourceUrl is required.
+ *
+ * Example usage:
+ *   goog.dom.safe.setLinkHrefAndRel(linkEl, url, 'stylesheet');
+ * which is a safe alternative to
+ *   linkEl.rel = 'stylesheet';
+ *   linkEl.href = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLLinkElement} link The link element whose href property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl|!goog.html.TrustedResourceUrl} url The URL
+ *     to assign to the href property. Must be a TrustedResourceUrl if the
+ *     value assigned to rel contains "stylesheet". A string value is
+ *     sanitized with goog.html.SafeUrl.sanitize.
+ * @param {string} rel The value to assign to the rel property.
+ * @throws {Error} if rel contains "stylesheet" and url is not a
+ *     TrustedResourceUrl
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setLinkHrefAndRel = function(link, url, rel) {
+  goog.dom.asserts.assertIsHTMLLinkElement(link);
+  link.rel = rel;
+  if (goog.string.internal.caseInsensitiveContains(rel, 'stylesheet')) {
+    goog.asserts.assert(
+        url instanceof goog.html.TrustedResourceUrl,
+        'URL must be TrustedResourceUrl because "rel" contains "stylesheet"');
+    link.href = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+  } else if (url instanceof goog.html.TrustedResourceUrl) {
+    link.href = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+  } else if (url instanceof goog.html.SafeUrl) {
+    link.href = goog.html.SafeUrl.unwrapTrustedURL(url);
+  } else {  // string
+    // SafeUrl.sanitize must return legitimate SafeUrl when passed a string.
+    link.href = goog.html.SafeUrl.unwrapTrustedURL(
+        goog.html.SafeUrl.sanitizeAssertUnchanged(url));
+  }
+};
+
+
+/**
+ * Safely assigns a URL to an object element's data property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setObjectData(objectEl, url);
+ * which is a safe alternative to
+ *   objectEl.data = url;
+ * The latter can result in loading untrusted code unless setit is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLObjectElement} object The object element whose data property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setObjectData = function(object, url) {
+  goog.dom.asserts.assertIsHTMLObjectElement(object);
+  object.data = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
+};
+
+
+/**
+ * Safely assigns a URL to a script element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setScriptSrc(scriptEl, url);
+ * which is a safe alternative to
+ *   scriptEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLScriptElement} script The script element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setScriptSrc = function(script, url) {
+  goog.dom.asserts.assertIsHTMLScriptElement(script);
+  script.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
+
+  // If CSP nonces are used, propagate them to dynamically created scripts.
+  // This is necessary to allow nonce-based CSPs without 'strict-dynamic'.
+  var nonce = goog.getScriptNonce();
+  if (nonce) {
+    script.setAttribute('nonce', nonce);
+  }
+};
+
+
+/**
+ * Safely assigns a value to a script element's content.
+ *
+ * Example usage:
+ *   goog.dom.safe.setScriptContent(scriptEl, content);
+ * which is a safe alternative to
+ *   scriptEl.text = content;
+ * The latter can result in executing untrusted code unless it is ensured that
+ * the code is loaded from a trustworthy resource.
+ *
+ * @param {!HTMLScriptElement} script The script element whose content is being
+ *     set.
+ * @param {!goog.html.SafeScript} content The content to assign.
+ */
+goog.dom.safe.setScriptContent = function(script, content) {
+  goog.dom.asserts.assertIsHTMLScriptElement(script);
+  script.text = goog.html.SafeScript.unwrapTrustedScript(content);
+
+  // If CSP nonces are used, propagate them to dynamically created scripts.
+  // This is necessary to allow nonce-based CSPs without 'strict-dynamic'.
+  var nonce = goog.getScriptNonce();
+  if (nonce) {
+    script.setAttribute('nonce', nonce);
+  }
+};
+
+
+/**
+ * Safely assigns a URL to a Location object's href property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * loc's href property.  If url is of type string however, it is first sanitized
+ * using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setLocationHref(document.location, redirectUrl);
+ * which is a safe alternative to
+ *   document.location.href = redirectUrl;
+ * The latter can result in XSS vulnerabilities if redirectUrl is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Location} loc The Location object whose href property is to be
+ *     assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setLocationHref = function(loc, url) {
+  goog.dom.asserts.assertIsLocation(loc);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  loc.href = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+};
+
+/**
+ * Safely assigns the URL of a Location object.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and
+ * passed to Location#assign. If url is of type string however, it is
+ * first sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.assignHref(document.location, newUrl);
+ * which is a safe alternative to
+ *   document.location.assign(newUrl);
+ * The latter can result in XSS vulnerabilities if newUrl is a
+ * user-/attacker-controlled value.
+ *
+ * This has the same behaviour as setLocationHref, however some test
+ * mock Location.assign instead of a property assignment.
+ *
+ * @param {!Location} loc The Location object which is to be assigned.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.assignLocation = function(loc, url) {
+  goog.dom.asserts.assertIsLocation(loc);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  loc.assign(goog.html.SafeUrl.unwrapTrustedURL(safeUrl));
+};
+
+
+/**
+ * Safely replaces the URL of a Location object.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and
+ * passed to Location#replace. If url is of type string however, it is
+ * first sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.replaceLocation(document.location, newUrl);
+ * which is a safe alternative to
+ *   document.location.replace(newUrl);
+ * The latter can result in XSS vulnerabilities if newUrl is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Location} loc The Location object which is to be replaced.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.replaceLocation = function(loc, url) {
+  goog.dom.asserts.assertIsLocation(loc);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  loc.replace(goog.html.SafeUrl.unwrapTrustedURL(safeUrl));
+};
+
+
+/**
+ * Safely opens a URL in a new window (via window.open).
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and passed in to
+ * window.open.  If url is of type string however, it is first sanitized
+ * using goog.html.SafeUrl.sanitize.
+ *
+ * Note that this function does not prevent leakages via the referer that is
+ * sent by window.open. It is advised to only use this to open 1st party URLs.
+ *
+ * Example usage:
+ *   goog.dom.safe.openInWindow(url);
+ * which is a safe alternative to
+ *   window.open(url);
+ * The latter can result in XSS vulnerabilities if redirectUrl is a
+ * user-/attacker-controlled value.
+ *
+ * @param {string|!goog.html.SafeUrl} url The URL to open.
+ * @param {Window=} opt_openerWin Window of which to call the .open() method.
+ *     Defaults to the global window.
+ * @param {!goog.string.Const=} opt_name Name of the window to open in. Can be
+ *     _top, etc as allowed by window.open().
+ * @param {string=} opt_specs Comma-separated list of specifications, same as
+ *     in window.open().
+ * @param {boolean=} opt_replace Whether to replace the current entry in browser
+ *     history, same as in window.open().
+ * @return {Window} Window the url was opened in.
+ */
+goog.dom.safe.openInWindow = function(
+    url, opt_openerWin, opt_name, opt_specs, opt_replace) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  var win = opt_openerWin || goog.global;
+  return win.open(
+      goog.html.SafeUrl.unwrapTrustedURL(safeUrl),
+      // If opt_name is undefined, simply passing that in to open() causes IE to
+      // reuse the current window instead of opening a new one. Thus we pass ''
+      // in instead, which according to spec opens a new window. See
+      // https://html.spec.whatwg.org/multipage/browsers.html#dom-open .
+      opt_name ? goog.string.Const.unwrap(opt_name) : '', opt_specs,
+      opt_replace);
+};
+
+
+/**
+ * Parses the HTML as 'text/html'.
+ * @param {!DOMParser} parser
+ * @param {!goog.html.SafeHtml} html The HTML to be parsed.
+ * @return {?Document}
+ */
+goog.dom.safe.parseFromStringHtml = function(parser, html) {
+  return goog.dom.safe.parseFromString(parser, html, 'text/html');
+};
+
+
+/**
+ * Parses the string.
+ * @param {!DOMParser} parser
+ * @param {!goog.html.SafeHtml} content Note: We don't have a special type for
+ *     XML od SVG supported by this function so we use SafeHtml.
+ * @param {string} type
+ * @return {?Document}
+ */
+goog.dom.safe.parseFromString = function(parser, content, type) {
+  return parser.parseFromString(
+      goog.html.SafeHtml.unwrapTrustedHTML(content), type);
+};
+
+
+/**
+ * Safely creates an HTMLImageElement from a Blob.
+ *
+ * Example usage:
+ *     goog.dom.safe.createImageFromBlob(blob);
+ * which is a safe alternative to
+ *     image.src = createObjectUrl(blob)
+ * The latter can result in executing malicious same-origin scripts from a bad
+ * Blob.
+ * @param {!Blob} blob The blob to create the image from.
+ * @return {!HTMLImageElement} The image element created from the blob.
+ * @throws {!Error} If called with a Blob with a MIME type other than image/.*.
+ */
+goog.dom.safe.createImageFromBlob = function(blob) {
+  // Any image/* MIME type is accepted as safe.
+  if (!/^image\/.*/g.test(blob.type)) {
+    throw new Error(
+        'goog.dom.safe.createImageFromBlob only accepts MIME type image/.*.');
+  }
+  var objectUrl = goog.global.URL.createObjectURL(blob);
+  var image = new goog.global.Image();
+  image.onload = function() {
+    goog.global.URL.revokeObjectURL(objectUrl);
+  };
+  goog.dom.safe.setImageSrc(
+      image,
+      goog.html.uncheckedconversions
+          .safeUrlFromStringKnownToSatisfyTypeContract(
+              goog.string.Const.from('Image blob URL.'), objectUrl));
+  return image;
+};
+
+//javascript/closure/string/string.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Utilities for string manipulation.
+ * @author pupius@google.com (Daniel Pupius)
+ * @author arv@google.com (Erik Arvidsson)
+ */
+
+
+/**
+ * Namespace for string utilities
+ */
+goog.provide('goog.string');
+goog.provide('goog.string.Unicode');
+
+goog.require('goog.dom.safe');
+goog.require('goog.html.uncheckedconversions');
+goog.require('goog.string.Const');
+goog.require('goog.string.internal');
+
+
+/**
+ * @define {boolean} Enables HTML escaping of lowercase letter "e" which helps
+ * with detection of double-escaping as this letter is frequently used.
+ */
+goog.string.DETECT_DOUBLE_ESCAPING =
+    goog.define('goog.string.DETECT_DOUBLE_ESCAPING', false);
+
+
+/**
+ * @define {boolean} Whether to force non-dom html unescaping.
+ */
+goog.string.FORCE_NON_DOM_HTML_UNESCAPING =
+    goog.define('goog.string.FORCE_NON_DOM_HTML_UNESCAPING', false);
+
+
+/**
+ * Common Unicode string characters.
+ * @enum {string}
+ */
+goog.string.Unicode = {
+  NBSP: '\xa0'
+};
+
+
+/**
+ * Fast prefix-checker.
+ * @param {string} str The string to check.
+ * @param {string} prefix A string to look for at the start of `str`.
+ * @return {boolean} True if `str` begins with `prefix`.
+ */
+goog.string.startsWith = goog.string.internal.startsWith;
+
+
+/**
+ * Fast suffix-checker.
+ * @param {string} str The string to check.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix`.
+ */
+goog.string.endsWith = goog.string.internal.endsWith;
+
+
+/**
+ * Case-insensitive prefix-checker.
+ * @param {string} str The string to check.
+ * @param {string} prefix  A string to look for at the end of `str`.
+ * @return {boolean} True if `str` begins with `prefix` (ignoring
+ *     case).
+ */
+goog.string.caseInsensitiveStartsWith =
+    goog.string.internal.caseInsensitiveStartsWith;
+
+
+/**
+ * Case-insensitive suffix-checker.
+ * @param {string} str The string to check.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix` (ignoring
+ *     case).
+ */
+goog.string.caseInsensitiveEndsWith =
+    goog.string.internal.caseInsensitiveEndsWith;
+
+
+/**
+ * Case-insensitive equality checker.
+ * @param {string} str1 First string to check.
+ * @param {string} str2 Second string to check.
+ * @return {boolean} True if `str1` and `str2` are the same string,
+ *     ignoring case.
+ */
+goog.string.caseInsensitiveEquals = goog.string.internal.caseInsensitiveEquals;
+
+
+/**
+ * Does simple python-style string substitution.
+ * subs("foo%s hot%s", "bar", "dog") becomes "foobar hotdog".
+ * @param {string} str The string containing the pattern.
+ * @param {...*} var_args The items to substitute into the pattern.
+ * @return {string} A copy of `str` in which each occurrence of
+ *     {@code %s} has been replaced an argument from `var_args`.
+ */
+goog.string.subs = function(str, var_args) {
+  var splitParts = str.split('%s');
+  var returnString = '';
+
+  var subsArguments = Array.prototype.slice.call(arguments, 1);
+  while (subsArguments.length &&
+         // Replace up to the last split part. We are inserting in the
+         // positions between split parts.
+         splitParts.length > 1) {
+    returnString += splitParts.shift() + subsArguments.shift();
+  }
+
+  return returnString + splitParts.join('%s');  // Join unused '%s'
+};
+
+
+/**
+ * Converts multiple whitespace chars (spaces, non-breaking-spaces, new lines
+ * and tabs) to a single space, and strips leading and trailing whitespace.
+ * @param {string} str Input string.
+ * @return {string} A copy of `str` with collapsed whitespace.
+ */
+goog.string.collapseWhitespace = function(str) {
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return str.replace(/[\s\xa0]+/g, ' ').replace(/^\s+|\s+$/g, '');
+};
+
+
+/**
+ * Checks if a string is empty or contains only whitespaces.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty or whitespace only.
+ */
+goog.string.isEmptyOrWhitespace = goog.string.internal.isEmptyOrWhitespace;
+
+
+/**
+ * Checks if a string is empty.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty.
+ */
+goog.string.isEmptyString = function(str) {
+  return str.length == 0;
+};
+
+
+/**
+ * Checks if a string is empty or contains only whitespaces.
+ *
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty or whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace instead.
+ */
+goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
+
+
+/**
+ * Checks if a string is null, undefined, empty or contains only whitespaces.
+ * @param {*} str The string to check.
+ * @return {boolean} Whether `str` is null, undefined, empty, or
+ *     whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str))
+ *     instead.
+ */
+goog.string.isEmptyOrWhitespaceSafe = function(str) {
+  return goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str));
+};
+
+
+/**
+ * Checks if a string is null, undefined, empty or contains only whitespaces.
+ *
+ * @param {*} str The string to check.
+ * @return {boolean} Whether `str` is null, undefined, empty, or
+ *     whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace instead.
+ */
+goog.string.isEmptySafe = goog.string.isEmptyOrWhitespaceSafe;
+
+
+/**
+ * Checks if a string is all breaking whitespace.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether the string is all breaking whitespace.
+ */
+goog.string.isBreakingWhitespace = function(str) {
+  return !/[^\t\n\r ]/.test(str);
+};
+
+
+/**
+ * Checks if a string contains all letters.
+ * @param {string} str string to check.
+ * @return {boolean} True if `str` consists entirely of letters.
+ */
+goog.string.isAlpha = function(str) {
+  return !/[^a-zA-Z]/.test(str);
+};
+
+
+/**
+ * Checks if a string contains only numbers.
+ * @param {*} str string to check. If not a string, it will be
+ *     casted to one.
+ * @return {boolean} True if `str` is numeric.
+ */
+goog.string.isNumeric = function(str) {
+  return !/[^0-9]/.test(str);
+};
+
+
+/**
+ * Checks if a string contains only numbers or letters.
+ * @param {string} str string to check.
+ * @return {boolean} True if `str` is alphanumeric.
+ */
+goog.string.isAlphaNumeric = function(str) {
+  return !/[^a-zA-Z0-9]/.test(str);
+};
+
+
+/**
+ * Checks if a character is a space character.
+ * @param {string} ch Character to check.
+ * @return {boolean} True if `ch` is a space.
+ */
+goog.string.isSpace = function(ch) {
+  return ch == ' ';
+};
+
+
+/**
+ * Checks if a character is a valid unicode character.
+ * @param {string} ch Character to check.
+ * @return {boolean} True if `ch` is a valid unicode character.
+ */
+goog.string.isUnicodeChar = function(ch) {
+  return ch.length == 1 && ch >= ' ' && ch <= '~' ||
+      ch >= '\u0080' && ch <= '\uFFFD';
+};
+
+
+/**
+ * Takes a string and replaces newlines with a space. Multiple lines are
+ * replaced with a single space.
+ * @param {string} str The string from which to strip newlines.
+ * @return {string} A copy of `str` stripped of newlines.
+ */
+goog.string.stripNewlines = function(str) {
+  return str.replace(/(\r\n|\r|\n)+/g, ' ');
+};
+
+
+/**
+ * Replaces Windows and Mac new lines with unix style: \r or \r\n with \n.
+ * @param {string} str The string to in which to canonicalize newlines.
+ * @return {string} `str` A copy of {@code} with canonicalized newlines.
+ */
+goog.string.canonicalizeNewlines = function(str) {
+  return str.replace(/(\r\n|\r|\n)/g, '\n');
+};
+
+
+/**
+ * Normalizes whitespace in a string, replacing all whitespace chars with
+ * a space.
+ * @param {string} str The string in which to normalize whitespace.
+ * @return {string} A copy of `str` with all whitespace normalized.
+ */
+goog.string.normalizeWhitespace = function(str) {
+  return str.replace(/\xa0|\s/g, ' ');
+};
+
+
+/**
+ * Normalizes spaces in a string, replacing all consecutive spaces and tabs
+ * with a single space. Replaces non-breaking space with a space.
+ * @param {string} str The string in which to normalize spaces.
+ * @return {string} A copy of `str` with all consecutive spaces and tabs
+ *    replaced with a single space.
+ */
+goog.string.normalizeSpaces = function(str) {
+  return str.replace(/\xa0|[ \t]+/g, ' ');
+};
+
+
+/**
+ * Removes the breaking spaces from the left and right of the string and
+ * collapses the sequences of breaking spaces in the middle into single spaces.
+ * The original and the result strings render the same way in HTML.
+ * @param {string} str A string in which to collapse spaces.
+ * @return {string} Copy of the string with normalized breaking spaces.
+ */
+goog.string.collapseBreakingSpaces = function(str) {
+  return str.replace(/[\t\r\n ]+/g, ' ')
+      .replace(/^[\t\r\n ]+|[\t\r\n ]+$/g, '');
+};
+
+
+/**
+ * Trims white spaces to the left and right of a string.
+ * @param {string} str The string to trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.trim = goog.string.internal.trim;
+
+
+/**
+ * Trims whitespaces at the left end of a string.
+ * @param {string} str The string to left trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.trimLeft = function(str) {
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return str.replace(/^[\s\xa0]+/, '');
+};
+
+
+/**
+ * Trims whitespaces at the right end of a string.
+ * @param {string} str The string to right trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.trimRight = function(str) {
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return str.replace(/[\s\xa0]+$/, '');
+};
+
+
+/**
+ * A string comparator that ignores case.
+ * -1 = str1 less than str2
+ *  0 = str1 equals str2
+ *  1 = str1 greater than str2
+ *
+ * @param {string} str1 The string to compare.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} The comparator result, as described above.
+ */
+goog.string.caseInsensitiveCompare =
+    goog.string.internal.caseInsensitiveCompare;
+
+
+/**
+ * Compares two strings interpreting their numeric substrings as numbers.
+ *
+ * @param {string} str1 First string.
+ * @param {string} str2 Second string.
+ * @param {!RegExp} tokenizerRegExp Splits a string into substrings of
+ *     non-negative integers, non-numeric characters and optionally fractional
+ *     numbers starting with a decimal point.
+ * @return {number} Negative if str1 < str2, 0 is str1 == str2, positive if
+ *     str1 > str2.
+ * @private
+ */
+goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
+  if (str1 == str2) {
+    return 0;
+  }
+  if (!str1) {
+    return -1;
+  }
+  if (!str2) {
+    return 1;
+  }
+
+  // Using match to split the entire string ahead of time turns out to be faster
+  // for most inputs than using RegExp.exec or iterating over each character.
+  var tokens1 = str1.toLowerCase().match(tokenizerRegExp);
+  var tokens2 = str2.toLowerCase().match(tokenizerRegExp);
+
+  var count = Math.min(tokens1.length, tokens2.length);
+
+  for (var i = 0; i < count; i++) {
+    var a = tokens1[i];
+    var b = tokens2[i];
+
+    // Compare pairs of tokens, returning if one token sorts before the other.
+    if (a != b) {
+      // Only if both tokens are integers is a special comparison required.
+      // Decimal numbers are sorted as strings (e.g., '.09' < '.1').
+      var num1 = parseInt(a, 10);
+      if (!isNaN(num1)) {
+        var num2 = parseInt(b, 10);
+        if (!isNaN(num2) && num1 - num2) {
+          return num1 - num2;
+        }
+      }
+      return a < b ? -1 : 1;
+    }
+  }
+
+  // If one string is a substring of the other, the shorter string sorts first.
+  if (tokens1.length != tokens2.length) {
+    return tokens1.length - tokens2.length;
+  }
+
+  // The two strings must be equivalent except for case (perfect equality is
+  // tested at the head of the function.) Revert to default ASCII string
+  // comparison to stabilize the sort.
+  return str1 < str2 ? -1 : 1;
+};
+
+
+/**
+ * String comparison function that handles non-negative integer numbers in a
+ * way humans might expect. Using this function, the string 'File 2.jpg' sorts
+ * before 'File 10.jpg', and 'Version 1.9' before 'Version 1.10'. The comparison
+ * is mostly case-insensitive, though strings that are identical except for case
+ * are sorted with the upper-case strings before lower-case.
+ *
+ * This comparison function is up to 50x slower than either the default or the
+ * case-insensitive compare. It should not be used in time-critical code, but
+ * should be fast enough to sort several hundred short strings (like filenames)
+ * with a reasonable delay.
+ *
+ * @param {string} str1 The string to compare in a numerically sensitive way.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
+ *     0 if str1 > str2.
+ */
+goog.string.intAwareCompare = function(str1, str2) {
+  return goog.string.numberAwareCompare_(str1, str2, /\d+|\D+/g);
+};
+
+
+/**
+ * String comparison function that handles non-negative integer and fractional
+ * numbers in a way humans might expect. Using this function, the string
+ * 'File 2.jpg' sorts before 'File 10.jpg', and '3.14' before '3.2'. Equivalent
+ * to {@link goog.string.intAwareCompare} apart from the way how it interprets
+ * dots.
+ *
+ * @param {string} str1 The string to compare in a numerically sensitive way.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
+ *     0 if str1 > str2.
+ */
+goog.string.floatAwareCompare = function(str1, str2) {
+  return goog.string.numberAwareCompare_(str1, str2, /\d+|\.\d+|\D+/g);
+};
+
+
+/**
+ * Alias for {@link goog.string.floatAwareCompare}.
+ *
+ * @param {string} str1
+ * @param {string} str2
+ * @return {number}
+ */
+goog.string.numerateCompare = goog.string.floatAwareCompare;
+
+
+/**
+ * URL-encodes a string
+ * @param {*} str The string to url-encode.
+ * @return {string} An encoded copy of `str` that is safe for urls.
+ *     Note that '#', ':', and other characters used to delimit portions
+ *     of URLs *will* be encoded.
+ */
+goog.string.urlEncode = function(str) {
+  return encodeURIComponent(String(str));
+};
+
+
+/**
+ * URL-decodes the string. We need to specially handle '+'s because
+ * the javascript library doesn't convert them to spaces.
+ * @param {string} str The string to url decode.
+ * @return {string} The decoded `str`.
+ */
+goog.string.urlDecode = function(str) {
+  return decodeURIComponent(str.replace(/\+/g, ' '));
+};
+
+
+/**
+ * Converts \n to <br>s or <br />s.
+ * @param {string} str The string in which to convert newlines.
+ * @param {boolean=} opt_xml Whether to use XML compatible tags.
+ * @return {string} A copy of `str` with converted newlines.
+ */
+goog.string.newLineToBr = goog.string.internal.newLineToBr;
+
+
+/**
+ * Escapes double quote '"' and single quote '\'' characters in addition to
+ * '&', '<', and '>' so that a string can be included in an HTML tag attribute
+ * value within double or single quotes.
+ *
+ * It should be noted that > doesn't need to be escaped for the HTML or XML to
+ * be valid, but it has been decided to escape it for consistency with other
+ * implementations.
+ *
+ * With goog.string.DETECT_DOUBLE_ESCAPING, this function escapes also the
+ * lowercase letter "e".
+ *
+ * NOTE(pupius):
+ * HtmlEscape is often called during the generation of large blocks of HTML.
+ * Using statics for the regular expressions and strings is an optimization
+ * that can more than half the amount of time IE spends in this function for
+ * large apps, since strings and regexes both contribute to GC allocations.
+ *
+ * Testing for the presence of a character before escaping increases the number
+ * of function calls, but actually provides a speed increase for the average
+ * case -- since the average case often doesn't require the escaping of all 4
+ * characters and indexOf() is much cheaper than replace().
+ * The worst case does suffer slightly from the additional calls, therefore the
+ * opt_isLikelyToContainHtmlChars option has been included for situations
+ * where all 4 HTML entities are very likely to be present and need escaping.
+ *
+ * Some benchmarks (times tended to fluctuate +-0.05ms):
+ *                                     FireFox                     IE6
+ * (no chars / average (mix of cases) / all 4 chars)
+ * no checks                     0.13 / 0.22 / 0.22         0.23 / 0.53 / 0.80
+ * indexOf                       0.08 / 0.17 / 0.26         0.22 / 0.54 / 0.84
+ * indexOf + re test             0.07 / 0.17 / 0.28         0.19 / 0.50 / 0.85
+ *
+ * An additional advantage of checking if replace actually needs to be called
+ * is a reduction in the number of object allocations, so as the size of the
+ * application grows the difference between the various methods would increase.
+ *
+ * @param {string} str string to be escaped.
+ * @param {boolean=} opt_isLikelyToContainHtmlChars Don't perform a check to see
+ *     if the character needs replacing - use this option if you expect each of
+ *     the characters to appear often. Leave false if you expect few html
+ *     characters to occur in your strings, such as if you are escaping HTML.
+ * @return {string} An escaped copy of `str`.
+ */
+goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
+  str = goog.string.internal.htmlEscape(str, opt_isLikelyToContainHtmlChars);
+  if (goog.string.DETECT_DOUBLE_ESCAPING) {
+    str = str.replace(goog.string.E_RE_, '&#101;');
+  }
+  return str;
+};
+
+
+/**
+ * Regular expression that matches a lowercase letter "e", for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.E_RE_ = /e/g;
+
+
+/**
+ * Unescapes an HTML string.
+ *
+ * @param {string} str The string to unescape.
+ * @return {string} An unescaped copy of `str`.
+ */
+goog.string.unescapeEntities = function(str) {
+  if (goog.string.contains(str, '&')) {
+    // We are careful not to use a DOM if we do not have one or we explicitly
+    // requested non-DOM html unescaping.
+    if (!goog.string.FORCE_NON_DOM_HTML_UNESCAPING &&
+        'document' in goog.global) {
+      return goog.string.unescapeEntitiesUsingDom_(str);
+    } else {
+      // Fall back on pure XML entities
+      return goog.string.unescapePureXmlEntities_(str);
+    }
+  }
+  return str;
+};
+
+
+/**
+ * Unescapes a HTML string using the provided document.
+ *
+ * @param {string} str The string to unescape.
+ * @param {!Document} document A document to use in escaping the string.
+ * @return {string} An unescaped copy of `str`.
+ */
+goog.string.unescapeEntitiesWithDocument = function(str, document) {
+  if (goog.string.contains(str, '&')) {
+    return goog.string.unescapeEntitiesUsingDom_(str, document);
+  }
+  return str;
+};
+
+
+/**
+ * Unescapes an HTML string using a DOM to resolve non-XML, non-numeric
+ * entities. This function is XSS-safe and whitespace-preserving.
+ * @private
+ * @param {string} str The string to unescape.
+ * @param {Document=} opt_document An optional document to use for creating
+ *     elements. If this is not specified then the default window.document
+ *     will be used.
+ * @return {string} The unescaped `str` string.
+ */
+goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
+  /** @type {!Object<string, string>} */
+  var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
+  /** @type {!Element} */
+  var div;
+  if (opt_document) {
+    div = opt_document.createElement('div');
+  } else {
+    div = goog.global.document.createElement('div');
+  }
+  // Match as many valid entity characters as possible. If the actual entity
+  // happens to be shorter, it will still work as innerHTML will return the
+  // trailing characters unchanged. Since the entity characters do not include
+  // open angle bracket, there is no chance of XSS from the innerHTML use.
+  // Since no whitespace is passed to innerHTML, whitespace is preserved.
+  return str.replace(goog.string.HTML_ENTITY_PATTERN_, function(s, entity) {
+    // Check for cached entity.
+    var value = seen[s];
+    if (value) {
+      return value;
+    }
+    // Check for numeric entity.
+    if (entity.charAt(0) == '#') {
+      // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex numbers.
+      var n = Number('0' + entity.substr(1));
+      if (!isNaN(n)) {
+        value = String.fromCharCode(n);
+      }
+    }
+    // Fall back to innerHTML otherwise.
+    if (!value) {
+      // Append a non-entity character to avoid a bug in Webkit that parses
+      // an invalid entity at the end of innerHTML text as the empty string.
+      goog.dom.safe.setInnerHtml(
+          div,
+          goog.html.uncheckedconversions
+              .safeHtmlFromStringKnownToSatisfyTypeContract(
+                  goog.string.Const.from('Single HTML entity.'), s + ' '));
+      // Then remove the trailing character from the result.
+      value = div.firstChild.nodeValue.slice(0, -1);
+    }
+    // Cache and return.
+    return seen[s] = value;
+  });
+};
+
+
+/**
+ * Unescapes XML entities.
+ * @private
+ * @param {string} str The string to unescape.
+ * @return {string} An unescaped copy of `str`.
+ */
+goog.string.unescapePureXmlEntities_ = function(str) {
+  return str.replace(/&([^;]+);/g, function(s, entity) {
+    switch (entity) {
+      case 'amp':
+        return '&';
+      case 'lt':
+        return '<';
+      case 'gt':
+        return '>';
+      case 'quot':
+        return '"';
+      default:
+        if (entity.charAt(0) == '#') {
+          // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex.
+          var n = Number('0' + entity.substr(1));
+          if (!isNaN(n)) {
+            return String.fromCharCode(n);
+          }
+        }
+        // For invalid entities we just return the entity
+        return s;
+    }
+  });
+};
+
+
+/**
+ * Regular expression that matches an HTML entity.
+ * See also HTML5: Tokenization / Tokenizing character references.
+ * @private
+ * @type {!RegExp}
+ */
+goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
+
+
+/**
+ * Do escaping of whitespace to preserve spatial formatting. We use character
+ * entity #160 to make it safer for xml.
+ * @param {string} str The string in which to escape whitespace.
+ * @param {boolean=} opt_xml Whether to use XML compatible tags.
+ * @return {string} An escaped copy of `str`.
+ */
+goog.string.whitespaceEscape = function(str, opt_xml) {
+  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
+  return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml);
+};
+
+
+/**
+ * Preserve spaces that would be otherwise collapsed in HTML by replacing them
+ * with non-breaking space Unicode characters.
+ * @param {string} str The string in which to preserve whitespace.
+ * @return {string} A copy of `str` with preserved whitespace.
+ */
+goog.string.preserveSpaces = function(str) {
+  return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
+};
+
+
+/**
+ * Strip quote characters around a string.  The second argument is a string of
+ * characters to treat as quotes.  This can be a single character or a string of
+ * multiple character and in that case each of those are treated as possible
+ * quote characters. For example:
+ *
+ * <pre>
+ * goog.string.stripQuotes('"abc"', '"`') --> 'abc'
+ * goog.string.stripQuotes('`abc`', '"`') --> 'abc'
+ * </pre>
+ *
+ * @param {string} str The string to strip.
+ * @param {string} quoteChars The quote characters to strip.
+ * @return {string} A copy of `str` without the quotes.
+ */
+goog.string.stripQuotes = function(str, quoteChars) {
+  var length = quoteChars.length;
+  for (var i = 0; i < length; i++) {
+    var quoteChar = length == 1 ? quoteChars : quoteChars.charAt(i);
+    if (str.charAt(0) == quoteChar && str.charAt(str.length - 1) == quoteChar) {
+      return str.substring(1, str.length - 1);
+    }
+  }
+  return str;
+};
+
+
+/**
+ * Truncates a string to a certain length and adds '...' if necessary.  The
+ * length also accounts for the ellipsis, so a maximum length of 10 and a string
+ * 'Hello World!' produces 'Hello W...'.
+ * @param {string} str The string to truncate.
+ * @param {number} chars Max number of characters.
+ * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
+ *     characters from being cut off in the middle.
+ * @return {string} The truncated `str` string.
+ */
+goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.unescapeEntities(str);
+  }
+
+  if (str.length > chars) {
+    str = str.substring(0, chars - 3) + '...';
+  }
+
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.htmlEscape(str);
+  }
+
+  return str;
+};
+
+
+/**
+ * Truncate a string in the middle, adding "..." if necessary,
+ * and favoring the beginning of the string.
+ * @param {string} str The string to truncate the middle of.
+ * @param {number} chars Max number of characters.
+ * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
+ *     characters from being cutoff in the middle.
+ * @param {number=} opt_trailingChars Optional number of trailing characters to
+ *     leave at the end of the string, instead of truncating as close to the
+ *     middle as possible.
+ * @return {string} A truncated copy of `str`.
+ */
+goog.string.truncateMiddle = function(
+    str, chars, opt_protectEscapedCharacters, opt_trailingChars) {
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.unescapeEntities(str);
+  }
+
+  if (opt_trailingChars && str.length > chars) {
+    if (opt_trailingChars > chars) {
+      opt_trailingChars = chars;
+    }
+    var endPoint = str.length - opt_trailingChars;
+    var startPoint = chars - opt_trailingChars;
+    str = str.substring(0, startPoint) + '...' + str.substring(endPoint);
+  } else if (str.length > chars) {
+    // Favor the beginning of the string:
+    var half = Math.floor(chars / 2);
+    var endPos = str.length - half;
+    half += chars % 2;
+    str = str.substring(0, half) + '...' + str.substring(endPos);
+  }
+
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.htmlEscape(str);
+  }
+
+  return str;
+};
+
+
+/**
+ * Special chars that need to be escaped for goog.string.quote.
+ * @private {!Object<string, string>}
+ */
+goog.string.specialEscapeChars_ = {
+  '\0': '\\0',
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
+  '\x0B': '\\x0B',  // '\v' is not supported in JScript
+  '"': '\\"',
+  '\\': '\\\\',
+  // To support the use case of embedding quoted strings inside of script
+  // tags, we have to make sure HTML comments and opening/closing script tags do
+  // not appear in the resulting string. The specific strings that must be
+  // escaped are documented at:
+  // http://www.w3.org/TR/html51/semantics.html#restrictions-for-contents-of-script-elements
+  '<': '\x3c'
+};
+
+
+/**
+ * Character mappings used internally for goog.string.escapeChar.
+ * @private {!Object<string, string>}
+ */
+goog.string.jsEscapeCache_ = {
+  '\'': '\\\''
+};
+
+
+/**
+ * Encloses a string in double quotes and escapes characters so that the
+ * string is a valid JS string. The resulting string is safe to embed in
+ * `<script>` tags as "<" is escaped.
+ * @param {string} s The string to quote.
+ * @return {string} A copy of `s` surrounded by double quotes.
+ */
+goog.string.quote = function(s) {
+  s = String(s);
+  var sb = ['"'];
+  for (var i = 0; i < s.length; i++) {
+    var ch = s.charAt(i);
+    var cc = ch.charCodeAt(0);
+    sb[i + 1] = goog.string.specialEscapeChars_[ch] ||
+        ((cc > 31 && cc < 127) ? ch : goog.string.escapeChar(ch));
+  }
+  sb.push('"');
+  return sb.join('');
+};
+
+
+/**
+ * Takes a string and returns the escaped string for that input string.
+ * @param {string} str The string to escape.
+ * @return {string} An escaped string representing `str`.
+ */
+goog.string.escapeString = function(str) {
+  var sb = [];
+  for (var i = 0; i < str.length; i++) {
+    sb[i] = goog.string.escapeChar(str.charAt(i));
+  }
+  return sb.join('');
+};
+
+
+/**
+ * Takes a character and returns the escaped string for that character. For
+ * example escapeChar(String.fromCharCode(15)) -> "\\x0E".
+ * @param {string} c The character to escape.
+ * @return {string} An escaped string representing `c`.
+ */
+goog.string.escapeChar = function(c) {
+  if (c in goog.string.jsEscapeCache_) {
+    return goog.string.jsEscapeCache_[c];
+  }
+
+  if (c in goog.string.specialEscapeChars_) {
+    return goog.string.jsEscapeCache_[c] = goog.string.specialEscapeChars_[c];
+  }
+
+  var rv = c;
+  var cc = c.charCodeAt(0);
+  if (cc > 31 && cc < 127) {
+    rv = c;
+  } else {
+    // tab is 9 but handled above
+    if (cc < 256) {
+      rv = '\\x';
+      if (cc < 16 || cc > 256) {
+        rv += '0';
+      }
+    } else {
+      rv = '\\u';
+      if (cc < 4096) {  // \u1000
+        rv += '0';
+      }
+    }
+    rv += cc.toString(16).toUpperCase();
+  }
+
+  return goog.string.jsEscapeCache_[c] = rv;
+};
+
+
+/**
+ * Determines whether a string contains a substring.
+ * @param {string} str The string to search.
+ * @param {string} subString The substring to search for.
+ * @return {boolean} Whether `str` contains `subString`.
+ */
+goog.string.contains = goog.string.internal.contains;
+
+
+/**
+ * Determines whether a string contains a substring, ignoring case.
+ * @param {string} str The string to search.
+ * @param {string} subString The substring to search for.
+ * @return {boolean} Whether `str` contains `subString`.
+ */
+goog.string.caseInsensitiveContains =
+    goog.string.internal.caseInsensitiveContains;
+
+
+/**
+ * Returns the non-overlapping occurrences of ss in s.
+ * If either s or ss evalutes to false, then returns zero.
+ * @param {string} s The string to look in.
+ * @param {string} ss The string to look for.
+ * @return {number} Number of occurrences of ss in s.
+ */
+goog.string.countOf = function(s, ss) {
+  return s && ss ? s.split(ss).length - 1 : 0;
+};
+
+
+/**
+ * Removes a substring of a specified length at a specific
+ * index in a string.
+ * @param {string} s The base string from which to remove.
+ * @param {number} index The index at which to remove the substring.
+ * @param {number} stringLength The length of the substring to remove.
+ * @return {string} A copy of `s` with the substring removed or the full
+ *     string if nothing is removed or the input is invalid.
+ */
+goog.string.removeAt = function(s, index, stringLength) {
+  var resultStr = s;
+  // If the index is greater or equal to 0 then remove substring
+  if (index >= 0 && index < s.length && stringLength > 0) {
+    resultStr = s.substr(0, index) +
+        s.substr(index + stringLength, s.length - index - stringLength);
+  }
+  return resultStr;
+};
+
+
+/**
+ * Removes the first occurrence of a substring from a string.
+ * @param {string} str The base string from which to remove.
+ * @param {string} substr The string to remove.
+ * @return {string} A copy of `str` with `substr` removed or the
+ *     full string if nothing is removed.
+ */
+goog.string.remove = function(str, substr) {
+  return str.replace(substr, '');
+};
+
+
+/**
+ *  Removes all occurrences of a substring from a string.
+ *  @param {string} s The base string from which to remove.
+ *  @param {string} ss The string to remove.
+ *  @return {string} A copy of `s` with `ss` removed or the full
+ *      string if nothing is removed.
+ */
+goog.string.removeAll = function(s, ss) {
+  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
+  return s.replace(re, '');
+};
+
+
+/**
+ *  Replaces all occurrences of a substring of a string with a new substring.
+ *  @param {string} s The base string from which to remove.
+ *  @param {string} ss The string to replace.
+ *  @param {string} replacement The replacement string.
+ *  @return {string} A copy of `s` with `ss` replaced by
+ *      `replacement` or the original string if nothing is replaced.
+ */
+goog.string.replaceAll = function(s, ss, replacement) {
+  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
+  return s.replace(re, replacement.replace(/\$/g, '$$$$'));
+};
+
+
+/**
+ * Escapes characters in the string that are not safe to use in a RegExp.
+ * @param {*} s The string to escape. If not a string, it will be casted
+ *     to one.
+ * @return {string} A RegExp safe, escaped copy of `s`.
+ */
+goog.string.regExpEscape = function(s) {
+  return String(s)
+      .replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1')
+      .replace(/\x08/g, '\\x08');
+};
+
+
+/**
+ * Repeats a string n times.
+ * @param {string} string The string to repeat.
+ * @param {number} length The number of times to repeat.
+ * @return {string} A string containing `length` repetitions of
+ *     `string`.
+ */
+goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
+  // The native method is over 100 times faster than the alternative.
+  return string.repeat(length);
+} : function(string, length) {
+  return new Array(length + 1).join(string);
+};
+
+
+/**
+ * Pads number to given length and optionally rounds it to a given precision.
+ * For example:
+ * <pre>padNumber(1.25, 2, 3) -> '01.250'
+ * padNumber(1.25, 2) -> '01.25'
+ * padNumber(1.25, 2, 1) -> '01.3'
+ * padNumber(1.25, 0) -> '1.25'</pre>
+ *
+ * @param {number} num The number to pad.
+ * @param {number} length The desired length.
+ * @param {number=} opt_precision The desired precision.
+ * @return {string} `num` as a string with the given options.
+ */
+goog.string.padNumber = function(num, length, opt_precision) {
+  var s = goog.isDef(opt_precision) ? num.toFixed(opt_precision) : String(num);
+  var index = s.indexOf('.');
+  if (index == -1) {
+    index = s.length;
+  }
+  return goog.string.repeat('0', Math.max(0, length - index)) + s;
+};
+
+
+/**
+ * Returns a string representation of the given object, with
+ * null and undefined being returned as the empty string.
+ *
+ * @param {*} obj The object to convert.
+ * @return {string} A string representation of the `obj`.
+ */
+goog.string.makeSafe = function(obj) {
+  return obj == null ? '' : String(obj);
+};
+
+
+/**
+ * Concatenates string expressions. This is useful
+ * since some browsers are very inefficient when it comes to using plus to
+ * concat strings. Be careful when using null and undefined here since
+ * these will not be included in the result. If you need to represent these
+ * be sure to cast the argument to a String first.
+ * For example:
+ * <pre>buildString('a', 'b', 'c', 'd') -> 'abcd'
+ * buildString(null, undefined) -> ''
+ * </pre>
+ * @param {...*} var_args A list of strings to concatenate. If not a string,
+ *     it will be casted to one.
+ * @return {string} The concatenation of `var_args`.
+ */
+goog.string.buildString = function(var_args) {
+  return Array.prototype.join.call(arguments, '');
+};
+
+
+/**
+ * Returns a string with at least 64-bits of randomness.
+ *
+ * Doesn't trust JavaScript's random function entirely. Uses a combination of
+ * random and current timestamp, and then encodes the string in base-36 to
+ * make it shorter.
+ *
+ * @return {string} A random string, e.g. sn1s7vb4gcic.
+ */
+goog.string.getRandomString = function() {
+  var x = 2147483648;
+  return Math.floor(Math.random() * x).toString(36) +
+      Math.abs(Math.floor(Math.random() * x) ^ goog.now()).toString(36);
+};
+
+
+/**
+ * Compares two version numbers.
+ *
+ * @param {string|number} version1 Version of first item.
+ * @param {string|number} version2 Version of second item.
+ *
+ * @return {number}  1 if `version1` is higher.
+ *                   0 if arguments are equal.
+ *                  -1 if `version2` is higher.
+ */
+goog.string.compareVersions = goog.string.internal.compareVersions;
+
+
+/**
+ * String hash function similar to java.lang.String.hashCode().
+ * The hash code for a string is computed as
+ * s[0] * 31 ^ (n - 1) + s[1] * 31 ^ (n - 2) + ... + s[n - 1],
+ * where s[i] is the ith character of the string and n is the length of
+ * the string. We mod the result to make it between 0 (inclusive) and 2^32
+ * (exclusive).
+ * @param {string} str A string.
+ * @return {number} Hash value for `str`, between 0 (inclusive) and 2^32
+ *  (exclusive). The empty string returns 0.
+ */
+goog.string.hashCode = function(str) {
+  var result = 0;
+  for (var i = 0; i < str.length; ++i) {
+    // Normalize to 4 byte range, 0 ... 2^32.
+    result = (31 * result + str.charCodeAt(i)) >>> 0;
+  }
+  return result;
+};
+
+
+/**
+ * The most recent unique ID. |0 is equivalent to Math.floor in this case.
+ * @type {number}
+ * @private
+ */
+goog.string.uniqueStringCounter_ = Math.random() * 0x80000000 | 0;
+
+
+/**
+ * Generates and returns a string which is unique in the current document.
+ * This is useful, for example, to create unique IDs for DOM elements.
+ * @return {string} A unique id.
+ */
+goog.string.createUniqueString = function() {
+  return 'goog_' + goog.string.uniqueStringCounter_++;
+};
+
+
+/**
+ * Converts the supplied string to a number, which may be Infinity or NaN.
+ * This function strips whitespace: (toNumber(' 123') === 123)
+ * This function accepts scientific notation: (toNumber('1e1') === 10)
+ *
+ * This is better than JavaScript's built-in conversions because, sadly:
+ *     (Number(' ') === 0) and (parseFloat('123a') === 123)
+ *
+ * @param {string} str The string to convert.
+ * @return {number} The number the supplied string represents, or NaN.
+ */
+goog.string.toNumber = function(str) {
+  var num = Number(str);
+  if (num == 0 && goog.string.isEmptyOrWhitespace(str)) {
+    return NaN;
+  }
+  return num;
+};
+
+
+/**
+ * Returns whether the given string is lower camel case (e.g. "isFooBar").
+ *
+ * Note that this assumes the string is entirely letters.
+ * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
+ *
+ * @param {string} str String to test.
+ * @return {boolean} Whether the string is lower camel case.
+ */
+goog.string.isLowerCamelCase = function(str) {
+  return /^[a-z]+([A-Z][a-z]*)*$/.test(str);
+};
+
+
+/**
+ * Returns whether the given string is upper camel case (e.g. "FooBarBaz").
+ *
+ * Note that this assumes the string is entirely letters.
+ * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
+ *
+ * @param {string} str String to test.
+ * @return {boolean} Whether the string is upper camel case.
+ */
+goog.string.isUpperCamelCase = function(str) {
+  return /^([A-Z][a-z]*)+$/.test(str);
+};
+
+
+/**
+ * Converts a string from selector-case to camelCase (e.g. from
+ * "multi-part-string" to "multiPartString"), useful for converting
+ * CSS selectors and HTML dataset keys to their equivalent JS properties.
+ * @param {string} str The string in selector-case form.
+ * @return {string} The string in camelCase form.
+ */
+goog.string.toCamelCase = function(str) {
+  return String(str).replace(/\-([a-z])/g, function(all, match) {
+    return match.toUpperCase();
+  });
+};
+
+
+/**
+ * Converts a string from camelCase to selector-case (e.g. from
+ * "multiPartString" to "multi-part-string"), useful for converting JS
+ * style and dataset properties to equivalent CSS selectors and HTML keys.
+ * @param {string} str The string in camelCase form.
+ * @return {string} The string in selector-case form.
+ */
+goog.string.toSelectorCase = function(str) {
+  return String(str).replace(/([A-Z])/g, '-$1').toLowerCase();
+};
+
+
+/**
+ * Converts a string into TitleCase. First character of the string is always
+ * capitalized in addition to the first letter of every subsequent word.
+ * Words are delimited by one or more whitespaces by default. Custom delimiters
+ * can optionally be specified to replace the default, which doesn't preserve
+ * whitespace delimiters and instead must be explicitly included if needed.
+ *
+ * Default delimiter => " ":
+ *    goog.string.toTitleCase('oneTwoThree')    => 'OneTwoThree'
+ *    goog.string.toTitleCase('one two three')  => 'One Two Three'
+ *    goog.string.toTitleCase('  one   two   ') => '  One   Two   '
+ *    goog.string.toTitleCase('one_two_three')  => 'One_two_three'
+ *    goog.string.toTitleCase('one-two-three')  => 'One-two-three'
+ *
+ * Custom delimiter => "_-.":
+ *    goog.string.toTitleCase('oneTwoThree', '_-.')       => 'OneTwoThree'
+ *    goog.string.toTitleCase('one two three', '_-.')     => 'One two three'
+ *    goog.string.toTitleCase('  one   two   ', '_-.')    => '  one   two   '
+ *    goog.string.toTitleCase('one_two_three', '_-.')     => 'One_Two_Three'
+ *    goog.string.toTitleCase('one-two-three', '_-.')     => 'One-Two-Three'
+ *    goog.string.toTitleCase('one...two...three', '_-.') => 'One...Two...Three'
+ *    goog.string.toTitleCase('one. two. three', '_-.')   => 'One. two. three'
+ *    goog.string.toTitleCase('one-two.three', '_-.')     => 'One-Two.Three'
+ *
+ * @param {string} str String value in camelCase form.
+ * @param {string=} opt_delimiters Custom delimiter character set used to
+ *      distinguish words in the string value. Each character represents a
+ *      single delimiter. When provided, default whitespace delimiter is
+ *      overridden and must be explicitly included if needed.
+ * @return {string} String value in TitleCase form.
+ */
+goog.string.toTitleCase = function(str, opt_delimiters) {
+  var delimiters = goog.isString(opt_delimiters) ?
+      goog.string.regExpEscape(opt_delimiters) :
+      '\\s';
+
+  // For IE8, we need to prevent using an empty character set. Otherwise,
+  // incorrect matching will occur.
+  delimiters = delimiters ? '|[' + delimiters + ']+' : '';
+
+  var regexp = new RegExp('(^' + delimiters + ')([a-z])', 'g');
+  return str.replace(regexp, function(all, p1, p2) {
+    return p1 + p2.toUpperCase();
+  });
+};
+
+
+/**
+ * Capitalizes a string, i.e. converts the first letter to uppercase
+ * and all other letters to lowercase, e.g.:
+ *
+ * goog.string.capitalize('one')     => 'One'
+ * goog.string.capitalize('ONE')     => 'One'
+ * goog.string.capitalize('one two') => 'One two'
+ *
+ * Note that this function does not trim initial whitespace.
+ *
+ * @param {string} str String value to capitalize.
+ * @return {string} String value with first letter in uppercase.
+ */
+goog.string.capitalize = function(str) {
+  return String(str.charAt(0)).toUpperCase() +
+      String(str.substr(1)).toLowerCase();
+};
+
+
+/**
+ * Parse a string in decimal or hexidecimal ('0xFFFF') form.
+ *
+ * To parse a particular radix, please use parseInt(string, radix) directly. See
+ * https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/parseInt
+ *
+ * This is a wrapper for the built-in parseInt function that will only parse
+ * numbers as base 10 or base 16.  Some JS implementations assume strings
+ * starting with "0" are intended to be octal. ES3 allowed but discouraged
+ * this behavior. ES5 forbids it.  This function emulates the ES5 behavior.
+ *
+ * For more information, see Mozilla JS Reference: http://goo.gl/8RiFj
+ *
+ * @param {string|number|null|undefined} value The value to be parsed.
+ * @return {number} The number, parsed. If the string failed to parse, this
+ *     will be NaN.
+ */
+goog.string.parseInt = function(value) {
+  // Force finite numbers to strings.
+  if (isFinite(value)) {
+    value = String(value);
+  }
+
+  if (goog.isString(value)) {
+    // If the string starts with '0x' or '-0x', parse as hex.
+    return /^\s*-?0x/i.test(value) ? parseInt(value, 16) : parseInt(value, 10);
+  }
+
+  return NaN;
+};
+
+
+/**
+ * Splits a string on a separator a limited number of times.
+ *
+ * This implementation is more similar to Python or Java, where the limit
+ * parameter specifies the maximum number of splits rather than truncating
+ * the number of results.
+ *
+ * See http://docs.python.org/2/library/stdtypes.html#str.split
+ * See JavaDoc: http://goo.gl/F2AsY
+ * See Mozilla reference: http://goo.gl/dZdZs
+ *
+ * @param {string} str String to split.
+ * @param {string} separator The separator.
+ * @param {number} limit The limit to the number of splits. The resulting array
+ *     will have a maximum length of limit+1.  Negative numbers are the same
+ *     as zero.
+ * @return {!Array<string>} The string, split.
+ */
+goog.string.splitLimit = function(str, separator, limit) {
+  var parts = str.split(separator);
+  var returnVal = [];
+
+  // Only continue doing this while we haven't hit the limit and we have
+  // parts left.
+  while (limit > 0 && parts.length) {
+    returnVal.push(parts.shift());
+    limit--;
+  }
+
+  // If there are remaining parts, append them to the end.
+  if (parts.length) {
+    returnVal.push(parts.join(separator));
+  }
+
+  return returnVal;
+};
+
+
+/**
+ * Finds the characters to the right of the last instance of any separator
+ *
+ * This function is similar to goog.string.path.baseName, except it can take a
+ * list of characters to split the string on. It will return the rightmost
+ * grouping of characters to the right of any separator as a left-to-right
+ * oriented string.
+ *
+ * @see goog.string.path.baseName
+ * @param {string} str The string
+ * @param {string|!Array<string>} separators A list of separator characters
+ * @return {string} The last part of the string with respect to the separators
+ */
+goog.string.lastComponent = function(str, separators) {
+  if (!separators) {
+    return str;
+  } else if (typeof separators == 'string') {
+    separators = [separators];
+  }
+
+  var lastSeparatorIndex = -1;
+  for (var i = 0; i < separators.length; i++) {
+    if (separators[i] == '') {
+      continue;
+    }
+    var currentSeparatorIndex = str.lastIndexOf(separators[i]);
+    if (currentSeparatorIndex > lastSeparatorIndex) {
+      lastSeparatorIndex = currentSeparatorIndex;
+    }
+  }
+  if (lastSeparatorIndex == -1) {
+    return str;
+  }
+  return str.slice(lastSeparatorIndex + 1);
+};
+
+
+/**
+ * Computes the Levenshtein edit distance between two strings.
+ * @param {string} a
+ * @param {string} b
+ * @return {number} The edit distance between the two strings.
+ */
+goog.string.editDistance = function(a, b) {
+  var v0 = [];
+  var v1 = [];
+
+  if (a == b) {
+    return 0;
+  }
+
+  if (!a.length || !b.length) {
+    return Math.max(a.length, b.length);
+  }
+
+  for (var i = 0; i < b.length + 1; i++) {
+    v0[i] = i;
+  }
+
+  for (var i = 0; i < a.length; i++) {
+    v1[0] = i + 1;
+
+    for (var j = 0; j < b.length; j++) {
+      var cost = Number(a[i] != b[j]);
+      // Cost for the substring is the minimum of adding one character, removing
+      // one character, or a swap.
+      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+    }
+
+    for (var j = 0; j < v0.length; j++) {
+      v0[j] = v1[j];
+    }
+  }
+
+  return v1[b.length];
+};
+
+//javascript/closure/labs/useragent/engine.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Closure user agent detection.
+ * @see http://en.wikipedia.org/wiki/User_agent
+ * For more information on browser brand, platform, or device see the other
+ * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
+ *
+ */
+
+goog.provide('goog.labs.userAgent.engine');
+
+goog.require('goog.array');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Presto.
+ */
+goog.labs.userAgent.engine.isPresto = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Presto');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Trident.
+ */
+goog.labs.userAgent.engine.isTrident = function() {
+  // IE only started including the Trident token in IE8.
+  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
+      goog.labs.userAgent.util.matchUserAgent('MSIE');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Edge.
+ */
+goog.labs.userAgent.engine.isEdge = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Edge');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is WebKit.
+ */
+goog.labs.userAgent.engine.isWebKit = function() {
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
+      !goog.labs.userAgent.engine.isEdge();
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Gecko.
+ */
+goog.labs.userAgent.engine.isGecko = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
+      !goog.labs.userAgent.engine.isWebKit() &&
+      !goog.labs.userAgent.engine.isTrident() &&
+      !goog.labs.userAgent.engine.isEdge();
+};
+
+
+/**
+ * @return {string} The rendering engine's version or empty string if version
+ *     can't be determined.
+ */
+goog.labs.userAgent.engine.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  if (userAgentString) {
+    var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
+
+    var engineTuple = goog.labs.userAgent.engine.getEngineTuple_(tuples);
+    if (engineTuple) {
+      // In Gecko, the version string is either in the browser info or the
+      // Firefox version.  See Gecko user agent string reference:
+      // http://goo.gl/mULqa
+      if (engineTuple[0] == 'Gecko') {
+        return goog.labs.userAgent.engine.getVersionForKey_(tuples, 'Firefox');
+      }
+
+      return engineTuple[1];
+    }
+
+    // MSIE has only one version identifier, and the Trident version is
+    // specified in the parenthetical. IE Edge is covered in the engine tuple
+    // detection.
+    var browserTuple = tuples[0];
+    var info;
+    if (browserTuple && (info = browserTuple[2])) {
+      var match = /Trident\/([^\s;]+)/.exec(info);
+      if (match) {
+        return match[1];
+      }
+    }
+  }
+  return '';
+};
+
+
+/**
+ * @param {!Array<!Array<string>>} tuples Extracted version tuples.
+ * @return {!Array<string>|undefined} The engine tuple or undefined if not
+ *     found.
+ * @private
+ */
+goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
+  if (!goog.labs.userAgent.engine.isEdge()) {
+    return tuples[1];
+  }
+  for (var i = 0; i < tuples.length; i++) {
+    var tuple = tuples[i];
+    if (tuple[0] == 'Edge') {
+      return tuple;
+    }
+  }
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the rendering engine version is higher or the same
+ *     as the given version.
+ */
+goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
+  return goog.string.compareVersions(
+             goog.labs.userAgent.engine.getVersion(), version) >= 0;
+};
+
+
+/**
+ * @param {!Array<!Array<string>>} tuples Version tuples.
+ * @param {string} key The key to look for.
+ * @return {string} The version string of the given key, if present.
+ *     Otherwise, the empty string.
+ * @private
+ */
+goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
+  // TODO(nnaze): Move to util if useful elsewhere.
+
+  var pair = goog.array.find(tuples, function(pair) { return key == pair[0]; });
+
+  return pair && pair[1] || '';
+};
+
+//javascript/closure/labs/useragent/platform.js
+// Copyright 2013 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Closure user agent platform detection.
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For more information on browser brand, rendering engine, or device see the
+ * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
+ * respectively).
+ *
+ */
+
+goog.provide('goog.labs.userAgent.platform');
+
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the platform is Android.
+ */
+goog.labs.userAgent.platform.isAndroid = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Android');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPod.
+ */
+goog.labs.userAgent.platform.isIpod = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPod');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPhone.
+ */
+goog.labs.userAgent.platform.isIphone = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPad.
+ */
+goog.labs.userAgent.platform.isIpad = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iOS.
+ */
+goog.labs.userAgent.platform.isIos = function() {
+  return goog.labs.userAgent.platform.isIphone() ||
+      goog.labs.userAgent.platform.isIpad() ||
+      goog.labs.userAgent.platform.isIpod();
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Mac.
+ */
+goog.labs.userAgent.platform.isMacintosh = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
+};
+
+
+/**
+ * Note: ChromeOS is not considered to be Linux as it does not report itself
+ * as Linux in the user agent string.
+ * @return {boolean} Whether the platform is Linux.
+ */
+goog.labs.userAgent.platform.isLinux = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Linux');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Windows.
+ */
+goog.labs.userAgent.platform.isWindows = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Windows');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is ChromeOS.
+ */
+goog.labs.userAgent.platform.isChromeOS = function() {
+  return goog.labs.userAgent.util.matchUserAgent('CrOS');
+};
+
+/**
+ * @return {boolean} Whether the platform is Chromecast.
+ */
+goog.labs.userAgent.platform.isChromecast = function() {
+  return goog.labs.userAgent.util.matchUserAgent('CrKey');
+};
+
+/**
+ * @return {boolean} Whether the platform is KaiOS.
+ */
+goog.labs.userAgent.platform.isKaiOS = function() {
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
+};
+
+/**
+ * @return {boolean} Whether the platform is Go2Phone.
+ */
+goog.labs.userAgent.platform.isGo2Phone = function() {
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('GAFP');
+};
+
+/**
+ * The version of the platform. We only determine the version for Windows,
+ * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
+ * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
+ * version 0.0.
+ *
+ * @return {string} The platform version or empty string if version cannot be
+ *     determined.
+ */
+goog.labs.userAgent.platform.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  var version = '', re;
+  if (goog.labs.userAgent.platform.isWindows()) {
+    re = /Windows (?:NT|Phone) ([0-9.]+)/;
+    var match = re.exec(userAgentString);
+    if (match) {
+      version = match[1];
+    } else {
+      version = '0.0';
+    }
+  } else if (goog.labs.userAgent.platform.isIos()) {
+    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
+    var match = re.exec(userAgentString);
+    // Report the version as x.y.z and not x_y_z
+    version = match && match[1].replace(/_/g, '.');
+  } else if (goog.labs.userAgent.platform.isMacintosh()) {
+    re = /Mac OS X ([0-9_.]+)/;
+    var match = re.exec(userAgentString);
+    // Note: some old versions of Camino do not report an OSX version.
+    // Default to 10.
+    version = match ? match[1].replace(/_/g, '.') : '10';
+  } else if (goog.labs.userAgent.platform.isKaiOS()) {
+    re = /(?:KaiOS)\/(\S+)/i;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isAndroid()) {
+    re = /Android\s+([^\);]+)(\)|;)/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isChromeOS()) {
+    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  }
+  return version || '';
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the browser version is higher or the same as the
+ *     given version.
+ */
+goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
+  return goog.string.compareVersions(
+             goog.labs.userAgent.platform.getVersion(), version) >= 0;
+};
+
+//javascript/closure/reflect/reflect.js
+// Copyright 2009 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Useful compiler idioms.
+ *
+ * @author johnlenz@google.com (John Lenz)
+ */
+
+goog.provide('goog.reflect');
+
+
+/**
+ * Syntax for object literal casts.
+ * @see http://go/jscompiler-renaming
+ * @see https://goo.gl/CRs09P
+ *
+ * Use this if you have an object literal whose keys need to have the same names
+ * as the properties of some class even after they are renamed by the compiler.
+ *
+ * @param {!Function} type Type to cast to.
+ * @param {Object} object Object literal to cast.
+ * @return {Object} The object literal.
+ */
+goog.reflect.object = function(type, object) {
+  return object;
+};
+
+/**
+ * Syntax for renaming property strings.
+ * @see http://go/jscompiler-renaming
+ * @see https://goo.gl/CRs09P
+ *
+ * Use this if you have an need to access a property as a string, but want
+ * to also have the property renamed by the compiler. In contrast to
+ * goog.reflect.object, this method takes an instance of an object.
+ *
+ * Properties must be simple names (not qualified names).
+ *
+ * @param {string} prop Name of the property
+ * @param {!Object} object Instance of the object whose type will be used
+ *     for renaming
+ * @return {string} The renamed property.
+ */
+goog.reflect.objectProperty = function(prop, object) {
+  return prop;
+};
+
+/**
+ * To assert to the compiler that an operation is needed when it would
+ * otherwise be stripped. For example:
+ * <code>
+ *     // Force a layout
+ *     goog.reflect.sinkValue(dialog.offsetHeight);
+ * </code>
+ * @param {T} x
+ * @return {T}
+ * @template T
+ */
+goog.reflect.sinkValue = function(x) {
+  goog.reflect.sinkValue[' '](x);
+  return x;
+};
+
+
+/**
+ * The compiler should optimize this function away iff no one ever uses
+ * goog.reflect.sinkValue.
+ */
+goog.reflect.sinkValue[' '] = goog.nullFunction;
+
+
+/**
+ * Check if a property can be accessed without throwing an exception.
+ * @param {Object} obj The owner of the property.
+ * @param {string} prop The property name.
+ * @return {boolean} Whether the property is accessible. Will also return true
+ *     if obj is null.
+ */
+goog.reflect.canAccessProperty = function(obj, prop) {
+
+  try {
+    goog.reflect.sinkValue(obj[prop]);
+    return true;
+  } catch (e) {
+  }
+  return false;
+};
+
+
+/**
+ * Retrieves a value from a cache given a key. The compiler provides special
+ * consideration for this call such that it is generally considered side-effect
+ * free. However, if the `opt_keyFn` or `valueFn` have side-effects
+ * then the entire call is considered to have side-effects.
+ *
+ * Conventionally storing the value on the cache would be considered a
+ * side-effect and preclude unused calls from being pruned, ie. even if
+ * the value was never used, it would still always be stored in the cache.
+ *
+ * Providing a side-effect free `valueFn` and `opt_keyFn`
+ * allows unused calls to `goog.reflect.cache` to be pruned.
+ *
+ * @param {!Object<K, V>} cacheObj The object that contains the cached values.
+ * @param {?} key The key to lookup in the cache. If it is not string or number
+ *     then a `opt_keyFn` should be provided. The key is also used as the
+ *     parameter to the `valueFn`.
+ * @param {function(?):V} valueFn The value provider to use to calculate the
+ *     value to store in the cache. This function should be side-effect free
+ *     to take advantage of the optimization.
+ * @param {function(?):K=} opt_keyFn The key provider to determine the cache
+ *     map key. This should be used if the given key is not a string or number.
+ *     If not provided then the given key is used. This function should be
+ *     side-effect free to take advantage of the optimization.
+ * @return {V} The cached or calculated value.
+ * @template K
+ * @template V
+ */
+goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
+  var storedKey = opt_keyFn ? opt_keyFn(key) : key;
+
+  if (Object.prototype.hasOwnProperty.call(cacheObj, storedKey)) {
+    return cacheObj[storedKey];
+  }
+
+  return (cacheObj[storedKey] = valueFn(key));
+};
+
+//javascript/closure/useragent/useragent.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Rendering engine detection.
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For information on the browser brand (such as Safari versus Chrome), see
+ * goog.userAgent.product.
+ * @author arv@google.com (Erik Arvidsson)
+ * @see ../demos/useragent.html
+ */
+
+goog.provide('goog.userAgent');
+
+goog.require('goog.labs.userAgent.browser');
+goog.require('goog.labs.userAgent.engine');
+goog.require('goog.labs.userAgent.platform');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.reflect');
+goog.require('goog.string');
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is IE.
+ */
+goog.userAgent.ASSUME_IE = goog.define('goog.userAgent.ASSUME_IE', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is EDGE.
+ */
+goog.userAgent.ASSUME_EDGE = goog.define('goog.userAgent.ASSUME_EDGE', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is GECKO.
+ */
+goog.userAgent.ASSUME_GECKO = goog.define('goog.userAgent.ASSUME_GECKO', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is WEBKIT.
+ */
+goog.userAgent.ASSUME_WEBKIT =
+    goog.define('goog.userAgent.ASSUME_WEBKIT', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is a
+ *     mobile device running WebKit e.g. iPhone or Android.
+ */
+goog.userAgent.ASSUME_MOBILE_WEBKIT =
+    goog.define('goog.userAgent.ASSUME_MOBILE_WEBKIT', false);
+
+
+/**
+ * @define {boolean} Whether we know at compile-time that the browser is OPERA.
+ */
+goog.userAgent.ASSUME_OPERA = goog.define('goog.userAgent.ASSUME_OPERA', false);
+
+
+/**
+ * @define {boolean} Whether the
+ *     `goog.userAgent.isVersionOrHigher`
+ *     function will return true for any version.
+ */
+goog.userAgent.ASSUME_ANY_VERSION =
+    goog.define('goog.userAgent.ASSUME_ANY_VERSION', false);
+
+
+/**
+ * Whether we know the browser engine at compile-time.
+ * @type {boolean}
+ * @private
+ */
+goog.userAgent.BROWSER_KNOWN_ = goog.userAgent.ASSUME_IE ||
+    goog.userAgent.ASSUME_EDGE || goog.userAgent.ASSUME_GECKO ||
+    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.ASSUME_WEBKIT ||
+    goog.userAgent.ASSUME_OPERA;
+
+
+/**
+ * Returns the userAgent string for the current browser.
+ *
+ * @return {string} The userAgent string.
+ */
+goog.userAgent.getUserAgentString = function() {
+  return goog.labs.userAgent.util.getUserAgent();
+};
+
+
+/**
+ * @return {?Navigator} The native navigator object.
+ */
+goog.userAgent.getNavigatorTyped = function() {
+  // Need a local navigator reference instead of using the global one,
+  // to avoid the rare case where they reference different objects.
+  // (in a WorkerPool, for example).
+  return goog.global['navigator'] || null;
+};
+
+
+/**
+ * TODO(nnaze): Change type to "Navigator" and update compilation targets.
+ * @return {?Object} The native navigator object.
+ */
+goog.userAgent.getNavigator = function() {
+  return goog.userAgent.getNavigatorTyped();
+};
+
+
+/**
+ * Whether the user agent is Opera.
+ * @type {boolean}
+ */
+goog.userAgent.OPERA = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_OPERA :
+    goog.labs.userAgent.browser.isOpera();
+
+
+/**
+ * Whether the user agent is Internet Explorer.
+ * @type {boolean}
+ */
+goog.userAgent.IE = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_IE :
+    goog.labs.userAgent.browser.isIE();
+
+
+/**
+ * Whether the user agent is Microsoft Edge.
+ * @type {boolean}
+ */
+goog.userAgent.EDGE = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_EDGE :
+    goog.labs.userAgent.engine.isEdge();
+
+
+/**
+ * Whether the user agent is MS Internet Explorer or MS Edge.
+ * @type {boolean}
+ */
+goog.userAgent.EDGE_OR_IE = goog.userAgent.EDGE || goog.userAgent.IE;
+
+
+/**
+ * Whether the user agent is Gecko. Gecko is the rendering engine used by
+ * Mozilla, Firefox, and others.
+ * @type {boolean}
+ */
+goog.userAgent.GECKO = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_GECKO :
+    goog.labs.userAgent.engine.isGecko();
+
+
+/**
+ * Whether the user agent is WebKit. WebKit is the rendering engine that
+ * Safari, Android and others use.
+ * @type {boolean}
+ */
+goog.userAgent.WEBKIT = goog.userAgent.BROWSER_KNOWN_ ?
+    goog.userAgent.ASSUME_WEBKIT || goog.userAgent.ASSUME_MOBILE_WEBKIT :
+    goog.labs.userAgent.engine.isWebKit();
+
+
+/**
+ * Whether the user agent is running on a mobile device.
+ *
+ * This is a separate function so that the logic can be tested.
+ *
+ * TODO(nnaze): Investigate swapping in goog.labs.userAgent.device.isMobile().
+ *
+ * @return {boolean} Whether the user agent is running on a mobile device.
+ * @private
+ */
+goog.userAgent.isMobile_ = function() {
+  return goog.userAgent.WEBKIT &&
+      goog.labs.userAgent.util.matchUserAgent('Mobile');
+};
+
+
+/**
+ * Whether the user agent is running on a mobile device.
+ *
+ * TODO(nnaze): Consider deprecating MOBILE when labs.userAgent
+ *   is promoted as the gecko/webkit logic is likely inaccurate.
+ *
+ * @type {boolean}
+ */
+goog.userAgent.MOBILE =
+    goog.userAgent.ASSUME_MOBILE_WEBKIT || goog.userAgent.isMobile_();
+
+
+/**
+ * Used while transitioning code to use WEBKIT instead.
+ * @type {boolean}
+ * @deprecated Use {@link goog.userAgent.product.SAFARI} instead.
+ * TODO(nicksantos): Delete this from goog.userAgent.
+ */
+goog.userAgent.SAFARI = goog.userAgent.WEBKIT;
+
+
+/**
+ * @return {string} the platform (operating system) the user agent is running
+ *     on. Default to empty string because navigator.platform may not be defined
+ *     (on Rhino, for example).
+ * @private
+ */
+goog.userAgent.determinePlatform_ = function() {
+  var navigator = goog.userAgent.getNavigatorTyped();
+  return navigator && navigator.platform || '';
+};
+
+
+/**
+ * The platform (operating system) the user agent is running on. Default to
+ * empty string because navigator.platform may not be defined (on Rhino, for
+ * example).
+ * @type {string}
+ */
+goog.userAgent.PLATFORM = goog.userAgent.determinePlatform_();
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a Macintosh operating
+ *     system.
+ */
+goog.userAgent.ASSUME_MAC = goog.define('goog.userAgent.ASSUME_MAC', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a Windows operating
+ *     system.
+ */
+goog.userAgent.ASSUME_WINDOWS =
+    goog.define('goog.userAgent.ASSUME_WINDOWS', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a Linux operating
+ *     system.
+ */
+goog.userAgent.ASSUME_LINUX = goog.define('goog.userAgent.ASSUME_LINUX', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on a X11 windowing
+ *     system.
+ */
+goog.userAgent.ASSUME_X11 = goog.define('goog.userAgent.ASSUME_X11', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on Android.
+ */
+goog.userAgent.ASSUME_ANDROID =
+    goog.define('goog.userAgent.ASSUME_ANDROID', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on an iPhone.
+ */
+goog.userAgent.ASSUME_IPHONE =
+    goog.define('goog.userAgent.ASSUME_IPHONE', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on an iPad.
+ */
+goog.userAgent.ASSUME_IPAD = goog.define('goog.userAgent.ASSUME_IPAD', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on an iPod.
+ */
+goog.userAgent.ASSUME_IPOD = goog.define('goog.userAgent.ASSUME_IPOD', false);
+
+
+/**
+ * @define {boolean} Whether the user agent is running on KaiOS.
+ */
+goog.userAgent.ASSUME_KAIOS = goog.define('goog.userAgent.ASSUME_KAIOS', false);
+
+/**
+ * @define {boolean} Whether the user agent is running on Go2Phone.
+ */
+goog.userAgent.ASSUME_GO2PHONE =
+    goog.define('goog.userAgent.ASSUME_GO2PHONE', false);
+
+
+/**
+ * @type {boolean}
+ * @private
+ */
+goog.userAgent.PLATFORM_KNOWN_ = goog.userAgent.ASSUME_MAC ||
+    goog.userAgent.ASSUME_WINDOWS || goog.userAgent.ASSUME_LINUX ||
+    goog.userAgent.ASSUME_X11 || goog.userAgent.ASSUME_ANDROID ||
+    goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
+    goog.userAgent.ASSUME_IPOD;
+
+
+/**
+ * Whether the user agent is running on a Macintosh operating system.
+ * @type {boolean}
+ */
+goog.userAgent.MAC = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_MAC :
+    goog.labs.userAgent.platform.isMacintosh();
+
+
+/**
+ * Whether the user agent is running on a Windows operating system.
+ * @type {boolean}
+ */
+goog.userAgent.WINDOWS = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_WINDOWS :
+    goog.labs.userAgent.platform.isWindows();
+
+
+/**
+ * Whether the user agent is Linux per the legacy behavior of
+ * goog.userAgent.LINUX, which considered ChromeOS to also be
+ * Linux.
+ * @return {boolean}
+ * @private
+ */
+goog.userAgent.isLegacyLinux_ = function() {
+  return goog.labs.userAgent.platform.isLinux() ||
+      goog.labs.userAgent.platform.isChromeOS();
+};
+
+
+/**
+ * Whether the user agent is running on a Linux operating system.
+ *
+ * Note that goog.userAgent.LINUX considers ChromeOS to be Linux,
+ * while goog.labs.userAgent.platform considers ChromeOS and
+ * Linux to be different OSes.
+ *
+ * @type {boolean}
+ */
+goog.userAgent.LINUX = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_LINUX :
+    goog.userAgent.isLegacyLinux_();
+
+
+/**
+ * @return {boolean} Whether the user agent is an X11 windowing system.
+ * @private
+ */
+goog.userAgent.isX11_ = function() {
+  var navigator = goog.userAgent.getNavigatorTyped();
+  return !!navigator &&
+      goog.string.contains(navigator['appVersion'] || '', 'X11');
+};
+
+
+/**
+ * Whether the user agent is running on a X11 windowing system.
+ * @type {boolean}
+ */
+goog.userAgent.X11 = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_X11 :
+    goog.userAgent.isX11_();
+
+
+/**
+ * Whether the user agent is running on Android.
+ * @type {boolean}
+ */
+goog.userAgent.ANDROID = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_ANDROID :
+    goog.labs.userAgent.platform.isAndroid();
+
+
+/**
+ * Whether the user agent is running on an iPhone.
+ * @type {boolean}
+ */
+goog.userAgent.IPHONE = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_IPHONE :
+    goog.labs.userAgent.platform.isIphone();
+
+
+/**
+ * Whether the user agent is running on an iPad.
+ * @type {boolean}
+ */
+goog.userAgent.IPAD = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_IPAD :
+    goog.labs.userAgent.platform.isIpad();
+
+
+/**
+ * Whether the user agent is running on an iPod.
+ * @type {boolean}
+ */
+goog.userAgent.IPOD = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_IPOD :
+    goog.labs.userAgent.platform.isIpod();
+
+
+/**
+ * Whether the user agent is running on iOS.
+ * @type {boolean}
+ */
+goog.userAgent.IOS = goog.userAgent.PLATFORM_KNOWN_ ?
+    (goog.userAgent.ASSUME_IPHONE || goog.userAgent.ASSUME_IPAD ||
+     goog.userAgent.ASSUME_IPOD) :
+    goog.labs.userAgent.platform.isIos();
+
+/**
+ * Whether the user agent is running on KaiOS.
+ */
+goog.userAgent.KAIOS = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_KAIOS :
+    goog.labs.userAgent.platform.isKaiOS();
+
+/**
+ * Whether the user agent is running on Go2Phone.
+ */
+goog.userAgent.GO2PHONE = goog.userAgent.PLATFORM_KNOWN_ ?
+    goog.userAgent.ASSUME_GO2PHONE :
+    goog.labs.userAgent.platform.isGo2Phone();
+
+
+/**
+ * @return {string} The string that describes the version number of the user
+ *     agent.
+ * @private
+ */
+goog.userAgent.determineVersion_ = function() {
+  // All browsers have different ways to detect the version and they all have
+  // different naming schemes.
+  // version is a string rather than a number because it may contain 'b', 'a',
+  // and so on.
+  var version = '';
+  var arr = goog.userAgent.getVersionRegexResult_();
+  if (arr) {
+    version = arr ? arr[1] : '';
+  }
+
+  if (goog.userAgent.IE) {
+    // IE9 can be in document mode 9 but be reporting an inconsistent user agent
+    // version.  If it is identifying as a version lower than 9 we take the
+    // documentMode as the version instead.  IE8 has similar behavior.
+    // It is recommended to set the X-UA-Compatible header to ensure that IE9
+    // uses documentMode 9.
+    var docMode = goog.userAgent.getDocumentMode_();
+    if (docMode != null && docMode > parseFloat(version)) {
+      return String(docMode);
+    }
+  }
+
+  return version;
+};
+
+
+/**
+ * @return {?IArrayLike<string>|undefined} The version regex matches from
+ *     parsing the user
+ *     agent string. These regex statements must be executed inline so they can
+ *     be compiled out by the closure compiler with the rest of the useragent
+ *     detection logic when ASSUME_* is specified.
+ * @private
+ */
+goog.userAgent.getVersionRegexResult_ = function() {
+  var userAgent = goog.userAgent.getUserAgentString();
+  if (goog.userAgent.GECKO) {
+    return /rv\:([^\);]+)(\)|;)/.exec(userAgent);
+  }
+  if (goog.userAgent.EDGE) {
+    return /Edge\/([\d\.]+)/.exec(userAgent);
+  }
+  if (goog.userAgent.IE) {
+    return /\b(?:MSIE|rv)[: ]([^\);]+)(\)|;)/.exec(userAgent);
+  }
+  if (goog.userAgent.WEBKIT) {
+    // WebKit/125.4
+    return /WebKit\/(\S+)/.exec(userAgent);
+  }
+  if (goog.userAgent.OPERA) {
+    // If none of the above browsers were detected but the browser is Opera, the
+    // only string that is of interest is 'Version/<number>'.
+    return /(?:Version)[ \/]?(\S+)/.exec(userAgent);
+  }
+  return undefined;
+};
+
+
+/**
+ * @return {number|undefined} Returns the document mode (for testing).
+ * @private
+ */
+goog.userAgent.getDocumentMode_ = function() {
+  // NOTE(user): goog.userAgent may be used in context where there is no DOM.
+  var doc = goog.global['document'];
+  return doc ? doc['documentMode'] : undefined;
+};
+
+
+/**
+ * The version of the user agent. This is a string because it might contain
+ * 'b' (as in beta) as well as multiple dots.
+ * @type {string}
+ */
+goog.userAgent.VERSION = goog.userAgent.determineVersion_();
+
+
+/**
+ * Compares two version numbers.
+ *
+ * @param {string} v1 Version of first item.
+ * @param {string} v2 Version of second item.
+ *
+ * @return {number}  1 if first argument is higher
+ *                   0 if arguments are equal
+ *                  -1 if second argument is higher.
+ * @deprecated Use goog.string.compareVersions.
+ */
+goog.userAgent.compare = function(v1, v2) {
+  return goog.string.compareVersions(v1, v2);
+};
+
+
+/**
+ * Cache for {@link goog.userAgent.isVersionOrHigher}.
+ * Calls to compareVersions are surprisingly expensive and, as a browser's
+ * version number is unlikely to change during a session, we cache the results.
+ * @const
+ * @private
+ */
+goog.userAgent.isVersionOrHigherCache_ = {};
+
+
+/**
+ * Whether the user agent version is higher or the same as the given version.
+ * NOTE: When checking the version numbers for Firefox and Safari, be sure to
+ * use the engine's version, not the browser's version number.  For example,
+ * Firefox 3.0 corresponds to Gecko 1.9 and Safari 3.0 to Webkit 522.11.
+ * Opera and Internet Explorer versions match the product release number.<br>
+ * @see <a href="http://en.wikipedia.org/wiki/Safari_version_history">
+ *     Webkit</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Gecko_engine">Gecko</a>
+ *
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the user agent version is higher or the same as
+ *     the given version.
+ */
+goog.userAgent.isVersionOrHigher = function(version) {
+  return goog.userAgent.ASSUME_ANY_VERSION ||
+      goog.reflect.cache(
+          goog.userAgent.isVersionOrHigherCache_, version, function() {
+            return goog.string.compareVersions(
+                       goog.userAgent.VERSION, version) >= 0;
+          });
+};
+
+
+/**
+ * Deprecated alias to `goog.userAgent.isVersionOrHigher`.
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the user agent version is higher or the same as
+ *     the given version.
+ * @deprecated Use goog.userAgent.isVersionOrHigher().
+ */
+goog.userAgent.isVersion = goog.userAgent.isVersionOrHigher;
+
+
+/**
+ * Whether the IE effective document mode is higher or the same as the given
+ * document mode version.
+ * NOTE: Only for IE, return false for another browser.
+ *
+ * @param {number} documentMode The document mode version to check.
+ * @return {boolean} Whether the IE effective document mode is higher or the
+ *     same as the given version.
+ */
+goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
+  return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
+};
+
+
+/**
+ * Deprecated alias to `goog.userAgent.isDocumentModeOrHigher`.
+ * @param {number} version The version to check.
+ * @return {boolean} Whether the IE effective document mode is higher or the
+ *      same as the given version.
+ * @deprecated Use goog.userAgent.isDocumentModeOrHigher().
+ */
+goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
+
+
+/**
+ * For IE version < 7, documentMode is undefined, so attempt to use the
+ * CSS1Compat property to see if we are in standards mode. If we are in
+ * standards mode, treat the browser version as the document mode. Otherwise,
+ * IE is emulating version 5.
+ * @type {number|undefined}
+ * @const
+ */
+goog.userAgent.DOCUMENT_MODE = (function() {
+  var doc = goog.global['document'];
+  var mode = goog.userAgent.getDocumentMode_();
+  if (!doc || !goog.userAgent.IE) {
+    return undefined;
+  }
+  return mode || (doc['compatMode'] == 'CSS1Compat' ?
+                      parseInt(goog.userAgent.VERSION, 10) :
+                      5);
+})();
+
+//javascript/closure/debug/debug.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Logging and debugging utilities.
+ *
+ * @see ../demos/debug.html
+ */
+
+goog.provide('goog.debug');
+
+goog.require('goog.array');
+goog.require('goog.debug.errorcontext');
+goog.require('goog.userAgent');
+
+
+/** @define {boolean} Whether logging should be enabled. */
+goog.debug.LOGGING_ENABLED =
+    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
+
+
+/** @define {boolean} Whether to force "sloppy" stack building. */
+goog.debug.FORCE_SLOPPY_STACKS =
+    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
+
+
+/**
+ * Catches onerror events fired by windows and similar objects.
+ * @param {function(Object)} logFunc The function to call with the error
+ *    information.
+ * @param {boolean=} opt_cancel Whether to stop the error from reaching the
+ *    browser.
+ * @param {Object=} opt_target Object that fires onerror events.
+ * @suppress {strictMissingProperties} onerror is not defined as a property
+ *    on Object.
+ */
+goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
+  var target = opt_target || goog.global;
+  var oldErrorHandler = target.onerror;
+  var retVal = !!opt_cancel;
+
+  // Chrome interprets onerror return value backwards (http://crbug.com/92062)
+  // until it was fixed in webkit revision r94061 (Webkit 535.3). This
+  // workaround still needs to be skipped in Safari after the webkit change
+  // gets pushed out in Safari.
+  // See https://bugs.webkit.org/show_bug.cgi?id=67119
+  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher('535.3')) {
+    retVal = !retVal;
+  }
+
+  /**
+   * New onerror handler for this target. This onerror handler follows the spec
+   * according to
+   * http://www.whatwg.org/specs/web-apps/current-work/#runtime-script-errors
+   * The spec was changed in August 2013 to support receiving column information
+   * and an error object for all scripts on the same origin or cross origin
+   * scripts with the proper headers. See
+   * https://mikewest.org/2013/08/debugging-runtime-errors-with-window-onerror
+   *
+   * @param {string} message The error message. For cross-origin errors, this
+   *     will be scrubbed to just "Script error.". For new browsers that have
+   *     updated to follow the latest spec, errors that come from origins that
+   *     have proper cross origin headers will not be scrubbed.
+   * @param {string} url The URL of the script that caused the error. The URL
+   *     will be scrubbed to "" for cross origin scripts unless the script has
+   *     proper cross origin headers and the browser has updated to the latest
+   *     spec.
+   * @param {number} line The line number in the script that the error
+   *     occurred on.
+   * @param {number=} opt_col The optional column number that the error
+   *     occurred on. Only browsers that have updated to the latest spec will
+   *     include this.
+   * @param {Error=} opt_error The optional actual error object for this
+   *     error that should include the stack. Only browsers that have updated
+   *     to the latest spec will inlude this parameter.
+   * @return {boolean} Whether to prevent the error from reaching the browser.
+   */
+  target.onerror = function(message, url, line, opt_col, opt_error) {
+    if (oldErrorHandler) {
+      oldErrorHandler(message, url, line, opt_col, opt_error);
+    }
+    logFunc({
+      message: message,
+      fileName: url,
+      line: line,
+      lineNumber: line,
+      col: opt_col,
+      error: opt_error
+    });
+    return retVal;
+  };
+};
+
+
+/**
+ * Creates a string representing an object and all its properties.
+ * @param {Object|null|undefined} obj Object to expose.
+ * @param {boolean=} opt_showFn Show the functions as well as the properties,
+ *     default is false.
+ * @return {string} The string representation of `obj`.
+ */
+goog.debug.expose = function(obj, opt_showFn) {
+  if (typeof obj == 'undefined') {
+    return 'undefined';
+  }
+  if (obj == null) {
+    return 'NULL';
+  }
+  var str = [];
+
+  for (var x in obj) {
+    if (!opt_showFn && goog.isFunction(obj[x])) {
+      continue;
+    }
+    var s = x + ' = ';
+
+    try {
+      s += obj[x];
+    } catch (e) {
+      s += '*** ' + e + ' ***';
+    }
+    str.push(s);
+  }
+  return str.join('\n');
+};
+
+
+/**
+ * Creates a string representing a given primitive or object, and for an
+ * object, all its properties and nested objects. NOTE: The output will include
+ * Uids on all objects that were exposed. Any added Uids will be removed before
+ * returning.
+ * @param {*} obj Object to expose.
+ * @param {boolean=} opt_showFn Also show properties that are functions (by
+ *     default, functions are omitted).
+ * @return {string} A string representation of `obj`.
+ */
+goog.debug.deepExpose = function(obj, opt_showFn) {
+  var str = [];
+
+  // Track any objects where deepExpose added a Uid, so they can be cleaned up
+  // before return. We do this globally, rather than only on ancestors so that
+  // if the same object appears in the output, you can see it.
+  var uidsToCleanup = [];
+  var ancestorUids = {};
+
+  var helper = function(obj, space) {
+    var nestspace = space + '  ';
+
+    var indentMultiline = function(str) {
+      return str.replace(/\n/g, '\n' + space);
+    };
+
+
+    try {
+      if (!goog.isDef(obj)) {
+        str.push('undefined');
+      } else if (goog.isNull(obj)) {
+        str.push('NULL');
+      } else if (goog.isString(obj)) {
+        str.push('"' + indentMultiline(obj) + '"');
+      } else if (goog.isFunction(obj)) {
+        str.push(indentMultiline(String(obj)));
+      } else if (goog.isObject(obj)) {
+        // Add a Uid if needed. The struct calls implicitly adds them.
+        if (!goog.hasUid(obj)) {
+          uidsToCleanup.push(obj);
+        }
+        var uid = goog.getUid(obj);
+        if (ancestorUids[uid]) {
+          str.push('*** reference loop detected (id=' + uid + ') ***');
+        } else {
+          ancestorUids[uid] = true;
+          str.push('{');
+          for (var x in obj) {
+            if (!opt_showFn && goog.isFunction(obj[x])) {
+              continue;
+            }
+            str.push('\n');
+            str.push(nestspace);
+            str.push(x + ' = ');
+            helper(obj[x], nestspace);
+          }
+          str.push('\n' + space + '}');
+          delete ancestorUids[uid];
+        }
+      } else {
+        str.push(obj);
+      }
+    } catch (e) {
+      str.push('*** ' + e + ' ***');
+    }
+  };
+
+  helper(obj, '');
+
+  // Cleanup any Uids that were added by the deepExpose.
+  for (var i = 0; i < uidsToCleanup.length; i++) {
+    goog.removeUid(uidsToCleanup[i]);
+  }
+
+  return str.join('');
+};
+
+
+/**
+ * Recursively outputs a nested array as a string.
+ * @param {Array<?>} arr The array.
+ * @return {string} String representing nested array.
+ */
+goog.debug.exposeArray = function(arr) {
+  var str = [];
+  for (var i = 0; i < arr.length; i++) {
+    if (goog.isArray(arr[i])) {
+      str.push(goog.debug.exposeArray(arr[i]));
+    } else {
+      str.push(arr[i]);
+    }
+  }
+  return '[ ' + str.join(', ') + ' ]';
+};
+
+
+/**
+ * Normalizes the error/exception object between browsers.
+ * @param {*} err Raw error object.
+ * @return {{
+ *    message: (?|undefined),
+ *    name: (?|undefined),
+ *    lineNumber: (?|undefined),
+ *    fileName: (?|undefined),
+ *    stack: (?|undefined)
+ * }} Normalized error object.
+ * @suppress {strictMissingProperties} properties not defined on err
+ */
+goog.debug.normalizeErrorObject = function(err) {
+  var href = goog.getObjectByName('window.location.href');
+  if (err == null) {
+    err = 'Unknown Error of type "null/undefined"';
+  }
+  if (goog.isString(err)) {
+    return {
+      'message': err,
+      'name': 'Unknown error',
+      'lineNumber': 'Not available',
+      'fileName': href,
+      'stack': 'Not available'
+    };
+  }
+
+  var lineNumber, fileName;
+  var threwError = false;
+
+  try {
+    lineNumber = err.lineNumber || err.line || 'Not available';
+  } catch (e) {
+    // Firefox 2 sometimes throws an error when accessing 'lineNumber':
+    // Message: Permission denied to get property UnnamedClass.lineNumber
+    lineNumber = 'Not available';
+    threwError = true;
+  }
+
+  try {
+    fileName = err.fileName || err.filename || err.sourceURL ||
+        // $googDebugFname may be set before a call to eval to set the filename
+        // that the eval is supposed to present.
+        goog.global['$googDebugFname'] || href;
+  } catch (e) {
+    // Firefox 2 may also throw an error when accessing 'filename'.
+    fileName = 'Not available';
+    threwError = true;
+  }
+
+  // The IE Error object contains only the name and the message.
+  // The Safari Error object uses the line and sourceURL fields.
+  if (threwError || !err.lineNumber || !err.fileName || !err.stack ||
+      !err.message || !err.name) {
+    var message = err.message;
+    if (message == null) {
+      if (err.constructor && err.constructor instanceof Function) {
+        var ctorName = err.constructor.name ?
+            err.constructor.name :
+            goog.debug.getFunctionName(err.constructor);
+        message = 'Unknown Error of type "' + ctorName + '"';
+      } else {
+        message = 'Unknown Error of unknown type';
+      }
+    }
+    return {
+      'message': message,
+      'name': err.name || 'UnknownError',
+      'lineNumber': lineNumber,
+      'fileName': fileName,
+      'stack': err.stack || 'Not available'
+    };
+  }
+
+  // Standards error object
+  // Typed !Object. Should be a subtype of the return type, but it's not.
+  return /** @type {?} */ (err);
+};
+
+
+/**
+ * Converts an object to an Error using the object's toString if it's not
+ * already an Error, adds a stacktrace if there isn't one, and optionally adds
+ * an extra message.
+ * @param {*} err The original thrown error, object, or string.
+ * @param {string=} opt_message  optional additional message to add to the
+ *     error.
+ * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
+ *     it is converted to an Error which is enhanced and returned.
+ */
+goog.debug.enhanceError = function(err, opt_message) {
+  var error;
+  if (!(err instanceof Error)) {
+    error = Error(err);
+    if (Error.captureStackTrace) {
+      // Trim this function off the call stack, if we can.
+      Error.captureStackTrace(error, goog.debug.enhanceError);
+    }
+  } else {
+    error = err;
+  }
+
+  if (!error.stack) {
+    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
+  }
+  if (opt_message) {
+    // find the first unoccupied 'messageX' property
+    var x = 0;
+    while (error['message' + x]) {
+      ++x;
+    }
+    error['message' + x] = String(opt_message);
+  }
+  return error;
+};
+
+
+/**
+ * Converts an object to an Error using the object's toString if it's not
+ * already an Error, adds a stacktrace if there isn't one, and optionally adds
+ * context to the Error, which is reported by the closure error reporter.
+ * @param {*} err The original thrown error, object, or string.
+ * @param {!Object<string, string>=} opt_context Key-value context to add to the
+ *     Error.
+ * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
+ *     it is converted to an Error which is enhanced and returned.
+ */
+goog.debug.enhanceErrorWithContext = function(err, opt_context) {
+  var error = goog.debug.enhanceError(err);
+  if (opt_context) {
+    for (var key in opt_context) {
+      goog.debug.errorcontext.addErrorContext(error, key, opt_context[key]);
+    }
+  }
+  return error;
+};
+
+
+/**
+ * Gets the current stack trace. Simple and iterative - doesn't worry about
+ * catching circular references or getting the args.
+ * @param {number=} opt_depth Optional maximum depth to trace back to.
+ * @return {string} A string with the function names of all functions in the
+ *     stack, separated by \n.
+ * @suppress {es5Strict}
+ */
+goog.debug.getStacktraceSimple = function(opt_depth) {
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
+    if (stack) {
+      return stack;
+    }
+    // NOTE: browsers that have strict mode support also have native "stack"
+    // properties.  Fall-through for legacy browser support.
+  }
+
+  var sb = [];
+  var fn = arguments.callee.caller;
+  var depth = 0;
+
+  while (fn && (!opt_depth || depth < opt_depth)) {
+    sb.push(goog.debug.getFunctionName(fn));
+    sb.push('()\n');
+
+    try {
+      fn = fn.caller;
+    } catch (e) {
+      sb.push('[exception trying to get caller]\n');
+      break;
+    }
+    depth++;
+    if (depth >= goog.debug.MAX_STACK_DEPTH) {
+      sb.push('[...long stack...]');
+      break;
+    }
+  }
+  if (opt_depth && depth >= opt_depth) {
+    sb.push('[...reached max depth limit...]');
+  } else {
+    sb.push('[end]');
+  }
+
+  return sb.join('');
+};
+
+
+/**
+ * Max length of stack to try and output
+ * @type {number}
+ */
+goog.debug.MAX_STACK_DEPTH = 50;
+
+
+/**
+ * @param {Function} fn The function to start getting the trace from.
+ * @return {?string}
+ * @private
+ */
+goog.debug.getNativeStackTrace_ = function(fn) {
+  var tempErr = new Error();
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(tempErr, fn);
+    return String(tempErr.stack);
+  } else {
+    // IE10, only adds stack traces when an exception is thrown.
+    try {
+      throw tempErr;
+    } catch (e) {
+      tempErr = e;
+    }
+    var stack = tempErr.stack;
+    if (stack) {
+      return String(stack);
+    }
+  }
+  return null;
+};
+
+
+/**
+ * Gets the current stack trace, either starting from the caller or starting
+ * from a specified function that's currently on the call stack.
+ * @param {?Function=} fn If provided, when collecting the stack trace all
+ *     frames above the topmost call to this function, including that call,
+ *     will be left out of the stack trace.
+ * @return {string} Stack trace.
+ * @suppress {es5Strict}
+ */
+goog.debug.getStacktrace = function(fn) {
+  var stack;
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    // Try to get the stack trace from the environment if it is available.
+    var contextFn = fn || goog.debug.getStacktrace;
+    stack = goog.debug.getNativeStackTrace_(contextFn);
+  }
+  if (!stack) {
+    // NOTE: browsers that have strict mode support also have native "stack"
+    // properties. This function will throw in strict mode.
+    stack = goog.debug.getStacktraceHelper_(fn || arguments.callee.caller, []);
+  }
+  return stack;
+};
+
+
+/**
+ * Private helper for getStacktrace().
+ * @param {?Function} fn If provided, when collecting the stack trace all
+ *     frames above the topmost call to this function, including that call,
+ *     will be left out of the stack trace.
+ * @param {Array<!Function>} visited List of functions visited so far.
+ * @return {string} Stack trace starting from function fn.
+ * @suppress {es5Strict}
+ * @private
+ */
+goog.debug.getStacktraceHelper_ = function(fn, visited) {
+  var sb = [];
+
+  // Circular reference, certain functions like bind seem to cause a recursive
+  // loop so we need to catch circular references
+  if (goog.array.contains(visited, fn)) {
+    sb.push('[...circular reference...]');
+
+    // Traverse the call stack until function not found or max depth is reached
+  } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
+    sb.push(goog.debug.getFunctionName(fn) + '(');
+    var args = fn.arguments;
+    // Args may be null for some special functions such as host objects or eval.
+    for (var i = 0; args && i < args.length; i++) {
+      if (i > 0) {
+        sb.push(', ');
+      }
+      var argDesc;
+      var arg = args[i];
+      switch (typeof arg) {
+        case 'object':
+          argDesc = arg ? 'object' : 'null';
+          break;
+
+        case 'string':
+          argDesc = arg;
+          break;
+
+        case 'number':
+          argDesc = String(arg);
+          break;
+
+        case 'boolean':
+          argDesc = arg ? 'true' : 'false';
+          break;
+
+        case 'function':
+          argDesc = goog.debug.getFunctionName(arg);
+          argDesc = argDesc ? argDesc : '[fn]';
+          break;
+
+        case 'undefined':
+        default:
+          argDesc = typeof arg;
+          break;
+      }
+
+      if (argDesc.length > 40) {
+        argDesc = argDesc.substr(0, 40) + '...';
+      }
+      sb.push(argDesc);
+    }
+    visited.push(fn);
+    sb.push(')\n');
+
+    try {
+      sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
+    } catch (e) {
+      sb.push('[exception trying to get caller]\n');
+    }
+
+  } else if (fn) {
+    sb.push('[...long stack...]');
+  } else {
+    sb.push('[end]');
+  }
+  return sb.join('');
+};
+
+
+/**
+ * Gets a function name
+ * @param {Function} fn Function to get name of.
+ * @return {string} Function's name.
+ */
+goog.debug.getFunctionName = function(fn) {
+  if (goog.debug.fnNameCache_[fn]) {
+    return goog.debug.fnNameCache_[fn];
+  }
+
+  // Heuristically determine function name based on code.
+  var functionSource = String(fn);
+  if (!goog.debug.fnNameCache_[functionSource]) {
+    var matches = /function\s+([^\(]+)/m.exec(functionSource);
+    if (matches) {
+      var method = matches[1];
+      goog.debug.fnNameCache_[functionSource] = method;
+    } else {
+      goog.debug.fnNameCache_[functionSource] = '[Anonymous]';
+    }
+  }
+
+  return goog.debug.fnNameCache_[functionSource];
+};
+
+
+/**
+ * Makes whitespace visible by replacing it with printable characters.
+ * This is useful in finding diffrences between the expected and the actual
+ * output strings of a testcase.
+ * @param {string} string whose whitespace needs to be made visible.
+ * @return {string} string whose whitespace is made visible.
+ */
+goog.debug.makeWhitespaceVisible = function(string) {
+  return string.replace(/ /g, '[_]')
+      .replace(/\f/g, '[f]')
+      .replace(/\n/g, '[n]\n')
+      .replace(/\r/g, '[r]')
+      .replace(/\t/g, '[t]');
+};
+
+
+/**
+ * Returns the type of a value. If a constructor is passed, and a suitable
+ * string cannot be found, 'unknown type name' will be returned.
+ *
+ * <p>Forked rather than moved from {@link goog.asserts.getType_}
+ * to avoid adding a dependency to goog.asserts.
+ * @param {*} value A constructor, object, or primitive.
+ * @return {string} The best display name for the value, or 'unknown type name'.
+ */
+goog.debug.runtimeType = function(value) {
+  if (value instanceof Function) {
+    return value.displayName || value.name || 'unknown type name';
+  } else if (value instanceof Object) {
+    return /** @type {string} */ (value.constructor.displayName) ||
+        value.constructor.name || Object.prototype.toString.call(value);
+  } else {
+    return value === null ? 'null' : typeof value;
+  }
+};
+
+
+/**
+ * Hash map for storing function names that have already been looked up.
+ * @type {Object}
+ * @private
+ */
+goog.debug.fnNameCache_ = {};
+
+
+/**
+ * Private internal function to support goog.debug.freeze.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ * @private
+ */
+goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
+  return arg;
+};
+
+
+/**
+ * Freezes the given object, but only in debug mode (and in browsers that
+ * support it).  Note that this is a shallow freeze, so for deeply nested
+ * objects it must be called at every level to ensure deep immutability.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ */
+goog.debug.freeze = function(arg) {
+  // NOTE: this compiles to nothing, but hides the possible side effect of
+  // freezeInternal_ from the compiler so that the entire call can be
+  // removed if the result is not used.
+  return {
+    valueOf: function() {
+      return goog.debug.freezeInternal_(arg);
+    }
+  }.valueOf();
+};
+
+//javascript/closure/i18n/uchar.js
+// Copyright 2009 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Collection of utility functions for Unicode character.
+ *
+ */
+
+goog.provide('goog.i18n.uChar');
+
+
+// Constants for handling Unicode supplementary characters (surrogate pairs).
+
+
+/**
+ * The minimum value for Supplementary code points.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
+
+
+/**
+ * The highest Unicode code point value (scalar value) according to the Unicode
+ * Standard.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
+
+
+/**
+ * Lead surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
+
+
+/**
+ * Lead surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
+
+
+/**
+ * Trail surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
+
+
+/**
+ * Trail surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
+
+
+/**
+ * The number of least significant bits of a supplementary code point that in
+ * UTF-16 become the least significant bits of the trail surrogate. The rest of
+ * the in-use bits of the supplementary code point become the least significant
+ * bits of the lead surrogate.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
+
+
+/**
+ * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
+ * @param {string} ch The given character.
+ * @return {string} The U+ notation of the given character.
+ */
+goog.i18n.uChar.toHexString = function(ch) {
+  var chCode = goog.i18n.uChar.toCharCode(ch);
+  var chCodeStr = 'U+' +
+      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
+
+  return chCodeStr;
+};
+
+
+/**
+ * Gets a string padded with given character to get given size.
+ * @param {string} str The given string to be padded.
+ * @param {number} length The target size of the string.
+ * @param {string} ch The character to be padded with.
+ * @return {string} The padded string.
+ * @private
+ */
+goog.i18n.uChar.padString_ = function(str, length, ch) {
+  while (str.length < length) {
+    str = ch + str;
+  }
+  return str;
+};
+
+
+/**
+ * Gets Unicode value of the given character.
+ * @param {string} ch The given character, which in the case of a supplementary
+ * character is actually a surrogate pair. The remainder of the string is
+ * ignored.
+ * @return {number} The Unicode value of the character.
+ */
+goog.i18n.uChar.toCharCode = function(ch) {
+  return goog.i18n.uChar.getCodePointAround(ch, 0);
+};
+
+
+/**
+ * Gets a character from the given Unicode value. If the given code point is not
+ * a valid Unicode code point, null is returned.
+ * @param {number} code The Unicode value of the character.
+ * @return {?string} The character corresponding to the given Unicode value.
+ */
+goog.i18n.uChar.fromCharCode = function(code) {
+  if (!goog.isDefAndNotNull(code) ||
+      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
+    return null;
+  }
+  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
+    // First, we split the code point into the trail surrogate part (the
+    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
+    // part (the rest of the bits, shifted down; note that for now this includes
+    // the supplementary offset, also shifted down, to be subtracted off below).
+    var leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
+    var trailBits = code &
+        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
+        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
+        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
+
+    // Now we calculate the code point of each surrogate by adding each offset
+    // to the corresponding base code point.
+    var leadCodePoint = leadBits +
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
+         // Subtract off the supplementary offset, which had been shifted down
+         // with the rest of leadBits. We do this here instead of before the
+         // shift in order to save a separate subtraction step.
+         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
+          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
+    var trailCodePoint = trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
+
+    // Convert the code points into a 2-character long string.
+    return String.fromCharCode(leadCodePoint) +
+        String.fromCharCode(trailCodePoint);
+  }
+  return String.fromCharCode(code);
+};
+
+
+/**
+ * Returns the Unicode code point at the specified index.
+ *
+ * If the char value specified at the given index is in the leading-surrogate
+ * range, and the following index is less than the length of `string`, and
+ * the char value at the following index is in the trailing-surrogate range,
+ * then the supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * If the char value specified at the given index is in the trailing-surrogate
+ * range, and the preceding index is not before the start of `string`, and
+ * the char value at the preceding index is in the leading-surrogate range, then
+ * the negated supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * The negation allows the caller to differentiate between the case where the
+ * given index is at the leading surrogate and the one where it is at the
+ * trailing surrogate, and thus deduce where the next character starts and
+ * preceding character ends.
+ *
+ * Otherwise, the char value at the given index is returned. Thus, a leading
+ * surrogate is returned when it is not followed by a trailing surrogate, and a
+ * trailing surrogate is returned when it is not preceded by a leading
+ * surrogate.
+ *
+ * @param {string} string The string.
+ * @param {number} index The index from which the code point is to be retrieved.
+ * @return {number} The code point at the given index. If the given index is
+ * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
+ * point encoded by the pair. If the given index is that of the end (i.e. trail
+ * surrogate) of a surrogate pair, returns the negated code pointed encoded by
+ * the pair.
+ */
+goog.i18n.uChar.getCodePointAround = function(string, index) {
+  var charCode = string.charCodeAt(index);
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
+      index + 1 < string.length) {
+    var trail = string.charCodeAt(index + 1);
+    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+      // Part of a surrogate pair.
+      return /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
+    }
+  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
+    var lead = string.charCodeAt(index - 1);
+    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
+      // Part of a surrogate pair.
+      var codepoint = /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
+      return -codepoint;
+    }
+  }
+  return charCode;
+};
+
+
+/**
+ * Determines the length of the string needed to represent the specified
+ * Unicode code point.
+ * @param {number} codePoint
+ * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
+ */
+goog.i18n.uChar.charCount = function(codePoint) {
+  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
+};
+
+
+/**
+ * Determines whether the specified Unicode code point is in the supplementary
+ * Unicode characters range.
+ * @param {number} codePoint
+ * @return {boolean} Whether then given code point is a supplementary character.
+ */
+goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a leading surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a leading surrogate
+ * character.
+ */
+goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a trailing surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a trailing surrogate
+ * character.
+ */
+goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Composes a supplementary Unicode code point from the given UTF-16 surrogate
+ * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
+ * isn't a trailing surrogate code point, null is returned.
+ * @param {number} lead The leading surrogate code point.
+ * @param {number} trail The trailing surrogate code point.
+ * @return {?number} The supplementary Unicode code point obtained by decoding
+ * the given UTF-16 surrogate pair.
+ */
+goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
+      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+    var shiftedLeadOffset =
+        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
+         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
+    var trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
+        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
+    return shiftedLeadOffset + trailOffset;
+  }
+  return null;
+};
+
+//javascript/closure/structs/inversionmap.js
+// Copyright 2008 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Provides inversion and inversion map functionality for storing
+ * integer ranges and corresponding values.
+ *
+ */
+
+goog.provide('goog.structs.InversionMap');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+
+
+
+/**
+ * Maps ranges to values.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @constructor
+ * @template T
+ */
+goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
+  /**
+   * @protected {?Array<number>}
+   */
+  this.rangeArray = null;
+
+  goog.asserts.assert(
+      rangeArray.length == valueArray.length,
+      'rangeArray and valueArray must have the same length.');
+  this.storeInversion_(rangeArray, opt_delta);
+
+  /** @protected {Array<T>} */
+  this.values = valueArray;
+};
+
+
+/**
+ * Stores the integers as ranges (half-open).
+ * If delta is true, the integers are delta from the previous value and
+ * will be restored to the absolute value.
+ * When used as a set, even indices are IN, and odd are OUT.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @private
+ */
+goog.structs.InversionMap.prototype.storeInversion_ = function(
+    rangeArray, opt_delta) {
+  this.rangeArray = rangeArray;
+
+  for (var i = 1; i < rangeArray.length; i++) {
+    if (rangeArray[i] == null) {
+      rangeArray[i] = rangeArray[i - 1] + 1;
+    } else if (opt_delta) {
+      rangeArray[i] += rangeArray[i - 1];
+    }
+  }
+};
+
+
+/**
+ * Splices a range -> value map into this inversion map.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ */
+goog.structs.InversionMap.prototype.spliceInversion = function(
+    rangeArray, valueArray, opt_delta) {
+  // By building another inversion map, we build the arrays that we need
+  // to splice in.
+  var otherMap =
+      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
+
+  // Figure out where to splice those arrays.
+  var startRange = otherMap.rangeArray[0];
+  var endRange =
+      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
+  var startSplice = this.getLeast(startRange);
+  var endSplice = this.getLeast(endRange);
+
+  // The inversion map works by storing the start points of ranges...
+  if (startRange != this.rangeArray[startSplice]) {
+    // ...if we're splicing in a start point that isn't already here,
+    // then we need to insert it after the insertion point.
+    startSplice++;
+  }  // otherwise we overwrite the insertion point.
+
+  this.rangeArray = this.rangeArray.slice(0, startSplice)
+                        .concat(otherMap.rangeArray)
+                        .concat(this.rangeArray.slice(endSplice + 1));
+  this.values = this.values.slice(0, startSplice)
+                    .concat(otherMap.values)
+                    .concat(this.values.slice(endSplice + 1));
+};
+
+
+/**
+ * Gets the value corresponding to a number from the inversion map.
+ * @param {number} intKey The number for which value needs to be retrieved
+ *     from inversion map.
+ * @return {T|null} Value retrieved from inversion map; null if not found.
+ */
+goog.structs.InversionMap.prototype.at = function(intKey) {
+  var index = this.getLeast(intKey);
+  if (index < 0) {
+    return null;
+  }
+  return this.values[index];
+};
+
+
+/**
+ * Gets the largest index such that rangeArray[index] <= intKey from the
+ * inversion map.
+ * @param {number} intKey The probe for which rangeArray is searched.
+ * @return {number} Largest index such that rangeArray[index] <= intKey.
+ * @protected
+ */
+goog.structs.InversionMap.prototype.getLeast = function(intKey) {
+  var arr = this.rangeArray;
+  var low = 0;
+  var high = arr.length;
+  while (high - low > 8) {
+    var mid = (high + low) >> 1;
+    if (arr[mid] <= intKey) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  for (; low < high; ++low) {
+    if (intKey < arr[low]) {
+      break;
+    }
+  }
+  return low - 1;
+};
+
+//javascript/closure/i18n/graphemebreak.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
+ * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
+ *
+ * Reference: http://unicode.org/reports/tr29
+ *
+ */
+
+goog.provide('goog.i18n.GraphemeBreak');
+
+goog.require('goog.asserts');
+goog.require('goog.i18n.uChar');
+goog.require('goog.structs.InversionMap');
+
+/**
+ * Enum for all Grapheme Cluster Break properties.
+ * These enums directly corresponds to Grapheme_Cluster_Break property values
+ * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
+ * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
+ *
+ * @protected @enum {number}
+ */
+goog.i18n.GraphemeBreak.property = {
+  OTHER: 0,
+  CONTROL: 1,
+  EXTEND: 2,
+  PREPEND: 3,
+  SPACING_MARK: 4,
+  INDIC_LETTER: 5,
+  VIRAMA: 6,
+  L: 7,
+  V: 8,
+  T: 9,
+  LV: 10,
+  LVT: 11,
+  CR: 12,
+  LF: 13,
+  REGIONAL_INDICATOR: 14,
+  ZWJ: 15,
+  E_BASE: 16,
+  GLUE_AFTER_ZWJ: 17,
+  E_MODIFIER: 18,
+  E_BASE_GAZ: 19
+};
+
+
+/**
+ * Grapheme Cluster Break property values for all codepoints as inversion map.
+ * Constructed lazily.
+ *
+ * @private {?goog.structs.InversionMap}
+ */
+goog.i18n.GraphemeBreak.inversions_ = null;
+
+
+/**
+ * Indicates if a and b form a grapheme cluster.
+ *
+ * This implements the rules in:
+ * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
+ *
+ * @param {number|string} a Code point or string with the first side of
+ *     grapheme cluster.
+ * @param {number|string} b Code point or string with the second side of
+ *     grapheme cluster.
+ * @param {boolean} extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster.
+ * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ * @private
+ */
+goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
+  var prop = goog.i18n.GraphemeBreak.property;
+
+  var aCode = goog.isString(a) ?
+      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
+      a;
+  var bCode =
+      goog.isString(b) ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
+
+  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
+  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
+
+  var isString = goog.isString(a);
+
+  // GB3.
+  if (aProp === prop.CR && bProp === prop.LF) {
+    return false;
+  }
+
+  // GB4.
+  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
+    return true;
+  }
+
+  // GB5.
+  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
+    return true;
+  }
+
+  // GB6.
+  if (aProp === prop.L &&
+      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
+       bProp === prop.LVT)) {
+    return false;
+  }
+
+  // GB7.
+  if ((aProp === prop.LV || aProp === prop.V) &&
+      (bProp === prop.V || bProp === prop.T)) {
+    return false;
+  }
+
+  // GB8.
+  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
+    return false;
+  }
+
+  // GB9.
+  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
+    return false;
+  }
+
+  // GB9a, GB9b.
+  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
+    return false;
+  }
+
+  // Tailorings for basic aksara support.
+  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
+    return false;
+  }
+
+  var aStr, index, codePoint, codePointProp;
+
+  // GB10.
+  if (isString) {
+    if (bProp === prop.E_MODIFIER) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.EXTEND) {
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing:
+    // (E_Base | EBG) × E_Modifier.
+    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
+        bProp === prop.E_MODIFIER) {
+      return false;
+    }
+  }
+
+  // GB11.
+  if (aProp === prop.ZWJ &&
+      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
+    return false;
+  }
+
+  // GB12, GB13.
+  if (isString) {
+    if (bProp === prop.REGIONAL_INDICATOR) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of these rules:
+      // - sot (RI RI)* RI × RI
+      // - [^RI] (RI RI)* RI × RI.
+      var numberOfRi = 0;
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+      }
+      if (numberOfRi % 2 === 1) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing: RI × RI.
+    if (aProp === prop.REGIONAL_INDICATOR &&
+        bProp === prop.REGIONAL_INDICATOR) {
+      return false;
+    }
+  }
+
+  // GB999.
+  return true;
+};
+
+
+/**
+ * Method to return property enum value of the code point. If it is Hangul LV or
+ * LVT, then it is computed; for the rest it is picked from the inversion map.
+ *
+ * @param {number} codePoint The code point value of the character.
+ * @return {number} Property enum value of code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
+  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
+    var prop = goog.i18n.GraphemeBreak.property;
+    if (codePoint % 0x1C === 0x10) {
+      return prop.LV;
+    }
+    return prop.LVT;
+  } else {
+    if (!goog.i18n.GraphemeBreak.inversions_) {
+      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
+          [
+            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
+            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
+            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
+            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
+            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
+            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
+            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
+            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
+            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
+            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
+            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
+            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
+            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
+            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
+            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
+            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
+            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
+            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
+            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
+            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
+            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
+            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
+            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
+            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
+            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
+            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
+            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
+            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
+            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
+            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
+            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
+            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
+            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
+            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
+            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
+            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
+            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
+            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
+            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
+            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
+            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
+            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
+            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
+            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
+            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
+            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
+            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
+            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
+            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
+            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
+            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
+            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
+            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
+            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
+            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
+            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
+            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
+            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
+            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
+            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
+            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
+            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
+            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
+            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
+            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
+            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
+            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
+            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
+            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
+            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
+            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
+            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
+            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
+            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
+            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
+            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
+            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
+            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
+            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
+            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
+            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
+            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
+            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
+            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
+            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
+            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
+            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
+            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
+            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
+            788162, 31
+          ],
+          [
+            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
+            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
+            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
+            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
+            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
+            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
+            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
+            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
+            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
+            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
+            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
+            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
+            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
+            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
+            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
+            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
+            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
+            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
+            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
+            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
+            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
+            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
+            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
+            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
+            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
+            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
+            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
+            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
+            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
+            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
+            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
+            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
+            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
+            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
+            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
+            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
+          ],
+          true);
+    }
+    return /** @type {number} */ (
+        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
+  }
+};
+
+/**
+ * Extracts a code point from a string at the specified index.
+ *
+ * @param {string} str
+ * @param {number} index
+ * @return {number} Extracted code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
+  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
+  return (codePoint < 0) ? -codePoint : codePoint;
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * Legacy function. Does not cover cases where a sequence of code points is
+ * required in order to decide if there is a grapheme cluster boundary, such as
+ * emoji modifier sequences and emoji flag sequences. To cover all cases please
+ * use `hasGraphemeBreakStrings`.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {number} a The code point value of the first character.
+ * @param {number} b The code point value of the second character.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {string} a String with the first sequence of characters.
+ * @param {string} b String with the second sequence of characters.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
+  goog.asserts.assert(goog.isDef(a), 'First string should be defined.');
+  goog.asserts.assert(goog.isDef(b), 'Second string should be defined.');
+
+  // Break if any of the strings is empty.
+  if (a.length === 0 || b.length === 0) {
+    return true;
+  }
+
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
+//javascript/closure/format/format.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Provides utility functions for formatting strings, numbers etc.
+ *
+ */
+
+goog.provide('goog.format');
+
+goog.require('goog.i18n.GraphemeBreak');
+goog.require('goog.string');
+goog.require('goog.userAgent');
+
+
+/**
+ * Formats a number of bytes in human readable form.
+ * 54, 450K, 1.3M, 5G etc.
+ * @param {number} bytes The number of bytes to show.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} The human readable form of the byte size.
+ */
+goog.format.fileSize = function(bytes, opt_decimals) {
+  return goog.format.numBytesToString(bytes, opt_decimals, false);
+};
+
+
+/**
+ * Checks whether string value containing scaling units (K, M, G, T, P, m,
+ * u, n) can be converted to a number.
+ *
+ * Where there is a decimal, there must be a digit to the left of the
+ * decimal point.
+ *
+ * Negative numbers are valid.
+ *
+ * Examples:
+ *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
+ *
+ * @param {string} val String value to check.
+ * @return {boolean} True if string could be converted to a numeric value.
+ */
+goog.format.isConvertableScaledNumber = function(val) {
+  return goog.format.SCALED_NUMERIC_RE_.test(val);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * If string ends in 'B', use binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumericValue = function(stringValue) {
+  if (goog.string.endsWith(stringValue, 'B')) {
+    return goog.format.stringToNumericValue_(
+        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+  }
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_SI_);
+};
+
+
+/**
+ * Converts a string to number of bytes, taking into account the units.
+ * Binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumBytes = function(stringValue) {
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+};
+
+
+/**
+ * Converts a numeric value to string representation. SI conversion.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} String representation of number.
+ */
+goog.format.numericValueToString = function(val, opt_decimals) {
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
+};
+
+
+/**
+ * Converts number of bytes to string representation. Binary conversion.
+ * Default is to return the additional 'B' suffix only for scales greater than
+ * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
+ * of 1000. Otherwise, suffix is empty string.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
+ *     string.  Default is true.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a no break space. Default is false.
+ * @return {string} String representation of number of bytes.
+ */
+goog.format.numBytesToString = function(
+    val, opt_decimals, opt_suffix, opt_useSeparator) {
+  var suffix = '';
+  if (!goog.isDef(opt_suffix) || opt_suffix) {
+    suffix = 'B';
+  }
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
+      opt_useSeparator);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @param {Object} conversion Dictionary of conversion scales.
+ * @return {number} Numeric value for string.  If it cannot be converted,
+ *    returns NaN.
+ * @private
+ */
+goog.format.stringToNumericValue_ = function(stringValue, conversion) {
+  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
+  if (!match) {
+    return NaN;
+  }
+  var val = Number(match[1]) * conversion[match[2]];
+  return val;
+};
+
+
+/**
+ * Converts a numeric value to string, using specified conversion
+ * scales.
+ * @param {number} val Value to be converted.
+ * @param {Object} conversion Dictionary of scaling factors.
+ * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
+ * @param {string=} opt_suffix Optional suffix to append.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a space. Default is false.
+ * @return {string} The human readable form of the byte size.
+ * @private
+ */
+goog.format.numericValueToString_ = function(
+    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
+  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
+  var orig_val = val;
+  var symbol = '';
+  var separator = '';
+  var scale = 1;
+  if (val < 0) {
+    val = -val;
+  }
+  for (var i = 0; i < prefixes.length; i++) {
+    var unit = prefixes[i];
+    scale = conversion[unit];
+    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
+      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
+      // than "500m"
+      symbol = unit;
+      break;
+    }
+  }
+  if (!symbol) {
+    scale = 1;
+  } else {
+    if (opt_suffix) {
+      symbol += opt_suffix;
+    }
+    if (opt_useSeparator) {
+      separator = ' ';
+    }
+  }
+  var ex = Math.pow(10, goog.isDef(opt_decimals) ? opt_decimals : 2);
+  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
+};
+
+
+/**
+ * Regular expression for detecting scaling units, such as K, M, G, etc. for
+ * converting a string representation to a numeric value.
+ *
+ * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
+ * of 1000) or Binary (powers of 1024) conversions.
+ *
+ * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
+ * binary conversion (e.g., '10.2MB').
+ *
+ * @type {RegExp}
+ * @private
+ */
+goog.format.SCALED_NUMERIC_RE_ =
+    /^([-]?\d+\.?\d*)([K,M,G,T,P,E,Z,Y,k,m,u,n]?)[B]?$/;
+
+
+/**
+ * Ordered list of scaling prefixes in decreasing order.
+ * @private {Array<string>}
+ */
+goog.format.NUMERIC_SCALE_PREFIXES_ =
+    ['Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  SI conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_SI_ = {
+  '': 1,
+  'n': 1e-9,
+  'u': 1e-6,
+  'm': 1e-3,
+  'k': 1e3,
+  'K': 1e3,
+  'M': 1e6,
+  'G': 1e9,
+  'T': 1e12,
+  'P': 1e15,
+  'E': 1e18,
+  'Z': 1e21,
+  'Y': 1e24
+};
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  Binary
+ * conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_BINARY_ = {
+  '': 1,
+  'n': Math.pow(1024, -3),
+  'u': Math.pow(1024, -2),
+  'm': 1.0 / 1024,
+  'k': 1024,
+  'K': 1024,
+  'M': Math.pow(1024, 2),
+  'G': Math.pow(1024, 3),
+  'T': Math.pow(1024, 4),
+  'P': Math.pow(1024, 5),
+  'E': Math.pow(1024, 6),
+  'Z': Math.pow(1024, 7),
+  'Y': Math.pow(1024, 8)
+};
+
+
+/**
+ * First Unicode code point that has the Mark property.
+ * @type {number}
+ * @private
+ */
+goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
+
+
+/**
+ * Returns true if and only if given character should be treated as a breaking
+ * space. All ASCII control characters, the main Unicode range of spacing
+ * characters (U+2000 to U+200B inclusive except for U+2007), and several other
+ * Unicode space characters are treated as breaking spaces.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is a breaking space.
+ * @private
+ */
+goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
+  return (charCode <= goog.format.WbrToken_.SPACE) ||
+      (charCode >= 0x1000 &&
+       ((charCode >= 0x2000 && charCode <= 0x2006) ||
+        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
+        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
+        charCode == 0x205f || charCode == 0x3000));
+};
+
+
+/**
+ * Returns true if and only if given character is an invisible formatting
+ * character.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is an invisible formatting character.
+ * @private
+ */
+goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
+  // See: http://unicode.org/charts/PDF/U2000.pdf
+  return (charCode >= 0x200C && charCode <= 0x200F) ||
+      (charCode >= 0x202A && charCode <= 0x202E);
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.  The counter is
+ * reset if a space or a character which behaves like a space is encountered,
+ * but it isn't incremented if an invisible formatting character is encountered.
+ * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
+ * character count, HTML tags do not.
+ *
+ * With common strings aliased, objects allocations are constant based on the
+ * length of the string: N + 3. This guarantee does not hold if the string
+ * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
+ *     function determining if there is a grapheme break between two characters,
+ *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
+ * @param {number=} opt_maxlen Maximum length after which to ensure
+ *     there is a break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @private
+ */
+goog.format.insertWordBreaksGeneric_ = function(
+    str, hasGraphemeBreak, opt_maxlen) {
+  var maxlen = opt_maxlen || 10;
+  if (maxlen > str.length) return str;
+
+  var rv = [];
+  var n = 0;  // The length of the current token
+
+  // This will contain the ampersand or less-than character if one of the
+  // two has been seen; otherwise, the value is zero.
+  var nestingCharCode = 0;
+
+  // First character position from input string that has not been outputted.
+  var lastDumpPosition = 0;
+
+  var charCode = 0;
+  for (var i = 0; i < str.length; i++) {
+    // Using charCodeAt versus charAt avoids allocating new string objects.
+    var lastCharCode = charCode;
+    charCode = str.charCodeAt(i);
+
+    // Don't add a WBR before characters that might be grapheme extending.
+    var isPotentiallyGraphemeExtending =
+        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
+        !hasGraphemeBreak(lastCharCode, charCode, true);
+
+    // Don't add a WBR at the end of a word. For the purposes of determining
+    // work breaks, all ASCII control characters and some commonly encountered
+    // Unicode spacing characters are treated as breaking spaces.
+    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
+        !isPotentiallyGraphemeExtending) {
+      // Flush everything seen so far, and append a word break.
+      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
+      lastDumpPosition = i;
+      n = 0;
+    }
+
+    if (!nestingCharCode) {
+      // Not currently within an HTML tag or entity
+
+      if (charCode == goog.format.WbrToken_.LT ||
+          charCode == goog.format.WbrToken_.AMP) {
+        // Entering an HTML Entity '&' or open tag '<'
+        nestingCharCode = charCode;
+      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
+        // A space or control character -- reset the token length
+        n = 0;
+      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
+        // A normal flow character - increment.  For grapheme extending
+        // characters, this is not *technically* a new character.  However,
+        // since the grapheme break detector might be overly conservative,
+        // we have to continue incrementing, or else we won't even be able
+        // to add breaks when we get to things like punctuation.  For the
+        // case where we have a full grapheme break detector, it is okay if
+        // we occasionally break slightly early.
+        n++;
+      }
+    } else if (
+        charCode == goog.format.WbrToken_.GT &&
+        nestingCharCode == goog.format.WbrToken_.LT) {
+      // Leaving an HTML tag, treat the tag as zero-length
+      nestingCharCode = 0;
+    } else if (
+        charCode == goog.format.WbrToken_.SEMI_COLON &&
+        nestingCharCode == goog.format.WbrToken_.AMP) {
+      // Leaving an HTML entity, treat it as length one
+      nestingCharCode = 0;
+      n++;
+    }
+  }
+
+  // Take care of anything we haven't flushed so far.
+  rv.push(str.substr(lastDumpPosition));
+
+  return rv.join('');
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is as aggressive as possible, using a full table of Unicode
+ * characters where it is legal to insert word breaks; however, this table
+ * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
+ * insertWordBreaksBasic to minimize the size impact.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaks = function(str, opt_maxlen) {
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
+};
+
+
+/**
+ * Determines conservatively if a character has a Grapheme break.
+ *
+ * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
+ * conservative, returning true only for characters in common scripts that
+ * are simple to account for.
+ *
+ * @param {number} lastCharCode The previous character code.  Ignored.
+ * @param {number} charCode The character code under consideration.  It must be
+ *     at least \u0300 as a precondition -- this case is covered by
+ *     insertWordBreaksGeneric_.
+ * @param {boolean=} opt_extended Ignored, to conform with the interface.
+ * @return {boolean} Whether it is one of the recognized subsets of characters
+ *     with a grapheme break.
+ * @private
+ */
+goog.format.conservativelyHasGraphemeBreak_ = function(
+    lastCharCode, charCode, opt_extended) {
+  // Return false for everything except the most common Cyrillic characters.
+  // Don't worry about Latin characters, because insertWordBreaksGeneric_
+  // itself already handles those.
+  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
+  // simple to do so.
+  return charCode >= 0x400 && charCode < 0x523;
+};
+
+
+// TODO(gboyer): Consider using a compile-time flag to switch implementations
+// rather than relying on the developers to toggle implementations.
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is less aggressive than insertWordBreaks, only inserting
+ * breaks next to punctuation and between Latin or Cyrillic characters.
+ * However, this is good enough for the common case of URLs.  It also
+ * works for all Latin and Cyrillic languages, plus CJK has no need for word
+ * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
+ * code eliminated.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
+};
+
+
+/**
+ * True iff the current userAgent is IE8 or above.
+ * @type {boolean}
+ * @private
+ */
+goog.format.IS_IE8_OR_ABOVE_ =
+    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
+
+
+/**
+ * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
+ * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
+ * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
+ * use &lt;wbr&gt;.
+ * @type {string}
+ */
+goog.format.WORD_BREAK_HTML =
+    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
+                            '&shy;' :
+                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
+
+
+/**
+ * Tokens used within insertWordBreaks.
+ * @private
+ * @enum {number}
+ */
+goog.format.WbrToken_ = {
+  LT: 60,          // '<'.charCodeAt(0)
+  GT: 62,          // '>'.charCodeAt(0)
+  AMP: 38,         // '&'.charCodeAt(0)
+  SEMI_COLON: 59,  // ';'.charCodeAt(0)
+  SPACE: 32        // ' '.charCodeAt(0)
+};
+
 //javascript/closure/i18n/bidiformatter.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
 //
@@ -18971,7 +20144,6 @@ goog.html.uncheckedconversions
  * @fileoverview Utility for formatting text for display in a potentially
  * opposite-directionality context without garbling.
  * Mostly a port of http://go/formatter.cc.
- * @author tomerigo@google.com (Tomer Greenberg)
  */
 
 
@@ -19527,7 +20699,6 @@ goog.i18n.BidiFormatter.prototype.endEdge = function() {
 
 /**
  * @fileoverview Additional mathematical functions.
- * @author pupius@google.com (Daniel Pupius)
  */
 
 goog.provide('goog.math');
@@ -19619,7 +20790,7 @@ goog.math.nearlyEquals = function(a, b, opt_tolerance) {
 };
 
 
-// TODO(jrajeshwar): Rename to normalizeAngle, retaining old name as deprecated
+// TODO(user): Rename to normalizeAngle, retaining old name as deprecated
 // alias.
 /**
  * Normalizes an angle to be in range [0-360). Angles outside this range will
@@ -21136,7 +22307,7 @@ goog.iter.slice = function(iterable, start, opt_end) {
  * @private
  * @template VALUE
  */
-// TODO(dlindquist): Consider moving this into goog.array as a public function.
+// TODO(user): Consider moving this into goog.array as a public function.
 goog.iter.hasDuplicates_ = function(arr) {
   var deduped = [];
   goog.array.removeDuplicates(arr, deduped);
@@ -21269,38 +22440,11 @@ goog.iter.combinationsWithReplacement = function(iterable, length) {
  * @fileoverview Datastructure: Hash Map.
  *
  * @author arv@google.com (Erik Arvidsson)
- * @author jonp@google.com (Jon Perlow) Optimized for IE6
  *
  * This file contains an implementation of a Map structure. It implements a lot
  * of the methods used in goog.structs so those functions work on hashes. This
  * is best suited for complex key types. For simple keys such as numbers and
  * strings consider using the lighter-weight utilities in goog.object.
- * MOE:begin_intracomment_strip
- *
- * NOTE(flan): Internally, key types are NOT actually cast to
- * strings. Some people actually rely on this behavior even though it
- * is incorrect. For more information, see http://b/5622311.
- *
- * NOTE(flan): Erik Corry (erikcorry) from the V8 team went over this
- * class with me to help look for simplifications and
- * optimizations. In the end, he didn't come up with very much. Erik
- * explained that "for (k in o)" is not optimized in Crankshaft
- * because it needs to look up properties in the whole prototype
- * chain. It also needs to return the keys in order. Thus keeping an
- * array of keys is actually much more efficient.
- *
- * Likewise, one option to iterate safely with "for (k in o)" is to
- * prefix the keys with some character, like ':'. This can create a
- * lot of strings that didn't exist before. In Closure Labs,
- * goog.labs.structs.Map uses extra arrays to store non-safe keys and
- * values.
- *
- * Thus, there are not a lot of reasonable simplifications that can be
- * done here without impacting performance.
- *
- * TODO(chrishenry): Create some performance benchmarks for common
- * operations.
- * MOE:end_intracomment_strip
  */
 
 
@@ -23226,9 +24370,6 @@ goog.uri.utils.makeUnique = function(uri) {
  * behavior slightly.
  *
  * @author msamuel@google.com (Mike Samuel)
- * @author pupius@google.com (Dan Pupius) - Ported to Closure
- * @author jonp@google.com (Jon Perlow) - Optimized for IE6
- * @author micapolos@google.com (Michal Pociecha-Los) - Dot segments removal
  */
 
 goog.provide('goog.Uri');
@@ -25420,9 +26561,6 @@ goog.loadModule(function(exports) {'use strict';/*
 /**
  * @fileoverview Interfaces and helper functions for Soy maps/proto maps/ES6
  *     maps.
- * MOE:begin_intracomment_strip
- * See go/soy-proto-map.
- * MOE:end_intracomment_strip
  */
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
@@ -25655,10 +26793,6 @@ exports = {
  * <p>TODO(lukes): ensure that the above pattern is actually followed
  * consistently.
  *
- * @author Garrett Boyer
- * @author Mike Samuel
- * @author Kai Huang
- * @author Aharon Lanin
  */
 goog.provide('soy');
 goog.provide('soy.asserts');
@@ -25733,10 +26867,10 @@ soydata.IdomFunction;
  * @private
  */
 soydata.isContentKind_ = function(value, contentKind) {
-  // TODO(aharon): This function should really include the assert on
+  // TODO(user): This function should really include the assert on
   // value.constructor that is currently sprinkled at most of the call sites.
   // Unfortunately, that would require a (debug-mode-only) switch statement.
-  // TODO(aharon): Perhaps we should get rid of the contentKind property
+  // TODO(user): Perhaps we should get rid of the contentKind property
   // altogether and only at the constructor.
   return value != null && value.contentKind === contentKind;
 };
@@ -27675,7 +28809,7 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   // Unicode-wrapping does not conform to the syntax of the other types of
   // content. For lack of anything better to do, we we do not declare a content
   // kind at all by falling through to the non-SanitizedContent case below.
-  // TODO(aharon): Consider throwing a runtime error on receipt of
+  // TODO(user): Consider throwing a runtime error on receipt of
   // SanitizedContent other than TEXT, HTML, or JS_STR_CHARS.
 
   // The input was not SanitizedContent, so our output isn't SanitizedContent
