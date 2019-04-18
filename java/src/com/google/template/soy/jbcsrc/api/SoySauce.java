@@ -95,9 +95,9 @@ public interface SoySauce {
      * and when to {@link WriteContinuation#continueRender() continue rendering}. There are 4
      * possibilities for every rendering operation.
      *
-     * <p>Checks the content kind of the template. Non-strict and {@code kind="html"} templates are
-     * allowed, unless {@link #setExpectedContentKind} was called. The goal is to prevent accidental
-     * rendering of unescaped {@code kind="text"} in contexts where that could lead to XSS.
+     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
+     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
+     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
      *
      * <ul>
      *   <li>The render operation may complete successfully. This is indicated by the fact that
@@ -134,9 +134,9 @@ public interface SoySauce {
      *   <li>This api doesn't throw {@link IOException}
      * </ul>
      *
-     * <p>Checks the content kind of the template. Non-strict and {@code kind="html"} templates are
-     * allowed, unless {@link #setExpectedContentKind} was called. The goal is to prevent accidental
-     * rendering of unescaped {@code kind="text"} in contexts where that could lead to XSS.
+     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
+     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
+     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
      *
      * <p>It is safe to call this method multiple times, but each call will initiate a new render of
      * the configured template. To continue rendering a template you must use the returned
@@ -155,9 +155,9 @@ public interface SoySauce {
      *   <li>This api doesn't throw {@link IOException}
      * </ul>
      *
-     * <p>Checks the content kind of the template. Non-strict and {@code kind="html"} templates are
-     * allowed, unless {@link #setExpectedContentKind} was called. The goal is to prevent accidental
-     * rendering of unescaped {@code kind="text"} in contexts where that could lead to XSS.
+     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
+     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
+     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
      *
      * <p>It is safe to call this method multiple times, but each call will initiate a new render of
      * the configured template. To continue rendering a template you must use the returned

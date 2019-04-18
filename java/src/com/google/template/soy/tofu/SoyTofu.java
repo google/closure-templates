@@ -175,8 +175,8 @@ public interface SoyTofu {
     /**
      * Renders the template using the data, injected data, and message bundle previously set.
      *
-     * <p>Checks the content kind of the template. Non-strict and kind="html" templates are allowed,
-     * unless setContentKind was called. The goal is to prevent accidental rendering of unescaped
+     * <p>Checks the content kind of the template. kind="html" templates are allowed, unless
+     * setContentKind was called. The goal is to prevent accidental rendering of unescaped
      * kind="text" in contexts where that could XSS.
      *
      * @throws SoyTofuException if an error occurs during rendering.
@@ -184,15 +184,15 @@ public interface SoyTofu {
     String render();
 
     /**
-     * Renders the strict-mode template as a SanitizedContent object, which can be used as an input
-     * to another Soy template, or used to verify that the output type is correct.
+     * Renders the template as a SanitizedContent object, which can be used as an input to another
+     * Soy template, or used to verify that the output type is correct.
      *
      * <p>This returns a SanitizedContent object corresponding to the kind="..." attribute of the
      * template. The expected content kind must be set beforehand, unless HTML is expected, to avoid
      * an exception.
      *
-     * @throws IllegalArgumentException If the template is non-strict, or the kind doesn't match the
-     *     expected kind (from setContentKind, or the default of HTML).
+     * @throws IllegalArgumentException If the kind doesn't match the expected kind (from
+     *     setContentKind, or the default of HTML).
      * @throws SoyTofuException if an error occurs during rendering.
      */
     SanitizedContent renderStrict();
@@ -201,8 +201,8 @@ public interface SoyTofu {
      * Renders the template using the data, injected data, and message bundle previously set into
      * the given Appendable.
      *
-     * <p>Checks the content kind of the template. Non-strict and kind="html" templates are allowed,
-     * unless setContentKind was called. The goal is to prevent accidental rendering of unescaped
+     * <p>Checks the content kind of the template. kind="html" templates are allowed, unless
+     * setContentKind was called. The goal is to prevent accidental rendering of unescaped
      * kind="text" in contexts where that could XSS.
      *
      * @throws SoyTofuException if an error occurs during rendering.
