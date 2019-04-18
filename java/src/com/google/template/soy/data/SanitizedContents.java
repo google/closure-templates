@@ -212,11 +212,32 @@ public final class SanitizedContents {
   /**
    * Wraps an assumed-safe CSS constant.
    *
-   * <p>This only accepts compile-time constants, based on the assumption that URLs that are
+   * <p>This only accepts compile-time constants, based on the assumption that CSSes that are
    * controlled by the application (and not user input) are considered safe.
    */
   public static SanitizedContent constantCss(@CompileTimeConstant final String constant) {
     return fromConstant(constant, ContentKind.CSS, Dir.LTR);
+  }
+
+  /**
+   * Wraps an assumed-safe JS constant.
+   *
+   * <p>This only accepts compile-time constants, based on the assumption that scripts that are
+   * controlled by the application (and not user input) are considered safe.
+   */
+  public static SanitizedContent constantJs(@CompileTimeConstant final String constant) {
+    return fromConstant(constant, ContentKind.JS, Dir.LTR);
+  }
+
+  /**
+   * Wraps an assumed-safe trusted_resource_uri constant.
+   *
+   * <p>This only accepts compile-time constants, based on the assumption that trusted resource URIs
+   * that are controlled by the application (and not user input) are considered safe.
+   */
+  public static SanitizedContent constantTrustedResourceUri(
+      @CompileTimeConstant final String constant) {
+    return fromConstant(constant, ContentKind.TRUSTED_RESOURCE_URI, Dir.LTR);
   }
 
   /**
