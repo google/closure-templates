@@ -61,6 +61,7 @@ import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
+import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -510,16 +511,29 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Label startDetachPoint = new Label();
       // Note: If the value of rangeArgs.start() is above 32 bits, Ints.checkedCast() will fail at
       // runtime with IllegalArgumentException.
-      Expression startExpression =
-          MethodRef.INTS_CHECKED_CAST.invoke(
-              exprCompiler.compile(expression.get(), startDetachPoint).unboxAsLong());
-      if (!startExpression.isCheap()) {
-        // bounce it into a local variable
-        Variable startVar = scope.createSynthetic(varName, startExpression, STORE);
-        initStatements.add(startVar.initializer().labelStart(startDetachPoint));
-        startExpression = startVar.local();
+      SoyExpression compiledExpression = exprCompiler.compile(expression.get(), startDetachPoint);
+      Expression rangeValue;
+      SoyRuntimeType type = compiledExpression.soyRuntimeType();
+      if (!type.isKnownInt()) {
+        // The type checker allows for numeric types, but we only support ints in the runtime.
+        // simply unbox to a double and cast to an int
+        rangeValue =
+            MethodRef.INTS_CHECKED_CAST.invoke(
+                BytecodeUtils.numericConversion(
+                    type.isKnownFloat()
+                        ? compiledExpression.unboxAsDouble()
+                        : compiledExpression.coerceToDouble(),
+                    Type.LONG_TYPE));
+      } else {
+        rangeValue = MethodRef.INTS_CHECKED_CAST.invoke(compiledExpression.unboxAsLong());
       }
-      return startExpression;
+      if (!rangeValue.isCheap()) {
+        // bounce it into a local variable
+        Variable startVar = scope.createSynthetic(varName, rangeValue, STORE);
+        initStatements.add(startVar.initializer().labelStart(startDetachPoint));
+        rangeValue = startVar.local();
+      }
+      return rangeValue;
     }
   }
 
