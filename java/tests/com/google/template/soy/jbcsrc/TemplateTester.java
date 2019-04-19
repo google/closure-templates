@@ -320,7 +320,7 @@ public final class TemplateTester {
         result = null;
       }
       if (result.type() != RenderResult.Type.DONE) {
-        fail("renders to completion", result);
+        failWithActual("expected to render to completion", result);
       }
 
       String output = builder.toString();

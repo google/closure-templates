@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableMap;
@@ -66,28 +67,28 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isNotValidExpression() {
     parseExpression();
     if (!errorReporter.hasErrors()) {
-      fail("is an invalid expression");
+      failWithActual(simpleFact("expected to be an invalid expression"));
     }
   }
 
   void isNotValidGlobal() {
     ExprNode expr = parseExpression();
     if (expr instanceof GlobalNode && !errorReporter.hasErrors()) {
-      fail("is an invalid global");
+      failWithActual(simpleFact("expected to be an invalid global"));
     }
   }
 
   void isNotValidVar() {
     ExprNode expr = parseExpression();
     if (expr instanceof VarRefNode && !errorReporter.hasErrors()) {
-      fail("is an invalid var");
+      failWithActual(simpleFact("expected to be an invalid var"));
     }
   }
 
   ExprNode isValidExpression() {
     ExprNode expr = parseExpression();
     if (errorReporter.hasErrors()) {
-      fail("is a valid expression", errorReporter.getErrors());
+      failWithActual("expected to be a valid expression", errorReporter.getErrors());
     }
     return expr;
   }
@@ -95,7 +96,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isValidGlobal() {
     ExprNode expr = parseExpression();
     if (errorReporter.hasErrors()) {
-      fail("is a valid global", errorReporter.getErrors());
+      failWithActual("expected to be a valid global", errorReporter.getErrors());
     }
     Truth.assertThat(expr).named(actualAsString()).isInstanceOf(GlobalNode.class);
   }
@@ -103,7 +104,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isValidGlobalNamed(String name) {
     GlobalNode globalNode = (GlobalNode) parseExpression();
     if (errorReporter.hasErrors()) {
-      fail("is valid global", errorReporter.getErrors());
+      failWithActual("expected to be valid global", errorReporter.getErrors());
     }
     String actualName = globalNode.getName();
     if (!actualName.equals(name)) {
@@ -118,7 +119,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   void isValidVar() {
     ExprNode expr = parseExpression();
     if (!(expr instanceof VarRefNode) || errorReporter.hasErrors()) {
-      fail("is a valid var", errorReporter.getErrors());
+      failWithActual("expected to be a valid var", errorReporter.getErrors());
     }
   }
 

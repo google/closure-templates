@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc.restricted.testing;
 
+import static com.google.common.truth.Fact.simpleFact;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.truth.FailureMetadata;
@@ -191,7 +193,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
       }
       return this;
     }
-    fail("throws an exception");
+    failWithActual(simpleFact("expected to throw an exception"));
     return this; // dead code, but the compiler can't prove it
   }
 }
