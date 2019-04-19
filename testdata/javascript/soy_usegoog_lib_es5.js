@@ -362,7 +362,7 @@ $jscomp.polyfill("Map", function(NativeMap) {
   return PolyfillMap;
 }, "es6", "es3");
 var goog = goog || {};
-goog.global = this;
+goog.global = this || self;
 goog.isDef = function(val) {
   return void 0 !== val;
 };
