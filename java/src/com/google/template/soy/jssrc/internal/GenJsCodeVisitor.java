@@ -1565,7 +1565,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       JsType jsType = getJsTypeForParamTypeCheck(paramType);
       // The opt_param.name value that will be type-tested.
       String paramAlias = genParamAlias(paramName);
-      Expression coerced = jsType.getValueCoercion(paramChunk, generator);
+      Expression coerced =
+          jsType.getValueCoercion(paramChunk, generator, /* hasDefault=*/ param.hasDefault());
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
         paramChunk = generator.declarationBuilder().setRhs(coerced).build().ref();

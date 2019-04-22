@@ -546,14 +546,15 @@ public final class JsType {
 
   /** Generates code to coerce the value, returns {@code null} if no coercion is necessary. */
   @Nullable
-  final Expression getValueCoercion(Expression value, Generator codeGenerator) {
+  final Expression getValueCoercion(Expression value, Generator codeGenerator, boolean hasDefault) {
     boolean needsProtoCoercion = coercionStrategies.contains(ValueCoercionStrategy.PROTO);
     if (!needsProtoCoercion) {
       return null;
     }
     Expression coercion =
         value.castAs("?").dotAccess("$jspbMessageInstance").or(value, codeGenerator);
-    return coercionStrategies.contains(ValueCoercionStrategy.NULL)
+    // if there is a matching default expression treat the parameter as though it was nullable.
+    return (coercionStrategies.contains(ValueCoercionStrategy.NULL) || hasDefault)
         ? value.and(coercion, codeGenerator)
         : coercion;
   }
