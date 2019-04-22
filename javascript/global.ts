@@ -23,8 +23,8 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
 
 /** Retrieves the Soy element in a type-safe way. */
 export function getSoy<TElement extends SoyElement<{}|null, {}>>(
-    node: Node, elementCtor: ElementCtor<TElement>) {
-  return assertInstanceof(node.__soy, elementCtor);
+    node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
+  return assertInstanceof(node.__soy, elementCtor, message);
 }
 
 /** Retrieves the Soy element in a type-safe way, or null if it doesn't exist */
