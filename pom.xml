@@ -76,7 +76,7 @@
     <guice.version>4.1.0</guice.version>
     <guava.version>25.1-jre</guava.version>
     <asm.version>7.0</asm.version>
-    <autovalue.version>1.6.2</autovalue.version>
+    <autovalue.version>1.6.3</autovalue.version>
     <proto.version>3.3.0</proto.version>
     <soy.examples>${project.basedir}/examples</soy.examples>
     <soy.examples.out>${project.build.directory}/examples</soy.examples.out>
@@ -246,7 +246,7 @@
     <dependency>
       <groupId>com.google.truth</groupId>
       <artifactId>truth</artifactId>
-      <version>0.42</version>
+      <version>0.44</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
