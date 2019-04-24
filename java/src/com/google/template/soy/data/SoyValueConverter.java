@@ -92,252 +92,47 @@ public final class SoyValueConverter {
 
   @Inject
   SoyValueConverter() {
-    cheapConverterMap.put(
-        SoyValueProvider.class,
-        new Converter<SoyValueProvider>() {
-          @Override
-          public SoyValueProvider apply(SoyValueProvider input) {
-            return input;
-          }
-        });
-    cheapConverterMap.put(
-        String.class,
-        new Converter<String>() {
-          @Override
-          public SoyValue apply(String input) {
-            return StringData.forValue(input);
-          }
-        });
-    cheapConverterMap.put(
-        Boolean.class,
-        new Converter<Boolean>() {
-          @Override
-          public SoyValue apply(Boolean input) {
-            return BooleanData.forValue(input);
-          }
-        });
-    cheapConverterMap.put(
-        Integer.class,
-        new Converter<Integer>() {
-          @Override
-          public SoyValue apply(Integer input) {
-            return IntegerData.forValue(input.longValue());
-          }
-        });
-    cheapConverterMap.put(
-        Long.class,
-        new Converter<Long>() {
-          @Override
-          public SoyValue apply(Long input) {
-            return IntegerData.forValue(input.longValue());
-          }
-        });
+    cheapConverterMap.put(SoyValueProvider.class, input -> input);
+    cheapConverterMap.put(String.class, StringData::forValue);
+    cheapConverterMap.put(Boolean.class, BooleanData::forValue);
+    cheapConverterMap.put(Integer.class, input -> IntegerData.forValue(input.longValue()));
+    cheapConverterMap.put(Long.class, IntegerData::forValue);
 
+    cheapConverterMap.put(Float.class, input -> FloatData.forValue(input.doubleValue()));
+    cheapConverterMap.put(Double.class, FloatData::forValue);
+    cheapConverterMap.put(Future.class, SoyFutureValueProvider::new);
+    // Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
     cheapConverterMap.put(
-        Float.class,
-        new Converter<Float>() {
-          @Override
-          public SoyValue apply(Float input) {
-            return FloatData.forValue(input.doubleValue());
-          }
-        });
+        EnumValueDescriptor.class, input -> IntegerData.forValue(input.getNumber()));
+    // Proto enum that was directly passed into the template
     cheapConverterMap.put(
-        Double.class,
-        new Converter<Double>() {
-          @Override
-          public SoyValue apply(Double input) {
-            return FloatData.forValue(input.doubleValue());
-          }
-        });
+        ProtocolMessageEnum.class, input -> IntegerData.forValue(input.getNumber()));
+    cheapConverterMap.put(SafeHtml.class, SanitizedContents::fromSafeHtml);
+    cheapConverterMap.put(SafeHtmlProto.class, SanitizedContents::fromSafeHtmlProto);
+    cheapConverterMap.put(SafeScript.class, SanitizedContents::fromSafeScript);
+    cheapConverterMap.put(SafeScriptProto.class, SanitizedContents::fromSafeScriptProto);
+    cheapConverterMap.put(SafeStyle.class, SanitizedContents::fromSafeStyle);
+    cheapConverterMap.put(SafeStyleProto.class, SanitizedContents::fromSafeStyleProto);
+    cheapConverterMap.put(SafeStyleSheet.class, SanitizedContents::fromSafeStyleSheet);
+    cheapConverterMap.put(SafeStyleSheetProto.class, SanitizedContents::fromSafeStyleSheetProto);
+    cheapConverterMap.put(SafeUrl.class, SanitizedContents::fromSafeUrl);
+    cheapConverterMap.put(SafeUrlProto.class, SanitizedContents::fromSafeUrlProto);
+    cheapConverterMap.put(TrustedResourceUrl.class, SanitizedContents::fromTrustedResourceUrl);
     cheapConverterMap.put(
-        Future.class,
-        new Converter<Future<?>>() {
-          @Override
-          public SoyValueProvider apply(Future<?> input) {
-            return new SoyFutureValueProvider(input);
-          }
-        });
-    cheapConverterMap.put(
-        EnumValueDescriptor.class,
-        new Converter<EnumValueDescriptor>() {
-          @Override
-          public SoyValue apply(EnumValueDescriptor input) {
-            // / Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
-            return IntegerData.forValue(input.getNumber());
-          }
-        });
-    cheapConverterMap.put(
-        ProtocolMessageEnum.class,
-        new Converter<ProtocolMessageEnum>() {
-          @Override
-          public SoyValue apply(ProtocolMessageEnum input) {
-            // Proto enum that was directly passed into the template
-            return IntegerData.forValue(input.getNumber());
-          }
-        });
-    cheapConverterMap.put(
-        SafeHtml.class,
-        new Converter<SafeHtml>() {
-          @Override
-          public SoyValue apply(SafeHtml obj) {
-            return SanitizedContents.fromSafeHtml(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeHtmlProto.class,
-        new Converter<SafeHtmlProto>() {
-          @Override
-          public SoyValue apply(SafeHtmlProto obj) {
-            return SanitizedContents.fromSafeHtmlProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeScript.class,
-        new Converter<SafeScript>() {
-          @Override
-          public SoyValue apply(SafeScript obj) {
-            return SanitizedContents.fromSafeScript(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeScriptProto.class,
-        new Converter<SafeScriptProto>() {
-          @Override
-          public SoyValue apply(SafeScriptProto obj) {
-            return SanitizedContents.fromSafeScriptProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyle.class,
-        new Converter<SafeStyle>() {
-          @Override
-          public SoyValue apply(SafeStyle obj) {
-            return SanitizedContents.fromSafeStyle(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyleProto.class,
-        new Converter<SafeStyleProto>() {
-          @Override
-          public SoyValue apply(SafeStyleProto obj) {
-            return SanitizedContents.fromSafeStyleProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyleSheet.class,
-        new Converter<SafeStyleSheet>() {
-          @Override
-          public SoyValue apply(SafeStyleSheet obj) {
-            return SanitizedContents.fromSafeStyleSheet(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeStyleSheetProto.class,
-        new Converter<SafeStyleSheetProto>() {
-          @Override
-          public SoyValue apply(SafeStyleSheetProto obj) {
-            return SanitizedContents.fromSafeStyleSheetProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeUrl.class,
-        new Converter<SafeUrl>() {
-          @Override
-          public SoyValue apply(SafeUrl obj) {
-            return SanitizedContents.fromSafeUrl(obj);
-          }
-        });
-    cheapConverterMap.put(
-        SafeUrlProto.class,
-        new Converter<SafeUrlProto>() {
-          @Override
-          public SoyValue apply(SafeUrlProto obj) {
-            return SanitizedContents.fromSafeUrlProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        TrustedResourceUrl.class,
-        new Converter<TrustedResourceUrl>() {
-          @Override
-          public SoyValue apply(TrustedResourceUrl obj) {
-            return SanitizedContents.fromTrustedResourceUrl(obj);
-          }
-        });
-    cheapConverterMap.put(
-        TrustedResourceUrlProto.class,
-        new Converter<TrustedResourceUrlProto>() {
-          @Override
-          public SoyValue apply(TrustedResourceUrlProto obj) {
-            return SanitizedContents.fromTrustedResourceUrlProto(obj);
-          }
-        });
-    cheapConverterMap.put(
-        Message.Builder.class,
-        new Converter<Message.Builder>() {
-          @Override
-          public SoyValueProvider apply(Message.Builder input) {
-            return SoyProtoValue.create(input.build());
-          }
-        });
-    cheapConverterMap.put(
-        Message.class,
-        new Converter<Message>() {
-          @Override
-          public SoyValueProvider apply(Message input) {
-            return SoyProtoValue.create(input);
-          }
-        });
+        TrustedResourceUrlProto.class, SanitizedContents::fromTrustedResourceUrlProto);
+    cheapConverterMap.put(Message.Builder.class, input -> SoyProtoValue.create(input.build()));
+    cheapConverterMap.put(Message.class, SoyProtoValue::create);
 
     expensiveConverterMap.put(
         ByteString.class,
-        new Converter<ByteString>() {
-          @Override
-          public SoyValue apply(ByteString input) {
-            return StringData.forValue(BaseEncoding.base64().encode(input.toByteArray()));
-          }
-        });
-    expensiveConverterMap.put(
-        SoyGlobalsValue.class,
-        new Converter<SoyGlobalsValue>() {
-          @Override
-          public SoyValueProvider apply(SoyGlobalsValue input) {
-            return convert(input.getSoyGlobalValue());
-          }
-        });
-    expensiveConverterMap.put(
-        Map.class,
-        new Converter<Map<String, ?>>() {
-          @Override
-          public SoyValue apply(Map<String, ?> input) {
-            return newDictFromMap(input);
-          }
-        });
-    expensiveConverterMap.put(
-        MarkAsSoyMap.class,
-        new Converter<MarkAsSoyMap>() {
-          @Override
-          public SoyValue apply(MarkAsSoyMap input) {
-            return newSoyMapFromJavaMap(input.delegate());
-          }
-        });
-    expensiveConverterMap.put(
-        Collection.class,
-        new Converter<Collection<?>>() {
-          @Override
-          public SoyValue apply(Collection<?> input) {
-            return newListFromIterable(input);
-          }
-        });
+        input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
+    expensiveConverterMap.put(SoyGlobalsValue.class, input -> convert(input.getSoyGlobalValue()));
+    expensiveConverterMap.put(Map.class, this::newDictFromMap);
+    expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
+    expensiveConverterMap.put(Collection.class, this::newListFromIterable);
     // NOTE: We don't convert plain Iterables, because many types extend from Iterable but are not
     // meant to be enumerated. (e.g. ByteString implements Iterable<Byte>)
-    expensiveConverterMap.put(
-        FluentIterable.class,
-        new Converter<FluentIterable<?>>() {
-          @Override
-          public SoyValue apply(FluentIterable<?> input) {
-            return newListFromIterable(input);
-          }
-        });
+    expensiveConverterMap.put(FluentIterable.class, this::newListFromIterable);
   }
 
   // -----------------------------------------------------------------------------------------------
