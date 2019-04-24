@@ -18,6 +18,7 @@ package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
@@ -98,7 +99,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
     if (errorReporter.hasErrors()) {
       failWithActual("expected to be a valid global", errorReporter.getErrors());
     }
-    Truth.assertThat(expr).named(actualAsString()).isInstanceOf(GlobalNode.class);
+    assertWithMessage(actualAsString()).that(expr).isInstanceOf(GlobalNode.class);
   }
 
   void isValidGlobalNamed(String name) {

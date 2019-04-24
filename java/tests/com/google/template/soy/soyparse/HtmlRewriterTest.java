@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
@@ -441,8 +442,8 @@ public final class HtmlRewriterTest {
     for (String tag : new String[] {"</script>", "</style>", "</title>", "</textarea>", "</xmp>"}) {
       ErrorReporter errorReporter = ErrorReporter.createForTest();
       runPass(tag, errorReporter);
-      assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-          .named("error message for: %s", tag)
+      assertWithMessage("error message for: %s", tag)
+          .that(Iterables.getOnlyElement(errorReporter.getErrors()).message())
           .isEqualTo("Unexpected close tag for context-changing tag.");
     }
   }
@@ -563,8 +564,8 @@ public final class HtmlRewriterTest {
     for (String text : new String[] {"<!--", "<!-- --", "<!--->"}) {
       errorReporter = ErrorReporter.createForTest();
       runPass(text, errorReporter);
-      assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-          .named("error message for: %s", text)
+      assertWithMessage("error message for: %s", text)
+          .that(Iterables.getOnlyElement(errorReporter.getErrors()).message())
           .isEqualTo(
               "template changes context from 'pcdata' to 'html comment'. "
                   + "Did you forget to close the html comment?");

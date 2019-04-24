@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -287,7 +288,7 @@ public final class TransitiveIjParamsTest {
       ImmutableSortedSet<String> tofuIjs = tofu.getUsedIjParamsForTemplate(templateName);
       ImmutableSet<String> sauceIjs =
           compiledTemplates.getTransitiveIjParamsForTemplate(templateName);
-      assertThat(sauceIjs).named("sauce ijs").isEqualTo(tofuIjs);
+      assertWithMessage("sauce ijs").that(sauceIjs).isEqualTo(tofuIjs);
       return sauceIjs;
     }
   }

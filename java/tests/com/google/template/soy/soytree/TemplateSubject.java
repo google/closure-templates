@@ -18,7 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.truth.Fact.simpleFact;
-import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -103,7 +103,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
   public void isWellFormed() {
     ErrorReporter errorReporter = doParse();
-    assertThat(errorReporter.getErrors()).named("the template parsed successfully").isEmpty();
+    assertWithMessage("the template parsed successfully").that(errorReporter.getErrors()).isEmpty();
   }
 
   public void isNotWellFormed() {
