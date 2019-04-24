@@ -73,7 +73,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
     }
 
     void definedAt(SourceLocation srcLocation) {
-      Truth.assertThat(actual().getSourceLocation()).isEqualTo(srcLocation);
+      check("getSourceLocation()").that(actual().getSourceLocation()).isEqualTo(srcLocation);
     }
   }
 
