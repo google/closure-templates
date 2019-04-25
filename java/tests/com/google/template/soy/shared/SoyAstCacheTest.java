@@ -64,14 +64,14 @@ public final class SoyAstCacheTest {
     cache.put("foo", VersionedFile.of(fileNode1, version2));
     VersionedFile versionedFile = cache.get("foo", version2);
     assertThat(versionedFile.file().getId()).isEqualTo(0xdeadbeef);
-    assertThat(versionedFile.file()).isNotSameAs(fileNode1);
+    assertThat(versionedFile.file()).isNotSameInstanceAs(fileNode1);
     assertThat(versionedFile.version()).isEqualTo(version2);
 
     assertThat(cache.get("bar", version1)).isNull();
 
     versionedFile = cache.get("foo", version2);
     assertThat(versionedFile.file().getId()).isEqualTo(0xdeadbeef);
-    assertThat(versionedFile.file()).isNotSameAs(fileNode1);
+    assertThat(versionedFile.file()).isNotSameInstanceAs(fileNode1);
     assertThat(versionedFile.version()).isEqualTo(version2);
 
     // Non matching version.

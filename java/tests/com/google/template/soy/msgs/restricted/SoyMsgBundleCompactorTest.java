@@ -151,7 +151,7 @@ public class SoyMsgBundleCompactorTest {
 
     SoyMsgSelectPart select1 = (SoyMsgSelectPart) xxMsgBundle.getMsg(265).getParts().get(0);
     SoyMsgSelectPart select2 = (SoyMsgSelectPart) xxMsgBundle.getMsg(266).getParts().get(0);
-    assertThat(select2).isNotSameAs(select1);
+    assertThat(select2).isNotSameInstanceAs(select1);
     assertWithMessage("Select var names should be interned")
         .that(select2.getSelectVarName())
         .isSameAs(select1.getSelectVarName());

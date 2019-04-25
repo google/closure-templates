@@ -56,7 +56,7 @@ public class SoyTypeRegistryTest {
     ListType listOfFloat = typeRegistry.getOrCreateListType(FloatType.getInstance());
 
     assertThat(listOfInt2).isSameAs(listOfInt);
-    assertThat(listOfFloat).isNotSameAs(listOfInt);
+    assertThat(listOfFloat).isNotSameInstanceAs(listOfInt);
   }
 
   @Test
@@ -74,8 +74,8 @@ public class SoyTypeRegistryTest {
             StringType.getInstance(), StringType.getInstance());
 
     assertThat(mapOfIntToString2).isSameAs(mapOfIntToString);
-    assertThat(mapOfIntToInt).isNotSameAs(mapOfIntToString);
-    assertThat(mapOfStringToString).isNotSameAs(mapOfIntToString);
+    assertThat(mapOfIntToInt).isNotSameInstanceAs(mapOfIntToString);
+    assertThat(mapOfStringToString).isNotSameInstanceAs(mapOfIntToString);
   }
 
   @Test
@@ -85,7 +85,7 @@ public class SoyTypeRegistryTest {
     SoyType u3 = typeRegistry.getOrCreateUnionType(IntType.getInstance(), StringType.getInstance());
 
     assertThat(u2).isSameAs(u1);
-    assertThat(u3).isNotSameAs(u1);
+    assertThat(u3).isNotSameInstanceAs(u1);
   }
 
   @Test
@@ -104,8 +104,8 @@ public class SoyTypeRegistryTest {
             ImmutableMap.of("a", IntType.getInstance(), "c", FloatType.getInstance()));
 
     assertThat(r2).isSameAs(r1);
-    assertThat(r3).isNotSameAs(r1);
-    assertThat(r4).isNotSameAs(r1);
+    assertThat(r3).isNotSameInstanceAs(r1);
+    assertThat(r4).isNotSameInstanceAs(r1);
   }
 
   @Test
