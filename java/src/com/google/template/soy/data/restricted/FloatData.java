@@ -30,12 +30,7 @@ public final class FloatData extends NumberData {
   /** The float value. */
   private final double value;
 
-  /**
-   * @param value The float value.
-   * @deprecated Use {@link FloatData#forValue}.
-   */
-  @Deprecated
-  public FloatData(double value) {
+  private FloatData(double value) {
     this.value = value;
   }
 
@@ -45,7 +40,6 @@ public final class FloatData extends NumberData {
    * @param value The desired value.
    * @return A FloatData instance with the given value.
    */
-  @SuppressWarnings("deprecation")
   public static FloatData forValue(double value) {
     return new FloatData(value);
   }
