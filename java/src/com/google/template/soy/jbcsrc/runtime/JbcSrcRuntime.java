@@ -40,7 +40,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.SoyString;
@@ -511,7 +510,7 @@ public final class JbcSrcRuntime {
       return RenderResult.done();
     }
 
-    long getPluralRemainder() {
+    double getPluralRemainder() {
       throw new UnsupportedOperationException(
           "this is not a plural message so remainder don't make sense");
     }
@@ -521,7 +520,7 @@ public final class JbcSrcRuntime {
   public static final class PlrSelMsgRenderer extends MsgRenderer {
     private boolean resolvedCases;
     // only one plural is allowed per message so we only need to track one remainder.
-    private long remainder = -1;
+    private double remainder = -1;
 
     public PlrSelMsgRenderer(
         long msgId,
@@ -549,7 +548,7 @@ public final class JbcSrcRuntime {
             parts = selectPart.lookupCase(selectCase);
           } else if (first instanceof SoyMsgPluralPart) {
             SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) first;
-            long pluralValue = getPlural(pluralPart.getPluralVarName());
+            double pluralValue = getPlural(pluralPart.getPluralVarName());
             parts = pluralPart.lookupCase(pluralValue, locale);
             // precalculate and store the remainder.
             remainder = pluralValue - pluralPart.getOffset();
@@ -567,7 +566,7 @@ public final class JbcSrcRuntime {
     }
 
     @Override
-    long getPluralRemainder() {
+    double getPluralRemainder() {
       return remainder;
     }
 
@@ -581,12 +580,12 @@ public final class JbcSrcRuntime {
     }
 
     /** Returns the plural case variable value. */
-    private long getPlural(String pluralVarName) {
-      IntegerData pluralValue = (IntegerData) placeholders.get(pluralVarName);
+    private double getPlural(String pluralVarName) {
+      NumberData pluralValue = (NumberData) placeholders.get(pluralVarName);
       if (pluralValue == null) {
         throw new IllegalArgumentException("No value provided for plural: '" + pluralVarName + "'");
       }
-      return pluralValue.longValue();
+      return pluralValue.numberValue();
     }
   }
 

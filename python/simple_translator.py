@@ -81,7 +81,8 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
     return msg_cases
 
   def render_plural(self, msg, case_value, values):
-    msg_text = msg.get('=%d' % case_value) or msg.get('other')
+    msg_text = (msg.get('=%d' % case_value)
+                if int(case_value) == case_value else None) or msg.get('other')
     return msg_text.format(**values)
 
   def prepare_icu(self, msg_id, msg_text, msg_fields):

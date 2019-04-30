@@ -119,11 +119,11 @@ final class MsgCompiler {
     Expression compileToString(ExprRootNode node, Label reattachPoint);
 
     /**
-     * Compiles the expression to an {@code IntegerData} valued expression.
+     * Compiles the expression to an {@code NumberData} valued expression.
      *
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
      */
-    Expression compileToInt(ExprRootNode node, Label reattachPoint);
+    Expression compileToNumber(ExprRootNode node, Label reattachPoint);
 
     /**
      * Compiles the given node to a statement that writes the result into the given appendable.
@@ -428,7 +428,8 @@ final class MsgCompiler {
     MsgPluralNode repPluralNode = originalMsg.getRepPluralNode(plural.getPluralVarName());
     if (!placeholderNameToPutStatement.containsKey(plural.getPluralVarName())) {
       Label reattachPoint = new Label();
-      Expression value = placeholderCompiler.compileToInt(repPluralNode.getExpr(), reattachPoint);
+      Expression value =
+          placeholderCompiler.compileToNumber(repPluralNode.getExpr(), reattachPoint);
       placeholderNameToPutStatement.put(
           plural.getPluralVarName(),
           putToMapFunction(plural.getPluralVarName(), value, reattachPoint));

@@ -320,7 +320,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       }
 
       // Handle cases.
-      List<SoyMsgPart> caseParts = pluralPart.lookupCase((int) correctPluralValue, locale);
+      List<SoyMsgPart> caseParts = pluralPart.lookupCase(correctPluralValue, locale);
 
       for (SoyMsgPart casePart : caseParts) {
 

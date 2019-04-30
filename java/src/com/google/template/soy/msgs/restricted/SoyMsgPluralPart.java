@@ -76,7 +76,7 @@ public final class SoyMsgPluralPart extends SoyMsgPart {
    *     is known that there are no non-specific plural parts (This is commonly the case for default
    *     messages, since soy only allows direct specification of explicit or 'other').
    */
-  public ImmutableList<SoyMsgPart> lookupCase(long pluralValue, @Nullable ULocale locale) {
+  public ImmutableList<SoyMsgPart> lookupCase(double pluralValue, @Nullable ULocale locale) {
     // TODO(lukes): clean up this method, the control flow is overly complex.  It could be cleaned
     // up by separating cases into 3 different lists.
 

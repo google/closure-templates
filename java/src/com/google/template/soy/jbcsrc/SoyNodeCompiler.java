@@ -40,7 +40,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -1155,8 +1155,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           }
 
           @Override
-          public Expression compileToInt(ExprRootNode node, Label reattachPoint) {
-            return exprCompiler.compile(node, reattachPoint).box().checkedCast(IntegerData.class);
+          public Expression compileToNumber(ExprRootNode node, Label reattachPoint) {
+            return exprCompiler.compile(node, reattachPoint).box().checkedCast(NumberData.class);
           }
 
           @Override
