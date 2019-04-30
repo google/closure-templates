@@ -54,6 +54,21 @@ $jscomp.checkStringArgs = function(thisArg, arg, func) {
   }
   return thisArg + "";
 };
+$jscomp.polyfill("String.prototype.repeat", function(orig) {
+  return orig ? orig : function(copies) {
+    var string = $jscomp.checkStringArgs(this, null, "repeat");
+    if (0 > copies || 1342177279 < copies) {
+      throw new RangeError("Invalid count value");
+    }
+    copies |= 0;
+    for (var result = ""; copies;) {
+      if (copies & 1 && (result += string), copies >>>= 1) {
+        string += string;
+      }
+    }
+    return result;
+  };
+}, "es6", "es3");
 $jscomp.SYMBOL_PREFIX = "jscomp_symbol_";
 $jscomp.initSymbol = function() {
   $jscomp.initSymbol = function() {
@@ -120,6 +135,13 @@ $jscomp.iteratorFromArray = function(array, transform) {
   };
   return iter;
 };
+$jscomp.polyfill("Array.prototype.entries", function(orig) {
+  return orig ? orig : function() {
+    return $jscomp.iteratorFromArray(this, function(i, v) {
+      return [i, v];
+    });
+  };
+}, "es6", "es3");
 $jscomp.polyfill("Array.from", function(orig) {
   return orig ? orig : function(arrayLike, opt_mapFn, opt_thisArg) {
     opt_mapFn = null != opt_mapFn ? opt_mapFn : function(x) {
@@ -137,6 +159,13 @@ $jscomp.polyfill("Array.from", function(orig) {
       }
     }
     return result;
+  };
+}, "es6", "es3");
+$jscomp.polyfill("Array.prototype.keys", function(orig) {
+  return orig ? orig : function() {
+    return $jscomp.iteratorFromArray(this, function(i) {
+      return i;
+    });
   };
 }, "es6", "es3");
 $jscomp.checkEs6ConformanceViaProxy = function() {
