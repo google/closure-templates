@@ -37,7 +37,7 @@ public final class HtmlOpenTagNodeTest {
     assertThat(openTag.toSourceString()).isEqualTo("<div class=\"foo\">");
     assertThat(openTag.isSelfClosing()).isFalse();
     assertThat(openTag.getTagName().getNode()).isInstanceOf(RawTextNode.class);
-    assertThat(openTag.getTagName().getNode()).isSameAs(openTag.getChild(0));
+    assertThat(openTag.getTagName().getNode()).isSameInstanceAs(openTag.getChild(0));
     assertThat(openTag.numChildren()).isEqualTo(2);
   }
 

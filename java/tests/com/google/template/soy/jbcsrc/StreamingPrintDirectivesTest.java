@@ -116,7 +116,7 @@ public final class StreamingPrintDirectivesTest {
     RenderResult result = create.render(output, context);
     // rendering paused because it found our future
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameAs(future1);
+    assertThat(result.future()).isSameInstanceAs(future1);
     // but we actually rendered the first half of the param even though it went through a print
     // directive. all the content in parens went through our directive
     assertThat(output.getAndClearBuffer())
@@ -125,7 +125,7 @@ public final class StreamingPrintDirectivesTest {
     future1.set("future1");
     result = create.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameAs(future2);
+    assertThat(result.future()).isSameInstanceAs(future2);
     // here we made it into .unstreamable, but printed no part of the parameter due to the non
     // streamable print directive
     assertThat(output.getAndClearBuffer())

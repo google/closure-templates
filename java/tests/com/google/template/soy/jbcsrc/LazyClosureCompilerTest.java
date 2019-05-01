@@ -95,13 +95,13 @@ public class LazyClosureCompilerTest {
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameAs(bar); // we found bar!
+    assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("hello ");
 
     // make sure no progress is made
     result = template.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameAs(bar);
+    assertThat(result.future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("hello ");
     bar.set("bar");
 
@@ -206,13 +206,13 @@ public class LazyClosureCompilerTest {
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameAs(bar); // we found bar!
+    assertThat(result.future()).isSameInstanceAs(bar); // we found bar!
     assertThat(output.toString()).isEqualTo("before use");
 
     // make sure no progress is made
     result = template.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
-    assertThat(result.future()).isSameAs(bar);
+    assertThat(result.future()).isSameInstanceAs(bar);
     assertThat(output.toString()).isEqualTo("before use");
     bar.set(" bar");
 

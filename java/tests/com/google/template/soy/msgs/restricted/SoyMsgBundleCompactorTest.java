@@ -135,29 +135,29 @@ public class SoyMsgBundleCompactorTest {
   public void testInterning() {
     assertWithMessage("SoyMsgRawTextPart should be interned")
         .that(yyMsgBundle.getMsg(314).getParts().get(0))
-        .isSameAs(xxMsgBundle.getMsg(314).getParts().get(0));
+        .isSameInstanceAs(xxMsgBundle.getMsg(314).getParts().get(0));
     assertWithMessage("SoyMsgRawTextPart should be interned")
         .that(yyMsgBundle.getMsg(159).getParts().get(0))
-        .isSameAs(xxMsgBundle.getMsg(159).getParts().get(0));
+        .isSameInstanceAs(xxMsgBundle.getMsg(159).getParts().get(0));
     assertWithMessage("SoyMsgPlaceholderPart should be interned")
         .that(yyMsgBundle.getMsg(159).getParts().get(1))
-        .isSameAs(xxMsgBundle.getMsg(159).getParts().get(1));
+        .isSameInstanceAs(xxMsgBundle.getMsg(159).getParts().get(1));
     assertWithMessage("SoyMsgSelectPart should be interned")
         .that(yyMsgBundle.getMsg(265).getParts().get(0))
-        .isSameAs(xxMsgBundle.getMsg(265).getParts().get(0));
+        .isSameInstanceAs(xxMsgBundle.getMsg(265).getParts().get(0));
     assertWithMessage("SoyMsgSelectPart should be interned")
         .that(yyMsgBundle.getMsg(358).getParts().get(0))
-        .isSameAs(xxMsgBundle.getMsg(358).getParts().get(0));
+        .isSameInstanceAs(xxMsgBundle.getMsg(358).getParts().get(0));
 
     SoyMsgSelectPart select1 = (SoyMsgSelectPart) xxMsgBundle.getMsg(265).getParts().get(0);
     SoyMsgSelectPart select2 = (SoyMsgSelectPart) xxMsgBundle.getMsg(266).getParts().get(0);
     assertThat(select2).isNotSameInstanceAs(select1);
     assertWithMessage("Select var names should be interned")
         .that(select2.getSelectVarName())
-        .isSameAs(select1.getSelectVarName());
+        .isSameInstanceAs(select1.getSelectVarName());
     assertWithMessage("Case values should be interned")
         .that(select2.getCases().get(0).spec())
-        .isSameAs(select1.getCases().get(0).spec());
+        .isSameInstanceAs(select1.getCases().get(0).spec());
   }
 
   @Test

@@ -46,10 +46,10 @@ public class CompactInternerTest {
     String firstGoodbye = new String("goodbye");
     interner.intern(firstHello);
     interner.intern(firstGoodbye);
-    assertThat(interner.intern(firstHello)).isSameAs(firstHello);
-    assertThat(interner.intern("hello")).isSameAs(firstHello);
-    assertThat(interner.intern(firstGoodbye)).isSameAs(firstGoodbye);
-    assertThat(interner.intern("goodbye")).isSameAs(firstGoodbye);
+    assertThat(interner.intern(firstHello)).isSameInstanceAs(firstHello);
+    assertThat(interner.intern("hello")).isSameInstanceAs(firstHello);
+    assertThat(interner.intern(firstGoodbye)).isSameInstanceAs(firstGoodbye);
+    assertThat(interner.intern("goodbye")).isSameInstanceAs(firstGoodbye);
   }
 
   @Test
@@ -62,15 +62,15 @@ public class CompactInternerTest {
     // Place the items in the interner the first time.
     for (int i = 0; i < iterations; i++) {
       longs[i] = (long) i;
-      assertThat(interner.intern(longs[i])).isSameAs(longs[i]);
+      assertThat(interner.intern(longs[i])).isSameInstanceAs(longs[i]);
       strings[i] = "String Number " + i;
-      assertThat(interner.intern(strings[i])).isSameAs(strings[i]);
+      assertThat(interner.intern(strings[i])).isSameInstanceAs(strings[i]);
     }
 
     // Second time, make sure we get the same objects.
     for (int i = 0; i < iterations; i++) {
-      assertThat(interner.intern(Long.valueOf(i))).isSameAs(longs[i]);
-      assertThat(interner.intern("String Number " + i)).isSameAs(strings[i]);
+      assertThat(interner.intern(Long.valueOf(i))).isSameInstanceAs(longs[i]);
+      assertThat(interner.intern("String Number " + i)).isSameInstanceAs(strings[i]);
     }
   }
 

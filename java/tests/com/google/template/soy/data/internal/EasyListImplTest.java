@@ -71,7 +71,7 @@ public class EasyListImplTest {
     assertThat(list.length()).isEqualTo(3);
     assertThat(list.asJavaList()).isEqualTo(ImmutableList.of(BLAH_0, PI, BLAH_2));
     assertThat(list.asResolvedJavaList()).isEqualTo(ImmutableList.of(BLAH_0, PI, BLAH_2));
-    assertThat(list.get(0)).isSameAs(BLAH_0);
+    assertThat(list.get(0)).isSameInstanceAs(BLAH_0);
     assertThat(list.get(0)).isNotSameInstanceAs(BLAH_2);
     assertThat(list.get(0)).isEqualTo(BLAH_2); // not same, but they compare equal
     assertThat(list.getProvider(1).resolve().floatValue()).isEqualTo(3.14);

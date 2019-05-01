@@ -92,7 +92,7 @@ public final class FunctionNodeTest {
             .fileSet();
     List<FunctionNode> functionNodes = SoyTreeUtils.getAllNodesOfType(root, FunctionNode.class);
     assertThat(functionNodes).hasSize(2);
-    assertThat(functionNodes.get(0).getSoyFunction()).isSameAs(foo);
-    assertThat(functionNodes.get(1).getSoyFunction()).isSameAs(bar);
+    assertThat(functionNodes.get(0).getSoyFunction()).isSameInstanceAs(foo);
+    assertThat(functionNodes.get(1).getSoyFunction()).isSameInstanceAs(bar);
   }
 }

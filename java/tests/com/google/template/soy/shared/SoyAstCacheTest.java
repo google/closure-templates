@@ -84,6 +84,6 @@ public final class SoyAstCacheTest {
   public void testIdGenerator() {
 
     // Make sure it always returns the same generator.
-    assertThat(cache.getNodeIdGenerator()).isSameAs(cache.getNodeIdGenerator());
+    assertThat(cache.getNodeIdGenerator()).isSameInstanceAs(cache.getNodeIdGenerator());
   }
 }
