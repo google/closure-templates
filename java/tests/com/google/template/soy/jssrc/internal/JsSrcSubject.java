@@ -224,9 +224,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
       String templateBody;
         int startOfJsDoc = file.substring(0, startOfFunction).lastIndexOf("/**");
         templateBody = file.substring(startOfJsDoc, endOfFunction);
-      return check()
-          .withMessage("Unexpected template body generated for %s:", actual())
-          .that(templateBody);
+      return check("generatedTemplate()").that(templateBody);
     }
 
     @Override

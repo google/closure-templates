@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
@@ -259,7 +258,7 @@ public final class TemplateTester {
                     "Expected %s to fail to render, but it rendered '%s'.",
                     actual(), builder.toString())));
       } catch (Throwable t) {
-        return check().that(t);
+        return check("failure()").that(t);
       }
       throw new AssertionError("unreachable");
     }
@@ -293,7 +292,7 @@ public final class TemplateTester {
                 String.format(
                     "Expected %s to fail to compile, but it compiled successfully.", actual())));
       }
-      return check().that(Lists.transform(errors.getErrors(), SoyError::message));
+      return check("errors()").that(Lists.transform(errors.getErrors(), SoyError::message));
     }
 
     private SoyRecord asRecord(Map<String, ?> params) {
@@ -316,7 +315,7 @@ public final class TemplateTester {
         // TODO(lukes): the fact that we are catching an exception means we have structured
         // this subject poorly.  The subject should be responsible for asserting, not actually
         // invoking the functionality under test.
-        failWithCauseAndMessage(e, "Unexpected failure for %s", actualAsString());
+        failWithCauseAndMessage(e, "template was not expected to throw an exception");
         result = null;
       }
       if (result.type() != RenderResult.Type.DONE) {
@@ -409,8 +408,8 @@ public final class TemplateTester {
      * makes the assertion "about" the exception, Truth includes it as a cause.
      */
 
-    private void failWithCauseAndMessage(Throwable cause, String format, Object... args) {
-      check().about(UnexpectedFailureSubject::new).that(cause).doFail(format, args);
+    private void failWithCauseAndMessage(Throwable cause, String message) {
+      check("thrownException()").about(UnexpectedFailureSubject::new).that(cause).doFail(message);
     }
 
     private static final class UnexpectedFailureSubject
@@ -419,8 +418,8 @@ public final class TemplateTester {
         super(metadata, actual);
       }
 
-      void doFail(String format, Object... args) {
-        failWithoutActual(simpleFact(lenientFormat(format, args)));
+      void doFail(String message) {
+        failWithoutActual(simpleFact(message));
       }
     }
   }
