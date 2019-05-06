@@ -52,10 +52,12 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -72,8 +74,12 @@ import javax.inject.Inject;
  */
 public final class SoyValueConverter {
 
-  /** Static instance of this class that does not include any custom value converters. */
-  public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
+  /**
+   * Static instance of this class that does not include any custom value converters.
+   *
+   * @deprecated Use {@link #INSTANCE} instead
+   */
+  @Deprecated public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
 
   public static final SoyValueConverter INSTANCE = UNCUSTOMIZED_INSTANCE;
 
@@ -241,16 +247,17 @@ public final class SoyValueConverter {
     return convertNonPrimitive(obj);
   }
 
-  private SoyValueProvider convertNonPrimitive(@Nullable Object obj) {
-    SoyValueProvider converted = expensiveConverterMap.convert(obj);
-    if (converted != null) {
-      return converted;
-    }
-
-    throw new SoyDataException(
-        "Attempting to convert unrecognized object to Soy value (object type "
-            + obj.getClass().getName()
-            + ").");
+  /**
+   * Converts the object returned by the given supplier lazily.
+   *
+   * <p>The supplier is guaranteed to only be called once and will be immediately discarded after
+   * being invoked.
+   *
+   * @param supplier The object to convert.
+   * @return An equivalent SoyValueProvider.
+   */
+  public SoyValueProvider convertLazy(Supplier<?> supplier) {
+    return new LazyProvider(() -> convert(supplier.get()));
   }
 
   /**
@@ -273,6 +280,50 @@ public final class SoyValueConverter {
           return RenderResult.done();
         }
       };
+    }
+  }
+
+  private SoyValueProvider convertNonPrimitive(@Nullable Object obj) {
+    SoyValueProvider converted = expensiveConverterMap.convert(obj);
+    if (converted != null) {
+      return converted;
+    }
+    throw new SoyDataException(
+        "Attempting to convert unrecognized object to Soy value (object type "
+            + obj.getClass().getName()
+            + ").");
+  }
+
+  private static final class LazyProvider implements SoyValueProvider {
+    Supplier<SoyValueProvider> delegateProvider;
+    SoyValueProvider delegate;
+
+    LazyProvider(Supplier<SoyValueProvider> delegateProvider) {
+      this.delegateProvider = delegateProvider;
+    }
+
+    @Override
+    public SoyValue resolve() {
+      return delegate().resolve();
+    }
+
+    @Override
+    public RenderResult status() {
+      return delegate().status();
+    }
+
+    @Override
+    public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
+        throws IOException {
+      return delegate().renderAndResolve(appendable, isLast);
+    }
+
+    SoyValueProvider delegate() {
+      if (delegate == null) {
+        delegate = delegateProvider.get();
+        delegateProvider = null;
+      }
+      return delegate;
     }
   }
 

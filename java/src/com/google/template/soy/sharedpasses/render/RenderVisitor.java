@@ -929,7 +929,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // Default parameters are undefined if they're unset.
       return;
     }
-    checkValueType(param, paramValue.resolve(), node);
+
+    SoyValue value;
+    try {
+      value = paramValue.resolve();
+    } catch (Exception e) {
+      throw RenderException.createWithSource("failed to evaluate param: " + param.name(), e, node);
+    }
+    checkValueType(param, value, node);
   }
 
   /** Check that the value matches the given param type. */

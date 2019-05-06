@@ -36,7 +36,12 @@ public interface SoySauce {
   /** Returns a new {@link Renderer} for configuring and rendering the given template. */
   Renderer renderTemplate(String template);
 
-  /** Returns the transitive set of {@code $ij} params needed to render this template. */
+  /**
+   * Returns the transitive set of {@code $ij} params needed to render this template.
+   *
+   * <p>NOTE: this will return a super-set of the parameters that will actually be used at runtime,
+   * this is because it doesn't take delpackages or conditional logic inside templates into account.
+   */
   ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo);
 
   /** A Renderer can configure rendering parameters and render the template. */
