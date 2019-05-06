@@ -8,8 +8,8 @@
 
 The first step is to use the Soy compiler to compile a `.soy` file to a
 corresponding JavaScript file.
- See
-[Compiling Templates](dir.md) for more details.
+
+See [Compiling Templates](dir.md) for more details.
 
 Your `foo.soy` file generates a `foo.soy.js` file. Each template in `foo.soy`
 generates a JavaScript function of the same name in `foo.soy.js`, which you can
