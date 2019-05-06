@@ -16,6 +16,8 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.truth.Fact.fact;
+import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
 
@@ -146,7 +148,10 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
       } else {
         compileBody();
       }
-      fail("Compilation suceeded when it should have failed.");
+      failWithoutActual(
+          fact("expected compilation to fail with", expectedClass),
+          simpleFact("but it succeeded"),
+          fact("code was", actual()));
     } catch (Exception actual) {
       assertThat(actual).isInstanceOf(expectedClass);
     }

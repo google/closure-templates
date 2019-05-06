@@ -206,9 +206,7 @@ abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, Str
 
     StringSubject generatesTemplateThat() {
       generateCode();
-      if (fileNode.numChildren() != 1) {
-        fail("expected to only have 1 template: " + fileNode.getChildren());
-      }
+      check("parse().getChildren()").that(fileNode.getChildren()).hasSize(1);
       TemplateNode template = fileNode.getChild(0);
       // we know that 'file' contains exactly one template.  so find it.
       int functionIndex = file.indexOf("function(");

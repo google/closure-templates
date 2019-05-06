@@ -234,9 +234,7 @@ public final class TemplateTester {
                     "Expected %s to fail to render with a %s, but it rendered '%s'",
                     actual(), expected, "")));
       } catch (Throwable t) {
-        if (!expected.isInstance(t)) {
-          failWithBadResults("failsToRenderWith", expected, "failed with", t);
-        }
+        check("failure()").that(t).isInstanceOf(expected);
       }
       return this; // may be dead
     }
@@ -322,13 +320,8 @@ public final class TemplateTester {
         failWithActual("expected to render to completion", result);
       }
 
-      String output = builder.toString();
-      if (!output.equals(expectedOutput)) {
-        failWithBadResults("renders as", expectedOutput, "renders as", output);
-      }
-      if (!expectedLogged.equals(logOutput.toString())) {
-        failWithBadResults("logs", expectedLogged, "logs", logOutput.toString());
-      }
+      check("render()").that(builder.toString()).isEqualTo(expectedOutput);
+      check("logOutput()").that(logOutput.toString()).isEqualTo(expectedLogged);
       return this;
     }
 

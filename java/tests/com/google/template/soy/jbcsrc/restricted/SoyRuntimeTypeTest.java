@@ -15,6 +15,9 @@
  */
 package com.google.template.soy.jbcsrc.restricted;
 
+import static com.google.common.truth.Fact.fact;
+import static com.google.common.truth.Fact.simpleFact;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.FailureMetadata;
@@ -121,9 +124,7 @@ public class SoyRuntimeTypeTest {
 
     SoyRuntimeTypeSubject isBoxedAs(Type type) {
       SoyRuntimeType boxed = SoyRuntimeType.getBoxedType(actual());
-      if (!boxed.runtimeType().equals(type)) {
-        failWithBadResults("isBoxedAs", type.toString(), "boxed as", boxed.runtimeType());
-      }
+      check("boxed()").that(boxed.runtimeType()).isEqualTo(type);
       return this;
     }
 
@@ -134,19 +135,22 @@ public class SoyRuntimeTypeTest {
     SoyRuntimeTypeSubject isUnboxedAs(Type type) {
       Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual());
       if (!unboxedAs.isPresent()) {
-        failWithBadResults("isUnboxedAs", type.toString(), "has no unboxed form", "");
+        failWithoutActual(
+            fact("expected to unbox to", type),
+            simpleFact("but has no unboxed form"),
+            fact("type was", actual()));
       }
-      if (!unboxedAs.get().runtimeType().equals(type)) {
-        failWithBadResults(
-            "isUnboxedAs", type.toString(), "unboxed as", unboxedAs.get().runtimeType());
-      }
+      check("boxed()").that(unboxedAs.get().runtimeType()).isEqualTo(type);
       return this;
     }
 
     SoyRuntimeTypeSubject isNotUnboxable() {
       Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual());
       if (unboxedAs.isPresent()) {
-        failWithBadResults("isNotUnboxable", "", "unboxed as", unboxedAs.get().runtimeType());
+        failWithoutActual(
+            simpleFact("expected not to unbox"),
+            fact("but unboxed to", unboxedAs.get().runtimeType()),
+            fact("type was", actual()));
       }
       return this;
     }

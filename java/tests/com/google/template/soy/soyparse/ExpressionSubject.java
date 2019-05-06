@@ -59,10 +59,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   void generatesASTWithRootOfType(Class<? extends ExprNode> clazz) {
     ExprNode root = isValidExpression();
-    if (!clazz.isInstance(root)) {
-      failWithBadResults("generates an ast with root of type", clazz, "has type", root.getClass());
-    }
-    Truth.assertThat(root).isInstanceOf(clazz);
+    check("parseExpression()").that(root).isInstanceOf(clazz);
   }
 
   void isNotValidExpression() {
@@ -107,14 +104,8 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
     if (errorReporter.hasErrors()) {
       failWithActual("expected to be valid global", errorReporter.getErrors());
     }
-    String actualName = globalNode.getName();
-    if (!actualName.equals(name)) {
-      failWithBadResults("is global named", name, "has name", actualName);
-    }
-    String actualSourceString = globalNode.toSourceString();
-    if (!actualSourceString.equals(name)) {
-      failWithBadResults("is global named", name, "has source string", actualSourceString);
-    }
+    check("parseExpression().getName()").that(globalNode.getName()).isEqualTo(name);
+    check("parseExpression().toSourceString()").that(globalNode.toSourceString()).isEqualTo(name);
   }
 
   void isValidVar() {
@@ -129,13 +120,8 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
     assertThat(errorReporter.hasErrors()).isFalse();
 
-    String actualName = varNode.getName();
-    if (!actualName.equals(name)) {
-      failWithBadResults("is var named", name, "is named", actualName);
-    }
-    if (!varNode.toSourceString().equals("$" + name)) {
-      failWithBadResults("has sourceString", "$" + name, "is named", varNode.toSourceString());
-    }
+    check("parseExpression().getName()").that(varNode.getName()).isEqualTo(name);
+    check("parseExpression().getName()").that(varNode.toSourceString()).isEqualTo("$" + name);
   }
 
   ExpressionSubject withAlias(String alias, String namespace) {

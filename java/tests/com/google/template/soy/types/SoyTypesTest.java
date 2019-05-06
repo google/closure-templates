@@ -704,7 +704,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual());
       SoyType rightType = parseType(other);
       if (!leftType.isAssignableFrom(rightType)) {
-        fail("isAssignableFrom", other);
+        failWithActual("expected to be assignable from", other);
       }
     }
 
@@ -712,7 +712,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual());
       SoyType rightType = parseType(other);
       if (leftType.isAssignableFrom(rightType)) {
-        fail("isNotAssignableFrom", other);
+        failWithActual("expected not to be assignable from", other);
       }
     }
 
@@ -726,7 +726,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual());
       SoyType rightType = parseType(other);
       if (!leftType.equals(rightType)) {
-        fail("isEqualTo", other);
+        failWithActual("expected", other);
       }
       // make sure that assignability is compatible with equality.
       if (!leftType.isAssignableFrom(rightType)) {
@@ -753,7 +753,7 @@ public class SoyTypesTest {
       SoyType leftType = parseType(actual());
       SoyType rightType = parseType(other);
       if (leftType.equals(rightType)) {
-        fail("isNotEqualTo", other);
+        failWithActual("expected not to be", other);
       }
       // make sure that assignability is compatible with equality.
       if (leftType.isAssignableFrom(rightType) && rightType.isAssignableFrom(leftType)) {

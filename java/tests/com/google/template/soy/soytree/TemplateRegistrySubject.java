@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
@@ -43,7 +42,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   TemplateBasicNodeSubject containsBasicTemplate(String name) {
     TemplateMetadata templateBasicNode = actual().getBasicTemplateOrElement(name);
     if (templateBasicNode == null) {
-      fail("The registry doesn't contain a template named", name);
+      failWithActual("expected to contain a template named", name);
     }
     return Truth.assertAbout(TemplateBasicNodeSubject::new).that(templateBasicNode);
   }
@@ -51,7 +50,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   void doesNotContainBasicTemplate(String name) {
     TemplateMetadata templateBasicNode = actual().getBasicTemplateOrElement(name);
     if (templateBasicNode != null) {
-      fail("The registry does contain a template named", name);
+      failWithActual("expected not to contain a template named", name);
     }
   }
 

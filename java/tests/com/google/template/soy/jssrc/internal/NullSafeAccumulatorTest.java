@@ -173,9 +173,7 @@ public final class NullSafeAccumulatorTest {
           actual()
               .result(CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
               .getCode();
-      if (!actualCode.equals(expectedCode)) {
-        failWithBadResults("generates", expectedCode, "generates", actualCode);
-      }
+      check("getCode()").that(actualCode).isEqualTo(expectedCode);
     }
   }
 }
