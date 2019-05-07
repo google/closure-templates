@@ -56,19 +56,6 @@ public final class NodeContentKinds {
           .put(SanitizedContentKind.TEXT, "goog.soy.data.UnsanitizedText")
           .build();
 
-  private static final ImmutableMap<SanitizedContentKind, String> IDOM_KIND_TO_JS_CTOR_NAME =
-      ImmutableMap.<SanitizedContentKind, String>builder()
-          .put(SanitizedContentKind.HTML, "Function")
-          .put(SanitizedContentKind.ATTRIBUTES, "Function")
-          .put(SanitizedContentKind.JS, "goog.soy.data.SanitizedJs")
-          .put(SanitizedContentKind.URI, "goog.soy.data.SanitizedUri")
-          .put(SanitizedContentKind.CSS, "goog.soy.data.SanitizedCss")
-          .put(
-              SanitizedContentKind.TRUSTED_RESOURCE_URI,
-              "goog.soy.data.SanitizedTrustedResourceUri")
-          .put(SanitizedContentKind.TEXT, "goog.soy.data.UnsanitizedText")
-          .build();
-
   /** The Javascript sanitized ordainer functions. */
   private static final ImmutableMap<SanitizedContentKind, String> KIND_TO_JS_ORDAINER_NAME =
       ImmutableMap.<SanitizedContentKind, String>builder()
@@ -144,9 +131,6 @@ public final class NodeContentKinds {
     if (!KIND_TO_JS_CTOR_NAME.keySet().containsAll(allKinds)) {
       throw new AssertionError("Not all ContentKind enums have a JS constructor");
     }
-    if (!IDOM_KIND_TO_JS_CTOR_NAME.keySet().containsAll(allKinds)) {
-      throw new AssertionError("Not all ContentKind enums have a Incremental DOM JS constructor");
-    }
 
     // These are the content kinds that actually have a native Soy language representation.
     if (!KIND_TO_JS_ORDAINER_NAME.keySet().containsAll(allKinds)) {
@@ -171,18 +155,6 @@ public final class NodeContentKinds {
   public static String toJsSanitizedContentCtorName(SanitizedContentKind contentKind) {
     // goog.soy.data.SanitizedHtml types etc are defined in Closure.
     return Preconditions.checkNotNull(KIND_TO_JS_CTOR_NAME.get(contentKind));
-  }
-
-  /**
-   * Given a {@link SanitizedContentKind}, returns the corresponding JS SanitizedContent
-   * constructor.
-   *
-   * <p>This functions similarly to {@link #toJsSanitizedContentCtorName}, but replaces HTML and
-   * Attribute types with Function instead of their sanitized types since in Incremental DOM, the
-   * HTML types are actually functions that are invoked.
-   */
-  public static String toIDOMSanitizedContentCtorName(SanitizedContentKind contentKind) {
-    return Preconditions.checkNotNull(IDOM_KIND_TO_JS_CTOR_NAME.get(contentKind));
   }
 
   /**
