@@ -81,8 +81,8 @@ public abstract class SoyFileSetParser {
    * Simple tuple of un an-evaluatied compilation unit containing information about dependencies.
    */
   @AutoValue
-  abstract static class CompilationUnitAndKind {
-    static CompilationUnitAndKind create(
+  public abstract static class CompilationUnitAndKind {
+    public static CompilationUnitAndKind create(
         SoyFileKind fileKind, String filePath, CompilationUnit compilationUnit) {
       // sanity check
       checkArgument(
