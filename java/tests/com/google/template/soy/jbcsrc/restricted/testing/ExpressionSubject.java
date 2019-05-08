@@ -45,20 +45,22 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
     return Truth.assertAbout(ExpressionSubject::new).that(resp);
   }
 
+  private final Expression actual;
   private final ExpressionEvaluator evaluator = new ExpressionEvaluator();
 
   private ExpressionSubject(FailureMetadata failureMetadata, Expression subject) {
     super(failureMetadata, subject);
+    this.actual = subject;
   }
 
   public ExpressionSubject evaluatesTo(int expected) {
-    evaluator.compile(actual());
+    evaluator.compile(actual);
     check("invoke()").that(((IntInvoker) evaluator.invoker).invoke()).isEqualTo(expected);
     return this;
   }
 
   public ExpressionSubject evaluatesTo(boolean expected) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     boolean actual;
     try {
       actual = ((BooleanInvoker) evaluator.invoker).invoke();
@@ -70,7 +72,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
   }
 
   public ExpressionSubject evaluatesTo(double expected) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     double actual;
     try {
       actual = ((DoubleInvoker) evaluator.invoker).invoke();
@@ -82,7 +84,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
   }
 
   public ExpressionSubject evaluatesTo(long expected) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     long actual;
     try {
       actual = ((LongInvoker) evaluator.invoker).invoke();
@@ -94,7 +96,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
   }
 
   public ExpressionSubject evaluatesTo(char expected) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     char actual;
     try {
       actual = ((CharInvoker) evaluator.invoker).invoke();
@@ -106,7 +108,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
   }
 
   public ExpressionSubject evaluatesTo(Object expected) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     Object actual;
     try {
       actual = ((ObjectInvoker) evaluator.invoker).invoke();
@@ -122,9 +124,9 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
    * coupled tests.
    */
   public ExpressionSubject hasCode(String... instructions) {
-    evaluator.compile(actual());
+    evaluator.compile(actual);
     String formatted = Joiner.on('\n').join(instructions);
-    check("code()").that(actual().trace().trim()).isEqualTo(formatted);
+    check("code()").that(actual.trace().trim()).isEqualTo(formatted);
     return this;
   }
 
@@ -133,15 +135,15 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
    * coupled tests.
    */
   public ExpressionSubject doesNotContainCode(String... instructions) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     String formatted = Joiner.on('\n').join(instructions);
-    String actual = actual().trace().trim();
+    String actual = this.actual.trace().trim();
     check("code()").that(actual).doesNotContain(formatted);
     return this;
   }
 
   public ExpressionSubject evaluatesToInstanceOf(Class<?> expected) {
-    evaluator.compile(actual());
+    evaluator.compile(this.actual);
     Object actual;
     try {
       actual = ((ObjectInvoker) evaluator.invoker).invoke();
@@ -149,7 +151,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
       failWithoutActual(
           fact("expected to evaluate to an instance of", expected),
           fact("but failed with", t),
-          fact("expression was", actual()));
+          fact("expression was", this.actual));
       return this;
     }
     check("invoke()").that(actual).isInstanceOf(expected);
@@ -160,7 +162,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
     failWithoutActual(
         fact("expected to evaluate to", expected),
         fact("but failed with", t),
-        fact("expression was", actual()));
+        fact("expression was", this.actual));
     return this;
   }
 
@@ -169,7 +171,7 @@ public final class ExpressionSubject extends Subject<ExpressionSubject, Expressi
   }
 
   public ExpressionSubject throwsException(Class<? extends Throwable> clazz, String message) {
-    evaluator.compile(actual());
+    evaluator.compile(actual);
     try {
       evaluator.invoker.voidInvoke();
     } catch (Throwable t) {

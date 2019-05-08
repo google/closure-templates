@@ -36,6 +36,7 @@ import com.google.template.soy.exprtree.VarRefNode;
  */
 final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
+  private final String actual;
   private final ErrorReporter errorReporter;
 
   private static final Subject.Factory<ExpressionSubject, String> FACTORY =
@@ -50,6 +51,7 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
 
   public ExpressionSubject(FailureMetadata failureMetadata, String s, ErrorReporter errorReporter) {
     super(failureMetadata, s);
+    this.actual = s;
     this.errorReporter = errorReporter;
   }
 
@@ -130,6 +132,6 @@ final class ExpressionSubject extends Subject<ExpressionSubject, String> {
   }
 
   private ExprNode parseExpression() {
-    return SoyFileParser.parseExpression(actual(), errorReporter);
+    return SoyFileParser.parseExpression(actual, errorReporter);
   }
 }

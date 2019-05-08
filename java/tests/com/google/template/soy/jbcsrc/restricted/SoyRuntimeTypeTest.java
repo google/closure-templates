@@ -114,8 +114,11 @@ public class SoyRuntimeTypeTest {
   }
 
   private static final class SoyRuntimeTypeSubject extends Subject<SoyRuntimeTypeSubject, SoyType> {
+    private final SoyType actual;
+
     protected SoyRuntimeTypeSubject(FailureMetadata metadata, SoyType actual) {
       super(metadata, actual);
+      this.actual = actual;
     }
 
     SoyRuntimeTypeSubject isBoxedAs(Class<?> type) {
@@ -123,7 +126,7 @@ public class SoyRuntimeTypeTest {
     }
 
     SoyRuntimeTypeSubject isBoxedAs(Type type) {
-      SoyRuntimeType boxed = SoyRuntimeType.getBoxedType(actual());
+      SoyRuntimeType boxed = SoyRuntimeType.getBoxedType(actual);
       check("boxed()").that(boxed.runtimeType()).isEqualTo(type);
       return this;
     }
@@ -133,7 +136,7 @@ public class SoyRuntimeTypeTest {
     }
 
     SoyRuntimeTypeSubject isUnboxedAs(Type type) {
-      Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual());
+      Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual);
       if (!unboxedAs.isPresent()) {
         failWithoutActual(
             fact("expected to unbox to", type),
@@ -145,7 +148,7 @@ public class SoyRuntimeTypeTest {
     }
 
     SoyRuntimeTypeSubject isNotUnboxable() {
-      Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual());
+      Optional<SoyRuntimeType> unboxedAs = SoyRuntimeType.getUnboxedType(actual);
       if (unboxedAs.isPresent()) {
         failWithoutActual(
             simpleFact("expected not to unbox"),

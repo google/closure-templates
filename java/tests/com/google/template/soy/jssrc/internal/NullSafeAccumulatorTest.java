@@ -164,13 +164,16 @@ public final class NullSafeAccumulatorTest {
   private static final class AccumulatorSubject
       extends Subject<AccumulatorSubject, NullSafeAccumulator> {
 
+    private final NullSafeAccumulator actual;
+
     AccumulatorSubject(FailureMetadata failureMetadata, NullSafeAccumulator actual) {
       super(failureMetadata, actual);
+      this.actual = actual;
     }
 
     void generates(String expectedCode) {
       String actualCode =
-          actual()
+          actual
               .result(CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
               .getCode();
       check("getCode()").that(actualCode).isEqualTo(expectedCode);

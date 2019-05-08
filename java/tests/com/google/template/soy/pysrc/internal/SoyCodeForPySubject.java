@@ -43,6 +43,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
 
   private static final String RUNTIME_PATH = "example.runtime";
 
+  private final String actual;
   private String bidiIsRtlFn = "";
 
   private String environmentModulePath = "";
@@ -63,6 +64,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
    */
   SoyCodeForPySubject(FailureMetadata failureMetadata, String code, boolean isFile) {
     super(failureMetadata, code);
+    this.actual = code;
     this.isFile = isFile;
   }
 
@@ -158,7 +160,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   }
 
   private String compileFile() {
-    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual()).parse().fileSet();
+    SoyFileSetNode node = SoyFileSetParserBuilder.forFileContents(actual).parse().fileSet();
     List<String> fileContents =
         PySrcMain.createVisitor(
                 defaultOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding(), ImmutableMap.of())
@@ -169,7 +171,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
   private String compileBody() {
     SoyNode node =
         SharedTestUtils.getNode(
-            SoyFileSetParserBuilder.forTemplateContents(actual()).parse().fileSet(), 0);
+            SoyFileSetParserBuilder.forTemplateContents(actual).parse().fileSet(), 0);
 
     // Setup the GenPyCodeVisitor's state before the node is visited.
     GenPyCodeVisitor genPyCodeVisitor =

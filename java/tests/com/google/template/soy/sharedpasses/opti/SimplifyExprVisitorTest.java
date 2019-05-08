@@ -159,13 +159,16 @@ public final class SimplifyExprVisitorTest {
   // Helpers.
 
   private static final class SimplifySubject extends Subject<SimplifySubject, String> {
+    private final String actual;
+
     private SimplifySubject(FailureMetadata failureMetadata, String s) {
       super(failureMetadata, s);
+      this.actual = s;
     }
 
     private void simplifiesTo(String expected) {
       ExprRootNode exprRoot =
-          new ExprRootNode(SoyFileParser.parseExpression(actual(), ErrorReporter.exploding()));
+          new ExprRootNode(SoyFileParser.parseExpression(actual, ErrorReporter.exploding()));
 
       PluginResolver resolver =
           new PluginResolver(

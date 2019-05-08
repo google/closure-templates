@@ -148,6 +148,7 @@ public final class TemplateTester {
   }
 
   static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
+    private final String actual;
     private final List<SoyFunction> soyFunctions = new ArrayList<>();
     private final List<SoySourceFunction> soySourceFunctions = new ArrayList<>();
     private final RenderContext.Builder defaultContextBuilder = createDefaultBuilder();
@@ -160,6 +161,7 @@ public final class TemplateTester {
 
     private CompiledTemplateSubject(FailureMetadata failureMetadata, String subject) {
       super(failureMetadata, subject);
+      this.actual = subject;
     }
 
     CompiledTemplateSubject withTypeRegistry(SoyTypeRegistry typeRegistry) {
@@ -232,7 +234,7 @@ public final class TemplateTester {
             simpleFact(
                 String.format(
                     "Expected %s to fail to render with a %s, but it rendered '%s'",
-                    actual(), expected, "")));
+                    actual, expected, "")));
       } catch (Throwable t) {
         check("failure()").that(t).isInstanceOf(expected);
       }
@@ -254,7 +256,7 @@ public final class TemplateTester {
             simpleFact(
                 String.format(
                     "Expected %s to fail to render, but it rendered '%s'.",
-                    actual(), builder.toString())));
+                    actual, builder.toString())));
       } catch (Throwable t) {
         return check("failure()").that(t);
       }
@@ -263,7 +265,7 @@ public final class TemplateTester {
 
     @CheckReturnValue
     public IterableSubject failsToCompileWithErrorsThat() {
-      SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual());
+      SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual);
       for (SoyFunction function : soyFunctions) {
         builder.addSoyFunction(function);
       }
@@ -288,7 +290,7 @@ public final class TemplateTester {
         failWithoutActual(
             simpleFact(
                 String.format(
-                    "Expected %s to fail to compile, but it compiled successfully.", actual())));
+                    "Expected %s to fail to compile, but it compiled successfully.", actual)));
       }
       return check("errors()").that(Lists.transform(errors.getErrors(), SoyError::message));
     }
@@ -329,15 +331,15 @@ public final class TemplateTester {
     protected String actualCustomStringRepresentation() {
       if (classData == null) {
         // hasn't been compiled yet.  just use the source text
-        return actual();
+        return actual;
       }
 
-      return "(<\n" + actual() + "\n Compiled as: \n" + Joiner.on('\n').join(classData) + "\n>)";
+      return "(<\n" + actual + "\n Compiled as: \n" + Joiner.on('\n').join(classData) + "\n>)";
     }
 
     private void compile() {
       if (classData == null) {
-        SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual());
+        SoyFileSetParserBuilder builder = SoyFileSetParserBuilder.forFileContents(actual);
         for (SoyFunction function : soyFunctions) {
           builder.addSoyFunction(function);
         }

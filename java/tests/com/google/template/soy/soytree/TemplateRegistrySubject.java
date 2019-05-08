@@ -31,8 +31,11 @@ import java.util.List;
  */
 final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, TemplateRegistry> {
 
+  private final TemplateRegistry actual;
+
   private TemplateRegistrySubject(FailureMetadata failureMetadata, TemplateRegistry registry) {
     super(failureMetadata, registry);
+    this.actual = registry;
   }
 
   static TemplateRegistrySubject assertThatRegistry(TemplateRegistry registry) {
@@ -40,7 +43,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   }
 
   TemplateBasicNodeSubject containsBasicTemplate(String name) {
-    TemplateMetadata templateBasicNode = actual().getBasicTemplateOrElement(name);
+    TemplateMetadata templateBasicNode = actual.getBasicTemplateOrElement(name);
     if (templateBasicNode == null) {
       failWithActual("expected to contain a template named", name);
     }
@@ -48,7 +51,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
   }
 
   void doesNotContainBasicTemplate(String name) {
-    TemplateMetadata templateBasicNode = actual().getBasicTemplateOrElement(name);
+    TemplateMetadata templateBasicNode = actual.getBasicTemplateOrElement(name);
     if (templateBasicNode != null) {
       failWithActual("expected not to contain a template named", name);
     }
@@ -56,35 +59,41 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
 
   TemplateDelegateNodesSubject containsDelTemplate(String name) {
     ImmutableList<TemplateMetadata> delTemplates =
-        actual().getDelTemplateSelector().delTemplateNameToValues().get(name);
+        actual.getDelTemplateSelector().delTemplateNameToValues().get(name);
     Truth.assertThat(delTemplates).isNotEmpty();
     return Truth.assertAbout(TemplateDelegateNodesSubject::new).that(delTemplates);
   }
 
   void doesNotContainDelTemplate(String name) {
-    Truth.assertThat(actual().getDelTemplateSelector().hasDelTemplateNamed(name)).isFalse();
+    Truth.assertThat(actual.getDelTemplateSelector().hasDelTemplateNamed(name)).isFalse();
   }
 
   static class TemplateBasicNodeSubject
       extends Subject<TemplateBasicNodeSubject, TemplateMetadata> {
+    private final TemplateMetadata actual;
+
     TemplateBasicNodeSubject(FailureMetadata failureMetadata, TemplateMetadata templateBasicNode) {
       super(failureMetadata, templateBasicNode);
+      this.actual = templateBasicNode;
     }
 
     void definedAt(SourceLocation srcLocation) {
-      check("getSourceLocation()").that(actual().getSourceLocation()).isEqualTo(srcLocation);
+      check("getSourceLocation()").that(actual.getSourceLocation()).isEqualTo(srcLocation);
     }
   }
 
   static class TemplateDelegateNodesSubject
       extends Subject<TemplateDelegateNodesSubject, List<TemplateMetadata>> {
+    private final List<TemplateMetadata> actual;
+
     TemplateDelegateNodesSubject(FailureMetadata failureMetadata, List<TemplateMetadata> nodes) {
       super(failureMetadata, nodes);
+      this.actual = nodes;
     }
 
     void definedAt(SourceLocation sourceLocation) {
       List<SourceLocation> locations = new ArrayList<>();
-      for (TemplateMetadata delegateNode : actual()) {
+      for (TemplateMetadata delegateNode : actual) {
         locations.add(delegateNode.getSourceLocation());
       }
       Truth.assertThat(locations).contains(sourceLocation);

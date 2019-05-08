@@ -51,12 +51,14 @@ import java.util.Map;
 public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, String> {
 
   // disable optimizer for backwards compatibility
+  private final String actual;
   private final SoyGeneralOptions opts = new SoyGeneralOptions().disableOptimizer();
 
   private final LocalVariableStack localVarExprs;
 
   private SoyExprForPySubject(FailureMetadata failureMetadata, String expr) {
     super(failureMetadata, expr);
+    this.actual = expr;
     localVarExprs = new LocalVariableStack();
   }
 
@@ -105,8 +107,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
    * @param expectedPyExprs the expected result of compilation
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
-    SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(getSubject()).parse().fileSet();
+    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(actual).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
@@ -168,7 +169,7 @@ public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, Stri
   public void translatesTo(PyExpr expectedPyExpr, Class<? extends PyExpr> expectedClass) {
 
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(untypedTemplateBodyForExpression(getSubject()))
+        SoyFileSetParserBuilder.forTemplateContents(untypedTemplateBodyForExpression(actual))
             .options(opts)
             .parse()
             .fileSet();

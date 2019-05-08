@@ -40,11 +40,13 @@ import javax.annotation.Nullable;
  */
 public final class TemplateSubject extends Subject<TemplateSubject, String> {
 
+  private final String actual;
   private SourceLocation actualSourceLocation;
   private SoyFileNode fileNode;
 
   TemplateSubject(FailureMetadata failureMetadata, String s) {
     super(failureMetadata, s);
+    this.actual = s;
   }
 
   public static TemplateSubject assertThatTemplateContent(String input) {
@@ -114,7 +116,7 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
   private ErrorReporter doParse() {
     SoyFileSupplier sourceFile =
         SoyFileSupplier.Factory.create(
-            "{namespace test}\n" + "{template .foo}\n" + actual() + "\n" + "{/template}",
+            "{namespace test}\n" + "{template .foo}\n" + actual + "\n" + "{/template}",
             "example.soy");
     ErrorReporter errorReporter =
         ErrorReporter.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
