@@ -153,7 +153,7 @@ public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, Stri
       failWithoutActual(
           fact("expected compilation to fail with", expectedClass),
           simpleFact("but it succeeded"),
-          fact("code was", actual()));
+          fact("code was", this.actual));
     } catch (Exception actual) {
       assertThat(actual).isInstanceOf(expectedClass);
     }

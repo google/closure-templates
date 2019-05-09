@@ -141,7 +141,7 @@ public class SoyRuntimeTypeTest {
         failWithoutActual(
             fact("expected to unbox to", type),
             simpleFact("but has no unboxed form"),
-            fact("type was", actual()));
+            fact("type was", actual));
       }
       check("boxed()").that(unboxedAs.get().runtimeType()).isEqualTo(type);
       return this;
@@ -153,7 +153,7 @@ public class SoyRuntimeTypeTest {
         failWithoutActual(
             simpleFact("expected not to unbox"),
             fact("but unboxed to", unboxedAs.get().runtimeType()),
-            fact("type was", actual()));
+            fact("type was", actual));
       }
       return this;
     }
