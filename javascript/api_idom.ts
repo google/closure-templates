@@ -272,7 +272,8 @@ export class NullRenderer extends IncrementalDomRenderer {
 /**
  * For the current pointer, returns the correct key - either the original
  * key if the proposed key is a suffix (this means that we're patching
- * a subtree of the originally rendered template), or the proposed key
+ * a subtree of the originally rendered template) or the current key is
+ * a suffix (we are rehydrating from a parent), or the proposed key
  * otherwise (go/soy-idom-suffix-matching-strategy).
  */
 function getKeyForCurrentPointer(proposedKeyArr?: ElementKey[]): string|null {
@@ -293,19 +294,21 @@ function getKeyForCurrentPointer(proposedKeyArr?: ElementKey[]): string|null {
   if (!currentPointerKey) return JSON.stringify(proposedKeyArr);
 
   const currentPointerKeyArr = JSON.parse(currentPointerKey);
-  return isProposedKeySuffixOfCurrentKey(proposedKeyArr, currentPointerKeyArr) ?
+  return isMatchingKey(proposedKeyArr, currentPointerKeyArr) ?
       // Just use the current (original) key.
       currentPointerKey :
       JSON.stringify(proposedKeyArr);
 }
 
 /**
- * Returns whether the proposed key is a suffix of the current key.
+ * Returns whether the proposed key is a suffix of the current key or vice
+ * versa.
  * For example:
  * - proposedKeyArr: ['b', 'c'], currentKeyArr: ['a', 'b', 'c'] => true
+ * - proposedKeyArr: ['a', 'b', 'c'], currentKeyArr: ['b', 'c'],  => true
  * - proposedKeyArr: ['b', 'c'], currentKeyArr: ['a', 'b', 'c', 'd'] => false
  */
-export function isProposedKeySuffixOfCurrentKey(
+export function isMatchingKey(
     proposedKeyArr: ElementKey[], currentPointerKeyArr: ElementKey[]) {
   let i = proposedKeyArr.length - 1;
   let j = currentPointerKeyArr.length - 1;
@@ -313,5 +316,5 @@ export function isProposedKeySuffixOfCurrentKey(
     i--;
     j--;
   }
-  return i < 0;
+  return i < 0 || j < 0;
 }
