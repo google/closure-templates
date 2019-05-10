@@ -992,6 +992,10 @@ goog.asserts.assert = function(condition, opt_message, var_args) {
   goog.asserts.ENABLE_ASSERTS && !condition && goog.asserts.doAssertFailure_("", null, opt_message, Array.prototype.slice.call(arguments, 2));
   return condition;
 };
+goog.asserts.assertExists = function(value, opt_message, var_args) {
+  goog.asserts.ENABLE_ASSERTS && null == value && goog.asserts.doAssertFailure_("Expected to exist: %s.", [value], opt_message, Array.prototype.slice.call(arguments, 2));
+  return value;
+};
 goog.asserts.fail = function(opt_message, var_args) {
   goog.asserts.ENABLE_ASSERTS && goog.asserts.errorHandler_(new goog.asserts.AssertionError("Failure" + (opt_message ? ": " + opt_message : ""), Array.prototype.slice.call(arguments, 1)));
 };
