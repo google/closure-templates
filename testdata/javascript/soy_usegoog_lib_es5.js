@@ -626,7 +626,7 @@ goog.transpile_ = function(code$jscomp$0, path$jscomp$0, target) {
     var transpilerPath = goog.basePath + goog.TRANSPILER, transpilerCode = goog.loadFileSync_(transpilerPath);
     if (transpilerCode) {
       (function() {
-        eval(transpilerCode + "\n//# sourceURL=" + transpilerPath);
+        (0,eval)(transpilerCode + "\n//# sourceURL=" + transpilerPath);
       }).call(goog.global);
       if (goog.global.$gwtExport && goog.global.$gwtExport.$jscomp && !goog.global.$gwtExport.$jscomp.transpile) {
         throw Error('The transpiler did not properly export the "transpile" method. $gwtExport: ' + JSON.stringify(goog.global.$gwtExport));
@@ -940,7 +940,16 @@ goog.identity_ = function(s) {
   return s;
 };
 goog.createTrustedTypesPolicy = function(name) {
-  return "undefined" !== typeof TrustedTypes && TrustedTypes.createPolicy ? TrustedTypes.createPolicy(name, {createHTML:goog.identity_, createScript:goog.identity_, createScriptURL:goog.identity_, createURL:goog.identity_}) : null;
+  var policy = null;
+  if ("undefined" === typeof TrustedTypes || !TrustedTypes.createPolicy) {
+    return policy;
+  }
+  try {
+    policy = TrustedTypes.createPolicy(name, {createHTML:goog.identity_, createScript:goog.identity_, createScriptURL:goog.identity_, createURL:goog.identity_});
+  } catch (e) {
+    goog.logToConsole_(e.message);
+  }
+  return policy;
 };
 goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ? goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + "#base") : null;
 goog.debug = {};
