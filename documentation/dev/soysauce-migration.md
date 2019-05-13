@@ -59,7 +59,7 @@ reason, there is an ahead of time compiler for `SoySauce`. See
 Once you have precompiled all your templates, you can construct a `SoySauce`
 object at runtime without `SoyFileSet` using 2 strategies.
 
-<!--zippy-->
+<section class="zippy">
 
 via `SoySauceBuilder`.
 
@@ -74,9 +74,9 @@ SoySauce soySauce = new SoySauceBuilder().build();
 
 See [Rendering from java](java.md#create-soysauce) for more details.
 
-<!--endzippy-->
+</section>
 
-<!--zippy-->
+<section class="zippy">
 
 via `Guice`
 
@@ -94,7 +94,7 @@ SoySauce soy = Guice.createInjector(new PrecompiledSoyModule())
 This is useful if you are supplying plugins and plugin instances via `Guice`
 multibinders.
 
-<!--endzippy-->
+</section>
 
 At this point you have everthing compiling and loaded correctly, now it is time
 to start rendering.
