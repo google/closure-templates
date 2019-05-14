@@ -342,7 +342,7 @@ Use `map` instead of `legacy_object_map` for all new Soy code.
 
 Backend    | type in host language
 ---------- | ---------------------
-JavaScript | `Map`
+JavaScript | `soy.map` (which is a structural interface covering `Map` and [`jspb.Map`](https://github.com/protocolbuffers/protobuf/blob/master/js/map.js), the most common implementations)
 SoySauce   | `java.util.Map`
 Tofu       | `java.util.Map`
 Python     | `dict`
