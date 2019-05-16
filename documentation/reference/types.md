@@ -311,43 +311,24 @@ For example,
   {@param m: map<int, string>}
   <ul>
     {for $key in mapKeys($m)}
-      <li>{$key}: {$m[$key]}
-      <li>{$key} * 2 = {$key * 2} // arithmetic on numeric keys in map
+      <li>{$key}: {$m[$key]}</li>
+      <li>{$key} * 2 = {$key * 2}</li> // arithmetic on numeric keys in map
     {/for}
+  </ul>
 {/template}
 ```
 
-Maps have several advantages over [legacy object maps](#legacy_object_map):
-
-*   Maps can contain non-string keys. The declared type of the key, `K`, must be
-    [bool](#bool), [string](#string), [int](#int), [float](#float),
-    [number](#number) (While it is possible to declare a legacy object map
-    with a non-string key type, the behavior of non-string keys in legacy object
-    maps is undefined and buggy.)
-*   There is a syntax for creating a [map literal](expressions.md#map):
-    `map(...)`. By contrast, there is no syntax to create a `legacy_object_map`
-    literal from inside a Soy template. (Legacy object maps can only be passed
-    in from host environments during rendering.)
-*   Legacy object maps are not supported if you are compiling to Python.
-    (Declaring a `legacy_object_map` param is a compilation error in the Python
-    backend.)
-
-Maps and legacy object maps are distinct types. You cannot pass a legacy object
-map to a template expecting a map, and vice versa. If you need to convert from
-one map type to the other, use the
-[mapToLegacyObjectMap](functions.md#mapToLegacyObjectMap) and
-[legacyObjectMapToMap](functions.md#legacyObjectMapToMap) functions.
-
-Use `map` instead of `legacy_object_map` for all new Soy code.
-
 Backend    | type in host language
 ---------- | ---------------------
-JavaScript | `soy.map` (which is a structural interface covering `Map` and [`jspb.Map`](https://github.com/protocolbuffers/protobuf/blob/master/js/map.js), the most common implementations)
+JavaScript | `soy.map` (which is a structural interface covering ES6 [`Map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) and [`jspb.Map`](https://github.com/protocolbuffers/protobuf/blob/master/js/map.js), the most common implementations)
 SoySauce   | `java.util.Map`
 Tofu       | `java.util.Map`
 Python     | `dict`
 
 ### `legacy_object_map<K, V>` {#legacy_object_map}
+
+WARNING: Use `map` instead of `legacy_object_map` for new Soy code. See
+go/soy-map-faq#advantages for details.
 
 A legacy object map takes two parameters for the key and value types. Legacy
 object maps are accessed using the
@@ -359,9 +340,9 @@ For example,
 {template .foo}
   {@param m: legacy_object_map<string, string>}
   <ul>
-  {for $key in keys($m)}
-    <li>{$key}: {$m[$key]}
-  {/for}
+    {for $key in keys($m)}
+      <li>{$key}: {$m[$key]}</li>
+    {/for}
   </ul>
 {/template}
 ```
@@ -369,9 +350,11 @@ For example,
 NOTE: only `string` is well supported for key types. The behavior for key types
 other than string is undefined.
 
-WARNING: legacy object maps have [several disadvantages](#map) compared to maps.
-Use `map` instead of `legacy_object_map` for all new Soy code. See
-go/soy-map-faq for details.
+Maps and legacy object maps are distinct types. You cannot pass a legacy object
+map to a template expecting a map, and vice versa. If you need to convert from
+one map type to the other, use the
+[mapToLegacyObjectMap](functions.md#mapToLegacyObjectMap) and
+[legacyObjectMapToMap](functions.md#legacyObjectMapToMap) functions.
 
 Backend    | type in host language
 ---------- | ------------------------------------------------------------------
