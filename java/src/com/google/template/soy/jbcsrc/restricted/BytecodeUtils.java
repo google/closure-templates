@@ -371,11 +371,8 @@ public final class BytecodeUtils {
    * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
    * equivalent to the given {@link SanitizedContentKind}, or null.
    */
-  public static Expression constantSanitizedContentKindAsContentKind(
-      @Nullable SanitizedContentKind kind) {
-    return (kind == null)
-        ? BytecodeUtils.constantNull(CONTENT_KIND_TYPE)
-        : FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
+  public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
+    return FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
   }
 
   /** Returns an {@link Expression} that evaluates to the given Dir, or null. */

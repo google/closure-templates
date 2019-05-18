@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -35,6 +34,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -234,8 +234,7 @@ public final class CommandTagAttribute {
     return whitespaceMode;
   }
 
-  @Nullable
-  public SanitizedContentKind valueAsContentKind(ErrorReporter errorReporter) {
+  public Optional<SanitizedContentKind> valueAsContentKind(ErrorReporter errorReporter) {
     checkState(valueExprList == null);
 
     Optional<SanitizedContentKind> contentKind = SanitizedContentKind.fromAttributeValue(value);
@@ -246,7 +245,7 @@ public final class CommandTagAttribute {
           key.identifier(),
           SanitizedContentKind.attributeValues().asList());
     }
-    return contentKind.orNull();
+    return contentKind;
   }
 
   String valueAsCssBase(ErrorReporter errorReporter) {

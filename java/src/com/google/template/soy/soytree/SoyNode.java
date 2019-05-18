@@ -200,7 +200,6 @@ public interface SoyNode extends Node {
     /**
      * Returns the content kind for strict autoescape, or null if not specified or not applicable.
      */
-    @Nullable
     SanitizedContentKind getContentKind();
   }
 

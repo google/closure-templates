@@ -17,7 +17,6 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -111,8 +110,7 @@ final class InferenceEngine {
    * @throws SoyAutoescapeException if they mismatch.
    */
   private static void checkBlockEndContext(RenderUnitNode node, Context endContext) {
-    if (!endContext.isValidEndContextForContentKind(
-        MoreObjects.firstNonNull(node.getContentKind(), SanitizedContentKind.HTML))) {
+    if (!endContext.isValidEndContextForContentKind(node.getContentKind())) {
       String msg =
           String.format(
               "A block of kind=\"%s\" cannot end in context %s. Likely cause is %s.",

@@ -21,6 +21,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -143,7 +144,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
                 attributeName.getSourceLocation(),
                 varName,
                 attributeName.getSourceLocation(),
-                null);
+                SanitizedContentKind.TEXT);
         // Adds a let var which references to the original attribute name, and move the name to
         // the let block.
         node.replaceChild(

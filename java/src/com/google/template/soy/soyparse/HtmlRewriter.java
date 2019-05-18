@@ -1302,7 +1302,7 @@ final class HtmlRewriter {
               case MSG_SELECT_DEFAULT_NODE:
                 return "default block";
               default:
-                throw new AssertionError("unexepected node: " + input);
+                throw new AssertionError("unexpected node: " + input);
             }
           },
           true, // exactly one branch will execute once
@@ -1495,17 +1495,7 @@ final class HtmlRewriter {
     }
 
     /** Visits a block whose content is in an entirely separate content scope. */
-    void visitScopedBlock(@Nullable SanitizedContentKind blockKind, BlockNode parent, String name) {
-      // blockKind will be null if
-      // * This is a non-strict template
-      // * this is a let/param block without a kind parameter (these are only legal in non-strict
-      //   templates)
-      if (blockKind == null) {
-        // TODO(lukes): in this case an error will be reported by a later part of the compiler.
-        // we could change the CheckEscapingSanitiyVisitor to run before this pass.  By leaving
-        // blockKind == null we will avoid parsing this block. (since State will == NONE).
-        // we could also just assume html... but that might be confusing in some cases?
-      }
+    void visitScopedBlock(SanitizedContentKind blockKind, BlockNode parent, String name) {
       State startState = State.fromKind(blockKind);
       Checkpoint checkpoint = errorReporter.checkpoint();
       ParsingContext newCtx =

@@ -285,7 +285,6 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract String getDelTemplateVariant();
 
-  @Nullable
   public abstract SanitizedContentKind getContentKind();
 
   public abstract boolean isStrictHtml();
@@ -332,7 +331,7 @@ public abstract class TemplateMetadata {
 
     public abstract Builder setDelTemplateVariant(String delTemplateVariant);
 
-    public abstract Builder setContentKind(@Nullable SanitizedContentKind contentKind);
+    public abstract Builder setContentKind(SanitizedContentKind contentKind);
 
     public abstract Builder setTemplateNode(@Nullable TemplateNode template);
 

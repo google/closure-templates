@@ -27,7 +27,7 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import java.util.List;
-import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  * Node representing a 'param' with content.
@@ -41,27 +41,29 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   private final MixinParentNode<StandaloneNode> parentMixin;
 
   /** The param's content kind, or null if no 'kind' attribute was present. */
-  @Nullable private final SanitizedContentKind contentKind;
+  private final SanitizedContentKind contentKind;
 
   public CallParamContentNode(
       int id,
       SourceLocation location,
       Identifier key,
-      @Nullable CommandTagAttribute kindAttr,
+      CommandTagAttribute kindAttr,
       ErrorReporter errorReporter) {
     super(id, location, key);
     this.parentMixin = new MixinParentNode<>(this);
 
-    if (kindAttr != null && !kindAttr.hasName("kind")) {
+    Optional<SanitizedContentKind> parsedKind = Optional.empty();
+    if (!kindAttr.hasName("kind")) {
       errorReporter.report(
           kindAttr.getName().location(),
           UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
           kindAttr.getName().identifier(),
           "param",
           "kind");
-      kindAttr = null;
+    } else {
+      parsedKind = kindAttr.valueAsContentKind(errorReporter);
     }
-    this.contentKind = (kindAttr != null) ? kindAttr.valueAsContentKind(errorReporter) : null;
+    this.contentKind = parsedKind.orElse(SanitizedContentKind.HTML);
   }
 
   /**
@@ -81,7 +83,6 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   }
 
   @Override
-  @Nullable
   public SanitizedContentKind getContentKind() {
     return contentKind;
   }

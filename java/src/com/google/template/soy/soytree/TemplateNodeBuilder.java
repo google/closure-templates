@@ -35,6 +35,7 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -159,12 +160,15 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
         case "kind":
-          kind = attribute.valueAsContentKind(errorReporter);
-          SourceLocation kindLocation = attribute.getValueLocation();
-          if (kind == SanitizedContentKind.HTML) {
+          Optional<SanitizedContentKind> parsedKind = attribute.valueAsContentKind(errorReporter);
+          if (parsedKind.orElse(null) == SanitizedContentKind.HTML) {
             errorReporter.report(
-                kindLocation, CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE, "kind", "html");
+                attribute.getValueLocation(),
+                CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
+                "kind",
+                "html");
           }
+          kind = parsedKind.orElse(SanitizedContentKind.HTML);
           break;
         case "requirecss":
           setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));

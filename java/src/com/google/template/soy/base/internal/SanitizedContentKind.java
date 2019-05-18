@@ -18,9 +18,9 @@ package com.google.template.soy.base.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.Optional;
 import java.util.TreeMap;
 
 /**
@@ -94,7 +94,7 @@ public enum SanitizedContentKind {
   /** Returns the kind for the given attribute value. Or {@code null} if it is invalid. */
   public static Optional<SanitizedContentKind> fromAttributeValue(String attributeValue) {
     checkNotNull(attributeValue);
-    return Optional.fromNullable(KINDS_BY_ATTRIBUTE_VALUE.get(attributeValue));
+    return Optional.ofNullable(KINDS_BY_ATTRIBUTE_VALUE.get(attributeValue));
   }
 
   /** Returns all the valid attribute values. */

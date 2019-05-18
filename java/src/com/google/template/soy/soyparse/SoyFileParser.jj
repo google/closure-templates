@@ -2591,7 +2591,7 @@ private LetNode LetStmt() :
   |
     // Content block
     try {
-      [ attr = Attribute() ]
+      attr = Attribute()
       tagEnd = <CMD_END>
     } catch (ParseException e) {
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
@@ -2601,6 +2601,10 @@ private LetNode LetStmt() :
     <CMD_CLOSE_LET>
 
     {
+      if (attr == null) {
+        SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
+        return new LetValueNode(-1, loc, "$error", loc, errorExpr(tagBegin));
+      }
       LetContentNode node =
           new LetContentNode(
               nodeIdGen.genId(),
@@ -3053,7 +3057,7 @@ private CallParamNode CallParam() :
     }
   |
     try {
-      [ attr = Attribute() ]
+      attr = Attribute()
       tagEnd = <CMD_END>
     } catch (ParseException e) {
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
@@ -3063,6 +3067,9 @@ private CallParamNode CallParam() :
     <CMD_CLOSE_PARAM>
 
     {
+      if (attr == null) {
+        return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagEnd), key, errorExpr(tagBegin));
+      }
       CallParamContentNode node =
           new CallParamContentNode(
               nodeIdGen.genId(),

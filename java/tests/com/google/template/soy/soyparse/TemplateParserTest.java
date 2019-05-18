@@ -1233,7 +1233,7 @@ public final class TemplateParserTest {
 
     // Test error case.
     TemplateSubject.assertThatTemplateContent("{let $alpha /}{/let}")
-        .causesError("parse error at '/}': expected }, identifier, or ':'")
+        .causesError("parse error at '/}': expected identifier or ':'")
         .at(1, 13);
 
     // Test error case.

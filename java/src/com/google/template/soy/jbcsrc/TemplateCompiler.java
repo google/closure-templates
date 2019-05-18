@@ -33,7 +33,6 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -202,8 +201,7 @@ final class TemplateCompiler {
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    SanitizedContentKind contentKind = templateNode.getContentKind();
-    String kind = contentKind == null ? "" : contentKind.name();
+    String kind = templateNode.getContentKind().name();
 
     // using linked hash sets below for determinism
     Set<String> uniqueIjs = new LinkedHashSet<>();

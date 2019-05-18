@@ -755,11 +755,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private static ContentKind fromSanitizedContentKind(SanitizedContentKind kind) {
-    if (kind == null) {
-      return null;
-    }
     return ContentKind.valueOf(kind.name());
   }
+
   /**
    * Private helper to evaluate an expression. Always use this helper instead of using evalVisitor
    * directly, because this helper creates and throws a RenderException if there's an error.
@@ -906,7 +904,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       final TemplateNode node, final TemplateParam param, @Nullable SoyValueProvider paramValue) {
     Kind kind = param.type().getKind();
     if (kind == Kind.ANY || kind == Kind.UNKNOWN) {
-      // Nothing to check.  ANY and UKNOWN match all types.
+      // Nothing to check.  ANY and UNKNOWN match all types.
       return;
     }
     if (paramValue == null) {

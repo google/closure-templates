@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -293,7 +295,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
     this.visibility = visibility;
     this.whitespaceMode = nodeBuilder.getWhitespaceMode();
-    this.contentKind = nodeBuilder.getContentKind();
+    this.contentKind = checkNotNull(nodeBuilder.getContentKind());
     this.requiredCssNamespaces = nodeBuilder.getRequiredCssNamespaces();
     this.cssBaseNamespace = nodeBuilder.getCssBaseNamespace();
     this.soyDoc = nodeBuilder.getSoyDoc();

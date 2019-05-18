@@ -122,7 +122,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 
 /**
  * Visitor for generating full JS code (i.e. statements) for parse tree nodes.
@@ -638,9 +637,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected String getTemplateReturnType(TemplateNode node) {
     // For strict autoescaping templates, the result is actually a typesafe wrapper.
     // We prepend "!" to indicate it is non-nullable.
-    return (node.getContentKind() == null)
-        ? "string"
-        : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
+    return "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
   }
 
   /**
@@ -808,29 +805,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       // 'output' at all. We simply concatenate the JS expressions and return the result.
 
       List<Expression> templateBodyChunks = genJsExprsVisitor.exec(node);
-      if (kind == null) {
-        // The template is not strict. Thus, it may not apply an escaping directive to *every* print
-        // command, which means that some of its print commands could produce a number. Thus, there
-        // is a danger that a plus operator between two expressions in the list will do numeric
-        // addition instead of string concatenation. Furthermore, a non-strict template always needs
-        // to return a string, but if there is just one expression in the list, and we return it as
-        // is, we may not always produce a string (since an escaping directive may not be getting
-        // applied in that expression at all, or a directive might be getting applied that produces
-        // SanitizedContent). We thus call a method that makes sure to return an expression that
-        // produces a string and is in no danger of using numeric addition when concatenating the
-        // expressions in the list.
-        bodyStatements.add(returnValue(CodeChunkUtils.concatChunksForceString(templateBodyChunks)));
-      } else {
-        // The template is strict. Thus, it applies an escaping directive to *every* print command,
-        // which means that no print command produces a number, which means that there is no danger
-        // of a plus operator between two print commands doing numeric addition instead of string
-        // concatenation. And since a strict template needs to return SanitizedContent, it is ok to
-        // get an expression that produces SanitizedContent, which is indeed possible with an
-        // escaping directive that produces SanitizedContent. Thus, we do not have to be extra
-        // careful when concatenating the expressions in the list.
-        bodyStatements.add(
-            returnValue(sanitize(CodeChunkUtils.concatChunks(templateBodyChunks), kind)));
-      }
+      // The template is strict. Thus, it applies an escaping directive to *every* print command,
+      // which means that no print command produces a number, which means that there is no danger
+      // of a plus operator between two print commands doing numeric addition instead of string
+      // concatenation. And since a strict template needs to return SanitizedContent, it is ok to
+      // get an expression that produces SanitizedContent, which is indeed possible with an
+      // escaping directive that produces SanitizedContent. Thus, we do not have to be extra
+      // careful when concatenating the expressions in the list.
+      bodyStatements.add(
+          returnValue(sanitize(CodeChunkUtils.concatChunks(templateBodyChunks), kind)));
     } else {
       // Case 2: Normal case.
 
@@ -842,18 +825,14 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return Statement.of(bodyStatements.build());
   }
 
-  protected final Expression sanitize(
-      Expression templateBody, @Nullable SanitizedContentKind contentKind) {
-    if (contentKind != null) {
-      // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
-      // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
-      // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
-      //   the result of one template and feed it to another, and also to confidently assign
-      //   sanitized HTML content to innerHTML. This does not use the internal-blocks variant,
-      //   and so will wrap empty strings.
-      return sanitizedContentOrdainerFunction(contentKind).call(templateBody);
-    }
-    return templateBody;
+  protected final Expression sanitize(Expression templateBody, SanitizedContentKind contentKind) {
+    // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
+    // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
+    // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
+    //   the result of one template and feed it to another, and also to confidently assign
+    //   sanitized HTML content to innerHTML. This does not use the internal-blocks variant,
+    //   and so will wrap empty strings.
+    return sanitizedContentOrdainerFunction(contentKind).call(templateBody);
   }
 
   protected GenJsCodeVisitorAssistantForMsgs getAssistantForMsgs() {

@@ -36,6 +36,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.FixedIdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -219,14 +220,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     List<Statement> statements = new ArrayList<>();
     // Tag the content with the kind
-    if (node.getContentKind() != null) {
-      statements.add(
-          appendableExpression
-              .setSanitizedContentKind(node.getContentKind())
-              .setSanitizedContentDirectionality(
-                  ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
-              .toStatement());
-    }
+    statements.add(
+        appendableExpression
+            .setSanitizedContentKind(node.getContentKind())
+            .setSanitizedContentDirectionality(
+                ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
+            .toStatement());
     statements.add(prefix.compile(exprCompiler, appendableExpression));
     statements.add(visitChildrenInNewScope(node));
     statements.add(suffix.compile(exprCompiler, appendableExpression));
@@ -1171,7 +1170,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                     node.getSourceLocation(),
                     "$" + phname,
                     node.getSourceLocation(),
-                    null);
+                    SanitizedContentKind.TEXT);
             // copy the node so we don't end up removing it from the parent as a side effect.
             fakeLet.addChild(SoyTreeUtils.cloneWithNewIds(node, new FixedIdGenerator(-1)));
             fakeLet.setParent(node.getParent());

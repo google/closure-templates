@@ -17,11 +17,9 @@
 package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -97,9 +95,7 @@ public final class ContextualAutoescaper {
           // The author specifies the kind of SanitizedContent to produce, and thus the context in
           // which to escape.
           Context startContext =
-              Context.getStartContextForContentKind(
-                  MoreObjects.firstNonNull(
-                      templateNode.getContentKind(), SanitizedContentKind.HTML));
+              Context.getStartContextForContentKind(templateNode.getContentKind());
           InferenceEngine.inferTemplateEndContext(
               templateNode, startContext, inferences, errorReporter);
         } catch (SoyAutoescapeException e) {

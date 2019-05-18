@@ -19,17 +19,10 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.EscapingMode;
-import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
  * Visitor performing escaping sanity checks over all input -- not just input affected by the
@@ -45,69 +38,18 @@ final class CheckEscapingSanityFilePass extends CompilerFilePass {
   private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE =
       SoyErrorKind.of("{0} can only be used internally by the Soy compiler.");
 
-  private static final SoyErrorKind RENDER_UNIT_WITHOUT_KIND =
-      SoyErrorKind.of("'{'{0}'}'...'{'/{0}'}' blocks require an explicit kind=\"\".");
-
-  private final Visitor visitor;
+  private final ErrorReporter errorReporter;
 
   CheckEscapingSanityFilePass(ErrorReporter errorReporter) {
-    this.visitor = new Visitor(errorReporter);
+    this.errorReporter = errorReporter;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    visitor.exec(file);
-  }
-
-  private static final class Visitor extends AbstractSoyNodeVisitor<Void> {
-    final ErrorReporter errorReporter;
-
-    Visitor(ErrorReporter errorReporter) {
-      this.errorReporter = errorReporter;
-    }
-    // --------------------------------------------------------------------------------------------
-    // Implementations for specific nodes.
-
-    @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+    for (PrintDirectiveNode node : SoyTreeUtils.getAllNodesOfType(file, PrintDirectiveNode.class)) {
       EscapingMode escapingMode = EscapingMode.fromDirective(node.getName());
       if (escapingMode != null && escapingMode.isInternalOnly) {
         errorReporter.report(node.getSourceLocation(), ILLEGAL_PRINT_DIRECTIVE, node.getName());
-      }
-    }
-
-    @Override
-    protected void visitLetContentNode(LetContentNode node) {
-      visitRenderUnitNode(node);
-    }
-
-    @Override
-    protected void visitCallParamContentNode(CallParamContentNode node) {
-      visitRenderUnitNode(node);
-    }
-
-    private void visitRenderUnitNode(RenderUnitNode node) {
-      if (node.getContentKind() == null) {
-        errorReporter.report(
-            node.getSourceLocation(),
-            RENDER_UNIT_WITHOUT_KIND,
-            node.getKind() == Kind.LET_CONTENT_NODE ? "let" : "param");
-      }
-      visitChildren(node);
-    }
-
-    // --------------------------------------------------------------------------------------------
-    // Fallback implementation.
-
-    @Override
-    protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ParentSoyNode<?>) {
-        visitChildren((ParentSoyNode<?>) node);
       }
     }
   }
