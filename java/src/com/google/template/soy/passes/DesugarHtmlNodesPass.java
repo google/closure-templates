@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -48,6 +47,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Replaces {@link HtmlOpenTagNode} and {@link HtmlCloseTagNode} with a set of RawTextNodes and the
@@ -84,7 +84,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
     boolean needsSpaceSelfClosingTag;
 
     /** Tracks all the nodes that should replace the current node. */
-    private Optional<ImmutableList<StandaloneNode>> replacements = Optional.absent();
+    private Optional<ImmutableList<StandaloneNode>> replacements = Optional.empty();
 
     RewritingVisitor(IdGenerator idGenerator) {
       this.idGenerator = idGenerator;
@@ -320,7 +320,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
           List<? extends C> typedReplacements = (List<? extends C>) replacements.get();
           parent.addChildren(i, typedReplacements);
           i += replacements.get().size() - 1;
-          replacements = Optional.absent();
+          replacements = Optional.empty();
         }
       }
       checkState(!replacements.isPresent());

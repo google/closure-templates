@@ -17,7 +17,6 @@ package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +30,7 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Marker class for a chunk of code that represents a value.
@@ -447,6 +447,6 @@ public abstract class Expression extends CodeChunk {
 
   /** Returns the string literal value of this Expression if it is a string literal. */
   public Optional<String> asStringLiteral() {
-    return Optional.absent();
+    return Optional.empty();
   }
 }

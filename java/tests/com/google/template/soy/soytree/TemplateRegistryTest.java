@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static com.google.template.soy.soytree.TemplateRegistrySubject.assertThatRegistry;
 
 import com.google.common.collect.ImmutableList;
@@ -218,7 +219,7 @@ public final class TemplateRegistryTest {
             "ns.moo",
             NO_ATTRS,
             FAIL);
-    assertThat(registry.getCallContentKind(node)).isAbsent();
+    assertThat(registry.getCallContentKind(node)).isEmpty();
   }
 
   @Test
@@ -262,6 +263,6 @@ public final class TemplateRegistryTest {
             Identifier.create("ns.moo", SourceLocation.UNKNOWN),
             NO_ATTRS,
             FAIL);
-    assertThat(registry.getCallContentKind(node)).isAbsent();
+    assertThat(registry.getCallContentKind(node)).isEmpty();
   }
 }

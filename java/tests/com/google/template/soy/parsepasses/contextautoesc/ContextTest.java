@@ -16,6 +16,7 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.truth.OptionalSubject.optionals;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import org.junit.Test;
@@ -34,9 +35,11 @@ public class ContextTest {
     Context bContext = Context.parse(b);
     Context expectedContext = Context.parse(expected);
     assertWithMessage("Union of " + aContext + " and " + bContext)
+        .about(optionals())
         .that(Context.union(aContext, bContext))
         .hasValue(expectedContext);
     assertWithMessage("Reverse union of " + bContext + " and " + aContext)
+        .about(optionals())
         .that(Context.union(bContext, aContext))
         .hasValue(expectedContext);
   }
@@ -45,11 +48,13 @@ public class ContextTest {
     Context aContext = Context.parse(a);
     Context bContext = Context.parse(b);
     assertWithMessage("Union of " + aContext + " and " + bContext)
+        .about(optionals())
         .that(Context.union(aContext, bContext))
-        .isAbsent();
+        .isEmpty();
     assertWithMessage("Reverse union of " + bContext + " and " + aContext)
+        .about(optionals())
         .that(Context.union(bContext, aContext))
-        .isAbsent();
+        .isEmpty();
   }
 
   @Test

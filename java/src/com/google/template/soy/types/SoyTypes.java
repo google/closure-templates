@@ -17,13 +17,13 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** Utility methods for operating on {@link SoyType} instances. */
@@ -159,7 +159,7 @@ public final class SoyTypes {
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
     if (!isNumericOrUnknown(t0) || !isNumericOrUnknown(t1)) {
-      return Optional.absent();
+      return Optional.empty();
     }
 
     // Note: everything is assignable to unknown and itself.  So the first two conditions take care
@@ -390,7 +390,7 @@ public final class SoyTypes {
     @Nullable
     public SoyType resolve(SoyType left, SoyType right) {
       Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
-      return arithmeticType.orNull();
+      return arithmeticType.orElse(null);
     }
   }
 }

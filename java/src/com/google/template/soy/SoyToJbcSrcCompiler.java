@@ -16,11 +16,11 @@
 
 package com.google.template.soy;
 
-import com.google.common.base.Optional;
 import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import org.kohsuke.args4j.Option;
 
 /** Executable for compiling a set of Soy files into corresponding Java class files in a jar. */
@@ -52,7 +52,7 @@ public final class SoyToJbcSrcCompiler extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    Optional<ByteSink> srcJarSink = Optional.absent();
+    Optional<ByteSink> srcJarSink = Optional.empty();
     if (outputSrcJar != null) {
       srcJarSink = Optional.of(Files.asByteSink(outputSrcJar));
     }

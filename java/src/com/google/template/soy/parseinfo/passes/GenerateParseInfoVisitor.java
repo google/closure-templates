@@ -19,7 +19,6 @@ package com.google.template.soy.parseinfo.passes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -73,6 +72,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -599,7 +599,7 @@ public final class GenerateParseInfoVisitor
     // ------ *SoyTemplateInfo class start. ------
     ilb.appendLine();
     ilb.appendLine();
-    appendJavadoc(ilb, Optional.fromNullable(node.getSoyDocDesc()).or(""), true, false);
+    appendJavadoc(ilb, Optional.ofNullable(node.getSoyDocDesc()).orElse(""), true, false);
     ilb.appendLine(
         "public static final class ", templateInfoClassName, " extends SoyTemplateInfo {");
     ilb.increaseIndent();

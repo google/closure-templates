@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -25,6 +24,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /** A registry of information about every compiled template. */
@@ -51,7 +51,7 @@ final class CompiledTemplateRegistry {
         // all delegates are guaranteed to have the same content kind by the
         // checkdelegatesvisitor
         deltemplateNameToContentKind.put(
-            template.getDelTemplateName(), Optional.fromNullable(template.getContentKind()));
+            template.getDelTemplateName(), Optional.ofNullable(template.getContentKind()));
       }
     }
     this.templateNameToMetadata = templateToMetadata.build();
@@ -87,7 +87,7 @@ final class CompiledTemplateRegistry {
    */
   @Nullable
   SanitizedContentKind getDelTemplateContentKind(String delTemplateName) {
-    return deltemplateNameToContentKind.get(delTemplateName).orNull();
+    return deltemplateNameToContentKind.get(delTemplateName).orElse(null);
   }
 
   boolean hasDelTemplateDefinition(String delTemplateName) {

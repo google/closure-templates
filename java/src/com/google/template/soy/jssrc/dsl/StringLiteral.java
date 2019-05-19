@@ -16,13 +16,13 @@
 package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.Optional;
 
 /** Represents a string literal expression. */
 @AutoValue

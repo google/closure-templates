@@ -16,8 +16,8 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
-import com.google.common.base.Optional;
 import com.google.template.soy.soytree.SoyNode;
+import java.util.Optional;
 
 /**
  * Nodes in the HTML tag matcher graph.

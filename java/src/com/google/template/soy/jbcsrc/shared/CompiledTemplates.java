@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.Immutable;
@@ -27,6 +26,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -239,11 +239,11 @@ public final class CompiledTemplates {
         delTemplateName = Optional.of(deltemplateMetadata.name());
         delPackage =
             deltemplateMetadata.delPackage().isEmpty()
-                ? Optional.absent()
+                ? Optional.empty()
                 : Optional.of(deltemplateMetadata.delPackage());
       } else {
-        this.delTemplateName = Optional.absent();
-        this.delPackage = Optional.absent();
+        this.delTemplateName = Optional.empty();
+        this.delPackage = Optional.empty();
       }
     }
 

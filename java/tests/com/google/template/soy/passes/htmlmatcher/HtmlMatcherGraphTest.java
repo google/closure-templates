@@ -17,6 +17,7 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public final class HtmlMatcherGraphTest {
   public void testAddNodeToEmptyGraph_udatesRootNode() {
     HtmlMatcherGraph matcherGraph = new HtmlMatcherGraph();
 
-    assertThat(matcherGraph.getRootNode()).isAbsent();
+    assertThat(matcherGraph.getRootNode()).isEmpty();
 
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
@@ -52,7 +53,7 @@ public final class HtmlMatcherGraphTest {
   public void testAddNode_updatesCursor() {
     HtmlMatcherGraph matcherGraph = new HtmlMatcherGraph();
 
-    assertThat(matcherGraph.getNodeAtCursor()).isAbsent();
+    assertThat(matcherGraph.getNodeAtCursor()).isEmpty();
 
     HtmlMatcherGraphNode openNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
@@ -77,15 +78,15 @@ public final class HtmlMatcherGraphTest {
   public void testSaveRestoreEmptyGraph() {
     HtmlMatcherGraph emptyGraph = new HtmlMatcherGraph();
 
-    assertThat(emptyGraph.getRootNode()).isAbsent();
+    assertThat(emptyGraph.getRootNode()).isEmpty();
 
     emptyGraph.saveCursor();
 
-    assertThat(emptyGraph.getNodeAtCursor()).isAbsent();
+    assertThat(emptyGraph.getNodeAtCursor()).isEmpty();
 
     emptyGraph.restoreCursor();
 
-    assertThat(emptyGraph.getNodeAtCursor()).isAbsent();
+    assertThat(emptyGraph.getNodeAtCursor()).isEmpty();
   }
 
   @Test

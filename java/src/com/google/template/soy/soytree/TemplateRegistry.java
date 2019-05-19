@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +31,7 @@ import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -202,9 +202,9 @@ public final class TemplateRegistry {
     // For per-file compilation, we may not have any of the delegate templates in the compilation
     // unit.
     if (!templateNodes.isEmpty()) {
-      return Optional.fromNullable(templateNodes.get(0).getContentKind());
+      return Optional.of(templateNodes.get(0).getContentKind());
     }
     // The template node may be null if the template is being compiled in isolation.
-    return Optional.absent();
+    return Optional.empty();
   }
 }

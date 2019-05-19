@@ -19,12 +19,12 @@ package com.google.template.soy.logging;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.BaseUtils;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -115,7 +115,7 @@ public final class ValidatedLoggingConfig {
           element.getName(),
           element.getId(),
           element.getProtoType().isEmpty()
-              ? Optional.absent()
+              ? Optional.empty()
               : Optional.of(element.getProtoType()));
     }
 

@@ -35,7 +35,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentType;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -64,6 +63,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -449,7 +449,7 @@ public final class JsType {
                       Optional<Expression> typeAssertion =
                           memberType.getTypeAssertion(value, codeGenerator);
                       if (!typeAssertion.isPresent()) {
-                        return Optional.absent();
+                        return Optional.empty();
                       }
                       if (result == null) {
                         result = typeAssertion.get();
@@ -473,7 +473,7 @@ public final class JsType {
 
   /** Can generate code chunks which validate the 'type' of a given code chunk. */
   private interface TypePredicate {
-    TypePredicate NO_OP = (value, codeGenerator) -> Optional.absent();
+    TypePredicate NO_OP = (value, codeGenerator) -> Optional.empty();
 
     /**
      * Returns a code chunk that evaluates to {@code true} if the given chunk matches the predicate
@@ -536,7 +536,7 @@ public final class JsType {
       Expression value, String valueName, Generator codeGenerator) {
     Optional<Expression> typeAssertion = getTypeAssertion(value, codeGenerator);
     if (!typeAssertion.isPresent()) {
-      return Optional.absent();
+      return Optional.empty();
     }
 
     return Optional.of(

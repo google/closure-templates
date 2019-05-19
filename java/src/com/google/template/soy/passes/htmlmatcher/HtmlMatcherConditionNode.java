@@ -18,11 +18,11 @@ package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Optional;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.soytree.SoyNode;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
@@ -39,8 +39,8 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
 
   @Nullable private HtmlMatcherGraphNode falseBranchNode = null;
 
-  private Optional<Boolean> isInternallyBalancedForForeignContent = Optional.absent();
-  private Optional<Boolean> isInternallyBalanced = Optional.absent();
+  private Optional<Boolean> isInternallyBalancedForForeignContent = Optional.empty();
+  private Optional<Boolean> isInternallyBalanced = Optional.empty();
 
   public HtmlMatcherConditionNode(SoyNode soyNode, ExprNode expression, HtmlMatcherGraph graph) {
     this.soyNode = soyNode;
@@ -114,10 +114,10 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
     switch (edgeKind) {
       case TRUE_EDGE:
-        return Optional.fromNullable(trueBranchNode);
+        return Optional.ofNullable(trueBranchNode);
       case FALSE_EDGE:
-        return Optional.fromNullable(falseBranchNode);
+        return Optional.ofNullable(falseBranchNode);
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 }

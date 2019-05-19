@@ -18,7 +18,6 @@ package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,6 +27,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Simple {@link com.google.template.soy.error.ErrorReporter} implementation.
@@ -133,7 +133,7 @@ final class ErrorReporterImpl extends ErrorReporter {
         builder.append(caretLine).append("\n");
         return Optional.of(builder.toString());
       }
-      return Optional.absent();
+      return Optional.empty();
     }
 
     /**
@@ -145,7 +145,7 @@ final class ErrorReporterImpl extends ErrorReporter {
       // Try to find a snippet of source code associated with the exception and print it.
       SoyFileSupplier supplier = filePathsToSuppliers.get(location.getFilePath());
       if (supplier == null) {
-        return Optional.absent();
+        return Optional.empty();
       }
       String result;
       try (BufferedReader reader = new BufferedReader(supplier.open())) {
@@ -156,9 +156,9 @@ final class ErrorReporterImpl extends ErrorReporter {
         }
         result = reader.readLine(); // returns null on EOF
       } catch (IOException ioe) {
-        return Optional.absent();
+        return Optional.empty();
       }
-      return Optional.fromNullable(result);
+      return Optional.ofNullable(result);
     }
   }
 }

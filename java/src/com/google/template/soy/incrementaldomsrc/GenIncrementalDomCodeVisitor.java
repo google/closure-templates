@@ -58,7 +58,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESC
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -127,6 +126,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Generates a series of JavaScript control statements and function calls for rendering one or more

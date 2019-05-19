@@ -16,7 +16,7 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
-import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
@@ -33,7 +33,7 @@ public final class HtmlMatcherAccumulatorNodeTest {
   public void testGetSoyNodeDoesNotExist() {
     HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
 
-    assertThat(accNode.getSoyNode()).isAbsent();
+    assertThat(accNode.getSoyNode()).isEmpty();
   }
 
   @Test
@@ -56,7 +56,7 @@ public final class HtmlMatcherAccumulatorNodeTest {
   public void testGetNodeForEdgeKind_defaultIsAbsent() {
     HtmlMatcherAccumulatorNode accNode = new HtmlMatcherAccumulatorNode();
 
-    assertThat(accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -66,7 +66,7 @@ public final class HtmlMatcherAccumulatorNodeTest {
 
     accNode.linkActiveEdgeToNode(nextNode);
 
-    assertThat(accNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(accNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test

@@ -20,6 +20,7 @@ import static com.google.common.base.Strings.lenientFormat;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Fact.simpleFact;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
 
 import com.google.common.collect.ImmutableMap;
@@ -351,36 +352,36 @@ public class SoyTypesTest {
 
   @Test
   public void testLowestCommonTypeArithmetic() {
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(STRING_TYPE, HTML_TYPE)).isAbsent();
-    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(HTML_TYPE, STRING_TYPE)).isAbsent();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, ANY_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ANY_TYPE, INT_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(STRING_TYPE, HTML_TYPE)).isEmpty();
+    assertThat(SoyTypes.computeLowestCommonTypeArithmetic(HTML_TYPE, STRING_TYPE)).isEmpty();
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(ListType.of(INT_TYPE), INT_TYPE))
-        .isAbsent();
+        .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 LegacyObjectMapType.of(INT_TYPE, STRING_TYPE), INT_TYPE))
-        .isAbsent();
+        .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 RecordType.of(ImmutableMap.of("a", INT_TYPE, "b", FLOAT_TYPE)), INT_TYPE))
-        .isAbsent();
+        .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 UnionType.of(LegacyObjectMapType.of(FLOAT_TYPE, STRING_TYPE), INT_TYPE),
                 FLOAT_TYPE))
-        .isAbsent();
+        .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 UnionType.of(BOOL_TYPE, INT_TYPE, STRING_TYPE), NUMBER_TYPE))
-        .isAbsent();
+        .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(UnionType.of(BOOL_TYPE, INT_TYPE), INT_TYPE))
-        .isAbsent();
+        .isEmpty();
     assertThat(
             SoyTypes.computeLowestCommonTypeArithmetic(
                 UnionType.of(STRING_TYPE, FLOAT_TYPE), INT_TYPE))
-        .isAbsent();
+        .isEmpty();
 
     assertThat(SoyTypes.computeLowestCommonTypeArithmetic(INT_TYPE, FLOAT_TYPE))
         .hasValue(FLOAT_TYPE);

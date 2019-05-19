@@ -16,8 +16,8 @@
 
 package com.google.template.soy.plugin.javascript.restricted;
 
-import com.google.common.base.Optional;
 import com.google.template.soy.plugin.restricted.SoySourceValue;
+import java.util.Optional;
 
 /** A value that resolves to a SoyValue or supported native type at runtime. */
 public interface JavaScriptValue extends SoySourceValue {

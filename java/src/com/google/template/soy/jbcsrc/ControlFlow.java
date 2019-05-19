@@ -19,12 +19,12 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.List;
+import java.util.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -46,7 +46,7 @@ final class ControlFlow {
 
     /** Returns this single {@code if} as a standalone statement. */
     Statement asStatement() {
-      return ifElseChain(ImmutableList.of(this), Optional.absent());
+      return ifElseChain(ImmutableList.of(this), Optional.empty());
     }
   }
 

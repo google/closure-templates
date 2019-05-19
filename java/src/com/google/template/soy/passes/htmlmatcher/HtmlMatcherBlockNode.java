@@ -19,9 +19,9 @@ package com.google.template.soy.passes.htmlmatcher;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Optional;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.soytree.SoyNode;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -54,15 +54,15 @@ public final class HtmlMatcherBlockNode extends HtmlMatcherGraphNode {
 
   @Override
   public Optional<SoyNode> getSoyNode() {
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override
   public Optional<HtmlMatcherGraphNode> getNodeForEdgeKind(EdgeKind edgeKind) {
     if (edgeKind == EdgeKind.TRUE_EDGE) {
-      return Optional.fromNullable(nextNode);
+      return Optional.ofNullable(nextNode);
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override

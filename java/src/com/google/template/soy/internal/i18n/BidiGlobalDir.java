@@ -18,11 +18,11 @@ package com.google.template.soy.internal.i18n;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.data.Dir;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -155,7 +155,7 @@ public final class BidiGlobalDir {
   }
 
   public Optional<String> getNamespace() {
-    return Optional.fromNullable(namespace);
+    return Optional.ofNullable(namespace);
   }
 
   /** Converts this into a {@link Dir} if it represents LTR or RTL. */

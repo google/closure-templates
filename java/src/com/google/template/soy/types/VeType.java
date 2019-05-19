@@ -15,15 +15,15 @@
  */
 package com.google.template.soy.types;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.soytree.SoyTypeP;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Soy's ve type, for tracking VE names and their associated data type. */
 public final class VeType extends SoyType {
 
-  public static final VeType NO_DATA = new VeType(Optional.absent());
+  public static final VeType NO_DATA = new VeType(Optional.empty());
 
   private final Optional<String> dataType;
 
@@ -62,7 +62,7 @@ public final class VeType extends SoyType {
 
   @Override
   void doToProto(SoyTypeP.Builder builder) {
-    builder.setVe(dataType.or("null"));
+    builder.setVe(dataType.orElse("null"));
   }
 
   @Override

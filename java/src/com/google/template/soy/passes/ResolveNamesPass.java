@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -53,6 +52,7 @@ import java.util.BitSet;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Visitor which resolves all variable and parameter references to point to the corresponding
@@ -325,7 +325,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
       case STATE:
         return Optional.of(((TemplateStateVar) varDefn).nameLocation());
       case UNDECLARED:
-        return Optional.absent();
+        return Optional.empty();
     }
     throw new AssertionError(varDefn.kind());
   }

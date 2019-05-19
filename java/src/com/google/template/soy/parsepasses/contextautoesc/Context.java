@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -41,6 +40,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Pattern;
 import javax.annotation.CheckReturnValue;
@@ -570,7 +570,7 @@ public final class Context {
       case URI:
         if (state == HtmlContext.URI && uriPart != UriPart.QUERY) {
           // NOTE: Only support the query portion of URIs.
-          return Optional.absent();
+          return Optional.empty();
         }
         // In other contexts like JS and CSS strings, it makes sense to treat the message's
         // placeholders as plain text, but escape the entire result of message evaluation.
@@ -593,7 +593,7 @@ public final class Context {
       default:
         // Other contexts, primarily source code contexts, don't have a meaningful way to support
         // natural language text.
-        return Optional.absent();
+        return Optional.empty();
     }
   }
 
@@ -775,7 +775,7 @@ public final class Context {
    * paths join, such as the path through the then-clause of an <code>{if}</code> command and the
    * path through the else-clause.
    *
-   * @return Optional.absent() when there is no such context consistent with both.
+   * @return Optional.empty() when there is no such context consistent with both.
    */
   static Optional<Context> union(Context a, Context b) {
     // NOTE: Avoid the temptation to return early; instead, rely on the equals() check at the end
@@ -856,7 +856,7 @@ public final class Context {
       }
     }
 
-    return a.equals(b) ? Optional.of(a) : Optional.absent();
+    return a.equals(b) ? Optional.of(a) : Optional.empty();
   }
 
   static Optional<Context> union(Iterable<Context> contexts) {

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.api;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
@@ -27,6 +26,7 @@ import com.google.template.soy.shared.internal.SharedModule;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.Optional;
 import javax.inject.Singleton;
 
 /**
@@ -57,7 +57,7 @@ public final class PrecompiledSoyModule extends AbstractModule {
         .withScope(scopedData)
         .withFunctions(pluginFunctions)
         .withDirectives(pluginDirectives)
-        .withPluginInstances(pluginInstances.or(ImmutableMap.of()))
+        .withPluginInstances(pluginInstances.orElse(ImmutableMap.of()))
         .build();
   }
 

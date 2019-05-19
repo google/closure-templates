@@ -19,8 +19,8 @@ package com.google.template.soy.error;
 import static java.util.Comparator.comparing;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.template.soy.base.SourceLocation;
+import java.util.Optional;
 
 /** A structured error object for reporting */
 @AutoValue
@@ -67,7 +67,7 @@ public abstract class SoyError implements Comparable<SoyError> {
         + ": "
         + message()
         + "\n"
-        + snippet().or("");
+        + snippet().orElse("");
   }
 
   @Override

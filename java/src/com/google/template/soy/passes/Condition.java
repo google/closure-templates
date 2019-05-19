@@ -16,13 +16,13 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import java.util.List;
+import java.util.Optional;
 
 /** Condition for a particular control flow branch. */
 abstract class Condition {
@@ -80,7 +80,7 @@ abstract class Condition {
     private final Optional<ExprNode> expr;
 
     IfCondition() {
-      this.expr = Optional.absent();
+      this.expr = Optional.empty();
     }
 
     IfCondition(ExprNode expr) {
@@ -92,7 +92,7 @@ abstract class Condition {
       if (condition.expr.isPresent()) {
         this.expr = Optional.of(condition.expr.get().copy(new CopyState()));
       } else {
-        this.expr = Optional.absent();
+        this.expr = Optional.empty();
       }
     }
 
@@ -118,14 +118,14 @@ abstract class Condition {
       }
       if (object instanceof IfCondition) {
         IfCondition cond = (IfCondition) object;
-        return ExprEquivalence.get().equivalent(expr.orNull(), cond.expr.orNull());
+        return ExprEquivalence.get().equivalent(expr.orElse(null), cond.expr.orElse(null));
       }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return ExprEquivalence.get().hash(expr.orNull());
+      return ExprEquivalence.get().hash(expr.orElse(null));
     }
   }
 

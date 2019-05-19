@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
@@ -39,6 +38,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
+import java.util.Optional;
 
 /** Checks if HTML is printed only from HTML context. */
 final class CheckBadContextualUsagePass extends CompilerFileSetPass {
@@ -106,7 +106,7 @@ final class CheckBadContextualUsagePass extends CompilerFileSetPass {
       SoyErrorKind errorKind) {
     if (!ALLOWED_CONTEXTS.containsEntry(contentKind, node.getHtmlContext())) {
       Optional<SanitizedContentKind> calleeContentKind = registry.getCallContentKind(node);
-      if (calleeContentKind.orNull() == contentKind) {
+      if (calleeContentKind.orElse(null) == contentKind) {
         errorReporter.report(node.getSourceLocation(), errorKind);
       }
     }

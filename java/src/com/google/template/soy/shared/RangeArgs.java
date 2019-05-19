@@ -17,12 +17,12 @@
 package com.google.template.soy.shared;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.template.soy.basicfunctions.RangeFunction;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.soytree.ForNode;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A class that represents the arguments of a {@code range(...)} expression in a {@code {for ...}}
@@ -33,9 +33,9 @@ public abstract class RangeArgs {
   private static RangeArgs create(List<ExprNode> args) {
     switch (args.size()) {
       case 1:
-        return new AutoValue_RangeArgs(Optional.absent(), args.get(0), Optional.absent());
+        return new AutoValue_RangeArgs(Optional.empty(), args.get(0), Optional.empty());
       case 2:
-        return new AutoValue_RangeArgs(Optional.of(args.get(0)), args.get(1), Optional.absent());
+        return new AutoValue_RangeArgs(Optional.of(args.get(0)), args.get(1), Optional.empty());
       case 3:
         return new AutoValue_RangeArgs(
             Optional.of(args.get(0)), args.get(1), Optional.of(args.get(2)));
@@ -55,7 +55,7 @@ public abstract class RangeArgs {
         return Optional.of(create(fn.getChildren()));
       }
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
   /** The expression for the iteration start point. Default is {@code 0}. */

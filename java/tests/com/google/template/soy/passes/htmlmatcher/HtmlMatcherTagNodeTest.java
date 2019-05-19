@@ -17,6 +17,7 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
@@ -75,7 +76,7 @@ public final class HtmlMatcherTagNodeTest {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
-    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -83,7 +84,7 @@ public final class HtmlMatcherTagNodeTest {
     HtmlMatcherTagNode testMatcherTagNode =
         TestUtils.htmlMatcherOpenTagNode(TestUtils.soyHtmlOpenTagNode());
 
-    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(testMatcherTagNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test

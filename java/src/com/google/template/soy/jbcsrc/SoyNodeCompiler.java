@@ -32,7 +32,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNu
 import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.FixedIdGenerator;
@@ -110,6 +109,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -266,7 +266,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitIfNode(IfNode node) {
     List<IfBlock> ifs = new ArrayList<>();
-    Optional<Statement> elseBlock = Optional.absent();
+    Optional<Statement> elseBlock = Optional.empty();
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
@@ -305,7 +305,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     switchVar = switchVar.withSource(variable.local());
 
     List<IfBlock> cases = new ArrayList<>();
-    Optional<Statement> defaultBlock = Optional.absent();
+    Optional<Statement> defaultBlock = Optional.empty();
     for (SoyNode child : children) {
       if (child instanceof SwitchCaseNode) {
         SwitchCaseNode caseNode = (SwitchCaseNode) child;
@@ -1035,7 +1035,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               node,
               ConstructorRef.AUGMENTED_PARAM_STORE.construct(
                   paramsRecord, constant(node.numChildren())))
-          .or(paramsRecord);
+          .orElse(paramsRecord);
     }
 
     Expression paramStoreExpression = getParamStoreExpression(node, reattachPoint);
@@ -1078,7 +1078,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             dataExpression, constant(node.numChildren()));
     if (node.isPassingAllData()) {
       paramStoreExpression =
-          maybeAddDefaultParams(node, paramStoreExpression).or(paramStoreExpression);
+          maybeAddDefaultParams(node, paramStoreExpression).orElse(paramStoreExpression);
     }
     return paramStoreExpression;
   }
@@ -1100,7 +1100,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                 parameterLookup.getParam(param));
       }
     }
-    return foundDefaultParams ? Optional.of(paramStoreExpression) : Optional.absent();
+    return foundDefaultParams ? Optional.of(paramStoreExpression) : Optional.empty();
   }
 
   private Expression getDataRecordExpression(CallNode node, Label reattachPoint) {

@@ -19,7 +19,6 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -61,6 +60,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -112,7 +112,7 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
 
   @VisibleForTesting
   public Optional<HtmlMatcherGraph> getHtmlMatcherGraph() {
-    return Optional.fromNullable(htmlMatcherGraph);
+    return Optional.ofNullable(htmlMatcherGraph);
   }
 
   private void checkVeLogNode(VeLogNode node) {

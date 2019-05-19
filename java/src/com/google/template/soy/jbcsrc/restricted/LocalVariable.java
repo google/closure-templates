@@ -20,7 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -129,7 +129,7 @@ public final class LocalVariable extends Expression {
    * Return a {@link Statement} that stores the value of the given expression into this variable.
    */
   public Statement store(final Expression expr) {
-    return store(expr, Optional.absent());
+    return store(expr, Optional.empty());
   }
 
   /**

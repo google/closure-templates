@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Utf8;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -57,6 +56,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -126,7 +126,7 @@ public final class BytecodeUtils {
                         // The easiest way to generically get an array class.
                         return Optional.of(Array.newInstance(elementType.get(), 0).getClass());
                       }
-                      return Optional.absent();
+                      return Optional.empty();
                     case Type.VOID:
                       return Optional.of(void.class);
                     case Type.BOOLEAN:
@@ -152,12 +152,12 @@ public final class BytecodeUtils {
                           // if the class is generated, don't try to look it up.
                           // It might actually succeed in a case where we have the class on our
                           // classpath already!
-                          return Optional.absent();
+                          return Optional.empty();
                         }
                         return Optional.of(
                             Class.forName(className, false, BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
-                        return Optional.absent();
+                        return Optional.empty();
                       }
                     default:
                       throw new IllegalArgumentException("unsupported type: " + key);

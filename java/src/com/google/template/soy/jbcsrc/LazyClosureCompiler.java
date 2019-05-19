@@ -33,7 +33,6 @@ import static com.google.template.soy.soytree.SoyTreeUtils.isDescendantOf;
 import static java.util.Arrays.asList;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
@@ -77,6 +76,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -236,7 +236,7 @@ final class LazyClosureCompiler {
     Optional<Expression> asRawText =
         prefix != ExtraCodeCompiler.NO_OP && suffix != ExtraCodeCompiler.NO_OP
             ? asRawTextOnly(proposedName, renderUnit)
-            : Optional.absent();
+            : Optional.empty();
     if (asRawText.isPresent()) {
       return asRawText.get();
     }
@@ -279,7 +279,7 @@ final class LazyClosureCompiler {
         }
         builder.append(((RawTextNode) child).getRawText());
       } else {
-        return Optional.absent();
+        return Optional.empty();
       }
     }
 

@@ -25,7 +25,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNu
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
@@ -96,6 +95,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -245,7 +245,7 @@ final class ExpressionCompiler {
   Optional<SoyExpression> compileWithNoDetaches(ExprNode node) {
     checkNotNull(node);
     if (RequiresDetachVisitor.INSTANCE.exec(node)) {
-      return Optional.absent();
+      return Optional.empty();
     }
     Supplier<ExpressionDetacher> throwingSupplier =
         () -> {

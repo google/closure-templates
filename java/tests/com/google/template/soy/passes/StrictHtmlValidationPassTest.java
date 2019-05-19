@@ -17,9 +17,9 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -33,6 +33,7 @@ import com.google.template.soy.passes.htmlmatcher.TestUtils;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
+import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -54,7 +55,7 @@ public final class StrictHtmlValidationPassTest {
 
     // Assert.
     assertThat(matcherGraph).isPresent();
-    assertThat(matcherGraph.get().getRootNode()).isAbsent();
+    assertThat(matcherGraph.get().getRootNode()).isEmpty();
   }
 
   @Test
@@ -172,7 +173,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -241,7 +242,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "div");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -312,7 +313,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "li");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -370,7 +371,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -449,7 +450,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -520,7 +521,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "li");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -613,7 +614,7 @@ public final class StrictHtmlValidationPassTest {
     TestUtils.assertNodeIsCloseTagWithName(nextNode, "span");
 
     // Verify that the graph ends here.
-    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(nextNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   private static void assertThatIfExpressionEqualTo(HtmlMatcherGraphNode node, String exprString) {

@@ -19,15 +19,15 @@ package com.google.template.soy.passes.htmlmatcher;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Optional;
 import java.util.ArrayDeque;
+import java.util.Optional;
 
 public final class HtmlMatcherGraph {
 
-  private Optional<HtmlMatcherGraphNode> rootNode = Optional.absent();
+  private Optional<HtmlMatcherGraphNode> rootNode = Optional.empty();
 
   /** Pointer to where all new nodes are added in the graph. */
-  private Optional<HtmlMatcherGraphNode> graphCursor = Optional.absent();
+  private Optional<HtmlMatcherGraphNode> graphCursor = Optional.empty();
 
   private final ArrayDeque<Optional<HtmlMatcherGraphNode>> cursorStack = new ArrayDeque<>();
 

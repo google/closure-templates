@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
-import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -43,6 +42,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Type;
 
@@ -87,7 +87,7 @@ public abstract class SoyRuntimeType {
               new CacheLoader<SoyType, Optional<PrimitiveSoyType>>() {
                 @Override
                 public Optional<PrimitiveSoyType> load(SoyType key) throws Exception {
-                  return Optional.fromNullable(unboxedTypeImpl(key));
+                  return Optional.ofNullable(unboxedTypeImpl(key));
                 }
               });
 
@@ -210,7 +210,8 @@ public abstract class SoyRuntimeType {
           // 2. if all members of the union have the same runtimeType then we can use that
           SoyType nonNullType = SoyTypes.removeNull(soyType);
           if (!nonNullType.equals(soyType)) {
-            PrimitiveSoyType primitive = (PrimitiveSoyType) getUnboxedType(nonNullType).orNull();
+            PrimitiveSoyType primitive =
+                (PrimitiveSoyType) getUnboxedType(nonNullType).orElse(null);
             if (primitive != null && !BytecodeUtils.isPrimitive(primitive.runtimeType())) {
               return new PrimitiveSoyType(
                   soyType, primitive.runtimeType(), primitive.box().runtimeType());
@@ -218,7 +219,7 @@ public abstract class SoyRuntimeType {
           }
           PrimitiveSoyType memberType = null;
           for (SoyType member : ((UnionType) soyType).getMembers()) {
-            PrimitiveSoyType primitive = (PrimitiveSoyType) getUnboxedType(member).orNull();
+            PrimitiveSoyType primitive = (PrimitiveSoyType) getUnboxedType(member).orElse(null);
             if (primitive == null) {
               return null;
             }

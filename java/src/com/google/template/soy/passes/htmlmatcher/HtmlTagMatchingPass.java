@@ -17,7 +17,6 @@
 package com.google.template.soy.passes.htmlmatcher;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
@@ -35,6 +34,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TagName;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -74,7 +74,7 @@ public final class HtmlTagMatchingPass {
   private static final String UNEXPECTED_OPEN_TAG_SOMETIMES =
       "This HTML open tag does not consistently match with a close tag.";
 
-  private static final Optional<HtmlTagNode> INVALID_NODE = Optional.absent();
+  private static final Optional<HtmlTagNode> INVALID_NODE = Optional.empty();
 
   private final ErrorReporter errorReporter;
   /** Required in order to generate synthetic nodes. */

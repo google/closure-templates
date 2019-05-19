@@ -16,7 +16,7 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
-import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
@@ -64,7 +64,7 @@ public final class HtmlMatcherConditionNodeTest {
 
     assertThat(testIfConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE))
         .hasValue(testIfElseConditionNode);
-    assertThat(testIfConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(testIfConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -81,7 +81,7 @@ public final class HtmlMatcherConditionNodeTest {
 
     assertThat(switchCase1Node.getNodeForEdgeKind(EdgeKind.TRUE_EDGE))
         .hasValue(switchCase2Node);
-    assertThat(switchCase1Node.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(switchCase1Node.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -98,7 +98,7 @@ public final class HtmlMatcherConditionNodeTest {
 
     assertThat(testIfConditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE))
         .hasValue(testIfElseConditionNode);
-    assertThat(testIfConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(testIfConditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -115,7 +115,7 @@ public final class HtmlMatcherConditionNodeTest {
 
     assertThat(switchCase1Node.getNodeForEdgeKind(EdgeKind.FALSE_EDGE))
         .hasValue(switchCase2Node);
-    assertThat(switchCase1Node.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(switchCase1Node.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
   }
 
   @Test
@@ -124,8 +124,8 @@ public final class HtmlMatcherConditionNodeTest {
     HtmlMatcherConditionNode conditionNode =
         new HtmlMatcherConditionNode(soyNode, soyNode.getExpr());
 
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -134,8 +134,8 @@ public final class HtmlMatcherConditionNodeTest {
     HtmlMatcherConditionNode conditionNode =
         new HtmlMatcherConditionNode(soyNode, soyNode.getExprList().get(0));
 
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -193,7 +193,7 @@ public final class HtmlMatcherConditionNodeTest {
     conditionNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, openNode);
 
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).hasValue(openNode);
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -207,7 +207,7 @@ public final class HtmlMatcherConditionNodeTest {
     conditionNode.linkEdgeToNode(EdgeKind.TRUE_EDGE, openNode);
 
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).hasValue(openNode);
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isAbsent();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).isEmpty();
   }
 
   @Test
@@ -220,7 +220,7 @@ public final class HtmlMatcherConditionNodeTest {
 
     conditionNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, openNode);
 
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(openNode);
   }
 
@@ -234,7 +234,7 @@ public final class HtmlMatcherConditionNodeTest {
 
     conditionNode.linkEdgeToNode(EdgeKind.FALSE_EDGE, openNode);
 
-    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isAbsent();
+    assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE)).isEmpty();
     assertThat(conditionNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE)).hasValue(openNode);
   }
 }
