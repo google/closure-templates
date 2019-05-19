@@ -18,7 +18,6 @@ package com.google.template.soy.error;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
 
 /**
  * Reports on all Soy compilation errors and allows for programmatic inspection via {@link
@@ -28,7 +27,7 @@ public final class SoyCompilationException extends RuntimeException {
   private final ImmutableList<SoyError> errors;
 
   public SoyCompilationException(Iterable<SoyError> errors) {
-    this.errors = Ordering.natural().immutableSortedCopy(errors);
+    this.errors = ImmutableList.sortedCopyOf(errors);
     checkArgument(!this.errors.isEmpty());
   }
 

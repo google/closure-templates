@@ -16,10 +16,11 @@
 
 package com.google.template.soy.msgs.internal;
 
+import static java.util.Comparator.comparing;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -44,17 +45,6 @@ import java.util.List;
  */
 public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
 
-  private static final Ordering<SoyMsg> SOURCE_LOCATION_ORDERING =
-      new Ordering<SoyMsg>() {
-        @Override
-        public int compare(SoyMsg left, SoyMsg right) {
-          // the messages sorted by this comparator only have one source location.
-          // messages gain extra source locations when merged together in a bundle.
-          return Iterables.getOnlyElement(left.getSourceLocations())
-              .compareTo(Iterables.getOnlyElement(right.getSourceLocations()));
-        }
-      };
-
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
 
@@ -68,7 +58,9 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
 
     msgs = Lists.newArrayList();
     visit(node);
-    Collections.sort(msgs, SOURCE_LOCATION_ORDERING);
+    // the messages in this list only have one source location.
+    // messages gain extra source locations when merged together in a bundle.
+    Collections.sort(msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations())));
     return new SoyMsgBundleImpl(null, msgs);
   }
 
