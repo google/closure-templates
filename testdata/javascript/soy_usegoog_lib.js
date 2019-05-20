@@ -26750,7 +26750,7 @@ function $$populateMap(jspbMap, map) {
  * @return {?} The key, coerced to a string if it is an UnsanitizedText object.
  */
 function $$maybeCoerceKeyToString(key) {
-  return key instanceof UnsanitizedText ? key.getContent() : key;
+  return key instanceof UnsanitizedText ? key.toString() : key;
 }
 
 /**

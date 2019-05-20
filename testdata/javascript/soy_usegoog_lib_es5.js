@@ -6164,7 +6164,7 @@ soy.map.$$mapToLegacyObjectMap = function(map) {
   return obj;
 };
 soy.map.$$maybeCoerceKeyToString = function(key) {
-  return key instanceof goog.soy.data.UnsanitizedText ? key.content : key;
+  return key instanceof goog.soy.data.UnsanitizedText ? key.toString() : key;
 };
 soy.map.$$populateMap = function(jspbMap, map) {
   for (var $jscomp$iter$1 = $jscomp.makeIterator(map.entries()), $jscomp$key$ = $jscomp$iter$1.next(); !$jscomp$key$.done; $jscomp$key$ = $jscomp$iter$1.next()) {
