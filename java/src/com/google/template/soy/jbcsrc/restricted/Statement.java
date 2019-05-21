@@ -138,9 +138,9 @@ public abstract class Statement extends BytecodeProducer {
 
   /** Writes this statement as the complete method body to {@code ga}. */
   private final void writeMethodTo(CodeBuilder builder) {
-    builder.visitCode();
-    gen(builder);
     try {
+      builder.visitCode();
+      gen(builder);
       builder.endMethod();
     } catch (Throwable t) {
       // ASM fails in bizarre ways, attach a trace of the thing we tried to generate to the
