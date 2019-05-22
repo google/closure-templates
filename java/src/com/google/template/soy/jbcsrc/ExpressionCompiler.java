@@ -125,12 +125,14 @@ final class ExpressionCompiler {
     private BasicExpressionCompiler(
         TemplateParameterLookup parameters,
         TemplateVariableManager varManager,
+        FieldManager fields,
         ErrorReporter reporter,
         SoyTypeRegistry registry) {
       this.compilerVisitor =
           new CompilerVisitor(
               parameters,
               varManager,
+              fields,
               Suppliers.ofInstance(BasicDetacher.INSTANCE),
               reporter,
               registry);
@@ -165,17 +167,23 @@ final class ExpressionCompiler {
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
       TemplateVariableManager varManager,
+      FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
-    return new ExpressionCompiler(detacherFactory, parameters, varManager, reporter, registry);
+    return new ExpressionCompiler(
+        detacherFactory, parameters, varManager, fields, reporter, registry);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
-      TemplateVariableManager varManager, ErrorReporter reporter, SoyTypeRegistry registry) {
+      TemplateVariableManager varManager,
+      FieldManager fields,
+      ErrorReporter reporter,
+      SoyTypeRegistry registry) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
             /* parameters= */ null,
             varManager,
+            fields,
             Suppliers.ofInstance(ExpressionDetacher.NullDetatcher.INSTANCE),
             reporter,
             registry));
@@ -190,13 +198,15 @@ final class ExpressionCompiler {
   static BasicExpressionCompiler createBasicCompiler(
       TemplateParameterLookup parameters,
       TemplateVariableManager varManager,
+      FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
-    return new BasicExpressionCompiler(parameters, varManager, reporter, registry);
+    return new BasicExpressionCompiler(parameters, varManager, fields, reporter, registry);
   }
 
   @Nullable private final TemplateParameterLookup parameters;
   private final TemplateVariableManager varManager;
+  private final FieldManager fields;
   private final ExpressionDetacher.Factory detacherFactory;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry registry;
@@ -205,11 +215,13 @@ final class ExpressionCompiler {
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
       TemplateVariableManager varManager,
+      FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
     this.detacherFactory = detacherFactory;
     this.parameters = parameters;
     this.varManager = varManager;
+    this.fields = checkNotNull(fields);
     this.reporter = reporter;
     this.registry = registry;
   }
@@ -252,7 +264,7 @@ final class ExpressionCompiler {
           throw new AssertionError();
         };
     return Optional.of(
-        new CompilerVisitor(parameters, varManager, throwingSupplier, reporter, registry)
+        new CompilerVisitor(parameters, varManager, fields, throwingSupplier, reporter, registry)
             .exec(node));
   }
 
@@ -265,6 +277,7 @@ final class ExpressionCompiler {
         new CompilerVisitor(
             parameters,
             varManager,
+            fields,
             // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
             // detacher eagerly creates detach points so we want to delay until definitely
             // necessary.
@@ -278,18 +291,21 @@ final class ExpressionCompiler {
     final Supplier<? extends ExpressionDetacher> detacher;
     final TemplateParameterLookup parameters;
     final TemplateVariableManager varManager;
+    final FieldManager fields;
     final ErrorReporter reporter;
     final SoyTypeRegistry registry;
 
     CompilerVisitor(
         TemplateParameterLookup parameters,
         TemplateVariableManager varManager,
+        FieldManager fields,
         Supplier<? extends ExpressionDetacher> detacher,
         ErrorReporter reporter,
         SoyTypeRegistry registry) {
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
+      this.fields = fields;
       this.reporter = reporter;
       this.registry = registry;
     }
@@ -318,7 +334,7 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitStringNode(StringNode node) {
-      return SoyExpression.forString(constant(node.getValue(), varManager));
+      return SoyExpression.forString(constant(node.getValue(), fields));
     }
 
     @Override

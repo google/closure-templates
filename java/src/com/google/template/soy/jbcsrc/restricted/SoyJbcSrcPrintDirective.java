@@ -26,10 +26,8 @@ import java.util.List;
  *
  * <p>Soy super package private. This interface is subject to change and should only be implemented
  * within the Soy codebase.
- *
- * @deprecated Use Soy functions instead
  */
-@Deprecated
+@SuppressWarnings("deprecation")
 public interface SoyJbcSrcPrintDirective extends SoyPrintDirective {
 
   /**

@@ -18,26 +18,17 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_APPENDABLE_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.TEMP_BUFFER_FIELD;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
-import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.jbcsrc.FieldManager.LazyAllocatedField;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.ClassFieldManager;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
-import com.google.template.soy.jbcsrc.restricted.TypeInfo;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -47,10 +38,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -70,7 +58,7 @@ import org.objectweb.asm.commons.Method;
  * <p>Finally, this class can be used to generate static, per template fields for storing state.
  * Currently, this is used to store default english messages and raw text constants > 64K in length.
  */
-final class TemplateVariableManager implements ClassFieldManager {
+final class TemplateVariableManager {
   enum SaveStrategy {
     /** Means that the value of the variable should be recalculated rather than saved to a field. */
     DERIVED,
@@ -199,43 +187,30 @@ final class TemplateVariableManager implements ClassFieldManager {
 
     abstract Statement restore();
 
-    abstract void maybeDefineField(ClassVisitor writer);
-
     final LocalVariable local() {
       return local;
     }
   }
 
   private final class FieldSavedVariable extends Variable {
-    private FieldRef fieldRef; // lazily allocated on a save/restore operation
 
-    private FieldSavedVariable(Expression initExpression, LocalVariable local) {
+    final LazyAllocatedField field;
+
+    private FieldSavedVariable(
+        Expression initExpression, LocalVariable local, LazyAllocatedField field) {
       super(initExpression, local);
+      this.field = field;
     }
 
     @Override
     Statement save() {
-      return getField().putInstanceField(thisVar, local);
+      return field.getField().putInstanceField(thisVar, local);
     }
 
     @Override
     Statement restore() {
-      Expression fieldValue = getField().accessor(thisVar);
+      Expression fieldValue = field.getField().accessor(thisVar);
       return local.store(fieldValue);
-    }
-
-    private FieldRef getField() {
-      if (fieldRef == null) {
-        fieldRef = FieldRef.createField(owner, local.variableName(), local.resultType());
-      }
-      return fieldRef;
-    }
-
-    @Override
-    void maybeDefineField(ClassVisitor writer) {
-      if (fieldRef != null) {
-        fieldRef.defineField(writer);
-      }
     }
   }
 
@@ -253,9 +228,6 @@ final class TemplateVariableManager implements ClassFieldManager {
     Statement restore() {
       return local.store(initExpression);
     }
-
-    @Override
-    void maybeDefineField(ClassVisitor writer) {}
   }
 
   private static final class TemporaryVariable extends Variable {
@@ -272,45 +244,21 @@ final class TemplateVariableManager implements ClassFieldManager {
     Statement restore() {
       throw new UnsupportedOperationException("Should not call restore() on this variable.");
     }
-
-    @Override
-    void maybeDefineField(ClassVisitor writer) {}
   }
 
-  @AutoValue
-  abstract static class StaticFieldVariable {
-    abstract FieldRef field();
-
-    abstract Expression initializer();
-  }
-
+  private final FieldManager fields;
   private final List<Variable> allVariables = new ArrayList<>();
   private final Deque<Map<VarKey, Variable>> frames = new ArrayDeque<>();
-  private final List<StaticFieldVariable> staticFields = new ArrayList<>();
-  private final UniqueNameGenerator fieldNames;
   private final BitSet availableSlots = new BitSet();
-  private final TypeInfo owner;
   private final LocalVariable thisVar;
-  // Allocated lazily
-  @Nullable private FieldRef currentCalleeField;
-  // Allocated lazily
-  @Nullable private FieldRef currentRendereeField;
-  // Allocated lazily
-  @Nullable private FieldRef currentAppendable;
 
   /**
-   * @param fieldNames The field name set for the current class.
-   * @param owner The type that is the owner of the method being generated
+   * @param fields The field manager for the current class.
    * @param thisVar An expression returning the current 'this' reference
    * @param method The method being generated
    */
-  TemplateVariableManager(
-      UniqueNameGenerator fieldNames, TypeInfo owner, LocalVariable thisVar, Method method) {
-    this.fieldNames = fieldNames;
-    this.fieldNames.claimName(CURRENT_CALLEE_FIELD);
-    this.fieldNames.claimName(CURRENT_RENDEREE_FIELD);
-    this.fieldNames.claimName(TEMP_BUFFER_FIELD);
-    this.owner = owner;
+  TemplateVariableManager(FieldManager fields, LocalVariable thisVar, Method method) {
+    this.fields = fields;
     this.thisVar = thisVar;
     availableSlots.set(0); // for 'this'
     int from = 1;
@@ -333,26 +281,38 @@ final class TemplateVariableManager implements ClassFieldManager {
       Variable createSynthetic(
           SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
         checkState(!exited, "Scope already exited");
-        VarKey key = VarKey.create(Kind.SYNTHETIC, varName.name());
         // synthetics are prefixed by $ by convention
-        String name = fieldNames.generateName("$" + varName.name());
-        return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
+        return doCreate(
+            fields.addLazyGeneratedField("$" + varName.name(), initExpr.resultType()),
+            new Label(),
+            scopeExit,
+            initExpr,
+            VarKey.create(Kind.SYNTHETIC, varName.name()),
+            strategy);
       }
 
       @Override
       Variable createTemporary(String name, Expression initExpr) {
         checkState(!exited, "Scope already exited");
-        VarKey key = VarKey.create(Kind.TEMPORARY, name);
-        name = fieldNames.generateName("$$" + name);
-        return doCreate(name, new Label(), scopeExit, initExpr, key, SaveStrategy.NEVER);
+        return doCreate(
+            fields.addLazyGeneratedField("$$" + name, initExpr.resultType()),
+            new Label(),
+            scopeExit,
+            initExpr,
+            VarKey.create(Kind.TEMPORARY, name),
+            SaveStrategy.NEVER);
       }
 
       @Override
       Variable create(String name, Expression initExpr, SaveStrategy strategy) {
         checkState(!exited, "Scope already exited");
-        VarKey key = VarKey.create(Kind.USER_DEFINED, name);
-        name = fieldNames.generateName(name);
-        return doCreate(name, new Label(), scopeExit, initExpr, key, strategy);
+        return doCreate(
+            fields.addLazyGeneratedField(name, initExpr.resultType()),
+            new Label(),
+            scopeExit,
+            initExpr,
+            VarKey.create(Kind.USER_DEFINED, name),
+            strategy);
       }
 
       @Override
@@ -381,7 +341,7 @@ final class TemplateVariableManager implements ClassFieldManager {
       }
 
       private Variable doCreate(
-          String name,
+          LazyAllocatedField field,
           Label start,
           Label end,
           Expression initExpr,
@@ -389,7 +349,7 @@ final class TemplateVariableManager implements ClassFieldManager {
           SaveStrategy strategy) {
         int index = reserveSlotFor(initExpr.resultType());
         LocalVariable local =
-            LocalVariable.createLocal(name, index, initExpr.resultType(), start, end);
+            LocalVariable.createLocal(field.name(), index, initExpr.resultType(), start, end);
         Variable var;
         switch (strategy) {
           case DERIVED:
@@ -399,7 +359,7 @@ final class TemplateVariableManager implements ClassFieldManager {
             var = new TemporaryVariable(initExpr, local);
             break;
           case STORE:
-            var = new FieldSavedVariable(initExpr, local);
+            var = new FieldSavedVariable(initExpr, local, field);
             break;
           default:
             throw new AssertionError();
@@ -420,116 +380,6 @@ final class TemplateVariableManager implements ClassFieldManager {
         throw new RuntimeException("unable to write table entry for: " + var.local, t);
       }
     }
-  }
-
-  @Override
-  public FieldRef addStaticField(String proposedName, Expression initializer) {
-    return addStaticField(
-        proposedName, initializer, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE);
-  }
-
-  FieldRef addPackagePrivateStaticField(String proposedName, Expression initializer) {
-    return addStaticField(proposedName, initializer, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
-  }
-
-  private FieldRef addStaticField(String proposedName, Expression initializer, int accessFlags) {
-    String name = fieldNames.generateName(proposedName);
-    FieldRef ref =
-        FieldRef.create(
-            owner, name, initializer.resultType(), accessFlags, !initializer.isNonNullable());
-    staticFields.add(new AutoValue_TemplateVariableManager_StaticFieldVariable(ref, initializer));
-    return ref;
-  }
-
-  // TODO(lukes): consider moving all these optional 'one per template' fields to a different object
-  // for management.
-
-  /** Defines all the fields necessary for the registered variables. */
-  void defineFields(ClassVisitor writer) {
-    for (Variable var : allVariables) {
-      var.maybeDefineField(writer);
-    }
-    if (currentCalleeField != null) {
-      currentCalleeField.defineField(writer);
-    }
-    if (currentRendereeField != null) {
-      currentRendereeField.defineField(writer);
-    }
-    if (currentAppendable != null) {
-      currentAppendable.defineField(writer);
-    }
-  }
-
-  /**
-   * Adds definitions for all the static fields managed by this variable set and adds a {@code
-   * <clinit>} method to the given class.
-   *
-   * @param writer The class to add the fields and static initializer to.
-   */
-  void defineStaticFields(ClassVisitor writer) {
-    if (staticFields.isEmpty()) {
-      return;
-    }
-    List<Statement> statements = new ArrayList<>();
-    for (StaticFieldVariable staticField : staticFields) {
-      staticField.field().defineField(writer);
-      statements.add(staticField.field().putStaticField(staticField.initializer()));
-    }
-    statements.add(Statement.RETURN);
-    Statement.concat(statements).writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, writer);
-  }
-
-  /**
-   * Returns the field that holds the current callee template.
-   *
-   * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
-   * restoring the current callee to a local.
-   */
-  FieldRef getCurrentCalleeField() {
-    FieldRef local = currentCalleeField;
-    if (local == null) {
-      local =
-          currentCalleeField =
-              FieldRef.createField(owner, CURRENT_CALLEE_FIELD, CompiledTemplate.class);
-    }
-    return local;
-  }
-
-  /**
-   * Returns the field that holds the currently rendering SoyValueProvider.
-   *
-   * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
-   * restoring the current renderee to a local.
-   */
-  FieldRef getCurrentRenderee() {
-    FieldRef local = currentRendereeField;
-    if (local == null) {
-      local =
-          currentRendereeField =
-              FieldRef.createField(owner, CURRENT_RENDEREE_FIELD, SoyValueProvider.class);
-    }
-    return local;
-  }
-
-  /**
-   * Returns the field that holds the currently rendering LoggingAdvisingAppendable object that is
-   * used for streaming renders.
-   *
-   * <p>Unlike normal variables the VariableSet doesn't maintain responsibility for saving and
-   * restoring the current renderee to a local.
-   *
-   * <p>TODO(lukes): it would be better if the VariableSet would save/restore... the issue is
-   * allowing multiple uses within a template to share the field.
-   */
-  FieldRef getCurrentAppendable() {
-    FieldRef local = currentAppendable;
-    if (local == null) {
-      local =
-          currentAppendable =
-              FieldRef.createField(
-                  owner, CURRENT_APPENDABLE_FIELD, LoggingAdvisingAppendable.class);
-    }
-    return local;
   }
 
   /**
@@ -583,8 +433,7 @@ final class TemplateVariableManager implements ClassFieldManager {
     // Iterate backwards so that we restore variables in order of definition which will ensure that
     // derived fields work correctly.
     for (Iterator<Map<VarKey, Variable>> iterator = frames.descendingIterator();
-        iterator.hasNext();
-        ) {
+        iterator.hasNext(); ) {
       Map<VarKey, Variable> frame = iterator.next();
       for (Variable var : frame.values()) {
         saves.add(var.save());

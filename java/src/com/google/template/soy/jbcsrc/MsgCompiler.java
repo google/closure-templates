@@ -138,6 +138,7 @@ final class MsgCompiler {
   private final DetachState detachState;
   private final TemplateVariableManager variables;
   private final TemplateParameterLookup parameterLookup;
+  private final FieldManager fields;
   private final AppendableExpression appendableExpression;
   private final PlaceholderCompiler placeholderCompiler;
 
@@ -146,12 +147,14 @@ final class MsgCompiler {
       DetachState detachState,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
+      FieldManager fields,
       AppendableExpression appendableExpression,
       PlaceholderCompiler placeholderCompiler) {
     this.thisVar = checkNotNull(thisVar);
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
+    this.fields = checkNotNull(fields);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.placeholderCompiler = checkNotNull(placeholderCompiler);
   }
@@ -200,7 +203,7 @@ final class MsgCompiler {
    * java serialization, but just invoking the SoyMsgPart constructors isn't too hard.
    */
   private Expression compileDefaultMessagePartsConstant(MsgPartsAndIds partsAndId) {
-    return variables
+    return fields
         .addStaticField("msg_parts_" + partsAndId.id, partsToPartsList(partsAndId.parts))
         .accessor();
   }
@@ -242,7 +245,7 @@ final class MsgCompiler {
           constant(((SoyMsgPluralRemainderPart) part).getPluralVarName()));
     } else if (part instanceof SoyMsgRawTextPart) {
       return SOY_MSG_RAW_TEXT_PART_OF.invoke(
-          constant(((SoyMsgRawTextPart) part).getRawText(), variables));
+          constant(((SoyMsgRawTextPart) part).getRawText(), fields));
     } else if (part instanceof SoyMsgSelectPart) {
       SoyMsgSelectPart selectPart = (SoyMsgSelectPart) part;
       List<Expression> caseExprs = new ArrayList<>(selectPart.getCases().size());
@@ -296,7 +299,7 @@ final class MsgCompiler {
     ConstructorRef cstruct =
         msg.isPlrselMsg() ? ConstructorRef.PLRSEL_MSG_RENDERER : ConstructorRef.MSG_RENDERER;
     Statement initRendererStatement =
-        variables
+        fields
             .getCurrentRenderee()
             .putInstanceField(
                 thisVar,
@@ -308,7 +311,7 @@ final class MsgCompiler {
     List<Statement> initializationStatements = new ArrayList<>();
     initializationStatements.add(initRendererStatement);
     for (Function<Expression, Statement> fn : placeholderNameToPutStatement.values()) {
-      initializationStatements.add(fn.apply(variables.getCurrentRenderee().accessor(thisVar)));
+      initializationStatements.add(fn.apply(fields.getCurrentRenderee().accessor(thisVar)));
     }
 
     Statement initMsgRenderer = Statement.concat(initializationStatements);
@@ -320,7 +323,7 @@ final class MsgCompiler {
               appendableExpression,
               parameterLookup.getPluginContext(),
               variables);
-      FieldRef currentAppendableField = variables.getCurrentAppendable();
+      FieldRef currentAppendableField = fields.getCurrentAppendable();
       Statement initAppendable =
           currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
       Expression appendableExpression = currentAppendableField.accessor(thisVar);
@@ -339,7 +342,7 @@ final class MsgCompiler {
           Statement.concat(
               initAppendable,
               detachState.detachForRender(
-                  variables
+                  fields
                       .getCurrentRenderee()
                       .accessor(thisVar)
                       .invoke(
@@ -356,7 +359,7 @@ final class MsgCompiler {
               StringType.getInstance(),
               detachState
                   .createExpressionDetacher(start)
-                  .resolveSoyValueProvider(variables.getCurrentRenderee().accessor(thisVar))
+                  .resolveSoyValueProvider(fields.getCurrentRenderee().accessor(thisVar))
                   .checkedCast(SOY_STRING_TYPE));
       for (SoyPrintDirective directive : escapingDirectives) {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
@@ -368,7 +371,7 @@ final class MsgCompiler {
         initMsgRenderer,
         render,
         // clear the field
-        variables
+        fields
             .getCurrentRenderee()
             .putInstanceField(
                 thisVar,

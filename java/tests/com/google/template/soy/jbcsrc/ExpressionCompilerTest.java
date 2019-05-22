@@ -46,7 +46,6 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
-import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -88,6 +87,7 @@ import org.objectweb.asm.commons.Method;
 @RunWith(JUnit4.class)
 public class ExpressionCompilerTest {
   private final Map<String, SoyExpression> variables = new HashMap<>();
+  private final FieldManager fields = new FieldManager(null);
   private final ExpressionCompiler testExpressionCompiler =
       ExpressionCompiler.create(
           new ExpressionDetacher.Factory() {
@@ -160,8 +160,8 @@ public class ExpressionCompilerTest {
               throw new UnsupportedOperationException();
             }
           },
-          new TemplateVariableManager(
-              JbcSrcNameGenerators.forFieldNames(), null, null, getRenderMethod()),
+          new TemplateVariableManager(fields, null, getRenderMethod()),
+          fields,
           ErrorReporter.exploding(),
           new SoyTypeRegistry());
 

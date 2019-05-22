@@ -43,17 +43,22 @@ public abstract class FieldRef {
   public static final FieldRef EMPTY_MAP =
       staticFieldReference(SoyValueConverter.class, "EMPTY_MAP");
 
-  public static FieldRef createFinalField(TypeInfo owner, String name, Class<?> type) {
-    return createFinalField(owner, name, Type.getType(type));
+  // All the valid access specifiers for a field.  Enables a quick sanity check
+  private static final int FIELD_ACCESS_MASK =
+      Opcodes.ACC_PRIVATE
+          + Opcodes.ACC_PUBLIC
+          + Opcodes.ACC_PROTECTED
+          + Opcodes.ACC_STATIC
+          + Opcodes.ACC_FINAL;
+
+  public static FieldRef create(
+      TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {
+    checkArgument((FIELD_ACCESS_MASK & modifiers) == modifiers, "invalid modifiers");
+    return new AutoValue_FieldRef(owner, name, type, modifiers, isNullable);
   }
 
-  public static FieldRef createFinalField(TypeInfo owner, String name, Type type) {
-    return new AutoValue_FieldRef(
-        owner,
-        name,
-        type,
-        Opcodes.ACC_PRIVATE + Opcodes.ACC_FINAL,
-        !BytecodeUtils.isPrimitive(type));
+  public static FieldRef create(TypeInfo owner, String name, Type fieldType, int modifiers) {
+    return create(owner, name, fieldType, modifiers, !BytecodeUtils.isPrimitive(fieldType));
   }
 
   public static FieldRef instanceFieldReference(Class<?> owner, String name) {
@@ -69,7 +74,7 @@ public abstract class FieldRef {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    return new AutoValue_FieldRef(
+    return create(
         TypeInfo.create(owner), name, Type.getType(fieldType), modifiers, !fieldType.isPrimitive());
   }
 
@@ -87,7 +92,7 @@ public abstract class FieldRef {
     if (!Modifier.isStatic(field.getModifiers())) {
       throw new IllegalStateException("Field: " + field + " is not static");
     }
-    return new AutoValue_FieldRef(
+    return create(
         TypeInfo.create(field.getDeclaringClass()),
         field.getName(),
         Type.getType(field.getType()),
@@ -100,21 +105,12 @@ public abstract class FieldRef {
   }
 
   public static FieldRef createPublicStaticField(TypeInfo owner, String name, Type type) {
-    return new AutoValue_FieldRef(
+    return create(
         owner,
         name,
         type,
         Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
         !BytecodeUtils.isPrimitive(type));
-  }
-
-  public static FieldRef createField(TypeInfo owner, String name, Class<?> type) {
-    return createField(owner, name, Type.getType(type));
-  }
-
-  public static FieldRef createField(TypeInfo owner, String name, Type type) {
-    return new AutoValue_FieldRef(
-        owner, name, type, Opcodes.ACC_PRIVATE, !BytecodeUtils.isPrimitive(type));
   }
 
   /** The type that owns this field. */
@@ -240,10 +236,5 @@ public abstract class FieldRef {
   public void putUnchecked(CodeBuilder adapter) {
     checkState(!isStatic(), "This field is static!");
     adapter.putField(owner().type(), name(), type());
-  }
-
-  public static FieldRef create(
-      TypeInfo owner, String name, Type type, int accessFlags, boolean isNullable) {
-    return new AutoValue_FieldRef(owner, name, type, accessFlags, isNullable);
   }
 }

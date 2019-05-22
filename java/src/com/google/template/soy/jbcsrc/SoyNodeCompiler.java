@@ -143,11 +143,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       AppendableExpression appendableVar,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
+      FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {
     DetachState detachState = new DetachState(variables, thisVar, stateField);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(detachState, parameterLookup, variables, reporter, typeRegistry);
+        ExpressionCompiler.create(
+            detachState, parameterLookup, variables, fields, reporter, typeRegistry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(variables, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
@@ -156,6 +158,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         detachState,
         variables,
         parameterLookup,
+        fields,
         appendableVar,
         expressionCompiler,
         soyValueProviderCompiler,
@@ -163,7 +166,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             registry,
             innerClasses,
             parameterLookup,
-            variables,
+            fields,
             soyValueProviderCompiler,
             reporter,
             typeRegistry));
@@ -174,6 +177,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private final DetachState detachState;
   private final TemplateVariableManager variables;
   private final TemplateParameterLookup parameterLookup;
+  private final FieldManager fields;
   private final AppendableExpression appendableExpression;
   private final ExpressionCompiler exprCompiler;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
@@ -186,6 +190,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       DetachState detachState,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
+      FieldManager fields,
       AppendableExpression appendableExpression,
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
@@ -195,6 +200,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
+    this.fields = checkNotNull(fields);
     this.appendableExpression = checkNotNull(appendableExpression);
     this.exprCompiler = checkNotNull(exprCompiler);
     this.expressionToSoyValueProviderCompiler = checkNotNull(expressionToSoyValueProviderCompiler);
@@ -662,7 +668,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement initRenderee = Statement.NULL_STATEMENT;
     Statement clearRenderee = Statement.NULL_STATEMENT;
     if (!soyValueProvider.isCheap()) {
-      FieldRef currentRendereeField = variables.getCurrentRenderee();
+      FieldRef currentRendereeField = fields.getCurrentRenderee();
       initRenderee = currentRendereeField.putInstanceField(thisVar, soyValueProvider);
       clearRenderee =
           currentRendereeField.putInstanceField(thisVar, constantNull(SOY_VALUE_PROVIDER_TYPE));
@@ -683,7 +689,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint),
               parameterLookup.getPluginContext(),
               variables);
-      FieldRef currentAppendableField = variables.getCurrentAppendable();
+      FieldRef currentAppendableField = fields.getCurrentAppendable();
       initAppendable =
           currentAppendableField
               .putInstanceField(thisVar, wrappedAppendable.appendable())
@@ -743,7 +749,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitRawTextNode(RawTextNode node) {
     AppendableExpression render =
-        appendableExpression.appendString(constant(node.getRawText(), variables));
+        appendableExpression.appendString(constant(node.getRawText(), fields));
     // TODO(lukes): add some heuristics about when to add this
     // ideas:
     // * never try to detach in certain 'contexts' (e.g. attribute context)
@@ -961,7 +967,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Statement initAppendable = Statement.NULL_STATEMENT;
     Statement clearAppendable = Statement.NULL_STATEMENT;
     Expression appendable;
-    FieldRef currentCalleeField = variables.getCurrentCalleeField();
+    FieldRef currentCalleeField = fields.getCurrentCalleeField();
     // TODO(lukes): for CallBasicNodes, we could take advantage of the ShortCircuitable interface to
     // statically remove directives based on the callee kind.  Note, we can't do this for
     // CallDelegateNodes because there is no guarantee that we can tell what the kind is.
@@ -977,7 +983,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               appendableExpression,
               parameterLookup.getRenderContext(),
               variables);
-      FieldRef currentAppendableField = variables.getCurrentAppendable();
+      FieldRef currentAppendableField = fields.getCurrentAppendable();
       initAppendable =
           currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
       appendable = currentAppendableField.accessor(thisVar);
@@ -1146,6 +1152,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         detachState,
         variables,
         parameterLookup,
+        fields,
         appendableExpression,
         new PlaceholderCompiler() {
           @Override
@@ -1187,6 +1194,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         detachState,
         variables,
         parameterLookup,
+        fields,
         appendable,
         exprCompiler,
         expressionToSoyValueProviderCompiler,

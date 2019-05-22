@@ -24,7 +24,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_AD
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
-import static com.google.template.soy.jbcsrc.restricted.FieldRef.createField;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
 import static com.google.template.soy.jbcsrc.restricted.MethodRef.RENDER_RESULT_DONE;
@@ -35,7 +34,6 @@ import static java.util.Arrays.asList;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -44,8 +42,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
-import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
+import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -172,7 +170,7 @@ final class LazyClosureCompiler {
   private final InnerClasses innerClasses;
   private final TemplateParameterLookup parentVariableLookup;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
-  private final TemplateVariableManager parentVariables;
+  private final FieldManager parentFields;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
 
@@ -180,14 +178,14 @@ final class LazyClosureCompiler {
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       TemplateParameterLookup parentVariableLookup,
-      TemplateVariableManager parentVariables,
+      FieldManager parentFields,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
-    this.parentVariables = parentVariables;
+    this.parentFields = parentFields;
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
     this.reporter = reporter;
     this.typeRegistry = typeRegistry;
@@ -284,10 +282,10 @@ final class LazyClosureCompiler {
     }
 
     SanitizedContentKind kind = renderUnit.getContentKind();
-    Expression value = constant(builder == null ? "" : builder.toString(), parentVariables);
+    Expression value = constant(builder == null ? "" : builder.toString(), parentFields);
     value = MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
 
-    FieldRef staticField = parentVariables.addStaticField(name, value);
+    FieldRef staticField = parentFields.addStaticField(name, value);
     return Optional.of(staticField.accessor());
   }
 
@@ -297,7 +295,7 @@ final class LazyClosureCompiler {
 
   /** A simple object to aid in generating code for a single node. */
   private final class CompilationUnit {
-    final UniqueNameGenerator fieldNames = JbcSrcNameGenerators.forFieldNames();
+    final FieldManager fields;
     final TypeInfo type;
     final TypeInfo baseClass;
     final SoyNode node;
@@ -305,6 +303,7 @@ final class LazyClosureCompiler {
 
     CompilationUnit(SoyClassWriter writer, TypeInfo type, TypeInfo baseClass, SoyNode node) {
       this.writer = writer;
+      this.fields = new FieldManager(type);
       this.type = type;
       this.baseClass = baseClass;
       this.node = node;
@@ -315,11 +314,12 @@ final class LazyClosureCompiler {
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
       TemplateVariableManager variableSet =
-          new TemplateVariableManager(fieldNames, type, thisVar, DO_RESOLVE);
+          new TemplateVariableManager(fields, thisVar, DO_RESOLVE);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
-          ExpressionCompiler.createBasicCompiler(lookup, variableSet, reporter, typeRegistry)
+          ExpressionCompiler.createBasicCompiler(
+                  lookup, variableSet, fields, reporter, typeRegistry)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -334,8 +334,6 @@ final class LazyClosureCompiler {
               adapter.mark(end);
             }
           };
-      variableSet.defineStaticFields(writer);
-      variableSet.defineFields(writer);
       Expression constructExpr =
           generateConstructor(
               new Statement() {
@@ -348,14 +346,14 @@ final class LazyClosureCompiler {
               lookup.getCapturedFields());
 
       doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, writer);
+      fields.defineFields(writer);
+      fields.defineStaticInitializer(writer);
       return constructExpr;
     }
 
     Expression compileRenderable(
         RenderUnitNode renderUnit, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
-      FieldRef stateField = createField(type, STATE_FIELD, Type.INT_TYPE);
-      stateField.defineField(writer);
-      fieldNames.claimName(STATE_FIELD);
+      FieldRef stateField = fields.addField(STATE_FIELD, Type.INT_TYPE);
 
       final Label start = new Label();
       final Label end = new Label();
@@ -365,7 +363,7 @@ final class LazyClosureCompiler {
               .asNonNullable();
 
       final TemplateVariableManager variableSet =
-          new TemplateVariableManager(fieldNames, type, thisVar, DO_RENDER);
+          new TemplateVariableManager(fields, thisVar, DO_RENDER);
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler =
@@ -377,6 +375,7 @@ final class LazyClosureCompiler {
               AppendableExpression.forLocal(appendableVar),
               variableSet,
               lookup,
+              fields,
               reporter,
               typeRegistry);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
@@ -399,8 +398,6 @@ final class LazyClosureCompiler {
           };
       SanitizedContentKind kind = renderUnit.getContentKind();
       final Expression contentKind = constantSanitizedContentKindAsContentKind(kind);
-      variableSet.defineStaticFields(writer);
-      variableSet.defineFields(writer);
       Statement superClassContstructor =
           new Statement() {
             @Override
@@ -413,7 +410,9 @@ final class LazyClosureCompiler {
       Expression constructExpr =
           generateConstructor(superClassContstructor, lookup.getCapturedFields());
 
+      fields.defineFields(writer);
       fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, writer);
+      fields.defineStaticInitializer(writer);
       return constructExpr;
     }
 
@@ -436,7 +435,6 @@ final class LazyClosureCompiler {
       int index = 1; // start at 1 since 'this' occupied slot 0
       for (ParentCapture capture : captures) {
         FieldRef field = capture.field();
-        field.defineField(writer);
         LocalVariable var = createLocal(field.name(), index, field.type(), start, end);
         assignments.add(field.putInstanceField(thisVar, var));
         argExpressions.add(capture.parentExpression());
@@ -480,8 +478,7 @@ final class LazyClosureCompiler {
    */
   @AutoValue
   abstract static class ParentCapture {
-    static ParentCapture create(TypeInfo owner, String name, Expression parentExpression) {
-      FieldRef captureField = FieldRef.createFinalField(owner, name, parentExpression.resultType());
+    static ParentCapture create(FieldRef captureField, Expression parentExpression) {
       if (parentExpression.isNonNullable()) {
         captureField = captureField.asNonNull();
       }
@@ -509,6 +506,10 @@ final class LazyClosureCompiler {
    *   <li>Finally, for the {@link RenderContext}, we lazily generate a {@link ParentCapture} if
    *       necessary.
    * </ul>
+   *
+   * <p>TODO(lukes): it appears that we capture fields that are fields in our parent, we should
+   * instead just capture a reference to the root template object and de-reference the fields
+   * directly. This should save code in multiple places..
    */
   private static final class LazyClosureParameterLookup implements TemplateParameterLookup {
     private final CompilationUnit params;
@@ -543,9 +544,10 @@ final class LazyClosureCompiler {
       ParentCapture capturedField = paramFields.get(param);
       if (capturedField == null) {
         String name = param.name();
-        params.fieldNames.claimName(name);
+        Expression expression = parentParameterLookup.getParam(param);
         capturedField =
-            ParentCapture.create(params.type, name, parentParameterLookup.getParam(param));
+            ParentCapture.create(
+                params.fields.addFinalField(name, expression.resultType()), expression);
         paramFields.put(param, capturedField);
       }
       return capturedField.field().accessor(thisVar);
@@ -567,9 +569,10 @@ final class LazyClosureCompiler {
 
       ParentCapture capturedField = localFields.get(local);
       if (capturedField == null) {
-        String name = params.fieldNames.generateName(local.name());
-        capturedField =
-            ParentCapture.create(params.type, name, parentParameterLookup.getLocal(local));
+        Expression expression = parentParameterLookup.getLocal(local);
+        FieldRef field =
+            params.fields.addGeneratedFinalField(local.name(), expression.resultType());
+        capturedField = ParentCapture.create(field, expression);
         localFields.put(local, capturedField);
       }
       return capturedField.field().accessor(thisVar);
@@ -584,9 +587,10 @@ final class LazyClosureCompiler {
 
       ParentCapture capturedField = syntheticFields.get(varName);
       if (capturedField == null) {
-        String name = params.fieldNames.generateName(varName.name());
-        capturedField =
-            ParentCapture.create(params.type, name, parentParameterLookup.getLocal(varName));
+        Expression expression = parentParameterLookup.getLocal(varName);
+        FieldRef field =
+            params.fields.addGeneratedFinalField(varName.name(), expression.resultType());
+        capturedField = ParentCapture.create(field, expression);
         syntheticFields.put(varName, capturedField);
       }
       return capturedField.field().accessor(thisVar);
@@ -631,10 +635,11 @@ final class LazyClosureCompiler {
     @Override
     public RenderContextExpression getRenderContext() {
       if (renderContextCapture == null) {
-        params.fieldNames.claimName(RENDER_CONTEXT_FIELD);
         renderContextCapture =
             ParentCapture.create(
-                params.type, RENDER_CONTEXT_FIELD, parentParameterLookup.getRenderContext());
+                params.fields.addFinalField(
+                    RENDER_CONTEXT_FIELD, BytecodeUtils.RENDER_CONTEXT_TYPE),
+                parentParameterLookup.getRenderContext());
       }
       return new RenderContextExpression(renderContextCapture.field().accessor(thisVar));
     }
@@ -642,10 +647,10 @@ final class LazyClosureCompiler {
     @Override
     public Expression getParamsRecord() {
       if (paramsCapture == null) {
-        params.fieldNames.claimName(PARAMS_FIELD);
         paramsCapture =
             ParentCapture.create(
-                params.type, PARAMS_FIELD, parentParameterLookup.getParamsRecord());
+                params.fields.addFinalField(PARAMS_FIELD, BytecodeUtils.SOY_RECORD_TYPE),
+                parentParameterLookup.getParamsRecord());
       }
       return paramsCapture.field().accessor(thisVar);
     }
@@ -653,9 +658,10 @@ final class LazyClosureCompiler {
     @Override
     public Expression getIjRecord() {
       if (ijCapture == null) {
-        params.fieldNames.claimName(IJ_FIELD);
         ijCapture =
-            ParentCapture.create(params.type, IJ_FIELD, parentParameterLookup.getIjRecord());
+            ParentCapture.create(
+                params.fields.addFinalField(IJ_FIELD, BytecodeUtils.SOY_RECORD_TYPE),
+                parentParameterLookup.getIjRecord());
       }
       return ijCapture.field().accessor(thisVar);
     }
