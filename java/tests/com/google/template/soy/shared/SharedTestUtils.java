@@ -16,7 +16,11 @@
 
 package com.google.template.soy.shared;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+import static java.util.stream.Collectors.toCollection;
+
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -30,11 +34,18 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.junit.Test;
 
 /**
  * Shared utilities for unit tests.
@@ -176,5 +187,35 @@ public final class SharedTestUtils {
       node = ((ParentSoyNode<?>) node).getChild(index);
     }
     return node;
+  }
+
+  public static void testAllTestFilesAreCovered(String dir, Class<?> clazz) throws Exception {
+    testAllTestFilesAreCovered(dir, clazz, ImmutableSet.of());
+  }
+
+  public static void testAllTestFilesAreCovered(
+      String dir, Class<?> clazz, Set<String> filesWithoutTestMethods) throws Exception {
+    Set<String> testFiles;
+    try (Stream<Path> stream = Files.list(Paths.get(dir))) {
+      testFiles =
+          stream
+              .map(
+                  path -> {
+                    String filename = path.getFileName().toString();
+                    filename = filename.substring(0, filename.indexOf('.'));
+                    return filename;
+                  })
+              .collect(toCollection(HashSet::new));
+    }
+    Set<String> testMethods =
+        Arrays.stream(clazz.getMethods())
+            .filter(method -> method.isAnnotationPresent(Test.class))
+            .map(Method::getName)
+            .collect(toCollection(HashSet::new));
+
+    assertWithMessage(
+            "These files are missing tests methods. Delete the files or add test methods for them.")
+        .that(Sets.difference(Sets.difference(testFiles, filesWithoutTestMethods), testMethods))
+        .isEmpty();
   }
 }
