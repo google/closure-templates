@@ -93,7 +93,8 @@ public final class ValidatedConformanceConfig {
             error);
       case BANNED_HTML_TAG:
         Requirement.BannedHtmlTag bannedHtmlTag = requirement.getBannedHtmlTag();
-        return new BannedHtmlTag(bannedHtmlTag.getTagList(), error);
+        return new BannedHtmlTag(
+            bannedHtmlTag.getTagList(), bannedHtmlTag.getWhenAttributePossiblyPresentList(), error);
       case BAN_XID_FOR_CSS_OBFUSCATION:
         return new BanXidForCssObfuscation(error);
       case REQUIREMENTTYPE_NOT_SET:

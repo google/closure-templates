@@ -311,6 +311,102 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void bannedHtmlTagWithAttribute() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'div'\n"
+            + "    when_attribute_possibly_present: 'contenteditable'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <div contenteditable>test</div>\n"
+            + "{/template}");
+  }
+
+  @Test
+  public void bannedHtmlTagWithAttributeDifferentCase() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'div'\n"
+            + "    when_attribute_possibly_present: 'contenteditable'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <div CONTENTEDITABLE>test</div>\n"
+            + "{/template}");
+  }
+
+  @Test
+  public void bannedHtmlTagWithNonStaticAttribute() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'div'\n"
+            + "    when_attribute_possibly_present: 'contenteditable'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "{@param baz: bool}"
+            + "  <div {if $baz}contenteditable{/if}>test</div>\n"
+            + "{/template}");
+  }
+
+  @Test
+  public void bannedHtmlTagWithMultipleAttributes() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'div'\n"
+            + "    when_attribute_possibly_present: 'contenteditable'\n"
+            + "    when_attribute_possibly_present: 'style'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <div contenteditable style='color:red;'>test</div>\n"
+            + "{/template}");
+  }
+
+  @Test
+  public void bannedHtmlTagWithAttributeNoViolation() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'div'\n"
+            + "    when_attribute_possibly_present: 'contenteditable'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .bar}\n" + "  <div>test</div>\n" + "{/template}");
+  }
+
+  @Test
+  public void bannedHtmlTagWithMultipleAttributesNoViolation() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  banned_html_tag: {\n"
+            + "    tag: 'div'\n"
+            + "    when_attribute_possibly_present: 'contenteditable'\n"
+            + "    when_attribute_possibly_present: 'style'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .bar}\n"
+            + "  <div contenteditable>test</div>\n"
+            + "{/template}");
+  }
+
+  @Test
   public void testBanInlineEventHandlers() {
     assertViolation(
         "requirement: {\n"

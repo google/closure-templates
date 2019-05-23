@@ -54,6 +54,9 @@ message Requirement {
   message BannedHtmlTag {
     // The banned HTML tag (lowercase).
     repeated string tag = 1;
+
+    // If provided, then it will only ban tags that have all these attributes.
+    repeated string when_attribute_possibly_present = 2;
   }
 
   message BanXidForCssObfuscation {
