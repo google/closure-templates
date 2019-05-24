@@ -469,17 +469,9 @@ public final class ParseExpressionTest {
     assertThat(protoFn.getProtoName()).isEqualTo("my.Proto");
     assertThat(protoFn.getParamNames())
         .comparingElementsUsing(
-            new Correspondence<Identifier, String>() {
-              @Override
-              public boolean compare(Identifier actual, String expected) {
-                return actual.identifier().equals(expected);
-              }
-
-              @Override
-              public String toString() {
-                return "is equal to";
-              }
-            })
+            Correspondence.from(
+                (Identifier actual, String expected) -> actual.identifier().equals(expected),
+                "is equal to"))
         .containsExactly("a", "b", "c")
         .inOrder();
     assertThat(protoFn.numChildren()).isEqualTo(3);
