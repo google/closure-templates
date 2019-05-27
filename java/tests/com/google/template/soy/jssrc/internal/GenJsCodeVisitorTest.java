@@ -585,20 +585,16 @@ public final class GenJsCodeVisitorTest {
             + "if (opt_data.boo) {\n"
             + "  var alpha__soy8 = opt_data.boo.foo;\n"
             + "  var beta__soy11 = 'Boo!';\n"
-            + "  var beta__wrapped11 = "
-            + "soydata.$$markUnsanitizedTextForInternalBlocks(beta__soy11);\n"
             + "  var gamma__soy21 = '';\n"
             + "  var i14ListLen = Math.max(0, Math.ceil((alpha__soy8 - 0) / 1));\n"
             + "  for (var i14Index = 0; i14Index < i14ListLen; i14Index++) {\n"
             + "    var i14Data = 0 + i14Index * 1;\n"
-            + "    gamma__soy21 += i14Data + beta__wrapped11;\n"
+            + "    gamma__soy21 += i14Data + beta__soy11;\n"
             + "  }\n"
-            + "  var gamma__wrapped21 = "
-            + "soydata.$$markUnsanitizedTextForInternalBlocks(gamma__soy21);\n"
             + "  var delta__soy24 = 'Boop!';\n"
             + "  var delta__wrapped24 = soydata.VERY_UNSAFE"
             + ".$$ordainSanitizedHtmlForInternalBlocks(delta__soy24);\n"
-            + "  output += alpha__soy8 + beta__wrapped11 + gamma__wrapped21 + delta__wrapped24;\n"
+            + "  output += alpha__soy8 + beta__soy11 + gamma__soy21 + delta__wrapped24;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
@@ -614,7 +610,6 @@ public final class GenJsCodeVisitorTest {
         genJsCodeVisitor
             .gen(parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding())
             .get(0);
-    assertThat(jsFilesContents).contains("goog.require('soydata')");
     assertThat(jsFilesContents).contains("goog.require('soydata.VERY_UNSAFE')");
   }
 
@@ -712,8 +707,7 @@ public final class GenJsCodeVisitorTest {
             + "  param12 += i6Data;\n"
             + "}\n"
             + "output += some.func(soy.$$assignDefaults("
-            + "{goo: soydata.$$markUnsanitizedTextForInternalBlocks(param12)}, opt_data.boo), "
-            + "opt_ijData);\n";
+            + "{goo: param12}, opt_data.boo), opt_ijData);\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
 

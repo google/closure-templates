@@ -40,10 +40,6 @@ public final class GenPyCallExprVisitorTest {
           + "  %s\n"
           + "{/template}\n";
 
-  private static final String SANITIZED_APPROVAL =
-      "approval=sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("
-          + "'Internally created Sanitization.')";
-
   @Test
   public void testBasicCall() {
     String soyCode = "{call .goo data=\"all\" /}";
@@ -79,8 +75,7 @@ public final class GenPyCallExprVisitorTest {
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
     soyCode = "{call .goo}\n" + "  {param goo kind=\"text\"}Hello{/param}\n" + "{/call}\n";
-    expectedPyCode =
-        "goo({'goo': sanitize.UnsanitizedText('Hello', " + SANITIZED_APPROVAL + ")}, ijData)";
+    expectedPyCode = "goo({'goo': 'Hello'}, ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
@@ -90,10 +85,7 @@ public final class GenPyCallExprVisitorTest {
             + "  {param goo: $moo /}\n"
             + "  {param moo kind=\"text\"}Hello{/param}\n"
             + "{/call}\n";
-    expectedPyCode =
-        "goo({'goo': data.get('moo'), 'moo': sanitize.UnsanitizedText('Hello', "
-            + SANITIZED_APPROVAL
-            + ")}, ijData)";
+    expectedPyCode = "goo({'goo': data.get('moo'), 'moo': 'Hello'}, ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
 
@@ -118,10 +110,7 @@ public final class GenPyCallExprVisitorTest {
             + "    {for $i in range(3)}{$i}{/for}\n"
             + "  {/param}\n"
             + "{/call}\n";
-    String expectedPyCode =
-        "goo({'moo': sanitize.UnsanitizedText(''.join(param###), "
-            + SANITIZED_APPROVAL
-            + ")}, ijData)";
+    String expectedPyCode = "goo({'moo': ''.join(param###)}, ijData)";
 
     assertThatSoyFile(String.format(SOY_BASE, soyCode)).compilesToSourceContaining(expectedPyCode);
   }

@@ -29,6 +29,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentO
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -359,7 +360,7 @@ public class GenCallCodeUtils {
    */
   protected Expression maybeWrapContent(
       CodeChunk.Generator generator, CallParamContentNode node, Expression content) {
-    if (node.getContentKind() == null) {
+    if (node.getContentKind() == SanitizedContentKind.TEXT) {
       return content;
     }
 

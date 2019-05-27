@@ -74,7 +74,7 @@ public class JsExprUtilsTest {
 
     assertThat(JsExprUtils.maybeWrapAsSanitizedContent(ContentKind.HTML, expr).getText())
         .isEqualTo("soydata.VERY_UNSAFE.ordainSanitizedHtml('foo' + 'bar')");
-    assertThat(JsExprUtils.maybeWrapAsSanitizedContent(null, expr).getText())
+    assertThat(JsExprUtils.maybeWrapAsSanitizedContent(ContentKind.TEXT, expr).getText())
         .isEqualTo("'foo' + 'bar'");
   }
 

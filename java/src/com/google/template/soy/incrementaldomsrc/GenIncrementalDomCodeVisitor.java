@@ -679,15 +679,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       String outputVarName = generatedVarName + "_output";
       jsCodeBuilder.pushOutputVar(outputVarName).setOutputVarInited();
 
+      // TODO(b/246994962): Skip this definition for SanitizedContentKind.TEXT.
       definition =
           Statement.of(
               VariableDeclaration.builder(outputVarName).setRhs(LITERAL_EMPTY_STRING).build(),
               visitChildrenReturningCodeChunk(node),
               builder
                   .setRhs(
-                      JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks(
-                              node.getContentKind())
-                          .call(id(outputVarName)))
+                      kind == SanitizedContentKind.TEXT
+                          ? id(outputVarName)
+                          : JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks(
+                                  node.getContentKind())
+                              .call(id(outputVarName)))
                   .build());
       jsCodeBuilder.popOutputVar();
     }

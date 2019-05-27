@@ -560,6 +560,9 @@ public final class JsType {
   }
 
   private static JsType createSanitized(final SanitizedContentKind kind, boolean isStrict) {
+    if (kind == SanitizedContentKind.TEXT) {
+      return STRING_TYPE;
+    }
     String type = NodeContentKinds.toJsSanitizedContentCtorName(kind);
     // NOTE: we don't add goog.requires for all these alias types.  This is 'ok' since we never
     // invoke a method on them directly (instead they just get passed around and eventually get
@@ -576,8 +579,20 @@ public final class JsType {
       // sanitized type is specified - it just means that the text will
       // be escaped.
       builder.addType("string");
-      builder.addType("!goog.soy.data.UnsanitizedText");
-      builder.addRequire(GoogRequire.create("goog.soy.data.UnsanitizedText"));
+    } else {
+      builder.addType("!soydata.$$EMPTY_STRING_");
+      builder.addType("!" + type);
+      builder.addRequire(GoogRequire.create(type));
+      if (!isStrict) {
+        // All the sanitized types have an .isCompatibleWith method for testing for allowed types
+        // NOTE: this actually allows 'string' to be passed, which is inconsistent with other
+        // backends.
+        // We allow string or unsanitized type to be passed where a sanitized type is specified - it
+        // just means that the text will be escaped.
+        builder.addType("string");
+        builder.addType("!goog.soy.data.UnsanitizedText");
+        builder.addRequire(GoogRequire.create("goog.soy.data.UnsanitizedText"));
+      }
     }
     // add extra alternate types
     // TODO(lukes): instead of accepting alternates we should probably just coerce to sanitized

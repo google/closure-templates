@@ -36,7 +36,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_MAYBE_COERCE_KEY_TO_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
@@ -294,27 +293,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return map.withInitialStatements(setCalls.build());
   }
 
-  /**
-   * Soy strings can be represented by SanitizedContent objects at runtime, so care needs to be
-   * taken when indexing into a map with a Soy "string". For pre-ES6 object maps, this isn't a
-   * problem, since bracket access implicitly calls toString() on the key, and SanitizedContent
-   * overrides toString appropriately. But ES6 Maps and jspb.Maps don't do this automatically, so we
-   * need to set it up.
-   */
   private Expression genMapKeyCode(ExprNode keyNode) {
-    Expression key = visit(keyNode);
-    // We need to coerce if the value could possibly be a sanitizedcontent object
-    boolean needsRuntimeCoercionLogic = false;
-    SoyType type = keyNode.getType();
-    for (SoyType member :
-        (type instanceof UnionType ? ((UnionType) type).getMembers() : ImmutableList.of(type))) {
-      SoyType.Kind kind = member.getKind();
-      needsRuntimeCoercionLogic |=
-          kind.isKnownStringOrSanitizedContent()
-              || kind == SoyType.Kind.UNKNOWN
-              || kind == SoyType.Kind.ANY;
-    }
-    return needsRuntimeCoercionLogic ? SOY_MAP_MAYBE_COERCE_KEY_TO_STRING.call(key) : key;
+    return visit(keyNode);
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -106,9 +106,9 @@ public final class GenJsExprsVisitorTest {
     String expectedGenCode =
         JOINER.join(
             "var $tmp = new Map();",
-            "$tmp.set(soy.$$checkNotNull(soy.map.$$maybeCoerceKeyToString('a')), 'b');",
-            "$tmp.set(soy.$$checkNotNull(soy.map.$$maybeCoerceKeyToString(opt_data.boo)), 'c');",
-            "$tmp.get(soy.map.$$maybeCoerceKeyToString(opt_data.boo));");
+            "$tmp.set(soy.$$checkNotNull('a'), 'b');",
+            "$tmp.set(soy.$$checkNotNull(opt_data.boo), 'c');",
+            "$tmp.get(opt_data.boo);");
     assertGeneratedChunks(soyNodeCode, expectedGenCode);
   }
 
@@ -219,9 +219,7 @@ public final class GenJsExprsVisitorTest {
             "  {param goo kind=\"text\"}Blah{/param}",
             "{/call}");
     assertGeneratedChunks(
-        soyNodeCode,
-        "some.func(soy.$$assignDefaults({goo: soydata.$$markUnsanitizedTextForInternalBlocks("
-            + "'Blah')}, opt_data.boo), opt_ijData);");
+        soyNodeCode, "some.func(soy.$$assignDefaults({goo: 'Blah'}, opt_data.boo), opt_ijData);");
   }
 
   @Test
@@ -242,8 +240,8 @@ public final class GenJsExprsVisitorTest {
             "  {param goo kind=\"text\"}{lb}{isNonnull($goo)}{rb} is {$goo.moo}{/param}",
             "{/call}");
     expectedJsExprText =
-        "some.func(/** @type {?} */ ({goo: soydata.$$markUnsanitizedTextForInternalBlocks("
-            + "'{' + (gooData8 != null) + '} is ' + gooData8.moo)}), opt_ijData);";
+        "some.func(/** @type {?} */ ({goo: "
+            + "'{' + (gooData8 != null) + '} is ' + gooData8.moo}), opt_ijData);";
     assertGeneratedChunks(soyNodeCode, expectedJsExprText);
   }
 

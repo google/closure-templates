@@ -30,6 +30,9 @@ final class InternalPyExprUtils {
    * @param pyExpr The expression to wrap.
    */
   static PyExpr wrapAsSanitizedContent(SanitizedContentKind contentKind, PyExpr pyExpr) {
+    if (contentKind == SanitizedContentKind.TEXT) {
+      return pyExpr;
+    }
     String sanitizer = NodeContentKinds.toPySanitizedContentOrdainer(contentKind);
     String approval =
         "sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval("

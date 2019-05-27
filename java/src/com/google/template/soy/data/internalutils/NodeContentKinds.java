@@ -52,8 +52,7 @@ public final class NodeContentKinds {
           .put(
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
               "goog.soy.data.SanitizedTrustedResourceUri")
-          // NOTE: Text could be a string but for legacy reasons, it's UnsanitizedText.
-          .put(SanitizedContentKind.TEXT, "goog.soy.data.UnsanitizedText")
+          .put(SanitizedContentKind.TEXT, "string")
           .build();
 
   /** The Javascript sanitized ordainer functions. */
@@ -67,7 +66,7 @@ public final class NodeContentKinds {
           .put(
               SanitizedContentKind.TRUSTED_RESOURCE_URI,
               "soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri")
-          .put(SanitizedContentKind.TEXT, "soydata.markUnsanitizedText")
+          .put(SanitizedContentKind.TEXT, "")
           .build();
 
   /**
@@ -96,7 +95,7 @@ public final class NodeContentKinds {
               .put(
                   SanitizedContentKind.TRUSTED_RESOURCE_URI,
                   "soydata.VERY_UNSAFE.$$ordainSanitizedTrustedResourceUriForInternalBlocks")
-              .put(SanitizedContentKind.TEXT, "soydata.$$markUnsanitizedTextForInternalBlocks")
+              .put(SanitizedContentKind.TEXT, "")
               .build();
 
   /** The JavaScript method to unpack a safe proto to sanitized object. */
@@ -123,7 +122,7 @@ public final class NodeContentKinds {
           .put(SanitizedContentKind.URI, "sanitize.SanitizedUri")
           .put(SanitizedContentKind.CSS, "sanitize.SanitizedCss")
           .put(SanitizedContentKind.TRUSTED_RESOURCE_URI, "sanitize.SanitizedTrustedResourceUri")
-          .put(SanitizedContentKind.TEXT, "sanitize.UnsanitizedText")
+          .put(SanitizedContentKind.TEXT, "")
           .build();
 
   static {
@@ -185,9 +184,6 @@ public final class NodeContentKinds {
    * @param contentKind
    */
   public static String getJsImportForOrdainersFunctions(SanitizedContentKind contentKind) {
-    if (contentKind == SanitizedContentKind.TEXT) {
-      return "soydata";
-    }
     return "soydata.VERY_UNSAFE";
   }
 

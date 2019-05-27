@@ -51,8 +51,7 @@ public class NodeContentKindsTest {
         "goog.soy.data.SanitizedJs",
         NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.JS));
     assertEquals(
-        "goog.soy.data.UnsanitizedText",
-        NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.TEXT));
+        "string", NodeContentKinds.toJsSanitizedContentCtorName(SanitizedContentKind.TEXT));
   }
 
   @Test
@@ -75,9 +74,7 @@ public class NodeContentKindsTest {
     assertEquals(
         "soydata.VERY_UNSAFE.ordainSanitizedJs",
         NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.JS));
-    assertEquals(
-        "soydata.markUnsanitizedText",
-        NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.TEXT));
+    assertEquals("", NodeContentKinds.toJsSanitizedContentOrdainer(SanitizedContentKind.TEXT));
   }
 
   @Test
@@ -103,7 +100,7 @@ public class NodeContentKindsTest {
         "soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.JS));
     assertEquals(
-        "soydata.$$markUnsanitizedTextForInternalBlocks",
+        "",
         NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(SanitizedContentKind.TEXT));
   }
 }

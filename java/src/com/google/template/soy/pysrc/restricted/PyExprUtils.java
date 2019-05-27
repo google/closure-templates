@@ -173,6 +173,9 @@ public final class PyExprUtils {
    */
   @Deprecated
   public static PyExpr wrapAsSanitizedContent(ContentKind contentKind, PyExpr pyExpr) {
+    if (contentKind == ContentKind.TEXT) {
+      return pyExpr;
+    }
     String sanitizer =
         NodeContentKinds.toPySanitizedContentOrdainer(
             SanitizedContentKind.valueOf(contentKind.name()));

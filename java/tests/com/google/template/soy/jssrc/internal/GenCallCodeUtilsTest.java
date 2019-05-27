@@ -69,10 +69,7 @@ public final class GenCallCodeUtilsTest {
                 "{call some.func data=\"$boo\"}",
                 "  {param goo kind=\"text\"}Blah{/param}",
                 "{/call}"))
-        .isEqualTo(
-            "some.func(soy.$$assignDefaults("
-                + "{goo: soydata.$$markUnsanitizedTextForInternalBlocks('Blah')}, boo), "
-                + "opt_ijData);");
+        .isEqualTo("some.func(soy.$$assignDefaults({goo: 'Blah'}, boo), opt_ijData);");
 
     String callExprText =
         getCallExprTextHelper(
@@ -83,11 +80,9 @@ public final class GenCallCodeUtilsTest {
                 + "{/call}\n");
     assertThat(callExprText)
         .matches(
-            Pattern.quote(
-                    "some.func(/** @type {?} */ "
-                        + "({goo: soydata.$$markUnsanitizedTextForInternalBlocks(param")
+            Pattern.quote("some.func(/** @type {?} */ ({goo: param")
                 + "[0-9]+"
-                + Pattern.quote(")}), opt_ijData);"));
+                + Pattern.quote("}), opt_ijData);"));
   }
 
   @Test

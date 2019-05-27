@@ -637,7 +637,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected String getTemplateReturnType(TemplateNode node) {
     // For strict autoescaping templates, the result is actually a typesafe wrapper.
     // We prepend "!" to indicate it is non-nullable.
-    return "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
+    return node.getContentKind() == SanitizedContentKind.TEXT
+        ? "string"
+        : "!" + NodeContentKinds.toJsSanitizedContentCtorName(node.getContentKind());
   }
 
   /**
@@ -826,13 +828,16 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   protected final Expression sanitize(Expression templateBody, SanitizedContentKind contentKind) {
-    // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
-    // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
-    // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
-    //   the result of one template and feed it to another, and also to confidently assign
-    //   sanitized HTML content to innerHTML. This does not use the internal-blocks variant,
-    //   and so will wrap empty strings.
-    return sanitizedContentOrdainerFunction(contentKind).call(templateBody);
+    if (contentKind != SanitizedContentKind.TEXT) {
+      // Templates with autoescape="strict" return the SanitizedContent wrapper for its kind:
+      // - Call sites are wrapped in an escaper. Returning SanitizedContent prevents re-escaping.
+      // - The topmost call into Soy returns a SanitizedContent. This will make it easy to take
+      //   the result of one template and feed it to another, and also to confidently assign
+      //   sanitized HTML content to innerHTML. This does not use the internal-blocks variant,
+      //   and so will wrap empty strings.
+      return sanitizedContentOrdainerFunction(contentKind).call(templateBody);
+    }
+    return templateBody;
   }
 
   protected GenJsCodeVisitorAssistantForMsgs getAssistantForMsgs() {
@@ -925,7 +930,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     jsCodeBuilder.popOutputVar();
 
-    if (node.getContentKind() != null) {
+    if (node.getContentKind() != SanitizedContentKind.TEXT) {
       // If the let node had a content kind specified, it was autoescaped in the corresponding
       // context. Hence the result of evaluating the let block is wrapped in a SanitizedContent
       // instance of the appropriate kind.

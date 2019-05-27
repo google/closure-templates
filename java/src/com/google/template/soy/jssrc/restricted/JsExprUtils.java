@@ -24,7 +24,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.exprtree.Operator;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /**
  * Common utilities for dealing with JS expressions.
@@ -147,9 +146,8 @@ public class JsExprUtils {
    *     it.
    */
   @Deprecated
-  public static JsExpr maybeWrapAsSanitizedContent(
-      @Nullable ContentKind contentKind, JsExpr jsExpr) {
-    if (contentKind == null) {
+  public static JsExpr maybeWrapAsSanitizedContent(ContentKind contentKind, JsExpr jsExpr) {
+    if (contentKind == ContentKind.TEXT) {
       return jsExpr;
     } else {
       return wrapWithFunction(
