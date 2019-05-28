@@ -333,13 +333,6 @@ def filter_tel_uri(value):
       generated_sanitize.filter_tel_uri_helper(value), approval=approval)
 
 
-def filter_no_auto_escape(value):
-  if is_content_kind(value, CONTENT_KIND.TEXT):
-    return _INNOCUOUS_OUTPUT
-
-  return value
-
-
 def filter_normalize_uri(value):
   if (is_content_kind(value, CONTENT_KIND.URI)
       or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
@@ -650,15 +643,3 @@ class SanitizedTrustedResourceUri(SanitizedContent):
   def __init__(self, content=None, approval=None):
     super(SanitizedTrustedResourceUri, self).__init__(content, DIR.LTR,
                                                       approval)
-
-
-class UnsanitizedText(SanitizedContent):
-  content_kind = CONTENT_KIND.TEXT
-
-  def __init__(self, content=None, approval=None):
-    # approval is still in the api for consistency, but unsanitized text is
-    # always approved.
-    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
-        'Unsanitized Text does not require approval.')
-    super(UnsanitizedText, self).__init__(
-        content=str(content), content_dir=None, approval=approval)

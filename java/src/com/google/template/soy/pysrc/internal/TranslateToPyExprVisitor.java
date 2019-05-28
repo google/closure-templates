@@ -122,17 +122,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     }
   }
 
-  /** If a key should be coerced to a string before a key access. */
-  private enum CoerceKeyToString {
-    /**
-     * Coerce the key to a string. This is mostly useful for keys that are the {@link
-     * com.google.template.soy.data.UnsanitizedString} type.
-     */
-    YES,
-    /** Do not coerce the key to a string. */
-    NO
-  }
-
   private static final SoyErrorKind PROTO_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of("Proto accessors are not supported in pysrc.");
   private static final SoyErrorKind PROTO_INIT_NOT_SUPPORTED =
@@ -236,7 +225,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       ExprNode keyNode = node.getChild(i);
       PyExpr key = visit(keyNode);
       key = new PyFunctionExprBuilder("runtime.check_not_null").addArg(key).asPyExpr();
-      key = new PyFunctionExprBuilder("runtime.maybe_coerce_key_to_string").addArg(key).asPyExpr();
       ExprNode valueNode = node.getChild(i + 1);
       dict.put(key, visit(valueNode));
     }
@@ -336,8 +324,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
             switch (baseKind) {
               case LIST:
-                return genCodeForKeyAccess(
-                    refText, keyPyExpr, NotFoundBehavior.returnNone(), CoerceKeyToString.NO);
+                return genCodeForKeyAccess(refText, keyPyExpr, NotFoundBehavior.returnNone());
               case UNKNOWN:
                 errorReporter.report(
                     itemAccess.getKeyExprChild().getSourceLocation(),
@@ -345,12 +332,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
                 // fall through
               case MAP:
               case UNION:
-                return genCodeForKeyAccess(
-                    refText, keyPyExpr, NotFoundBehavior.returnNone(), CoerceKeyToString.YES);
+                return genCodeForKeyAccess(refText, keyPyExpr, NotFoundBehavior.returnNone());
               case LEGACY_OBJECT_MAP:
               case RECORD:
-                return genCodeForKeyAccess(
-                    refText, keyPyExpr, NotFoundBehavior.throwException(), CoerceKeyToString.YES);
+                return genCodeForKeyAccess(refText, keyPyExpr, NotFoundBehavior.throwException());
               default:
                 throw new AssertionError("illegal item access on " + baseKind);
             }
@@ -576,8 +561,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private static String genCodeForLiteralKeyAccess(
       String containerExpr, String key, NotFoundBehavior notFoundBehavior) {
-    return genCodeForKeyAccess(
-        containerExpr, new PyStringExpr("'" + key + "'"), notFoundBehavior, CoerceKeyToString.NO);
+    return genCodeForKeyAccess(containerExpr, new PyStringExpr("'" + key + "'"), notFoundBehavior);
   }
 
   /**
@@ -589,13 +573,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @param coerceKeyToString Whether or not the key should be coerced to a string.
    */
   private static String genCodeForKeyAccess(
-      String containerExpr,
-      PyExpr key,
-      NotFoundBehavior notFoundBehavior,
-      CoerceKeyToString coerceKeyToString) {
-    if (coerceKeyToString == CoerceKeyToString.YES) {
-      key = new PyFunctionExprBuilder("runtime.maybe_coerce_key_to_string").addArg(key).asPyExpr();
-    }
+      String containerExpr, PyExpr key, NotFoundBehavior notFoundBehavior) {
     switch (notFoundBehavior.getType()) {
       case RETURN_NONE:
         return new PyFunctionExprBuilder("runtime.key_safe_data_access")

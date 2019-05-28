@@ -30,7 +30,6 @@ import re
 import sys
 
 from . import environment
-from . import sanitize
 
 import six
 
@@ -487,24 +486,6 @@ def map_to_legacy_object_map(m):
     An equivalent legacy_object_map, with keys coerced to strings.
   """
   return {str(key): m[key] for key in m}
-
-
-def maybe_coerce_key_to_string(key):
-  """Coerce an UnsanitizedText key to string.
-
-  SoyMaps, like ES6 Maps and proto maps, allow non-string values as map keys.
-  But UnsanitizedText keys still need to be coerced to strings so that instances
-  with identical textual content are considered identical for map lookups.
-
-  Args:
-    key: The key that is being inserted into or looked up in the map.
-
-  Returns:
-    The key, coerced to a string if it is an UnsanitizedText object.
-  """
-  if sanitize.is_content_kind(key, sanitize.CONTENT_KIND.TEXT):
-    return key.content
-  return key
 
 
 def str_to_ascii_lower_case(s):

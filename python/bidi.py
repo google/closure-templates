@@ -267,8 +267,6 @@ def unicode_wrap(global_dir, text):
   # string data.
   approval = sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Persisting existing sanitizations.')
-  if sanitize.is_content_kind(text, sanitize.CONTENT_KIND.TEXT):
-    return sanitize.UnsanitizedText(wrapped_text)
   if is_html:
     return sanitize.SanitizedHtml(wrapped_text, wrapped_text_dir,
                                   approval=approval)
