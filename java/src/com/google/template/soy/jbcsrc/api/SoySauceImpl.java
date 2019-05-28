@@ -210,6 +210,7 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public Continuation<SanitizedContent> renderStrict() {
       enforceContentKind();
+      // TODO(b/129547159): prevent calling renderStrict with ContentKind.TEXT
       StringBuilder sb = new StringBuilder();
       OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {

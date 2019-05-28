@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
@@ -284,9 +285,10 @@ public final class SoyExpression extends Expression {
    */
   private static void doBox(CodeBuilder adapter, SoyRuntimeType type) {
     if (type.isKnownSanitizedContent()) {
-      FieldRef.enumReference(
-              ContentKind.valueOf(((SanitizedType) type.soyType()).getContentKind().name()))
-          .accessStaticUnchecked(adapter);
+      ContentKind kind =
+          ContentKind.valueOf(((SanitizedType) type.soyType()).getContentKind().name());
+      checkState(kind != ContentKind.TEXT); // sanity check
+      FieldRef.enumReference(kind).accessStaticUnchecked(adapter);
       MethodRef.ORDAIN_AS_SAFE.invokeUnchecked(adapter);
     } else if (type.isKnownString()) {
       MethodRef.STRING_DATA_FOR_VALUE.invokeUnchecked(adapter);

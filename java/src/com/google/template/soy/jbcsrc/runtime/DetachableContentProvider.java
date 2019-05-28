@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
  * implementations.
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
-  @Nullable private final ContentKind contentKind;
+  private final ContentKind contentKind;
 
   // Will be either a SanitizedContent or a StringData.
   private SoyValue resolvedValue;
@@ -51,7 +51,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
   private LoggingAdvisingAppendable builder;
 
-  protected DetachableContentProvider(@Nullable ContentKind contentKind) {
+  protected DetachableContentProvider(ContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
@@ -130,10 +130,10 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
         String string = buffer.toString();
         // This drops logs, but that is sometimes necessary.  We should make sure this only happens
         // when it has to by making sure that renderAndResolve is used for all printing usecases
-        if (contentKind != null) {
-          local = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
-        } else {
+        if (contentKind == ContentKind.TEXT) {
           local = StringData.forValue(string);
+        } else {
+          local = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
         }
         resolvedValue = local;
       } else {

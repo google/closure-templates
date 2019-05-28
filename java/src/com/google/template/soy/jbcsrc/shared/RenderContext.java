@@ -53,10 +53,9 @@ public final class RenderContext {
         }
 
         @Override
-        @Nullable
         public ContentKind kind() {
           // The kind doesn't really matter, since the empty string can always be safely escaped
-          return null;
+          return ContentKind.TEXT;
         }
       };
 

@@ -281,9 +281,14 @@ final class LazyClosureCompiler {
       }
     }
 
-    SanitizedContentKind kind = renderUnit.getContentKind();
     Expression value = constant(builder == null ? "" : builder.toString(), parentFields);
-    value = MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
+    SanitizedContentKind kind = renderUnit.getContentKind();
+    if (kind == SanitizedContentKind.TEXT) {
+      value = MethodRef.STRING_DATA_FOR_VALUE.invoke(value);
+    } else {
+      value =
+          MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
+    }
 
     FieldRef staticField = parentFields.addStaticField(name, value);
     return Optional.of(staticField.accessor());
