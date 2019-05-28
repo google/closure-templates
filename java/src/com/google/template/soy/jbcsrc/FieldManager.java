@@ -22,8 +22,6 @@ import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_CALLEE_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.CURRENT_RENDEREE_FIELD;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -62,9 +60,9 @@ final class FieldManager implements ClassFieldManager {
     this.fieldNames.claimName(CURRENT_APPENDABLE_FIELD);
   }
 
-  LazyAllocatedField addLazyGeneratedField(String suggestedName, Type type) {
+  FieldRef addGeneratedField(String suggestedName, Type type) {
     String name = fieldNames.generateName(suggestedName);
-    return new LazyAllocatedField(name, () -> doAddField(name, type, Opcodes.ACC_PRIVATE));
+    return doAddField(name, type, Opcodes.ACC_PRIVATE);
   }
 
   FieldRef addGeneratedFinalField(String suggestedName, Type type) {
@@ -199,23 +197,5 @@ final class FieldManager implements ClassFieldManager {
     abstract FieldRef field();
 
     abstract Expression initializer();
-  }
-
-  static final class LazyAllocatedField {
-    private final String name;
-    private final Supplier<FieldRef> fieldCreator;
-
-    LazyAllocatedField(String name, Supplier<FieldRef> fieldCreator) {
-      this.name = name;
-      this.fieldCreator = Suppliers.memoize(fieldCreator);
-    }
-
-    FieldRef getField() {
-      return fieldCreator.get();
-    }
-
-    String name() {
-      return name;
-    }
   }
 }

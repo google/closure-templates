@@ -66,14 +66,13 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
@@ -554,7 +553,7 @@ final class ProtoUtils {
       ProtoInitNode node,
       Function<ExprNode, SoyExpression> compilerFunction,
       Supplier<? extends ExpressionDetacher> detacher,
-      TemplateVariableManager varManager) {
+      LocalVariableManager varManager) {
     return new ProtoInitGenerator(node, compilerFunction, detacher, varManager).generate();
   }
 
@@ -562,7 +561,7 @@ final class ProtoUtils {
     private final ProtoInitNode node;
     private final Function<ExprNode, SoyExpression> compilerFunction;
     private final Supplier<? extends ExpressionDetacher> detacher;
-    private final TemplateVariableManager varManager;
+    private final LocalVariableManager varManager;
 
     private final SoyProtoType protoType;
     private final Descriptor descriptor;
@@ -571,7 +570,7 @@ final class ProtoUtils {
         ProtoInitNode node,
         Function<ExprNode, SoyExpression> compilerFunction,
         Supplier<? extends ExpressionDetacher> detacher,
-        TemplateVariableManager varManager) {
+        LocalVariableManager varManager) {
       this.node = node;
       this.compilerFunction = compilerFunction;
       this.detacher = detacher;
@@ -700,26 +699,26 @@ final class ProtoUtils {
       Preconditions.checkArgument(mapArg.isNonNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
+      // TODO(lukes): handle map literals specially
       Expression resolved =
           detacher
               .get()
               .resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
 
       // Enter new scope
-      Scope scope = varManager.enterScope();
-      // Create local variables
-      final Variable map = scope.createTemporary(field.getName() + "__map", resolved);
-      // map.entrySet().iterator()
-      final Variable iter =
-          scope.createTemporary(
-              field.getName() + "__iter",
-              map.local().invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR));
-      // (Map.Entry) iter.next()
-      final Variable mapEntry =
-          scope.createTemporary(
-              field.getName() + "__mapEntry",
-              iter.local().invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE));
+      LocalVariableManager.Scope scope = varManager.enterScope();
 
+      // map.entrySet().iterator()
+      Expression getMapIterator =
+          resolved.invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR);
+      final LocalVariable iter =
+          scope.createLocal(field.getName() + "__iter", getMapIterator.resultType());
+      Statement loopInitialization = iter.store(getMapIterator, iter.start());
+      // (Map.Entry) iter.next()
+      Expression iterNext = iter.invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
+      final LocalVariable mapEntry =
+          scope.createLocal(field.getName() + "__mapEntry", iterNext.resultType());
+      Statement initMapEntry = mapEntry.store(iterNext, mapEntry.start());
       // exitScope must be called after creating all the variables
       final Statement scopeExit = scope.exitScope();
 
@@ -730,34 +729,36 @@ final class ProtoUtils {
       SoyType valueType = mapType.getValueType();
       SoyRuntimeType valueRuntimeType = SoyRuntimeType.getBoxedType(valueType);
 
-      Expression getMapKey =
-          mapEntry
-              .local()
-              .invoke(MethodRef.MAP_GET_KEY)
-              .checkedCast(keyRuntimeType.runtimeType())
-              // In ResolveExpressionTypesPass we already enforce that key is not nullable.
-              .asNonNullable();
-      SoyExpression mapKey = SoyExpression.forSoyValue(keyType, getMapKey);
-
-      // resolve() is safe since we called ExpressionDetacher at the very beginning of this method
-      // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
-      Expression getAndResolveMapValue =
-          mapEntry
-              .local()
-              .invoke(MethodRef.MAP_GET_VALUE)
-              .checkedCast(SOY_VALUE_PROVIDER_TYPE)
-              .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
-              .checkedCast(valueRuntimeType.runtimeType());
+      SoyExpression mapKey =
+          SoyExpression.forSoyValue(
+              keyType,
+              mapEntry
+                  .invoke(MethodRef.MAP_GET_KEY)
+                  .checkedCast(keyRuntimeType.runtimeType())
+                  // In ResolveExpressionTypesPass we already enforce that key is not nullable.  By
+                  // asserting that it isn't we just get an NPE when we are wrong, which is what we
+                  // want.
+                  .asNonNullable());
 
       // Convert the soy value to java type
 
       // ResolveExpressionTypesPass already enforces that the value is not nullable. If the value is
       // null, it reports a type mismatch error.
       SoyExpression mapValue =
-          SoyExpression.forSoyValue(valueType, getAndResolveMapValue).asNonNullable();
+          SoyExpression.forSoyValue(
+                  valueType,
+                  mapEntry
+                      .invoke(MethodRef.MAP_GET_VALUE)
+                      .checkedCast(SOY_VALUE_PROVIDER_TYPE)
+                      // resolve() is safe since we called ExpressionDetacher at the very beginning
+                      // of this method
+                      // (SomeType) ((SoyValueProvider) mapEntry.getValue()).resolve()
+                      .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
+                      .checkedCast(valueRuntimeType.runtimeType()))
+              .asNonNullable();
 
       // iter.hasNext()
-      final Expression iterHasNext = iter.local().invoke(MethodRef.ITERATOR_HAS_NEXT);
+      final Expression iterHasNext = iter.invoke(MethodRef.ITERATOR_HAS_NEXT);
 
       // Invokes the putFooFieldMap method in proto message builder
       final Statement putOne = handleMapSetter(mapKey, mapValue, field);
@@ -766,8 +767,7 @@ final class ProtoUtils {
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
-          map.initializer().gen(cb);
-          iter.initializer().gen(cb);
+          loopInitialization.gen(cb);
 
           // Loop start
           Label loopStart = cb.mark();
@@ -777,7 +777,7 @@ final class ProtoUtils {
           cb.ifZCmp(Opcodes.IFEQ, end);
 
           // Loop body: load the current map entry and put it into proto
-          mapEntry.initializer().gen(cb);
+          initMapEntry.gen(cb);
           putOne.gen(cb);
 
           // Go back to loop start
@@ -875,14 +875,19 @@ final class ProtoUtils {
       Expression resolved = detacher.get().resolveSoyValueProviderList(unboxed);
 
       // Enter new scope
-      Scope scope = varManager.enterScope();
+      LocalVariableManager.Scope scope = varManager.enterScope();
 
       // Create local variables: list, loop index, list size
-      final Variable list = scope.createTemporary(field.getName() + "__list", resolved);
-      final Variable index = scope.createTemporary(field.getName() + "__index", constant(0));
-      final Variable listSize =
-          scope.createTemporary(
-              field.getName() + "__size", MethodRef.LIST_SIZE.invoke(list.local()));
+      final LocalVariable list =
+          scope.createLocal(field.getName() + "__list", resolved.resultType());
+
+      final LocalVariable listSize = scope.createLocal(field.getName() + "__size", Type.INT_TYPE);
+      final LocalVariable index = scope.createLocal(field.getName() + "__index", Type.INT_TYPE);
+      Statement indexInitialization = index.store(constant(0), index.start());
+      Statement loopInitialization =
+          Statement.concat(
+              list.store(resolved, list.start()),
+              listSize.store(list.invoke(MethodRef.LIST_SIZE), listSize.start()));
 
       // exitScope must be called after creating all the variables
       final Statement scopeExit = scope.exitScope();
@@ -892,8 +897,8 @@ final class ProtoUtils {
 
       // Call list.get(i).resolveSoyValueProvider(), then cast to the expected subtype of SoyValue
       Expression getAndResolve =
-          list.local() // list
-              .invoke(MethodRef.LIST_GET, index.local()) // .get(i)
+          list // list
+              .invoke(MethodRef.LIST_GET, index) // .get(i)
               .checkedCast(SOY_VALUE_PROVIDER_TYPE) // cast Object to SoyValueProvider
               .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE) // .resolve()
               .checkedCast(elementType.runtimeType()); // cast SoyValue to appropriate subtype
@@ -919,17 +924,14 @@ final class ProtoUtils {
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
-          list.initializer().gen(cb);
-          listSize.initializer().gen(cb);
+          loopInitialization.gen(cb);
 
           // if list.size() == 0, skip loop
-          listSize.local().gen(cb);
+          listSize.gen(cb);
           Label listIsEmpty = new Label();
           cb.ifZCmp(Opcodes.IFEQ, listIsEmpty);
 
-          // i = 0
-          index.initializer().gen(cb);
-
+          indexInitialization.gen(cb);
           // Begin loop
           Label loopStart = cb.mark();
 
@@ -937,11 +939,11 @@ final class ProtoUtils {
           getAndAddOne.gen(cb);
 
           // i++
-          cb.iinc(index.local().index(), 1);
+          cb.iinc(index.index(), 1);
 
           // if i < list.size(), goto loopStart
-          index.local().gen(cb);
-          listSize.local().gen(cb);
+          index.gen(cb);
+          listSize.gen(cb);
           cb.ifICmp(Opcodes.IFLT, loopStart);
 
           // End loop

@@ -451,12 +451,12 @@ final class TemplateCompiler {
 
     @Override
     public Expression getLocal(LocalVar local) {
-      return variableSet.getVariable(local.name()).local();
+      return variableSet.getVariable(local.name());
     }
 
     @Override
     public Expression getLocal(SyntheticVarName varName) {
-      return variableSet.getVariable(varName).local();
+      return variableSet.getVariable(varName);
     }
 
     @Override

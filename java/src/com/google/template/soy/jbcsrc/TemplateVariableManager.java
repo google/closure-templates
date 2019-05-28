@@ -16,62 +16,33 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.Sets;
-import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.jbcsrc.FieldManager.LazyAllocatedField;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 /**
- * Manages scopes and local variables.
- *
- * <p>This class also manages other template level resources, like:
- *
- * <ul>
- *   <li>A {@link #getCurrentCalleeField() callee field} that holds the current template that is
- *       being called.
- *   <li>A {@link #getCurrentRenderee() renderee field} that holds the current incrementally
- *       rendering {@link SoyValueProvider} that is being called.
- *   <li>A {@link #getMsgPlaceholderMapField() map} that can be used to store message placeholders.
- * </ul>
- *
- * <p>Finally, this class can be used to generate static, per template fields for storing state.
- * Currently, this is used to store default english messages and raw text constants > 64K in length.
+ * Manages logical template variables and their scopes as well as calculating how to generate
+ * save/restore logic for template detaches.
  */
-final class TemplateVariableManager {
+final class TemplateVariableManager implements LocalVariableManager {
   enum SaveStrategy {
     /** Means that the value of the variable should be recalculated rather than saved to a field. */
     DERIVED,
-    /**
-     * Means that the we never expect to save/restore the value of this variable, and that any
-     * attempt to do so should be an error.
-     */
-    NEVER,
     /** Means that the value of the variable should be saved to a field. */
     STORE;
   }
 
-  abstract static class Scope {
+  abstract static class Scope implements LocalVariableManager.Scope {
     private Scope() {}
 
     /**
@@ -90,17 +61,6 @@ final class TemplateVariableManager {
         SyntheticVarName name, Expression initializer, SaveStrategy strategy);
 
     /**
-     * Creates a new temporary variable. A temporary variable is a variable that is introduced by
-     * the compiler, and is never accessed outside of the given scope. Its {@link SaveStrategy} is
-     * always set to {@code NEVER}.
-     *
-     * @param name A proposed name for the variable, the actual variable name may be modified to
-     *     ensure uniqueness
-     * @param initializer The expression that can be used to initialize the variable
-     */
-    abstract Variable createTemporary(String name, Expression initializer);
-
-    /**
      * Creates a new user-defined variable.
      *
      * @param name The name of the variable, the name is assumed to be unique (enforced by the
@@ -110,12 +70,6 @@ final class TemplateVariableManager {
      *     derivable from other variables already defined.
      */
     abstract Variable create(String name, Expression initializer, SaveStrategy strategy);
-
-    /**
-     * Returns a statement that should be used when exiting the scope. This is responsible for
-     * appropriately clearing fields and visiting end labels.
-     */
-    abstract Statement exitScope();
   }
 
   /**
@@ -141,19 +95,20 @@ final class TemplateVariableManager {
        * foreach} loop. For these we generate 'synthetic' variables to efficiently reference the
        * expression.
        */
-      SYNTHETIC,
-
-      /** A subset of synthetic variables that are never accessed outside the initializing scope. */
-      TEMPORARY;
+      SYNTHETIC;
     }
 
-    static VarKey create(Kind kind, String proposedName) {
-      return new AutoValue_TemplateVariableManager_VarKey(kind, proposedName);
+    static VarKey create(String proposedName) {
+      return new AutoValue_TemplateVariableManager_VarKey(Kind.USER_DEFINED, proposedName);
+    }
+
+    static VarKey create(SyntheticVarName proposedName) {
+      return new AutoValue_TemplateVariableManager_VarKey(Kind.SYNTHETIC, proposedName);
     }
 
     abstract Kind kind();
 
-    abstract String name();
+    abstract Object name();
   }
 
   /**
@@ -193,23 +148,30 @@ final class TemplateVariableManager {
   }
 
   private final class FieldSavedVariable extends Variable {
-
-    final LazyAllocatedField field;
+    final String originalProposedName;
+    FieldRef field;
 
     private FieldSavedVariable(
-        Expression initExpression, LocalVariable local, LazyAllocatedField field) {
+        String originalProposedName, Expression initExpression, LocalVariable local) {
       super(initExpression, local);
-      this.field = field;
+      this.originalProposedName = originalProposedName;
+    }
+
+    FieldRef getField() {
+      if (field == null) {
+        field = fields.addGeneratedField(originalProposedName, local.resultType());
+      }
+      return field;
     }
 
     @Override
     Statement save() {
-      return field.getField().putInstanceField(thisVar, local);
+      return getField().putInstanceField(thisVar, local);
     }
 
     @Override
     Statement restore() {
-      Expression fieldValue = field.getField().accessor(thisVar);
+      Expression fieldValue = getField().accessor(thisVar);
       return local.store(fieldValue);
     }
   }
@@ -230,27 +192,11 @@ final class TemplateVariableManager {
     }
   }
 
-  private static final class TemporaryVariable extends Variable {
-    private TemporaryVariable(Expression initExpression, LocalVariable local) {
-      super(initExpression, local);
-    }
-
-    @Override
-    Statement save() {
-      throw new UnsupportedOperationException("Should not call save() on this variable.");
-    }
-
-    @Override
-    Statement restore() {
-      throw new UnsupportedOperationException("Should not call restore() on this variable.");
-    }
-  }
-
   private final FieldManager fields;
-  private final List<Variable> allVariables = new ArrayList<>();
-  private final Deque<Map<VarKey, Variable>> frames = new ArrayDeque<>();
-  private final BitSet availableSlots = new BitSet();
+  private final SimpleLocalVariableManager delegate;
+  private final Map<VarKey, Variable> variablesByKey = new LinkedHashMap<>();
   private final LocalVariable thisVar;
+  private int numberOfActiveTemporaries;
 
   /**
    * @param fields The field manager for the current class.
@@ -260,160 +206,98 @@ final class TemplateVariableManager {
   TemplateVariableManager(FieldManager fields, LocalVariable thisVar, Method method) {
     this.fields = fields;
     this.thisVar = thisVar;
-    availableSlots.set(0); // for 'this'
-    int from = 1;
-    for (Type type : method.getArgumentTypes()) {
-      int to = from + type.getSize();
-      availableSlots.set(from, to);
-      from = to;
-    }
+    this.delegate = new SimpleLocalVariableManager(method, /*isStatic=*/ false);
   }
 
   /** Enters a new scope. Variables may only be defined within a scope. */
-  Scope enterScope() {
-    final Map<VarKey, Variable> currentFrame = new LinkedHashMap<>();
-    final Label scopeExit = new Label();
-    frames.push(currentFrame);
+  @Override
+  public Scope enterScope() {
+    final LocalVariableManager.Scope delegateScope = delegate.enterScope();
     return new Scope() {
-      boolean exited;
+      final List<VarKey> activeVariables = new ArrayList<>();
+      int activeTemporariesInThisScope;
 
       @Override
       Variable createSynthetic(
           SyntheticVarName varName, Expression initExpr, SaveStrategy strategy) {
-        checkState(!exited, "Scope already exited");
-        // synthetics are prefixed by $ by convention
         return doCreate(
-            fields.addLazyGeneratedField("$" + varName.name(), initExpr.resultType()),
-            new Label(),
-            scopeExit,
-            initExpr,
-            VarKey.create(Kind.SYNTHETIC, varName.name()),
-            strategy);
-      }
-
-      @Override
-      Variable createTemporary(String name, Expression initExpr) {
-        checkState(!exited, "Scope already exited");
-        return doCreate(
-            fields.addLazyGeneratedField("$$" + name, initExpr.resultType()),
-            new Label(),
-            scopeExit,
-            initExpr,
-            VarKey.create(Kind.TEMPORARY, name),
-            SaveStrategy.NEVER);
+            // synthetics are prefixed by $ by convention
+            "$" + varName.name(), initExpr, VarKey.create(varName), strategy);
       }
 
       @Override
       Variable create(String name, Expression initExpr, SaveStrategy strategy) {
-        checkState(!exited, "Scope already exited");
-        return doCreate(
-            fields.addLazyGeneratedField(name, initExpr.resultType()),
-            new Label(),
-            scopeExit,
-            initExpr,
-            VarKey.create(Kind.USER_DEFINED, name),
-            strategy);
+        return doCreate(name, initExpr, VarKey.create(name), strategy);
       }
 
       @Override
-      Statement exitScope() {
-        checkState(!exited, "Scope already exited");
-        exited = true;
-        frames.pop();
-        // Use identity semantics to make sure we visit each label at most once.  visiting a label
-        // more than once tends to corrupt internal asm state.
-        final Set<Label> endLabels = Sets.newIdentityHashSet();
-        for (Variable var : currentFrame.values()) {
-          endLabels.add(var.local.end());
-          availableSlots.clear(
-              var.local.index(), var.local.index() + var.local.resultType().getSize());
-        }
-        return new Statement() {
-          // TODO(lukes): we could generate null writes for when object typed fields go out of
-          // scope.  This would potentially allow intermediate results to be collected sooner.
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            for (Label label : endLabels) {
-              adapter.visitLabel(label);
-            }
+      public LocalVariable createLocal(String name, Type type) {
+        numberOfActiveTemporaries++;
+        activeTemporariesInThisScope++;
+        return delegateScope.createLocal(name, type);
+      }
+
+      @Override
+      public Statement exitScope() {
+        numberOfActiveTemporaries -= activeTemporariesInThisScope;
+        for (VarKey key : activeVariables) {
+          Variable var = variablesByKey.remove(key);
+          if (var == null) {
+            throw new IllegalStateException("no variable active for key: " + key);
           }
-        };
+        }
+        return delegateScope.exitScope();
       }
 
       private Variable doCreate(
-          LazyAllocatedField field,
-          Label start,
-          Label end,
-          Expression initExpr,
-          VarKey key,
-          SaveStrategy strategy) {
-        int index = reserveSlotFor(initExpr.resultType());
-        LocalVariable local =
-            LocalVariable.createLocal(field.name(), index, initExpr.resultType(), start, end);
+          String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
+        LocalVariable local = delegateScope.createLocal(proposedName, initExpr.resultType());
         Variable var;
         switch (strategy) {
           case DERIVED:
             var = new DerivedVariable(initExpr, local);
             break;
-          case NEVER:
-            var = new TemporaryVariable(initExpr, local);
-            break;
           case STORE:
-            var = new FieldSavedVariable(initExpr, local, field);
+            var = new FieldSavedVariable(proposedName, initExpr, local);
             break;
           default:
             throw new AssertionError();
         }
-        currentFrame.put(key, var);
-        allVariables.add(var);
+        Variable old = variablesByKey.put(key, var);
+        if (old != null) {
+          throw new IllegalStateException("multiple variables active for key: " + key);
+        }
+        activeVariables.add(key);
         return var;
       }
     };
   }
 
-  /** Write a local variable table entry for every registered variable. */
-  void generateTableEntries(CodeBuilder ga) {
-    for (Variable var : allVariables) {
-      try {
-        var.local.tableEntry(ga);
-      } catch (Throwable t) {
-        throw new RuntimeException("unable to write table entry for: " + var.local, t);
-      }
-    }
+  @Override
+  public void generateTableEntries(CodeBuilder ga) {
+    delegate.generateTableEntries(ga);
   }
 
   /**
    * Looks up a user defined variable with the given name. The variable must have been created in a
    * currently active scope.
    */
-  Variable getVariable(String name) {
-    VarKey varKey = VarKey.create(Kind.USER_DEFINED, name);
-    return getVariable(varKey);
+  LocalVariable getVariable(String name) {
+    return getVariable(VarKey.create(name));
   }
 
   /**
    * Looks up a synthetic variable with the given name. The variable must have been created in a
    * currently active scope.
    */
-  Variable getVariable(SyntheticVarName name) {
-    VarKey varKey = VarKey.create(Kind.SYNTHETIC, name.name());
-    return getVariable(varKey);
+  LocalVariable getVariable(SyntheticVarName name) {
+    return getVariable(VarKey.create(name));
   }
 
-  private Variable getVariable(VarKey varKey) {
-    Variable potentialMatch = null;
-    for (Map<VarKey, Variable> f : frames) {
-      Variable variable = f.get(varKey);
-      if (variable != null) {
-        if (potentialMatch == null) {
-          potentialMatch = variable;
-        } else {
-          throw new IllegalArgumentException("Ambiguous variable: " + varKey);
-        }
-      }
-    }
-    if (potentialMatch != null) {
-      return potentialMatch;
+  private LocalVariable getVariable(VarKey varKey) {
+    Variable var = variablesByKey.get(varKey);
+    if (var != null) {
+      return var.local();
     }
     throw new IllegalArgumentException("No variable: '" + varKey + "' is bound");
   }
@@ -428,33 +312,19 @@ final class TemplateVariableManager {
 
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
   SaveRestoreState saveRestoreState() {
+    if (numberOfActiveTemporaries > 0) {
+      throw new IllegalStateException(
+          "Can't generate save/restore state when there are active non-saved temporary variables: "
+              + numberOfActiveTemporaries);
+    }
     List<Statement> saves = new ArrayList<>();
     List<Statement> restores = new ArrayList<>();
-    // Iterate backwards so that we restore variables in order of definition which will ensure that
-    // derived fields work correctly.
-    for (Iterator<Map<VarKey, Variable>> iterator = frames.descendingIterator();
-        iterator.hasNext(); ) {
-      Map<VarKey, Variable> frame = iterator.next();
-      for (Variable var : frame.values()) {
-        saves.add(var.save());
-        restores.add(var.restore());
-      }
+    // The map is in insertion order.  This is important since it means derived variables will work
+    for (Variable var : variablesByKey.values()) {
+      saves.add(var.save());
+      restores.add(var.restore());
     }
     return new AutoValue_TemplateVariableManager_SaveRestoreState(
         Statement.concat(saves), Statement.concat(restores));
-  }
-
-  private int reserveSlotFor(Type type) {
-    int size = type.getSize();
-    checkArgument(size != 0);
-    int start = 0;
-    while (true) {
-      int nextClear = availableSlots.nextClearBit(start);
-      if (size == 2 && availableSlots.get(nextClear + 1)) {
-        start = nextClear + 1;
-      }
-      availableSlots.set(nextClear, nextClear + size);
-      return nextClear;
-    }
   }
 }

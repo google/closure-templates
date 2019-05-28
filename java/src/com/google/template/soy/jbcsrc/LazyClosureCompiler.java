@@ -569,7 +569,7 @@ final class LazyClosureCompiler {
     public Expression getLocal(LocalVar local) {
       if (isDescendantOf(local.declaringNode(), params.node)) {
         // in this case, we just delegate to VariableSet
-        return variableSet.getVariable(local.name()).local();
+        return variableSet.getVariable(local.name());
       }
 
       ParentCapture capturedField = localFields.get(local);
@@ -587,7 +587,7 @@ final class LazyClosureCompiler {
     public Expression getLocal(SyntheticVarName varName) {
       if (isDescendantOf(varName.declaringNode(), params.node)) {
         // in this case, we just delegate to VariableSet
-        return variableSet.getVariable(varName).local();
+        return variableSet.getVariable(varName);
       }
 
       ParentCapture capturedField = syntheticFields.get(varName);

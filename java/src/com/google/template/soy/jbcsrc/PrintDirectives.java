@@ -17,12 +17,10 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -135,22 +133,25 @@ final class PrintDirectives {
       JbcSrcPluginContext context,
       TemplateVariableManager variableManager) {
     final List<LocalVariable> closeables = new ArrayList<>();
-    final List<Variable> appendableVars = new ArrayList<>();
+    final List<Statement> wrapVars = new ArrayList<>();
     Scope scope = variableManager.enterScope();
 
     AppendableAndOptions prev = AppendableAndOptions.create(appendable);
-    Variable prevVar = scope.createTemporary("tmp_appendable", appendable);
-    appendableVars.add(prevVar);
+    LocalVariable prevVar =
+        scope.createLocal("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
+    wrapVars.add(prevVar.store(prev.appendable(), prevVar.start()));
 
     // Apply the directives to the appendable in reverse
     // since we are wrapping the directives around the appendable we need to wrap the underlying
     // appendable with the last directive first. so iterate in reverse order.
     for (DirectiveWithArgs directiveToApply : Lists.reverse(directivesToApply)) {
-      AppendableAndOptions curr = directiveToApply.apply(context, prevVar.local());
-      Variable currVar = scope.createTemporary("tmp_appendable", curr.appendable());
-      appendableVars.add(currVar);
+      AppendableAndOptions curr = directiveToApply.apply(context, prevVar);
+      LocalVariable currVar =
+          scope.createLocal("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
+      wrapVars.add(currVar.store(curr.appendable(), currVar.start()));
+
       if (curr.closeable()) {
-        closeables.add(currVar.local());
+        closeables.add(currVar);
       }
       prev = curr;
       prevVar = currVar;
@@ -174,8 +175,7 @@ final class PrintDirectives {
       // need to close foo first.
       appendableExpression =
           RUNTIME_PROPAGATE_CLOSE.invoke(
-              Iterables.getLast(appendableVars).local(),
-              BytecodeUtils.asImmutableList(Lists.reverse(closeables)));
+              prevVar, BytecodeUtils.asImmutableList(Lists.reverse(closeables)));
       closeable = true;
     }
 
@@ -184,8 +184,8 @@ final class PrintDirectives {
         new Expression(appendableExpression.resultType()) {
           @Override
           protected void doGen(CodeBuilder adapter) {
-            for (Variable var : appendableVars) {
-              var.initializer().gen(adapter);
+            for (Statement init : wrapVars) {
+              init.gen(adapter);
             }
             appendableExpression.gen(adapter);
             exitScope.gen(adapter);
@@ -206,12 +206,13 @@ final class PrintDirectives {
 
     static DirectiveWithArgs create(
         SoyJbcSrcPrintDirective.Streamable directive, List<SoyExpression> arguments) {
-      return new AutoValue_PrintDirectives_DirectiveWithArgs(directive, arguments);
+      return new AutoValue_PrintDirectives_DirectiveWithArgs(
+          directive, ImmutableList.copyOf(arguments));
     }
 
     abstract SoyJbcSrcPrintDirective.Streamable directive();
 
-    abstract List<SoyExpression> arguments();
+    abstract ImmutableList<SoyExpression> arguments();
 
     AppendableAndOptions apply(JbcSrcPluginContext context, Expression appendable) {
       return directive().applyForJbcSrcStreaming(context, appendable, arguments());
