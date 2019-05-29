@@ -317,26 +317,28 @@ final class MsgCompiler {
     Statement initMsgRenderer = Statement.concat(initializationStatements);
     Statement render;
     if (areAllPrintDirectivesStreamable(escapingDirectives)) {
-      AppendableAndOptions wrappedAppendable =
-          applyStreamingEscapingDirectives(
-              escapingDirectives,
-              appendableExpression,
-              parameterLookup.getPluginContext(),
-              variables);
-      FieldRef currentAppendableField = fields.getCurrentAppendable();
-      Statement initAppendable =
-          currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
-      Expression appendableExpression = currentAppendableField.accessor(thisVar);
-      Statement clearAppendable =
-          currentAppendableField.putInstanceField(
-              thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
-      if (wrappedAppendable.closeable()) {
+      Statement initAppendable = Statement.NULL_STATEMENT;
+      Statement clearAppendable = Statement.NULL_STATEMENT;
+      Expression appendable = appendableExpression;
+      if (!escapingDirectives.isEmpty()) {
+        AppendableAndOptions wrappedAppendable =
+            applyStreamingEscapingDirectives(
+                escapingDirectives, appendable, parameterLookup.getPluginContext(), variables);
+        FieldRef currentAppendableField = fields.getCurrentAppendable();
+        initAppendable =
+            currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
+        appendable = currentAppendableField.accessor(thisVar);
         clearAppendable =
-            Statement.concat(
-                appendableExpression
-                    .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
-                    .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
-                clearAppendable);
+            currentAppendableField.putInstanceField(
+                thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+        if (wrappedAppendable.closeable()) {
+          clearAppendable =
+              Statement.concat(
+                  appendableExpression
+                      .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
+                      .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                  clearAppendable);
+        }
       }
       render =
           Statement.concat(
@@ -347,7 +349,7 @@ final class MsgCompiler {
                       .accessor(thisVar)
                       .invoke(
                           MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
-                          appendableExpression,
+                          appendable,
                           // set the isLast field to true since we know this will only be rendered
                           // once.
                           /* isLast=*/ constant(true))),

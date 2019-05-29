@@ -676,7 +676,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
     initRenderee = initRenderee.labelStart(reattachPoint);
 
-    // TODO(lukes): we should have similar logic for calls and message escaping
     Statement initAppendable = Statement.NULL_STATEMENT;
     Statement clearAppendable = Statement.NULL_STATEMENT;
     Expression appendable = appendableExpression;
@@ -966,7 +965,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Label parametersReattachPoint, CallNode node, Expression calleeExpression) {
     Statement initAppendable = Statement.NULL_STATEMENT;
     Statement clearAppendable = Statement.NULL_STATEMENT;
-    Expression appendable;
+    Expression appendable = appendableExpression;
     FieldRef currentCalleeField = fields.getCurrentCalleeField();
     // TODO(lukes): for CallBasicNodes, we could take advantage of the ShortCircuitable interface to
     // statically remove directives based on the callee kind.  Note, we can't do this for
@@ -975,32 +974,33 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       calleeExpression =
           MethodRef.RUNTIME_APPLY_ESCAPERS.invoke(
               calleeExpression, getEscapingDirectivesList(node));
-      appendable = appendableExpression;
     } else {
-      AppendableAndOptions wrappedAppendable =
-          applyStreamingEscapingDirectives(
-              node.getEscapingDirectives(),
-              appendableExpression,
-              parameterLookup.getRenderContext(),
-              variables);
-      FieldRef currentAppendableField = fields.getCurrentAppendable();
-      initAppendable =
-          currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
-      appendable = currentAppendableField.accessor(thisVar);
-      clearAppendable =
-          currentAppendableField.putInstanceField(
-              thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
-      if (wrappedAppendable.closeable()) {
-        // make sure to call close before clearing
+      if (!node.getEscapingDirectives().isEmpty()) {
+        AppendableAndOptions wrappedAppendable =
+            applyStreamingEscapingDirectives(
+                node.getEscapingDirectives(),
+                appendable,
+                parameterLookup.getRenderContext(),
+                variables);
+        FieldRef currentAppendableField = fields.getCurrentAppendable();
+        initAppendable =
+            currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
+        appendable = currentAppendableField.accessor(thisVar);
         clearAppendable =
-            Statement.concat(
-                // We need to cast because the static type of the field is just plain old
-                // LoggingAdvisingAppendable
-                currentAppendableField
-                    .accessor(thisVar)
-                    .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
-                    .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
-                clearAppendable);
+            currentAppendableField.putInstanceField(
+                thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
+        if (wrappedAppendable.closeable()) {
+          // make sure to call close before clearing
+          clearAppendable =
+              Statement.concat(
+                  // We need to cast because the static type of the field is just plain old
+                  // LoggingAdvisingAppendable
+                  currentAppendableField
+                      .accessor(thisVar)
+                      .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
+                      .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                  clearAppendable);
+        }
       }
     }
     Statement initCallee =

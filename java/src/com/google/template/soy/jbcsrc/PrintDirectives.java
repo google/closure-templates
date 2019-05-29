@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -92,6 +94,7 @@ final class PrintDirectives {
       Expression appendable,
       JbcSrcPluginContext context,
       TemplateVariableManager variables) {
+    checkArgument(!directives.isEmpty());
     List<DirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (SoyPrintDirective directive : directives) {
       directivesToApply.add(
@@ -117,6 +120,7 @@ final class PrintDirectives {
       BasicExpressionCompiler basic,
       JbcSrcPluginContext renderContext,
       TemplateVariableManager variables) {
+    checkArgument(!directives.isEmpty());
     List<DirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (PrintDirectiveNode directive : directives) {
       directivesToApply.add(

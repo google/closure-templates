@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
@@ -240,6 +241,7 @@ public final class JbcSrcRuntime {
    */
   public static CompiledTemplate applyEscapers(
       CompiledTemplate delegate, ImmutableList<SoyJavaPrintDirective> directives) {
+    checkState(!directives.isEmpty());
     ContentKind kind = delegate.kind();
     if (canSkipEscaping(directives, kind)) {
       return delegate;
