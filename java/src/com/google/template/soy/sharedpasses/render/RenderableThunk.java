@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
@@ -25,7 +27,6 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * A renderable <a href="http://en.wikipedia.org/wiki/Thunk">thunk</a>.
@@ -38,10 +39,10 @@ import javax.annotation.Nullable;
 public abstract class RenderableThunk implements SoyValueProvider {
   private String content;
   private SoyValue resolved;
-  @Nullable private final ContentKind kind;
+  private final ContentKind kind;
 
-  protected RenderableThunk(@Nullable ContentKind kind) {
-    this.kind = kind;
+  protected RenderableThunk(ContentKind kind) {
+    this.kind = checkNotNull(kind);
   }
 
   @Override
@@ -84,7 +85,7 @@ public abstract class RenderableThunk implements SoyValueProvider {
   void doResolveOnto(Appendable appendable) throws IOException {
     doRender(appendable);
     content = appendable.toString();
-    if (kind == null) {
+    if (kind == ContentKind.TEXT) {
       resolved = StringData.forValue(content);
     } else {
       resolved = UnsafeSanitizedContentOrdainer.ordainAsSafe(content, kind);

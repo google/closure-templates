@@ -569,7 +569,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       }
       ContentKind calleeKind = fromSanitizedContentKind(callee.getContentKind());
       SoyValue resultData =
-          calleeKind != null
+          calleeKind != ContentKind.TEXT
               ? UnsafeSanitizedContentOrdainer.ordainAsSafe(calleeBuilder.toString(), calleeKind)
               : StringData.forValue(calleeBuilder.toString());
       for (SoyPrintDirective directive : node.getEscapingDirectives()) {
