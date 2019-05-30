@@ -44,7 +44,6 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -89,8 +88,10 @@ final class TemplateCompiler {
   private static final TypeInfo TEMPLATE_TYPE = TypeInfo.create(CompiledTemplate.class);
 
   private final CompiledTemplateRegistry registry;
-  private final FieldRef paramsField;
-  private final FieldRef ijField;
+  // lazily allocated
+  private FieldRef paramsField;
+  // lazily allocated
+  private FieldRef ijField;
   private final FieldRef stateField;
   private final FieldManager fields;
   private final ImmutableMap<String, FieldRef> paramFields;
@@ -112,9 +113,6 @@ final class TemplateCompiler {
     this.templateNode = templateNode;
     this.innerClasses = new InnerClasses(template.typeInfo());
     this.fields = new FieldManager(template.typeInfo());
-    this.paramsField =
-        fields.addFinalField(PARAMS_FIELD, BytecodeUtils.SOY_RECORD_TYPE).asNonNull();
-    this.ijField = fields.addFinalField(IJ_FIELD, BytecodeUtils.SOY_RECORD_TYPE).asNonNull();
     this.stateField = fields.addField(STATE_FIELD, Type.INT_TYPE).asNonNull();
 
     ImmutableMap.Builder<String, FieldRef> builder = ImmutableMap.builder();
@@ -372,8 +370,13 @@ final class TemplateCompiler {
     final LocalVariable paramsVar = createLocal("params", 1, SOY_RECORD_TYPE, start, end);
     final LocalVariable ijVar = createLocal("ij", 2, SOY_RECORD_TYPE, start, end);
     final List<Statement> assignments = new ArrayList<>();
-    assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
-    assignments.add(ijField.putInstanceField(thisVar, ijVar));
+    // these aren't always needed, so we lazily allocate the fields
+    if (paramsField != null) {
+      assignments.add(paramsField.putInstanceField(thisVar, paramsVar));
+    }
+    if (ijField != null) {
+      assignments.add(ijField.putInstanceField(thisVar, ijVar));
+    }
     for (TemplateParam param : templateNode.getAllParams()) {
       Expression paramProvider =
           getParam(paramsVar, ijVar, param, defaultParamInitializers.get(param));
@@ -422,7 +425,7 @@ final class TemplateCompiler {
     }
   }
 
-  private final class TemplateVariables implements TemplateParameterLookup {
+  private final class TemplateVariables extends AbstractTemplateParameterLookup {
     private final TemplateVariableManager variableSet;
     private final Expression thisRef;
     private final RenderContextExpression renderContext;
@@ -440,8 +443,27 @@ final class TemplateCompiler {
     }
 
     @Override
-    public Expression getParam(TemplateParam param) {
-      return paramFields.get(param.name()).accessor(thisRef);
+    FieldRef getParamField(TemplateParam param) {
+      return paramFields.get(param.name());
+    }
+
+    // allocate these lazily since they are only needed in certain cases (ij is needed for all
+    // calls, but not every template has a call, params is needed for data="all" style calls, but
+    // not all templates have those)
+    @Override
+    FieldRef getParamsRecordField() {
+      if (paramsField == null) {
+        paramsField = fields.addFinalField(PARAMS_FIELD, BytecodeUtils.SOY_RECORD_TYPE).asNonNull();
+      }
+      return paramsField;
+    }
+
+    @Override
+    FieldRef getIjRecordField() {
+      if (ijField == null) {
+        ijField = fields.addFinalField(IJ_FIELD, BytecodeUtils.SOY_RECORD_TYPE).asNonNull();
+      }
+      return ijField;
     }
 
     @Override
@@ -460,23 +482,13 @@ final class TemplateCompiler {
     }
 
     @Override
-    public JbcSrcPluginContext getPluginContext() {
-      return renderContext;
-    }
-
-    @Override
     public RenderContextExpression getRenderContext() {
       return renderContext;
     }
 
     @Override
-    public Expression getParamsRecord() {
-      return paramsField.accessor(thisRef);
-    }
-
-    @Override
-    public Expression getIjRecord() {
-      return ijField.accessor(thisRef);
+    Expression getCompiledTemplate() {
+      return thisRef;
     }
   }
 }

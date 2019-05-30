@@ -127,12 +127,13 @@ public final class BytecodeCompiler {
               public List<ClassData> getResult() {
                 logger.log(
                     Level.FINE,
-                    "Compilation took {0}\n"
-                        + "     templates: {1}\n"
-                        + "       classes: {2}\n"
-                        + "         bytes: {3}\n"
-                        + "        fields: {4}\n"
-                        + "  detachStates: {5}",
+                    "\n"
+                        + "Compilation took: {0}\n"
+                        + "       templates: {1}\n"
+                        + "         classes: {2}\n"
+                        + "           bytes: {3}\n"
+                        + "          fields: {4}\n"
+                        + "    detachStates: {5}",
                     new Object[] {
                       stopwatch.toString(),
                       registry.getAllTemplates().size(),

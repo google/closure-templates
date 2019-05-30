@@ -20,6 +20,7 @@ package com.google.template.soy.jbcsrc;
 final class StandardNames {
   static final String PARAMS_FIELD = "$params";
   static final String IJ_FIELD = "$ij";
+  static final String COMPILED_TEMPLATE = "$template";
   static final String STATE_FIELD = "$state";
   static final String RENDER_CONTEXT_FIELD = "$renderContext";
   static final String CURRENT_CALLEE_FIELD = "$currentCallee";

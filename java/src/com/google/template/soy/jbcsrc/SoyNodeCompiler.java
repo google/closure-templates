@@ -142,7 +142,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression thisVar,
       AppendableExpression appendableVar,
       TemplateVariableManager variables,
-      TemplateParameterLookup parameterLookup,
+      AbstractTemplateParameterLookup parameterLookup,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {

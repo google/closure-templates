@@ -16,8 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
+import static com.google.template.soy.jbcsrc.StandardNames.COMPILED_TEMPLATE;
 import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
@@ -48,7 +47,6 @@ import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
-import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
@@ -168,7 +166,7 @@ final class LazyClosureCompiler {
 
   private final CompiledTemplateRegistry registry;
   private final InnerClasses innerClasses;
-  private final TemplateParameterLookup parentVariableLookup;
+  private final AbstractTemplateParameterLookup parentVariableLookup;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   private final FieldManager parentFields;
   private final ErrorReporter reporter;
@@ -177,7 +175,7 @@ final class LazyClosureCompiler {
   LazyClosureCompiler(
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
-      TemplateParameterLookup parentVariableLookup,
+      AbstractTemplateParameterLookup parentVariableLookup,
       FieldManager parentFields,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       ErrorReporter reporter,
@@ -511,30 +509,24 @@ final class LazyClosureCompiler {
    *   <li>Finally, for the {@link RenderContext}, we lazily generate a {@link ParentCapture} if
    *       necessary.
    * </ul>
-   *
-   * <p>TODO(lukes): it appears that we capture fields that are fields in our parent, we should
-   * instead just capture a reference to the root template object and de-reference the fields
-   * directly. This should save code in multiple places..
    */
-  private static final class LazyClosureParameterLookup implements TemplateParameterLookup {
+  private static final class LazyClosureParameterLookup extends AbstractTemplateParameterLookup {
     private final CompilationUnit params;
-    private final TemplateParameterLookup parentParameterLookup;
+    private final AbstractTemplateParameterLookup parentParameterLookup;
     private final TemplateVariableManager variableSet;
     private final Expression thisVar;
 
     // These fields track all the parent captures that we need to generate.
     // NOTE: TemplateParam and LocalVar have identity semantics.  But the AST is guaranteed to not
     // have multiple copies.
-    private final Map<TemplateParam, ParentCapture> paramFields = new LinkedHashMap<>();
     private final Map<LocalVar, ParentCapture> localFields = new LinkedHashMap<>();
     private final Map<SyntheticVarName, ParentCapture> syntheticFields = new LinkedHashMap<>();
     private ParentCapture renderContextCapture;
-    private ParentCapture paramsCapture;
-    private ParentCapture ijCapture;
+    private ParentCapture templateCapture;
 
     LazyClosureParameterLookup(
         CompilationUnit params,
-        TemplateParameterLookup parentParameterLookup,
+        AbstractTemplateParameterLookup parentParameterLookup,
         TemplateVariableManager variableSet,
         Expression thisVar) {
       this.params = params;
@@ -544,18 +536,8 @@ final class LazyClosureCompiler {
     }
 
     @Override
-    public Expression getParam(TemplateParam param) {
-      // All params are packed into fields
-      ParentCapture capturedField = paramFields.get(param);
-      if (capturedField == null) {
-        String name = param.name();
-        Expression expression = parentParameterLookup.getParam(param);
-        capturedField =
-            ParentCapture.create(
-                params.fields.addFinalField(name, expression.resultType()), expression);
-        paramFields.put(param, capturedField);
-      }
-      return capturedField.field().accessor(thisVar);
+    public FieldRef getParamField(TemplateParam param) {
+      return parentParameterLookup.getParamField(param);
     }
 
     @Override
@@ -603,38 +585,9 @@ final class LazyClosureCompiler {
 
     Iterable<ParentCapture> getCapturedFields() {
       return Iterables.concat(
-          Iterables.filter(
-              asList(paramsCapture, ijCapture, renderContextCapture), Objects::nonNull),
-          paramFields.values(),
+          Iterables.filter(asList(renderContextCapture, templateCapture), Objects::nonNull),
           localFields.values(),
           syntheticFields.values());
-    }
-
-    @Override
-    public JbcSrcPluginContext getPluginContext() {
-      // return a lazy delegate.  Most plugins never even need the context, but accessing
-      // getRenderContext() will copy the field into the inner class as a side effect.  using a lazy
-      // delegate we can avoid that in the common case.
-      return new JbcSrcPluginContext() {
-        RenderContextExpression delegate;
-
-        RenderContextExpression getDelegate() {
-          if (delegate == null) {
-            delegate = getRenderContext();
-          }
-          return delegate;
-        }
-
-        @Override
-        public Expression getBidiGlobalDir() {
-          return getDelegate().getBidiGlobalDir();
-        }
-
-        @Override
-        public Expression getULocale() {
-          return getDelegate().getULocale();
-        }
-      };
     }
 
     @Override
@@ -650,25 +603,25 @@ final class LazyClosureCompiler {
     }
 
     @Override
-    public Expression getParamsRecord() {
-      if (paramsCapture == null) {
-        paramsCapture =
+    Expression getCompiledTemplate() {
+      if (templateCapture == null) {
+        Expression compiledTemplate = parentParameterLookup.getCompiledTemplate();
+        templateCapture =
             ParentCapture.create(
-                params.fields.addFinalField(PARAMS_FIELD, BytecodeUtils.SOY_RECORD_TYPE),
-                parentParameterLookup.getParamsRecord());
+                params.fields.addFinalField(COMPILED_TEMPLATE, compiledTemplate.resultType()),
+                compiledTemplate);
       }
-      return paramsCapture.field().accessor(thisVar);
+      return templateCapture.field().accessor(thisVar);
     }
 
     @Override
-    public Expression getIjRecord() {
-      if (ijCapture == null) {
-        ijCapture =
-            ParentCapture.create(
-                params.fields.addFinalField(IJ_FIELD, BytecodeUtils.SOY_RECORD_TYPE),
-                parentParameterLookup.getIjRecord());
-      }
-      return ijCapture.field().accessor(thisVar);
+    FieldRef getParamsRecordField() {
+      return parentParameterLookup.getParamsRecordField();
+    }
+
+    @Override
+    FieldRef getIjRecordField() {
+      return parentParameterLookup.getIjRecordField();
     }
   }
 }

@@ -43,18 +43,14 @@ public abstract class FieldRef {
   public static final FieldRef EMPTY_MAP =
       staticFieldReference(SoyValueConverter.class, "EMPTY_MAP");
 
-  // All the valid access specifiers for a field.  Enables a quick sanity check
-  private static final int FIELD_ACCESS_MASK =
-      Opcodes.ACC_PRIVATE
-          + Opcodes.ACC_PUBLIC
-          + Opcodes.ACC_PROTECTED
-          + Opcodes.ACC_STATIC
-          + Opcodes.ACC_FINAL;
 
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {
-    checkArgument((FIELD_ACCESS_MASK & modifiers) == modifiers, "invalid modifiers");
-    return new AutoValue_FieldRef(owner, name, type, modifiers, isNullable);
+    checkArgument((Modifier.fieldModifiers() & modifiers) == modifiers, "invalid modifiers");
+    FieldRef ref = new AutoValue_FieldRef(owner, name, type);
+    ref.accessFlags = modifiers;
+    ref.isNullable = isNullable;
+    return ref;
   }
 
   public static FieldRef create(TypeInfo owner, String name, Type fieldType, int modifiers) {
@@ -124,18 +120,27 @@ public abstract class FieldRef {
    * The field access flags. This is a bit set of things like {@link Opcodes#ACC_STATIC} and {@link
    * Opcodes#ACC_PRIVATE}.
    */
-  abstract int accessFlags();
+  private int accessFlags;
 
-  abstract boolean isNullable();
+  private boolean isNullable;
 
   public final boolean isStatic() {
-    return (accessFlags() & Opcodes.ACC_STATIC) != 0;
+    return (accessFlags & Opcodes.ACC_STATIC) != 0;
+  }
+
+  private static final int VISIBILITY_MASK =
+      Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED | Opcodes.ACC_PRIVATE;
+
+  public final FieldRef setVisibility(int visibility) {
+    checkArgument(visibility % VISIBILITY_MASK == visibility);
+    accessFlags = (accessFlags & ~VISIBILITY_MASK) | visibility;
+    return this;
   }
 
   /** Defines the given field as member of the class. */
   public void defineField(ClassVisitor cv) {
     cv.visitField(
-        accessFlags(),
+        accessFlags,
         name(),
         type().getDescriptor(),
         null /* no generic signature */,
@@ -143,21 +148,24 @@ public abstract class FieldRef {
   }
 
   public FieldRef asNonNull() {
-    if (!isNullable() || BytecodeUtils.isPrimitive(type())) {
-      return this;
-    }
-    return new AutoValue_FieldRef(owner(), name(), type(), accessFlags(), false);
+    isNullable = false;
+    return this;
   }
 
   /** Returns an accessor that accesses this field on the given owner. */
   public Expression accessor(final Expression owner) {
     checkState(!isStatic());
-    checkArgument(owner.resultType().equals(this.owner().type()));
+    checkArgument(
+        owner.resultType().equals(this.owner().type()),
+        "Unexpected type: %s expected %s",
+        owner.resultType(),
+        owner().type());
+
     Features features = Features.of();
     if (owner.isCheap()) {
       features = features.plus(Feature.CHEAP);
     }
-    if (!isNullable()) {
+    if (!isNullable) {
       features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(type(), features) {
@@ -173,7 +181,7 @@ public abstract class FieldRef {
   public Expression accessor() {
     checkState(isStatic());
     Features features = Features.of(Feature.CHEAP);
-    if (!isNullable()) {
+    if (!isNullable) {
       features = features.plus(Feature.NON_NULLABLE);
     }
     return new Expression(type(), features) {
