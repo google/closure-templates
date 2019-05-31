@@ -22,7 +22,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.soytree.defn.LoopVar;
 import java.util.Map;
 
 /** An {@link Environment} for testing expressions. */
@@ -52,12 +51,7 @@ public final class TestingEnvironment extends Environment {
   }
 
   @Override
-  void bindIsLast(LoopVar loopVar, boolean isLast) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  void bindCurrentIndex(LoopVar loopVar, int lastIndex) {
+  void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
     throw new UnsupportedOperationException();
   }
 
@@ -67,12 +61,12 @@ public final class TestingEnvironment extends Environment {
   }
 
   @Override
-  boolean isLast(LoopVar loopVar) {
+  boolean isLast(VarDefn loopVar) {
     return doGetProvider(loopVar.name() + "__isLast").resolve().booleanValue();
   }
 
   @Override
-  int getIndex(LoopVar loopVar) {
+  int getIndex(VarDefn loopVar) {
     return doGetProvider(loopVar.name() + "__index").resolve().integerValue();
   }
 

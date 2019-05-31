@@ -104,7 +104,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
@@ -1640,7 +1640,9 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
     /** @param fn The function that must take a loop variable. */
     private void requireLoopVariableInScope(FunctionNode fn, ExprNode loopVariable) {
       if (!(loopVariable instanceof VarRefNode
-          && ((VarRefNode) loopVariable).getDefnDecl() instanceof LoopVar)) {
+          && ((VarRefNode) loopVariable).getDefnDecl() instanceof LocalVar
+          && ((LocalVar) ((VarRefNode) loopVariable).getDefnDecl()).declaringNode()
+              instanceof ForNonemptyNode)) {
         errorReporter.report(
             fn.getSourceLocation(), LOOP_VARIABLE_NOT_IN_SCOPE, fn.getFunctionName());
       }

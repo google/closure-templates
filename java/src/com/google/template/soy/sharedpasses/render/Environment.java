@@ -16,20 +16,18 @@
 
 package com.google.template.soy.sharedpasses.render;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.restricted.BooleanData;
-import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * The local variable table.
@@ -67,11 +65,12 @@ public abstract class Environment {
   /** Associates a value with the given variable. */
   abstract void bind(VarDefn var, SoyValueProvider value);
 
-  /** Sets the 'isLast' boolean for the given LoopVar. */
-  abstract void bindIsLast(LoopVar loopVar, boolean isLast);
-
-  /** Sets the currentIndex for the given LoopVar. */
-  abstract void bindCurrentIndex(LoopVar loopVar, int lastIndex);
+  /**
+   * Binds the data about the current loop position to support the isLast and index builtin
+   * functions.
+   */
+  abstract void bindLoopPosition(
+      VarDefn loopVar, SoyValueProvider value, int index, boolean isLast);
 
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValue getVar(VarDefn var);
@@ -80,18 +79,21 @@ public abstract class Environment {
   abstract SoyValueProvider getVarProvider(VarDefn var);
 
   /** Returns {@code true} if we are the last iteration for the given loop variable. */
-  abstract boolean isLast(LoopVar loopVar);
+  abstract boolean isLast(VarDefn loopVar);
 
   /** Returns the current iterator inject for the given loop variable. */
-  abstract int getIndex(LoopVar loopVar);
+  abstract int getIndex(VarDefn loopVar);
 
   private static final class Impl extends Environment {
-    final SoyValueProvider[] localVariableTable;
-    final SoyRecord data;
+    private static final class LoopPosition {
+      boolean isLast;
+      int index;
+      SoyValueProvider item;
+    }
 
+    final Map<VarDefn, Object> localVariables = new IdentityHashMap<>();
+    final SoyRecord data;
     Impl(TemplateNode template, SoyRecord data, SoyRecord ijData) {
-      // seed the lvt with the params
-      this.localVariableTable = new SoyValueProvider[template.getMaxLocalVariableTableSize()];
       this.data = data;
       for (TemplateParam param : template.getAllParams()) {
         SoyValueProvider provider =
@@ -100,23 +102,22 @@ public abstract class Environment {
           provider =
               param.isRequired() || param.hasDefault() ? UndefinedData.INSTANCE : NullData.INSTANCE;
         }
-        localVariableTable[param.localVariableIndex()] = provider;
+        bind(param, provider);
       }
     }
 
     @Override
     void bind(VarDefn var, SoyValueProvider value) {
-      localVariableTable[var.localVariableIndex()] = value;
+      localVariables.put(var, value);
     }
 
     @Override
-    void bindIsLast(LoopVar loopVar, boolean isLast) {
-      localVariableTable[loopVar.isLastIteratorIndex()] = BooleanData.forValue(isLast);
-    }
-
-    @Override
-    void bindCurrentIndex(LoopVar loopVar, int lastIndex) {
-      localVariableTable[loopVar.currentLoopIndexIndex()] = IntegerData.forValue(lastIndex);
+    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
+      LoopPosition position =
+          (LoopPosition) localVariables.computeIfAbsent(loopVar, ignored -> new LoopPosition());
+      position.item = value;
+      position.index = index;
+      position.isLast = isLast;
     }
 
     @Override
@@ -125,30 +126,28 @@ public abstract class Environment {
         // Special case for legacy templates with undeclared params.  Undeclared params aren't
         // assigned indices in the local variable table.
         SoyValueProvider provider = data.getFieldProvider(var.name());
-        return provider != null ? provider : checkNotNull(UndefinedData.INSTANCE);
+        return provider != null ? provider : UndefinedData.INSTANCE;
       }
-      return localVariableTable[var.localVariableIndex()];
+      Object o = localVariables.get(var);
+      if (o instanceof LoopPosition) {
+        return ((LoopPosition) o).item;
+      }
+      return (SoyValueProvider) o;
     }
 
     @Override
     SoyValue getVar(VarDefn var) {
-      if (var.kind() == Kind.UNDECLARED) {
-        // Special case for legacy templates with undeclared params.  Undeclared params aren't
-        // assigned indices in the local variable table.
-        SoyValue value = data.getField(var.name());
-        return value != null ? value : checkNotNull(UndefinedData.INSTANCE);
-      }
-      return localVariableTable[var.localVariableIndex()].resolve();
+      return getVarProvider(var).resolve();
     }
 
     @Override
-    boolean isLast(LoopVar loopVar) {
-      return localVariableTable[loopVar.isLastIteratorIndex()].resolve().booleanValue();
+    boolean isLast(VarDefn var) {
+      return ((LoopPosition) localVariables.get(var)).isLast;
     }
 
     @Override
-    int getIndex(LoopVar loopVar) {
-      return localVariableTable[loopVar.currentLoopIndexIndex()].resolve().integerValue();
+    int getIndex(VarDefn var) {
+      return ((LoopPosition) localVariables.get(var)).index;
     }
   }
 
@@ -160,12 +159,7 @@ public abstract class Environment {
     }
 
     @Override
-    void bindIsLast(LoopVar loopVar, boolean isLast) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    void bindCurrentIndex(LoopVar loopVar, int lastIndex) {
+    void bindLoopPosition(VarDefn loopVar, SoyValueProvider value, int index, boolean isLast) {
       throw new UnsupportedOperationException();
     }
 
@@ -180,12 +174,12 @@ public abstract class Environment {
     }
 
     @Override
-    boolean isLast(LoopVar loopVar) {
+    boolean isLast(VarDefn loopVar) {
       return UndefinedData.INSTANCE.booleanValue();
     }
 
     @Override
-    int getIndex(LoopVar loopVar) {
+    int getIndex(VarDefn loopVar) {
       return UndefinedData.INSTANCE.integerValue();
     }
   }

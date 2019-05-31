@@ -84,7 +84,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
-import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType.Kind;
 import java.io.Flushable;
@@ -450,10 +449,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   private void executeForeachBody(ForNonemptyNode child, int i, SoyValueProvider value, int size) {
-    LoopVar var = child.getVar();
-    env.bind(var, value);
-    env.bindCurrentIndex(var, i);
-    env.bindIsLast(var, size - 1 == i);
+    env.bindLoopPosition(child.getVar(), value, i, size - 1 == i);
     visitChildren(child);
   }
 

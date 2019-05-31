@@ -38,8 +38,6 @@ abstract class AbstractVarDefn implements VarDefn {
   /** The data type of the value. */
   @Nullable SoyType type;
 
-  private int localVariableIndex = -1;
-
   /**
    * @param name The name of the value.
    * @param type The data type of the value.
@@ -55,7 +53,6 @@ abstract class AbstractVarDefn implements VarDefn {
     this.name = var.name;
     this.nameLocation = var.nameLocation;
     this.type = var.type;
-    this.localVariableIndex = var.localVariableIndex;
   }
 
   @Override
@@ -76,16 +73,6 @@ abstract class AbstractVarDefn implements VarDefn {
 
   public boolean hasType() {
     return type != null;
-  }
-
-  @Override
-  public void setLocalVariableIndex(int i) {
-    localVariableIndex = i;
-  }
-
-  @Override
-  public int localVariableIndex() {
-    return localVariableIndex;
   }
 
   @Override

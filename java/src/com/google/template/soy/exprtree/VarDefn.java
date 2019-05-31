@@ -22,9 +22,12 @@ import javax.annotation.Nullable;
 
 /**
  * Interface for the definition of a variable, i.e. a value that can be referred to by name.
- * Variables include params, injected params, and local vars. Note that a definition does not always
- * have a corresponding declaration in user code. Some definitions are implicit, e.g. in the case of
- * injected params.
+ * Variables include params, injected params, and local vars.
+ *
+ * <p>This object is appropriate for use as a unique hash key for referring to variables and should
+ * always be used as opposed to using a variable name.
+ *
+ * <p>TODO(lukes): All variables have declaring nodes, we should add that field to this interface.
  *
  */
 public interface VarDefn {
@@ -59,10 +62,4 @@ public interface VarDefn {
 
   /** Returns true if this is an {@code @inject} param. */
   boolean isInjected();
-
-  /** Returns the index of this variable in the local variable table of the template. */
-  int localVariableIndex();
-
-  /** Assigns the index of this variable in the local variable table for its containing template. */
-  void setLocalVariableIndex(int i);
 }

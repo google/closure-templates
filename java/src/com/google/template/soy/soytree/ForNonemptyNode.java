@@ -21,7 +21,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
-import com.google.template.soy.soytree.defn.LoopVar;
+import com.google.template.soy.soytree.defn.LocalVar;
 
 /**
  * Node representing the loop portion of a 'for' statement.
@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.defn.LoopVar;
 public final class ForNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LocalVarBlockNode {
 
-  private final LoopVar var;
+  private final LocalVar var;
 
   /**
    * @param id The id for this node.
@@ -42,7 +42,7 @@ public final class ForNonemptyNode extends AbstractBlockNode
   public ForNonemptyNode(int id, String varName, SourceLocation varNameLocation) {
     // TODO(lukes): this is a weird location for this node.  Not sure what would be better
     super(id, varNameLocation);
-    this.var = new LoopVar(varName, varNameLocation, this, null);
+    this.var = new LocalVar(varName, varNameLocation, this, /* type= */ null);
   }
 
   /**
@@ -52,7 +52,7 @@ public final class ForNonemptyNode extends AbstractBlockNode
    */
   private ForNonemptyNode(ForNonemptyNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.var = new LoopVar(orig.var, this);
+    this.var = new LocalVar(orig.var, this);
     copyState.updateRefs(orig.var, this.var);
   }
 
@@ -66,7 +66,7 @@ public final class ForNonemptyNode extends AbstractBlockNode
   }
 
   @Override
-  public final LoopVar getVar() {
+  public final LocalVar getVar() {
     return var;
   }
 

@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
@@ -29,7 +30,9 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -57,8 +60,9 @@ public final class ResolveNamesPassTest {
             .fileSet();
     runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
-    assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
+    VarRefNode varRef =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
+    assertThat(varRef.getDefnDecl()).isSameAs(n.getParams().get(0));
   }
 
   @Test
@@ -70,8 +74,9 @@ public final class ResolveNamesPassTest {
             .fileSet();
     runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
-    assertThat(n.getInjectedParams().get(0).localVariableIndex()).isEqualTo(0);
+    VarRefNode varRef =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
+    assertThat(varRef.getDefnDecl()).isSameAs(n.getInjectedParams().get(0));
   }
 
   @Test
@@ -82,8 +87,11 @@ public final class ResolveNamesPassTest {
             .fileSet();
     runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(1);
-    assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(0);
+    LetValueNode letNode =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, LetValueNode.class));
+    VarRefNode varRef =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
+    assertThat(varRef.getDefnDecl()).isSameAs(letNode.getVar());
   }
 
   @Test
@@ -96,25 +104,20 @@ public final class ResolveNamesPassTest {
                     "{let $la: 1 /}",
                     "{for $item in ['a', 'b']}",
                     "  {$pa ? 1 : 0}{$pb ? 1 : 0}{$la + $item}",
-                    "{/for}",
-                    "{let $lb: 1 /}"))
+                    "{/for}"))
             .parse()
             .fileSet();
     runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    // 6 because we have 2 params, 1 let and a foreach loop var which needs 3 slots (variable,
-    // index, lastIndex) active within the foreach loop.  the $lb can reuse a slot for the foreach
-    // loop variable
-    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(6);
-    assertThat(n.getParams().get(0).localVariableIndex()).isEqualTo(0);
-    assertThat(n.getParams().get(1).localVariableIndex()).isEqualTo(1);
-    assertThat(((LetValueNode) n.getChild(0)).getVar().localVariableIndex()).isEqualTo(2);
-    ForNonemptyNode forNonemptyNode = (ForNonemptyNode) ((ForNode) n.getChild(1)).getChild(0);
-    assertThat(forNonemptyNode.getVar().localVariableIndex()).isEqualTo(3);
-    assertThat(forNonemptyNode.getVar().currentLoopIndexIndex()).isEqualTo(4);
-    assertThat(forNonemptyNode.getVar().isLastIteratorIndex()).isEqualTo(5);
-    // The loop variables are out of scope so we can reuse the 3rd slot
-    assertThat(((LetValueNode) n.getChild(2)).getVar().localVariableIndex()).isEqualTo(3);
+    LetNode la = (LetNode) n.getChild(0);
+    ForNonemptyNode loop = (ForNonemptyNode) ((ForNode) n.getChild(1)).getChild(0);
+
+    ImmutableList<VarRefNode> varRefs = SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class);
+    assertThat(varRefs).hasSize(4);
+    assertThat(varRefs.get(0).getDefnDecl()).isSameAs(n.getParams().get(0)); // $pa
+    assertThat(varRefs.get(1).getDefnDecl()).isSameAs(n.getParams().get(1)); // $pb
+    assertThat(varRefs.get(2).getDefnDecl()).isSameAs(la.getVar()); // $la
+    assertThat(varRefs.get(3).getDefnDecl()).isSameAs(loop.getVar()); // $item
   }
 
   @Test
@@ -126,18 +129,13 @@ public final class ResolveNamesPassTest {
             .fileSet();
     runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    // 3 because each new $la binding is a 'new variable'
-    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(3);
     LetValueNode firstLet = (LetValueNode) n.getChild(0);
     LetValueNode secondLet = (LetValueNode) n.getChild(1);
     LetValueNode thirdLet = (LetValueNode) n.getChild(2);
-    assertThat(firstLet.getVar().localVariableIndex()).isEqualTo(0);
-    assertThat(secondLet.getVar().localVariableIndex()).isEqualTo(1);
-    assertThat(thirdLet.getVar().localVariableIndex()).isEqualTo(2);
     assertThat(((VarRefNode) secondLet.getExpr().getRoot()).getDefnDecl())
-        .isEqualTo(firstLet.getVar());
+        .isSameAs(firstLet.getVar());
     assertThat(((VarRefNode) thirdLet.getExpr().getRoot()).getDefnDecl())
-        .isEqualTo(secondLet.getVar());
+        .isSameAs(secondLet.getVar());
   }
 
   @Test
@@ -183,14 +181,14 @@ public final class ResolveNamesPassTest {
   }
 
   @Test
-  public void testLetContentSlotLifetime() {
+  public void testLetContentNameLifetime() {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
                     "{let $a kind=\"text\"}",
                     "  {if true}", // introduce an extra scope
-                    "    {let $b: 2 /}",
-                    "    {$b}",
+                    "    {let $a: 2 /}", // its kind of weird that we allow this
+                    "    {$a}",
                     "  {/if}",
                     "{/let}",
                     "{$a}"))
@@ -198,13 +196,14 @@ public final class ResolveNamesPassTest {
             .fileSet();
     runPass(soyTree);
     TemplateNode n = soyTree.getChild(0).getChild(0);
-    // 1 because each new $la binding overwrites the prior one
-    assertThat(n.getMaxLocalVariableTableSize()).isEqualTo(2);
     LetContentNode aLetNode = (LetContentNode) n.getChild(0);
-    assertThat(aLetNode.getVar().localVariableIndex()).isEqualTo(1);
-    LetValueNode bLetNode =
-        (LetValueNode) ((IfCondNode) ((IfNode) aLetNode.getChild(0)).getChild(0)).getChild(0);
-    assertThat(bLetNode.getVar().localVariableIndex()).isEqualTo(0);
+    VarRefNode aVarRef = (VarRefNode) ((PrintNode) n.getChild(1)).getExpr().getRoot();
+    assertThat(aVarRef.getDefnDecl()).isSameAs(aLetNode.getVar());
+
+    IfCondNode ifNode = (IfCondNode) ((IfNode) aLetNode.getChild(0)).getChild(0);
+    LetValueNode innerALetNode = (LetValueNode) ifNode.getChild(0);
+    VarRefNode innerAVarRef = (VarRefNode) ((PrintNode) ifNode.getChild(1)).getExpr().getRoot();
+    assertThat(innerAVarRef.getDefnDecl()).isSameAs(innerALetNode.getVar());
   }
 
 

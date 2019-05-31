@@ -95,7 +95,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
-import com.google.template.soy.soytree.defn.LoopVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.MapType;
@@ -746,7 +745,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     int localVarIndex;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      localVarIndex = env.getIndex((LoopVar) dataRef.getDefnDecl());
+      localVarIndex = env.getIndex(dataRef.getDefnDecl());
     } catch (Exception e) {
       throw RenderException.create(
           "Failed to evaluate function call " + node.toSourceString() + ".", e);
@@ -759,7 +758,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     boolean isLast;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      isLast = env.isLast((LoopVar) dataRef.getDefnDecl());
+      isLast = env.isLast(dataRef.getDefnDecl());
     } catch (Exception e) {
       throw RenderException.create(
           "Failed to evaluate function call " + node.toSourceString() + ".", e);
@@ -772,7 +771,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     int localVarIndex;
     try {
       VarRefNode dataRef = (VarRefNode) node.getChild(0);
-      localVarIndex = env.getIndex((LoopVar) dataRef.getDefnDecl());
+      localVarIndex = env.getIndex(dataRef.getDefnDecl());
     } catch (Exception e) {
       throw RenderException.create(
           "Failed to evaluate function call " + node.toSourceString() + ".", e);
