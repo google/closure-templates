@@ -28,7 +28,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_NUMBER;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_UNSANITIZED_TEXT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VELOG;
@@ -133,28 +132,8 @@ public final class JsType {
   private static final JsType NUMBER_TYPE =
       builder().addType("number").setPredicate(GOOG_IS_NUMBER).build();
 
-  /**
-   * The correct JsType for the soy {@code string} type is {@link #STRING_OR_UNSANITIZED_TEXT},
-   * since the Soy runtime explicitly annotates some strings as being unsanitized. This type exists
-   * for the rare situations where the UnsanitizedText union is not useful, such as in map keys.
-   */
   private static final JsType STRING_TYPE =
       builder().addType("string").setPredicate(GOOG_IS_STRING).build();
-
-  // TODO(lukes): does idom need a custom one that excludes sanitized content?
-  private static final JsType STRING_OR_UNSANITIZED_TEXT =
-      builder()
-          // TODO(lukes): should this contain unsanitized text?
-          .addType("string")
-          .addType("!goog.soy.data.UnsanitizedText")
-          .addRequire(GoogRequire.create("goog.soy.data.UnsanitizedText"))
-          .setPredicate(
-              (value, codeGenerator) ->
-                  Optional.of(
-                      GOOG_IS_STRING
-                          .call(value)
-                          .or(value.instanceOf(GOOG_SOY_DATA_UNSANITIZED_TEXT), codeGenerator)))
-          .build();
 
   private static final JsType RAW_ARRAY_TYPE =
       builder().addType("!Array").setPredicate(GOOG_IS_ARRAY).build();
@@ -301,7 +280,7 @@ public final class JsType {
         return NUMBER_TYPE;
 
       case STRING:
-        return STRING_OR_UNSANITIZED_TEXT;
+        return STRING_TYPE;
 
       case ATTRIBUTES:
         if (isIncrementalDom) {
@@ -590,8 +569,6 @@ public final class JsType {
         // We allow string or unsanitized type to be passed where a sanitized type is specified - it
         // just means that the text will be escaped.
         builder.addType("string");
-        builder.addType("!goog.soy.data.UnsanitizedText");
-        builder.addRequire(GoogRequire.create("goog.soy.data.UnsanitizedText"));
       }
     }
     // add extra alternate types
