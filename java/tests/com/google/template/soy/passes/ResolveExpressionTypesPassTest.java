@@ -114,6 +114,7 @@ public final class ResolveExpressionTypesPassTest {
                     "{assertType('list<int>|null', $pd)}",
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .desugarHtmlAndStateNodes(false)
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -171,6 +172,7 @@ public final class ResolveExpressionTypesPassTest {
                     "</div>"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
+            .desugarHtmlAndStateNodes(false)
             .parse()
             .fileSet();
     assertTypes(soyTree);

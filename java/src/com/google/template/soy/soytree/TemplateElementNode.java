@@ -36,8 +36,7 @@ import javax.annotation.Nullable;
 public final class TemplateElementNode extends TemplateNode implements ExprHolderNode {
 
   /** The state variables from template header. */
-  private final ImmutableList<TemplateStateVar> stateVars;
-
+  private ImmutableList<TemplateStateVar> stateVars;
   /**
    * Main constructor. This is package-private because TemplateElementNode instances should be built
    * using TemplateElementNodeBuilder.
@@ -54,6 +53,14 @@ public final class TemplateElementNode extends TemplateNode implements ExprHolde
       ImmutableList<TemplateStateVar> stateVars) {
     super(nodeBuilder, "element", soyFileHeaderInfo, Visibility.PUBLIC, params);
     this.stateVars = stateVars;
+  }
+
+  /**
+   * This exists as part of the work in DesugarStateNodesPass to downlevel @state to @let. As part
+   * of that, all state nodes should be cleared.
+   */
+  public void clearStateVars() {
+    this.stateVars = ImmutableList.of();
   }
 
   /**

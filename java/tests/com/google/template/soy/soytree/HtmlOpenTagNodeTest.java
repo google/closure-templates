@@ -62,7 +62,7 @@ public final class HtmlOpenTagNodeTest {
             .join("{namespace ns}", "{template .t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         SoyFileSetParserBuilder.forFileContents(soyFile)
-            .desugarHtmlNodes(false)
+            .desugarHtmlAndStateNodes(false)
             .parse()
             .fileSet()
             .getChild(0);

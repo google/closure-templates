@@ -67,7 +67,7 @@ public final class SoyFileSetParserBuilder {
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
-  private boolean desugarHtmlNodes = true;
+  private boolean desugarHtmlAndStateNodes = true;
   // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
   // for incrementaldomsrc, not tests.
@@ -219,8 +219,8 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder desugarHtmlNodes(boolean desugarHtmlNodes) {
-    this.desugarHtmlNodes = desugarHtmlNodes;
+  public SoyFileSetParserBuilder desugarHtmlAndStateNodes(boolean desugarHtmlAndStateNodes) {
+    this.desugarHtmlAndStateNodes = desugarHtmlAndStateNodes;
     return this;
   }
 
@@ -283,7 +283,7 @@ public final class SoyFileSetParserBuilder {
         .setSoyPrintDirectiveMap(soyPrintDirectiveMap)
         .setErrorReporter(errorReporter)
         .setTypeRegistry(typeRegistry)
-        .desugarHtmlNodes(desugarHtmlNodes)
+        .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)
         .setPluginResolver(

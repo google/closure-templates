@@ -700,6 +700,7 @@ public final class SoyFileSet {
                 passManagerBuilder()
                     .allowUnknownGlobals()
                     .allowV1Expression()
+                    .desugarHtmlAndStateNodes(false)
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                     // TODO(lukes): consider changing this to pass a null resolver instead of the
                     // ALLOW_UNDEFINED mode
@@ -902,7 +903,10 @@ public final class SoyFileSet {
     // and constants. For consistency/reusability of templates it would be nice to not allow that
     // but the cat is out of the bag.
     PassManager.Builder builder =
-        passManagerBuilder().allowUnknownGlobals().allowV1Expression().desugarHtmlNodes(false);
+        passManagerBuilder()
+            .allowUnknownGlobals()
+            .allowV1Expression()
+            .desugarHtmlAndStateNodes(false);
     ParseResult result = parse(builder);
     throwIfErrorsPresent();
     TemplateRegistry registry = result.registry();
@@ -927,7 +931,7 @@ public final class SoyFileSet {
   public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
     resetErrorReporter();
     // For incremental dom backend, we don't desugar HTML nodes since it requires HTML context.
-    ParseResult result = parse(passManagerBuilder().desugarHtmlNodes(false));
+    ParseResult result = parse(passManagerBuilder().desugarHtmlAndStateNodes(false));
     throwIfErrorsPresent();
     List<String> generatedSrcs =
         new IncrementalDomSrcMain(scopedData.enterable(), typeRegistry)

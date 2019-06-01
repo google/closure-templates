@@ -269,7 +269,7 @@ public final class VeLogInstrumentationVisitorTest {
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(soyFile)
             // Disable desguaring pass and manually run it later
-            .desugarHtmlNodes(false)
+            .desugarHtmlAndStateNodes(false)
             .typeRegistry(
                 new SoyTypeRegistry.Builder()
                     .addDescriptors(

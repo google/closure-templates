@@ -117,7 +117,7 @@ public final class PassManager {
     private boolean allowUnknownGlobals;
     private boolean allowV1Expression;
     private boolean disableAllTypeChecking;
-    private boolean desugarHtmlNodes = true;
+    private boolean desugarHtmlAndStateNodes = true;
     private boolean optimize = true;
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
@@ -190,8 +190,8 @@ public final class PassManager {
      *
      * <p>The default is {@code true}.
      */
-    public Builder desugarHtmlNodes(boolean desugarHtmlNodes) {
-      this.desugarHtmlNodes = desugarHtmlNodes;
+    public Builder desugarHtmlAndStateNodes(boolean desugarHtmlAndStateNodes) {
+      this.desugarHtmlAndStateNodes = desugarHtmlAndStateNodes;
       return this;
     }
 
@@ -359,10 +359,11 @@ public final class PassManager {
       // These tend to simplify or canonicalize the tree in order to simplify the task of code
       // generation.
 
-      if (desugarHtmlNodes) {
+      if (desugarHtmlAndStateNodes) {
         // always desugar before the end since the backends (besides incremental dom) cannot handle
         // the nodes.
         addPass(new DesugarHtmlNodesPass(), crossTemplateCheckingPassesBuilder);
+        addPass(new DesugarStateNodesPass(), crossTemplateCheckingPassesBuilder);
       }
       // TODO(lukes): there should only be one way to disable the optimizer, not 2
       if (optimize && options.isOptimizerEnabled()) {
@@ -371,6 +372,7 @@ public final class PassManager {
       // DesugarHtmlNodesPass may chop up RawTextNodes, and OptimizationPass may produce additional
       // RawTextNodes. Stich them back together here.
       addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
+
       building = false;
       if (!passContinuationRegistry.isEmpty()) {
         throw new IllegalStateException(

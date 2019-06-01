@@ -645,7 +645,7 @@ public final class StrictHtmlValidationPassTest {
         // Tests in this suite run the new Strict HTML Validation passes manually.
         .addPassContinuationRule(
             StrictHtmlValidationPass.class, PassContinuationRule.STOP_BEFORE_PASS)
-        .desugarHtmlNodes(false)
+        .desugarHtmlAndStateNodes(false)
         .errorReporter(ErrorReporter.createForTest())
         .parse()
         .fileSet()
