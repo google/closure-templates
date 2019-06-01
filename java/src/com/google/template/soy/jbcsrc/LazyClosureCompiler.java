@@ -65,7 +65,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -538,13 +537,6 @@ final class LazyClosureCompiler {
     @Override
     public FieldRef getParamField(TemplateParam param) {
       return parentParameterLookup.getParamField(param);
-    }
-
-    @Override
-    public SoyExpression getState(TemplateStateVar stateVar) {
-      // We can always just access the parent directly instead of capturing because these are simple
-      // expressions or static field references.
-      return parentParameterLookup.getState(stateVar);
     }
 
     @Override

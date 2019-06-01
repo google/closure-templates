@@ -25,7 +25,6 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 
 /**
  * An abstract base class that adds extra visitor methods for unpacking varrefs and functions based
@@ -64,8 +63,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       case PARAM:
         return visitParam(node, (TemplateParam) defn);
       case STATE:
-        // State is inlined since it is always a constant
-        return visitStateNode(node, (TemplateStateVar) defn);
+        throw new AssertionError("state should have been desugared");
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
     }
@@ -121,10 +119,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   T visitParam(VarRefNode varRef, TemplateParam param) {
     return visitExprNode(varRef);
-  }
-
-  T visitStateNode(VarRefNode node, TemplateStateVar state) {
-    return visitExprNode(node);
   }
 
   T visitIsFirstFunction(FunctionNode node) {

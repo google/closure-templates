@@ -60,13 +60,11 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -262,18 +260,12 @@ final class TemplateCompiler {
         new TemplateVariableManager(fields, thisVar, template.renderMethod().method());
     // TODO(lukes): this is wrong. The constantCompiler should not use the TemplateVariableManager
     // since their code isn't generated in the render method.
-    ImmutableMap<TemplateStateVar, SoyExpression> stateInitializers = ImmutableMap.of();
     BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(variableSet, fields, reporter, soyTypeRegistry);
-    if (templateNode instanceof TemplateElementNode) {
-      stateInitializers =
-          generateStateInitializers((TemplateElementNode) templateNode, constantCompiler);
-    }
     ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers =
         generateDefaultParamInitializers(templateNode, constantCompiler);
     TemplateVariables variables =
-        new TemplateVariables(
-            variableSet, thisVar, stateInitializers, new RenderContextExpression(contextVar));
+        new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 registry,
@@ -306,20 +298,8 @@ final class TemplateCompiler {
     return defaultParamInitializers;
   }
 
-  private ImmutableMap<TemplateStateVar, SoyExpression> generateStateInitializers(
-      TemplateElementNode node,
-      BasicExpressionCompiler constantCompiler) {
-    ImmutableMap.Builder<TemplateStateVar, SoyExpression> builder = ImmutableMap.builder();
-    for (TemplateStateVar state : node.getStateVars()) {
-      SoyExpression stateValue = getDefaultValueVarRef(state, constantCompiler);
-      builder.put(state, stateValue);
-    }
-    return builder.build();
-  }
-
   private ImmutableMap<TemplateParam, SoyExpression> generateDefaultParamInitializers(
-      TemplateNode template,
-      BasicExpressionCompiler constantCompiler) {
+      TemplateNode template, BasicExpressionCompiler constantCompiler) {
     ImmutableMap.Builder<TemplateParam, SoyExpression> params = ImmutableMap.builder();
     for (TemplateParam param : template.getParams()) {
       if (param.hasDefault()) {
@@ -429,17 +409,14 @@ final class TemplateCompiler {
     private final TemplateVariableManager variableSet;
     private final Expression thisRef;
     private final RenderContextExpression renderContext;
-    private final ImmutableMap<TemplateStateVar, SoyExpression> stateVars;
 
     TemplateVariables(
         TemplateVariableManager variableSet,
         Expression thisRef,
-        ImmutableMap<TemplateStateVar, SoyExpression> stateVars,
         RenderContextExpression renderContext) {
       this.variableSet = variableSet;
       this.thisRef = thisRef;
       this.renderContext = renderContext;
-      this.stateVars = stateVars;
     }
 
     @Override
@@ -464,11 +441,6 @@ final class TemplateCompiler {
         ijField = fields.addFinalField(IJ_FIELD, BytecodeUtils.SOY_RECORD_TYPE).asNonNull();
       }
       return ijField;
-    }
-
-    @Override
-    public SoyExpression getState(TemplateStateVar stateVar) {
-      return stateVars.get(stateVar);
     }
 
     @Override

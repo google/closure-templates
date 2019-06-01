@@ -59,7 +59,6 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
@@ -147,11 +146,6 @@ public class ExpressionCompilerTest {
 
             @Override
             public Expression getParamsRecord() {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public SoyExpression getState(TemplateStateVar stateVar) {
               throw new UnsupportedOperationException();
             }
 

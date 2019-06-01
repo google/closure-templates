@@ -87,7 +87,6 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -350,11 +349,6 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitGlobalNode(GlobalNode node) {
       return visit(node.getValue());
-    }
-
-    @Override
-    final SoyExpression visitStateNode(VarRefNode node, TemplateStateVar state) {
-      return parameters.getState(state);
     }
 
     // Collection literals
@@ -1212,11 +1206,6 @@ final class ExpressionCompiler {
     @Override
     protected Boolean visitDataAccessNode(DataAccessNode node) {
       return true;
-    }
-
-    @Override
-    Boolean visitStateNode(VarRefNode node, TemplateStateVar state) {
-      return false;
     }
 
     @Override
