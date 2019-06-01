@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -260,18 +259,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** If the template is using strict html mode. */
   private final boolean strictHtml;
 
-  /** The params from template header or SoyDoc. */
-  private final ImmutableList<TemplateParam> params;
-
-  /** The injected params from template header. */
-  private ImmutableList<TemplateParam> injectedParams;
-
   private int maxLocalVariableTableSize = -1;
 
   // TODO(b/19406885): Remove.
   private final String commandText;
 
   private final SourceLocation openTagLocation;
+
+  private ImmutableList<TemplateHeaderVarDefn> headerParams;
 
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
@@ -288,8 +283,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       String cmdName,
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
-      @Nullable ImmutableList<TemplateParam> params) {
+      ImmutableList<TemplateHeaderVarDefn> params) {
     super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
+    checkNotNull(params);
+    this.headerParams = params == null ? ImmutableList.of() : params;
     this.soyFileHeaderInfo = soyFileHeaderInfo;
     this.templateName = nodeBuilder.getTemplateName();
     this.partialTemplateName = nodeBuilder.getPartialTemplateName();
@@ -301,21 +298,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.soyDoc = nodeBuilder.getSoyDoc();
     this.soyDocDesc = nodeBuilder.getSoyDocDesc();
     this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlDisabled());
-    // Split out @inject params into a separate list because we don't want them
-    // to be visible to code that looks at the template's calling signature.
-    ImmutableList.Builder<TemplateParam> regularParams = ImmutableList.builder();
-    ImmutableList.Builder<TemplateParam> injectedParams = ImmutableList.builder();
-    if (params != null) {
-      for (TemplateParam param : params) {
-        if (param.isInjected()) {
-          injectedParams.add(param);
-        } else {
-          regularParams.add(param);
-        }
-      }
-    }
-    this.params = regularParams.build();
-    this.injectedParams = injectedParams.build();
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
   }
@@ -327,6 +309,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    */
   protected TemplateNode(TemplateNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.headerParams = copyParams(orig.headerParams, copyState);
     this.soyFileHeaderInfo = orig.soyFileHeaderInfo.copy();
     this.templateName = orig.templateName;
     this.partialTemplateName = orig.partialTemplateName;
@@ -337,19 +320,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.cssBaseNamespace = orig.cssBaseNamespace;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
-    this.params = copyParams(orig.params, copyState);
-    this.injectedParams = copyParams(orig.injectedParams, copyState);
     this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.openTagLocation = orig.openTagLocation;
   }
 
-  private static ImmutableList<TemplateParam> copyParams(
-      ImmutableList<TemplateParam> orig, CopyState copyState) {
-    ImmutableList.Builder<TemplateParam> newParams = ImmutableList.builder();
-    for (TemplateParam prev : orig) {
-      TemplateParam next = prev.copy();
+  private static ImmutableList<TemplateHeaderVarDefn> copyParams(
+      ImmutableList<TemplateHeaderVarDefn> orig, CopyState copyState) {
+    ImmutableList.Builder<TemplateHeaderVarDefn> newParams = ImmutableList.builder();
+    for (TemplateHeaderVarDefn prev : orig) {
+      TemplateHeaderVarDefn next = prev.copy();
       newParams.add(next);
       copyState.updateRefs(prev, next);
     }
@@ -479,19 +460,51 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return soyDocDesc;
   }
 
+  /**
+   * This exists as part of the work in DesugarStateNodesPass to downlevel @state to @let. As part
+   * of that, all state nodes should be cleared.
+   */
+  public void clearStateVars() {
+    ImmutableList.Builder<TemplateHeaderVarDefn> builder = ImmutableList.builder();
+    for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
+      if (header instanceof TemplateParam) {
+        builder.add(header);
+      }
+    }
+    this.headerParams = builder.build();
+  }
+
   /** Returns the params from template header. */
   public ImmutableList<TemplateParam> getParams() {
-    return params;
+    ImmutableList.Builder<TemplateParam> builder = ImmutableList.builder();
+    for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
+      if (header instanceof TemplateParam && !header.isInjected()) {
+        builder.add((TemplateParam) header);
+      }
+    }
+    return builder.build();
   }
 
   /** Returns the injected params from template header. */
   public ImmutableList<TemplateParam> getInjectedParams() {
-    return injectedParams;
+    ImmutableList.Builder<TemplateParam> builder = ImmutableList.builder();
+    for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
+      if (header instanceof TemplateParam && header.isInjected()) {
+        builder.add((TemplateParam) header);
+      }
+    }
+    return builder.build();
   }
 
   /** Returns all params from template header, both regular and injected. */
   public Iterable<TemplateParam> getAllParams() {
-    return Iterables.concat(params, injectedParams);
+    ImmutableList.Builder<TemplateParam> builder = ImmutableList.builder();
+    for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
+      if (header instanceof TemplateParam) {
+        builder.add((TemplateParam) header);
+      }
+    }
+    return builder.build();
   }
 
   @Override
@@ -507,7 +520,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
-    for (TemplateParam param : getParams()) {
+    for (TemplateHeaderVarDefn param : getParams()) {
       ExprRootNode defaultValue = param.defaultValue();
       if (defaultValue != null) {
         exprs.add(defaultValue);
@@ -517,15 +530,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   public void addCspNonceParam(TemplateParam cspNonce) {
-    injectedParams =
-        ImmutableList.<TemplateParam>builder().addAll(injectedParams).add(cspNonce).build();
+    headerParams =
+        ImmutableList.<TemplateHeaderVarDefn>builder().addAll(headerParams).add(cspNonce).build();
   }
 
-  protected ImmutableList<? extends TemplateHeaderVarDefn> getHeaderParamsForSourceString() {
-    return new ImmutableList.Builder<TemplateHeaderVarDefn>()
-        .addAll(params)
-        .addAll(injectedParams)
-        .build();
+  public ImmutableList<TemplateHeaderVarDefn> getHeaderParams() {
+    return this.headerParams;
   }
 
   @Override
@@ -540,7 +550,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     // Begin tag.
     sb.append(getTagString()).append("\n");
 
-    appendHeaderVarDecl(getHeaderParamsForSourceString(), sb);
+    appendHeaderVarDecl(getHeaderParams(), sb);
 
     // Body.
     // If first or last char of template body is a space, must be turned into '{sp}'.

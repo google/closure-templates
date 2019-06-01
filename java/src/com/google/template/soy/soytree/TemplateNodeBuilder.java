@@ -32,7 +32,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -54,8 +54,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
               + "Use '{@param}' in the template header instead.");
   private static final SoyErrorKind INVALID_PARAM_NAMED_IJ =
       SoyErrorKind.of("Invalid param name ''ij'' (''ij'' is for injected data).");
+  // TODO: Print out which line contained the declared variable.
   private static final SoyErrorKind PARAM_ALREADY_DECLARED =
-      SoyErrorKind.of("Param ''{0}'' already declared.");
+      SoyErrorKind.of("''{0}'' already declared.");
 
   /** Info from the containing Soy file's header declarations. */
   protected final SoyFileHeaderInfo soyFileHeaderInfo;
@@ -105,7 +106,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   protected String soyDocDesc;
 
   /** The params from template header. Null if no decls. */
-  @Nullable protected ImmutableList<TemplateParam> params;
+  @Nullable protected ImmutableList<TemplateHeaderVarDefn> params;
 
   protected boolean strictHtmlDisabled;
 
@@ -211,30 +212,22 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return (T) this;
   }
 
-  /**
-   * This method is intended to be called at most once for header params.
-   *
-   * @param newParams The params to add.
-   */
-  public T addParams(Iterable<? extends TemplateParam> newParams) {
-
-    Set<String> seenParamKeys = new HashSet<>();
-    if (this.params == null) {
-      this.params = ImmutableList.copyOf(newParams);
-    } else {
-      for (TemplateParam oldParam : this.params) {
-        seenParamKeys.add(oldParam.name());
-      }
-      this.params =
-          ImmutableList.<TemplateParam>builder().addAll(this.params).addAll(newParams).build();
-    }
+  /** This method is intended to be called at most once for header params. */
+  public T addVarDefns(Iterable<? extends TemplateHeaderVarDefn> varDefns) {
+    Preconditions.checkState(this.params == null);
+    Set<String> seenVarDefns = new HashSet<>();
+    this.params = ImmutableList.copyOf(varDefns);
 
     // Check new params.
-    for (TemplateParam param : newParams) {
+    for (TemplateHeaderVarDefn param : varDefns) {
+      // TODO(lukes): delete this error sometime in 2020.  There is no reason to disallow params
+      // with this name any more other than the fact that it might confuse an author.  Waiting a
+      // year should ensure that most authors have realized that $ij vars no longer work the way
+      // they used to
       if (param.name().equals("ij")) {
         errorReporter.report(param.nameLocation(), INVALID_PARAM_NAMED_IJ);
       }
-      if (!seenParamKeys.add(param.name())) {
+      if (!seenVarDefns.add(param.name())) {
         errorReporter.report(param.nameLocation(), PARAM_ALREADY_DECLARED, param.name());
       }
     }

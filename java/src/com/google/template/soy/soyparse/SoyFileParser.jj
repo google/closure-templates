@@ -1711,10 +1711,9 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
 {
   Token tok;
   TemplateHeaderVarDefn param;
-  List<TemplateParam> params = ImmutableList.of();
+  List<TemplateHeaderVarDefn> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
-  List<TemplateStateVar> stateVars = ImmutableList.of();
 
 }
 {
@@ -1743,16 +1742,16 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
             whitespace = null;
             soyDoc = null;
             if (params.isEmpty()) {
-              params = new ArrayList<TemplateParam>();
+              params = new ArrayList<TemplateHeaderVarDefn>();
             }
             params.add((TemplateParam) param);
             break;
           case STATE:
+            if (params.isEmpty()) {
+              params = new ArrayList<TemplateHeaderVarDefn>();
+            }
             if (allowState) {
-              if (stateVars.isEmpty()) {
-                stateVars = new ArrayList<TemplateStateVar>();
-              }
-              stateVars.add((TemplateStateVar) param);
+              params.add(param);
             } else {
               errorReporter.report(param.nameLocation(), STATE_IN_TEMPLATE);
             }
@@ -1766,10 +1765,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean 
   )*
 
   {
-    templateBuilder.addParams(params);
-    if (allowState) {
-      ((TemplateElementNodeBuilder) templateBuilder).setStateVars(stateVars);
-    }
+    templateBuilder.addVarDefns(params);
     return whitespace;
   }
 }

@@ -28,7 +28,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import javax.annotation.Nullable;
 
 /**
@@ -86,7 +86,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       String delTemplateName,
       @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
-      ImmutableList<TemplateParam> params) {
+      ImmutableList<TemplateHeaderVarDefn> params) {
 
     super(
         nodeBuilder,

@@ -16,24 +16,17 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Builder for TemplateElementNode.
@@ -44,9 +37,6 @@ import java.util.Set;
 public final class TemplateElementNodeBuilder
     extends TemplateNodeBuilder<TemplateElementNodeBuilder> {
 
-  private static final SoyErrorKind DUPLICATE_DECLARATION =
-      SoyErrorKind.of("Param ''{0}'' is a duplicate of state var ''{0}''.");
-
   protected static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
       ImmutableSet.of("autoescape", "kind", "stricthtml", "visibility");
 
@@ -54,9 +44,6 @@ public final class TemplateElementNodeBuilder
       SoyErrorKind.of("Attribute ''{0}'' is not allowed on Soy elements.");
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
-
-  /** The state variables from template header. */
-  private ImmutableList<TemplateStateVar> stateVars = ImmutableList.of();
 
   /** @param soyFileHeaderInfo Info from the containing Soy file's header declarations. */
   public TemplateElementNodeBuilder(
@@ -77,19 +64,6 @@ public final class TemplateElementNodeBuilder
     return this;
   }
 
-  public TemplateElementNodeBuilder setStateVars(List<TemplateStateVar> newStateVars) {
-    this.stateVars = ImmutableList.copyOf(newStateVars);
-    checkDuplicateHeaderVars(params, stateVars, errorReporter);
-    return this;
-  }
-
-  @Override
-  public TemplateElementNodeBuilder addParams(Iterable<? extends TemplateParam> allParams) {
-    super.addParams(allParams);
-    checkDuplicateHeaderVars(params, stateVars, errorReporter);
-    return this;
-  }
-
   @Override
   public TemplateElementNode build() {
     Preconditions.checkState(id != null && cmdText != null);
@@ -99,35 +73,6 @@ public final class TemplateElementNodeBuilder
             this.sourceLocation, BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
       }
     }
-    return new TemplateElementNode(this, soyFileHeaderInfo, params, stateVars);
-  }
-
-  /**
-   * Check for duplicate header variable names and append error text for each duplicate to the
-   * `errorReporter`. For example, this is an error:
-   *
-   * <pre>{@code
-   * {@param s: bool}
-   * {@state s: bool}
-   * }</pre>
-   *
-   * Note that it is not possible to have duplicate names of the same declaration type. Any
-   * duplicate {@code @state} or {@code @param} will have been flagged as error during the resolve-
-   * names pass or in {@link #addParams(Iterable)}.
-   */
-  @VisibleForTesting
-  static void checkDuplicateHeaderVars(
-      ImmutableList<? extends TemplateHeaderVarDefn> params,
-      ImmutableList<? extends TemplateHeaderVarDefn> stateVars,
-      ErrorReporter errorReporter) {
-
-    final Set<String> stateVarNames =
-        stateVars.stream().map(TemplateHeaderVarDefn::name).collect(toImmutableSet());
-
-    Iterable<? extends TemplateHeaderVarDefn> duplicateVars =
-        Iterables.filter(params, param -> stateVarNames.contains(param.name()));
-    for (TemplateHeaderVarDefn duplicateVar : duplicateVars) {
-      errorReporter.report(duplicateVar.nameLocation(), DUPLICATE_DECLARATION, duplicateVar.name());
-    }
+    return new TemplateElementNode(this, soyFileHeaderInfo, params);
   }
 }

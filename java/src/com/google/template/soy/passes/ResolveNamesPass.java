@@ -39,9 +39,9 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
@@ -136,15 +136,9 @@ public final class ResolveNamesPass extends CompilerFilePass {
       // Create a scope for all parameters.
       localVariables = new LocalVariables();
       localVariables.enterScope();
-
-      // Add both injected and regular params to the param scope.
-      for (TemplateParam param : node.getAllParams()) {
+      // Add all header params to the param scope.
+      for (TemplateHeaderVarDefn param : node.getHeaderParams()) {
         localVariables.define(param, node);
-      }
-      if (node instanceof TemplateElementNode) {
-        for (TemplateStateVar stateVar : ((TemplateElementNode) node).getStateVars()) {
-          localVariables.define(stateVar, node);
-        }
       }
 
       visitSoyNode(node);

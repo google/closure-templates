@@ -86,7 +86,7 @@ public class TemplateNodeTest {
             + "{/template}",
         errorReporter);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Param 'foo' already declared.");
+        .isEqualTo("'foo' already declared.");
   }
 
   @Test

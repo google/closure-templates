@@ -23,7 +23,6 @@ import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
@@ -102,7 +101,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -273,11 +271,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
     protected void visitTemplateNode(TemplateNode node) {
       // need to visit expressions first so parameters with inferred types have their expressions
       // analyzed
-      List<TemplateHeaderVarDefn> headerVars = Lists.newArrayList(node.getParams());
-      if (node.getKind() == SoyNode.Kind.TEMPLATE_ELEMENT_NODE) {
-        headerVars.addAll(((TemplateElementNode) node).getStateVars());
-      }
-
+      List<TemplateHeaderVarDefn> headerVars = node.getHeaderParams();
       // If the default value expressions are not constant, they could reference another default
       // value parameter, which won't work because it's looking up the type of the parameter when it
       // hasn't been inferred yet.  So report an error and override the type to be the errortype
