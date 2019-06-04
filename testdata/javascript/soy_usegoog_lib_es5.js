@@ -6153,9 +6153,6 @@ soy.checks.isTrustedResourceURI = function(value) {
 soy.checks.isURI = function(value) {
   return soy.checks.isContentKind_(value, goog.soy.data.SanitizedContentKind.URI, goog.soy.data.SanitizedUri);
 };
-soy.checks.isText = function(value) {
-  return soy.checks.isContentKind_(value, goog.soy.data.SanitizedContentKind.TEXT, goog.soy.data.UnsanitizedText);
-};
 soy.map = {};
 var module$contents$soy$map_SoyMap = function() {
 };
@@ -6173,9 +6170,6 @@ soy.map.$$mapToLegacyObjectMap = function(map) {
     obj[(0,goog.asserts.assertString)(k)] = v;
   }
   return obj;
-};
-soy.map.$$maybeCoerceKeyToString = function(key) {
-  return key instanceof goog.soy.data.UnsanitizedText ? key.toString() : key;
 };
 soy.map.$$populateMap = function(jspbMap, map) {
   for (var $jscomp$iter$1 = $jscomp.makeIterator(map.entries()), $jscomp$key$ = $jscomp$iter$1.next(); !$jscomp$key$.done; $jscomp$key$ = $jscomp$iter$1.next()) {
@@ -6256,9 +6250,6 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
     return new InstantiableCtor(String(content));
   };
 };
-soydata.markUnsanitizedText = function(content) {
-  return new goog.soy.data.UnsanitizedText(content);
-};
 soydata.VERY_UNSAFE.ordainSanitizedHtml = soydata.$$makeSanitizedContentFactory_(goog.soy.data.SanitizedHtml);
 soydata.VERY_UNSAFE.ordainSanitizedJs = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(goog.soy.data.SanitizedJs);
 soydata.VERY_UNSAFE.ordainSanitizedUri = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(goog.soy.data.SanitizedUri);
@@ -6292,9 +6283,7 @@ soy.$$parseInt = function(str) {
   var parsed = parseInt(String(str), 10);
   return isNaN(parsed) ? null : parsed;
 };
-soy.$$equals = function(obj1, obj2) {
-  var valueOne = obj1 instanceof goog.soy.data.UnsanitizedText ? obj1.toString() : obj1;
-  var valueTwo = obj2 instanceof goog.soy.data.UnsanitizedText ? obj2.toString() : obj2;
+soy.$$equals = function(valueOne, valueTwo) {
   return goog.isFunction(valueOne) && goog.isFunction(valueTwo) ? valueOne.contentKind !== valueTwo.contentKind ? !1 : valueOne.toString() === valueTwo.toString() : valueOne instanceof goog.soy.data.SanitizedContent && valueTwo instanceof goog.soy.data.SanitizedContent ? valueOne.contentKind != valueTwo.contentKind ? !1 : valueOne.toString() == valueTwo.toString() : valueOne == valueTwo;
 };
 soy.$$parseFloat = function(str) {
@@ -6367,10 +6356,6 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ = func
     var contentString = String(content);
     return contentString ? new InstantiableCtor(contentString) : soydata.$$EMPTY_STRING_.VALUE;
   };
-};
-soydata.$$markUnsanitizedTextForInternalBlocks = function(content) {
-  var contentString = String(content);
-  return contentString ? new goog.soy.data.UnsanitizedText(contentString) : soydata.$$EMPTY_STRING_.VALUE;
 };
 soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks = soydata.$$makeSanitizedContentFactoryForInternalBlocks_(goog.soy.data.SanitizedHtml);
 soydata.VERY_UNSAFE.$$ordainSanitizedJsForInternalBlocks = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_(goog.soy.data.SanitizedJs);
@@ -6657,7 +6642,7 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
 };
 soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir), isHtml = soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.HTML), wrappedText = formatter.unicodeWrapWithKnownDir(soydata.getContentDir(text), text + "", isHtml), wrappedTextDir = formatter.contextDir_;
-  return soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.TEXT) ? soydata.markUnsanitizedText(wrappedText) : isHtml ? soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir) : wrappedText;
+  return isHtml ? soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir) : wrappedText;
 };
 soy.asserts.assertType = function(condition, paramName, param, jsDocTypeStr) {
   if (goog.asserts.ENABLE_ASSERTS && !condition) {

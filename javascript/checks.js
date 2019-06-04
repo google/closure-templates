@@ -12,7 +12,6 @@ goog.require('goog.soy.data.SanitizedHtmlAttribute');
 goog.require('goog.soy.data.SanitizedJs');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
-goog.require('goog.soy.data.UnsanitizedText');
 
 /**
  * Checks whether a given value is of a given content kind.
@@ -89,14 +88,4 @@ soy.checks.isURI = function(value) {
   return soy.checks.isContentKind_(
       value, goog.soy.data.SanitizedContentKind.URI,
       goog.soy.data.SanitizedUri);
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isText = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.TEXT,
-      goog.soy.data.UnsanitizedText);
 };

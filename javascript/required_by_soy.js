@@ -50,7 +50,6 @@ goog.require('goog.soy.data.SanitizedHtmlAttribute');
 goog.require('goog.soy.data.SanitizedJs');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
-goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
 goog.require('google3.javascript.template.soy.soyutils_idom');
@@ -122,7 +121,6 @@ goog.exportSymbol('goog.soy.data.SanitizedHtmlAttribute', goog.soy.data.Sanitize
 goog.exportSymbol('goog.soy.data.SanitizedJs', goog.soy.data.SanitizedJs);
 goog.exportSymbol('goog.soy.data.SanitizedTrustedResourceUri', goog.soy.data.SanitizedTrustedResourceUri);
 goog.exportSymbol('goog.soy.data.SanitizedUri', goog.soy.data.SanitizedUri);
-goog.exportSymbol('goog.soy.data.UnsanitizedText', goog.soy.data.UnsanitizedText);
 goog.exportSymbol('goog.string.Const', goog.string.Const);
 goog.exportSymbol('goog.string.StringBuffer', goog.string.StringBuffer);
 goog.exportSymbol('goog.string.contains', goog.string.contains);

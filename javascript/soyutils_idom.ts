@@ -22,7 +22,6 @@ import SanitizedHtml from 'goog:goog.soy.data.SanitizedHtml'; // from //javascri
 import SanitizedHtmlAttribute from 'goog:goog.soy.data.SanitizedHtmlAttribute'; // from //javascript/closure/soy:data
 import SanitizedJs from 'goog:goog.soy.data.SanitizedJs'; // from //javascript/closure/soy:data
 import SanitizedUri from 'goog:goog.soy.data.SanitizedUri'; // from //javascript/closure/soy:data
-import UnsanitizedText from 'goog:goog.soy.data.UnsanitizedText'; // from //javascript/closure/soy:data
 import * as googString from 'goog:goog.string';  // from //javascript/closure/string
 import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:checks
@@ -32,9 +31,6 @@ import * as incrementaldom from 'incrementaldom';  // from //third_party/javascr
 import {IncrementalDomRenderer, isMatchingKey} from './api_idom';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
-
-type TextualValue =
-    UnsanitizedText|SanitizedUri|SanitizedJs|string|number|boolean;
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.

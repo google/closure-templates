@@ -26566,7 +26566,6 @@ goog.require('goog.soy.data.SanitizedHtmlAttribute');
 goog.require('goog.soy.data.SanitizedJs');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
-goog.require('goog.soy.data.UnsanitizedText');
 
 /**
  * Checks whether a given value is of a given content kind.
@@ -26645,16 +26644,6 @@ soy.checks.isURI = function(value) {
       goog.soy.data.SanitizedUri);
 };
 
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isText = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.TEXT,
-      goog.soy.data.UnsanitizedText);
-};
-
 //javascript/template/soy/soyutils_map.js
 goog.loadModule(function(exports) {'use strict';/*
  * Copyright 2017 Google Inc.
@@ -26679,7 +26668,6 @@ goog.loadModule(function(exports) {'use strict';/*
 goog.module('soy.map');
 goog.module.declareLegacyNamespace();
 
-const UnsanitizedText = goog.require('goog.soy.data.UnsanitizedText');
 const {assertString} = goog.require('goog.asserts');
 const {shuffle} = goog.require('goog.array');
 
@@ -26787,18 +26775,6 @@ function $$populateMap(jspbMap, map) {
 }
 
 /**
- * SoyMaps, like ES6 Maps and proto maps, allow non-string values as map keys.
- * But UnsanitizedText keys still need to be coerced to strings so that
- * instances with identical textual content are considered identical for map
- * lookups.
- * @param {?} key The key that is being inserted into or looked up in the map.
- * @return {?} The key, coerced to a string if it is an UnsanitizedText object.
- */
-function $$maybeCoerceKeyToString(key) {
-  return key instanceof UnsanitizedText ? key.toString() : key;
-}
-
-/**
  * Determines if the argument matches the soy.map.Map interface.
  * @param {?} map The object to check.
  * @return {boolean} True if it is a soy.map.Map, false otherwise.
@@ -26811,7 +26787,6 @@ function $$isSoyMap(map) {
 
 exports = {
   $$mapToLegacyObjectMap,
-  $$maybeCoerceKeyToString,
   $$populateMap,
   $$getMapKeys,
   $$isSoyMap,
@@ -26937,7 +26912,6 @@ goog.require('goog.soy.data.SanitizedHtmlAttribute');
 goog.require('goog.soy.data.SanitizedJs');
 goog.require('goog.soy.data.SanitizedTrustedResourceUri');
 goog.require('goog.soy.data.SanitizedUri');
-goog.require('goog.soy.data.UnsanitizedText');
 goog.require('goog.string');
 goog.require('goog.string.Const');
 goog.require('soy.checks');
@@ -27155,22 +27129,9 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_ = function(ctor) {
 
 
 // -----------------------------------------------------------------------------
-// Sanitized content ordainers. Please use these with extreme caution (with the
-// exception of markUnsanitizedText). A good recommendation is to limit usage
-// of these to just a handful of files in your source tree where usages can be
-// carefully audited.
-
-
-/**
- * Marks content as UnsanitizedText. This serves no purpose anymore.
- *
- * @param {?} content Text.
- * @param {?goog.i18n.bidi.Dir=} contentDir ignored
- * @return {!goog.soy.data.UnsanitizedText}
- */
-soydata.markUnsanitizedText = function(content, contentDir) {
-  return new goog.soy.data.UnsanitizedText(content);
-};
+// Sanitized content ordainers. Please use these with extreme caution. A good
+// recommendation is to limit usage of these to just a handful of files in your
+// source tree where usages can be carefully audited.
 
 
 /**
@@ -27347,7 +27308,7 @@ soy.$$checkNotNull = function(val) {
 /**
  * Parses the given string into a base 10 integer. Returns null if parse is
  * unsuccessful.
- * @param {?string|!goog.soy.data.UnsanitizedText} str The string to parse
+ * @param {?string} str The string to parse
  * @return {?number} The string parsed as a base 10 integer, or null if
  * unsuccessful
  */
@@ -27359,38 +27320,14 @@ soy.$$parseInt = function(str) {
 /**
  * When equals comparison cannot be expressed using JS runtime semantics for ==,
  * bail out to a runtime function. In practice, this only means comparisons
- * of boolean and number are valid for equals, and everything else needs this
- * function. Even "strings" have to go through this since in some cases they
- * are just strings and in some cases they are UnsanitizedText. In addition,
- * some sanitized content may be functions or objects that need to be coerced
- * to a string.
- * @param {?} obj1
- * @param {?} obj2
+ * of boolean, string and number are valid for equals, and everything else needs
+ * this function. Some sanitized content may be functions or objects that need
+ * to be coerced to a string.
+ * @param {?} valueOne
+ * @param {?} valueTwo
  * @return {boolean}
  */
-soy.$$equals = function(obj1, obj2) {
-  /** @type {?} */
-  var valueOne;
-  /** @type {?} */
-  var valueTwo;
-
-  /**
-   * Convert text to string since that's what it really is. Or just keep it the
-   * same
-   * @param {?} obj
-   * @return {?}
-   */
-  function unsanitizedTextOrObject(obj) {
-    if (obj instanceof goog.soy.data.UnsanitizedText) {
-      return obj.toString();
-    } else {
-      return obj;
-    }
-  }
-
-  valueOne = unsanitizedTextOrObject(obj1);
-  valueTwo = unsanitizedTextOrObject(obj2);
-
+soy.$$equals = function(valueOne, valueTwo) {
   // Incremental DOM functions have to be coerced to a string. At runtime
   // they are tagged with a type for ATTR or HTML. They both need to be
   // the same to be considered structurally equal. Beware, as this is a
@@ -27422,7 +27359,7 @@ soy.$$equals = function(obj1, obj2) {
 
 /**
  * Parses the given string into a float. Returns null if parse is unsuccessful.
- * @param {?string|!goog.soy.data.UnsanitizedText} str The string to parse
+ * @param {?string} str The string to parse
  * @return {?number} The string parsed as a float, or null if unsuccessful.
  */
 soy.$$parseFloat = function(str) {
@@ -27554,10 +27491,9 @@ soy.$$registerDelegateFn = function(
  * true, then returns an implementation that is equivalent to an empty template
  * (i.e. rendered output would be empty string).
  *
- * @param {string|!goog.soy.data.UnsanitizedText} delTemplateId The
- *     delegate template id.
- * @param {string|!goog.soy.data.UnsanitizedText} delTemplateVariant
- *     The delegate template variant (can be empty string).
+ * @param {string} delTemplateId The delegate template id.
+ * @param {string} delTemplateVariant The delegate template variant (can be
+ *     empty string).
  * @param {boolean} allowsEmptyDefault Whether to default to the empty template
  *     function if there's no active implementation.
  * @return {!Function} The retrieved implementation function.
@@ -27713,22 +27649,6 @@ soydata.$$makeSanitizedContentFactoryWithDefaultDirOnlyForInternalBlocks_ =
 
 
 /**
- * Creates kind="text" block contents (internal use only).
- *
- * @param {?} content Text.
- * @return {!goog.soy.data.UnsanitizedText|!soydata.$$EMPTY_STRING_} Wrapped
- *     result.
- */
-soydata.$$markUnsanitizedTextForInternalBlocks = function(content) {
-  var contentString = String(content);
-  if (!contentString) {
-    return soydata.$$EMPTY_STRING_.VALUE;
-  }
-  return new goog.soy.data.UnsanitizedText(contentString);
-};
-
-
-/**
  * Creates kind="html" block contents (internal use only).
  *
  * @param {?} content Text.
@@ -27854,9 +27774,8 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
  * converting entities.
  *
  * The last two parameters are idom functions.
- * @param {(string|?goog.soy.data.SanitizedHtml|?goog.soy.data.UnsanitizedText|
- *     !soydata.IdomFunction|!Function|null|undefined)}
- *     value
+ * @param {string|?goog.soy.data.SanitizedHtml|?soydata.IdomFunction|?Function|
+ *     undefined} value
  * @return {string}
  */
 soy.$$htmlToText = function(value) {
@@ -28891,8 +28810,7 @@ soy.$$bidiSpanWrap = function(bidiGlobalDir, text) {
  *     if rtl, 0 if unknown.
  * @param {?} text The string to be wrapped. Can be other types, but the value
  *     will be coerced to a string.
- * @return {!goog.soy.data.UnsanitizedText|!goog.soy.data.SanitizedHtml|string}
- *     The wrapped string.
+ * @return {!goog.soy.data.SanitizedHtml|string} The wrapped string.
  */
 soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   var formatter = soy.$$getBidiFormatterInstance_(bidiGlobalDir);
@@ -28909,22 +28827,17 @@ soy.$$bidiUnicodeWrap = function(bidiGlobalDir, text) {
   // information - a bidi wrapping directive - has already been run.
   var wrappedTextDir = formatter.getContextDir();
 
-  // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
-  // Unicode-wrapping safe HTML or JS string data gives valid, safe HTML or JS
-  // string data.
+  // Unicode-wrapping safe HTML string data gives valid, safe HTML string data.
   // ATTENTION: Do these need to be ...ForInternalBlocks()?
-  if (soydata.isContentKind_(text, goog.soy.data.SanitizedContentKind.TEXT)) {
-    return soydata.markUnsanitizedText(wrappedText);
-  }
   if (isHtml) {
     return soydata.VERY_UNSAFE.ordainSanitizedHtml(wrappedText, wrappedTextDir);
   }
 
   // Unicode-wrapping does not conform to the syntax of the other types of
-  // content. For lack of anything better to do, we we do not declare a content
+  // content. For lack of anything better to do, we do not declare a content
   // kind at all by falling through to the non-SanitizedContent case below.
   // TODO(user): Consider throwing a runtime error on receipt of
-  // SanitizedContent other than TEXT, HTML, or JS_STR_CHARS.
+  // SanitizedContent other than HTML.
 
   // The input was not SanitizedContent, so our output isn't SanitizedContent
   // either.
