@@ -221,12 +221,12 @@ public final class VeLogInstrumentationVisitorTest {
     SoyFileSetNode node =
         runPass(
             "{velog Bar}<div>"
-                + "<span {call .attr}{param foo : 'data-ved' /}{/call}></span>"
+                + "<span {call .attr}{param foo: 'data-ved' /}{/call}></span>"
                 + "</div>{/velog}"
                 + "{/template}"
                 + ""
                 + "{template .attr kind=\"attributes\"}"
-                + "{@param foo : string}"
+                + "{@param foo: string}"
                 + "{$foo}={currentVed()}");
     StringBuilder sb = new StringBuilder();
     node.getChild(0).getChild(0).appendSourceStringForChildren(sb);
@@ -234,7 +234,7 @@ public final class VeLogInstrumentationVisitorTest {
         .isEqualTo(
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
-                + "<span {call .attr}{param foo : 'data-ved' /}{/call}>"
+                + "<span {call .attr}{param foo: 'data-ved' /}{/call}>"
                 + "</span>"
                 + "</div>"
                 + "{/velog}");

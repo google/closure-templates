@@ -58,7 +58,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   private final MixinParentNode<StandaloneNode> parentMixin;
 
   /** The let node's content kind, or null if no 'kind' attribute was present. */
-  @Nullable private final SanitizedContentKind contentKind;
+  private final SanitizedContentKind contentKind;
 
   public LetContentNode(
       int id,
@@ -112,7 +112,6 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   }
 
   @Override
-  @Nullable
   public SanitizedContentKind getContentKind() {
     return contentKind;
   }

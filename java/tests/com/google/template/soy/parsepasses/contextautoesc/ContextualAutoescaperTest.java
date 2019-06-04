@@ -694,7 +694,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "  {@param? x: ?}\n",
-            "{call .bar}{param world : $x + 1 /}{/call}\n",
+            "{call .bar}{param world: $x + 1 /}{/call}\n",
             "{/template}\n\n",
             "{template .bar}\n",
             "  {@param? world: ?}\n",
@@ -704,7 +704,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "  {@param? x: ?}\n",
-            "{call .bar}{param world : $x + 1 /}{/call}\n",
+            "{call .bar}{param world: $x + 1 /}{/call}\n",
             "{/template}\n\n",
             "{template .bar}\n",
             "  {@param? world: ?}\n",
@@ -1090,7 +1090,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo}\n",
             "{let $src kind=\"trusted_resource_uri\"}/foo.js{/let}",
-            "<script src='{$src |filterTrustedResourceUri |escapeHtmlAttribute}'></script>\n",
+            "<script src='{$src |escapeHtmlAttribute}'></script>\n",
             "{/template}"),
         join(
             "{namespace ns}\n\n",
@@ -2013,6 +2013,59 @@ public final class ContextualAutoescaperTest {
             "{template .main}\n",
             "  {@param p: ?}\n",
             "<div style='url(&quot;{$p}&quot;);'></div>\n",
+            "{/template}"));
+  }
+
+  // Test that certain constructs generate data that we trust at compile time.
+  @Test
+  public void testShortCircuitableDirectives() {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: html}\n",
+            "{let $trusted kind=\"html\"}foo{/let}",
+            // parameters are not currently trusted but local variables are.
+            "{$untrusted |escapeHtml}{$trusted}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: html}\n",
+            "{let $trusted kind=\"html\"}foo{/let}\n",
+            "{$untrusted}{$trusted}\n",
+            "{/template}"));
+
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: html}\n",
+            "{call .sub}{param trusted kind=\"html\"}foo{/param}{/call}",
+            "{call .sub2}{param untrusted: $untrusted /}{/call}\n",
+            "{/template}\n\n",
+            "{template .sub visibility=\"private\"}\n",
+            "  {@param trusted: html}\n",
+            "{$trusted}\n",
+            "{/template}\n\n",
+            "{template .sub2 visibility=\"private\"}\n",
+            "  {@param untrusted: html}\n",
+            "{$untrusted |escapeHtml}\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: html}\n",
+            "{call .sub}{param trusted kind=\"html\"}foo{/param}{/call}",
+            "{call .sub2}{param untrusted: $untrusted /}{/call}\n",
+            "{/template}\n\n",
+            "{template .sub visibility=\"private\"}\n",
+            "  {@param trusted: html}\n",
+            "{$trusted}\n",
+            "{/template}\n\n",
+            "{template .sub2 visibility=\"private\"}\n",
+            "  {@param untrusted: html}\n",
+            "{$untrusted}\n",
             "{/template}"));
   }
 

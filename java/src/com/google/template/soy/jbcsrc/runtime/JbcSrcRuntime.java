@@ -56,7 +56,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
-import com.google.template.soy.shared.internal.ShortCircuitable;
+import com.google.template.soy.shared.internal.ShortCircuitables;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.Closeable;
@@ -243,27 +243,12 @@ public final class JbcSrcRuntime {
       CompiledTemplate delegate, ImmutableList<SoyJavaPrintDirective> directives) {
     checkState(!directives.isEmpty());
     ContentKind kind = delegate.kind();
-    if (canSkipEscaping(directives, kind)) {
+    directives = ShortCircuitables.filterDirectivesForKind(kind, directives);
+    if (directives.isEmpty()) {
+      // everything was filtered, common for for delcalls from compatible contexts (html -> html)
       return delegate;
     }
     return new EscapedCompiledTemplate(delegate, directives, kind);
-  }
-
-  /**
-   * Identifies some cases where the combination of directives and content kind mean we can skip
-   * applying the escapers. This is an opportunistic optimization, it is possible that we will fail
-   * to skip escaping in some cases where we could and that is OK. However, there should never be a
-   * case where we skip escaping and but the escapers would actually modify the input.
-   */
-  private static boolean canSkipEscaping(
-      ImmutableList<SoyJavaPrintDirective> directives, ContentKind kind) {
-    for (SoyJavaPrintDirective directive : directives) {
-      if (!(directive instanceof ShortCircuitable)
-          || !((ShortCircuitable) directive).isNoopForKind(kind)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   public static SoyValueProvider getSoyListItem(List<SoyValueProvider> list, long index) {

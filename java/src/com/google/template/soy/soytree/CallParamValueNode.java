@@ -62,7 +62,7 @@ public final class CallParamValueNode extends CallParamNode implements ExprHolde
 
   @Override
   public String getCommandText() {
-    return getKey().identifier() + " : " + valueExpr.toSourceString();
+    return getKey().identifier() + ": " + valueExpr.toSourceString();
   }
 
   @Override

@@ -18,21 +18,41 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.internal.ShortCircuitable;
+import com.google.template.soy.shared.internal.ShortCircuitables;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.EscapingMode;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SanitizedType;
+import javax.annotation.Nullable;
 
 /**
  * Applies changes specified in {@link Inferences} to a Soy parse tree.
@@ -97,6 +117,108 @@ final class Rewriter {
 
         printNode.addChild(newPrintDirectiveIndex, newPrintDirective);
       }
+      // Be conservative.
+      // IncrementalDom currently depends on the existence of escapeHtml to force logging to occur.
+      // It might be better to use a different strategy, or just to replace directives that operate
+      // on HTML.  print directives are slowly going away.
+      if (!printNode.hasUserSpecifiedPrintDirectives()) {
+        SanitizedContentKind trustedKind = getTrustedContentKindForNode(printNode);
+        if (trustedKind != null) {
+          ContentKind trustedContentKind = ContentKind.valueOf(trustedKind.name());
+          // Remove the initial directive if it would short circuit for the given kind.
+          while (printNode.numChildren() > 0) {
+            PrintDirectiveNode directive = printNode.getChild(0);
+            if (directive.getPrintDirective() instanceof ShortCircuitable
+                && ((ShortCircuitable) directive.getPrintDirective())
+                    .isNoopForKind(trustedContentKind)) {
+              printNode.removeChild(0);
+              continue;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    /**
+     * Returns the content kind for the value if it exists and can be trusted.
+     *
+     * <p>We only trust sanitized content objects where we know it was produced by a {@code let} or
+     * {@code param} variable (for private templates where we can find the callsites). This is
+     * because the type checking we do at runtime is insufficiently strict in all backends to fully
+     * trust just the type system.
+     *
+     * <p>This is a conservative set of conditions and leaves some opportunities on the table.
+     */
+    @Nullable
+    private SanitizedContentKind getTrustedContentKindForNode(ExprHolderNode exprHolder) {
+      return getTrustedContentKindForNode(exprHolder, /*followCalls=*/ true);
+    }
+
+    @Nullable
+    private SanitizedContentKind getTrustedContentKindForNode(
+        ExprHolderNode exprHolder, boolean followCalls) {
+      ExprNode expr = Iterables.getOnlyElement(exprHolder.getExprList()).getRoot();
+      if (!(expr instanceof VarRefNode)) {
+        return null; // we only support trivial var refs
+      }
+      VarRefNode varRef = (VarRefNode) expr;
+      if (varRef.getDefnDecl() instanceof LocalVar) {
+        LocalVar var = (LocalVar) varRef.getDefnDecl();
+        if (var.declaringNode() instanceof LetContentNode) {
+          return ((LetContentNode) var.declaringNode()).getContentKind();
+        }
+      } else if (varRef.getDefnDecl() instanceof TemplateParam && followCalls) {
+        TemplateParam param = (TemplateParam) varRef.getDefnDecl();
+        return getTrustedContentKindForParameter(
+            exprHolder.getNearestAncestor(TemplateNode.class), param);
+      }
+      return null;
+    }
+
+    private SanitizedContentKind getTrustedContentKindForParameter(
+        TemplateNode template, TemplateParam param) {
+      if (param.isInjected()) {
+        return null; // can't validate injected parameters
+      }
+      if (!param.type().getKind().isKnownSanitizedContent()) {
+        return null; // only care about sanitized types
+      }
+      SanitizedContentKind expectedKind = ((SanitizedType) param.type()).getContentKind();
+
+      // if it is private we know that all callers are in this file.  Find them and check
+      // if they are all passing the parameter with a consistent kind
+      if (template.getVisibility() != Visibility.PRIVATE) {
+        return null; // can only find all callers for private templates
+      }
+      for (CallBasicNode callNode :
+          SoyTreeUtils.getAllNodesOfType(template.getParent(), CallBasicNode.class)) {
+        if (callNode.getCalleeName().equals(template.getTemplateName())
+            && !doesCallPassCompatibleContentForParameter(callNode, expectedKind, param.name())) {
+          return null;
+        }
+      }
+      return expectedKind;
+    }
+
+    /** Checks if the given call passes the parameter with a known safe content kind. */
+    private boolean doesCallPassCompatibleContentForParameter(
+        CallNode callNode, SanitizedContentKind expectedKind, String parameter) {
+      for (CallParamNode callParam : callNode.getChildren()) {
+        if (callParam.getKey().identifier().equals(parameter)) {
+          if (callParam instanceof CallParamContentNode
+              && ((CallParamContentNode) callParam).getContentKind() == expectedKind) {
+            return true;
+          } else if (callParam instanceof CallParamValueNode
+              // We don't follow calls so we don't get lost in recursive templates
+              && getTrustedContentKindForNode(
+                      (CallParamValueNode) callParam, /* followCalls=*/ false)
+                  == expectedKind) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     /** Do nothing. */
@@ -126,7 +248,19 @@ final class Rewriter {
     /** Rewrite call targets. */
     @Override
     protected void visitCallNode(CallNode node) {
-      node.setEscapingDirectives(getDirectivesForNode(node));
+      ImmutableList<SoyPrintDirective> directives = getDirectivesForNode(node);
+      // only handle CalllBasicNode. The compiler attempts to enforce consistency in the type of
+      // deltemplates but there is currently no strong guarantee that they are compatible.  So be
+      // conservative here.
+      if (node instanceof CallBasicNode) {
+        ImmutableList<TemplateMetadata> targets = inferences.lookupTemplates(node);
+        if (!targets.isEmpty()) {
+          directives =
+              ShortCircuitables.filterDirectivesForKind(
+                  ContentKind.valueOf(targets.get(0).getContentKind().name()), directives);
+        }
+      }
+      node.setEscapingDirectives(directives);
 
       visitChildren(node);
     }

@@ -144,6 +144,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return isImplicit;
   }
 
+  public boolean hasUserSpecifiedPrintDirectives() {
+    return getChildren().stream().anyMatch(pd -> !pd.isSynthetic());
+  }
+
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;
