@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, TemplateRegistry> {
+final class TemplateRegistrySubject extends Subject {
 
   private final TemplateRegistry actual;
 
@@ -68,8 +68,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
     Truth.assertThat(actual.getDelTemplateSelector().hasDelTemplateNamed(name)).isFalse();
   }
 
-  static class TemplateBasicNodeSubject
-      extends Subject<TemplateBasicNodeSubject, TemplateMetadata> {
+  static class TemplateBasicNodeSubject extends Subject {
     private final TemplateMetadata actual;
 
     TemplateBasicNodeSubject(FailureMetadata failureMetadata, TemplateMetadata templateBasicNode) {
@@ -82,8 +81,7 @@ final class TemplateRegistrySubject extends Subject<TemplateRegistrySubject, Tem
     }
   }
 
-  static class TemplateDelegateNodesSubject
-      extends Subject<TemplateDelegateNodesSubject, List<TemplateMetadata>> {
+  static class TemplateDelegateNodesSubject extends Subject {
     private final List<TemplateMetadata> actual;
 
     TemplateDelegateNodesSubject(FailureMetadata failureMetadata, List<TemplateMetadata> nodes) {

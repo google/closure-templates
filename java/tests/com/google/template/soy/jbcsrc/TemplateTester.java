@@ -147,7 +147,7 @@ public final class TemplateTester {
     return (SoyRecord) SoyValueConverter.INSTANCE.convert(params);
   }
 
-  static final class CompiledTemplateSubject extends Subject<CompiledTemplateSubject, String> {
+  static final class CompiledTemplateSubject extends Subject {
     private final String actual;
     private final List<SoyFunction> soyFunctions = new ArrayList<>();
     private final List<SoySourceFunction> soySourceFunctions = new ArrayList<>();
@@ -407,8 +407,7 @@ public final class TemplateTester {
       check("thrownException()").about(UnexpectedFailureSubject::new).that(cause).doFail(message);
     }
 
-    private static final class UnexpectedFailureSubject
-        extends Subject<UnexpectedFailureSubject, Throwable> {
+    private static final class UnexpectedFailureSubject extends Subject {
       UnexpectedFailureSubject(FailureMetadata metadata, Throwable actual) {
         super(metadata, actual);
       }

@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-public final class TemplateSubject extends Subject<TemplateSubject, String> {
+public final class TemplateSubject extends Subject {
 
   private final String actual;
   private SourceLocation actualSourceLocation;
@@ -60,8 +60,8 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
       failWithoutActual(
           simpleFact(
               lenientFormat(
-                  "%s should have failed to parse with <%s>, instead had errors: %s",
-                  actualAsString(), error, errorReporter.getErrors())));
+                  "<%s> should have failed to parse with <%s>, instead had errors: %s",
+                  actual, error, errorReporter.getErrors())));
     }
     actualSourceLocation = report.location();
     return this;
@@ -74,8 +74,8 @@ public final class TemplateSubject extends Subject<TemplateSubject, String> {
       failWithoutActual(
           simpleFact(
               lenientFormat(
-                  "%s should have failed to parse with <%s>, instead had errors: %s",
-                  actualAsString(), message, errorReporter.getErrors())));
+                  "<%s> should have failed to parse with <%s>, instead had errors: %s",
+                  actual, message, errorReporter.getErrors())));
     }
     actualSourceLocation = report.location();
     return this;

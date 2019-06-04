@@ -78,7 +78,7 @@
     <asm.version>7.0</asm.version>
     <autovalue.version>1.6.3</autovalue.version>
     <proto.version>3.3.0</proto.version>
-    <truth.version>0.44</truth.version>
+    <truth.version>0.45</truth.version>
     <soy.examples>${project.basedir}/examples</soy.examples>
     <soy.examples.out>${project.build.directory}/examples</soy.examples.out>
   </properties>

@@ -48,7 +48,7 @@ import java.util.Map;
  * or more Python expressions.
  *
  */
-public final class SoyExprForPySubject extends Subject<SoyExprForPySubject, String> {
+public final class SoyExprForPySubject extends Subject {
 
   // disable optimizer for backwards compatibility
   private final String actual;

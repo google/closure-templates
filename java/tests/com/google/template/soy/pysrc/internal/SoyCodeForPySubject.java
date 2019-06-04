@@ -39,7 +39,7 @@ import java.util.List;
  * matches the expected output.
  *
  */
-public final class SoyCodeForPySubject extends Subject<SoyCodeForPySubject, String> {
+public final class SoyCodeForPySubject extends Subject {
 
   private static final String RUNTIME_PATH = "example.runtime";
 

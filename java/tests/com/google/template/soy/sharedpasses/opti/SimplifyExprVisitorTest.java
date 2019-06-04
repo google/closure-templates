@@ -158,7 +158,7 @@ public final class SimplifyExprVisitorTest {
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
-  private static final class SimplifySubject extends Subject<SimplifySubject, String> {
+  private static final class SimplifySubject extends Subject {
     private final String actual;
 
     private SimplifySubject(FailureMetadata failureMetadata, String s) {

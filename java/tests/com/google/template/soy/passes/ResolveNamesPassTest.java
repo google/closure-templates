@@ -62,7 +62,7 @@ public final class ResolveNamesPassTest {
     TemplateNode n = soyTree.getChild(0).getChild(0);
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
-    assertThat(varRef.getDefnDecl()).isSameAs(n.getParams().get(0));
+    assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getParams().get(0));
   }
 
   @Test
@@ -76,7 +76,7 @@ public final class ResolveNamesPassTest {
     TemplateNode n = soyTree.getChild(0).getChild(0);
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
-    assertThat(varRef.getDefnDecl()).isSameAs(n.getInjectedParams().get(0));
+    assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getInjectedParams().get(0));
   }
 
   @Test
@@ -91,7 +91,7 @@ public final class ResolveNamesPassTest {
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, LetValueNode.class));
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
-    assertThat(varRef.getDefnDecl()).isSameAs(letNode.getVar());
+    assertThat(varRef.getDefnDecl()).isSameInstanceAs(letNode.getVar());
   }
 
   @Test
@@ -114,10 +114,10 @@ public final class ResolveNamesPassTest {
 
     ImmutableList<VarRefNode> varRefs = SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class);
     assertThat(varRefs).hasSize(4);
-    assertThat(varRefs.get(0).getDefnDecl()).isSameAs(n.getParams().get(0)); // $pa
-    assertThat(varRefs.get(1).getDefnDecl()).isSameAs(n.getParams().get(1)); // $pb
-    assertThat(varRefs.get(2).getDefnDecl()).isSameAs(la.getVar()); // $la
-    assertThat(varRefs.get(3).getDefnDecl()).isSameAs(loop.getVar()); // $item
+    assertThat(varRefs.get(0).getDefnDecl()).isSameInstanceAs(n.getParams().get(0)); // $pa
+    assertThat(varRefs.get(1).getDefnDecl()).isSameInstanceAs(n.getParams().get(1)); // $pb
+    assertThat(varRefs.get(2).getDefnDecl()).isSameInstanceAs(la.getVar()); // $la
+    assertThat(varRefs.get(3).getDefnDecl()).isSameInstanceAs(loop.getVar()); // $item
   }
 
   @Test
@@ -133,9 +133,9 @@ public final class ResolveNamesPassTest {
     LetValueNode secondLet = (LetValueNode) n.getChild(1);
     LetValueNode thirdLet = (LetValueNode) n.getChild(2);
     assertThat(((VarRefNode) secondLet.getExpr().getRoot()).getDefnDecl())
-        .isSameAs(firstLet.getVar());
+        .isSameInstanceAs(firstLet.getVar());
     assertThat(((VarRefNode) thirdLet.getExpr().getRoot()).getDefnDecl())
-        .isSameAs(secondLet.getVar());
+        .isSameInstanceAs(secondLet.getVar());
   }
 
   @Test
@@ -198,12 +198,12 @@ public final class ResolveNamesPassTest {
     TemplateNode n = soyTree.getChild(0).getChild(0);
     LetContentNode aLetNode = (LetContentNode) n.getChild(0);
     VarRefNode aVarRef = (VarRefNode) ((PrintNode) n.getChild(1)).getExpr().getRoot();
-    assertThat(aVarRef.getDefnDecl()).isSameAs(aLetNode.getVar());
+    assertThat(aVarRef.getDefnDecl()).isSameInstanceAs(aLetNode.getVar());
 
     IfCondNode ifNode = (IfCondNode) ((IfNode) aLetNode.getChild(0)).getChild(0);
     LetValueNode innerALetNode = (LetValueNode) ifNode.getChild(0);
     VarRefNode innerAVarRef = (VarRefNode) ((PrintNode) ifNode.getChild(1)).getExpr().getRoot();
-    assertThat(innerAVarRef.getDefnDecl()).isSameAs(innerALetNode.getVar());
+    assertThat(innerAVarRef.getDefnDecl()).isSameInstanceAs(innerALetNode.getVar());
   }
 
 

@@ -57,7 +57,7 @@ import javax.annotation.Nullable;
 
 /** Custom Truth subject to aid testing Soy->JS codegen. */
 @CheckReturnValue
-abstract class JsSrcSubject<T extends Subject<T, String>> extends Subject<T, String> {
+abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   private static final Joiner JOINER = Joiner.on('\n');
 

@@ -696,7 +696,7 @@ public class SoyTypesTest {
     return Truth.assertAbout(SoyTypeSubject::new).that(typeString);
   }
 
-  private static final class SoyTypeSubject extends Subject<SoyTypeSubject, String> {
+  private static final class SoyTypeSubject extends Subject {
     private final String actual;
 
     protected SoyTypeSubject(FailureMetadata metadata, String actual) {

@@ -38,7 +38,7 @@ import com.google.template.soy.jbcsrc.restricted.testing.ExpressionEvaluator.Obj
  * nullary interface methods. For each expression we will compile an appropriately typed
  * implementation of an invoker interface.
  */
-public final class ExpressionSubject extends Subject<ExpressionSubject, Expression> {
+public final class ExpressionSubject extends Subject {
 
   /** Returns a truth subject that can be used to assert on an {@link Expression}. */
   public static ExpressionSubject assertThatExpression(Expression resp) {

@@ -113,7 +113,7 @@ public class SoyRuntimeTypeTest {
     return Truth.assertAbout(SoyRuntimeTypeSubject::new).that(type);
   }
 
-  private static final class SoyRuntimeTypeSubject extends Subject<SoyRuntimeTypeSubject, SoyType> {
+  private static final class SoyRuntimeTypeSubject extends Subject {
     private final SoyType actual;
 
     protected SoyRuntimeTypeSubject(FailureMetadata metadata, SoyType actual) {

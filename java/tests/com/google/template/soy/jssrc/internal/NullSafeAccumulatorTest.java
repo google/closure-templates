@@ -161,8 +161,7 @@ public final class NullSafeAccumulatorTest {
     return Truth.assertAbout(AccumulatorSubject::new).that(accumulator);
   }
 
-  private static final class AccumulatorSubject
-      extends Subject<AccumulatorSubject, NullSafeAccumulator> {
+  private static final class AccumulatorSubject extends Subject {
 
     private final NullSafeAccumulator actual;
 
