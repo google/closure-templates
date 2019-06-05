@@ -330,7 +330,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       ImmutableList<TemplateHeaderVarDefn> orig, CopyState copyState) {
     ImmutableList.Builder<TemplateHeaderVarDefn> newParams = ImmutableList.builder();
     for (TemplateHeaderVarDefn prev : orig) {
-      TemplateHeaderVarDefn next = prev.copy();
+      TemplateHeaderVarDefn next = prev.copy(copyState);
       newParams.add(next);
       copyState.updateRefs(prev, next);
     }
@@ -353,6 +353,17 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Returns this template's name. */
   public String getTemplateName() {
     return templateName;
+  }
+
+  /**
+   * This exists as part of the work in DesugarStateNodesPass to downlevel @state to @let. As part
+   * of that, all state nodes should be cleared.
+   */
+  public void clearStateVars() {
+    this.headerParams =
+        this.headerParams.stream()
+            .filter(p -> !(p instanceof TemplateStateVar))
+            .collect(ImmutableList.toImmutableList());
   }
 
   /** Returns this template's partial name. */
@@ -458,20 +469,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   @Nullable
   public String getSoyDocDesc() {
     return soyDocDesc;
-  }
-
-  /**
-   * This exists as part of the work in DesugarStateNodesPass to downlevel @state to @let. As part
-   * of that, all state nodes should be cleared.
-   */
-  public void clearStateVars() {
-    ImmutableList.Builder<TemplateHeaderVarDefn> builder = ImmutableList.builder();
-    for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
-      if (header instanceof TemplateParam) {
-        builder.add(header);
-      }
-    }
-    this.headerParams = builder.build();
   }
 
   /** Returns the params from template header. */

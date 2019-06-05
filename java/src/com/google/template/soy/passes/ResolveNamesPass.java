@@ -136,8 +136,12 @@ public final class ResolveNamesPass extends CompilerFilePass {
       // Create a scope for all parameters.
       localVariables = new LocalVariables();
       localVariables.enterScope();
+      ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
       // Add all header params to the param scope.
       for (TemplateHeaderVarDefn param : node.getHeaderParams()) {
+        if (param.defaultValue() != null) {
+          exprVisitor.exec(param.defaultValue());
+        }
         localVariables.define(param, node);
       }
 

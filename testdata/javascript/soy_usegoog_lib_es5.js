@@ -4018,8 +4018,7 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
 var JSCompiler_inline_result$jscomp$6;
-var doc$jscomp$inline_11 = goog.global.document;
-JSCompiler_inline_result$jscomp$6 = doc$jscomp$inline_11 && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() || ("CSS1Compat" == doc$jscomp$inline_11.compatMode ? parseInt(goog.userAgent.VERSION, 10) : 5) : void 0;
+JSCompiler_inline_result$jscomp$6 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
 goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$6;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;

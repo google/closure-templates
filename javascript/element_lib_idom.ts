@@ -23,8 +23,22 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   private node: HTMLElement|null = null;
   private skipHandler:
       ((prev: TInterface, next: TInterface) => boolean)|null = null;
+  private active = false;
 
   constructor(protected data: TData, protected ijData?: IjData) {}
+
+  /**
+   * State variables that are derived from parameters will continue to be
+   * derived until this method is called.
+   * @package
+   */
+  setActive() {
+    this.active = true;
+  }
+
+  protected isActive() {
+    return this.active;
+  }
 
   /**
    * Patches the current dom node.

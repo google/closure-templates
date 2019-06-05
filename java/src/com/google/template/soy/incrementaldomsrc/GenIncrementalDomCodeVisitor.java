@@ -61,6 +61,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContentOperator;
@@ -113,11 +114,13 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
@@ -357,6 +360,27 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     boolean isTextTemplate = isTextContent(node.getContentKind());
 
     Statement typeChecks = genParamTypeChecks(node, alias);
+    ImmutableList.Builder<Statement> stateReassignmentBuilder = ImmutableList.builder();
+    if (node instanceof TemplateElementNode) {
+      TemplateElementNode soyElement = (TemplateElementNode) node;
+      for (TemplateHeaderVarDefn headerVar : Lists.newArrayList(soyElement.getStateVars())) {
+        if (SoyTreeUtils.isConstantExpr(headerVar.defaultValue())) {
+          continue;
+        }
+        stateReassignmentBuilder.add(
+            Statement.assign(
+                Expression.THIS.dotAccess(STATE_PREFIX + headerVar.name()),
+                translateExpr(headerVar.defaultValue())));
+      }
+    }
+    List<Statement> reassignments = stateReassignmentBuilder.build();
+    Statement stateReassignments = Statement.of(reassignments);
+    if (!reassignments.isEmpty()) {
+      stateReassignments =
+          Statement.ifStatement(
+                  Expression.not(Expression.THIS.dotAccess("isActive").call()), stateReassignments)
+              .build();
+    }
     // Note: we do not try to combine this into a single return statement if the content is
     // computable as a JsExpr. A JavaScript compiler, such as Closure Compiler, is able to perform
     // the transformation.
@@ -373,7 +397,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       body =
           Statement.of(declare, body, returnValue(sanitize(declare.ref(), node.getContentKind())));
     }
-    return Statement.of(typeChecks, body);
+    return Statement.of(typeChecks, stateReassignments, body);
   }
 
   /**
@@ -448,11 +472,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       JsType jsType = JsType.forIncrementalDomState(stateVar.type());
       JsDoc stateVarJsdoc =
           JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
+      Expression rhsValue;
+      if (SoyTreeUtils.isConstantExpr(stateVar.defaultValue())) {
+        rhsValue = translateExpr(stateVar.defaultValue());
+      } else {
+        rhsValue = Expression.LITERAL_UNDEFINED.castAs("?");
+      }
       stateVarInitializations.add(
           Statement.assign(
-              Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()),
-              translateExpr(stateVar.defaultValue()),
-              stateVarJsdoc));
+              Expression.THIS.dotAccess(STATE_PREFIX + stateVar.name()), rhsValue, stateVarJsdoc));
     }
     // Build constructor method.
     Statement ctorBody =

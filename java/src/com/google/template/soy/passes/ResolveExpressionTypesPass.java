@@ -104,6 +104,7 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ErrorType;
@@ -276,27 +277,42 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       // value parameter, which won't work because it's looking up the type of the parameter when it
       // hasn't been inferred yet.  So report an error and override the type to be the errortype
       for (TemplateHeaderVarDefn headerVar : headerVars) {
-        if (headerVar.defaultValue() != null) {
-          for (ExprNode nonConstantChild :
-              SoyTreeUtils.getNonConstantChildren(headerVar.defaultValue())) {
-            String extra;
-            switch (nonConstantChild.getKind()) {
-              case VAR_REF_NODE:
-                extra = "Parameters are non-constant";
-                ((VarRefNode) nonConstantChild).setSubstituteType(ErrorType.getInstance());
-                break;
-              case FUNCTION_NODE:
-                extra = "Only pure functions can be used in state initializers";
-                break;
-              default:
-                throw new AssertionError("Unexpected non-constant expression: " + nonConstantChild);
-            }
-            errorReporter.report(
-                nonConstantChild.getSourceLocation(),
-                STATE_MUST_BE_CONSTANT,
-                headerVar.name(),
-                extra);
+        if (headerVar.defaultValue() == null) {
+          continue;
+        }
+        for (ExprNode nonConstantChild :
+            SoyTreeUtils.getNonConstantChildren(headerVar.defaultValue())) {
+          String extra;
+          switch (nonConstantChild.getKind()) {
+            case VAR_REF_NODE:
+              if (headerVar instanceof TemplateStateVar) {
+                VarRefNode refNode = (VarRefNode) nonConstantChild;
+                // @state depends on @state
+                if (refNode.getDefnDecl() instanceof TemplateStateVar) {
+                  extra = "State cannot be referenced in default initializers";
+                } else {
+                  continue; // @state depends on @param
+                }
+              } else {
+                // @param depends on @state/@param
+                extra = "Default parameters cannot depend on other parameters or state";
+              }
+              ((VarRefNode) nonConstantChild).setSubstituteType(ErrorType.getInstance());
+              break;
+            case FUNCTION_NODE:
+              if (headerVar instanceof TemplateStateVar) {
+                continue;
+              }
+              extra = "Only pure functions can be used in default param initializers";
+              break;
+            default:
+              throw new AssertionError("Unexpected non-constant expression: " + nonConstantChild);
           }
+          errorReporter.report(
+              nonConstantChild.getSourceLocation(),
+              STATE_MUST_BE_CONSTANT,
+              headerVar.name(),
+              extra);
         }
       }
 

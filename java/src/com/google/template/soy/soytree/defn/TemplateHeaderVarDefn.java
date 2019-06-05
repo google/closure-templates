@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.types.SoyType;
@@ -47,5 +48,5 @@ public interface TemplateHeaderVarDefn extends VarDefn {
   @Nullable
   String desc();
 
-  TemplateHeaderVarDefn copy();
+  TemplateHeaderVarDefn copy(CopyState copyState);
 }

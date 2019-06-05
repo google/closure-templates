@@ -25,6 +25,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -34,7 +35,6 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,10 +52,8 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind UNDECLARED_DATA_KEY =
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind UNUSED_PARAM =
-      SoyErrorKind.of("Param ''{0}'' unused in template body.");
-  private static final SoyErrorKind UNUSED_STATE =
-      SoyErrorKind.of("State var ''{0}'' unused in template body.");
+  private static final SoyErrorKind UNUSED_VAR =
+      SoyErrorKind.of("''{0}'' unused in template body.");
 
   private final ErrorReporter errorReporter;
 
@@ -85,6 +83,24 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
         dataKeys.put(varRefNode.getName(), varRefNode.getSourceLocation());
       }
     }
+    if (node instanceof TemplateElementNode) {
+      TemplateElementNode el = (TemplateElementNode) node;
+      for (TemplateStateVar state : el.getStateVars()) {
+        for (VarRefNode varRefNode :
+            SoyTreeUtils.getAllNodesOfType(state.defaultValue(), VarRefNode.class)) {
+          // This is in the case where @state appears before @param and uses @param.
+          if (varRefNode.getDefnDecl().kind() == VarDefn.Kind.UNDECLARED) {
+            errorReporter.report(
+                varRefNode.getSourceLocation(),
+                UNDECLARED_DATA_KEY,
+                varRefNode.getDefnDecl().name(),
+                "");
+          } else if (varRefNode.isPossibleHeaderVar()) {
+            dataKeys.put(varRefNode.getName(), varRefNode.getSourceLocation());
+          }
+        }
+      }
+    }
 
     IndirectParamsInfo ipi =
         new IndirectParamsCalculator(templateRegistry)
@@ -93,13 +109,15 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
     Set<String> allHeaderVarNames = new HashSet<>();
     List<TemplateHeaderVarDefn> unusedParams = new ArrayList<>();
     // Process @param header variables.
-    for (TemplateParam param : node.getAllParams()) {
+    // TODO: Switch getAllParams to getHeaderParams
+    for (TemplateHeaderVarDefn param : node.getAllParams()) {
       allHeaderVarNames.add(param.name());
       if (dataKeys.containsKey(param.name())) {
         // Good: Declared and referenced in template. We remove these from dataKeys so
         // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
         // but not declared in SoyDoc.
         dataKeys.removeAll(param.name());
+        // TODO: This should only be allowed for @param and not @inject or @state.
       } else if (ipi.paramKeyToCalleesMultimap.containsKey(param.name())
           || ipi.mayHaveIndirectParamsInExternalCalls
           || ipi.mayHaveIndirectParamsInExternalDelCalls) {
@@ -138,10 +156,10 @@ final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
     // Delegate templates can declare unused params because other implementations
     // of the same delegate may need to use those params.
     if (node instanceof TemplateBasicNode) {
-      reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_PARAM);
+      reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_VAR);
     }
     if (node instanceof TemplateElementNode) {
-      reportUnusedHeaderVars(errorReporter, unusedStateVars, UNUSED_STATE);
+      reportUnusedHeaderVars(errorReporter, unusedStateVars, UNUSED_VAR);
     }
   }
 

@@ -182,7 +182,7 @@ public final class CheckTemplateHeaderVarsPassTest {
     ImmutableList<SoyError> errors = paramsErrorsForTemplate(params, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
-    assertThat(errors.get(1).message()).isEqualTo("Param 'foo' unused in template body.");
+    assertThat(errors.get(1).message()).isEqualTo("'foo' unused in template body.");
   }
 
   @Test
@@ -191,7 +191,7 @@ public final class CheckTemplateHeaderVarsPassTest {
     String templateBody = "{$boo.foo}";
     ImmutableList<SoyError> errors = paramsErrorsForTemplate(params, templateBody);
     assertThat(Iterables.getOnlyElement(errors).message())
-        .isEqualTo("Param 'foo' unused in template body.");
+        .isEqualTo("'foo' unused in template body.");
   }
 
   @Test
@@ -212,7 +212,7 @@ public final class CheckTemplateHeaderVarsPassTest {
 
     ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent);
     assertThat(Iterables.getOnlyElement(errors).message())
-        .isEqualTo("Param 'zoo' unused in template body.");
+        .isEqualTo("'zoo' unused in template body.");
   }
 
   @Test
@@ -234,8 +234,8 @@ public final class CheckTemplateHeaderVarsPassTest {
     String templateBody = "{call .foo data=\"all\" /}";
     ImmutableList<SoyError> errors = paramsErrorsForTemplate(params, templateBody);
     assertThat(errors).hasSize(2);
-    assertThat(errors.get(0).message()).isEqualTo("Param 'boo' unused in template body.");
-    assertThat(errors.get(1).message()).isEqualTo("Param 'foo' unused in template body.");
+    assertThat(errors.get(0).message()).isEqualTo("'boo' unused in template body.");
+    assertThat(errors.get(1).message()).isEqualTo("'foo' unused in template body.");
   }
 
   @Test
@@ -310,7 +310,7 @@ public final class CheckTemplateHeaderVarsPassTest {
     ImmutableList<SoyError> errors = soyErrorsForElement(stateVarDecl, templateBody);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
-    assertThat(errors.get(1).message()).isEqualTo("State var 'foo' unused in template body.");
+    assertThat(errors.get(1).message()).isEqualTo("'foo' unused in template body.");
   }
 
   @Test
@@ -319,7 +319,7 @@ public final class CheckTemplateHeaderVarsPassTest {
     String templateBody = "<b>Hello</b>";
     ImmutableList<SoyError> errors = soyErrorsForElement(stateVarDecl, templateBody);
     assertThat(Iterables.getOnlyElement(errors).message())
-        .isEqualTo("State var 'foo' unused in template body.");
+        .isEqualTo("'foo' unused in template body.");
   }
 
   private static ImmutableList<SoyError> paramsErrorsForTemplate(

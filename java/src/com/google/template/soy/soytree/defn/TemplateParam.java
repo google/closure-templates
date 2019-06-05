@@ -124,7 +124,7 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
   }
 
   @Override
-  public TemplateParam copy() {
+  public TemplateParam copy(CopyState copyState) {
     return new TemplateParam(this);
   }
 }

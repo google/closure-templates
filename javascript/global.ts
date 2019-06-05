@@ -24,14 +24,16 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
 /** Retrieves the Soy element in a type-safe way. */
 export function getSoy<TElement extends SoyElement<{}|null, {}>>(
     node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
-  return assertInstanceof(node.__soy, elementCtor, message);
+  const soyEl = assertInstanceof(getSoyUntyped(node), elementCtor);
+  soyEl.setActive();
+  return soyEl;
 }
 
 /** Retrieves the Soy element in a type-safe way, or null if it doesn't exist */
 export function getSoyOptional<TElement extends SoyElement<{}, {}>>(
     node: Node, elementCtor: ElementCtor<TElement>) {
   if (!node.__soy) return null;
-  return assertInstanceof(node.__soy, elementCtor);
+  return getSoy(node, elementCtor);
 }
 
 /** Retrieves an untyped Soy element, or null if it doesn't exist. */
