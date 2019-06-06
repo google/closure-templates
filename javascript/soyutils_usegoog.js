@@ -927,9 +927,6 @@ soy.$$htmlToText = function(value) {
   if (value == null) {
     return '';
   }
-  if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.TEXT)) {
-    return value.toString();
-  }
   if (!soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
     return goog.asserts.assertString(value);
   }
