@@ -10,6 +10,7 @@ import {IdomFunctionMembers} from 'goog:soydata';  // from //javascript/template
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {IncrementalDomRenderer} from './api_idom';
+import {isTaggedForSkip} from './global';
 
 /** Function that executes Idom instructions */
 export type PatchFunction = (a?: {}) => void;
@@ -69,6 +70,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     this.node = node;
     // tslint:disable-next-line:no-any
     (node as any).__soy = this;
+    return isTaggedForSkip(node);
   }
 
   setSkipHandler(skipHandler: (prev: TInterface, next: TInterface) => boolean) {

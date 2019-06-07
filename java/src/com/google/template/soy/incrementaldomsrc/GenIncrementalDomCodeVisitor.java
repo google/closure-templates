@@ -1044,7 +1044,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     if (template instanceof TemplateElementNode && isFirstHtmlOpenTagNode) {
       // Append code to stash the template object in this node.
-      getJsCodeBuilder().append(id("this").dotAccess("setNodeInternal").call(openTagExpr));
+      getJsCodeBuilder()
+          .append(
+              Statement.ifStatement(
+                      id("this").dotAccess("setNodeInternal").call(openTagExpr),
+                      Statement.of(
+                          INCREMENTAL_DOM.dotAccess("skip").call(ImmutableList.of()).asStatement(),
+                          INCREMENTAL_DOM
+                              .dotAccess("elementClose")
+                              .call(ImmutableList.of(tagName))
+                              .asStatement(),
+                          Statement.returnValue(Expression.LITERAL_TRUE)))
+                  .build());
     } else {
       getJsCodeBuilder().append(openTagExpr);
     }
