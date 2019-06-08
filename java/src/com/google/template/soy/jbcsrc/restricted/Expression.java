@@ -65,7 +65,8 @@ public abstract class Expression extends BytecodeProducer {
     /** The expression is guaranteed to not return null. */
     NON_NULLABLE,
     /**
-     * The expression is 'cheap'. As a rule of thumb, if it involves allocation, it is not cheap.
+     * The expression is 'cheap'. As a rule of thumb, if it involves allocation, it is not cheap. If
+     * you need to allocate a local variable to calculate the expression, it is not cheap.
      *
      * <p>Cheapness is useful when deciding if it would be reasonable to evaluate an expression more
      * than once if the alternative is generating additional fields and save/restore code.

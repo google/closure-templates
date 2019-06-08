@@ -162,12 +162,18 @@ final class TemplateCompiler {
             .implementing(TEMPLATE_TYPE)
             .sourceFileName(templateNode.getSourceLocation().getFileName())
             .build();
+    BasicExpressionCompiler constantCompiler =
+        ExpressionCompiler.createConstantCompiler(
+            new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
+            fields,
+            reporter,
+            soyTypeRegistry);
     generateTemplateMetadata();
     generateKindMethod();
 
-    ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers = generateRenderMethod();
+    generateRenderMethod();
 
-    generateConstructor(defaultParamInitializers);
+    generateConstructor(constantCompiler);
 
     innerClasses.registerAllInnerClasses(writer);
     fields.defineFields(writer);
@@ -248,7 +254,7 @@ final class TemplateCompiler {
     return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
   }
 
-  private ImmutableMap<TemplateParam, SoyExpression> generateRenderMethod() {
+  private void generateRenderMethod() {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -258,12 +264,6 @@ final class TemplateCompiler {
         createLocal("context", 2, RENDER_CONTEXT_TYPE, start, end).asNonNullable();
     final TemplateVariableManager variableSet =
         new TemplateVariableManager(fields, thisVar, template.renderMethod().method());
-    // TODO(lukes): this is wrong. The constantCompiler should not use the TemplateVariableManager
-    // since their code isn't generated in the render method.
-    BasicExpressionCompiler constantCompiler =
-        ExpressionCompiler.createConstantCompiler(variableSet, fields, reporter, soyTypeRegistry);
-    ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers =
-        generateDefaultParamInitializers(templateNode, constantCompiler);
     TemplateVariables variables =
         new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
     final CompiledMethodBody methodBody =
@@ -295,19 +295,6 @@ final class TemplateCompiler {
       }
     }.writeIOExceptionMethod(Opcodes.ACC_PUBLIC, template.renderMethod().method(), writer);
     writer.setNumDetachStates(methodBody.numberOfDetachStates());
-    return defaultParamInitializers;
-  }
-
-  private ImmutableMap<TemplateParam, SoyExpression> generateDefaultParamInitializers(
-      TemplateNode template, BasicExpressionCompiler constantCompiler) {
-    ImmutableMap.Builder<TemplateParam, SoyExpression> params = ImmutableMap.builder();
-    for (TemplateParam param : template.getParams()) {
-      if (param.hasDefault()) {
-        SoyExpression defaultParamRef = getDefaultValueVarRef(param, constantCompiler);
-        params.put(param, defaultParamRef);
-      }
-    }
-    return params.build();
   }
 
   private SoyExpression getDefaultValueVarRef(
@@ -340,10 +327,9 @@ final class TemplateCompiler {
    * Generate a public constructor that assigns our final field and checks for missing required
    * params.
    *
-   * <p>This constructor is called by the generate factory classes.
+   * <p>This constructor is called by the generated factory classes.
    */
-  private void generateConstructor(
-      ImmutableMap<TemplateParam, SoyExpression> defaultParamInitializers) {
+  private void generateConstructor(BasicExpressionCompiler constantCompiler) {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -359,7 +345,13 @@ final class TemplateCompiler {
     }
     for (TemplateParam param : templateNode.getAllParams()) {
       Expression paramProvider =
-          getParam(paramsVar, ijVar, param, defaultParamInitializers.get(param));
+          getParam(
+              paramsVar,
+              ijVar,
+              param,
+              /* defaultValue=*/ param.hasDefault()
+                  ? getDefaultValueVarRef(param, constantCompiler)
+                  : null);
       assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
     }
     Statement constructorBody =

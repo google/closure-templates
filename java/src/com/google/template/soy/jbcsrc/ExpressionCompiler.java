@@ -123,7 +123,7 @@ final class ExpressionCompiler {
 
     private BasicExpressionCompiler(
         TemplateParameterLookup parameters,
-        TemplateVariableManager varManager,
+        LocalVariableManager varManager,
         FieldManager fields,
         ErrorReporter reporter,
         SoyTypeRegistry registry) {
@@ -165,16 +165,16 @@ final class ExpressionCompiler {
   static ExpressionCompiler create(
       ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
-      TemplateVariableManager varManager,
+      LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
     return new ExpressionCompiler(
-        detacherFactory, parameters, varManager, fields, reporter, registry);
+        detacherFactory, checkNotNull(parameters), varManager, fields, reporter, registry);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
-      TemplateVariableManager varManager,
+      LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
@@ -196,15 +196,16 @@ final class ExpressionCompiler {
    */
   static BasicExpressionCompiler createBasicCompiler(
       TemplateParameterLookup parameters,
-      TemplateVariableManager varManager,
+      LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
-    return new BasicExpressionCompiler(parameters, varManager, fields, reporter, registry);
+    return new BasicExpressionCompiler(
+        checkNotNull(parameters), varManager, fields, reporter, registry);
   }
 
   @Nullable private final TemplateParameterLookup parameters;
-  private final TemplateVariableManager varManager;
+  private final LocalVariableManager varManager;
   private final FieldManager fields;
   private final ExpressionDetacher.Factory detacherFactory;
   private final ErrorReporter reporter;
@@ -212,14 +213,14 @@ final class ExpressionCompiler {
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
-      TemplateParameterLookup parameters,
-      TemplateVariableManager varManager,
+      @Nullable TemplateParameterLookup parameters,
+      LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
     this.detacherFactory = detacherFactory;
     this.parameters = parameters;
-    this.varManager = varManager;
+    this.varManager = checkNotNull(varManager);
     this.fields = checkNotNull(fields);
     this.reporter = reporter;
     this.registry = registry;
@@ -288,15 +289,16 @@ final class ExpressionCompiler {
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     final Supplier<? extends ExpressionDetacher> detacher;
-    final TemplateParameterLookup parameters;
-    final TemplateVariableManager varManager;
+    // is null when this is a 'constant' compiler
+    @Nullable final TemplateParameterLookup parameters;
+    final LocalVariableManager varManager;
     final FieldManager fields;
     final ErrorReporter reporter;
     final SoyTypeRegistry registry;
 
     CompilerVisitor(
-        TemplateParameterLookup parameters,
-        TemplateVariableManager varManager,
+        @Nullable TemplateParameterLookup parameters,
+        LocalVariableManager varManager,
         FieldManager fields,
         Supplier<? extends ExpressionDetacher> detacher,
         ErrorReporter reporter,
@@ -1008,7 +1010,7 @@ final class ExpressionCompiler {
             .computeForJavaSource(args);
       }
 
-      // Functions that are not a SoyJbcSrcFunction nor a SoyJavaSourceFunction
+      // Functions that are not a SoyJavaSourceFunction
       // are registered with a LegacyFunctionAdapter by SoySauceImpl.
       Expression legacyFunctionRuntimeExpr =
           parameters
