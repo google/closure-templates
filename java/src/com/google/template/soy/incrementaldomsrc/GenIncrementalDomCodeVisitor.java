@@ -378,7 +378,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (!reassignments.isEmpty()) {
       stateReassignments =
           Statement.ifStatement(
-                  Expression.not(Expression.THIS.dotAccess("isActive").call()), stateReassignments)
+                  Expression.THIS.dotAccess("shouldSyncState").call(), stateReassignments)
               .build();
     }
     // Note: we do not try to combine this into a single return statement if the content is

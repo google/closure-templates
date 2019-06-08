@@ -24,21 +24,20 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
   private node: HTMLElement|null = null;
   private skipHandler:
       ((prev: TInterface, next: TInterface) => boolean)|null = null;
-  private active = false;
+  private syncState = true;
 
   constructor(protected data: TData, protected ijData?: IjData) {}
 
   /**
    * State variables that are derived from parameters will continue to be
    * derived until this method is called.
-   * @package
    */
-  setActive() {
-    this.active = true;
+  setSyncState(syncState: boolean) {
+    this.syncState = syncState;
   }
 
-  protected isActive() {
-    return this.active;
+  protected shouldSyncState() {
+    return this.syncState;
   }
 
   /**
