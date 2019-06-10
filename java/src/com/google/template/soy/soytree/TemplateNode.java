@@ -259,7 +259,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** If the template is using strict html mode. */
   private final boolean strictHtml;
 
-  private int maxLocalVariableTableSize = -1;
 
   // TODO(b/19406885): Remove.
   private final String commandText;
@@ -320,7 +319,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.cssBaseNamespace = orig.cssBaseNamespace;
     this.soyDoc = orig.soyDoc;
     this.soyDocDesc = orig.soyDocDesc;
-    this.maxLocalVariableTableSize = orig.maxLocalVariableTableSize;
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.openTagLocation = orig.openTagLocation;
@@ -443,14 +441,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    */
   public String getCssBaseNamespace() {
     return cssBaseNamespace;
-  }
-
-  public void setMaxLocalVariableTableSize(int size) {
-    this.maxLocalVariableTableSize = size;
-  }
-
-  public int getMaxLocalVariableTableSize() {
-    return maxLocalVariableTableSize;
   }
 
   /** Clears the SoyDoc text, description, and param descriptions. */
