@@ -125,6 +125,8 @@ interface ExpressionDetacher {
     @Override
     public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+      // TODO(lukes): if this expression is already assignable to a SoyValue, we don't need to do
+      // anything.
       return new Expression(SOY_VALUE_TYPE) {
         @Override
         protected void doGen(CodeBuilder adapter) {

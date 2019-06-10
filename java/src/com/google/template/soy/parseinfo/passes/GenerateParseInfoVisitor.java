@@ -41,7 +41,7 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
-import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
+import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -359,8 +359,9 @@ public final class GenerateParseInfoVisitor
         if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction
             && !pluginInstances.containsKey(fnNode.getFunctionName())) {
           Set<Class<?>> instances =
-              PluginInstanceFinder.find(
-                  (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren());
+              PluginAnalyzer.analyze(
+                      (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
+                  .pluginInstances();
           if (!instances.isEmpty()) {
             // We guarantee there's either 0 or 1 instances in the plugin because we already
             // passed through PluginResolver, which checked this.

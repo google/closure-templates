@@ -113,7 +113,8 @@ final class ExpressionToSoyValueProviderCompiler {
    */
   Optional<Expression> compileAvoidingDetaches(ExprNode node) {
     checkNotNull(node);
-    return new CompilerVisitor(variables, varManager, exprCompiler, null).exec(node);
+    return new CompilerVisitor(variables, varManager, exprCompiler, /*detachingExprCompiler=*/ null)
+        .exec(node);
   }
 
   private static final class CompilerVisitor

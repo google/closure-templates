@@ -39,6 +39,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
@@ -167,6 +168,7 @@ final class LazyClosureCompiler {
   private final InnerClasses innerClasses;
   private final AbstractTemplateParameterLookup parentVariableLookup;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
+  private final BasicExpressionCompiler parentConstantCompiler;
   private final FieldManager parentFields;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
@@ -177,12 +179,14 @@ final class LazyClosureCompiler {
       AbstractTemplateParameterLookup parentVariableLookup,
       FieldManager parentFields,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
+      BasicExpressionCompiler parentConstantCompiler,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
     this.parentFields = parentFields;
+    this.parentConstantCompiler = parentConstantCompiler;
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
     this.reporter = reporter;
     this.typeRegistry = typeRegistry;
@@ -190,6 +194,12 @@ final class LazyClosureCompiler {
 
   Expression compileLazyExpression(
       String namePrefix, SoyNode declaringNode, String varName, ExprNode exprNode) {
+    if (ExpressionCompiler.canCompileToConstant(exprNode)) {
+      SoyExpression expression = parentConstantCompiler.compile(exprNode);
+      return parentFields
+          .addStaticField(getProposedName(namePrefix, varName), expression.boxAsSoyValueProvider())
+          .accessor();
+    }
     Optional<Expression> asSoyValueProvider =
         expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
     if (asSoyValueProvider.isPresent()) {
@@ -363,7 +373,12 @@ final class LazyClosureCompiler {
       final LocalVariable appendableVar =
           createLocal("appendable", 1, LOGGING_ADVISING_APPENDABLE_TYPE, start, end)
               .asNonNullable();
-
+      BasicExpressionCompiler constantCompiler =
+          ExpressionCompiler.createConstantCompiler(
+              new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
+              fields,
+              reporter,
+              typeRegistry);
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RENDER);
       LazyClosureParameterLookup lookup =
@@ -378,6 +393,7 @@ final class LazyClosureCompiler {
               variableSet,
               lookup,
               fields,
+              constantCompiler,
               reporter,
               typeRegistry);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);

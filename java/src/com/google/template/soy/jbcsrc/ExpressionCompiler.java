@@ -35,9 +35,11 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -82,7 +84,9 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -202,6 +206,14 @@ final class ExpressionCompiler {
       SoyTypeRegistry registry) {
     return new BasicExpressionCompiler(
         checkNotNull(parameters), varManager, fields, reporter, registry);
+  }
+
+  /**
+   * Returns {@code true} if the value can be compiled to a constant expression in a static
+   * initializere.
+   */
+  static boolean canCompileToConstant(ExprNode expr) {
+    return CanCompileToConstantVisitor.INSTANCE.exec(expr);
   }
 
   @Nullable private final TemplateParameterLookup parameters;
@@ -1179,6 +1191,110 @@ final class ExpressionCompiler {
                 .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
         return SoyExpression.forSoyValue(node.getType(), soyValue);
       }
+    }
+  }
+
+  private static final class CanCompileToConstantVisitor
+      extends AbstractReturningExprNodeVisitor<Boolean> {
+    static final CanCompileToConstantVisitor INSTANCE = new CanCompileToConstantVisitor();
+
+    @Override
+    protected Boolean visitExprRootNode(ExprRootNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
+    protected Boolean visitVarRefNode(VarRefNode node) {
+      // no variable references are allowed in constant context.
+      return false;
+    }
+
+    @Override
+    protected Boolean visitPrimitiveNode(PrimitiveNode node) {
+      // primitives are fine
+      return true;
+    }
+
+    @Override
+    protected Boolean visitVeLiteralNode(VeLiteralNode node) {
+      // this is essentially a primitive
+      return true;
+    }
+
+    @Override
+    protected Boolean visitGlobalNode(GlobalNode node) {
+      // this is essentially a primitive
+      return true;
+    }
+
+    // collection literals are fine if their contents are
+    @Override
+    protected Boolean visitListLiteralNode(ListLiteralNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
+    protected Boolean visitRecordLiteralNode(RecordLiteralNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
+    protected Boolean visitMapLiteralNode(MapLiteralNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
+    protected Boolean visitProtoInitNode(ProtoInitNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    // shouldn't really happen, but is fine if the children are
+    @Override
+    protected Boolean visitDataAccessNode(DataAccessNode node) {
+      // data access is fine if the child expressions are.
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
+    protected Boolean visitOperatorNode(OperatorNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
+    protected Boolean visitFunctionNode(FunctionNode node) {
+      if (!areAllChildrenConstant(node)) {
+        return false;
+      }
+      if (!node.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
+        return false;
+      }
+      // We can evaluate the function if
+      // all the parameters are constants and we have an implementation that doesn't depend on the
+      // render context.
+      if (node.getSoyFunction() instanceof SoyJavaSourceFunction) {
+        try {
+          PluginAnalyzer.PluginMetadata metadata =
+              PluginAnalyzer.analyze((SoyJavaSourceFunction) node.getSoyFunction());
+          // the plugin can be generated as a constant expression if it doesn't access the context
+          // or require an instance function.
+          return metadata.pluginInstances().isEmpty() && !metadata.accessesContext();
+        } catch (Throwable ignored) {
+          // sort of lame but this just means that we will report the error when we try to generate
+          // actual code.
+          return false;
+        }
+      }
+      // legacy functions are not OK.
+      return false;
+    }
+
+    private boolean areAllChildrenConstant(ParentExprNode node) {
+      for (ExprNode child : node.getChildren()) {
+        if (!visit(child)) {
+          return false;
+        }
+      }
+      return true;
     }
   }
 

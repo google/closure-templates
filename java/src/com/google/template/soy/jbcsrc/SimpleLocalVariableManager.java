@@ -57,7 +57,6 @@ final class SimpleLocalVariableManager implements LocalVariableManager {
 
   @Override
   public void generateTableEntries(CodeBuilder cb) {
-    checkState(!generated);
     generated = true;
     for (LocalVariable var : allVariables) {
       try {

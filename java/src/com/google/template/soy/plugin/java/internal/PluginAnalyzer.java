@@ -16,6 +16,8 @@
 
 package com.google.template.soy.plugin.java.internal;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -28,33 +30,50 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Finds the classes that {@link SoyJavaSourceFunction} plugins use as plugin instances. */
-public final class PluginInstanceFinder {
-  private PluginInstanceFinder() {}
+/** statically analyzes {@link SoyJavaSourceFunction} plugins. */
+public final class PluginAnalyzer {
+  /** Simple metadata about the plugin. */
+  @AutoValue
+  public abstract static class PluginMetadata {
+    static PluginMetadata create(boolean accessesContext, Iterable<Class<?>> pluginInstances) {
+      return new AutoValue_PluginAnalyzer_PluginMetadata(
+          accessesContext, ImmutableSet.copyOf(pluginInstances));
+    }
+
+    /** Whether or not this plugin depends on the {@link JavaPluginContext}. */
+    public abstract boolean accessesContext();
+
+    /** The set of plugin instances classes required for this plugin at runtime. */
+    public abstract ImmutableSet<Class<?>> pluginInstances();
+  }
+
+  private PluginAnalyzer() {}
 
   /**
    * Calls {@link SoyJavaSourceFunction#applyForJavaSource} with the arity of each supported
    * signature to collect the instance classes used by the function.
    */
-  public static Set<Class<?>> find(SoyJavaSourceFunction ssf) {
+  public static PluginMetadata analyze(SoyJavaSourceFunction ssf) {
     FinderFactory factory = new FinderFactory();
+    FinderContext context = new FinderContext();
     SoyFunctionSignature fnSig = ssf.getClass().getAnnotation(SoyFunctionSignature.class);
     for (Signature sig : fnSig.value()) {
       List<JavaValue> args = Collections.nCopies(sig.parameterTypes().length, FinderValue.INSTANCE);
-      ssf.applyForJavaSource(factory, args, FinderContext.INSTANCE);
+      ssf.applyForJavaSource(factory, args, context);
     }
-    return factory.instances;
+    return PluginMetadata.create(context.accessed, factory.instances);
   }
 
   /**
    * Calls {@link SoyJavaSourceFunction#applyForJavaSource} with the number of args requested and
    * returns the instances it used.
    */
-  public static Set<Class<?>> find(SoyJavaSourceFunction ssf, int argCount) {
+  public static PluginMetadata analyze(SoyJavaSourceFunction ssf, int argCount) {
     FinderFactory factory = new FinderFactory();
+    FinderContext context = new FinderContext();
     List<JavaValue> args = Collections.nCopies(argCount, FinderValue.INSTANCE);
-    ssf.applyForJavaSource(factory, args, FinderContext.INSTANCE);
-    return factory.instances;
+    ssf.applyForJavaSource(factory, args, context);
+    return PluginMetadata.create(context.accessed, factory.instances);
   }
 
   private static class FinderFactory extends JavaValueFactory {
@@ -103,15 +122,17 @@ public final class PluginInstanceFinder {
   }
 
   private static final class FinderContext implements JavaPluginContext {
-    static final FinderContext INSTANCE = new FinderContext();
+    boolean accessed;
 
     @Override
     public JavaValue getBidiDir() {
+      accessed = true;
       return FinderValue.INSTANCE;
     }
 
     @Override
     public JavaValue getULocale() {
+      accessed = true;
       return FinderValue.INSTANCE;
     }
   }

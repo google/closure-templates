@@ -144,6 +144,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       TemplateVariableManager variables,
       AbstractTemplateParameterLookup parameterLookup,
       FieldManager fields,
+      BasicExpressionCompiler constantCompiler,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {
     DetachState detachState = new DetachState(variables, thisVar, stateField);
@@ -168,6 +169,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             parameterLookup,
             fields,
             soyValueProviderCompiler,
+            constantCompiler,
             reporter,
             typeRegistry));
   }
@@ -1121,6 +1123,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return compilerWithNewAppendable(AppendableExpression.logger()).visitChildrenInNewScope(node);
   }
 
+  // TODO(lukes): augment the LazyClosureCompiler so we can make smarter save/restore decisions
+  // some lets turn into simple static field dereferences.  We could use derived variables, or no
+  // variables at all.
   @Override
   protected Statement visitLetValueNode(LetValueNode node) {
     Expression newLetValue =

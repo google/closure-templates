@@ -28,7 +28,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.plugin.java.internal.PluginInstanceFinder;
+import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -155,7 +155,8 @@ public final class PluginResolver {
         } else if (function instanceof SoyJavaSourceFunction) {
           // Also make sure that the applyForJavaSource impl uses a single plugin instance.
           // We don't support multiple instances.
-          Set<Class<?>> instances = PluginInstanceFinder.find((SoyJavaSourceFunction) function);
+          Set<Class<?>> instances =
+              PluginAnalyzer.analyze((SoyJavaSourceFunction) function).pluginInstances();
           if (instances.size() > 1) {
             reporter.report(
                 SourceLocation.UNKNOWN,

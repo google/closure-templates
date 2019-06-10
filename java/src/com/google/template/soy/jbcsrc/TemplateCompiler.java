@@ -171,7 +171,7 @@ final class TemplateCompiler {
     generateTemplateMetadata();
     generateKindMethod();
 
-    generateRenderMethod();
+    generateRenderMethod(constantCompiler);
 
     generateConstructor(constantCompiler);
 
@@ -254,7 +254,7 @@ final class TemplateCompiler {
     return new AutoAnnotation_TemplateCompiler_createDelTemplateMetadata(delPackage, name, variant);
   }
 
-  private void generateRenderMethod() {
+  private void generateRenderMethod(BasicExpressionCompiler constantCompiler) {
     final Label start = new Label();
     final Label end = new Label();
     final LocalVariable thisVar = createThisVar(template.typeInfo(), start, end);
@@ -276,6 +276,7 @@ final class TemplateCompiler {
                 variableSet,
                 variables,
                 fields,
+                constantCompiler,
                 reporter,
                 soyTypeRegistry)
             .compile(templateNode);
