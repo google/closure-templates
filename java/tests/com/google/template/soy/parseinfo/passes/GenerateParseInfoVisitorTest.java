@@ -206,9 +206,7 @@ public final class GenerateParseInfoVisitorTest {
     ParseResult parseResult =
         SoyFileSetParserBuilder.forFileContents(
                 SharedTestUtils.buildTestSoyFileContent(
-                    /* strictHtml= */ true,
-                    /* soyDocParamNames= */ null,
-                    Joiner.on('\n').join(templateLines)))
+                    /* strictHtml= */ true, Joiner.on('\n').join(templateLines)))
             .typeRegistry(typeRegistry)
             .parse();
     TemplateRegistry registry = parseResult.registry();

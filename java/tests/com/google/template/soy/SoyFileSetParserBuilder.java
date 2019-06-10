@@ -110,9 +110,7 @@ public final class SoyFileSetParserBuilder {
       boolean strictHtml, String... templateContents) {
     String[] fileContents = new String[templateContents.length];
     for (int i = 0; i < fileContents.length; ++i) {
-      fileContents[i] =
-          SharedTestUtils.buildTestSoyFileContent(
-              strictHtml, /* soyDocParamNames= */ null, templateContents[i]);
+      fileContents[i] = SharedTestUtils.buildTestSoyFileContent(strictHtml, templateContents[i]);
     }
     return new SoyFileSetParserBuilder(fileContents);
   }
