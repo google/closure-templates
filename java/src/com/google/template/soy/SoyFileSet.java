@@ -623,7 +623,14 @@ public final class SoyFileSet {
     //    doesn't help anything
     // 2. it potentially removes metadata from the tree by precalculating expressions. For example,
     //    trivial print nodes are evaluated, which can remove globals from the tree, but the
-    ParseResult result = parse(passManagerBuilder().allowUnknownGlobals().optimize(false));
+    ParseResult result =
+        parse(
+            passManagerBuilder()
+                .allowUnknownGlobals()
+                .optimize(false)
+                // Don't desugar, this is a bit of a waste of time and it destroys type information
+                // about @state parameters
+                .desugarHtmlAndStateNodes(false));
     throwIfErrorsPresent();
 
     SoyFileSetNode soyTree = result.fileSet();

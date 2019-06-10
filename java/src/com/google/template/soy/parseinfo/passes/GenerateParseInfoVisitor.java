@@ -49,7 +49,6 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
@@ -300,7 +299,7 @@ public final class GenerateParseInfoVisitor
     String javaClassName = soyFileToJavaClassNameMap.get(node);
 
     // Collect the following:
-    // + all the public basic templates (non-private, non-delegate) in a map from the
+    // + all the public basic/element templates (non-private, non-delegate) in a map from the
     //   upper-underscore template name to the template's node,
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
@@ -312,7 +311,8 @@ public final class GenerateParseInfoVisitor
     SortedSet<String> protoTypes = Sets.newTreeSet();
     Map<String, String> pluginInstances = new TreeMap<>();
     for (TemplateNode template : node.getChildren()) {
-      if (template.getVisibility() == Visibility.PUBLIC && template instanceof TemplateBasicNode) {
+      if (template.getVisibility() == Visibility.PUBLIC
+          && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
       }
