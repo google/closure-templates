@@ -56,6 +56,7 @@ import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.ListType;
@@ -315,13 +316,12 @@ public final class GenerateParseInfoVisitor
         publicBasicTemplateMap.put(
             convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
       }
-      for (TemplateParam param : template.getAllParams()) {
-        if (!param.isInjected()) {
-          allParamKeys.add(param.name());
-          paramKeyToTemplatesMultimap.put(param.name(), template);
-        }
-        SoyType paramType = param.type();
-        findProtoTypesRecurse(paramType, protoTypes);
+      for (TemplateParam param : template.getParams()) {
+        allParamKeys.add(param.name());
+        paramKeyToTemplatesMultimap.put(param.name(), template);
+      }
+      for (TemplateHeaderVarDefn varDefn : template.getHeaderParams()) {
+        findProtoTypesRecurse(varDefn.type(), protoTypes);
       }
       // TODO(b/77597955): Scan all expressions, to pick up types from function return values and
       // anything else that may have a type now or in the future.
