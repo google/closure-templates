@@ -48,6 +48,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.jbcsrc.ControlFlow.IfBlock;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.LazyClosureCompiler.LazyClosure;
 import com.google.template.soy.jbcsrc.MsgCompiler.PlaceholderCompiler;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
@@ -1052,11 +1053,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Expression valueExpr;
       if (child instanceof CallParamContentNode) {
         valueExpr =
-            lazyClosureCompiler.compileLazyContent("param", (CallParamContentNode) child, paramKey);
+            lazyClosureCompiler
+                .compileLazyContent("param", (CallParamContentNode) child, paramKey)
+                .soyValueProvider();
       } else {
         valueExpr =
-            lazyClosureCompiler.compileLazyExpression(
-                "param", child, paramKey, ((CallParamValueNode) child).getExpr());
+            lazyClosureCompiler
+                .compileLazyExpression(
+                    "param", child, paramKey, ((CallParamValueNode) child).getExpr())
+                .soyValueProvider();
       }
       // ParamStore.setField return 'this' so we can just chain the invocations together.
       paramStoreExpression =
@@ -1123,20 +1128,29 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return compilerWithNewAppendable(AppendableExpression.logger()).visitChildrenInNewScope(node);
   }
 
-  // TODO(lukes): augment the LazyClosureCompiler so we can make smarter save/restore decisions
-  // some lets turn into simple static field dereferences.  We could use derived variables, or no
-  // variables at all.
   @Override
   protected Statement visitLetValueNode(LetValueNode node) {
-    Expression newLetValue =
-        lazyClosureCompiler.compileLazyExpression("let", node, node.getVarName(), node.getExpr());
-    return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
+    return storeClosure(
+        lazyClosureCompiler.compileLazyExpression("let", node, node.getVarName(), node.getExpr()));
   }
 
   @Override
   protected Statement visitLetContentNode(LetContentNode node) {
-    Expression newLetValue = lazyClosureCompiler.compileLazyContent("let", node, node.getVarName());
-    return currentScope.create(node.getVarName(), newLetValue, STORE).initializer();
+    return storeClosure(lazyClosureCompiler.compileLazyContent("let", node, node.getVarName()));
+  }
+
+  Statement storeClosure(LazyClosure newLetValue) {
+    if (newLetValue.isTrivial()) {
+      currentScope.createTrivial(newLetValue.name(), newLetValue.soyValueProvider());
+      return Statement.NULL_STATEMENT;
+    } else {
+      return currentScope
+          .create(
+              newLetValue.name(),
+              newLetValue.soyValueProvider(),
+              TemplateVariableManager.SaveStrategy.STORE)
+          .initializer();
+    }
   }
 
   @Override
@@ -1186,7 +1200,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             // copy the node so we don't end up removing it from the parent as a side effect.
             fakeLet.addChild(SoyTreeUtils.cloneWithNewIds(node, new FixedIdGenerator(-1)));
             fakeLet.setParent(node.getParent());
-            return lazyClosureCompiler.compileLazyContent("ph", fakeLet, phname, prefix, suffix);
+            return lazyClosureCompiler
+                .compileLazyContent("ph", fakeLet, phname, prefix, suffix)
+                .soyValueProvider();
           }
         });
   }

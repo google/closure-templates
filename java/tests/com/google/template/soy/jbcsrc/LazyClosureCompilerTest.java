@@ -22,6 +22,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
+import static java.util.Arrays.asList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +33,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -46,6 +48,8 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -294,5 +298,22 @@ public class LazyClosureCompilerTest {
                 + "{let $null5 : $null4 /}"
                 + "{$null5}")
         .rendersAs("null");
+  }
+
+  @Test
+  public void testTrivialLetClassStructure() throws Exception {
+    CompiledTemplates templates =
+        compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar /} {$foo}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    Class<?> template = factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+    // no inner classes besides the factory
+    assertThat(asList(template.getDeclaredClasses())).containsExactly(factory.getClass());
+    // we only store bar in a private static field
+    Field barField = template.getDeclaredField("let_bar");
+    assertThat(asList(template.getDeclaredFields()))
+        .containsExactly(template.getDeclaredField("$state"), barField);
+    assertThat(barField.getType()).isEqualTo(SoyString.class);
+    assertThat(barField.getModifiers())
+        .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);
   }
 }

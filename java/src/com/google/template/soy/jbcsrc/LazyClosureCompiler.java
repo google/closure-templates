@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
@@ -39,6 +40,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
@@ -135,6 +137,21 @@ import org.objectweb.asm.commons.Method;
  * }</pre>
  */
 final class LazyClosureCompiler {
+  @AutoValue
+  abstract static class LazyClosure {
+    static LazyClosure create(String name, Expression soyValueProvider, boolean isTrivial) {
+      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+
+      return new AutoValue_LazyClosureCompiler_LazyClosure(name, soyValueProvider, isTrivial);
+    }
+
+    abstract String name();
+
+    abstract Expression soyValueProvider();
+
+    abstract boolean isTrivial();
+  }
+
   // All our lazy closures are package private.  They should only be referenced by their parent
   // classes (or each other)
   private static final int LAZY_CLOSURE_ACCESS = Opcodes.ACC_FINAL;
@@ -192,18 +209,24 @@ final class LazyClosureCompiler {
     this.typeRegistry = typeRegistry;
   }
 
-  Expression compileLazyExpression(
-      String namePrefix, SoyNode declaringNode, String varName, ExprNode exprNode) {
+  LazyClosure compileLazyExpression(
+      String namePrefix, SoyNode declaringNode, String varName, ExprRootNode exprNode) {
     if (ExpressionCompiler.canCompileToConstant(exprNode)) {
       SoyExpression expression = parentConstantCompiler.compile(exprNode);
-      return parentFields
-          .addStaticField(getProposedName(namePrefix, varName), expression.boxAsSoyValueProvider())
-          .accessor();
+      return LazyClosure.create(
+          varName,
+          parentFields
+              .addStaticField(
+                  getProposedName(namePrefix, varName), expression.boxAsSoyValueProvider())
+              .accessor(),
+          /* isTrivial=*/ true);
     }
     Optional<Expression> asSoyValueProvider =
         expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
     if (asSoyValueProvider.isPresent()) {
-      return asSoyValueProvider.get();
+      Expression svp = asSoyValueProvider.get();
+      return LazyClosure.create(
+          varName, svp, /* isTrivial=*/ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE);
     }
     TypeInfo type =
         innerClasses.registerInnerClassWithGeneratedName(
@@ -221,15 +244,15 @@ final class LazyClosureCompiler {
     innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
     innerClasses.add(writer.toClassData());
-    return expr;
+    return LazyClosure.create(varName, expr, /* isTrivial=*/ false);
   }
 
-  Expression compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
+  LazyClosure compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
     return compileLazyContent(
         namePrefix, renderUnit, varName, ExtraCodeCompiler.NO_OP, ExtraCodeCompiler.NO_OP);
   }
 
-  Expression compileLazyContent(
+  LazyClosure compileLazyContent(
       String namePrefix,
       RenderUnitNode renderUnit,
       String varName,
@@ -243,7 +266,7 @@ final class LazyClosureCompiler {
             ? asRawTextOnly(proposedName, renderUnit)
             : Optional.empty();
     if (asRawText.isPresent()) {
-      return asRawText.get();
+      return LazyClosure.create(varName, asRawText.get(), /*isTrivial=*/ true);
     }
     TypeInfo type =
         innerClasses.registerInnerClassWithGeneratedName(proposedName, LAZY_CLOSURE_ACCESS);
@@ -260,7 +283,7 @@ final class LazyClosureCompiler {
     innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
     innerClasses.add(writer.toClassData());
-    return expr;
+    return LazyClosure.create(varName, expr, /* isTrivial=*/ false);
   }
 
   /**

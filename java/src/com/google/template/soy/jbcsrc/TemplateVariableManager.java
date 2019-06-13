@@ -46,6 +46,16 @@ final class TemplateVariableManager implements LocalVariableManager {
     private Scope() {}
 
     /**
+     * Creates a 'trivial' variable.
+     *
+     * <p>This simply registers an expression within the scope so it can be looked up via {@link
+     * #getVariable}, but it does not use a local variable or generate save/restore logic, the
+     * expression will simply be evaluated on every reference. So it is only reasonable for
+     * 'trivial' expressions that just read fields or refer to other local variables.
+     */
+    abstract void createTrivial(String name, Expression expression);
+
+    /**
      * Creates a new 'synthetic' variable. A synthetic variable is a variable that is introduced by
      * the compiler rather than having a user defined name.
      *
@@ -111,6 +121,36 @@ final class TemplateVariableManager implements LocalVariableManager {
     abstract Object name();
   }
 
+  private abstract static class AbstractVariable {
+    abstract Statement save();
+
+    abstract Statement restore();
+
+    abstract Expression accessor();
+  }
+
+  private static final class TrivialVariable extends AbstractVariable {
+    final Expression accessor;
+
+    TrivialVariable(Expression accessor) {
+      this.accessor = accessor;
+    }
+
+    @Override
+    Statement save() {
+      return Statement.NULL_STATEMENT;
+    }
+
+    @Override
+    Statement restore() {
+      return Statement.NULL_STATEMENT;
+    }
+
+    @Override
+    Expression accessor() {
+      return accessor;
+    }
+  }
   /**
    * A variable that needs to be saved/restored.
    *
@@ -123,7 +163,7 @@ final class TemplateVariableManager implements LocalVariableManager {
    *   <li>A {@link LocalVariable} that can be used to read the value.
    * </ul>
    */
-  abstract static class Variable {
+  abstract static class Variable extends AbstractVariable {
     protected final Expression initExpression;
     protected final LocalVariable local;
     private final Statement initializer;
@@ -138,9 +178,10 @@ final class TemplateVariableManager implements LocalVariableManager {
       return initializer;
     }
 
-    abstract Statement save();
-
-    abstract Statement restore();
+    @Override
+    final Expression accessor() {
+      return local();
+    }
 
     final LocalVariable local() {
       return local;
@@ -194,7 +235,7 @@ final class TemplateVariableManager implements LocalVariableManager {
 
   private final FieldManager fields;
   private final SimpleLocalVariableManager delegate;
-  private final Map<VarKey, Variable> variablesByKey = new LinkedHashMap<>();
+  private final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
   private final LocalVariable thisVar;
   private int numberOfActiveTemporaries;
 
@@ -216,6 +257,11 @@ final class TemplateVariableManager implements LocalVariableManager {
     return new Scope() {
       final List<VarKey> activeVariables = new ArrayList<>();
       int activeTemporariesInThisScope;
+
+      @Override
+      void createTrivial(String name, Expression expression) {
+        putVariable(VarKey.create(name), new TrivialVariable(expression));
+      }
 
       @Override
       Variable createSynthetic(
@@ -241,7 +287,7 @@ final class TemplateVariableManager implements LocalVariableManager {
       public Statement exitScope() {
         numberOfActiveTemporaries -= activeTemporariesInThisScope;
         for (VarKey key : activeVariables) {
-          Variable var = variablesByKey.remove(key);
+          AbstractVariable var = variablesByKey.remove(key);
           if (var == null) {
             throw new IllegalStateException("no variable active for key: " + key);
           }
@@ -251,24 +297,33 @@ final class TemplateVariableManager implements LocalVariableManager {
 
       private Variable doCreate(
           String proposedName, Expression initExpr, VarKey key, SaveStrategy strategy) {
-        LocalVariable local = delegateScope.createLocal(proposedName, initExpr.resultType());
         Variable var;
         switch (strategy) {
           case DERIVED:
-            var = new DerivedVariable(initExpr, local);
+            var =
+                new DerivedVariable(
+                    initExpr, delegateScope.createLocal(proposedName, initExpr.resultType()));
             break;
           case STORE:
-            var = new FieldSavedVariable(proposedName, initExpr, local);
+            var =
+                new FieldSavedVariable(
+                    proposedName,
+                    initExpr,
+                    delegateScope.createLocal(proposedName, initExpr.resultType()));
             break;
           default:
             throw new AssertionError();
         }
-        Variable old = variablesByKey.put(key, var);
+        putVariable(key, var);
+        return var;
+      }
+
+      private void putVariable(VarKey key, AbstractVariable var) {
+        AbstractVariable old = variablesByKey.put(key, var);
         if (old != null) {
           throw new IllegalStateException("multiple variables active for key: " + key);
         }
         activeVariables.add(key);
-        return var;
       }
     };
   }
@@ -282,7 +337,7 @@ final class TemplateVariableManager implements LocalVariableManager {
    * Looks up a user defined variable with the given name. The variable must have been created in a
    * currently active scope.
    */
-  LocalVariable getVariable(String name) {
+  Expression getVariable(String name) {
     return getVariable(VarKey.create(name));
   }
 
@@ -290,14 +345,14 @@ final class TemplateVariableManager implements LocalVariableManager {
    * Looks up a synthetic variable with the given name. The variable must have been created in a
    * currently active scope.
    */
-  LocalVariable getVariable(SyntheticVarName name) {
+  Expression getVariable(SyntheticVarName name) {
     return getVariable(VarKey.create(name));
   }
 
-  private LocalVariable getVariable(VarKey varKey) {
-    Variable var = variablesByKey.get(varKey);
+  private Expression getVariable(VarKey varKey) {
+    AbstractVariable var = variablesByKey.get(varKey);
     if (var != null) {
-      return var.local();
+      return var.accessor();
     }
     throw new IllegalArgumentException("No variable: '" + varKey + "' is bound");
   }
@@ -320,7 +375,7 @@ final class TemplateVariableManager implements LocalVariableManager {
     List<Statement> saves = new ArrayList<>();
     List<Statement> restores = new ArrayList<>();
     // The map is in insertion order.  This is important since it means derived variables will work
-    for (Variable var : variablesByKey.values()) {
+    for (AbstractVariable var : variablesByKey.values()) {
       saves.add(var.save());
       restores.add(var.restore());
     }
