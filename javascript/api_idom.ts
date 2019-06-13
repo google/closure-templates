@@ -16,12 +16,6 @@ type ElementKey = string|number|null;
 /** A key as passed from compiled Soy. Soy includes undefined in null. */
 type ElementKeyParam = ElementKey|undefined;
 
-/** Unwraps objects passed from Soy so they match strings. */
-function unwrapKey(key: ElementKeyParam): ElementKey {
-  if (key === undefined) return null;
-  return key;
-}
-
 /** Type for HTML templates */
 export type Template<T> =
     // tslint:disable-next-line:no-any
@@ -42,7 +36,9 @@ export class IncrementalDomRenderer {
   // - A new stack is pushed onto the holder before a manually keyed element
   //   is opened, and popped before the element is closed. This is because
   //   manual keys "reset" the key context.
-  private keyStackHolder: ElementKey[][] = [[]];
+  // Note that for performance, the "stack" is implemented as a string with
+  // the items being `${SIZE OF KEY}${DELIMITER}${KEY}`.
+  private readonly keyStackHolder: string[] = [];
   private logger: Logger|null = null;
 
   /**
@@ -54,14 +50,15 @@ export class IncrementalDomRenderer {
       elementOpenFn:
           (name: string, key?: string|null, statics?: string[]) => void,
       nameOrCtor: string, key?: ElementKeyParam, statics?: string[]) {
+    let oldKey: string;
     if (key !== undefined) {
-      this.pushKey(unwrapKey(key));
+      oldKey = this.pushKey(key);
     }
     const keyStack = this.getCurrentKeyStack();
     const el =
         elementOpenFn(nameOrCtor, getKeyForCurrentPointer(keyStack), statics);
     if (key !== undefined) {
-      this.popKey();
+      this.popKey(oldKey!);
     }
     return el;
   }
@@ -75,7 +72,7 @@ export class IncrementalDomRenderer {
    * keyed elements.
    */
   pushManualKey(key: ElementKeyParam) {
-    this.keyStackHolder.push([unwrapKey(key)]);
+    this.keyStackHolder.push(serializeKey(key));
   }
 
   /**
@@ -91,25 +88,27 @@ export class IncrementalDomRenderer {
    * calls.
    */
   pushKey(key: ElementKeyParam) {
-    const keyStack = this.keyStackHolder[this.keyStackHolder.length - 1];
-    keyStack.push(unwrapKey(key));
+    const oldKey = this.getCurrentKeyStack();
+    const serializedKey = serializeKey(key);
+    this.keyStackHolder[this.keyStackHolder.length - 1] =
+        serializedKey + oldKey;
+    return oldKey;
   }
 
   /**
    * Called (from generated template render function) AFTER template
    * calls.
    */
-  popKey() {
-    const keyStack = this.keyStackHolder[this.keyStackHolder.length - 1];
-    keyStack.pop();
+  popKey(oldKey: string) {
+    this.keyStackHolder[this.keyStackHolder.length - 1] = oldKey;
   }
 
   /**
    * Returns the stack on top of the holder. This represents the current
    * chain of keys.
    */
-  getCurrentKeyStack(): ElementKey[] {
-    return this.keyStackHolder[this.keyStackHolder.length - 1];
+  getCurrentKeyStack(): string {
+    return this.keyStackHolder[this.keyStackHolder.length - 1] || '';
   }
 
   elementOpen(nameOrCtor: string, key?: ElementKeyParam, statics?: string[]):
@@ -268,34 +267,47 @@ export class NullRenderer extends IncrementalDomRenderer {
 }
 
 /**
+ * Provides a compact serialization format for the key structure.
+ */
+export function serializeKey(item: string|number|null|undefined) {
+  const stringified = String(item);
+  let delimiter;
+  if (item == null) {
+    delimiter = '_';
+  } else if (typeof item === 'number') {
+    delimiter = '#';
+  } else {
+    delimiter = ':';
+  }
+  return `${stringified.length}${delimiter}${stringified}`;
+}
+
+/**
  * For the current pointer, returns the correct key - either the original
  * key if the proposed key is a suffix (this means that we're patching
  * a subtree of the originally rendered template) or the current key is
  * a suffix (we are rehydrating from a parent), or the proposed key
  * otherwise (go/soy-idom-suffix-matching-strategy).
  */
-function getKeyForCurrentPointer(proposedKeyArr?: ElementKey[]): string|null {
-  if (!proposedKeyArr) return null;
-
+function getKeyForCurrentPointer(proposedKey: string): string {
   const currentPointer = incrementaldom.currentPointer();
   if (!currentPointer || !incrementaldom.isDataInitialized(currentPointer)) {
     // If there is no current pointer or its data has not been initialized,
     // this means the element is being rendered or hydrated for the first
     // time, so just use the proposed key.
-    return JSON.stringify(proposedKeyArr);
+    return proposedKey;
   }
 
   const currentPointerKey = incrementaldom.getKey(currentPointer) as string;
   // If the current pointer has no key, just use the proposed key.
   // This is expected to happen when doing the initial client-side hydration
   // of server-side rendered DOM.
-  if (!currentPointerKey) return JSON.stringify(proposedKeyArr);
+  if (!currentPointerKey) return proposedKey;
 
-  const currentPointerKeyArr = JSON.parse(currentPointerKey);
-  return isMatchingKey(proposedKeyArr, currentPointerKeyArr) ?
+  return isMatchingKey(proposedKey, currentPointerKey) ?
       // Just use the current (original) key.
       currentPointerKey :
-      JSON.stringify(proposedKeyArr);
+      proposedKey;
 }
 
 /**
@@ -306,13 +318,7 @@ function getKeyForCurrentPointer(proposedKeyArr?: ElementKey[]): string|null {
  * - proposedKeyArr: ['a', 'b', 'c'], currentKeyArr: ['b', 'c'],  => true
  * - proposedKeyArr: ['b', 'c'], currentKeyArr: ['a', 'b', 'c', 'd'] => false
  */
-export function isMatchingKey(
-    proposedKeyArr: ElementKey[], currentPointerKeyArr: ElementKey[]) {
-  let i = proposedKeyArr.length - 1;
-  let j = currentPointerKeyArr.length - 1;
-  while (i >= 0 && j >= 0 && proposedKeyArr[i] === currentPointerKeyArr[j]) {
-    i--;
-    j--;
-  }
-  return i < 0 || j < 0;
+export function isMatchingKey(proposedKey: string, currentPointerKey: string) {
+  return proposedKey.startsWith(currentPointerKey) ||
+      currentPointerKey.startsWith(proposedKey);
 }
