@@ -463,6 +463,12 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testForLoop_rangeOverConstant() {
+    assertThatTemplateBody("{let $len: 10/}{for $i in range($len)}{$i}{/for}")
+        .rendersAs("0123456789");
+  }
+
+  @Test
   public void testForNode_mapKeys() {
     assertThatTemplateBody(
             "{@param map : map<string, int>}",

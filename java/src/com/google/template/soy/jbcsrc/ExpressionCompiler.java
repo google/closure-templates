@@ -25,8 +25,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNu
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -133,12 +131,7 @@ final class ExpressionCompiler {
         SoyTypeRegistry registry) {
       this.compilerVisitor =
           new CompilerVisitor(
-              parameters,
-              varManager,
-              fields,
-              Suppliers.ofInstance(BasicDetacher.INSTANCE),
-              reporter,
-              registry);
+              parameters, varManager, fields, BasicDetacher.INSTANCE, reporter, registry);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -187,7 +180,7 @@ final class ExpressionCompiler {
             /* parameters= */ null,
             varManager,
             fields,
-            Suppliers.ofInstance(ExpressionDetacher.NullDetatcher.INSTANCE),
+            ExpressionDetacher.NullDetatcher.INSTANCE,
             reporter,
             registry));
   }
@@ -271,12 +264,8 @@ final class ExpressionCompiler {
     if (RequiresDetachVisitor.INSTANCE.exec(node)) {
       return Optional.empty();
     }
-    Supplier<ExpressionDetacher> throwingSupplier =
-        () -> {
-          throw new AssertionError();
-        };
     return Optional.of(
-        new CompilerVisitor(parameters, varManager, fields, throwingSupplier, reporter, registry)
+        new CompilerVisitor(parameters, varManager, fields, /* detacher=*/ null, reporter, registry)
             .exec(node));
   }
 
@@ -290,17 +279,15 @@ final class ExpressionCompiler {
             parameters,
             varManager,
             fields,
-            // Use a lazy supplier to allocate the expression detacher on demand.  Allocating the
-            // detacher eagerly creates detach points so we want to delay until definitely
-            // necessary.
-            Suppliers.memoize(() -> detacherFactory.createExpressionDetacher(reattachPoint)),
+            detacherFactory.createExpressionDetacher(reattachPoint),
             reporter,
             registry));
   }
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
-    final Supplier<? extends ExpressionDetacher> detacher;
+    // is null when we are generating code with no detaches.
+    @Nullable final ExpressionDetacher detacher;
     // is null when this is a 'constant' compiler
     @Nullable final TemplateParameterLookup parameters;
     final LocalVariableManager varManager;
@@ -312,7 +299,7 @@ final class ExpressionCompiler {
         @Nullable TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         FieldManager fields,
-        Supplier<? extends ExpressionDetacher> detacher,
+        ExpressionDetacher detacher,
         ErrorReporter reporter,
         SoyTypeRegistry registry) {
       this.detacher = detacher;
@@ -770,7 +757,7 @@ final class ExpressionCompiler {
         return SoyExpression.forInt(expression);
       } else {
         // otherwise it must be a SoyValueProvider, resolve and cast
-        expression = detacher.get().resolveSoyValueProvider(expression);
+        expression = detacher.resolveSoyValueProvider(expression);
         return SoyExpression.forSoyValue(
             varRef.getType(),
             expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
@@ -789,7 +776,7 @@ final class ExpressionCompiler {
       // _not_ the first one. This would be super awesome and would save bytecode/branches/states
       // and technically be useful for all varrefs. For the time being we do the naive thing and
       // just assume that the jit can handle all the dead branches effectively.
-      Expression paramExpr = detacher.get().resolveSoyValueProvider(parameters.getParam(param));
+      Expression paramExpr = detacher.resolveSoyValueProvider(parameters.getParam(param));
       // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
       // since we do not have good checking for unions (or nullability)
       // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
@@ -805,7 +792,7 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
-      expression = detacher.get().resolveSoyValueProvider(expression);
+      expression = detacher.resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(
           varRef.getType(),
           expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
@@ -1157,7 +1144,6 @@ final class ExpressionCompiler {
         return SoyExpression.forSoyValue(
             node.getType(),
             detacher
-                .get()
                 .resolveSoyValueProvider(fieldProvider)
                 .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
       }
@@ -1185,7 +1171,6 @@ final class ExpressionCompiler {
         }
         Expression soyValue =
             detacher
-                .get()
                 .resolveSoyValueProvider(soyValueProvider)
                 // Just like javac, we insert cast operations when removing from a collection.
                 .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());

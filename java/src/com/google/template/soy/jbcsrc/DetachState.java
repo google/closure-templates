@@ -120,12 +120,16 @@ final class DetachState implements ExpressionDetacher.Factory {
    */
   @Override
   public ExpressionDetacher createExpressionDetacher(Label reattachPoint) {
-    SaveRestoreState saveRestoreState = variables.saveRestoreState();
-    Statement restore = saveRestoreState.restore();
-    int state = addState(reattachPoint, restore);
-    Statement saveState = stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+    // Lazily allocate the save restore state since it isnt always needed.
     return new ExpressionDetacher.BasicDetacher(
-        Statement.concat(saveRestoreState.save(), saveState));
+        () -> {
+          SaveRestoreState saveRestoreState = variables.saveRestoreState();
+          Statement restore = saveRestoreState.restore();
+          int state = addState(reattachPoint, restore);
+          Statement saveState =
+              stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+          return Statement.concat(saveRestoreState.save(), saveState);
+        });
   }
 
   /**
