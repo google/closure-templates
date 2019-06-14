@@ -294,16 +294,6 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract String getDelPackageName();
 
-  /**
-   * The actual parsed template. Will only be non-null for templates with {@link #getSoyFileKind} of
-   * {@link SoyFileKind#SRC}
-   *
-   * <p>TODO(user): eliminate this method. If someone clones the tree this will pin a copy of an
-   * old node.
-   */
-  @Nullable
-  public abstract TemplateNode getTemplateNode();
-
   /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
   public abstract ImmutableList<Parameter> getParameters();
 
@@ -332,8 +322,6 @@ public abstract class TemplateMetadata {
     public abstract Builder setDelTemplateVariant(String delTemplateVariant);
 
     public abstract Builder setContentKind(SanitizedContentKind contentKind);
-
-    public abstract Builder setTemplateNode(@Nullable TemplateNode template);
 
     public abstract Builder setStrictHtml(boolean strictHtml);
 
