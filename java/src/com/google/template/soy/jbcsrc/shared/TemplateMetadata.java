@@ -44,6 +44,9 @@ public @interface TemplateMetadata {
    */
   String[] injectedParams();
 
+  /** The required css for this template, plus all file level requiredcss. */
+  String[] requiredCssNames();
+
   /** Returns the fully qualified names of all the basic templates called by this template. */
   String[] callees();
 

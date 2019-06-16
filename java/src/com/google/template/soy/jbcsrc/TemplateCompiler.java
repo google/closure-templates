@@ -31,6 +31,7 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -228,19 +229,29 @@ final class TemplateCompiler {
       deltemplateMetadata = createDefaultDelTemplateMetadata();
     }
     TemplateMetadata metadata =
-        createTemplateMetadata(kind, uniqueIjs, callees, delCallees, deltemplateMetadata);
+        createTemplateMetadata(
+            kind,
+            new ImmutableSet.Builder<String>()
+                .addAll(templateNode.getRequiredCssNamespaces())
+                .addAll(templateNode.getParent().getRequiredCssNamespaces())
+                .build(),
+            uniqueIjs,
+            callees,
+            delCallees,
+            deltemplateMetadata);
     TEMPLATE_METADATA_REF.write(metadata, writer);
   }
 
   @AutoAnnotation
   static TemplateMetadata createTemplateMetadata(
       String contentKind,
+      Set<String> requiredCssNames,
       Set<String> injectedParams,
       Set<String> callees,
       Set<String> delCallees,
       TemplateMetadata.DelTemplateMetadata deltemplateMetadata) {
     return new AutoAnnotation_TemplateCompiler_createTemplateMetadata(
-        contentKind, injectedParams, callees, delCallees, deltemplateMetadata);
+        contentKind, requiredCssNames, injectedParams, callees, delCallees, deltemplateMetadata);
   }
 
   @AutoAnnotation
