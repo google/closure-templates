@@ -47,8 +47,10 @@ public class SoyHeaderCompilerTest {
     File soyFile1 = temp.newFile("temp.soy");
     Files.asCharSink(soyFile1, UTF_8)
         .write(
-            "{namespace ns}\n"
-                + "/***/\n{template .a}{@param p: string}{call .a data='all'/}{/template}");
+            "{namespace ns requirecss=\"ns.foo\"}\n"
+                + "/***/\n"
+                + "{template .a requirecss=\"ns.bar\"}{@param p: string}{call .a"
+                + " data='all'/}{/template}");
     File outputFile = temp.newFile("temp.soyh");
 
     int exitCode =
@@ -69,9 +71,11 @@ public class SoyHeaderCompilerTest {
     assertThat(file.getNamespace()).isEqualTo("ns");
     assertThat(file.getFilePath()).isEqualTo(soyFile1.getPath());
     assertThat(file.getTemplateList()).hasSize(1);
+    assertThat(file.getRequiredCssNamesList()).containsExactly("ns.foo");
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getTemplateName()).isEqualTo(".a");
     assertThat(template.getTemplateKind()).isEqualTo(TemplateKindP.BASIC);
+    assertThat(template.getRequiredCssNamesList()).containsExactly("ns.bar");
     assertThat(template.getContentKind()).isEqualTo(SanitizedContentKindP.HTML);
     assertThat(template.getParameterList())
         .containsExactly(

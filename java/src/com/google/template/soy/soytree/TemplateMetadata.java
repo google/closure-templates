@@ -56,6 +56,7 @@ public abstract class TemplateMetadata {
             .setStrictHtml(template.isStrictHtml())
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility())
+            .setRequiredCssNames(ImmutableList.copyOf(template.getRequiredCssNamespaces()))
             .setParameters(Parameter.directParametersFromTemplate(template))
             .setDataAllCallSituations(DataAllCallSituation.fromTemplate(template));
     switch (template.getKind()) {
@@ -297,6 +298,9 @@ public abstract class TemplateMetadata {
   /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
   public abstract ImmutableList<Parameter> getParameters();
 
+  /** The css namespaces required by the template */
+  public abstract ImmutableList<String> getRequiredCssNames();
+
   /**
    * The unique template calls that are performed by this template.
    *
@@ -310,6 +314,8 @@ public abstract class TemplateMetadata {
   @AutoValue.Builder
   public abstract static class Builder {
     public abstract Builder setSoyFileKind(SoyFileKind location);
+
+    public abstract Builder setRequiredCssNames(ImmutableList<String> requiredCssNames);
 
     public abstract Builder setSourceLocation(SourceLocation location);
 

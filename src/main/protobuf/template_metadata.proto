@@ -26,6 +26,7 @@ message SoyFileP {
   string delpackage = 2;
   string namespace = 3;
   repeated TemplateMetadataP template = 4;
+  repeated string required_css_names = 5;
 }
 
 // A soy type
@@ -142,6 +143,7 @@ message TemplateMetadataP {
   VisibilityP visibility = 6;
   repeated ParameterP parameter = 7;
   repeated DataAllCallSituationP data_all_call_situation = 8;
+  repeated string required_css_names = 10;
 
   reserved 9;
 }
