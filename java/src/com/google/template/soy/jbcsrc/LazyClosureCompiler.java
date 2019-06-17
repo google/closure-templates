@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.StandardNames.COMPILED_TEMPLATE;
 import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -388,7 +387,6 @@ final class LazyClosureCompiler {
 
     Expression compileRenderable(
         RenderUnitNode renderUnit, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
-      FieldRef stateField = fields.addField(STATE_FIELD, Type.INT_TYPE);
 
       final Label start = new Label();
       final Label end = new Label();
@@ -410,7 +408,6 @@ final class LazyClosureCompiler {
           SoyNodeCompiler.create(
               registry,
               innerClasses,
-              stateField,
               thisVar,
               AppendableExpression.forLocal(appendableVar),
               variableSet,

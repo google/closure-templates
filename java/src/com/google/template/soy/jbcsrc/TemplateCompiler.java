@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
-import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_INIT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
@@ -75,7 +74,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 /**
  * Compiles the top level {@link CompiledTemplate} class for a single template and all related
@@ -91,7 +89,6 @@ final class TemplateCompiler {
   private FieldRef paramsField;
   // lazily allocated
   private FieldRef ijField;
-  private final FieldRef stateField;
   private final FieldManager fields;
   private final ImmutableMap<String, FieldRef> paramFields;
   private final CompiledTemplateMetadata template;
@@ -112,7 +109,6 @@ final class TemplateCompiler {
     this.templateNode = templateNode;
     this.innerClasses = new InnerClasses(template.typeInfo());
     this.fields = new FieldManager(template.typeInfo());
-    this.stateField = fields.addField(STATE_FIELD, Type.INT_TYPE).asNonNull();
 
     ImmutableMap.Builder<String, FieldRef> builder = ImmutableMap.builder();
     for (TemplateParam param : templateNode.getAllParams()) {
@@ -281,7 +277,6 @@ final class TemplateCompiler {
         SoyNodeCompiler.create(
                 registry,
                 innerClasses,
-                stateField,
                 thisVar,
                 AppendableExpression.forLocal(appendableVar),
                 variableSet,

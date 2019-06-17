@@ -383,4 +383,16 @@ public final class DetachStateTest {
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("Hello foo!");
   }
+
+  @Test
+  public void testNoDetachesForTrivialBlocks() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile("{namespace ns}", "", "{template .t}", "", "{/template}", "");
+    CompiledTemplate template = templates.getTemplateFactory("ns.t").create(EMPTY_DICT, EMPTY_DICT);
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    assertThat(template.render(output, getDefaultContext(templates)))
+        .isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEmpty();
+    assertThat(template.getClass().getDeclaredFields()).hasLength(0); // no $state field
+  }
 }

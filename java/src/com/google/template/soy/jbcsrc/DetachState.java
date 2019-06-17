@@ -17,6 +17,8 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.StandardNames.STATE_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_RESULT_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.Statement.returnExpression;
 
@@ -30,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -101,17 +104,21 @@ final class DetachState implements ExpressionDetacher.Factory {
   private final TemplateVariableManager variables;
   private final List<ReattachState> reattaches = new ArrayList<>();
   private final Expression thisExpr;
-  private final FieldRef stateField;
+  private final FieldManager fields;
+  // lazily allocated
+  @Nullable private FieldRef stateField;
 
-  DetachState(TemplateVariableManager variables, Expression thisExpr, FieldRef stateField) {
-    checkArgument(stateField.type().equals(Type.INT_TYPE));
+  DetachState(TemplateVariableManager variables, Expression thisExpr, FieldManager fields) {
     this.variables = variables;
     this.thisExpr = thisExpr;
-    this.stateField = stateField;
-    // Add a null at the head of the list so that the reattaches in the list match their state
-    // indices  e.g. reattach.get(2) is the reattach for state 2.  Because 0 is a special case for
-    // 'initial call'.
-    reattaches.add(null);
+    this.fields = fields;
+  }
+
+  private FieldRef getStateField() {
+    if (stateField == null) {
+      stateField = fields.addField(STATE_FIELD, Type.INT_TYPE);
+    }
+    return stateField;
   }
 
   /**
@@ -127,7 +134,7 @@ final class DetachState implements ExpressionDetacher.Factory {
           Statement restore = saveRestoreState.restore();
           int state = addState(reattachPoint, restore);
           Statement saveState =
-              stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+              getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
           return Statement.concat(saveRestoreState.save(), saveState);
         });
   }
@@ -148,7 +155,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     final Expression isSoftLimited = appendable.softLimitReached();
     final Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
     final Statement saveState =
-        stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+        getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -196,7 +203,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     Statement restore = saveRestoreState.restore();
     int state = addState(reattachPoint, restore);
     final Statement saveState =
-        stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+        getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -264,7 +271,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     // We pass NULL statement for the restore logic since we handle that ourselves below
     int state = addState(reattachRender, Statement.NULL_STATEMENT);
     final Statement saveState =
-        stateField.putInstanceField(thisExpr, BytecodeUtils.constant(state));
+        getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
@@ -303,13 +310,22 @@ final class DetachState implements ExpressionDetacher.Factory {
    * <p>Note: This statement should be the <em>first</em> statement in any detachable method.
    */
   Statement generateReattachTable() {
-    final Expression readField = stateField.accessor(thisExpr);
+    if (stateField == null) {
+      checkState(reattaches.isEmpty(), "expected no reattaches: %s", reattaches);
+      return Statement.NULL_STATEMENT;
+    }
+    if (reattaches.isEmpty()) {
+      throw new IllegalStateException(
+          "inconsistent state, never generated a state but has reattach logic.");
+    }
+    final Expression readField = getStateField().accessor(thisExpr);
     final Statement defaultCase =
         Statement.throwExpression(MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(readField));
     return new Statement() {
       @Override
       protected void doGen(final CodeBuilder adapter) {
-        int[] keys = new int[reattaches.size()];
+        // add 1 so that state 0 is the initial state
+        int[] keys = new int[reattaches.size() + 1];
         for (int i = 0; i < keys.length; i++) {
           keys[i] = i;
         }
@@ -329,7 +345,8 @@ final class DetachState implements ExpressionDetacher.Factory {
                   adapter.goTo(end);
                   return;
                 }
-                ReattachState reattachState = reattaches.get(key);
+                // subtract 1 for the index of the state
+                ReattachState reattachState = reattaches.get(key - 1);
                 // restore and jump!
                 reattachState.restoreStatement().gen(adapter);
                 adapter.goTo(reattachState.reattachPoint());
@@ -353,7 +370,8 @@ final class DetachState implements ExpressionDetacher.Factory {
   private int addState(Label reattachPoint, Statement restore) {
     ReattachState create = ReattachState.create(reattachPoint, restore);
     reattaches.add(create);
-    int state = reattaches.size() - 1; // the index of the ReattachState in the list
+    // the index of the ReattachState in the list + 1, 0 is reserved for 'initial state'.
+    int state = reattaches.size();
     return state;
   }
 
@@ -372,6 +390,6 @@ final class DetachState implements ExpressionDetacher.Factory {
 
   /** Returns the number of unique detach/reattach points. */
   int getNumberOfDetaches() {
-    return reattaches.size() - 1;
+    return reattaches.size();
   }
 }

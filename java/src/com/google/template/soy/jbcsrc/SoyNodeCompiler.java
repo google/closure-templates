@@ -139,7 +139,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   static SoyNodeCompiler create(
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
-      FieldRef stateField,
       Expression thisVar,
       AppendableExpression appendableVar,
       TemplateVariableManager variables,
@@ -148,7 +147,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       BasicExpressionCompiler constantCompiler,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {
-    DetachState detachState = new DetachState(variables, thisVar, stateField);
+    DetachState detachState = new DetachState(variables, thisVar, fields);
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(
             detachState, parameterLookup, variables, fields, reporter, typeRegistry);
