@@ -28,7 +28,7 @@ import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {IncrementalDomRenderer, isMatchingKey, serializeKey} from './api_idom';
+import {IncrementalDomRenderer, isMatchingKey, patch, patchOuter, serializeKey} from './api_idom';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
 
@@ -114,7 +114,7 @@ function makeAttributes(idomFn: any): IdomFunction {
 function htmlToString(
     fn: LetFunction, renderer: IncrementalDomRenderer = defaultIdomRenderer) {
   const el = document.createElement('div');
-  incrementaldom.patch(el, () => fn(renderer));
+  patch(el, () => fn(renderer));
   return el.innerHTML;
 }
 
@@ -134,7 +134,7 @@ function attributesFactory(fn: PatchFunction): PatchFunction {
 function attributesToString(fn: PatchFunction): string {
   const elFn = attributesFactory(fn);
   const el = document.createElement('div');
-  incrementaldom.patchOuter(el, elFn);
+  patchOuter(el, elFn);
   const s: string[] = [];
   for (let i = 0; i < el.attributes.length; i++) {
     s.push(`${el.attributes[i].name}=${el.attributes[i].value}`);

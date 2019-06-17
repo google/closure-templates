@@ -9,7 +9,7 @@ import {IjData} from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_
 import {IdomFunctionMembers} from 'goog:soydata';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {IncrementalDomRenderer} from './api_idom';
+import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {isTaggedForSkip} from './global';
 
 /** Function that executes Idom instructions */
@@ -47,7 +47,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
    */
   render(renderer = new IncrementalDomRenderer()) {
     assert(this.node);
-    incrementaldom.patchOuter(this.node!, () => {
+    patchOuter(this.node!, () => {
       // If there are parameters, they must already be specified.
       this.renderInternal(renderer, this.data!, true);
     });

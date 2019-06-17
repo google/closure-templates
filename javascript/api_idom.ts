@@ -10,6 +10,15 @@ import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_
 import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
+/** PatchInner using Soy-IDOM semantics. */
+export const patchInner = incrementaldom.patchInner;
+
+/** PatchOuter using Soy-IDOM semantics. */
+export const patchOuter = incrementaldom.patchOuter;
+
+/** PatchInner using Soy-IDOM semantics. */
+export const patch = patchInner;
+
 /** A key as stored in the stack.  This is JSON-serialzed for idom APIs. */
 type ElementKey = string|number|null;
 
