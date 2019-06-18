@@ -11,19 +11,23 @@ import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  //
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 /** PatchInner using Soy-IDOM semantics. */
-export const patchInner = incrementaldom.patchInner;
-
+export const patchInner = incrementaldom.createPatchInner({
+  matches:
+      (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
+       currentPointerKey) => nameOrCtor === expectedNameOrCtor &&
+      isMatchingKey(proposedKey, currentPointerKey)
+});
 /** PatchOuter using Soy-IDOM semantics. */
-export const patchOuter = incrementaldom.patchOuter;
-
+export const patchOuter = incrementaldom.createPatchOuter({
+  matches:
+      (arg1, nameOrCtor, expectedNameOrCtor, proposedKey, currentPointerKey) =>
+          nameOrCtor === expectedNameOrCtor &&
+      isMatchingKey(proposedKey, currentPointerKey)
+});
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
 
-/** A key as stored in the stack.  This is JSON-serialzed for idom APIs. */
-type ElementKey = string|number|null;
-
-/** A key as passed from compiled Soy. Soy includes undefined in null. */
-type ElementKeyParam = ElementKey|undefined;
+type ElementKey = string|number|null|undefined;
 
 /** Type for HTML templates */
 export type Template<T> =
@@ -58,14 +62,13 @@ export class IncrementalDomRenderer {
   private elementOpenWrapper(
       elementOpenFn:
           (name: string, key?: string|null, statics?: string[]) => void,
-      nameOrCtor: string, key?: ElementKeyParam, statics?: string[]) {
+      nameOrCtor: string, key?: string, statics?: string[]) {
     let oldKey: string;
     if (key !== undefined) {
       oldKey = this.pushKey(key);
     }
     const keyStack = this.getCurrentKeyStack();
-    const el =
-        elementOpenFn(nameOrCtor, getKeyForCurrentPointer(keyStack), statics);
+    const el = elementOpenFn(nameOrCtor, keyStack, statics);
     if (key !== undefined) {
       this.popKey(oldKey!);
     }
@@ -80,7 +83,7 @@ export class IncrementalDomRenderer {
    * Called (from generated template render function) before OPENING
    * keyed elements.
    */
-  pushManualKey(key: ElementKeyParam) {
+  pushManualKey(key: ElementKey) {
     this.keyStackHolder.push(serializeKey(key));
   }
 
@@ -96,7 +99,7 @@ export class IncrementalDomRenderer {
    * Called (from generated template render function) BEFORE template
    * calls.
    */
-  pushKey(key: ElementKeyParam) {
+  pushKey(key: string) {
     const oldKey = this.getCurrentKeyStack();
     const serializedKey = serializeKey(key);
     this.keyStackHolder[this.keyStackHolder.length - 1] =
@@ -120,8 +123,8 @@ export class IncrementalDomRenderer {
     return this.keyStackHolder[this.keyStackHolder.length - 1] || '';
   }
 
-  elementOpen(nameOrCtor: string, key?: ElementKeyParam, statics?: string[]):
-      HTMLElement|void {
+  elementOpen(nameOrCtor: string, key?: string, statics?: string[]): HTMLElement
+      |void {
     return this.elementOpenWrapper(
         incrementaldom.elementOpen, nameOrCtor, key, statics);
   }
@@ -130,7 +133,7 @@ export class IncrementalDomRenderer {
     return incrementaldom.elementClose(name);
   }
 
-  elementOpenStart(name: string, key?: ElementKeyParam, statics?: string[]) {
+  elementOpenStart(name: string, key?: string, statics?: string[]) {
     return this.elementOpenWrapper(
         incrementaldom.elementOpenStart, name, key, statics);
   }
@@ -241,14 +244,14 @@ export class NullRenderer extends IncrementalDomRenderer {
   }
 
   elementOpen(
-      nameOrCtor: string, key?: ElementKey, statics?: string[],
+      nameOrCtor: string, key?: string, statics?: string[],
       ...varArgs: string[]) {}
 
   alignWithDOM(name: string, key: string) {}
 
   elementClose(name: string) {}
 
-  elementOpenStart(name: string, key?: ElementKey, statics?: string[]) {}
+  elementOpenStart(name: string, key?: string, statics?: string[]) {}
 
   elementOpenEnd() {}
 
@@ -292,42 +295,24 @@ export function serializeKey(item: string|number|null|undefined) {
 }
 
 /**
- * For the current pointer, returns the correct key - either the original
- * key if the proposed key is a suffix (this means that we're patching
- * a subtree of the originally rendered template) or the current key is
- * a suffix (we are rehydrating from a parent), or the proposed key
- * otherwise (go/soy-idom-suffix-matching-strategy).
- */
-function getKeyForCurrentPointer(proposedKey: string): string {
-  const currentPointer = incrementaldom.currentPointer();
-  if (!currentPointer || !incrementaldom.isDataInitialized(currentPointer)) {
-    // If there is no current pointer or its data has not been initialized,
-    // this means the element is being rendered or hydrated for the first
-    // time, so just use the proposed key.
-    return proposedKey;
-  }
-
-  const currentPointerKey = incrementaldom.getKey(currentPointer) as string;
-  // If the current pointer has no key, just use the proposed key.
-  // This is expected to happen when doing the initial client-side hydration
-  // of server-side rendered DOM.
-  if (!currentPointerKey) return proposedKey;
-
-  return isMatchingKey(proposedKey, currentPointerKey) ?
-      // Just use the current (original) key.
-      currentPointerKey :
-      proposedKey;
-}
-
-/**
- * Returns whether the proposed key is a suffix of the current key or vice
+ * Returns whether the proposed key is a prefix of the current key or vice
  * versa.
  * For example:
- * - proposedKeyArr: ['b', 'c'], currentKeyArr: ['a', 'b', 'c'] => true
- * - proposedKeyArr: ['a', 'b', 'c'], currentKeyArr: ['b', 'c'],  => true
- * - proposedKeyArr: ['b', 'c'], currentKeyArr: ['a', 'b', 'c', 'd'] => false
+ * - proposedKey: ['b', 'c'], currentPointerKey: ['a', 'b', 'c'] => true
+ *     proposedKey -> 1c1b, currentPointerKey -> 1c1b1a
+ * - proposedKey: ['a', 'b', 'c'], currentPointerKey: ['b', 'c'],  => true
+ *     proposedKey -> 1c1b1a, currentPointerKey -> 1c1b
+ * - proposedKey: ['b', 'c'], currentPointerKey: ['a', 'b', 'c', 'd'] => false
+ *     proposedKey -> 1c1b, currentPointerKey -> 1d1c1b1a
  */
-export function isMatchingKey(proposedKey: string, currentPointerKey: string) {
-  return proposedKey.startsWith(currentPointerKey) ||
-      currentPointerKey.startsWith(proposedKey);
+export function isMatchingKey(
+    proposedKey: unknown, currentPointerKey: unknown) {
+  // This is always true in Soy-IDOM, but Incremental DOM believes that it may
+  // be null or number.
+  if (typeof proposedKey === 'string' &&
+      typeof currentPointerKey === 'string') {
+    return proposedKey.startsWith(currentPointerKey) ||
+        currentPointerKey.startsWith(proposedKey);
+  }
+  return proposedKey === currentPointerKey;
 }
