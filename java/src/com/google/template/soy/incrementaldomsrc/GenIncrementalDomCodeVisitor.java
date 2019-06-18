@@ -111,7 +111,6 @@ import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -1037,16 +1036,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       openTagExpr = INCREMENTAL_DOM_ELEMENT_OPEN_END.call();
     }
 
-    VeLogNode velogNode =
-        (VeLogNode) template.firstChildThatMatches(n -> n.getKind() == Kind.VE_LOG_NODE);
-    boolean isFirstHtmlOpenTagNode =
-        velogNode != null
-            ? node.equals(
-                velogNode.firstChildThatMatches(n -> n.getKind() == Kind.HTML_OPEN_TAG_NODE))
-            : node.equals(
-                template.firstChildThatMatches(n -> n.getKind() == Kind.HTML_OPEN_TAG_NODE));
-
-    if (template instanceof TemplateElementNode && isFirstHtmlOpenTagNode) {
+    if (node.isElementRoot()) {
       // Append code to stash the template object in this node.
       getJsCodeBuilder()
           .append(

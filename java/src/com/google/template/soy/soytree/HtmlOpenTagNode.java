@@ -35,6 +35,9 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
    */
   private final boolean selfClosing;
 
+  /** Whether or not this node is the root of a soy element. Populated by the SoyElementPass. */
+  private boolean isElementRoot;
+
   public HtmlOpenTagNode(
       int id,
       StandaloneNode node,
@@ -48,6 +51,7 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   private HtmlOpenTagNode(HtmlOpenTagNode orig, CopyState copyState) {
     super(orig, copyState);
     this.selfClosing = orig.selfClosing;
+    this.isElementRoot = orig.isElementRoot;
   }
 
   @Override
@@ -57,6 +61,16 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
 
   public boolean isSelfClosing() {
     return selfClosing;
+  }
+
+  /** Returns true if this is an element root. */
+  public boolean isElementRoot() {
+    return isElementRoot;
+  }
+
+  /** Marks this tag as an element root. */
+  public void setElementRoot() {
+    isElementRoot = true;
   }
 
   public KeyNode getKeyNode() {
