@@ -10,24 +10,19 @@ import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_
 import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-/** PatchInner using Soy-IDOM semantics. */
-export const patchInner = incrementaldom.createPatchInner({
+const patchConfig: incrementaldom.PatchConfig = {
   matches:
       (matchNode, nameOrCtor, expectedNameOrCtor, proposedKey,
        currentPointerKey) => nameOrCtor === expectedNameOrCtor &&
       isMatchingKey(proposedKey, currentPointerKey)
-});
+};
+
+/** PatchInner using Soy-IDOM semantics. */
+export const patchInner = incrementaldom.createPatchInner(patchConfig);
 /** PatchOuter using Soy-IDOM semantics. */
-export const patchOuter = incrementaldom.createPatchOuter({
-  matches:
-      (arg1, nameOrCtor, expectedNameOrCtor, proposedKey, currentPointerKey) =>
-          nameOrCtor === expectedNameOrCtor &&
-      isMatchingKey(proposedKey, currentPointerKey)
-});
+export const patchOuter = incrementaldom.createPatchOuter(patchConfig);
 /** PatchInner using Soy-IDOM semantics. */
 export const patch = patchInner;
-
-type ElementKey = string|number|null|undefined;
 
 /** Type for HTML templates */
 export type Template<T> =
@@ -83,7 +78,7 @@ export class IncrementalDomRenderer {
    * Called (from generated template render function) before OPENING
    * keyed elements.
    */
-  pushManualKey(key: ElementKey) {
+  pushManualKey(key: incrementaldom.Key) {
     this.keyStackHolder.push(serializeKey(key));
   }
 
