@@ -112,6 +112,8 @@ goog.exportSymbol('goog.object', goog.object);
 goog.exportSymbol('goog.inherits', goog.inherits);
 goog.exportSymbol('goog.provide', goog.provide);
 goog.exportSymbol('goog.require', goog.require);
+goog.exportSymbol('goog.requireType', goog.requireType);
+goog.exportSymbol('goog.soy.IjData', goog.soy.IjData);
 goog.exportSymbol('goog.soy.data.SanitizedContent', goog.soy.data.SanitizedContent);
 goog.exportSymbol('goog.soy.data.SanitizedContentKind', goog.soy.data.SanitizedContentKind);
 goog.exportSymbol('goog.soy.data.SanitizedCss', goog.soy.data.SanitizedCss);

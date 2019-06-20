@@ -6,7 +6,7 @@
 
 import 'goog:soy.velog'; // from //javascript/template/soy:soyutils_velog
 
-import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
+import * as googSoy from 'goog:goog.soy';  // from //javascript/closure/soy
 import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
@@ -27,7 +27,7 @@ export const patch = patchInner;
 /** Type for HTML templates */
 export type Template<T> =
     // tslint:disable-next-line:no-any
-    (renderer: IncrementalDomRenderer, args: T, ijData?: soy.IjData) => any;
+    (renderer: IncrementalDomRenderer, args: T, ijData?: googSoy.IjData) => any;
 
 /**
  * Class that mostly delegates to global Incremental DOM runtime. This will

@@ -60,6 +60,7 @@ goog.require('goog.soy.data.SanitizedUri');
 goog.require('goog.string');
 goog.require('goog.string.Const');
 goog.require('soy.checks');
+goog.requireType('goog.soy');
 
 
 /**
@@ -67,9 +68,10 @@ goog.require('soy.checks');
  *
  * <p>Generated code contributes optional properties.
  *
- * @record
+ * @deprecated Use goog.soy.IjData instead
+ * @typedef {!goog.soy.IjData}
  */
-soy.IjData = function() {};
+soy.IjData;
 
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is

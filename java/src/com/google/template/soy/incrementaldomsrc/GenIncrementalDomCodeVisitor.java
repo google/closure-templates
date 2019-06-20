@@ -324,8 +324,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     } else {
       jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
     }
-    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("soy"));
-    jsDocBuilder.addParam("opt_ijData", "!soy.IjData=");
+    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
+    jsDocBuilder.addParam("opt_ijData", "!goog.soy.IjData=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
@@ -454,7 +454,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
 
     String paramsType = node.getParams().isEmpty() ? "null" : "!" + alias + ".Params";
-    String optIjDataType = "!soy.IjData=";
 
     ImmutableList.Builder<MethodDeclaration> stateMethods = ImmutableList.builder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
@@ -491,7 +490,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             "constructor",
             JsDoc.builder()
                 .addParam("opt_data", paramsType)
-                .addParam("opt_ijData", optIjDataType)
+                .addGoogRequire(GoogRequire.createTypeRequire("goog.soy"))
+                .addParam("opt_ijData", "!goog.soy.IjData=")
                 .build(),
             ctorBody);
 
