@@ -421,11 +421,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // The most practical solution to that is for soy to generate its own .d.ts files.
     Map<String, SoyType> ijData = getAllIjDataParams(node);
     if (!ijData.isEmpty()) {
-      GoogRequire require = GoogRequire.create("soy");
+      GoogRequire require = GoogRequire.create("goog.soy");
       jsCodeBuilder.appendLine();
       for (Map.Entry<String, SoyType> entry : ijData.entrySet()) {
         jsCodeBuilder.appendLine();
-        //
         jsCodeBuilder.appendLine(
             JsDoc.builder()
                 // Because every declaration can declare a type, we can get errors if they don't
@@ -751,10 +750,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     } else {
       jsDocBuilder.addParam("opt_data", "Object<string, *>=");
     }
-    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("soy"));
+    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
     // TODO(lukes): remove |Object<string, *> and only add the '=' if ij data is truly optional
-    jsDocBuilder.addParam("opt_ijData", "soy.IjData|Object<string, *>=");
-    jsDocBuilder.addParam("opt_ijData_deprecated", "soy.IjData|Object<string, *>=");
+    jsDocBuilder.addParam("opt_ijData", "goog.soy.IjData|Object<string, *>=");
+    jsDocBuilder.addParam("opt_ijData_deprecated", "goog.soy.IjData|Object<string, *>=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
