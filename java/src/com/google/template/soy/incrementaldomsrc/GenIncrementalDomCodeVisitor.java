@@ -325,7 +325,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
     }
     jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
-    jsDocBuilder.addParam("opt_ijData", "!goog.soy.IjData=");
+    jsDocBuilder.addParam("opt_ijData", "?goog.soy.IjData=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);

@@ -751,9 +751,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsDocBuilder.addParam("opt_data", "Object<string, *>=");
     }
     jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
-    // TODO(lukes): remove |Object<string, *> and only add the '=' if ij data is truly optional
-    jsDocBuilder.addParam("opt_ijData", "goog.soy.IjData|Object<string, *>=");
-    jsDocBuilder.addParam("opt_ijData_deprecated", "goog.soy.IjData|Object<string, *>=");
+    // TODO(lukes): remove |Object<string, *> and only add the '=/?' if ij data is truly optional
+    jsDocBuilder.addParam("opt_ijData", "(?goog.soy.IjData|?Object<string, *>)=");
+    jsDocBuilder.addParam("opt_ijData_deprecated", "(?goog.soy.IjData|?Object<string, *>)=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
