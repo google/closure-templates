@@ -33,7 +33,7 @@ you don't intend to send code for unused delegate implementations to the client
 
 /** Caller (basic template, not delegate template). */
 {template ...}
-  {delcall aaa.bbb.myButton allowemptydefault="false" data="..." /}
+  {delcall aaa.bbb.myButton allowemptydefault="true" data="..." /}
 {/template}
 
 /** Default implementation. */
