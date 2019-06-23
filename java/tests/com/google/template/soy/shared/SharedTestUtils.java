@@ -183,6 +183,7 @@ public final class SharedTestUtils {
     try (Stream<Path> stream = Files.list(Paths.get(dir))) {
       testFiles =
           stream
+              .filter(path -> path.getFileName().toString().endsWith(".soy"))
               .map(
                   path -> {
                     String filename = path.getFileName().toString();
