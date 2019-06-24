@@ -6,7 +6,7 @@
  */
 
 import {assertInstanceof} from 'goog:goog.asserts';  // from //javascript/closure/asserts
-import {IjData} from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
+import {IjData} from 'goog:goog.soy';  // from //javascript/closure/soy
 
 import {SoyElement} from './element_lib_idom';
 

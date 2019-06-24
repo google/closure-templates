@@ -4,8 +4,8 @@
  */
 
 import {assert} from 'goog:goog.asserts';  // from //javascript/closure/asserts
+import {IjData} from 'goog:goog.soy';      // from //javascript/closure/soy
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
-import {IjData} from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {IdomFunctionMembers} from 'goog:soydata';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 

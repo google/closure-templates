@@ -31091,16 +31091,6 @@ goog.require('soy.checks');
 goog.requireType('goog.soy');
 
 
-/**
- * A structural interface for injected data.
- *
- * <p>Generated code contributes optional properties.
- *
- * @deprecated Use goog.soy.IjData instead
- * @typedef {!goog.soy.IjData}
- */
-soy.IjData;
-
 // -----------------------------------------------------------------------------
 // soydata: Defines typed strings, e.g. an HTML string `"a<b>c"` is
 // semantically distinct from the plain text string `"a<b>c"` and smart
