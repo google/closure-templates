@@ -133,10 +133,6 @@ final class ParseErrors {
 
     ImmutableSet.Builder<String> expectedTokenImages = ImmutableSet.builder();
     for (int[] expected : e.expectedTokenSequences) {
-      // TODO(lukes): scrub velog from error messages until it is released
-      if (expected[0] == SoyFileParserConstants.CMD_BEGIN_VELOG) {
-        continue;
-      }
       // We only display the first token of any expected sequence
       String displayName = getSoyFileParserTokenDisplayName(expected[0]);
       if (displayName != null) {
@@ -210,6 +206,8 @@ final class ParseErrors {
         return "{print";
       case SoyFileParserConstants.CMD_BEGIN_KEY:
         return "{key";
+      case SoyFileParserConstants.CMD_BEGIN_VELOG:
+        return "{velog";
 
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.IDENT:

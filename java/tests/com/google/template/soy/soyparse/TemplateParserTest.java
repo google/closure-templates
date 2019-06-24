@@ -512,7 +512,7 @@ public final class TemplateParserTest {
         .causesError(
             "parse error at '{fallbackmsg ': expected text, {literal}, {call, {delcall, {msg, "
                 + "{/msg}, {if, {let, {for, {plural, {select, {switch, {log}, {debugger}, {print, "
-                + "{, {key, or whitespace");
+                + "{, {key, {velog, or whitespace");
     assertInvalidTemplate("{print $boo /}");
     assertInvalidTemplate("{if true}aaa{else/}bbb{/if}");
     assertInvalidTemplate("{call .aaa.bbb /}");
