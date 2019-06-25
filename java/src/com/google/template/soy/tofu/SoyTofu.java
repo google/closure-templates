@@ -169,8 +169,146 @@ public interface SoyTofu {
      * Sets the expected content kind.
      *
      * <p>An attempt to render a template with a different kind will fail if this has been called.
+     *
+     * @deprecated Use type-specific render methods instead of setting content kind before rendering
+     *     (e.g. {@link #renderHtml()}, {@link #renderCss()}, etc.).
      */
+    @Deprecated
     Renderer setContentKind(SanitizedContent.ContentKind contentKind);
+
+    /**
+     * Renders the configured html template to the given appendable.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.HTML}
+     *     (corresponding to kind="html" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderHtml(Appendable out);
+
+    /**
+     * Renders the configured html template as a {@link SanitizedContent} of type {@link
+     * ContentKind.HTML}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.HTML}
+     *     (corresponding to kind="html" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderHtml();
+
+    /**
+     * Renders the configured javascript template to the given appendable.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.JS}
+     *     (corresponding to kind="js" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderJs(Appendable out);
+
+    /**
+     * Renders the configured javascript template as a {@link SanitizedContent} of type {@link
+     * ContentKind.JS}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.JS}
+     *     (corresponding to kind="js" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderJs();
+
+    /**
+     * Renders the configured uri template to the given appendable.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.URI}
+     *     (corresponding to kind="uri" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderUri(Appendable out);
+
+    /**
+     * Renders the configured uri template as a {@link SanitizedContent} of type {@link
+     * ContentKind.URI}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.URI}
+     *     (corresponding to kind="uri" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderUri();
+
+    /**
+     * Renders the configured trusted resource uri template to the given appendable.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link
+     *     ContentKind.TRUSTED_RESOURCE_URI} (corresponding to kind="trusted_resource_uri" in the
+     *     template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderTrustedResourceUri(Appendable out);
+
+    /**
+     * Renders the configured trusted resource uri template as a {@link SanitizedContent} of type
+     * {@link ContentKind.TRUSTED_RESOURCE_URI}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link
+     *     ContentKind.TRUSTED_RESOURCE_URI} (corresponding to kind="trusted_resource_uri" in the
+     *     template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderTrustedResourceUri();
+
+    /**
+     * Renders the configured attributes template to the given appendable.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.ATTRIBUTES}
+     *     (corresponding to kind="attributes" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderAttributes(Appendable out);
+
+    /**
+     * Renders the configured css template as a {@link SanitizedContent} of type {@link
+     * ContentKind.ATTRIBUTES}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.ATTRIBUTES}
+     *     (corresponding to kind="attributes" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderAttributes();
+
+    /**
+     * Renders the configured css template to the given appendable.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.CSS}
+     *     (corresponding to kind="css" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderCss(Appendable out);
+
+    /**
+     * Renders the configured css template as a {@link SanitizedContent} of type {@link
+     * ContentKind.CSS}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.CSS}
+     *     (corresponding to kind="css" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderCss();
+
+    /**
+     * Renders the configured template to the given appendable. Any template type can be rendered as
+     * text.
+     *
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    void renderText(Appendable out);
+
+    /**
+     * Renders the configured template as a string. Any template type can be rendered as text.
+     *
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    String renderText();
+
+    // ---------------------------------------------------------------------------------------------
+    // Old render methods.
 
     /**
      * Renders the template using the data, injected data, and message bundle previously set.
@@ -180,7 +318,11 @@ public interface SoyTofu {
      * kind="text" in contexts where that could XSS.
      *
      * @throws SoyTofuException if an error occurs during rendering.
+     * @deprecated For text content, use {@link #renderText()} directly. Otherwise, use {@link
+     *     #renderHtml()}, {@link #renderCss()}, etc. to verify the content type, and then call
+     *     toString() to convert to a string.
      */
+    @Deprecated
     String render();
 
     /**
@@ -191,10 +333,12 @@ public interface SoyTofu {
      * template. The expected content kind must be set beforehand, unless HTML is expected, to avoid
      * an exception.
      *
+     * @deprecated Use {@link #renderHtml()}, {@link #renderCss()}, etc. instead.
      * @throws IllegalArgumentException If the kind doesn't match the expected kind (from
      *     setContentKind, or the default of HTML).
      * @throws SoyTofuException if an error occurs during rendering.
      */
+    @Deprecated
     SanitizedContent renderStrict();
 
     /**
@@ -205,13 +349,13 @@ public interface SoyTofu {
      * setContentKind was called. The goal is to prevent accidental rendering of unescaped
      * kind="text" in contexts where that could XSS.
      *
+     * @deprecated Use {@link #renderHtml(Appendable)}, {@link #renderCss(Appendable)}, etc.
+     *     instead.
      * @throws SoyTofuException if an error occurs during rendering.
      */
+    @Deprecated
     SanitizedContent.ContentKind render(Appendable out);
   }
-
-  // -----------------------------------------------------------------------------------------------
-  // Old render methods.
 
   /**
    * Renders a template.

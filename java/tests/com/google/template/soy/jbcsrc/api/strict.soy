@@ -17,6 +17,26 @@
 Hello world
 {/template}
 
+/** hello uri */
+{template .helloUri kind="uri"}
+ https://helloworld.com
+{/template}
+
+/** hello trusted resource uri */
+{template .helloTrustedResourceUri kind="trusted_resource_uri"}
+ /hello.world
+{/template}
+
+/** hello css */
+{template .helloCss kind="css"}
+  {literal}.helloWorld {display: none}{/literal}
+{/template}
+
+/** hello attributes */
+{template .helloAttributes kind="attributes"}
+ hello-world="true"
+{/template}
+
 /** a template with a param */
 {template .withParam}
   {@param p : string}

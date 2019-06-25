@@ -26,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -109,7 +110,7 @@ public final class BaseTofu implements SoyTofu {
     this.pluginInstances = ImmutableMap.copyOf(pluginInstances);
   }
 
-  private ImmutableMap<String, ImmutableSortedSet<String>> buildTemplateToIjParamsInfoMap(
+  private static ImmutableMap<String, ImmutableSortedSet<String>> buildTemplateToIjParamsInfoMap(
       ImmutableMap<String, TemplateNode> basicTemplates,
       DelTemplateSelector<TemplateDelegateNode> delTemplates) {
     Map<String, ImmutableSortedSet<String>> templateNameToIjs = new LinkedHashMap<>();
@@ -341,7 +342,6 @@ public final class BaseTofu implements SoyTofu {
     private SoyCssRenamingMap cssRenamingMap;
     private Predicate<String> activeDelPackageNames;
     private SanitizedContent.ContentKind expectedContentKind;
-    private boolean contentKindExplicitlySet;
     private boolean debugSoyTemplateInfo;
     private Map<String, Supplier<Object>> perRenderPluginInstances;
 
@@ -421,11 +421,11 @@ public final class BaseTofu implements SoyTofu {
     @Override
     public Renderer setContentKind(SanitizedContent.ContentKind contentKind) {
       this.expectedContentKind = Preconditions.checkNotNull(contentKind);
-      this.contentKindExplicitlySet = true;
       return this;
     }
 
     @Override
+    @Deprecated
     public String render() {
       StringBuilder sb = new StringBuilder();
       render(sb);
@@ -444,6 +444,79 @@ public final class BaseTofu implements SoyTofu {
     }
 
     @Override
+    public void renderHtml(Appendable out) {
+      renderSanitizedContent(ContentKind.HTML, out);
+    }
+
+    @Override
+    public SanitizedContent renderHtml() {
+      return renderSanitizedContent(ContentKind.HTML);
+    }
+
+    @Override
+    public void renderJs(Appendable out) {
+      renderSanitizedContent(ContentKind.JS, out);
+    }
+
+    @Override
+    public SanitizedContent renderJs() {
+      return renderSanitizedContent(ContentKind.JS);
+    }
+
+    @Override
+    public void renderUri(Appendable out) {
+      renderSanitizedContent(ContentKind.URI, out);
+    }
+
+    @Override
+    public SanitizedContent renderUri() {
+      return renderSanitizedContent(ContentKind.URI);
+    }
+
+    @Override
+    public void renderTrustedResourceUri(Appendable out) {
+      renderSanitizedContent(ContentKind.TRUSTED_RESOURCE_URI, out);
+    }
+
+    @Override
+    public SanitizedContent renderTrustedResourceUri() {
+      return renderSanitizedContent(ContentKind.TRUSTED_RESOURCE_URI);
+    }
+
+    @Override
+    public void renderAttributes(Appendable out) {
+      renderSanitizedContent(ContentKind.ATTRIBUTES, out);
+    }
+
+    @Override
+    public SanitizedContent renderAttributes() {
+      return renderSanitizedContent(ContentKind.ATTRIBUTES);
+    }
+
+    @Override
+    public void renderCss(Appendable out) {
+      renderSanitizedContent(ContentKind.CSS, out);
+    }
+
+    @Override
+    public SanitizedContent renderCss() {
+      return renderSanitizedContent(ContentKind.CSS);
+    }
+
+    @Override
+    public void renderText(Appendable out) {
+      renderMain(out);
+    }
+
+    @Override
+    public String renderText() {
+      StringBuilder sb = new StringBuilder();
+      renderMain(sb);
+      return sb.toString();
+    }
+
+    @Override
+    @Deprecated
     public SanitizedContent.ContentKind render(Appendable out) {
       TemplateNode template =
           baseTofu.renderMain(
@@ -462,6 +535,7 @@ public final class BaseTofu implements SoyTofu {
     }
 
     @Override
+    @Deprecated
     public SanitizedContent renderStrict() {
       StringBuilder sb = new StringBuilder();
       TemplateNode template =
@@ -482,7 +556,42 @@ public final class BaseTofu implements SoyTofu {
       return UnsafeSanitizedContentOrdainer.ordainAsSafe(sb.toString(), expectedContentKind);
     }
 
-    private void enforceContentKind(TemplateNode template) {
+    /**
+     * Renders the configured template to the given output buffer, and verifies that the template
+     * has the expected content kind.
+     */
+    private void renderSanitizedContent(ContentKind contentKind, Appendable out) {
+      TemplateNode template = renderMain(out);
+      enforceContentKind(template, contentKind);
+    }
+
+    /**
+     * Renders the configured template to a {@link SanitizedContent}, and verifies that the template
+     * has the expected content kind.
+     */
+    private SanitizedContent renderSanitizedContent(ContentKind contentKind) {
+      StringBuilder sb = new StringBuilder();
+      TemplateNode template = renderMain(sb);
+      enforceContentKind(template, contentKind);
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(sb.toString(), contentKind);
+    }
+
+    private TemplateNode renderMain(Appendable out) {
+      return baseTofu.renderMain(
+          out,
+          templateName,
+          data,
+          ijData,
+          activeDelPackageNames,
+          msgBundle,
+          idRenamingMap,
+          cssRenamingMap,
+          debugSoyTemplateInfo,
+          getPluginInstances());
+    }
+
+    private static void enforceContentKind(
+        TemplateNode template, SanitizedContent.ContentKind expectedContentKind) {
       if (expectedContentKind == SanitizedContent.ContentKind.TEXT) {
         // Allow any template to be called as text.
         return;
@@ -500,6 +609,10 @@ public final class BaseTofu implements SoyTofu {
                 + template.getContentKind().asAttributeValue()
                 + "\"");
       }
+    }
+
+    private void enforceContentKind(TemplateNode template) {
+      enforceContentKind(template, expectedContentKind);
     }
   }
 

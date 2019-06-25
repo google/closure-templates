@@ -52,8 +52,217 @@ public class SoySauceTest {
     sauce = builder.build().compileTemplates();
   }
 
+  /** Verifies SoySauce.Renderer#renderHtml(). */
   @Test
-  public void testStrictContentKindHandling_html() {
+  public void testRenderHtml() {
+    SanitizedContent sanitizedContent =
+        sauce.renderTemplate("strict_test.helloHtml").renderHtml().get();
+    assertThat(sanitizedContent).isEqualTo(ordainAsSafe("Hello world", ContentKind.HTML));
+    assertThat(sanitizedContent.toString()).isEqualTo("Hello world");
+    try {
+      sauce.renderTemplate("strict_test.helloJs").renderHtml().get();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
+    }
+  }
+
+  /** Verifies SoySauce.Renderer#renderHtml(AdvisingAppendable). */
+  @Test
+  public void testRenderHtml_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation =
+        sauce.renderTemplate("strict_test.helloHtml").renderHtml(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("Hello world");
+  }
+
+  /** Verifies SoySauce.Renderer#renderJs(). */
+  @Test
+  public void testRenderJs() {
+    SanitizedContent sanitizedContent =
+        sauce.renderTemplate("strict_test.helloJs").renderJs().get();
+    assertThat(sanitizedContent).isEqualTo(ordainAsSafe("'Hello world'", ContentKind.JS));
+    assertThat(sanitizedContent.toString()).isEqualTo("'Hello world'");
+    try {
+      sauce.renderTemplate("strict_test.helloHtml").renderJs().get();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloHtml' to be kind=\"js\" but was kind=\"html\"");
+    }
+  }
+
+  /** Verifies SoySauce.Renderer#renderJs(AdvisingAppendable). */
+  @Test
+  public void testRenderJs_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation = sauce.renderTemplate("strict_test.helloJs").renderJs(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("'Hello world'");
+  }
+
+  /** Verifies SoySauce.Renderer#renderUri(). */
+  @Test
+  public void testRenderUri() {
+    SanitizedContent sanitizedContent =
+        sauce.renderTemplate("strict_test.helloUri").renderUri().get();
+    assertThat(sanitizedContent).isEqualTo(ordainAsSafe("https://helloworld.com", ContentKind.URI));
+    assertThat(sanitizedContent.toString()).isEqualTo("https://helloworld.com");
+    try {
+      sauce.renderTemplate("strict_test.helloHtml").renderUri().get();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloHtml' to be kind=\"uri\" but was kind=\"html\"");
+    }
+  }
+
+  /** Verifies SoySauce.Renderer#renderUri(AdvisingAppendable). */
+  @Test
+  public void testRenderUri_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation =
+        sauce.renderTemplate("strict_test.helloUri").renderUri(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("https://helloworld.com");
+  }
+
+  /** Verifies SoySauce.Renderer#renderTrustedResourceUri(). */
+  @Test
+  public void testRenderTrustedResourceUri() {
+    SanitizedContent sanitizedContent =
+        sauce
+            .renderTemplate("strict_test.helloTrustedResourceUri")
+            .renderTrustedResourceUri()
+            .get();
+    assertThat(sanitizedContent)
+        .isEqualTo(ordainAsSafe("/hello.world", ContentKind.TRUSTED_RESOURCE_URI));
+    assertThat(sanitizedContent.toString()).isEqualTo("/hello.world");
+    try {
+      sauce.renderTemplate("strict_test.helloUri").renderTrustedResourceUri().get();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloUri' to be kind=\"trusted_resource_uri\" but"
+                  + " was kind=\"uri\"");
+    }
+  }
+
+  /** Verifies SoySauce.Renderer#renderTrustedResourceUri(AdvisingAppendable). */
+  @Test
+  public void testRenderTrustedResourceUri_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation =
+        sauce
+            .renderTemplate("strict_test.helloTrustedResourceUri")
+            .renderTrustedResourceUri(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("/hello.world");
+  }
+
+  /** Verifies SoySauce.Renderer#renderAttributes(). */
+  @Test
+  public void testRenderAttributes() {
+    SanitizedContent sanitizedContent =
+        sauce.renderTemplate("strict_test.helloAttributes").renderAttributes().get();
+    assertThat(sanitizedContent)
+        .isEqualTo(ordainAsSafe("hello-world=\"true\"", ContentKind.ATTRIBUTES));
+    assertThat(sanitizedContent.toString()).isEqualTo("hello-world=\"true\"");
+    try {
+      sauce.renderTemplate("strict_test.helloUri").renderAttributes().get();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloUri' to be kind=\"attributes\" but"
+                  + " was kind=\"uri\"");
+    }
+  }
+
+  /** Verifies SoySauce.Renderer#renderAttributes(AdvisingAppendable). */
+  @Test
+  public void testRenderAttributes_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation =
+        sauce.renderTemplate("strict_test.helloAttributes").renderAttributes(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("hello-world=\"true\"");
+  }
+
+  /** Verifies SoySauce.Renderer#renderCss(). */
+  @Test
+  public void testRenderCss() {
+    SanitizedContent sanitizedContent =
+        sauce.renderTemplate("strict_test.helloCss").renderCss().get();
+    assertThat(sanitizedContent)
+        .isEqualTo(ordainAsSafe(".helloWorld {display: none}", ContentKind.CSS));
+    assertThat(sanitizedContent.toString()).isEqualTo(".helloWorld {display: none}");
+    try {
+      sauce.renderTemplate("strict_test.helloUri").renderCss().get();
+      fail();
+    } catch (IllegalStateException e) {
+      assertThat(e)
+          .hasMessageThat()
+          .isEqualTo(
+              "Expected template 'strict_test.helloUri' to be kind=\"css\" but"
+                  + " was kind=\"uri\"");
+    }
+  }
+
+  /** Verifies SoySauce.Renderer#renderCss(AdvisingAppendable). */
+  @Test
+  public void testRenderCss_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation =
+        sauce.renderTemplate("strict_test.helloCss").renderCss(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo(".helloWorld {display: none}");
+  }
+
+  /**
+   * Verifies SoySauce.Renderer#renderText(), checking that all content types can be rendered as
+   * text.
+   */
+  @Test
+  public void testRenderText() {
+    assertThat(sauce.renderTemplate("strict_test.hello").renderText().get())
+        .isEqualTo("Hello world");
+    assertThat(sauce.renderTemplate("strict_test.helloHtml").renderText().get())
+        .isEqualTo("Hello world");
+    assertThat(sauce.renderTemplate("strict_test.helloJs").renderText().get())
+        .isEqualTo("'Hello world'");
+    assertThat(sauce.renderTemplate("strict_test.helloUri").renderText().get())
+        .isEqualTo("https://helloworld.com");
+    assertThat(sauce.renderTemplate("strict_test.helloTrustedResourceUri").renderText().get())
+        .isEqualTo("/hello.world");
+    assertThat(sauce.renderTemplate("strict_test.helloAttributes").renderText().get())
+        .isEqualTo("hello-world=\"true\"");
+    assertThat(sauce.renderTemplate("strict_test.helloCss").renderText().get())
+        .isEqualTo(".helloWorld {display: none}");
+  }
+
+  /** Verifies SoySauce.Renderer#renderText(AdvisingAppendable). */
+  @Test
+  public void testRenderText_toAppendable() throws IOException {
+    TestAppendable builder = new TestAppendable();
+    WriteContinuation continuation = sauce.renderTemplate("strict_test.hello").renderText(builder);
+    assertThat(continuation.result()).isEqualTo(RenderResult.done());
+    assertThat(builder.toString()).isEqualTo("Hello world");
+  }
+
+  @Test
+  public void testStrictContentKindHandling_html_deprecatedRenderMethods() {
     assertThat(sauce.renderTemplate("strict_test.helloHtml").render().get())
         .isEqualTo("Hello world");
     assertThat(sauce.renderTemplate("strict_test.helloHtml").renderStrict().get())
@@ -81,7 +290,7 @@ public class SoySauceTest {
   }
 
   @Test
-  public void testStrictContentKindHandling_js() {
+  public void testStrictContentKindHandling_js_deprecatedRenderMethods() {
     try {
       sauce.renderTemplate("strict_test.helloJs").render();
       fail();
@@ -128,7 +337,7 @@ public class SoySauceTest {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withParam");
 
     SettableFuture<String> p = SettableFuture.create();
-    Continuation<String> stringContinuation = tmpl.setData(ImmutableMap.of("p", p)).render();
+    Continuation<String> stringContinuation = tmpl.setData(ImmutableMap.of("p", p)).renderText();
     assertThat(stringContinuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(stringContinuation.result().future()).isEqualTo(p);
     p.set("tigger");
@@ -143,7 +352,7 @@ public class SoySauceTest {
 
     SettableFuture<String> p = SettableFuture.create();
     Continuation<SanitizedContent> strictContinuation =
-        tmpl.setData(ImmutableMap.of("p", p)).renderStrict();
+        tmpl.setData(ImmutableMap.of("p", p)).renderHtml();
     assertThat(strictContinuation.result().type()).isEqualTo(RenderResult.Type.DETACH);
     assertThat(strictContinuation.result().future()).isEqualTo(p);
     p.set("pooh bear");
@@ -158,7 +367,7 @@ public class SoySauceTest {
     TestAppendable builder = new TestAppendable();
     builder.softLimitReached = true;
     SettableFuture<String> p = SettableFuture.create();
-    WriteContinuation continuation = tmpl.setData(ImmutableMap.of("p", p)).render(builder);
+    WriteContinuation continuation = tmpl.setData(ImmutableMap.of("p", p)).renderText(builder);
     assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.LIMITED);
     assertThat(builder.toString()).isEqualTo("Hello, ");
     builder.softLimitReached = false;
@@ -186,17 +395,17 @@ public class SoySauceTest {
         };
 
     try {
-      tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).render();
+      tmpl.setData(ImmutableMap.of("depth", 10, "p", intProvider)).renderHtml();
       fail();
     } catch (ClassCastException cce) {
       // we get an CCE because we passed an int but it expected a string
       StackTraceElement[] stackTrace = cce.getStackTrace();
       assertThat(stackTrace[1].toString())
-          .isEqualTo("strict_test.callsItself.render(strict.soy:32)");
+          .isEqualTo("strict_test.callsItself.render(strict.soy:52)");
 
       for (int i = 2; i < 12; i++) {
         assertThat(stackTrace[i].toString())
-            .isEqualTo("strict_test.callsItself.render(strict.soy:34)");
+            .isEqualTo("strict_test.callsItself.render(strict.soy:54)");
       }
     }
   }
@@ -206,7 +415,7 @@ public class SoySauceTest {
   public void testDefaultParam() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.defaultParam");
 
-    assertThat(tmpl.setData(ImmutableMap.of("p", NullData.INSTANCE)).render().get())
+    assertThat(tmpl.setData(ImmutableMap.of("p", NullData.INSTANCE)).renderText().get())
         .isEqualTo("null");
   }
 
