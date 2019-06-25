@@ -25,7 +25,7 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
 /** Retrieves the Soy element in a type-safe way. */
 export function getSoy<TElement extends SoyElement<{}|null, {}>>(
     node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
-  const soyEl = assertInstanceof(getSoyUntyped(node), elementCtor);
+  const soyEl = assertInstanceof(getSoyUntyped(node), elementCtor, message);
   // We disable state syncing by default when elements are accessed on the
   // theory that the application wants to take control now.
   soyEl.setSyncState(false);
