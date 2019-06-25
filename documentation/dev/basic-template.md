@@ -73,25 +73,6 @@ Now our template has declared a parameter called `$name` which has the type
 `string`. (See the reference section on [types](../reference/types.md) for
 information on all the valid parameter types)
 
-#### Legacy syntax
-
-**WARNING**: New projects should not use this syntax
-
-You may also occasionally see the legacy syntax for params defined in template
-doc comments.
-
-```soy
-{namespace my.namespace}
-
-/** @param name The name to greet */
-{template .hello}
-  Hello, {$name}!
-{/template}
-```
-
-This syntax declares the same parameter, but there is no way to specify a type,
-so this syntax is discouraged for new code.
-
 ### Injected parameters
 
 Templates can also use injected parameters. These are useful if there is some
