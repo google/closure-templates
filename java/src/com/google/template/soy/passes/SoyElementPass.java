@@ -58,7 +58,7 @@ public final class SoyElementPass extends CompilerFilePass {
       Sets.immutableEnumSet(
           SoyNode.Kind.LET_CONTENT_NODE, SoyNode.Kind.LET_VALUE_NODE, SoyNode.Kind.LOG_NODE);
 
-  private static final String UNKNOWN_ELEMENT_TAG = "?";
+  private static final String DYNAMIC_ELEMENT_TAG = "?";
   private final ErrorReporter errorReporter;
 
   SoyElementPass(ErrorReporter errorReporter) {
@@ -123,15 +123,15 @@ public final class SoyElementPass extends CompilerFilePass {
       // openTag being null means that the template isn't kind HTML.
       boolean isValid =
           openTag != null && template.numChildren() > 0 && !bufferedErrorReporter.hasErrors();
+      HtmlElementMetadataP.Builder builder = HtmlElementMetadataP.newBuilder();
+      if (isValid) {
+        builder.setTag(
+            openTag.getTagName().isStatic()
+                ? openTag.getTagName().getStaticTagName()
+                : DYNAMIC_ELEMENT_TAG);
+      }
       template.setHtmlElementMetadata(
-          HtmlElementMetadataP.newBuilder()
-              .setIsHtmlElement(isValid)
-              .setIsVelogged(veLogNode != null)
-              .setTag(
-                  (isValid && openTag.getTagName().isStatic())
-                      ? openTag.getTagName().getStaticTagName()
-                      : UNKNOWN_ELEMENT_TAG)
-              .build());
+          builder.setIsHtmlElement(isValid).setIsVelogged(veLogNode != null).build());
     }
   }
 
