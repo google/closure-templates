@@ -42,8 +42,8 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -142,6 +142,39 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     node.getParent().replaceChild(node, replacementNode);
   }
 
+  // these cases may seem weird, but they tend to get introduced with @state parameter defaults and
+  // let variable inlining
+  @Override
+  protected void visitNullCoalescingOpNode(NullCoalescingOpNode node) {
+
+    // Recurse.
+    visitChildren(node);
+
+    // Can simplify if operand0 is constant. We assume no side-effects.
+    SoyValue operand0 = getConstantOrNull(node.getChild(0));
+    if (operand0 != null) {
+      if (operand0 instanceof NullData) {
+        node.getParent().replaceChild(node, node.getChild(1));
+      } else {
+        // all other constants are non=null, so use that
+        node.getParent().replaceChild(node, node.getChild(0));
+      }
+    } else {
+      // even if the first child isn't a constant, there are some values that we know are
+      // non-nullable.
+      switch (node.getChild(0).getKind()) {
+        case LIST_LITERAL_NODE:
+        case RECORD_LITERAL_NODE:
+        case PROTO_INIT_NODE:
+          // these are always non-null
+          node.getParent().replaceChild(node, node.getChild(0));
+          break;
+        default:
+          // do nothing.
+      }
+    }
+  }
+
   // Optimize accessing fields of record and proto literals: ['a': 'b'].a => 'b'
   // This is unlikely to occur by chance, but things like the msgWithId() function may introduce
   // this code since it desugars into a record literal.
@@ -159,22 +192,10 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         }
       }
       // replace with null?  this should have been a compiler error.
-    } else if (baseExpr instanceof ProtoInitNode) {
-      ProtoInitNode protoInit = (ProtoInitNode) baseExpr;
-      int fieldIndex = -1;
-      for (int i = 0; i < protoInit.getParamNames().size(); i++) {
-        if (protoInit.getParamNames().get(i).identifier().equals(node.getFieldName())) {
-          fieldIndex = i;
-          break;
-        }
-      }
-      if (fieldIndex != -1) {
-        node.getParent().replaceChild(node, protoInit.getChild(fieldIndex));
-      } else {
-        // here we could replace with a default value or null, but for now, do nothing, rather than
-        // implement proto default field semantics.
-      }
     }
+    // NOTE: we don't constant fold field accesses of ProtoInitNodes because protos implement
+    // complex null semantics. e.g. if we assign `null` to a field and then access it we may get a
+    // default value instead of `null`.
   }
 
   // Optimize accessing map and list literals.  This covers expressions like [1,2,3][1] and
@@ -273,11 +294,17 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     } catch (RenderException e) {
       return; // failed to preevaluate
     }
-    PrimitiveNode newNode =
-        InternalValueUtils.convertPrimitiveDataToExpr(
-            (PrimitiveData) preevalResult, node.getSourceLocation());
-    if (newNode != null) {
-      node.getParent().replaceChild(node, newNode);
+
+    // It is possible for this to be an arbitrary SoyValue if the exprNode calls a pure soy function
+    // TODO(lukes): consider adding compiler builtins for sanitized content literals and consider
+    // expanding support for collection literals (lists/maps) to expand scope here.
+    if (preevalResult instanceof PrimitiveData) {
+      PrimitiveNode newNode =
+          InternalValueUtils.convertPrimitiveDataToExpr(
+              (PrimitiveData) preevalResult, node.getSourceLocation());
+      if (newNode != null) {
+        node.getParent().replaceChild(node, newNode);
+      }
     }
   }
 

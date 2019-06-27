@@ -25,9 +25,19 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.PluginResolver.Mode;
+import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
+import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.InternalPlugins;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -155,6 +165,43 @@ public final class SimplifyExprVisitorTest {
         .simplifiesTo("$boo or true ? $boo and false : true"); // Can't simplify
   }
 
+  @Test
+  public void testSimplifyNullSafeOp() {
+    assertThat("null ?: 'aaa'").simplifiesTo("'aaa'");
+    assertThat("2 ?: 'aaa'").simplifiesTo("2");
+    assertThat("[null] ?: 'aaa'").simplifiesTo("[null]");
+  }
+
+  @Test
+  public void testEvaluatePureFunction() {
+    assertThat("returnsArgument(1)").simplifiesTo("1");
+    assertThat("returnsList()").simplifiesTo("returnsList()");
+    assertThat("returnsArgument(returnsList())").simplifiesTo("returnsArgument(returnsList())");
+  }
+
+  @SoyPureFunction
+  @SoyFunctionSignature(name = "returnsList", value = @Signature(returnType = "list<string>"))
+  public static class ReturnsListFunction implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return factory.listOf(
+          Arrays.asList(factory.constant("a"), factory.constant("b"), factory.constant("c")));
+    }
+  }
+
+  @SoyPureFunction
+  @SoyFunctionSignature(
+      name = "returnsArgument",
+      value = @Signature(parameterTypes = "any", returnType = "any"))
+  public static class ReturnsArgumentFunction implements SoyJavaSourceFunction {
+    @Override
+    public JavaValue applyForJavaSource(
+        JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
+      return args.get(0);
+    }
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Helpers.
 
@@ -176,7 +223,11 @@ public final class SimplifyExprVisitorTest {
               /** directives= */
               ImmutableMap.of(),
               InternalPlugins.internalLegacyFunctionMap(),
-              InternalPlugins.internalFunctionMap(),
+              ImmutableMap.<String, SoySourceFunction>builder()
+                  .putAll(InternalPlugins.internalFunctionMap())
+                  .put("returnsList", new ReturnsListFunction())
+                  .put("returnsArgument", new ReturnsArgumentFunction())
+                  .build(),
               ErrorReporter.exploding());
       for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(exprRoot, FunctionNode.class)) {
         function.setSoyFunction(
