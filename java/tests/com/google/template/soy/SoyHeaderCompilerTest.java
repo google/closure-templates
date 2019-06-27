@@ -42,15 +42,9 @@ import org.junit.runners.JUnit4;
 public class SoyHeaderCompilerTest {
   @Rule public final TemporaryFolder temp = new TemporaryFolder();
 
-  @Test
-  public void testOutputFileFlag() throws Exception {
+  private CompilationUnit getCompilationUnit(String content) throws Exception {
     File soyFile1 = temp.newFile("temp.soy");
-    Files.asCharSink(soyFile1, UTF_8)
-        .write(
-            "{namespace ns requirecss=\"ns.foo\"}\n"
-                + "/***/\n"
-                + "{template .a requirecss=\"ns.bar\"}{@param p: string}{call .a"
-                + " data='all'/}{/template}");
+    Files.asCharSink(soyFile1, UTF_8).write(content);
     File outputFile = temp.newFile("temp.soyh");
 
     int exitCode =
@@ -64,12 +58,26 @@ public class SoyHeaderCompilerTest {
     CompilationUnit unit;
     try (InputStream is = new GZIPInputStream(new FileInputStream(outputFile))) {
       unit = CompilationUnit.parseFrom(is);
+    } catch (Exception e) {
+      return null;
     }
+    SoyFileP file = unit.getFile(0);
+    assertThat(file.getFilePath()).isEqualTo(soyFile1.getPath());
+    return unit;
+  }
+
+  @Test
+  public void testOutputFileFlag() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit(
+            "{namespace ns requirecss=\"ns.foo\"}\n"
+                + "/***/\n"
+                + "{template .a requirecss=\"ns.bar\"}{@param p: string}{call .a"
+                + " data='all'/}{/template}");
     assertThat(unit.getFileList()).hasSize(1);
     SoyFileP file = unit.getFile(0);
     assertThat(file.getDelpackage()).isEmpty();
     assertThat(file.getNamespace()).isEqualTo("ns");
-    assertThat(file.getFilePath()).isEqualTo(soyFile1.getPath());
     assertThat(file.getTemplateList()).hasSize(1);
     assertThat(file.getRequiredCssNamesList()).containsExactly("ns.foo");
     TemplateMetadataP template = file.getTemplate(0);
@@ -86,5 +94,97 @@ public class SoyHeaderCompilerTest {
                 .build());
     assertThat(template.getDataAllCallSituationList())
         .containsExactly(DataAllCallSituationP.newBuilder().setTemplateName(".a").build());
+  }
+
+  @Test
+  public void testHtmlElementMetadata() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit("{namespace ns}\n" + "/***/\n" + "{template .a}<div></div>{/template}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("div");
+    assertThat(template.getHtmlElement().getIsHtmlElement()).isTrue();
+    assertThat(template.getHtmlElement().getIsVelogged()).isFalse();
+    assertThat(template.getSoyElement().getIsSoyElement()).isFalse();
+  }
+
+  @Test
+  public void testHtmlElementDynamicTag() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit(
+            "{namespace ns}\n"
+                + "/***/\n"
+                + "{template .a}{@param foo: string}<{$foo}></{$foo}>{/template}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("?");
+    assertThat(template.getHtmlElement().getIsHtmlElement()).isFalse();
+    assertThat(template.getHtmlElement().getIsVelogged()).isFalse();
+    assertThat(template.getSoyElement().getIsSoyElement()).isFalse();
+  }
+
+  @Test
+  public void testFragment() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit(
+            "{namespace ns}\n" + "/***/\n" + "{template .a}<div></div><div></div>{/template}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("?");
+    assertThat(template.getHtmlElement().getIsHtmlElement()).isFalse();
+    assertThat(template.getHtmlElement().getIsVelogged()).isFalse();
+    assertThat(template.getSoyElement().getIsSoyElement()).isFalse();
+  }
+
+  @Test
+  public void testSoyElementMetadata() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit("{namespace ns}\n" + "/***/\n" + "{element .a}<span></span>{/element}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getSoyElement().getIsSoyElement()).isTrue();
+    assertThat(template.getHtmlElement().getIsVelogged()).isFalse();
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("span");
+  }
+
+  @Test
+  public void testSoyElementMetadataSelfClosingTag() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit("{namespace ns}\n" + "/***/\n" + "{element .a}<input />{/element}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getSoyElement().getIsSoyElement()).isTrue();
+    assertThat(template.getHtmlElement().getIsVelogged()).isFalse();
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("input");
+  }
+
+  @Test
+  public void testSoyElementVelog() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit(
+            "{namespace ns}\n"
+                + "/***/\n"
+                + "{element .a}{@param vedata: ve_data}{velog"
+                + " $vedata}<span></span>{/velog}{/element}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getSoyElement().getIsSoyElement()).isTrue();
+    assertThat(template.getHtmlElement().getIsVelogged()).isTrue();
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("span");
+  }
+
+  @Test
+  public void testTemplateVelog() throws Exception {
+    CompilationUnit unit =
+        getCompilationUnit(
+            "{namespace ns}\n"
+                + "/***/\n"
+                + "{template .a}{@param vedata: ve_data}{velog"
+                + " $vedata}<span></span>{/velog}{/template}");
+    SoyFileP file = unit.getFile(0);
+    TemplateMetadataP template = file.getTemplate(0);
+    assertThat(template.getSoyElement().getIsSoyElement()).isFalse();
+    assertThat(template.getHtmlElement().getIsVelogged()).isTrue();
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("span");
   }
 }

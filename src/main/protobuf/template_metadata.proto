@@ -127,6 +127,27 @@ enum VisibilityP {
   PRIVATE = 2;
 }
 
+// Metadata around whether the template contains fragments, html elements
+// or velog.
+message HtmlElementMetadataP {
+  // If this is true, then the template contains either one visible HTML
+  // tag, or does a call that resolves to one HTML tag. If false, then
+  // there is a fragment. This is also false if the HTML element has dynamic
+  // number of tags due to if or switch statements.
+  bool is_html_element = 1;
+  // If this is true, then the single element has a velog around it. This is
+  // to prevent wrapping a velog around a call that is itself velogged.
+  bool is_velogged = 2;
+  // The tag of an element. If the template is a fragment or a template
+  // contains a dynamic tag, then this will be "?".
+  string tag = 3;
+}
+
+// Metadata around whether the template is a Soy element or not.
+message SoyElementMetadataP {
+  bool is_soy_element = 1;
+}
+
 // Represents a soy template.
 message TemplateMetadataP {
   TemplateKindP template_kind = 1;
@@ -144,6 +165,9 @@ message TemplateMetadataP {
   repeated ParameterP parameter = 7;
   repeated DataAllCallSituationP data_all_call_situation = 8;
   repeated string required_css_names = 10;
+
+  HtmlElementMetadataP html_element = 11;
+  SoyElementMetadataP soy_element = 12;
 
   reserved 9;
 }

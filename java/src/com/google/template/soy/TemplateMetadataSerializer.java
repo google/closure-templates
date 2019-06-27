@@ -138,24 +138,29 @@ public final class TemplateMetadataSerializer {
   }
 
   private static TemplateMetadataP protoFromTemplate(TemplateMetadata meta, SoyFileNode fileNode) {
-    return TemplateMetadataP.newBuilder()
-        .setTemplateName(
-            meta.getTemplateKind() == Kind.DELTEMPLATE
-                ? meta.getDelTemplateName()
-                : maybeShortenTemplateName(fileNode.getNamespace(), meta.getTemplateName()))
-        .setTemplateKind(TEMPLATE_KIND_CONVERTER.reverse().convert(meta.getTemplateKind()))
-        .setVisibility(VISIBILITY_CONVERTER.reverse().convert(meta.getVisibility()))
-        .addAllRequiredCssNames(meta.getRequiredCssNames())
-        .setContentKind(
-            meta.getContentKind() == null
-                ? SanitizedContentKindP.NONE
-                : CONTENT_KIND_CONVERTER.reverse().convert(meta.getContentKind()))
-        .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
-        .setStrictHtml(meta.isStrictHtml())
-        .addAllDataAllCallSituation(
-            protosFromCallSitatuations(meta.getDataAllCallSituations(), fileNode))
-        .addAllParameter(protosFromParameters(meta.getParameters()))
-        .build();
+    TemplateMetadataP.Builder builder =
+        TemplateMetadataP.newBuilder()
+            .setTemplateName(
+                meta.getTemplateKind() == Kind.DELTEMPLATE
+                    ? meta.getDelTemplateName()
+                    : maybeShortenTemplateName(fileNode.getNamespace(), meta.getTemplateName()))
+            .setTemplateKind(TEMPLATE_KIND_CONVERTER.reverse().convert(meta.getTemplateKind()))
+            .setVisibility(VISIBILITY_CONVERTER.reverse().convert(meta.getVisibility()))
+            .addAllRequiredCssNames(meta.getRequiredCssNames())
+            .setContentKind(
+                meta.getContentKind() == null
+                    ? SanitizedContentKindP.NONE
+                    : CONTENT_KIND_CONVERTER.reverse().convert(meta.getContentKind()))
+            .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
+            .setStrictHtml(meta.isStrictHtml())
+            .addAllDataAllCallSituation(
+                protosFromCallSitatuations(meta.getDataAllCallSituations(), fileNode))
+            .addAllParameter(protosFromParameters(meta.getParameters()));
+    // This may be null because some flows such as conformance tests do not run the SoyElementPass.
+    if (meta.getHtmlElement() != null && meta.getSoyElement() != null) {
+      builder = builder.setHtmlElement(meta.getHtmlElement()).setSoyElement(meta.getSoyElement());
+    }
+    return builder.build();
   }
 
   private static TemplateMetadata metadataFromProto(
@@ -191,6 +196,8 @@ public final class TemplateMetadataSerializer {
         .setTemplateName(templateName)
         .setSoyFileKind(fileKind)
         .setDelPackageName(delPackageName)
+        .setHtmlElement(templateProto.getHtmlElement())
+        .setSoyElement(templateProto.getSoyElement())
         .setStrictHtml(templateProto.getStrictHtml())
         .setRequiredCssNames(ImmutableList.copyOf(templateProto.getRequiredCssNamesList()))
         .setTemplateKind(templateKind)

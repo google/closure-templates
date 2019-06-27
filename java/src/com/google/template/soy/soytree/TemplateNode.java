@@ -259,6 +259,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** If the template is using strict html mode. */
   private final boolean strictHtml;
 
+  /** Additional metadata for serialization and verification across templates. */
+  private HtmlElementMetadataP templateMetadata = null;
 
   // TODO(b/19406885): Remove.
   private final String commandText;
@@ -470,6 +472,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       }
     }
     return builder.build();
+  }
+
+  public void setHtmlElementMetadata(HtmlElementMetadataP metadata) {
+    this.templateMetadata = metadata;
+  }
+
+  public HtmlElementMetadataP getHtmlElementMetadata() {
+    return templateMetadata;
   }
 
   /** Returns the injected params from template header. */

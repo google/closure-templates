@@ -52,6 +52,10 @@ public abstract class TemplateMetadata {
             .setTemplateName(template.getTemplateName())
             .setSourceLocation(template.getSourceLocation())
             .setSoyFileKind(SoyFileKind.SRC)
+            .setSoyElement(
+                SoyElementMetadataP.newBuilder()
+                    .setIsSoyElement(template instanceof TemplateElementNode)
+                    .build())
             .setContentKind(template.getContentKind())
             .setStrictHtml(template.isStrictHtml())
             .setDelPackageName(template.getDelPackageName())
@@ -59,6 +63,10 @@ public abstract class TemplateMetadata {
             .setRequiredCssNames(ImmutableList.copyOf(template.getRequiredCssNamespaces()))
             .setParameters(Parameter.directParametersFromTemplate(template))
             .setDataAllCallSituations(DataAllCallSituation.fromTemplate(template));
+    // In various conditions such as Conformance tests, this can be null.
+    if (template.getHtmlElementMetadata() != null) {
+      builder.setHtmlElement(template.getHtmlElementMetadata());
+    }
     switch (template.getKind()) {
       case TEMPLATE_BASIC_NODE:
         builder.setTemplateKind(Kind.BASIC);
@@ -275,6 +283,12 @@ public abstract class TemplateMetadata {
    */
   public abstract SourceLocation getSourceLocation();
 
+  @Nullable
+  public abstract HtmlElementMetadataP getHtmlElement();
+
+  @Nullable
+  public abstract SoyElementMetadataP getSoyElement();
+
   public abstract Kind getTemplateKind();
 
   public abstract String getTemplateName();
@@ -318,6 +332,10 @@ public abstract class TemplateMetadata {
     public abstract Builder setRequiredCssNames(ImmutableList<String> requiredCssNames);
 
     public abstract Builder setSourceLocation(SourceLocation location);
+
+    public abstract Builder setHtmlElement(HtmlElementMetadataP isHtml);
+
+    public abstract Builder setSoyElement(SoyElementMetadataP isSoyEl);
 
     public abstract Builder setTemplateKind(Kind kind);
 

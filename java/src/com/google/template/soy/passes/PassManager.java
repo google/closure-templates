@@ -293,7 +293,9 @@ public final class PassManager {
       addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
       addPass(new StrictHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-
+      // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
+      // validation).
+      addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
         // and before ResolveExpressionTypesPass (since we insert expressions).
@@ -320,9 +322,6 @@ public final class PassManager {
           singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass.
       addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
-      // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
-      // validation).
-      addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);
 
       // Cross template checking passes
 

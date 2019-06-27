@@ -18,11 +18,13 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.KeyNode;
@@ -35,7 +37,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import javax.annotation.Nullable;
 
 /** Validates restrictions specific to Soy elements. */
-final class SoyElementPass extends CompilerFilePass {
+public final class SoyElementPass extends CompilerFilePass {
 
   private static final SoyErrorKind ROOT_HAS_KEY_NODE =
       SoyErrorKind.of(
@@ -55,6 +57,8 @@ final class SoyElementPass extends CompilerFilePass {
   private static final ImmutableSet<SoyNode.Kind> ALLOWED_CHILD_NODES =
       Sets.immutableEnumSet(
           SoyNode.Kind.LET_CONTENT_NODE, SoyNode.Kind.LET_VALUE_NODE, SoyNode.Kind.LOG_NODE);
+
+  private static final String UNKNOWN_ELEMENT_TAG = "?";
   private final ErrorReporter errorReporter;
 
   SoyElementPass(ErrorReporter errorReporter) {
@@ -64,9 +68,7 @@ final class SoyElementPass extends CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getChildren()) {
-      if (!(template instanceof TemplateElementNode)) {
-        continue;
-      }
+      ErrorReporter bufferedErrorReporter = ErrorReporter.create(ImmutableMap.of());
       // scan through all children skipping 'ALLOWED_CHILD_KINDS' until we find an HtmlOpenTagNode
       // or a VeLogNode
       // validate the corresponding dom structure ensuring that our constrains are met:
@@ -75,45 +77,69 @@ final class SoyElementPass extends CompilerFilePass {
       // * tag name is not dynamic
       // then mark the open tag as an element root.
       boolean foundRootTags = false;
+      VeLogNode veLogNode = null;
+      HtmlOpenTagNode openTag = null;
       for (int i = 0; i < template.numChildren(); i++) {
         SoyNode child = template.getChild(i);
         if (ALLOWED_CHILD_NODES.contains(child.getKind())) {
           continue;
         }
         if (!foundRootTags && child instanceof HtmlOpenTagNode) {
-          HtmlTagNode tagNode = checkHtmlOpenTag(template, (HtmlOpenTagNode) child);
-          if (tagNode == null) {
+          HtmlTagNode closeTag =
+              checkHtmlOpenTag(template, (HtmlOpenTagNode) child, bufferedErrorReporter);
+          if (closeTag == null) {
             break;
           }
           // jump ahead to just after the close tag
-          i = template.getChildIndex(tagNode);
+          i = template.getChildIndex(closeTag);
           foundRootTags = true;
+          openTag = ((HtmlOpenTagNode) child);
         } else if (!foundRootTags && child instanceof VeLogNode) {
-          VeLogNode veLogNode = (VeLogNode) child;
-          HtmlOpenTagNode openTag = veLogNode.getOpenTagNode();
-          if (openTag == null) {
+          veLogNode = (VeLogNode) child;
+          HtmlOpenTagNode maybeOpenTagNode = veLogNode.getOpenTagNode();
+          if (maybeOpenTagNode == null) {
             // ve log validation should have failed already
             checkState(errorReporter.hasErrors());
           } else {
-            HtmlTagNode tagNode = checkHtmlOpenTag(veLogNode, openTag);
-            if (tagNode == null) {
+            HtmlTagNode closeTag =
+                checkHtmlOpenTag(veLogNode, maybeOpenTagNode, bufferedErrorReporter);
+            if (closeTag == null) {
               break; // skip reporting additional errors
             }
+            openTag = maybeOpenTagNode;
             foundRootTags = true;
           }
         } else {
-          errorReporter.report(child.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+          bufferedErrorReporter.report(child.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
           break; // break after first error
         }
       }
+      if (template instanceof TemplateElementNode) {
+        bufferedErrorReporter.copyTo(errorReporter);
+        if (openTag != null) {
+          openTag.setElementRoot();
+        }
+      }
+      // openTag being null means that the template isn't kind HTML.
+      boolean isValid =
+          openTag != null && template.numChildren() > 0 && !bufferedErrorReporter.hasErrors();
+      template.setHtmlElementMetadata(
+          HtmlElementMetadataP.newBuilder()
+              .setIsHtmlElement(isValid)
+              .setIsVelogged(veLogNode != null)
+              .setTag(
+                  (isValid && openTag.getTagName().isStatic())
+                      ? openTag.getTagName().getStaticTagName()
+                      : UNKNOWN_ELEMENT_TAG)
+              .build());
     }
   }
 
   @Nullable
-  private HtmlTagNode checkHtmlOpenTag(BlockNode parent, HtmlOpenTagNode openTagNode) {
-    openTagNode.setElementRoot();
-    validateNoKey(openTagNode);
-    validateNoDynamicTag(openTagNode);
+  private static HtmlTagNode checkHtmlOpenTag(
+      BlockNode parent, HtmlOpenTagNode openTagNode, ErrorReporter errorReporter) {
+    validateNoKey(openTagNode, errorReporter);
+    validateNoDynamicTag(openTagNode, errorReporter);
     if (openTagNode.isSelfClosing()
         || (openTagNode.getTagName().isDefinitelyVoid()
             && openTagNode.getTaggedPairs().isEmpty())) {
@@ -122,14 +148,11 @@ final class SoyElementPass extends CompilerFilePass {
     } else {
       // this is a 'normal' tag, so it should have a close tag
       if (openTagNode.getTaggedPairs().isEmpty()) {
-        // this element is un-balanced, so we should have already reported an error
-        checkState(errorReporter.hasErrors());
         return null;
       }
       if (openTagNode.getTaggedPairs().size() == 1) {
         HtmlTagNode closeTag = openTagNode.getTaggedPairs().get(0);
         if (closeTag.getParent() != parent) {
-          // This should be impossible.... checkState?
           errorReporter.report(
               openTagNode.getSourceLocation(), SOY_ELEMENT_OPEN_TAG_CLOSE_AMBIGUOUS);
           return null;
@@ -143,7 +166,7 @@ final class SoyElementPass extends CompilerFilePass {
   }
 
   // See go/soy-element-keyed-roots for reasoning on why this is disallowed.
-  private void validateNoKey(HtmlOpenTagNode firstTagNode) {
+  private static void validateNoKey(HtmlOpenTagNode firstTagNode, ErrorReporter errorReporter) {
     for (SoyNode child : firstTagNode.getChildren()) {
       if (child instanceof KeyNode) {
         errorReporter.report(firstTagNode.getSourceLocation(), ROOT_HAS_KEY_NODE);
@@ -151,7 +174,8 @@ final class SoyElementPass extends CompilerFilePass {
     }
   }
 
-  private void validateNoDynamicTag(HtmlOpenTagNode firstTagNode) {
+  private static void validateNoDynamicTag(
+      HtmlOpenTagNode firstTagNode, ErrorReporter errorReporter) {
     if (!firstTagNode.getTagName().isStatic()) {
       errorReporter.report(firstTagNode.getSourceLocation(), ROOT_IS_DYNAMIC_TAG);
     }
