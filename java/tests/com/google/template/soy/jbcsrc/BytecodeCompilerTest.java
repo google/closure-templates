@@ -102,7 +102,9 @@ public class BytecodeCompilerTest {
                 "{/template}",
                 "",
                 "/** */",
-                "{deltemplate myApp.myDelegate}", // default implementation (doesn't use $boo)
+                "{deltemplate myApp.myDelegate requirecss=\"ns.default\"}", // default
+                // implementation
+                // (doesn't use $boo)
                 "  {@param boo : string}",
                 "  default",
                 "{/deltemplate}",
@@ -112,7 +114,7 @@ public class BytecodeCompilerTest {
         Joiner.on("\n")
             .join(
                 "{delpackage SecretFeature}",
-                "{namespace ns2}",
+                "{namespace ns2 requirecss=\"ns.foo\"}",
                 "",
                 "/** */",
                 "{deltemplate myApp.myDelegate}", // implementation in SecretFeature
@@ -125,7 +127,7 @@ public class BytecodeCompilerTest {
         Joiner.on("\n")
             .join(
                 "{delpackage AlternateSecretFeature}",
-                "{namespace ns3}",
+                "{namespace ns3 requirecss=\"ns.bar\"}",
                 "",
                 "/** */",
                 "{deltemplate myApp.myDelegate}", // implementation in AlternateSecretFeature
@@ -162,6 +164,16 @@ public class BytecodeCompilerTest {
             .get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     Predicate<String> activePackages = arg -> false;
+    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", activePackages))
+        .containsExactly("ns.default");
+    assertThat(
+            templates.getAllRequiredCssNamespaces(
+                "ns1.callerTemplate", arg -> arg.equals("SecretFeature")))
+        .containsExactly("ns.foo");
+    assertThat(
+            templates.getAllRequiredCssNamespaces(
+                "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature")))
+        .containsExactly("ns.bar");
 
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
         .isEqualTo("default");
@@ -256,17 +268,19 @@ public class BytecodeCompilerTest {
                 "{/template}",
                 "",
                 "/** */",
-                "{deltemplate ns1.del variant=\"'v1'\"}",
+                "{deltemplate ns1.del variant=\"'v1'\" requirecss=\"ns.foo\"}",
                 "  v1",
                 "{/deltemplate}",
                 "",
                 "/** */",
-                "{deltemplate ns1.del variant=\"'v2'\"}",
+                "{deltemplate ns1.del variant=\"'v2'\" requirecss=\"ns.bar\"}",
                 "  v2",
                 "{/deltemplate}",
                 "");
 
     CompiledTemplates templates = compileFiles(soyFileContent1);
+    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", (arg) -> false))
+        .isEmpty();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
@@ -386,7 +400,10 @@ public class BytecodeCompilerTest {
             "{/template}",
             "");
     TemplateMetadata metadata = getTemplateMetadata(templates, "ns.requireCss");
+    Predicate<String> activePackages = arg -> false;
     assertThat(metadata.requiredCssNames()).asList().containsExactly("ns.foo", "ns.bar");
+    assertThat(templates.getAllRequiredCssNamespaces("ns.requireCss", activePackages))
+        .containsExactly("ns.foo", "ns.bar");
   }
 
   @Test
