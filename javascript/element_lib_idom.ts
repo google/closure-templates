@@ -13,7 +13,7 @@ import {IncrementalDomRenderer, patchOuter} from './api_idom';
 import {isTaggedForSkip} from './global';
 
 /** Function that executes Idom instructions */
-export type PatchFunction = (a?: {}) => void;
+export type PatchFunction = (a?: unknown) => void;
 
 /** Function that executes before a patch and determines whether to proceed. */
 export type SkipHandler = <T>(prev: T, next: T) => boolean;
