@@ -16,6 +16,8 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.Flags;
 import com.google.template.soy.data.SanitizedContent;
@@ -35,12 +37,62 @@ import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** Implements runtime type checks for tofu. */
 public final class TofuTypeChecks {
   private static final Logger logger = Logger.getLogger(TofuTypeChecks.class.getName());
+
+  private static final CheckResult PASS = new CheckResult(true, Optional.empty());
+  private static final CheckResult FAIL = new CheckResult(false, Optional.empty());
+
+  private static final class CheckResult {
+    static final CheckResult fromBool(boolean result) {
+      return result ? PASS : FAIL;
+    }
+
+    static final CheckResult passWithWarning(Runnable onPass) {
+      return new CheckResult(true, Optional.of(onPass));
+    }
+
+    final boolean result;
+    final Optional<Runnable> onPass;
+
+    CheckResult(boolean result, Optional<Runnable> onPass) {
+      this.result = result;
+      this.onPass = checkNotNull(onPass);
+      if (onPass.isPresent() && !result) {
+        throw new IllegalArgumentException("onPass values are only valid for successful results");
+      }
+    }
+
+    CheckResult or(CheckResult other) {
+      if (!result) {
+        return other;
+      }
+      if (!other.result) {
+        return this;
+      }
+      // they are both true, we need to merge the runnables
+      // if either runnable is absent, we can drop the other runnable, if both runnables are present
+      // we preserve both
+      if (!onPass.isPresent()) {
+        return this;
+      }
+      if (!other.onPass.isPresent()) {
+        return other;
+      }
+      // they are both true and both have runnables, concatenate the runnables
+      return passWithWarning(
+          () -> {
+            this.onPass.get().run();
+            other.onPass.get().run();
+          });
+    }
+  }
+
   /**
    * Returns true if the given {@linkplain SoyValue value} is an instance of the {@linkplain SoyType
    * type}. For generic types, this only checks the overall shape of the type (list, map, etc) since
@@ -55,85 +107,101 @@ public final class TofuTypeChecks {
    * @param location The source location of the instance
    * @return True if the value is an instance of the type.
    */
-  public static final boolean isInstance(SoyType type, SoyValue value, SourceLocation location) {
+  public static boolean isInstance(SoyType type, SoyValue value, SourceLocation location) {
+    CheckResult result = doIsInstance(type, value, location);
+    if (result.result) {
+      result.onPass.ifPresent(Runnable::run);
+      return true;
+    }
+    return false;
+  }
+
+  private static CheckResult doIsInstance(SoyType type, SoyValue value, SourceLocation location) {
     switch (type.getKind()) {
       case ANY:
       case UNKNOWN:
-        return true;
+        return PASS;
       case ATTRIBUTES:
         return isSanitizedofKind(value, ContentKind.ATTRIBUTES);
       case CSS:
         return isSanitizedofKind(value, ContentKind.CSS);
       case BOOL:
-        return value instanceof BooleanData;
+        return CheckResult.fromBool(value instanceof BooleanData);
       case FLOAT:
-        return value instanceof FloatData;
+        return CheckResult.fromBool(value instanceof FloatData);
       case HTML:
         return isSanitizedofKind(value, ContentKind.HTML);
       case INT:
-        return value instanceof IntegerData;
+        return CheckResult.fromBool(value instanceof IntegerData);
       case JS:
         return isSanitizedofKind(value, ContentKind.JS);
       case LIST:
-        return value instanceof SoyList;
+        return CheckResult.fromBool(value instanceof SoyList);
       case MAP:
-        return value instanceof SoyMap;
+        return CheckResult.fromBool(value instanceof SoyMap);
       case LEGACY_OBJECT_MAP:
-        return value instanceof SoyLegacyObjectMap;
+        return CheckResult.fromBool(value instanceof SoyLegacyObjectMap);
       case NULL:
-        return value == NullData.INSTANCE || value == UndefinedData.INSTANCE;
+        return CheckResult.fromBool(value == NullData.INSTANCE || value == UndefinedData.INSTANCE);
       case PROTO:
         // proto descriptors use instance equality.
-        return value instanceof SoyProtoValue
-            && ((SoyProtoValue) value).getProto().getDescriptorForType()
-                == ((SoyProtoType) type).getDescriptor();
+        return CheckResult.fromBool(
+            value instanceof SoyProtoValue
+                && ((SoyProtoValue) value).getProto().getDescriptorForType()
+                    == ((SoyProtoType) type).getDescriptor());
       case PROTO_ENUM:
         // TODO(lukes): this should also assert that the value is in range
-        return value instanceof IntegerData;
+        return CheckResult.fromBool(value instanceof IntegerData);
       case RECORD:
-        return value instanceof SoyRecord;
+        return CheckResult.fromBool(value instanceof SoyRecord);
       case STRING:
         if (Flags.stringIsNotSanitizedContent()) {
-          return value instanceof SoyString;
+          return CheckResult.fromBool(value instanceof SoyString);
         } else {
           if (value instanceof SoyString
               && value instanceof SanitizedContent
               && ((SanitizedContent) value).getContentKind() != ContentKind.TEXT
               && logger.isLoggable(Level.WARNING)) {
-            logger.log(
-                Level.WARNING,
-                String.format(
-                    "Passing in sanitized content into a template that accepts only string is "
-                        + "forbidden. Please modify the template at %s to take in "
-                        + "%s instead of just %s.",
-                    location != null ? location.toString() : "unknown",
-                    ((SanitizedContent) value).getContentKind(), type.toString()));
+            return CheckResult.passWithWarning(
+                () -> {
+                  logger.log(
+                      Level.WARNING,
+                      String.format(
+                          "Passing in sanitized content into a template that accepts only string"
+                              + " is forbidden. Please modify the template at %s to take in %s"
+                              + " instead of just %s.",
+                          location != null ? location.toString() : "unknown",
+                          ((SanitizedContent) value).getContentKind(),
+                          type.toString()),
+                      new Exception());
+                });
           }
-          return value instanceof SoyString || value instanceof SanitizedContent;
+          return CheckResult.fromBool(
+              value instanceof SoyString || value instanceof SanitizedContent);
         }
       case TRUSTED_RESOURCE_URI:
         return isSanitizedofKind(value, ContentKind.TRUSTED_RESOURCE_URI);
       case UNION:
+        CheckResult unionResult = FAIL;
         for (SoyType memberType : ((UnionType) type).getMembers()) {
-          if (isInstance(memberType, value, location)) {
-            return true;
-          }
+          unionResult = unionResult.or(doIsInstance(memberType, value, location));
         }
-        return false;
+        return unionResult;
       case URI:
         return isSanitizedofKind(value, ContentKind.URI);
       case VE:
       case VE_DATA:
         // Dynamic VE support is minimally implemented in Tofu: ve and ve_data objects are always
         // null.
-        return value == NullData.INSTANCE;
+        return CheckResult.fromBool(value == NullData.INSTANCE);
       case ERROR:
         // continue
     }
     throw new AssertionError("invalid type: " + type);
   }
 
-  private static boolean isSanitizedofKind(SoyValue value, ContentKind kind) {
-    return value instanceof SanitizedContent && ((SanitizedContent) value).getContentKind() == kind;
+  private static CheckResult isSanitizedofKind(SoyValue value, ContentKind kind) {
+    return CheckResult.fromBool(
+        value instanceof SanitizedContent && ((SanitizedContent) value).getContentKind() == kind);
   }
 }

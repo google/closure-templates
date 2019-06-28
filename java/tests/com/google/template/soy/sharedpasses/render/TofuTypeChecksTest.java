@@ -39,6 +39,7 @@ import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
