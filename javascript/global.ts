@@ -22,7 +22,12 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
   new(data: any, ijData: IjData): TElement;
 }
 
-/** Retrieves the Soy element in a type-safe way. */
+/**
+ * Retrieves the Soy element in a type-safe way.
+ *
+ * <p>Requires that the node has been rendered by this element already. Will
+ * throw an Error if this is not true.
+ */
 export function getSoy<TElement extends SoyElement<{}|null, {}>>(
     node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
   const soyEl = assertInstanceof(getSoyUntyped(node), elementCtor, message);
