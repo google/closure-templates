@@ -876,7 +876,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final Label restartPoint = new Label();
     final Expression veData = exprCompiler.compile(node.getVeDataExpression(), restartPoint);
     final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
-    final Statement body = Statement.concat(visitChildren(node));
     final Statement exitStatement =
         ControlFlow.IfBlock.create(
                 hasLogger, appendableExpression.exitLoggableElement().toStatement())
@@ -884,6 +883,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getLogonlyExpression() != null) {
       final Expression logonlyExpression =
           exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAsBoolean();
+      // needs to be called after evaluating the logonly expression so variables defined in the
+      // block aren't part of the save restore state for the logonly expression.
+      final Statement body = Statement.concat(visitChildrenInNewScope(node));
       return new Statement() {
         @Override
         protected void doGen(CodeBuilder cb) {
@@ -935,7 +937,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                       .toStatement()
                       .labelStart(restartPoint))
               .asStatement();
-      return Statement.concat(enterStatement, body, exitStatement);
+      return Statement.concat(
+          enterStatement, Statement.concat(visitChildrenInNewScope(node)), exitStatement);
     }
   }
 

@@ -154,11 +154,15 @@ public final class VeLoggingTest {
     StringBuilder sb = new StringBuilder();
     TestLogger testLogger = new TestLogger();
     renderTemplate(
-        ImmutableMap.of("t", true, "f", false),
+        ImmutableMap.of("t", true, "f", false, "n", 0),
         OutputAppendable.create(sb, testLogger),
         "{@param t : bool}",
         "{@param f : bool}",
-        "{velog Foo logonly=\"$t\"}<div data-id=1></div>{/velog}",
+        "{@param n : int}",
+        // add the let as a regression test for a bug where we would generate code in the wrong
+        // order which would cause us to try to save/restore the let value which hadn't been defined
+        // yet!
+        "{velog Foo logonly=\"$t\"}<div data-id=1>{let $foo: 1 + $n /}{$foo + $foo}</div>{/velog}",
         "{velog Bar logonly=\"$f\"}<div data-id=2></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEqualTo("<div data-id=2></div>");
