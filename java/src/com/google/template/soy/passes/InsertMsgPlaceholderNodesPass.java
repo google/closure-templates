@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -52,7 +53,9 @@ import java.util.List;
  */
 final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
   private static final SoyErrorKind INVALID_PLACEHOLDER =
-      SoyErrorKind.of("''{0}'' attributes are only valid inside '''{'msg...'' tags.");
+      SoyErrorKind.of(
+          "''{0}'' attributes are only valid on placeholders inside of '''{'msg...'' tags.{1}",
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind UNEXPECTED_COMMAND_IN_MSG =
       SoyErrorKind.of(
@@ -73,7 +76,7 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
     final List<SoyNode> nodesToReplace = new ArrayList<>();
     final IdGenerator nodeIdGen;
     final ErrorReporter errorReporter;
-    boolean inMsgNode = false;
+    boolean isValidMsgPlaceholderPosition = false;
 
     Visitor(IdGenerator nodeIdGen, ErrorReporter errorReporter) {
       this.errorReporter = errorReporter;
@@ -83,9 +86,9 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
     @Override
     protected void visitMsgNode(MsgNode msgNode) {
       msgNode.ensureSubstUnitInfoHasNotBeenAccessed();
-      inMsgNode = true;
+      isValidMsgPlaceholderPosition = true;
       visitChildren(msgNode);
-      inMsgNode = false;
+      isValidMsgPlaceholderPosition = false;
       for (SoyNode node : nodesToReplace) {
         ParentSoyNode<?> parent = node.getParent();
         if (!(parent instanceof MsgBlockNode)) {
@@ -135,13 +138,13 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
 
     @Override
     protected void visitPrintNode(PrintNode node) {
-      maybeAddAndVisitChildren(node);
+      maybeAddPlaceholderAndVisitChildren(node);
       checkPlaceholderNode(node);
     }
 
     @Override
     protected void visitCallNode(CallNode node) {
-      maybeAddAndVisitChildren(node);
+      maybeAddPlaceholderAndVisitChildren(node);
       checkPlaceholderNode(node);
     }
 
@@ -158,22 +161,22 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      maybeAddAndVisitChildren(node);
+      maybeAddPlaceholderAndVisitChildren(node);
       // NOTE: it is OK for these nodes to have phname attrs outside of msg blocks for backwards
       // compatibility
     }
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      maybeAddAndVisitChildren(node);
+      maybeAddPlaceholderAndVisitChildren(node);
 
-      if (!inMsgNode) {
+      if (!isValidMsgPlaceholderPosition) {
         // phname and phex are the only allowed close tag attribute, and even then it is only
         // allowed inside of messages
         for (String name : Arrays.asList("phname", "phex")) {
           HtmlAttributeNode attr = node.getDirectAttributeNamed(name);
           if (attr != null) {
-            errorReporter.report(attr.getSourceLocation(), INVALID_PLACEHOLDER, name);
+            errorReporter.report(attr.getSourceLocation(), INVALID_PLACEHOLDER, name, "");
           }
         }
       }
@@ -207,16 +210,16 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
       throw new AssertionError("Unexpected node: " + node.toSourceString());
     }
 
-    private void maybeAddAndVisitChildren(SoyNode node) {
-      if (inMsgNode) {
+    private void maybeAddPlaceholderAndVisitChildren(SoyNode node) {
+      if (isValidMsgPlaceholderPosition) {
         nodesToReplace.add(node);
       }
       if (node instanceof ParentSoyNode<?>) {
         // inside of a potential placeholder node, we shouldn't find other placeholder nodes.
-        boolean oldInMsgNode = inMsgNode;
-        inMsgNode = false;
+        boolean oldIsValidMsgPlaceholderPosition = isValidMsgPlaceholderPosition;
+        isValidMsgPlaceholderPosition = false;
         visitChildren((ParentSoyNode<?>) node);
-        inMsgNode = oldInMsgNode;
+        isValidMsgPlaceholderPosition = oldIsValidMsgPlaceholderPosition;
       }
     }
 
@@ -225,7 +228,7 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
       // If we are in a message node, and this isn't a block node (like {plural} or {select} or a
       // {case} inside of one of those), then report an error. All commands that aren't an error
       // have been overridden above.
-      if (inMsgNode && !(node instanceof MsgBlockNode)) {
+      if (isValidMsgPlaceholderPosition && !(node instanceof MsgBlockNode)) {
         errorReporter.report(node.getSourceLocation(), UNEXPECTED_COMMAND_IN_MSG);
         // don't visit children, otherwise every child will report an error also (happens with
         // ifnode and ifcondnode in particular)
@@ -240,15 +243,35 @@ final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
     }
 
     private void checkPlaceholderNode(MsgPlaceholderInitialNode node) {
-      if (inMsgNode) {
+      if (isValidMsgPlaceholderPosition) {
         return;
       }
-      if (node.getUserSuppliedPhName() != null) {
-        errorReporter.report(
-            node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHNAME_ATTR);
-      } else if (node.getUserSuppliedPhExample() != null) {
-        errorReporter.report(
-            node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHEX_ATTR);
+      if (node.getUserSuppliedPhName() != null || node.getUserSuppliedPhExample() != null) {
+        MsgNode msg = node.getNearestAncestor(MsgNode.class);
+        String extra = "";
+        if (msg != null) {
+          // this means we are in a message, just not in a placeholder position, this is likely
+          // because we are the child of another placeholder node, most likely an html tag
+          // See b/135952248
+          SoyNode current = node.getParent();
+          while (current != msg && !(current instanceof HtmlTagNode)) {
+            current = current.getParent();
+          }
+          if (current != msg) {
+            extra = " Did you mean to put this attribute on the surrounding html tag?";
+          }
+        }
+        if (node.getUserSuppliedPhName() != null) {
+          errorReporter.report(
+              node.getSourceLocation(),
+              INVALID_PLACEHOLDER,
+              MessagePlaceholders.PHNAME_ATTR,
+              extra);
+        }
+        if (node.getUserSuppliedPhExample() != null) {
+          errorReporter.report(
+              node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHEX_ATTR, extra);
+        }
       }
     }
   }
