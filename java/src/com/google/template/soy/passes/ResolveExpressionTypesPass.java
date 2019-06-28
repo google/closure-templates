@@ -229,10 +229,10 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
   private static final SoyErrorKind EXPLICIT_NULL =
       SoyErrorKind.of("Explicit use of the ''null'' type is not allowed.");
-  private static final SoyErrorKind INFERRED_NULL =
+  private static final SoyErrorKind AMBIGUOUS_INFERRED_TYPE =
       SoyErrorKind.of(
-          "The inferred type of this parameter is ''null'' which is not a useful type. "
-              + "Use an explicit type declaration to specify a wider type.");
+          "Using {0} in the initializer for a parameter with an inferred type is ambiguous. "
+              + "Add an explicit type declaration.");
   private static final SoyErrorKind VE_NO_CONFIG_FOR_ELEMENT =
       SoyErrorKind.of(
           "Could not find logging configuration for this element.{0}",
@@ -316,16 +316,18 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
         }
       }
 
-      visitExpressions(node);
-
       for (TemplateHeaderVarDefn headerVar : headerVars) {
+        // TODO(lukes): there are more non-sensical declarations than just 'null'
+        if (headerVar.getTypeNode() != null && NullType.getInstance().equals(headerVar.type())) {
+          errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
+        }
         if (headerVar.defaultValue() != null) {
+          new ResolveTypesExprVisitor(
+                  /* isDefaultInitializerForInferredParam=*/ headerVar.getTypeNode() == null)
+              .exec(headerVar.defaultValue());
           SoyType actualType = headerVar.defaultValue().getRoot().getType();
           if (headerVar.getTypeNode() != null) {
             SoyType declaredType = headerVar.type();
-            if (declaredType.equals(NullType.getInstance())) {
-              errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
-            }
             if (!declaredType.isAssignableFrom(actualType)) {
               errorReporter.report(
                   headerVar.defaultValue().getSourceLocation(),
@@ -338,12 +340,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
             // in this case the declaredType is inferred from the initializer expression, so just
             // assign
             headerVar.setType(actualType);
-            if (actualType.equals(NullType.getInstance())) {
-              errorReporter.report(headerVar.nameLocation(), INFERRED_NULL);
-            }
           }
-        } else if (headerVar.type().equals(NullType.getInstance())) {
-          errorReporter.report(headerVar.getTypeNode().sourceLocation(), EXPLICIT_NULL);
         }
       }
 
@@ -505,7 +502,8 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
   }
 
   private void visitExpressions(ExprHolderNode node) {
-    ResolveTypesExprVisitor exprVisitor = new ResolveTypesExprVisitor();
+    ResolveTypesExprVisitor exprVisitor =
+        new ResolveTypesExprVisitor(/* isDefaultInitializerForInferredParam=*/ false);
     for (ExprRootNode expr : node.getExprList()) {
       exprVisitor.exec(expr);
     }
@@ -567,6 +565,18 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
    * corresponding declaration object.
    */
   private final class ResolveTypesExprVisitor extends AbstractExprNodeVisitor<Void> {
+    /**
+     * Whether we are currently examining an expression in a default initializer for an inferred
+     * template.
+     *
+     * <p>When inferring types, some values are not legal because they create ambiguity. null and
+     * the empty collection literals all have this behavior.
+     */
+    final boolean isDefaultInitializerForInferredParam;
+
+    ResolveTypesExprVisitor(boolean isDefaultInitializerForInferredParam) {
+      this.isDefaultInitializerForInferredParam = isDefaultInitializerForInferredParam;
+    }
 
     private final AbstractExprNodeVisitor<Void> checkAllTypesAssignedVisitor =
         new AbstractExprNodeVisitor<Void>() {
@@ -599,6 +609,9 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
     @Override
     protected void visitPrimitiveNode(PrimitiveNode node) {
       // We don't do anything here because primitive nodes already have type information.
+      if (isDefaultInitializerForInferredParam && node.getKind() == ExprNode.Kind.NULL_NODE) {
+        errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "a 'null' literal");
+      }
     }
 
     @Override
@@ -611,6 +624,9 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       }
       // Special case for empty list.
       if (elementTypes.isEmpty()) {
+        if (isDefaultInitializerForInferredParam) {
+          errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty list");
+        }
         node.setType(ListType.EMPTY_LIST);
       } else {
         node.setType(
@@ -629,6 +645,10 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       if (numChildren == 0) {
         // TODO(b/79869432): Remove support for the empty record.
         node.setType(RecordType.EMPTY_RECORD);
+        if (isDefaultInitializerForInferredParam) {
+          errorReporter.report(
+              node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty record");
+        }
         return;
       }
 
@@ -649,6 +669,9 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       checkState(numChildren % 2 == 0);
       if (numChildren == 0) {
         node.setType(MapType.EMPTY_MAP);
+        if (isDefaultInitializerForInferredParam) {
+          errorReporter.report(node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty map");
+        }
         return;
       }
 

@@ -161,7 +161,7 @@ public abstract class SoyType {
    */
   public final boolean isAssignableFrom(SoyType srcType) {
     // Handle unions generically.  A type is assignable from a union if it is assignable from _all_
-    // memebers.
+    // members.
     if (srcType instanceof UnionType) {
       // By construction union types are guaranteed
       // 1. not to be empty
