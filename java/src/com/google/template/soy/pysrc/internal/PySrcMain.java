@@ -39,7 +39,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Main entry point for the Python Src backend (output target).
@@ -132,11 +131,9 @@ public final class PySrcMain {
     if (pySrcOptions.namespaceManifestFile() != null) {
       try (Writer out =
           Files.newWriter(new File(pySrcOptions.namespaceManifestFile()), StandardCharsets.UTF_8)) {
-        Properties prop = new Properties();
         for (String namespace : manifest.keySet()) {
-          prop.put(namespace, manifest.get(namespace));
+          out.write(String.format("%s=%s\n", namespace, manifest.get(namespace)));
         }
-        prop.store(out, null);
       }
     }
   }
