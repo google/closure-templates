@@ -45,7 +45,7 @@ There are a few ways to coerce a value to a boolean.
 All values have a boolean coercion (sometimes referred to as a 'truthiness'
 check), these mostly follow JavaScript semantics:
 
-*   '0' values are falsy, e.g. `null`, `""`, `0` `true`
+*   '0' values are falsy, e.g. `null`, `""`, `0`
 *   all other values are truthy
 
 NOTE: there are some inconsistencies in how these work across backends.
