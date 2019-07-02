@@ -30,7 +30,7 @@ import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -224,13 +224,17 @@ final class TemplateCompiler {
     } else {
       deltemplateMetadata = createDefaultDelTemplateMetadata();
     }
-    Set<String> namespaces = Sets.newLinkedHashSet();
-    // This ordering is critical to preserve css hierarchy.
-    namespaces.addAll(templateNode.getParent().getRequiredCssNamespaces());
-    namespaces.addAll(templateNode.getRequiredCssNamespaces());
     TemplateMetadata metadata =
         createTemplateMetadata(
-            kind, namespaces, uniqueIjs, callees, delCallees, deltemplateMetadata);
+            kind,
+            new ImmutableSet.Builder<String>()
+                .addAll(templateNode.getRequiredCssNamespaces())
+                .addAll(templateNode.getParent().getRequiredCssNamespaces())
+                .build(),
+            uniqueIjs,
+            callees,
+            delCallees,
+            deltemplateMetadata);
     TEMPLATE_METADATA_REF.write(metadata, writer);
   }
 
