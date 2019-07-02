@@ -24,6 +24,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
@@ -94,6 +95,15 @@ public final class SoySauceImpl implements SoySauce {
   @Override
   public ImmutableSortedSet<String> getTransitiveIjParamsForTemplate(String templateName) {
     return templates.getTransitiveIjParamsForTemplate(templateName);
+  }
+
+  @Override
+  public ImmutableList<String> getAllRequiredCssNamespaces(
+      String templateName,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    return templates.getAllRequiredCssNamespaces(
+        templateName, enabledDelpackages, collectCssFromDelvariants);
   }
 
   @Override
