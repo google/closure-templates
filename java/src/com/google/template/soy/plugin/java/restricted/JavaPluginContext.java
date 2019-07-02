@@ -26,4 +26,7 @@ public interface JavaPluginContext {
    * or directives.
    */
   JavaValue getBidiDir();
+
+  /** Returns all required css namespaces as a {@code List<String>} for the given template. */
+  JavaValue getAllRequiredCssNamespaces(JavaValue template);
 }

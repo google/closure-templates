@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
@@ -114,6 +115,18 @@ public final class CommandTagAttribute {
             .extend(Iterables.getLast(valueExprList).getSourceLocation());
     this.value = null;
     this.valueExprList = valueExprList;
+  }
+
+  public CommandTagAttribute copy(CopyState copyState) {
+    if (this.value == null) {
+      return new CommandTagAttribute(
+          key,
+          quoteStyle,
+          valueExprList.stream()
+              .map(expr -> expr.copy(copyState))
+              .collect(ImmutableList.toImmutableList()));
+    }
+    return new CommandTagAttribute(key, quoteStyle, value, valueLocation);
   }
 
   /** Returns the name. It is guaranteed to be a single identifier. */

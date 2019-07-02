@@ -989,6 +989,11 @@ final class ExpressionCompiler {
                       }
 
                       @Override
+                      public Expression getAllRequiredCssNamespaces(Expression template) {
+                        return error();
+                      }
+
+                      @Override
                       public Expression getULocale() {
                         return error();
                       }

@@ -94,6 +94,10 @@ public final class RenderContext {
     return msgBundle.getLocale();
   }
 
+  public ImmutableList<String> getAllRequiredCssNamespaces(String templateName) {
+    return templates.getAllRequiredCssNamespaces(templateName, activeDelPackageSelector, false);
+  }
+
   public BidiGlobalDir getBidiGlobalDir() {
     return BidiGlobalDir.forStaticIsRtl(msgBundle.isRtl());
   }

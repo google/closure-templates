@@ -249,6 +249,12 @@ public class SoyJavaSourceFunctionTester {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    /** Returns all required css namespaces. */
+    @Override
+    public Expression getAllRequiredCssNamespaces(Expression template) {
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     @Override
     public Expression getBidiGlobalDir() {
       if (bidiGlobalDir == BidiGlobalDir.RTL) {

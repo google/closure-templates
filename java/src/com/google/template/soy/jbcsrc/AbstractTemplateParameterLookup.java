@@ -61,6 +61,11 @@ abstract class AbstractTemplateParameterLookup implements TemplateParameterLooku
       public Expression getULocale() {
         return getRenderContext().getULocale();
       }
+
+      @Override
+      public Expression getAllRequiredCssNamespaces(Expression template) {
+        return getRenderContext().getAllRequiredCssNamespaces(template);
+      }
     };
   }
 

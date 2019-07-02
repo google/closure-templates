@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -62,6 +63,13 @@ public final class NamespaceDeclaration {
     this.requiredCssNamespaces = requiredCssNamespaces;
     this.cssBaseNamespace = cssBaseNamespace;
     this.attrs = ImmutableList.copyOf(attrs);
+  }
+
+  public NamespaceDeclaration copy(CopyState copyState) {
+    return new NamespaceDeclaration(
+        namespace,
+        attrs.stream().map(attr -> attr.copy(copyState)).collect(ImmutableList.toImmutableList()),
+        ErrorReporter.exploding());
   }
 
   public String getNamespace() {

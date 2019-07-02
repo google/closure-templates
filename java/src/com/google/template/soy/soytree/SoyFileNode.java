@@ -68,7 +68,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   private SoyFileNode(SoyFileNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delPackageName = orig.delPackageName;
-    this.namespaceDeclaration = orig.namespaceDeclaration; // Immutable
+    this.namespaceDeclaration = orig.namespaceDeclaration.copy(copyState);
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
   }

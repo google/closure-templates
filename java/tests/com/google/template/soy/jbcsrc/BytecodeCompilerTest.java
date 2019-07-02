@@ -164,15 +164,24 @@ public class BytecodeCompilerTest {
             .get();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     Predicate<String> activePackages = arg -> false;
-    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", activePackages))
+    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", activePackages, false))
         .containsExactly("ns.default");
     assertThat(
             templates.getAllRequiredCssNamespaces(
-                "ns1.callerTemplate", arg -> arg.equals("SecretFeature")))
+                "ns1.callerTemplate", arg -> arg.equals("SecretFeature"), false))
         .containsExactly("ns.foo");
     assertThat(
             templates.getAllRequiredCssNamespaces(
-                "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature")))
+                "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature"), false))
+        .containsExactly("ns.bar");
+
+    assertThat(
+            templates.getAllRequiredCssNamespaces(
+                "ns1.callerTemplate", arg -> arg.equals("SecretFeature"), false))
+        .containsExactly("ns.foo");
+    assertThat(
+            templates.getAllRequiredCssNamespaces(
+                "ns1.callerTemplate", arg -> arg.equals("AlternateSecretFeature"), false))
         .containsExactly("ns.bar");
 
     assertThat(renderWithContext(factory, getDefaultContext(templates, activePackages)))
@@ -279,7 +288,7 @@ public class BytecodeCompilerTest {
                 "");
 
     CompiledTemplates templates = compileFiles(soyFileContent1);
-    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", (arg) -> false))
+    assertThat(templates.getAllRequiredCssNamespaces("ns1.callerTemplate", (arg) -> false, false))
         .isEmpty();
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns1.callerTemplate");
     RenderContext context = getDefaultContext(templates);
@@ -402,7 +411,7 @@ public class BytecodeCompilerTest {
     TemplateMetadata metadata = getTemplateMetadata(templates, "ns.requireCss");
     Predicate<String> activePackages = arg -> false;
     assertThat(metadata.requiredCssNames()).asList().containsExactly("ns.foo", "ns.bar");
-    assertThat(templates.getAllRequiredCssNamespaces("ns.requireCss", activePackages))
+    assertThat(templates.getAllRequiredCssNamespaces("ns.requireCss", activePackages, false))
         .containsExactly("ns.foo", "ns.bar");
   }
 

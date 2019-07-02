@@ -160,6 +160,15 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           public JavaValue getBidiDir() {
             return JbcSrcJavaValue.of(jbcPluginContext.getBidiGlobalDir(), reporter);
           }
+
+          @Override
+          public JavaValue getAllRequiredCssNamespaces(JavaValue template) {
+            JbcSrcJavaValue exprTemplate = (JbcSrcJavaValue) template;
+            SoyExpression soyExpression = (SoyExpression) exprTemplate.expr();
+            return JbcSrcJavaValue.of(
+                jbcPluginContext.getAllRequiredCssNamespaces(soyExpression.unboxAsString()),
+                reporter);
+          }
         };
   }
 

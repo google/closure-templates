@@ -129,10 +129,12 @@ public final class CompiledTemplates {
    * Returns the transitive closure of all the css namespaces that might be used by this template.
    */
   public ImmutableList<String> getAllRequiredCssNamespaces(
-      String templateName, Predicate<String> enabledDelpackages) {
+      String templateName,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
     TemplateData templateData = getTemplateData(templateName);
     Set<TemplateData> all = Sets.newLinkedHashSet();
-    collectTransitiveCallees(templateData, all, enabledDelpackages);
+    collectTransitiveCallees(templateData, all, enabledDelpackages, collectCssFromDelvariants);
     LinkedHashSet<String> requiredNamespaces = Sets.newLinkedHashSet();
     for (TemplateData callee : all) {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
@@ -201,36 +203,32 @@ public final class CompiledTemplates {
 
   /** Adds all transitively called templates to {@code visited} */
   private void collectTransitiveCallees(
-      TemplateData templateData, Set<TemplateData> visited, Predicate<String> enabledDelpackages) {
+      TemplateData templateData,
+      Set<TemplateData> visited,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
     if (visited.contains(templateData)) {
       return; // avoids chasing recursive cycles
     }
+
     // TODO(tomnguyen) It may be important to collect css in lexical order instead of
     // separating templates and deltemplates.
     for (String callee : templateData.callees) {
-      collectTransitiveCallees(getTemplateData(callee), visited, enabledDelpackages);
+      collectTransitiveCallees(
+          getTemplateData(callee), visited, enabledDelpackages, collectCssFromDelvariants);
     }
     for (String delCallee : templateData.delCallees) {
-      TemplateData defaultTemplate = null;
-      boolean traversedTemplate = false;
-      for (TemplateData potentialCallee :
-          selector.delTemplateNameToValues().get(delCallee).stream()
-              // Remove all delvariants since we do not want to collect their CSS.
-              .filter(tmpl -> tmpl.variant.isEmpty())
-              .collect(ImmutableList.toImmutableList())) {
-        // If no templates are picked, then we should emit the CSS for the default.
-        if (!potentialCallee.delPackage.isPresent()) {
-          defaultTemplate = potentialCallee;
-        }
-        if (potentialCallee.delPackage.isPresent()
-            && enabledDelpackages.test(potentialCallee.delPackage.get())) {
-          collectTransitiveCallees(potentialCallee, visited, enabledDelpackages);
-          traversedTemplate = true;
-        }
-      }
-      if (defaultTemplate != null && !traversedTemplate) {
-        collectTransitiveCallees(defaultTemplate, visited, enabledDelpackages);
-      }
+      selector.delTemplateNameToValues().get(delCallee).stream()
+          .map(tmpl -> tmpl.variant)
+          .filter(variant -> collectCssFromDelvariants || variant.isEmpty())
+          .distinct()
+          .forEach(
+              variant ->
+                  collectTransitiveCallees(
+                      selector.selectTemplate(delCallee, variant, enabledDelpackages),
+                      visited,
+                      enabledDelpackages,
+                      collectCssFromDelvariants));
     }
     visited.add(templateData);
   }

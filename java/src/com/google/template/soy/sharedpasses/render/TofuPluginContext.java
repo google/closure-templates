@@ -41,4 +41,10 @@ final class TofuPluginContext implements JavaPluginContext {
   public TofuJavaValue getULocale() {
     return TofuJavaValue.forULocale(msgBundle == null ? ULocale.ENGLISH : msgBundle.getLocale());
   }
+
+  @Override
+  public TofuJavaValue getAllRequiredCssNamespaces(JavaValue template) {
+    throw new UnsupportedOperationException(
+        "Tofu does not support getting required css namespaces.");
+  }
 }

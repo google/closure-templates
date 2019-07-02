@@ -135,6 +135,12 @@ public final class PluginAnalyzer {
       accessed = true;
       return FinderValue.INSTANCE;
     }
+
+    @Override
+    public JavaValue getAllRequiredCssNamespaces(JavaValue template) {
+      accessed = true;
+      return FinderValue.INSTANCE;
+    }
   }
 
   private static final class FinderValue implements JavaValue {

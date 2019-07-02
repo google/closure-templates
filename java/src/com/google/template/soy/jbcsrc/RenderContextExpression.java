@@ -69,6 +69,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_BIDI_GLOBAL_DIR =
       MethodRef.create(RenderContext.class, "getBidiGlobalDir");
 
+  private static final MethodRef GET_ALL_REQUIRED_CSS_NAMESPACES =
+      MethodRef.create(RenderContext.class, "getAllRequiredCssNamespaces", String.class);
+
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
       MethodRef.create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
 
@@ -90,6 +93,11 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   @Override
   public Expression getBidiGlobalDir() {
     return delegate.invoke(GET_BIDI_GLOBAL_DIR);
+  }
+
+  @Override
+  public Expression getAllRequiredCssNamespaces(Expression template) {
+    return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template);
   }
 
   Expression getDebugSoyTemplateInfo() {
