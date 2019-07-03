@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc.api;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -43,6 +44,13 @@ public interface SoySauce {
    * this is because it doesn't take delpackages or conditional logic inside templates into account.
    */
   ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo);
+
+  /**
+   * Returns all css module namespaces needed to render this template. This follows css through
+   * deltemplate mods and optionally follows delvariants.
+   */
+  ImmutableList<String> getAllRequiredCssNamespaces(
+      String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
 
   /** A Renderer can configure rendering parameters and render the template. */
   interface Renderer {
@@ -93,9 +101,7 @@ public interface SoySauce {
     @Deprecated
     Renderer setExpectedContentKind(ContentKind kind);
 
-    /**
-     * Configures the {@link SoyLogger} to use.
-     */
+    /** Configures the {@link SoyLogger} to use. */
     Renderer setSoyLogger(SoyLogger logger);
 
     /**
