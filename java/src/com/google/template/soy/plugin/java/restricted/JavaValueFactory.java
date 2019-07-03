@@ -17,7 +17,9 @@
 package com.google.template.soy.plugin.java.restricted;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** A factory for instructing soy how to implement a {@link SoyJavaSourceFunction}. */
 public abstract class JavaValueFactory {
@@ -61,7 +63,20 @@ public abstract class JavaValueFactory {
   public static Method createMethod(Class<?> clazz, String methodName, Class<?>... params) {
     try {
       return clazz.getMethod(methodName, params);
-    } catch (NoSuchMethodException | SecurityException e) {
+    } catch (NoSuchMethodException e) {
+      if (params.length == 0) {
+        throw new IllegalArgumentException(
+            String.format(
+                "No such public method: %s.%s (with no parameters)", clazz.getName(), methodName));
+      } else {
+        throw new IllegalArgumentException(
+            String.format(
+                "No such public method: %s.%s(%s)",
+                clazz.getName(),
+                methodName,
+                Arrays.stream(params).map(Class::getName).collect(Collectors.joining(","))));
+      }
+    } catch (SecurityException e) {
       throw new IllegalArgumentException(e);
     }
   }
