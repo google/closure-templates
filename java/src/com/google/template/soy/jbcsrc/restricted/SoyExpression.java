@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -320,30 +319,40 @@ public final class SoyExpression extends Expression {
     if (soyType().equals(NullType.getInstance())) {
       return FALSE;
     }
-    if (delegate.isNonNullable()) {
-      return coerceNonNullableReferenceTypeToBoolean();
-    } else {
-      // If we are potentially nullable, then map null to false and run the normal logic recursively
-      // for the non-nullable branch.
-      final Label end = new Label();
-      return withSource(
-              new Expression(delegate.resultType(), delegate.features()) {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  delegate.gen(adapter);
-                  adapter.dup();
-                  Label nonNull = new Label();
-                  adapter.ifNonNull(nonNull);
-                  adapter.pop();
-                  adapter.pushBoolean(false);
-                  adapter.goTo(end);
-                  adapter.mark(nonNull);
-                }
-              })
-          .asNonNullable()
-          .coerceToBoolean()
-          .labelEnd(end);
-    }
+    final boolean isNonNullable = delegate.isNonNullable();
+    return SoyExpression.forBool(
+        new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
+          @Override
+          protected void doGen(CodeBuilder cb) {
+            Label end = null;
+            delegate.gen(cb);
+            if (!isNonNullable) {
+              // If we are potentially nullable, then map null to false and run the normal logic.
+              cb.dup();
+              end = new Label();
+              Label nonNull = new Label();
+              cb.ifNonNull(nonNull);
+              cb.pop();
+              cb.pushBoolean(false);
+              cb.goTo(end);
+              cb.mark(nonNull);
+            }
+            // handle non-nullable case
+            if (isBoxed()) {
+              MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN.invokeUnchecked(cb);
+            } else if (soyRuntimeType.isKnownString()) {
+              MethodRef.STRING_IS_EMPTY.invokeUnchecked(cb);
+              BytecodeUtils.doLogicalNot(cb);
+            } else {
+              // All other types are always truthy
+              cb.pop();
+              cb.pushBoolean(true);
+            }
+            if (end != null) {
+              cb.mark(end);
+            }
+          }
+        });
   }
 
   private SoyExpression coercePrimitiveToBoolean() {
@@ -357,28 +366,6 @@ public final class SoyExpression extends Expression {
       throw new AssertionError(
           "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
     }
-  }
-
-  private SoyExpression coerceNonNullableReferenceTypeToBoolean() {
-    if (isBoxed()) {
-      // If we are boxed, just call the SoyValue method
-      return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
-    }
-    // unboxed non-primitive types.  This would be strings, protos or lists
-    if (soyRuntimeType.isKnownString()) {
-      return forBool(logicalNot(delegate.invoke(MethodRef.STRING_IS_EMPTY)));
-    }
-    // All other types are always truthy, but we still need to eval the delegate in case it has
-    // side effects or contains a null exit branch.
-    return forBool(
-        new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            delegate.gen(adapter);
-            adapter.pop();
-            adapter.pushBoolean(true);
-          }
-        });
   }
 
   /** Coerce this expression to a string value. */
