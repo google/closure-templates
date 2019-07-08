@@ -263,6 +263,10 @@ public final class PassManager {
       addPass(
           new ResolveTemplateParamTypesPass(registry, errorReporter, disableAllTypeChecking),
           singleFilePassesBuilder);
+      addPass(
+          new DesugarSkipNodesPass(
+              options.getExperimentalFeatures().contains("skipNode"), errorReporter),
+          singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
       // needs to come before SoyConformancePass
       addPass(new ResolvePluginsPass(pluginResolver, registry), singleFilePassesBuilder);

@@ -139,6 +139,9 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case KEY_NODE:
         return visitKeyNode((KeyNode) node);
 
+      case SKIP_NODE:
+        return visitSkipNode((SkipNode) node);
+
       case VE_LOG_NODE:
         return visitVeLogNode((VeLogNode) node);
       case LOG_NODE:
@@ -243,6 +246,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitLetNode(LetNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitSkipNode(SkipNode node) {
     return visitSoyNode(node);
   }
 

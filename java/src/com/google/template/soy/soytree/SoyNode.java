@@ -94,6 +94,7 @@ public interface SoyNode extends Node {
     HTML_COMMENT_NODE,
 
     KEY_NODE,
+    SKIP_NODE,
 
     VE_LOG_NODE,
 

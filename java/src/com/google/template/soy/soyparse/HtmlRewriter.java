@@ -68,6 +68,7 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -1235,6 +1236,11 @@ final class HtmlRewriter {
 
     @Override
     protected void visitKeyNode(KeyNode node) {
+      processNonPrintableNode(node);
+    }
+
+    @Override
+    protected void visitSkipNode(SkipNode node) {
       processNonPrintableNode(node);
     }
 

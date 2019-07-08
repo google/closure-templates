@@ -182,6 +182,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitKeyNode((KeyNode) node);
         break;
 
+      case SKIP_NODE:
+        visitSkipNode((SkipNode) node);
+        break;
+
       case VE_LOG_NODE:
         visitVeLogNode((VeLogNode) node);
         break;
@@ -250,6 +254,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitRawTextNode(RawTextNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitSkipNode(SkipNode node) {
     visitSoyNode(node);
   }
 

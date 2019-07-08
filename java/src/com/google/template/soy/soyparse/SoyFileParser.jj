@@ -112,6 +112,7 @@ import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -956,6 +957,8 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_BEGIN_VELOG              : "{velog" <WS>    > : EXPR
 | < CMD_CLOSE_VELOG              : "{/velog}"       >
+
+| < CMD_SKIP                     : "{skip}"         >
 }
 
 
@@ -1961,6 +1964,7 @@ private StatementNode NonPrintableStmt() :
   | stmt = DebuggerStmt()
   | stmt = VeLogStmt()
   | stmt = KeyStmt()
+  | stmt = SkipStmt()
   )
 
   { return stmt; }
@@ -2480,6 +2484,26 @@ private KeyNode KeyStmt() :
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagEnd),
         expr);
+    return node;
+  }
+}
+
+/**
+ * SkipStmt -> CMD_SKIP
+ */
+private SkipNode SkipStmt() :
+{
+  Token tagBegin;
+}
+{
+  (
+    tagBegin = <CMD_SKIP>
+  )
+
+  {
+    SkipNode node = new SkipNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin));
     return node;
   }
 }
