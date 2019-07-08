@@ -554,24 +554,19 @@ public final class BytecodeUtils {
       @Override
       protected void doGen(CodeBuilder mv) {
         baseExpr.gen(mv);
-        doLogicalNot(mv);
+        // Surprisingly, java bytecode uses a branch (instead of 'xor 1' or something) to implement
+        // this. This is most likely useful for allowing true to be represented by any non-zero
+        // number.
+        Label ifTrue = mv.newLabel();
+        Label end = mv.newLabel();
+        mv.ifZCmp(Opcodes.IFNE, ifTrue); // if not 0 goto ifTrue
+        mv.pushBoolean(true);
+        mv.goTo(end);
+        mv.mark(ifTrue);
+        mv.pushBoolean(false);
+        mv.mark(end);
       }
     };
-  }
-
-  /** Performs a logical not operation on the value at the top of the stack. */
-  public static void doLogicalNot(CodeBuilder cb) {
-    // Surprisingly, javac bytecode uses a branch (instead of 'xor 1' or something) to implement
-    // this. This is most likely useful for allowing true to be represented by any non-zero
-    // number.
-    Label ifTrue = cb.newLabel();
-    Label end = cb.newLabel();
-    cb.ifZCmp(Opcodes.IFNE, ifTrue); // if not 0 goto ifTrue
-    cb.pushBoolean(true);
-    cb.goTo(end);
-    cb.mark(ifTrue);
-    cb.pushBoolean(false);
-    cb.mark(end);
   }
 
   /** Compares two {@link SoyExpression}s for equality using soy == semantics. */
