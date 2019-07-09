@@ -79,6 +79,9 @@ public final class I18NDirectivesRuntime {
     if (minFractionDigits != null) {
       numberFormat.setMinimumFractionDigits(minFractionDigits);
     }
+    if (maxFractionDigits == null) {
+      maxFractionDigits = minFractionDigits;
+    }
     if (maxFractionDigits != null) {
       numberFormat.setMaximumFractionDigits(maxFractionDigits);
     }

@@ -223,7 +223,7 @@ class FormatNumDirective
         args.size() > 3
             ? MethodRef.create(Integer.class, "valueOf", int.class)
                 .invoke(BytecodeUtils.numericConversion(args.get(3).unboxAsLong(), Type.INT_TYPE))
-            : minFractionDigits;
+            : BytecodeUtils.constantNull(Type.getType(Integer.class));
 
     return SoyExpression.forString(
         JbcSrcMethods.FORMAT_NUM.invoke(
