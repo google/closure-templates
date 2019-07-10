@@ -25,8 +25,9 @@ With directives:
 
 The `print` command is the most common command in Soy, so it merits a short
 syntax in which you can omit the command name `print`. When Soy encounters a
-`print` tag, it simply inserts the result of the expression, (coerced to a
-string)[coercions.md#string] if necessary, into the rendered output.
+`print` tag, it simply inserts the result of the expression,
+[coerced to a string](coercions.md#string) if necessary, into the rendered
+output.
 
 <p class="note">NOTE: The command name `print` is optional.</p>
 
