@@ -13,14 +13,14 @@ module = module;
 exports = {};
 const tsickle_soy_1 = goog.requireType('goog.soy');
 const tsickle_velog_2 = goog.requireType('soy.velog');
-const tsickle_incremental_dom_3 = goog.requireType('google3.third_party.javascript.incremental_dom.index');
-const tsickle_types_4 = goog.requireType('google3.third_party.javascript.incremental_dom.src.types');
+const tsickle_incremental_dom_3 = goog.requireType('incrementaldom');
+const tsickle_types_4 = goog.requireType('incrementaldom.src.types');
 const tsickle_module_1_ = goog.require('soy.velog');  // from //javascript/template/soy:soyutils_velog
 // from //javascript/closure/soy
 const goog_soy_velog_1 =
     tsickle_module_1_;  // from //javascript/template/soy:soyutils_velog
 // from //javascript/template/soy:soyutils_velog
-const incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index');  // from //third_party/javascript/incremental_dom:incrementaldom
+const incrementaldom = goog.require('incrementaldom');  // from //third_party/javascript/incremental_dom:incrementaldom
 // from //third_party/javascript/incremental_dom:incrementaldom
 /**
  * @type {{matches: (undefined|function(!Node,

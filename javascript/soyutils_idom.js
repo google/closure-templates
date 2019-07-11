@@ -32,7 +32,7 @@ const tsickle_string_8 = goog.requireType('goog.string');
 const tsickle_goog_soy_9 = goog.requireType('soy');
 const tsickle_checks_10 = goog.requireType('soy.checks');
 const tsickle_VERY_UNSAFE_11 = goog.requireType('soydata.VERY_UNSAFE');
-const tsickle_incremental_dom_12 = goog.requireType('google3.third_party.javascript.incremental_dom.index');
+const tsickle_incremental_dom_12 = goog.requireType('incrementaldom');
 const tsickle_api_idom_13 = goog.requireType('google3.javascript.template.soy.api_idom');
 const tsickle_element_lib_idom_14 = goog.requireType('google3.javascript.template.soy.element_lib_idom');
 const tsickle_global_15 = goog.requireType('google3.javascript.template.soy.global');
@@ -50,7 +50,7 @@ const goog_soy_checks_1 = goog.require('soy.checks');  // from //javascript/temp
 // from //javascript/template/soy:checks
 const goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE');  // from //javascript/template/soy:soy_usegoog_js
 // from //javascript/template/soy:soy_usegoog_js
-const incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index');  // from //third_party/javascript/incremental_dom:incrementaldom
+const {attributes, getKey, isDataInitialized, setKeyAttributeName, currentPointer, elementOpenStart, elementOpenEnd, elementClose, text, attr, skip, currentElement, skipNode} = goog.require('incrementaldom');  // from //third_party/javascript/incremental_dom:incrementaldom
 // from //third_party/javascript/incremental_dom:incrementaldom
 const api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
 const element_lib_idom_1 = goog.require('google3.javascript.template.soy.element_lib_idom');
@@ -58,7 +58,6 @@ exports.$SoyElement = element_lib_idom_1.SoyElement;
 const global_1 = goog.require('google3.javascript.template.soy.global');
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
-const {attributes, getKey, isDataInitialized} = incrementaldom;
 /** @type {!tsickle_api_idom_13.IncrementalDomRenderer} */
 const defaultIdomRenderer = new api_idom_1.IncrementalDomRenderer();
 /**
@@ -77,49 +76,49 @@ var Template;
 // tslint:disable-next-line:no-any
 attributes['checked'] =
     (/**
-      * @param {!Element} el
-      * @param {string} name
-      * @param {?} value
-      * @return {void}
-      */
-     (el, name, value) => {
-       // We don't use !!value because:
-       // 1. If value is '' (this is the case where a user uses <div checked
-       // />),
-       //    the checked value should be true, but '' is falsy.
-       // 2. If value is 'false', the checked value should be false, but
-       //    'false' is truthy.
-       el.setAttribute('checked', value);
-       ((/** @type {!HTMLInputElement} */ (el))).checked =
-           !(value === false || value === 'false' || value === undefined);
-     });
+     * @param {!Element} el
+     * @param {string} name
+     * @param {?} value
+     * @return {void}
+     */
+        (el, name, value) => {
+      // We don't use !!value because:
+      // 1. If value is '' (this is the case where a user uses <div checked
+      // />),
+      //    the checked value should be true, but '' is falsy.
+      // 2. If value is 'false', the checked value should be false, but
+      //    'false' is truthy.
+      el.setAttribute('checked', value);
+      ((/** @type {!HTMLInputElement} */ (el))).checked =
+          !(value === false || value === 'false' || value === undefined);
+    });
 // tslint:disable-next-line:no-any
 attributes['value'] = (/**
-                        * @param {!Element} el
-                        * @param {string} name
-                        * @param {?} value
-                        * @return {void}
-                        */
-                       (el, name, value) => {
-                         ((/** @type {!HTMLInputElement} */ (el))).value =
-                             value;
-                         el.setAttribute('value', value);
-                       });
+ * @param {!Element} el
+ * @param {string} name
+ * @param {?} value
+ * @return {void}
+ */
+    (el, name, value) => {
+  ((/** @type {!HTMLInputElement} */ (el))).value =
+      value;
+  el.setAttribute('value', value);
+});
 // Soy uses the {key} command syntax, rather than HTML attributes, to
 // indicate element keys.
-incrementaldom.setKeyAttributeName(null);
+setKeyAttributeName(null);
 /**
  * Returns the template object stored in the currentPointer element if it is the
  * correct type.  Otherwise, returns null.
  * @template T
- * @param {!tsickle_api_idom_13.IncrementalDomRenderer} incrementaldom
+ * @param {!tsickle_api_idom_13.IncrementalDomRenderer} idom
  * @param {function(new:T)} elementClassCtor
  * @param {string} firstElementKey
  * @return {(null|T)}
  */
-function tryGetElement(incrementaldom, elementClassCtor, firstElementKey) {
+function tryGetElement(idom, elementClassCtor, firstElementKey) {
   /** @type {(null|!Node)} */
-  let currentPointer = incrementaldom.currentPointer();
+  let currentPointer = idom.currentPointer();
   while (currentPointer != null) {
     /** @type {(null|!tsickle_element_lib_idom_14.SoyElement<*, ?>)} */
     const el = global_1.getSoyUntyped(currentPointer);
@@ -128,9 +127,9 @@ function tryGetElement(incrementaldom, elementClassCtor, firstElementKey) {
       const currentPointerKey =
           (/** @type {string} */ (getKey(currentPointer)));
       if (api_idom_1.isMatchingKey(
-              api_idom_1.serializeKey(firstElementKey) +
-                  incrementaldom.getCurrentKeyStack(),
-              currentPointerKey)) {
+          api_idom_1.serializeKey(firstElementKey) +
+          idom.getCurrentKeyStack(),
+          currentPointerKey)) {
         return el;
       }
     }
@@ -147,14 +146,14 @@ exports.$$tryGetElement = tryGetElement;
 function makeHtml(idomFn) {
   idomFn.toString =
       (/**
-        * @param {!tsickle_api_idom_13.IncrementalDomRenderer=} renderer
-        * @return {string}
-        */
-       (renderer = defaultIdomRenderer) => htmlToString(idomFn, renderer));
+       * @param {!tsickle_api_idom_13.IncrementalDomRenderer=} renderer
+       * @return {string}
+       */
+          (renderer = defaultIdomRenderer) => htmlToString(idomFn, renderer));
   idomFn.toBoolean = (/**
-                       * @return {boolean}
-                       */
-                      () => toBoolean(idomFn));
+   * @return {boolean}
+   */
+      () => toBoolean(idomFn));
   idomFn.contentKind = goog_goog_soy_data_SanitizedContentKind_1.HTML;
   return (/** @type {!tsickle_element_lib_idom_14.IdomFunction} */ (idomFn));
 }
@@ -166,13 +165,13 @@ exports.$$makeHtml = makeHtml;
  */
 function makeAttributes(idomFn) {
   idomFn.toString = (/**
-                      * @return {string}
-                      */
-                     () => attributesToString(idomFn));
+   * @return {string}
+   */
+      () => attributesToString(idomFn));
   idomFn.toBoolean = (/**
-                       * @return {boolean}
-                       */
-                      () => toBoolean(idomFn));
+   * @return {boolean}
+   */
+      () => toBoolean(idomFn));
   idomFn.contentKind = goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES;
   return (/** @type {!tsickle_element_lib_idom_14.IdomFunction} */ (idomFn));
 }
@@ -190,9 +189,9 @@ function htmlToString(fn, renderer = defaultIdomRenderer) {
   api_idom_1.patch(
       el,
       (/**
-        * @return {void}
-        */
-       () => fn(renderer)));
+       * @return {void}
+       */
+          () => fn(renderer)));
   return el.innerHTML;
 }
 exports.$$htmlToString = htmlToString;
@@ -202,14 +201,14 @@ exports.$$htmlToString = htmlToString;
  */
 function attributesFactory(fn) {
   return (/**
-           * @return {void}
-           */
-          () => {
-            incrementaldom.elementOpenStart('div');
-            fn(defaultIdomRenderer);
-            incrementaldom.elementOpenEnd();
-            incrementaldom.elementClose('div');
-          });
+   * @return {void}
+   */
+      () => {
+    elementOpenStart('div');
+    fn(defaultIdomRenderer);
+    elementOpenEnd();
+    elementClose('div');
+  });
 }
 /**
  * TODO(tomnguyen): Issue a warning in these cases so that users know that
@@ -240,17 +239,17 @@ function toBoolean(fn) {
 }
 /**
  * Calls an expression in case of a function or outputs it as text content.
- * @param {!tsickle_api_idom_13.IncrementalDomRenderer} incrementaldom
+ * @param {!tsickle_api_idom_13.IncrementalDomRenderer} renderer
  * @param {*} expr
  * @return {void}
  */
-function renderDynamicContent(incrementaldom, expr) {
+function renderDynamicContent(renderer, expr) {
   // TODO(lukes): check content kind == html
   if (typeof expr === 'function') {
     // The Soy compiler will validate the content kind of the parameter.
-    expr(incrementaldom);
+    expr(renderer);
   } else {
-    incrementaldom.text(String(expr));
+    text(String(expr));
   }
 }
 /**
@@ -276,18 +275,18 @@ function splitAttributes(attributes) {
       .replace(
           htmlAttributeRegExp,
           (/**
-            * @param {string} _
-            * @param {?} name
-            * @param {?} dq
-            * @param {?} sq
-            * @param {?} uq
-            * @return {string}
-            */
-           (_, name, dq, sq, uq) => {
-             nameValuePairs.push(
-                 [name, googString.unescapeEntities(dq || sq || uq || '')]);
-             return ' ';
-           }));
+           * @param {string} _
+           * @param {?} name
+           * @param {?} dq
+           * @param {?} sq
+           * @param {?} uq
+           * @return {string}
+           */
+              (_, name, dq, sq, uq) => {
+            nameValuePairs.push(
+                [name, googString.unescapeEntities(dq || sq || uq || '')]);
+            return ' ';
+          }));
   return nameValuePairs;
 }
 /**
@@ -307,14 +306,14 @@ function callDynamicAttributes(
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   /** @type {?} */
   const type = ((/** @type {!tsickle_element_lib_idom_14.IdomFunction} */ (
-                    (/** @type {?} */ (expr)))))
-                   .contentKind;
+      (/** @type {?} */ (expr)))))
+      .contentKind;
   if (type === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
     ((/**
-         @type {function(!tsickle_api_idom_13.IncrementalDomRenderer, A, B):
+     @type {function(!tsickle_api_idom_13.IncrementalDomRenderer, A, B):
              void}
-       */
-      (expr)))(incrementaldom, data, ij);
+     */
+        (expr)))(incrementaldom, data, ij);
   } else {
     /** @type {(string|!tsickle_SanitizedHtmlAttribute_5)} */
     let val;
@@ -324,13 +323,13 @@ function callDynamicAttributes(
       // and attribute names differently.
       val = soy.$$filterHtmlAttributes(
           htmlToString((        /**
-                                 * @return {void}
-                                 */
-                        () => ((/**
-                                   @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
+           * @return {void}
+           */
+              () => ((/**
+           @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
                                        A, B): void}
-                                 */
-                                (expr)))(defaultIdomRenderer, data, ij))));
+           */
+              (expr)))(defaultIdomRenderer, data, ij))));
     } else {
       val = (/** @type {!tsickle_SanitizedHtmlAttribute_5} */ ((
           (/** @type {function(A, B): (string|!tsickle_SanitizedContent_2)} */ (
@@ -354,11 +353,11 @@ exports.$$callDynamicAttributes = callDynamicAttributes;
 function printDynamicAttr(incrementaldom, expr) {
   if (goog.isFunction(expr) &&
       ((/** @type {!tsickle_element_lib_idom_14.IdomFunction} */ (expr)))
-              .contentKind ===
-          goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
+          .contentKind ===
+      goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
     // tslint:disable-next-line:no-any
     ((/** @type {function(!tsickle_api_idom_13.IncrementalDomRenderer): void} */
-      ((/** @type {?} */ (expr)))))(incrementaldom);
+        ((/** @type {?} */ (expr)))))(incrementaldom);
     return;
   }
   /** @type {!Array<!Array<string>>} */
@@ -368,11 +367,11 @@ function printDynamicAttr(incrementaldom, expr) {
   for (const attribute of attributes) {
     /** @type {string} */
     const attrName = isExprAttribute ? attribute[0] :
-                                       soy.$$filterHtmlAttributes(attribute[0]);
+        soy.$$filterHtmlAttributes(attribute[0]);
     if (attrName === 'zSoyz') {
-      incrementaldom.attr(attrName, '');
+      attr(attrName, '');
     } else {
-      incrementaldom.attr(String(attrName), String(attribute[1]));
+      attr(String(attrName), String(attribute[1]));
     }
   }
 }
@@ -391,32 +390,32 @@ function callDynamicHTML(incrementaldom, expr, data, ij) {
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   /** @type {?} */
   const type = ((/** @type {!tsickle_element_lib_idom_14.IdomFunction} */ (
-                    (/** @type {?} */ (expr)))))
-                   .contentKind;
+      (/** @type {?} */ (expr)))))
+      .contentKind;
   if (type === goog_goog_soy_data_SanitizedContentKind_1.HTML) {
     ((/**
-         @type {function(!tsickle_api_idom_13.IncrementalDomRenderer, A, B):
+     @type {function(!tsickle_api_idom_13.IncrementalDomRenderer, A, B):
              void}
-       */
-      (expr)))(incrementaldom, data, ij);
+     */
+        (expr)))(incrementaldom, data, ij);
   } else if (type === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
     /** @type {string} */
     const val =
         attributesToString((        /**
-                                     * @return {void}
-                                     */
-                            () => ((/**
-                                       @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
+         * @return {void}
+         */
+            () => ((/**
+         @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
                                            A, B): void}
-                                     */
-                                    (expr)))(defaultIdomRenderer, data, ij)));
-    incrementaldom.text(val);
+         */
+            (expr)))(defaultIdomRenderer, data, ij)));
+    text(val);
   } else {
     /** @type {(string|!tsickle_SanitizedContent_2)} */
     const val =
         ((/** @type {function(A, B): (string|!tsickle_SanitizedContent_2)} */ (
             expr)))(data, ij);
-    incrementaldom.text(String(val));
+    text(String(val));
   }
 }
 exports.$$callDynamicHTML = callDynamicHTML;
@@ -433,7 +432,7 @@ function callDynamicCss(
     incrementaldom, expr, data, ij) {
   /** @type {(string|!tsickle_SanitizedContent_2)} */
   const val = callDynamicText(expr, data, ij, soy.$$filterCssValue);
-  incrementaldom.text(String(val));
+  text(String(val));
 }
 exports.$$callDynamicCss = callDynamicCss;
 /**
@@ -449,7 +448,7 @@ function callDynamicJs(
     incrementaldom, expr, data, ij) {
   /** @type {(string|!tsickle_SanitizedContent_2)} */
   const val = callDynamicText(expr, data, ij, soy.$$escapeJsValue);
-  incrementaldom.text(String(val));
+  text(String(val));
 }
 exports.$$callDynamicJs = callDynamicJs;
 /**
@@ -468,38 +467,38 @@ function callDynamicText(
     expr, data, ij, escFn) {
   /** @type {function(string): string} */
   const transformFn = escFn ? escFn :
-                              (/**
-                                * @param {string} a
-                                * @return {string}
-                                */
-                               (a) => a);
+      (/**
+       * @param {string} a
+       * @return {string}
+       */
+          (a) => a);
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   /** @type {?} */
   const type = ((/** @type {!tsickle_element_lib_idom_14.IdomFunction} */ (
-                    (/** @type {?} */ (expr)))))
-                   .contentKind;
+      (/** @type {?} */ (expr)))))
+      .contentKind;
   /** @type {(string|!tsickle_SanitizedContent_2)} */
   let val;
   if (type === goog_goog_soy_data_SanitizedContentKind_1.HTML) {
     val = transformFn(
         htmlToString((        /**
-                               * @return {void}
-                               */
-                      () => ((/**
-                                 @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
+         * @return {void}
+         */
+            () => ((/**
+         @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
                                      A, B): void}
-                               */
-                              (expr)))(defaultIdomRenderer, data, ij))));
+         */
+            (expr)))(defaultIdomRenderer, data, ij))));
   } else if (type === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
     val = transformFn(
         attributesToString((        /**
-                                     * @return {void}
-                                     */
-                            () => ((/**
-                                       @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
+         * @return {void}
+         */
+            () => ((/**
+         @type {function(!tsickle_api_idom_13.IncrementalDomRenderer,
                                            A, B): void}
-                                     */
-                                    (expr)))(defaultIdomRenderer, data, ij))));
+         */
+            (expr)))(defaultIdomRenderer, data, ij))));
   } else {
     val =
         ((/** @type {function(A, B): (string|!tsickle_SanitizedContent_2)} */ (
@@ -523,19 +522,19 @@ function print(incrementaldom, expr, isSanitizedContent) {
     // If the string has no < or &, it's definitely not HTML. Otherwise
     // proceed with caution.
     if (content.indexOf('<') < 0 && content.indexOf('&') < 0) {
-      incrementaldom.text(content);
+      text(content);
     } else {
       // For HTML content we need to insert a custom element where we can place
       // the content without incremental dom modifying it.
       /** @type {(void|!HTMLElement)} */
-      const el = incrementaldom.elementOpen('html-blob');
+      const el = elementOpen('html-blob');
       if (el && el.__innerHTML !== content) {
         googSoy.renderHtml(
             el, goog_soydata_VERY_UNSAFE_1.ordainSanitizedHtml(content));
         el.__innerHTML = content;
       }
-      incrementaldom.skip();
-      incrementaldom.elementClose('html-blob');
+      skip();
+      elementClose('html-blob');
     }
   } else {
     renderDynamicContent(incrementaldom, expr);
@@ -549,7 +548,7 @@ exports.$$print = print;
  */
 function visitHtmlCommentNode(incrementaldom, val) {
   /** @type {(void|!HTMLElement)} */
-  const currNode = incrementaldom.currentElement();
+  const currNode = currentElement();
   if (!currNode) {
     return;
   }
@@ -560,7 +559,7 @@ function visitHtmlCommentNode(incrementaldom, val) {
   } else {
     currNode.appendChild(document.createComment(val));
   }
-  incrementaldom.skipNode();
+  skipNode();
 }
 exports.$$visitHtmlCommentNode = visitHtmlCommentNode;
 //#

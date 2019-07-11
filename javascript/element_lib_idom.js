@@ -15,12 +15,12 @@ const tsickle_asserts_1 = goog.requireType('goog.asserts');
 const tsickle_soy_2 = goog.requireType('goog.soy');
 const tsickle_SanitizedContentKind_3 = goog.requireType('goog.soy.data.SanitizedContentKind');
 const tsickle_goog_soydata_4 = goog.requireType('soydata');
-const tsickle_incremental_dom_5 = goog.requireType('google3.third_party.javascript.incremental_dom.index');
+const tsickle_incremental_dom_5 = goog.requireType('incrementaldom');
 const tsickle_api_idom_6 = goog.requireType('google3.javascript.template.soy.api_idom');
 const tsickle_global_7 = goog.requireType('google3.javascript.template.soy.global');
 const goog_goog_asserts_1 = goog.require('goog.asserts');  // from //javascript/closure/asserts
 // from //javascript/template/soy:soy_usegoog_js
-const incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index');  // from //third_party/javascript/incremental_dom:incrementaldom
+const incrementaldom = goog.require('incrementaldom');  // from //third_party/javascript/incremental_dom:incrementaldom
 // from //third_party/javascript/incremental_dom:incrementaldom
 const api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
 const global_1 = goog.require('google3.javascript.template.soy.global');
