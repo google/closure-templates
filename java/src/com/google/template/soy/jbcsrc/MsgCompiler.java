@@ -289,7 +289,7 @@ final class MsgCompiler {
       Expression locale,
       MsgPartsAndIds partsAndId) {
     // We need to render placeholders into a buffer and then pack them into a map to pass to
-    // Runtime.renderSoyMsgWithPlaceholders.
+    // JbcSrcRuntime.MsgRenderer.
 
     Map<String, Function<Expression, Statement>> placeholderNameToPutStatement =
         new LinkedHashMap<>();

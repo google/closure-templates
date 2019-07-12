@@ -135,7 +135,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
    * <pre>
    *   {msg desc="Link to help content."}Learn more{/msg}
    *   {msg desc="Tells user how to access a product." hidden="true"}
-   *     Click &lt;a href="}{$url}"&gt;here&lt;/a&gt; to access {$productName}.
+   *     Click &lt;a href="{$url}"&gt;here&lt;/a&gt; to access {$productName}.
    *   {/msg}
    * </pre>
    *

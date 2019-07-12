@@ -707,7 +707,7 @@ breaks into 2 cases
     placeholders around, introduce new plurals cases, etc. So for this we use a
     runtime library to interpret the `SoyMsg` object against a map of
     placeholder objects. So the compiler mostly generates code to populate the
-    placeholder map. See `Runtime.renderSoyMsgWithPlaceholders`
+    placeholder map. See `JbcSrcRuntime.MsgRenderer`.
 
 Future Optimizations:
 
