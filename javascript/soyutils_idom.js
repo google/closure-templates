@@ -50,7 +50,7 @@ const goog_soy_checks_1 = goog.require('soy.checks');  // from //javascript/temp
 // from //javascript/template/soy:checks
 const goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE');  // from //javascript/template/soy:soy_usegoog_js
 // from //javascript/template/soy:soy_usegoog_js
-const {attributes, getKey, isDataInitialized, setKeyAttributeName, currentPointer, elementOpenStart, elementOpenEnd, elementClose, text, attr, skip, currentElement, skipNode} = goog.require('incrementaldom');  // from //third_party/javascript/incremental_dom:incrementaldom
+const {attributes, getKey, isDataInitialized, setKeyAttributeName, currentPointer, elementOpen, elementOpenStart, elementOpenEnd, elementClose, text, attr, skip, currentElement, skipNode} = goog.require('incrementaldom');  // from //third_party/javascript/incremental_dom:incrementaldom
 // from //third_party/javascript/incremental_dom:incrementaldom
 const api_idom_1 = goog.require('google3.javascript.template.soy.api_idom');
 const element_lib_idom_1 = goog.require('google3.javascript.template.soy.element_lib_idom');
