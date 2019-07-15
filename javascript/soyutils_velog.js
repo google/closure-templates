@@ -29,7 +29,6 @@ goog.module('soy.velog');
 goog.module.declareLegacyNamespace();
 
 const Message = goog.require('jspb.Message');
-const xid = goog.require('xid');
 const {assert} = goog.require('goog.asserts');
 const {getFirstElementChild, getNextElementSibling} = goog.require('goog.dom');
 const {startsWith} = goog.require('goog.string');
@@ -92,10 +91,9 @@ class Metadata {
 // NOTE: we need to use toLowerCase in case the xid contains upper case
 // characters, browsers normalize keys to their ascii lowercase versions when
 // accessing attributes via the programmatic APIs (as we do below).
-/** @package */ const ELEMENT_ATTR = 'data-' + xid('soylog').toLowerCase();
+/** @package */ const ELEMENT_ATTR = 'data-soylog';
 
-/** @package */ const FUNCTION_ATTR =
-    'data-' + xid('soyloggingfunction').toLowerCase() + '-';
+/** @package */ const FUNCTION_ATTR = 'data-soyloggingfunction-';
 
 /** Sets up the global metadata object before rendering any templates. */
 function setUpLogging() {
@@ -147,11 +145,9 @@ function setMetadataTestOnly(testdata) {
  */
 function $$getLoggingAttribute(veData, logOnly) {
   if ($$hasMetadata()) {
-    const dataIdx =
-        metadata.elements.push(
-            new ElementMetadata(
-                veData.getVe().getId(), veData.getData(), logOnly))
-        - 1;
+    const dataIdx = metadata.elements.push(new ElementMetadata(
+                        veData.getVe().getId(), veData.getData(), logOnly)) -
+        1;
     // Insert a whitespace at the beginning. In VeLogInstrumentationVisitor,
     // we insert the return value of this method as a plain string instead of a
     // HTML attribute, therefore the desugaring pass does not know how to handle
@@ -302,7 +298,6 @@ function getDataAttribute(element, attr) {
  * @interface
  */
 class Logger {
-
   /**
    * Called when a `{velog}` statement is entered.
    * @param {!ElementMetadata} elementMetadata
