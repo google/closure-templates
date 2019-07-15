@@ -79,7 +79,6 @@ public final class BytecodeUtils {
       Type.getType(LoggingAdvisingAppendable.class);
   public static final Type LOGGING_ADVISING_BUILDER_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
-  public static final Type ARRAY_LIST_TYPE = Type.getType(ArrayList.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
@@ -796,7 +795,7 @@ public final class BytecodeUtils {
     // Note, we cannot necessarily use ImmutableList for anything besides the empty list because
     // we may need to put a null in it.
     final Expression construct = ConstructorRef.ARRAY_LIST_SIZE.construct(constant(copy.size()));
-    return new Expression(ARRAY_LIST_TYPE, Feature.NON_NULLABLE) {
+    return new Expression(LIST_TYPE, Feature.NON_NULLABLE) {
       @Override
       protected void doGen(CodeBuilder mv) {
         construct.gen(mv);
