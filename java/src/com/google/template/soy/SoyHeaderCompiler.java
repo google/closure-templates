@@ -60,4 +60,15 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
       unit.writeTo(os);
     }
   }
+
+  /**
+   * Compiles a set of Soy files into corresponding header files, which are usable as intermediates
+   * for future Soy compile routines.
+   *
+   * @param args Should contain command-line flags and the list of paths to the Soy files.
+   * @throws IOException If there are problems reading the input files or writing the output file.
+   */
+  public static void main(final String[] args) throws IOException {
+    new SoyHeaderCompiler().runMain(args);
+  }
 }
