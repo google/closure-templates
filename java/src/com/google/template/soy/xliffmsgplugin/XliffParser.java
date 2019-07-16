@@ -59,9 +59,19 @@ class XliffParser {
     SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
     SAXParser saxParser;
     try {
+      // FIXES: https://github.com/google/closure-templates/issues/178
+      // disable external entity and dtd resolution per
+      // https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.md#jaxp-documentbuilderfactory-saxparserfactory-and-dom4j
+      saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+      saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+      saxParserFactory.setFeature(
+          "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+      saxParserFactory.setFeature("http://javax.xml.XMLConstants/feature/secure-processing", true);
+      saxParserFactory.setValidating(false);
+      saxParserFactory.setXIncludeAware(false); // this should be the default, but just to be sure.
       saxParser = saxParserFactory.newSAXParser();
     } catch (ParserConfigurationException pce) {
-      throw new AssertionError("Could not get SAX parser for XML.");
+      throw new AssertionError("Could not get SAX parser for XML.", pce);
     }
 
     // Construct the handler for SAX parsing.
