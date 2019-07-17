@@ -88,7 +88,6 @@ public final class InternalPluginsTest {
     assertThat(streamingPrintDirectives.build())
         .containsExactly(
             "|escapeHtml",
-            "|blessStringAsTrustedResourceUrlForLegacy",
             "|escapeCssString",
             "|normalizeHtml",
             "|escapeJsString",

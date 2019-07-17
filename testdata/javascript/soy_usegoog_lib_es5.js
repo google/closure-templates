@@ -7515,9 +7515,6 @@ soy.$$filterTrustedResourceUri = function(value) {
   goog.asserts.fail("Bad value `%s` for |filterTrustedResourceUri", [String(value)]);
   return "about:invalid#zSoyz";
 };
-soy.$$blessStringAsTrustedResourceUrlForLegacy = function(value) {
-  return value;
-};
 soy.$$filterImageDataUri = function(value) {
   return soydata.VERY_UNSAFE.ordainSanitizedUri(soy.esc.$$filterImageDataUriHelper(value));
 };

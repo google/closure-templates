@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.basicdirectives.BlessStringAsTrustedResourceUrlForLegacyDirective;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
@@ -344,19 +343,6 @@ public final class Context {
         0);
   }
 
-  private static boolean hasBlessStringAsTrustedResourceUrlForLegacyDirective(
-      List<PrintDirectiveNode> printDirectives) {
-    for (PrintDirectiveNode directive : printDirectives) {
-      // If a print directive with the name "|blessStringAsTrustedResourceUrlForLegacy" exists
-      // we don't want to enforce presence of a trusted resource URL. This is mainly done so as
-      // not to break the legacy soy files.
-      if (directive.getName().equals(BlessStringAsTrustedResourceUrlForLegacyDirective.NAME)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   /**
    * Returns the escaping mode appropriate for dynamic content inserted in this context.
    *
@@ -397,11 +383,7 @@ public final class Context {
             escapingMode = EscapingMode.FILTER_NORMALIZE_REFRESH_URI;
             break;
           case TRUSTED_RESOURCE:
-            if (hasBlessStringAsTrustedResourceUrlForLegacyDirective(printDirectives)) {
-              escapingMode = EscapingMode.NORMALIZE_URI;
-            } else {
-              escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
-            }
+            escapingMode = EscapingMode.FILTER_TRUSTED_RESOURCE_URI;
             break;
           case NONE:
           case NORMAL:

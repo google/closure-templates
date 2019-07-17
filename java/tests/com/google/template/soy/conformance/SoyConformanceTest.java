@@ -481,8 +481,7 @@ public class SoyConformanceTest {
         "{namespace ns}\n"
             + "{template .foo}\n"
             + " {@param jsUrl : ?}{@param callback : ?}\n"
-            + "<script id=\"base-js\" src=\"{$jsUrl |blessStringAsTrustedResourceUrlForLegacy}\" "
-            + "async onload=\"{$callback}\"></script>\n"
+            + "<script id=\"base-js\" src=\"{$jsUrl}\" async onload=\"{$callback}\"></script>\n"
             + "{/template}");
   }
 

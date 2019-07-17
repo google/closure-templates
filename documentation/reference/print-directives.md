@@ -31,23 +31,6 @@ NOTE: This directive serves the same purpose as `|bidiSpanWrap`, but you should
 only use it in situations where HTML markup is not applicable, for example
 inside an HTML `<option>` element.
 
-### `|blessStringAsTrustedResourceUrlForLegacy` {#blessStringAsTrustedResourceUrlForLegacy}
-
-
-Can be used to disable the autoescaper for sensitive resource urls. For example,
-
-```soy
-<script src={$myScriptUrl}>
-```
-
-When the compiler sees this, it inserts a runtime check to make sure that
-`$myScriptUrl` is a trusted resource url. The
-`|blessStringAsTrustedResourceUrlForLegacy` can be used to disable this as part
-of a migration to strict autoescaping.
-
-See [trusted_resource_uri](./security.md#trusted_resource_url) in the security
-documentation for more information.
-
 ### `|changeNewlineToBr` {#changeNewlineToBr}
 
 Changes newlines sequences: `\n`, `\r`, or `\r\n` to `<br>`.

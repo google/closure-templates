@@ -38,7 +38,6 @@ import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
 import java.io.Closeable;
 import java.io.IOException;
@@ -616,31 +615,6 @@ public final class Sanitizers {
   /** For string inputs this function just returns the input string itself. */
   public static String filterTrustedResourceUri(String value) {
     return value;
-  }
-
-  /**
-   * For any resource string/variable which has |blessStringAsTrustedResuorceUrlForLegacy directive
-   * return the input value as is.
-   */
-  public static SoyValue blessStringAsTrustedResourceUrlForLegacy(SoyValue value) {
-    return value;
-  }
-
-  /**
-   * For any resource string/variable which has |blessStringAsTrustedResuorceUrlForLegacy directive
-   * return the input value as is after converting it into SoyValue.
-   */
-  public static SoyValue blessStringAsTrustedResourceUrlForLegacy(String value) {
-    return StringData.forValue(value);
-  }
-
-  /**
-   * For any resource string/variable which has |blessStringAsTrustedResuorceUrlForLegacy directive
-   * apply a no-op escaping directive
-   */
-  public static LoggingAdvisingAppendable blessStringAsTrustedResourceUrlForLegacyStreaming(
-      LoggingAdvisingAppendable appendable) {
-    return appendable;
   }
 
   /**

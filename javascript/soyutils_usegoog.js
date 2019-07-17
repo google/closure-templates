@@ -1493,18 +1493,6 @@ soy.$$filterTrustedResourceUri = function(value) {
 
 
 /**
- * For any resource string/variable which has
- * |blessStringAsTrustedResuorceUrlForLegacy directive return the value as is.
- *
- * @param {?} value The value to be blessed. Might not be a string
- * @return {?} value Return current value.
- */
-soy.$$blessStringAsTrustedResourceUrlForLegacy = function(value) {
-  return value;
-};
-
-
-/**
  * Allows only data-protocol image URI's.
  *
  * @param {?} value The value to process. May not be a string, but the value

@@ -200,10 +200,6 @@ This escaping logic applies to:
     *   subresource
     *   tag
 
-It is also possible to disable this escaping using the
-[`|blessStringAsTrustedResourceUrlForLegacy`](./print-directives.md#blessStringAsTrustedResourceUrlForLegacy)
-directive. This can be useful when migrating templates to `strict` autoescaping.
-
 ##### Just entity-escape
 
 Original entity: `<a href="/foo/{$x}">`
