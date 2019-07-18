@@ -18,14 +18,14 @@ package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_ATTRS;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_OPEN;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_OPEN_END;
-import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_OPEN_START;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
@@ -1002,6 +1002,21 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     args.add(key);
 
+    Expression openTagExpr = INCREMENTAL_DOM_OPEN.call(args);
+    if (node.isElementRoot()) {
+      // Append code to stash the template object in this node.
+      jsCodeBuilder.append(
+          Statement.ifStatement(
+                  id("this").dotAccess("setNodeInternal").call(openTagExpr),
+                  Statement.of(
+                      INCREMENTAL_DOM.dotAccess("skip").call(ImmutableList.of()).asStatement(),
+                      INCREMENTAL_DOM_CLOSE.call().asStatement(),
+                      Statement.returnValue(Expression.LITERAL_TRUE)))
+              .build());
+    } else {
+      jsCodeBuilder.append(openTagExpr);
+    }
+    jsCodeBuilder.increaseIndentTwice();
     // Instead of inlining the array, place the variable declaration in the global scope
     // and lazily initialize it in the template.
     if (!staticAttributes.isEmpty()) {
@@ -1014,45 +1029,13 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
               idExpr.assign(Expression.arrayLiteral(staticsBuilder.build())),
               /* codeGenerator= */ null);
       staticVarDeclarations.add(VariableDeclaration.builder(alias + id).build());
-      args.add(lazyAssignment);
+      jsCodeBuilder.append(INCREMENTAL_DOM_APPLY_STATICS.call(lazyAssignment));
     }
-
-    // If attributes are all static, we can remove the elementOpenStart and just use elementOpen.
-    // TODO(b/111717673): In practice this never seems to happen because we have
-    // data-debug-soy.
-    Expression openTagExpr;
-    if (node.numChildren() == 1) {
-      openTagExpr = INCREMENTAL_DOM_ELEMENT_OPEN.call(args);
-    } else {
-      jsCodeBuilder.append(INCREMENTAL_DOM_ELEMENT_OPEN_START.call(args));
-
-      jsCodeBuilder.increaseIndentTwice();
-      // child-0 is the tag name
-      for (int i = 1; i < node.numChildren(); i++) {
-        visit(node.getChild(i));
-      }
-      jsCodeBuilder.decreaseIndentTwice();
-
-      openTagExpr = INCREMENTAL_DOM_ELEMENT_OPEN_END.call();
+    for (int i = 1; i < node.numChildren(); i++) {
+      visit(node.getChild(i));
     }
-
-    if (node.isElementRoot()) {
-      // Append code to stash the template object in this node.
-      getJsCodeBuilder()
-          .append(
-              Statement.ifStatement(
-                      id("this").dotAccess("setNodeInternal").call(openTagExpr),
-                      Statement.of(
-                          INCREMENTAL_DOM.dotAccess("skip").call(ImmutableList.of()).asStatement(),
-                          INCREMENTAL_DOM
-                              .dotAccess("elementClose")
-                              .call(ImmutableList.of(tagName))
-                              .asStatement(),
-                          Statement.returnValue(Expression.LITERAL_TRUE)))
-                  .build());
-    } else {
-      getJsCodeBuilder().append(openTagExpr);
-    }
+    jsCodeBuilder.append(INCREMENTAL_DOM_APPLY_ATTRS.call());
+    jsCodeBuilder.decreaseIndentTwice();
   }
 
   /**
@@ -1165,7 +1148,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      emitClose(tagCodeChunk);
+      emitClose();
     }
   }
 
@@ -1196,7 +1179,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     if (!node.getTagName().isDefinitelyVoid()) {
-      emitClose(getTagNameCodeChunk(node.getTagName()));
+      emitClose();
     }
   }
 
@@ -1207,9 +1190,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * &lt;incrementalDom.elementClose('div');&gt;
    * </pre>
    */
-  private void emitClose(Expression tagName) {
+  private void emitClose() {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    jsCodeBuilder.append(INCREMENTAL_DOM_ELEMENT_CLOSE.call(tagName));
+    jsCodeBuilder.append(INCREMENTAL_DOM_CLOSE.call());
   }
 
   /**

@@ -44,17 +44,15 @@ final class IncrementalDomRuntime {
   public static final String INCREMENTAL_DOM_PARAM_NAME = "idomRenderer";
   public static final Expression INCREMENTAL_DOM = id(INCREMENTAL_DOM_PARAM_NAME);
 
-  public static final Expression INCREMENTAL_DOM_ELEMENT_OPEN =
-      INCREMENTAL_DOM.dotAccess("elementOpen");
+  public static final Expression INCREMENTAL_DOM_OPEN = INCREMENTAL_DOM.dotAccess("open");
 
-  public static final Expression INCREMENTAL_DOM_ELEMENT_CLOSE =
-      INCREMENTAL_DOM.dotAccess("elementClose");
+  public static final Expression INCREMENTAL_DOM_CLOSE = INCREMENTAL_DOM.dotAccess("close");
 
-  public static final Expression INCREMENTAL_DOM_ELEMENT_OPEN_START =
-      INCREMENTAL_DOM.dotAccess("elementOpenStart");
+  public static final Expression INCREMENTAL_DOM_APPLY_STATICS =
+      INCREMENTAL_DOM.dotAccess("applyStatics");
 
-  public static final Expression INCREMENTAL_DOM_ELEMENT_OPEN_END =
-      INCREMENTAL_DOM.dotAccess("elementOpenEnd");
+  public static final Expression INCREMENTAL_DOM_APPLY_ATTRS =
+      INCREMENTAL_DOM.dotAccess("applyAttrs");
 
   public static final Expression INCREMENTAL_DOM_ENTER = INCREMENTAL_DOM.dotAccess("enter");
 
