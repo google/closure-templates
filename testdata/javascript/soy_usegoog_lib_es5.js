@@ -7152,11 +7152,12 @@ soy.map.$$mapToLegacyObjectMap = function(map) {
   }
   return obj;
 };
-soy.map.$$populateMap = function(jspbMap, map) {
+soy.map.$$populateMap = function(proto, jspbMap, map) {
   for (var $jscomp$iter$1 = $jscomp.makeIterator(map.entries()), $jscomp$key$ = $jscomp$iter$1.next(); !$jscomp$key$.done; $jscomp$key$ = $jscomp$iter$1.next()) {
     var $jscomp$destructuring$var3 = $jscomp.makeIterator($jscomp$key$.value), k = $jscomp$destructuring$var3.next().value, v = $jscomp$destructuring$var3.next().value;
     jspbMap.set(k, v);
   }
+  return proto;
 };
 soy.map.$$getMapKeys = function(map) {
   var keys = Array.from(map.keys());

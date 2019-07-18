@@ -139,18 +139,14 @@ public final class JspbTest {
             "  )")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "var $tmp$$1 = new proto.example.SomeEmbeddedMessage();",
-            "$tmp$$1.setSomeEmbeddedNum(1000);",
-            "$tmp.setSomeEmbeddedMessage($tmp$$1);");
+            "new proto.example.ExampleExtendable().setSomeEmbeddedMessage(new"
+                + " proto.example.SomeEmbeddedMessage().setSomeEmbeddedNum(1000));");
 
     assertThatSoyExpr(
             expr("example.ExampleExtendable(someEmbeddedMessage: $e)")
                 .withParam("{@param e: example.SomeEmbeddedMessage}"))
         .withTypeRegistry(REGISTRY)
-        .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setSomeEmbeddedMessage(opt_data.e);");
+        .generatesCode("new proto.example.ExampleExtendable().setSomeEmbeddedMessage(opt_data.e);");
   }
 
   @Test
@@ -158,16 +154,16 @@ public final class JspbTest {
     assertThatSoyExpr("example.ExampleExtendable(someEnum: example.SomeEnum.SECOND)")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setSomeEnum(/** @type {?proto.example.SomeEnum} */ (2));");
+            "new proto.example.ExampleExtendable().setSomeEnum(/** @type {?proto.example.SomeEnum}"
+                + " */ (2));");
 
     assertThatSoyExpr(
             expr("example.ExampleExtendable(someEnum: $e)")
                 .withParam("{@param e: example.SomeEnum}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setSomeEnum(/** @type {?proto.example.SomeEnum} */ (opt_data.e));");
+            "new proto.example.ExampleExtendable().setSomeEnum(/** @type"
+                + " {?proto.example.SomeEnum} */ (opt_data.e));");
   }
 
   @Test
@@ -175,16 +171,16 @@ public final class JspbTest {
     assertThatSoyExpr("example.ExampleExtendable(repeatedLongWithInt52JsTypeList: [1000, 2000])")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setRepeatedLongWithInt52JsTypeList([1000, 2000]);");
+            "new proto.example.ExampleExtendable().setRepeatedLongWithInt52JsTypeList([1000,"
+                + " 2000]);");
 
     assertThatSoyExpr(
             expr("example.ExampleExtendable(repeatedLongWithInt52JsTypeList: $l)")
                 .withParam("{@param l: list<int>}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setRepeatedLongWithInt52JsTypeList(opt_data.l);");
+            "new proto.example.ExampleExtendable()"
+                + ".setRepeatedLongWithInt52JsTypeList(opt_data.l);");
   }
 
   @Test
@@ -192,15 +188,15 @@ public final class JspbTest {
     assertThatSoyExpr("example.ExampleExtendable(someIntExtension: 1000)")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setExtension(proto.example.someIntExtension, 1000);");
+            "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
+                + " 1000);");
 
     assertThatSoyExpr(
             expr("example.ExampleExtendable(someIntExtension: $i)").withParam("{@param i: int}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setExtension(proto.example.someIntExtension, opt_data.i);");
+            "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
+                + " opt_data.i);");
   }
 
   @Test
@@ -208,16 +204,16 @@ public final class JspbTest {
     assertThatSoyExpr("example.ExampleExtendable(listExtensionList: [1000, 2000, 3000])")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setExtension(proto.example.listExtensionList, [1000, 2000, 3000]);");
+            "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
+                + " [1000, 2000, 3000]);");
 
     assertThatSoyExpr(
             expr("example.ExampleExtendable(listExtensionList: $l)")
                 .withParam("{@param l: list<int>}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "var $tmp = new proto.example.ExampleExtendable();",
-            "$tmp.setExtension(proto.example.listExtensionList, opt_data.l);");
+            "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
+                + " opt_data.l);");
   }
 
   // Proto import tests
@@ -277,13 +273,15 @@ public final class JspbTest {
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData, opt_ijData_deprecated) {\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData_deprecated || opt_ijData);\n"
-            + "  var $tmp = /** @type {?} */ (opt_data.moo).$jspbMessageInstance || opt_data.moo;\n"
+            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData_deprecated ||"
+            + " opt_ijData);\n"
+            + "  var $tmp = /** @type {?} */ (opt_data.moo).$jspbMessageInstance ||"
+            + " opt_data.moo;\n"
             + "  /** @type {proto.example.ExampleExtendable} */\n"
-            + "  var moo = soy.asserts.assertType("
-            + "$tmp instanceof proto.example.ExampleExtendable, "
-            + "'moo', $tmp, 'proto.example.ExampleExtendable');\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml("
+            + "  var moo = soy.asserts.assertType($tmp instanceof proto.example.ExampleExtendable,"
+            + " 'moo', $tmp, 'proto.example.ExampleExtendable');\n"
+            + "  return"
+            + " soydata.VERY_UNSAFE.ordainSanitizedHtml("
             + "moo.getExtension(proto.example.SomeExtension.someExtensionField));\n"
             + "};\n"
             + "/**\n"
@@ -294,8 +292,7 @@ public final class JspbTest {
             + "boo.foo.goo.Params;\n"
             + "if (goog.DEBUG) {\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
-            + "}\n"
-            + "";
+            + "}\n";
 
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(

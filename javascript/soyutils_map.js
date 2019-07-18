@@ -117,14 +117,17 @@ function $$getMapKeys(map) {
  * This is used for proto initialization in Soy. Protocol buffer in JS does not
  * generate setters for map fields. To construct a proto map field, we use this
  * help method to save the content of map literal to proto.
+ * @param {T} proto
  * @param {!SoyMap<K, V>} jspbMap
  * @param {!SoyMap<K, V>} map
- * @template K, V
+ * @return {T}
+ * @template K, V, T
  */
-function $$populateMap(jspbMap, map) {
+function $$populateMap(proto, jspbMap, map) {
   for (const [k, v] of map.entries()) {
     jspbMap.set(k, v);
   }
+  return proto;
 }
 
 /**

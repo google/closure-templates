@@ -496,13 +496,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   protected Expression visitProtoInitNode(ProtoInitNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
     Expression proto = construct(protoConstructor(type));
-    if (node.numChildren() == 0) {
-      // If there's no further structure to the proto, no need to declare a variable.
-      return proto;
-    }
-    Expression protoVar = codeGenerator.declarationBuilder().setRhs(proto).build().ref();
-    ImmutableList.Builder<Statement> initialStatements = ImmutableList.builder();
-
     for (int i = 0; i < node.numChildren(); i++) {
       String fieldName = node.getParamName(i).identifier();
       FieldDescriptor fieldDesc = type.getFieldDescriptor(fieldName);
@@ -526,29 +519,27 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
       if (fieldDesc.isExtension()) {
         Expression extInfo = extensionField(fieldDesc);
-        initialStatements.add(
-            protoVar.dotAccess("setExtension").call(extInfo, fieldValue).asStatement());
+        proto = proto.dotAccess("setExtension").call(extInfo, fieldValue);
       } else if (fieldDesc.isMapField()) {
         // Protocol buffer in JS does not generate setters for map fields. To construct a proto map
         // field, we first save a reference to the empty instance using the getter,  and then load
         // it with the contents of the SoyMap.
         String getFn = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        Expression protoMap = protoVar.dotAccess(getFn).call();
-        Expression protoMapVar = codeGenerator.declarationBuilder().setRhs(protoMap).build().ref();
+        Expression protoVar = codeGenerator.declarationBuilder().setRhs(proto).build().ref();
         if (ProtoUtils.isSanitizedContentMap(fieldDesc)) {
           Expression sanitizedContentPackFn =
               sanitizedContentToProtoConverterFunction(
                   ProtoUtils.getMapValueMessageType(fieldDesc));
           fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
         }
-        initialStatements.add(SOY_MAP_POPULATE.call(protoMapVar, fieldValue).asStatement());
+        proto = SOY_MAP_POPULATE.call(protoVar, protoVar.dotAccess(getFn).call(), fieldValue);
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        initialStatements.add(protoVar.dotAccess(setFn).call(fieldValue).asStatement());
+        proto = proto.dotAccess(setFn).call(fieldValue);
       }
     }
 
-    return protoVar.withInitialStatements(initialStatements.build());
+    return proto;
   }
 
   // -----------------------------------------------------------------------------------------------

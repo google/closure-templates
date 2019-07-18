@@ -48,8 +48,6 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class GenCallCodeUtilsTest {
 
-  private static final Joiner JOINER = Joiner.on('\n');
-
   @Test
   public void testGenCallExprForBasicCalls() {
     assertThat(getCallExprTextHelper("{call some.func data=\"all\" /}"))
