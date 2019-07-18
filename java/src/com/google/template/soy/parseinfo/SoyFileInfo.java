@@ -18,6 +18,7 @@ package com.google.template.soy.parseinfo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 
 /**
@@ -25,17 +26,6 @@ import com.google.protobuf.Descriptors.GenericDescriptor;
  *
  */
 public class SoyFileInfo {
-
-  /**
-   * Enum for whether there are prefix expressions in the 'css' tags that a CSS name appears in.
-   * Note that it's possible for the same CSS name to appear in multiple 'css' tags, some of which
-   * contain prefixes and some of which don't.
-   */
-  public enum CssTagsPrefixPresence {
-    ALWAYS,
-    NEVER,
-    SOMETIMES;
-  }
 
   /** The source Soy file's name. */
   private final String fileName;
@@ -46,8 +36,8 @@ public class SoyFileInfo {
   /** List of public basic templates in this Soy file. */
   private final ImmutableList<SoyTemplateInfo> templates;
 
-  /** Map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
-  private final ImmutableMap<String, CssTagsPrefixPresence> cssNameMap;
+  /** The CSS names appearing in this file. */
+  private final ImmutableSet<String> cssNames;
 
   /** Map of function name to plugin instances used by all templates in this file. */
   private final ImmutableMap<String, String> pluginInstances;
@@ -66,12 +56,12 @@ public class SoyFileInfo {
       String fileName,
       String namespace,
       ImmutableList<SoyTemplateInfo> templates,
-      ImmutableMap<String, CssTagsPrefixPresence> cssNameMap,
+      ImmutableSet<String> cssNames,
       ImmutableMap<String, String> pluginInstances) {
     this.fileName = fileName;
     this.namespace = namespace;
     this.templates = templates;
-    this.cssNameMap = cssNameMap;
+    this.cssNames = cssNames;
     this.pluginInstances = pluginInstances;
   }
 
@@ -90,9 +80,9 @@ public class SoyFileInfo {
     return templates;
   }
 
-  /** Returns a map from each CSS name appearing in this file to its CssTagsPrefixPresence state. */
-  public final ImmutableMap<String, CssTagsPrefixPresence> getCssNames() {
-    return cssNameMap;
+  /** Returns the CSS names appearing in this file. */
+  public final ImmutableSet<String> getCssNames() {
+    return cssNames;
   }
 
   /**

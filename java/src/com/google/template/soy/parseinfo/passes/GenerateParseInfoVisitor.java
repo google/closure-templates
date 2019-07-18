@@ -22,11 +22,13 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -38,7 +40,6 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.parseinfo.SoyFileInfo.CssTagsPrefixPresence;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
@@ -77,6 +78,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -403,6 +405,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine();
     ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
+    ilb.appendLine("import com.google.common.collect.ImmutableSet;");
     ilb.appendLine("import com.google.common.collect.ImmutableSortedSet;");
     if (!protoTypes.isEmpty()) {
       ilb.appendLine("import com.google.protobuf.Descriptors.GenericDescriptor;");
@@ -526,13 +529,11 @@ public final class GenerateParseInfoVisitor
     ilb.appendLineEnd(",");
 
     // CSS names.
-    SortedMap<String, CssTagsPrefixPresence> cssNameMap = new CollectCssNamesVisitor().exec(node);
-    ImmutableMap.Builder<String, String> cssTagPrefixes = ImmutableMap.builder();
-    for (Map.Entry<String, CssTagsPrefixPresence> entry : cssNameMap.entrySet()) {
-      cssTagPrefixes.put(
-          "\"" + entry.getKey() + "\"", "CssTagsPrefixPresence." + entry.getValue().name());
-    }
-    appendImmutableMap(ilb, "<String, CssTagsPrefixPresence>", cssTagPrefixes.build());
+    SortedSet<String> cssNames =
+        collectCssNames(node).stream()
+            .map(s -> String.format("\"%s\"", s))
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
+    appendListOrSetHelper(ilb, "ImmutableSet.<String>of", cssNames);
     ilb.appendLineEnd(",");
 
     // Plugin Instances
@@ -984,48 +985,13 @@ public final class GenerateParseInfoVisitor
     }
   }
 
-  // -----------------------------------------------------------------------------------------------
-  // Helper visitor to collect CSS names.
-
-  /**
-   * Private helper class for visitSoyFileNode() to collect all the CSS names appearing in a file.
-   *
-   * <p>The return value of exec() is a map from each CSS name appearing in the given node's subtree
-   * to its CssTagsPrefixPresence state.
-   */
-  private static class CollectCssNamesVisitor
-      extends AbstractSoyNodeVisitor<SortedMap<String, CssTagsPrefixPresence>> {
-
-    /** Map from each CSS name to its CssTagsPrefixPresence state. */
-    private SortedMap<String, CssTagsPrefixPresence> cssNamesMap;
-
-    private CollectCssNamesVisitor() {
-      cssNamesMap = Maps.newTreeMap();
+  private static SortedSet<String> collectCssNames(SoyNode node) {
+    SortedSet<String> cssNames = new TreeSet<>();
+    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.CSS)) {
+      String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
+      cssNames.add(selector);
     }
 
-    @Override
-    public SortedMap<String, CssTagsPrefixPresence> exec(SoyNode node) {
-      for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.CSS)) {
-        String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
-        collectSelector(selector, fn.numChildren() > 1);
-      }
-
-      return cssNamesMap;
-    }
-
-    private void collectSelector(String selector, boolean hasComponentName) {
-      CssTagsPrefixPresence existingCssTagsPrefixPresence = cssNamesMap.get(selector);
-      CssTagsPrefixPresence additionalCssTagsPrefixPresence =
-          hasComponentName ? CssTagsPrefixPresence.ALWAYS : CssTagsPrefixPresence.NEVER;
-
-      if (existingCssTagsPrefixPresence == null) {
-        cssNamesMap.put(selector, additionalCssTagsPrefixPresence);
-      } else if (existingCssTagsPrefixPresence != additionalCssTagsPrefixPresence) {
-        // this CSS selector string has a prefix in some cases
-        cssNamesMap.put(selector, CssTagsPrefixPresence.SOMETIMES);
-      } else {
-        // Nothing to change.
-      }
-    }
+    return cssNames;
   }
 }

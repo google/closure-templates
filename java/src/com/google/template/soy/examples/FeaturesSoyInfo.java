@@ -5,6 +5,7 @@ package com.google.template.soy.examples;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.parseinfo.SoyFileInfo;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 
@@ -823,7 +824,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_BIDI_SUPPORT,
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
-        ImmutableMap.of(),
+        ImmutableSet.of(),
         ImmutableMap.of());
   }
 
