@@ -133,7 +133,7 @@ public final class SoyValueConverter {
         ByteString.class,
         input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
     expensiveConverterMap.put(SoyGlobalsValue.class, input -> convert(input.getSoyGlobalValue()));
-    expensiveConverterMap.put(Map.class, this::newDictFromMap);
+    expensiveConverterMap.putStringMap(this::newDictFromMap);
     expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
     expensiveConverterMap.put(Collection.class, this::newListFromIterable);
     // NOTE: We don't convert plain Iterables, because many types extend from Iterable but are not
@@ -366,6 +366,10 @@ public final class SoyValueConverter {
 
     <T> void put(Class<T> clazz, Converter<? extends T> converter) {
       checkState(map.put(clazz, checkNotNull(converter)) == null);
+    }
+
+    void putStringMap(Converter<Map<String, ?>> converter) {
+      put(Map.class, converter);
     }
 
     /**

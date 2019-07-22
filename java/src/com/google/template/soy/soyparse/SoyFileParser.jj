@@ -1524,7 +1524,8 @@ private TemplateNode Template(SoyFileHeaderInfo soyFileHeaderInfo) :
  * @param open The {template or {deltemplate token.
  * @param isDeltemplate True if the template is a deltemplate.
  */
-private void TemplateOpenTagHelper(TemplateNodeBuilder builder, Token open, boolean isDeltemplate) :
+private void TemplateOpenTagHelper(
+    TemplateNodeBuilder<?> builder, Token open, boolean isDeltemplate) :
 {
   Identifier templateName;
   List<CommandTagAttribute> attributes;
@@ -1710,7 +1711,7 @@ private RawTextNode RawText() :
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
  * consumed here, and returned as RawTextNode.
  */
-private RawTextNode TemplateHeader(TemplateNodeBuilder templateBuilder, boolean allowState) :
+private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boolean allowState) :
 {
   Token tok;
   TemplateHeaderVarDefn param;

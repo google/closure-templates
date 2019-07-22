@@ -60,7 +60,7 @@ abstract class Conditional extends Statement {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
-    for (IfThenPair child : conditions()) {
+    for (IfThenPair<Statement> child : conditions()) {
       child.predicate.collectRequires(collector);
       child.consequent.collectRequires(collector);
     }
@@ -70,7 +70,7 @@ abstract class Conditional extends Statement {
   }
 
   private void formatIfClause(FormattingContext ctx) {
-    IfThenPair first = conditions().get(0);
+    IfThenPair<Statement> first = conditions().get(0);
     ctx.appendInitialStatements(first.predicate)
         .append("if (")
         .appendOutputExpression(first.predicate)

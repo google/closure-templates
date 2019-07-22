@@ -127,21 +127,21 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   public T setId(int id) {
     Preconditions.checkState(this.id == null);
     this.id = id;
-    return (T) this;
+    return self();
   }
 
   /** Sets the source location. */
   public T setSourceLocation(SourceLocation location) {
     checkState(sourceLocation == null);
     this.sourceLocation = checkNotNull(location);
-    return (T) this;
+    return self();
   }
 
   /** Sets the source location. */
   public T setOpenTagLocation(SourceLocation location) {
     checkState(openTagLocation == null);
     this.openTagLocation = checkNotNull(location);
-    return (T) this;
+    return self();
   }
 
   /**
@@ -209,7 +209,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     Preconditions.checkArgument(soyDoc.startsWith("/**") && soyDoc.endsWith("*/"));
     this.soyDocDesc = cleanSoyDocHelper(soyDoc);
 
-    return (T) this;
+    return self();
   }
 
   /** This method is intended to be called at most once for header params. */
@@ -231,7 +231,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
         errorReporter.report(param.nameLocation(), PARAM_ALREADY_DECLARED, param.name());
       }
     }
-    return (T) this;
+    return self();
   }
 
   /** Builds the template node. Will error if not enough info as been set on this builder. */
@@ -308,6 +308,8 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   protected String getPartialTemplateName() {
     return partialTemplateName;
   }
+
+  protected abstract T self();
 
   // -----------------------------------------------------------------------------------------------
   // Private static helpers for parsing template SoyDoc.

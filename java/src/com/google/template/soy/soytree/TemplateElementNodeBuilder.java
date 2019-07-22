@@ -75,4 +75,9 @@ public final class TemplateElementNodeBuilder
     }
     return new TemplateElementNode(this, soyFileHeaderInfo, params);
   }
+
+  @Override
+  protected TemplateElementNodeBuilder self() {
+    return this;
+  }
 }

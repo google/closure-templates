@@ -182,4 +182,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
     return new TemplateDelegateNode(
         this, soyFileHeaderInfo, delTemplateName, delTemplateVariantExpr, delPriority, params);
   }
+
+  @Override
+  protected TemplateDelegateNodeBuilder self() {
+    return this;
+  }
 }

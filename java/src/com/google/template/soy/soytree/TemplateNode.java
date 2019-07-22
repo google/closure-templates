@@ -280,7 +280,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
    * @param params The params from template header or SoyDoc. Null if no decls and no SoyDoc.
    */
   TemplateNode(
-      TemplateNodeBuilder nodeBuilder,
+      TemplateNodeBuilder<?> nodeBuilder,
       String cmdName,
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
