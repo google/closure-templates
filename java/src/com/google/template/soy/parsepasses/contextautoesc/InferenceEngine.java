@@ -280,8 +280,6 @@ final class InferenceEngine {
     }
 
     private void visitRenderUnitNode(RenderUnitNode node) {
-      // TODO(b/80336719): Change the parser (or the RenderUnitNode constructor) to require a kind.
-      // The CheckEscapingSanityVisitor ensures that node.getContentKind is non-null
       inferInStrictMode(node);
     }
 
