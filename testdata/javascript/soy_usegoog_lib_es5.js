@@ -45,18 +45,30 @@ $jscomp.polyfill = function(target, polyfill) {
     impl != orig && null != impl && $jscomp.defineProperty(obj, property, {configurable:!0, writable:!0, value:impl});
   }
 };
-$jscomp.checkEs6ConformanceViaProxy = function() {
-  try {
-    var proxied = {}, proxy = Object.create(new $jscomp.global.Proxy(proxied, {get:function(target, key, receiver) {
-      return target == proxied && "q" == key && receiver == proxy;
-    }}));
-    return !0 === proxy.q;
-  } catch (err) {
-    return !1;
+$jscomp.checkStringArgs = function(thisArg, arg, func) {
+  if (null == thisArg) {
+    throw new TypeError("The 'this' value for String.prototype." + func + " must not be null or undefined");
   }
+  if (arg instanceof RegExp) {
+    throw new TypeError("First argument to String.prototype." + func + " must not be a regular expression");
+  }
+  return thisArg + "";
 };
-$jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS = !1;
-$jscomp.ES6_CONFORMANCE = $jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS && $jscomp.checkEs6ConformanceViaProxy();
+$jscomp.polyfill("String.prototype.repeat", function(orig) {
+  return orig ? orig : function(copies) {
+    var string = $jscomp.checkStringArgs(this, null, "repeat");
+    if (0 > copies || 1342177279 < copies) {
+      throw new RangeError("Invalid count value");
+    }
+    copies |= 0;
+    for (var result = ""; copies;) {
+      if (copies & 1 && (result += string), copies >>>= 1) {
+        string += string;
+      }
+    }
+    return result;
+  };
+}, "es6", "es3");
 $jscomp.SYMBOL_PREFIX = "jscomp_symbol_";
 $jscomp.initSymbol = function() {
   $jscomp.initSymbol = function() {
@@ -105,6 +117,69 @@ $jscomp.iteratorPrototype = function(next) {
   };
   return iterator;
 };
+$jscomp.iteratorFromArray = function(array, transform) {
+  $jscomp.initSymbolIterator();
+  array instanceof String && (array += "");
+  var i = 0, iter = {next:function() {
+    if (i < array.length) {
+      var index = i++;
+      return {value:transform(index, array[index]), done:!1};
+    }
+    iter.next = function() {
+      return {done:!0, value:void 0};
+    };
+    return iter.next();
+  }};
+  iter[Symbol.iterator] = function() {
+    return iter;
+  };
+  return iter;
+};
+$jscomp.polyfill("Array.prototype.entries", function(orig) {
+  return orig ? orig : function() {
+    return $jscomp.iteratorFromArray(this, function(i, v) {
+      return [i, v];
+    });
+  };
+}, "es6", "es3");
+$jscomp.polyfill("Array.from", function(orig) {
+  return orig ? orig : function(arrayLike, opt_mapFn, opt_thisArg) {
+    opt_mapFn = null != opt_mapFn ? opt_mapFn : function(x) {
+      return x;
+    };
+    var result = [], iteratorFunction = "undefined" != typeof Symbol && Symbol.iterator && arrayLike[Symbol.iterator];
+    if ("function" == typeof iteratorFunction) {
+      arrayLike = iteratorFunction.call(arrayLike);
+      for (var next, k = 0; !(next = arrayLike.next()).done;) {
+        result.push(opt_mapFn.call(opt_thisArg, next.value, k++));
+      }
+    } else {
+      for (var len = arrayLike.length, i = 0; i < len; i++) {
+        result.push(opt_mapFn.call(opt_thisArg, arrayLike[i], i));
+      }
+    }
+    return result;
+  };
+}, "es6", "es3");
+$jscomp.polyfill("Array.prototype.keys", function(orig) {
+  return orig ? orig : function() {
+    return $jscomp.iteratorFromArray(this, function(i) {
+      return i;
+    });
+  };
+}, "es6", "es3");
+$jscomp.checkEs6ConformanceViaProxy = function() {
+  try {
+    var proxied = {}, proxy = Object.create(new $jscomp.global.Proxy(proxied, {get:function(target, key, receiver) {
+      return target == proxied && "q" == key && receiver == proxy;
+    }}));
+    return !0 === proxy.q;
+  } catch (err) {
+    return !1;
+  }
+};
+$jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS = !1;
+$jscomp.ES6_CONFORMANCE = $jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS && $jscomp.checkEs6ConformanceViaProxy();
 $jscomp.owns = function(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 };
@@ -321,81 +396,6 @@ $jscomp.polyfill("Map", function(NativeMap) {
     return head.previous = head.next = head.head = head;
   }, mapIndex = 0;
   return PolyfillMap;
-}, "es6", "es3");
-$jscomp.checkStringArgs = function(thisArg, arg, func) {
-  if (null == thisArg) {
-    throw new TypeError("The 'this' value for String.prototype." + func + " must not be null or undefined");
-  }
-  if (arg instanceof RegExp) {
-    throw new TypeError("First argument to String.prototype." + func + " must not be a regular expression");
-  }
-  return thisArg + "";
-};
-$jscomp.polyfill("String.prototype.repeat", function(orig) {
-  return orig ? orig : function(copies) {
-    var string = $jscomp.checkStringArgs(this, null, "repeat");
-    if (0 > copies || 1342177279 < copies) {
-      throw new RangeError("Invalid count value");
-    }
-    copies |= 0;
-    for (var result = ""; copies;) {
-      if (copies & 1 && (result += string), copies >>>= 1) {
-        string += string;
-      }
-    }
-    return result;
-  };
-}, "es6", "es3");
-$jscomp.iteratorFromArray = function(array, transform) {
-  $jscomp.initSymbolIterator();
-  array instanceof String && (array += "");
-  var i = 0, iter = {next:function() {
-    if (i < array.length) {
-      var index = i++;
-      return {value:transform(index, array[index]), done:!1};
-    }
-    iter.next = function() {
-      return {done:!0, value:void 0};
-    };
-    return iter.next();
-  }};
-  iter[Symbol.iterator] = function() {
-    return iter;
-  };
-  return iter;
-};
-$jscomp.polyfill("Array.prototype.entries", function(orig) {
-  return orig ? orig : function() {
-    return $jscomp.iteratorFromArray(this, function(i, v) {
-      return [i, v];
-    });
-  };
-}, "es6", "es3");
-$jscomp.polyfill("Array.from", function(orig) {
-  return orig ? orig : function(arrayLike, opt_mapFn, opt_thisArg) {
-    opt_mapFn = null != opt_mapFn ? opt_mapFn : function(x) {
-      return x;
-    };
-    var result = [], iteratorFunction = "undefined" != typeof Symbol && Symbol.iterator && arrayLike[Symbol.iterator];
-    if ("function" == typeof iteratorFunction) {
-      arrayLike = iteratorFunction.call(arrayLike);
-      for (var next, k = 0; !(next = arrayLike.next()).done;) {
-        result.push(opt_mapFn.call(opt_thisArg, next.value, k++));
-      }
-    } else {
-      for (var len = arrayLike.length, i = 0; i < len; i++) {
-        result.push(opt_mapFn.call(opt_thisArg, arrayLike[i], i));
-      }
-    }
-    return result;
-  };
-}, "es6", "es3");
-$jscomp.polyfill("Array.prototype.keys", function(orig) {
-  return orig ? orig : function() {
-    return $jscomp.iteratorFromArray(this, function(i) {
-      return i;
-    });
-  };
 }, "es6", "es3");
 var goog = goog || {};
 goog.global = this || self;
@@ -1390,30 +1390,12 @@ goog.array.bucket = function(array, sorter, opt_obj) {
   }
   return buckets;
 };
-goog.array.bucketToMap = function(array, sorter) {
-  for (var buckets = new Map, i = 0; i < array.length; i++) {
-    var value = array[i], key = sorter(value, i, array);
-    if (void 0 !== key) {
-      var bucket = buckets.get(key);
-      bucket || (bucket = [], buckets.set(key, bucket));
-      bucket.push(value);
-    }
-  }
-  return buckets;
-};
 goog.array.toObject = function(arr, keyFunc, opt_obj) {
   var ret = {};
   goog.array.forEach(arr, function(element, index) {
     ret[keyFunc.call(opt_obj, element, index, arr)] = element;
   });
   return ret;
-};
-goog.array.toMap = function(arr, keyFunc) {
-  var map = new Map;
-  goog.array.forEach(arr, function(element, index) {
-    map.set(keyFunc(element, index, arr), element);
-  });
-  return map;
 };
 goog.array.range = function(startOrEnd, opt_end, opt_step) {
   var array = [], start = 0, end = startOrEnd, step = opt_step || 1;
