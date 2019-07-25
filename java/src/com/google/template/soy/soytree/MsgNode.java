@@ -273,7 +273,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     if (substUnitInfo == null) {
       substUnitInfo = genSubstUnitInfo(this, reporter);
     } else {
-      throw new IllegalStateException("calculateSubstitutionInfo has already been called yet.");
+      throw new IllegalStateException("calculateSubstitutionInfo has already been called.");
     }
   }
 
