@@ -495,13 +495,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .build(),
             ctorBody);
 
-    Statement maybeRender =
-        Statement.ifStatement(
-                id("super")
-                    .dotAccess("renderInternal")
-                    .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA, id("ignoreSkipHandler")),
-                Statement.returnValue(Expression.LITERAL_TRUE))
-            .build();
+    Statement queueElement =
+        id("this")
+            .dotAccess("queueSoyElement")
+            .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA, id("ignoreSkipHandler"))
+            .asStatement();
 
     // Build `renderInternal` method.
     MethodDeclaration renderInternalMethod =
@@ -516,7 +514,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .addParameterizedAnnotation("suppress", "checkTypes")
                 .build(),
             Statement.of(
-                maybeRender,
+                queueElement,
                 // Various parts of the js codegen expects these parameters to be in the local
                 // scope.
                 VariableDeclaration.builder("opt_ijData")
@@ -1007,7 +1005,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // Append code to stash the template object in this node.
       jsCodeBuilder.append(
           Statement.ifStatement(
-                  id("this").dotAccess("setNodeInternal").call(openTagExpr),
+                  INCREMENTAL_DOM.dotAccess("shouldSkip").call(openTagExpr),
                   Statement.of(
                       INCREMENTAL_DOM.dotAccess("skip").call(ImmutableList.of()).asStatement(),
                       INCREMENTAL_DOM_CLOSE.call().asStatement(),
