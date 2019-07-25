@@ -62,6 +62,9 @@ public abstract class ClassExpression extends Expression {
 
   @Override
   public void collectRequires(RequiresCollector collector) {
+    if (baseClass() != null) {
+      baseClass().collectRequires(collector);
+    }
     for (MethodDeclaration method : methods()) {
       method.collectRequires(collector);
     }
