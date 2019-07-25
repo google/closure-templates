@@ -37,7 +37,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.google.template.soy.SoyFileSet;
-import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoAutoescapeTrueSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoBidiSupportSoyTemplateInfo;
 import com.google.template.soy.examples.FeaturesSoyInfo.DemoCallWithParamBlockSoyTemplateInfo;
@@ -144,10 +143,7 @@ public class FeaturesUsage {
 
     writeExampleHeader("demoRawTextCommands");
     System.out.println(
-        tofu.newRenderer(DEMO_RAW_TEXT_COMMANDS)
-            .setMsgBundle(msgBundle)
-            .setContentKind(SanitizedContent.ContentKind.TEXT)
-            .render());
+        tofu.newRenderer(DEMO_RAW_TEXT_COMMANDS).setMsgBundle(msgBundle).renderText());
 
     writeExampleHeader("demoPrint");
     System.out.println(
@@ -295,8 +291,7 @@ public class FeaturesUsage {
                     DemoDoubleBracesSoyTemplateInfo.SET_MEMBERS,
                     ImmutableList.of(2, 3, 5, 7, 11, 13)))
             .setMsgBundle(msgBundle)
-            .setContentKind(SanitizedContent.ContentKind.TEXT)
-            .render());
+            .renderText());
 
     // The Hebrew in the following example comes out as question marks in the output because
     // System.out (and by default stdout generally) is set up to use a Latin encoding. To see
