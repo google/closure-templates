@@ -20,8 +20,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.collect.ImmutableList;
 
 /**
- * An unrecoverable exception in the Soy compiler. Reports parse errors found before the the
- * compiler failed.
+ * An unrecoverable exception in the Soy compiler. Reports parse errors found before the compiler
+ * failed.
  */
 public final class SoyInternalCompilerException extends RuntimeException {
   private final ImmutableList<SoyError> errors;
