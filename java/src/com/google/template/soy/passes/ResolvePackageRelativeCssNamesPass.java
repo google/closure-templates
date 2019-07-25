@@ -78,13 +78,13 @@ final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
 
   private void resolveSelector(
       TemplateNode template, FunctionNode node, @Nullable String packagePrefix) {
-    ExprNode lastChild = Iterables.getLast(node.getChildren());
+    ExprNode lastChild = Iterables.getLast(node.getChildren(), null);
     if (!(lastChild instanceof StringNode)) {
       // this will generate an error in CheckFunctionCallsVisitor
       return;
     }
 
-    StringNode selector = (StringNode) Iterables.getLast(node.getChildren());
+    StringNode selector = (StringNode) lastChild;
     String selectorText = selector.getValue();
     if (!selectorText.startsWith(RELATIVE_SELECTOR_PREFIX)) {
       return;

@@ -1553,7 +1553,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           }
           break;
         case INDEX:
-          requireLoopVariableInScope(node, node.getChild(0));
+          requireLoopVariableInScope(node, 0);
           node.setType(IntType.getInstance());
           break;
         case IS_PRIMARY_MSG_IN_USE:
@@ -1562,11 +1562,11 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           break;
         case IS_FIRST:
         case IS_LAST:
-          requireLoopVariableInScope(node, node.getChild(0));
+          requireLoopVariableInScope(node, 0);
           node.setType(BoolType.getInstance());
           break;
         case CSS:
-          checkArgIsStringLiteral(node.getChild(node.numChildren() - 1), "css");
+          checkArgIsStringLiteral(node, node.numChildren() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
         case XID:
@@ -1574,7 +1574,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           node.setType(StringType.getInstance());
           break;
         case V1_EXPRESSION:
-          checkArgIsStringLiteral(node.getChild(0), "v1Expression");
+          checkArgIsStringLiteral(node, 0, builtinFunction);
           node.setType(UnknownType.getInstance());
           break;
         case DEBUG_SOY_TEMPLATE_INFO:
@@ -1592,9 +1592,15 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
     }
 
     /** Private helper that reports an error if the argument is not a string literal. */
-    private void checkArgIsStringLiteral(ExprNode arg, String funcName) {
+    private void checkArgIsStringLiteral(
+        FunctionNode node, int childIndex, BuiltinFunction funcName) {
+      if (childIndex < 0 || childIndex >= node.numChildren()) {
+        return;
+      }
+
+      ExprNode arg = node.getChild(childIndex);
       if (!(arg instanceof StringNode)) {
-        errorReporter.report(arg.getSourceLocation(), STRING_LITERAL_REQUIRED, funcName);
+        errorReporter.report(arg.getSourceLocation(), STRING_LITERAL_REQUIRED, funcName.getName());
       }
     }
 
@@ -1671,7 +1677,12 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
     }
 
     /** @param fn The function that must take a loop variable. */
-    private void requireLoopVariableInScope(FunctionNode fn, ExprNode loopVariable) {
+    private void requireLoopVariableInScope(FunctionNode fn, int childIndex) {
+      if (childIndex < 0 || childIndex >= fn.numChildren()) {
+        return;
+      }
+
+      ExprNode loopVariable = fn.getChild(childIndex);
       if (!(loopVariable instanceof VarRefNode
           && ((VarRefNode) loopVariable).getDefnDecl() instanceof LocalVar
           && ((LocalVar) ((VarRefNode) loopVariable).getDefnDecl()).declaringNode()
