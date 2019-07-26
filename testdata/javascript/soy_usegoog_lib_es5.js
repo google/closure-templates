@@ -1846,6 +1846,10 @@ goog.object.getAllPropertyNames = function(obj, opt_includeObjectPrototype, opt_
   }
   return goog.object.getKeys(visitedSet);
 };
+goog.object.getSuperClass = function(constructor) {
+  var proto = Object.getPrototypeOf(constructor.prototype);
+  return proto && proto.constructor;
+};
 goog.labs.userAgent.browser = {};
 goog.labs.userAgent.browser.matchOpera_ = function() {
   return goog.labs.userAgent.util.matchUserAgent("Opera");

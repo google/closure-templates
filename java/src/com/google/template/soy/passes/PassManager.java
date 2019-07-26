@@ -77,18 +77,37 @@ public final class PassManager {
   }
 
   @VisibleForTesting final ImmutableList<CompilerFilePass> singleFilePasses;
+  @VisibleForTesting final ImmutableList<CompilerFileSetPass> templateReturnTypeInferencePasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
 
   private PassManager(
       ImmutableList<CompilerFilePass> singleFilePasses,
+      ImmutableList<CompilerFileSetPass> templateReturnTypeInferencePasses,
       ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses) {
     this.singleFilePasses = singleFilePasses;
+    this.templateReturnTypeInferencePasses = templateReturnTypeInferencePasses;
     this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
     for (CompilerFilePass pass : singleFilePasses) {
       pass.run(file, nodeIdGen);
+    }
+  }
+
+  /**
+   * Runs fileset passes that only require partial template registries that only contain
+   * dependencies.
+   */
+  public void runTemplateReturnTypeInferencePasses(
+      SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
+    ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
+    IdGenerator idGenerator = soyTree.getNodeIdGenerator();
+    for (CompilerFileSetPass pass : templateReturnTypeInferencePasses) {
+      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
+      if (result == CompilerFileSetPass.Result.STOP) {
+        break;
+      }
     }
   }
 
@@ -297,9 +316,6 @@ public final class PassManager {
       addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
       addPass(new StrictHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-      // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
-      // validation).
-      addPass(new SoyElementPass(errorReporter), singleFilePassesBuilder);
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
         // and before ResolveExpressionTypesPass (since we insert expressions).
@@ -326,6 +342,17 @@ public final class PassManager {
           singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass.
       addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
+
+      // Fileset passes run on all sources files and have access to a partial template registry so
+      // they can examine information about dependencies.
+      // In contrast to the set of passes below, the results of these passes can be cached in the
+      // AST cache.
+      ImmutableList.Builder<CompilerFileSetPass> templateReturnTypeInferencePasses =
+          ImmutableList.builder();
+
+      // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
+      // validation).
+      addPass(new SoyElementPass(errorReporter), templateReturnTypeInferencePasses);
 
       // Cross template checking passes
 
@@ -382,7 +409,9 @@ public final class PassManager {
             "The following continuation rules don't match any pass: " + passContinuationRegistry);
       }
       return new PassManager(
-          singleFilePassesBuilder.build(), crossTemplateCheckingPassesBuilder.build());
+          singleFilePassesBuilder.build(),
+          templateReturnTypeInferencePasses.build(),
+          crossTemplateCheckingPassesBuilder.build());
     }
 
     <T extends CompilerPass> void addPass(T pass, ImmutableList.Builder<T> builder) {
