@@ -33,14 +33,7 @@ abstract class CompilerFileSetPass extends CompilerPass {
     STOP;
   }
 
-  /**
-   * Runs the pass and returns whether or not compilation should abort.
-   *
-   * @param registry This can either be a complete registry (for crossTemplateCheckingPasses) for a
-   *     registry containing metadata about dependencies (for templateReturnTypeInferencePasses).
-   *     The latter is for modifying template node information (such as whether the template is a
-   *     Soy element) based off of its callees.
-   */
+  /** Runs the pass and returns whether or not compilation should abort. */
   abstract Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry);
 }

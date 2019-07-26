@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -34,12 +33,11 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import javax.annotation.Nullable;
 
 /** Validates restrictions specific to Soy elements. */
-public final class SoyElementPass extends CompilerFileSetPass {
+public final class SoyElementPass extends CompilerFilePass {
 
   private static final SoyErrorKind ROOT_HAS_KEY_NODE =
       SoyErrorKind.of(
@@ -68,15 +66,7 @@ public final class SoyElementPass extends CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    for (SoyFileNode file : sourceFiles) {
-      run(file);
-    }
-    return Result.CONTINUE;
-  }
-
-  private void run(SoyFileNode file) {
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getChildren()) {
       ErrorReporter bufferedErrorReporter = ErrorReporter.create(ImmutableMap.of());
       // scan through all children skipping 'ALLOWED_CHILD_KINDS' until we find an HtmlOpenTagNode
