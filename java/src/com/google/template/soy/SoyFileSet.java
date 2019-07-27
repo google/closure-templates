@@ -60,8 +60,8 @@ import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
-import com.google.template.soy.passes.ResolveExpressionTypesPass;
 import com.google.template.soy.passes.SoyConformancePass;
+import com.google.template.soy.passes.SoyElementPass;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -1008,10 +1008,13 @@ public final class SoyFileSet {
         () ->
             parse(
                 passManagerBuilder()
-                    // ResolveExpressionTypesPass resolve types (specifically on default parameter
-                    // values) which is necessary for template metadatas
+                    // Because we allow this for JS generated templates, we allow this for
+                    // headers.
+                    .allowUnknownGlobals()
+                    // SoyElement pass adds additional information to TemplateNodes for
+                    // serialization into headers.
                     .addPassContinuationRule(
-                        ResolveExpressionTypesPass.class, PassContinuationRule.STOP_AFTER_PASS)
+                        SoyElementPass.class, PassContinuationRule.STOP_AFTER_PASS)
                     .allowV1Expression(),
                 typeRegistry));
   }

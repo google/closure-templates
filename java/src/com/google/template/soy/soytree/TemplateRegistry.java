@@ -29,7 +29,6 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -65,15 +64,34 @@ public final class TemplateRegistry {
    * @param templates All the TemplateMetadata objects
    * @param errorReporter the error reporter
    */
-  public TemplateRegistry(List<TemplateMetadata> templates, ErrorReporter errorReporter) {
+  private TemplateRegistry(
+      ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap,
+      DelTemplateSelector<TemplateMetadata> delTemplateSelector,
+      ImmutableMap<String, TemplateMetadata> allTemplates) {
 
-    // ------ Iterate through all templates to collect data. ------
+    this.basicTemplatesOrElementsMap = basicTemplatesOrElementsMap;
+    this.delTemplateSelector = delTemplateSelector;
+    this.allTemplates = allTemplates;
+  }
+
+  public static Builder builder(ErrorReporter errorReporter) {
+    return new Builder(errorReporter);
+  }
+
+  /** Builder for TemplateRegistry */
+  public static final class Builder {
+    private final ErrorReporter errorReporter;
     Map<String, TemplateMetadata> allTemplatesBuilder = new LinkedHashMap<>();
     DelTemplateSelector.Builder<TemplateMetadata> delTemplateSelectorBuilder =
         new DelTemplateSelector.Builder<>();
     Map<String, TemplateMetadata> basicTemplatesOrElementsMap = new LinkedHashMap<>();
     Multimap<String, TemplateMetadata> delegateTemplates = HashMultimap.create();
-    for (TemplateMetadata template : templates) {
+
+    private Builder(ErrorReporter errorReporter) {
+      this.errorReporter = errorReporter;
+    }
+
+    public void addTemplate(TemplateMetadata template) {
       allTemplatesBuilder.put(template.getTemplateName(), template);
       switch (template.getTemplateKind()) {
         case BASIC:
@@ -121,23 +139,24 @@ public final class TemplateRegistry {
           break;
       }
     }
-    // make sure no basic nodes conflict with deltemplates
-    for (Map.Entry<String, TemplateMetadata> entry : delegateTemplates.entries()) {
-      TemplateMetadata node = basicTemplatesOrElementsMap.get(entry.getKey());
-      if (node != null) {
-        errorReporter.report(
-            entry.getValue().getSourceLocation(),
-            TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME,
-            entry.getKey(),
-            node.getSourceLocation());
+
+    public TemplateRegistry build() {
+      // make sure no basic nodes conflict with deltemplates
+      for (Map.Entry<String, TemplateMetadata> entry : delegateTemplates.entries()) {
+        TemplateMetadata node = basicTemplatesOrElementsMap.get(entry.getKey());
+        if (node != null) {
+          errorReporter.report(
+              entry.getValue().getSourceLocation(),
+              TEMPLATE_OR_ELEMENT_AND_DELTEMPLATE_WITH_SAME_NAME,
+              entry.getKey(),
+              node.getSourceLocation());
+        }
       }
+      return new TemplateRegistry(
+          ImmutableMap.copyOf(basicTemplatesOrElementsMap),
+          delTemplateSelectorBuilder.build(),
+          ImmutableMap.copyOf(allTemplatesBuilder));
     }
-
-    // ------ Build the final data structures. ------
-
-    this.basicTemplatesOrElementsMap = ImmutableMap.copyOf(basicTemplatesOrElementsMap);
-    this.delTemplateSelector = delTemplateSelectorBuilder.build();
-    this.allTemplates = ImmutableMap.copyOf(allTemplatesBuilder);
   }
 
   /** Returns all basic template names. */

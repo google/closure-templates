@@ -204,13 +204,23 @@ public abstract class SoyFileSetParser {
         } else {
           node = cachedFile.file();
         }
-        for (TemplateNode template : node.getChildren()) {
-          templateMetadatas.add(TemplateMetadata.fromTemplate(template));
-        }
         soyTree.addChild(node);
       }
-
-      TemplateRegistry registry = new TemplateRegistry(templateMetadatas, errorReporter());
+      // Only contains information from compilation units, but can be passed into single file
+      // passes.
+      TemplateRegistry.Builder builder = TemplateRegistry.builder(errorReporter());
+      for (TemplateMetadata template : templateMetadatas) {
+        builder.addTemplate(template);
+      }
+      if (!filesWereSkipped) {
+        passManager().runTemplateReturnTypeInferencePasses(soyTree, builder.build());
+      }
+      for (SoyFileNode node : soyTree.getChildren()) {
+        for (TemplateNode template : node.getChildren()) {
+          builder.addTemplate(TemplateMetadata.fromTemplate(template));
+        }
+      }
+      TemplateRegistry registry = builder.build();
       // Run passes that check the tree iff we successfully parsed every file.
       if (!filesWereSkipped) {
         passManager().runWholeFilesetPasses(soyTree, registry);
