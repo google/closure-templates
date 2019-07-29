@@ -410,32 +410,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         // this will always be the first element key.
         JsRuntime.XID.call(Expression.stringLiteral(node.getTemplateName() + "-0"));
 
-    VariableDeclaration elementInstanceDeclaration =
-        VariableDeclaration.builder("element")
-            .setRhs(
-                SOY_IDOM
-                    .dotAccess("$$tryGetElement")
-                    .call(INCREMENTAL_DOM, id(soyElementClassName), firstElementKey))
-            .build();
-    Statement maybeCreateElement =
-        Statement.ifStatement(
-                elementInstanceDeclaration.ref().tripleEquals(Expression.LITERAL_NULL),
-                elementInstanceDeclaration
-                    .ref()
-                    .assign(
-                        Expression.construct(
-                            id(soyElementClassName), JsRuntime.OPT_DATA, JsRuntime.OPT_IJ_DATA))
-                    .asStatement())
-            .build();
-
-    Statement elementRenderInvocation =
-        elementInstanceDeclaration
-            .ref()
-            .dotAccess("renderInternal")
-            .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA)
-            .asStatement();
-
-    return Statement.of(maybeCreateElement, elementInstanceDeclaration, elementRenderInvocation);
+    return SOY_IDOM
+        .dotAccess("$$handleSoyElement")
+        .call(
+            INCREMENTAL_DOM,
+            id(soyElementClassName),
+            firstElementKey,
+            JsRuntime.OPT_DATA,
+            JsRuntime.OPT_IJ_DATA)
+        .asStatement();
   }
 
   /**
@@ -495,12 +478,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .build(),
             ctorBody);
 
-    Statement queueElement =
-        id("this")
-            .dotAccess("queueSoyElement")
-            .call(INCREMENTAL_DOM, JsRuntime.OPT_DATA, id("ignoreSkipHandler"))
-            .asStatement();
-
     // Build `renderInternal` method.
     MethodDeclaration renderInternalMethod =
         MethodDeclaration.create(
@@ -508,13 +485,11 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             JsDoc.builder()
                 .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
                 .addParam("opt_data", paramsType)
-                .addParam("ignoreSkipHandler", "boolean=")
                 .addAnnotation("protected")
                 .addAnnotation("override")
                 .addParameterizedAnnotation("suppress", "checkTypes")
                 .build(),
             Statement.of(
-                queueElement,
                 // Various parts of the js codegen expects these parameters to be in the local
                 // scope.
                 VariableDeclaration.builder("opt_ijData")
