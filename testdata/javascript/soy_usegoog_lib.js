@@ -4205,7 +4205,7 @@ goog.debug.Error = function(opt_msg) {
   if (Error.captureStackTrace) {
     Error.captureStackTrace(this, goog.debug.Error);
   } else {
-    var stack = new Error().stack;
+    const stack = new Error().stack;
     if (stack) {
       /** @override */
       this.stack = stack;
@@ -6519,7 +6519,7 @@ goog.string.internal.startsWith = function(str, prefix) {
  * @see goog.string.endsWith
  */
 goog.string.internal.endsWith = function(str, suffix) {
-  var l = str.length - suffix.length;
+  const l = str.length - suffix.length;
   return l >= 0 && str.indexOf(suffix, l) == l;
 };
 
@@ -6613,8 +6613,8 @@ goog.string.internal.trim =
  * @see goog.string.caseInsensitiveCompare
  */
 goog.string.internal.caseInsensitiveCompare = function(str1, str2) {
-  var test1 = String(str1).toLowerCase();
-  var test2 = String(str2).toLowerCase();
+  const test1 = String(str1).toLowerCase();
+  const test2 = String(str2).toLowerCase();
 
   if (test1 < test2) {
     return -1;
@@ -6795,24 +6795,24 @@ goog.string.internal.caseInsensitiveContains = function(str, subString) {
  * @see goog.string.compareVersions
  */
 goog.string.internal.compareVersions = function(version1, version2) {
-  var order = 0;
+  let order = 0;
   // Trim leading and trailing whitespace and split the versions into
   // subversions.
-  var v1Subs = goog.string.internal.trim(String(version1)).split('.');
-  var v2Subs = goog.string.internal.trim(String(version2)).split('.');
-  var subCount = Math.max(v1Subs.length, v2Subs.length);
+  const v1Subs = goog.string.internal.trim(String(version1)).split('.');
+  const v2Subs = goog.string.internal.trim(String(version2)).split('.');
+  const subCount = Math.max(v1Subs.length, v2Subs.length);
 
   // Iterate over the subversions, as long as they appear to be equivalent.
-  for (var subIdx = 0; order == 0 && subIdx < subCount; subIdx++) {
-    var v1Sub = v1Subs[subIdx] || '';
-    var v2Sub = v2Subs[subIdx] || '';
+  for (let subIdx = 0; order == 0 && subIdx < subCount; subIdx++) {
+    let v1Sub = v1Subs[subIdx] || '';
+    let v2Sub = v2Subs[subIdx] || '';
 
     do {
       // Split the subversions into pairs of numbers and qualifiers (like 'b').
       // Two different RegExp objects are use to make it clear the code
       // is side-effect free
-      var v1Comp = /(\d*)(\D*)(.*)/.exec(v1Sub) || ['', '', '', ''];
-      var v2Comp = /(\d*)(\D*)(.*)/.exec(v2Sub) || ['', '', '', ''];
+      const v1Comp = /(\d*)(\D*)(.*)/.exec(v1Sub) || ['', '', '', ''];
+      const v2Comp = /(\d*)(\D*)(.*)/.exec(v2Sub) || ['', '', '', ''];
       // Break if there are no more matches.
       if (v1Comp[0].length == 0 && v2Comp[0].length == 0) {
         break;
@@ -6820,8 +6820,8 @@ goog.string.internal.compareVersions = function(version1, version2) {
 
       // Parse the numeric part of the subversion. A missing number is
       // equivalent to 0.
-      var v1CompNum = v1Comp[1].length == 0 ? 0 : parseInt(v1Comp[1], 10);
-      var v2CompNum = v2Comp[1].length == 0 ? 0 : parseInt(v2Comp[1], 10);
+      const v1CompNum = v1Comp[1].length == 0 ? 0 : parseInt(v1Comp[1], 10);
+      const v2CompNum = v2Comp[1].length == 0 ? 0 : parseInt(v2Comp[1], 10);
 
       // Compare the subversion components. The number has the highest
       // precedence. Next, if the numbers are equal, a subversion without any
@@ -7078,7 +7078,7 @@ goog.object.is = function(v, v2) {
  * @template T,K,V
  */
 goog.object.forEach = function(obj, f, opt_obj) {
-  for (var key in obj) {
+  for (const key in obj) {
     f.call(/** @type {?} */ (opt_obj), obj[key], key, obj);
   }
 };
@@ -7101,8 +7101,8 @@ goog.object.forEach = function(obj, f, opt_obj) {
  * @template T,K,V
  */
 goog.object.filter = function(obj, f, opt_obj) {
-  var res = {};
-  for (var key in obj) {
+  const res = {};
+  for (const key in obj) {
     if (f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       res[key] = obj[key];
     }
@@ -7126,8 +7126,8 @@ goog.object.filter = function(obj, f, opt_obj) {
  * @template T,K,V,R
  */
 goog.object.map = function(obj, f, opt_obj) {
-  var res = {};
-  for (var key in obj) {
+  const res = {};
+  for (const key in obj) {
     res[key] = f.call(/** @type {?} */ (opt_obj), obj[key], key, obj);
   }
   return res;
@@ -7149,7 +7149,7 @@ goog.object.map = function(obj, f, opt_obj) {
  * @template T,K,V
  */
 goog.object.some = function(obj, f, opt_obj) {
-  for (var key in obj) {
+  for (const key in obj) {
     if (f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       return true;
     }
@@ -7173,7 +7173,7 @@ goog.object.some = function(obj, f, opt_obj) {
  * @template T,K,V
  */
 goog.object.every = function(obj, f, opt_obj) {
-  for (var key in obj) {
+  for (const key in obj) {
     if (!f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       return false;
     }
@@ -7190,8 +7190,8 @@ goog.object.every = function(obj, f, opt_obj) {
  * @return {number} The number of key-value pairs in the object map.
  */
 goog.object.getCount = function(obj) {
-  var rv = 0;
-  for (var key in obj) {
+  let rv = 0;
+  for (const key in obj) {
     rv++;
   }
   return rv;
@@ -7207,7 +7207,7 @@ goog.object.getCount = function(obj) {
  * @return {string|undefined} The key or undefined if the object is empty.
  */
 goog.object.getAnyKey = function(obj) {
-  for (var key in obj) {
+  for (const key in obj) {
     return key;
   }
 };
@@ -7223,7 +7223,7 @@ goog.object.getAnyKey = function(obj) {
  * @template K,V
  */
 goog.object.getAnyValue = function(obj) {
-  for (var key in obj) {
+  for (const key in obj) {
     return obj[key];
   }
 };
@@ -7251,9 +7251,9 @@ goog.object.contains = function(obj, val) {
  * @template K,V
  */
 goog.object.getValues = function(obj) {
-  var res = [];
-  var i = 0;
-  for (var key in obj) {
+  const res = [];
+  let i = 0;
+  for (const key in obj) {
     res[i++] = obj[key];
   }
   return res;
@@ -7267,9 +7267,9 @@ goog.object.getValues = function(obj) {
  * @return {!Array<string>} Array of property keys.
  */
 goog.object.getKeys = function(obj) {
-  var res = [];
-  var i = 0;
-  for (var key in obj) {
+  const res = [];
+  let i = 0;
+  for (const key in obj) {
     res[i++] = key;
   }
   return res;
@@ -7290,13 +7290,13 @@ goog.object.getKeys = function(obj) {
  *     in the current object is null or undefined, returns undefined.
  */
 goog.object.getValueByKeys = function(obj, var_args) {
-  var isArrayLike = goog.isArrayLike(var_args);
-  var keys = isArrayLike ?
+  const isArrayLike = goog.isArrayLike(var_args);
+  const keys = isArrayLike ?
       /** @type {!IArrayLike<number|string>} */ (var_args) :
       arguments;
 
   // Start with the 2nd parameter for the variable parameters syntax.
-  for (var i = isArrayLike ? 0 : 1; i < keys.length; i++) {
+  for (let i = isArrayLike ? 0 : 1; i < keys.length; i++) {
     if (obj == null) return undefined;
     obj = obj[keys[i]];
   }
@@ -7326,7 +7326,7 @@ goog.object.containsKey = function(obj, key) {
  * @template K,V
  */
 goog.object.containsValue = function(obj, val) {
-  for (var key in obj) {
+  for (const key in obj) {
     if (obj[key] == val) {
       return true;
     }
@@ -7348,7 +7348,7 @@ goog.object.containsValue = function(obj, val) {
  * @template T,K,V
  */
 goog.object.findKey = function(obj, f, opt_this) {
-  for (var key in obj) {
+  for (const key in obj) {
     if (f.call(/** @type {?} */ (opt_this), obj[key], key, obj)) {
       return key;
     }
@@ -7370,7 +7370,7 @@ goog.object.findKey = function(obj, f, opt_this) {
  * @template T,K,V
  */
 goog.object.findValue = function(obj, f, opt_this) {
-  var key = goog.object.findKey(obj, f, opt_this);
+  const key = goog.object.findKey(obj, f, opt_this);
   return key && obj[key];
 };
 
@@ -7382,7 +7382,7 @@ goog.object.findValue = function(obj, f, opt_this) {
  * @return {boolean} true if obj is empty.
  */
 goog.object.isEmpty = function(obj) {
-  for (var key in obj) {
+  for (const key in obj) {
     return false;
   }
   return true;
@@ -7395,7 +7395,7 @@ goog.object.isEmpty = function(obj) {
  * @param {Object} obj The object to clear.
  */
 goog.object.clear = function(obj) {
-  for (var i in obj) {
+  for (const i in obj) {
     delete obj[i];
   }
 };
@@ -7409,7 +7409,7 @@ goog.object.clear = function(obj) {
  * @return {boolean} Whether an element was removed.
  */
 goog.object.remove = function(obj, key) {
-  var rv;
+  let rv;
   if (rv = key in /** @type {!Object} */ (obj)) {
     delete obj[key];
   }
@@ -7499,7 +7499,7 @@ goog.object.setWithReturnValueIfNotSet = function(obj, key, f) {
     return obj[key];
   }
 
-  var val = f();
+  const val = f();
   obj[key] = val;
   return val;
 };
@@ -7514,12 +7514,12 @@ goog.object.setWithReturnValueIfNotSet = function(obj, key, f) {
  * @template K,V
  */
 goog.object.equals = function(a, b) {
-  for (var k in a) {
+  for (const k in a) {
     if (!(k in b) || a[k] !== b[k]) {
       return false;
     }
   }
-  for (var k in b) {
+  for (const k in b) {
     if (!(k in a)) {
       return false;
     }
@@ -7539,8 +7539,8 @@ goog.object.clone = function(obj) {
   // We cannot use the prototype trick because a lot of methods depend on where
   // the actual key is set.
 
-  var res = {};
-  for (var key in obj) {
+  const res = {};
+  for (const key in obj) {
     res[key] = obj[key];
   }
   return res;
@@ -7564,13 +7564,13 @@ goog.object.clone = function(obj) {
  * @template T
  */
 goog.object.unsafeClone = function(obj) {
-  var type = goog.typeOf(obj);
+  const type = goog.typeOf(obj);
   if (type == 'object' || type == 'array') {
     if (goog.isFunction(obj.clone)) {
       return obj.clone();
     }
-    var clone = type == 'array' ? [] : {};
-    for (var key in obj) {
+    const clone = type == 'array' ? [] : {};
+    for (const key in obj) {
       clone[key] = goog.object.unsafeClone(obj[key]);
     }
     return clone;
@@ -7589,8 +7589,8 @@ goog.object.unsafeClone = function(obj) {
  * @return {!Object} The transposed object.
  */
 goog.object.transpose = function(obj) {
-  var transposed = {};
-  for (var key in obj) {
+  const transposed = {};
+  for (const key in obj) {
     transposed[obj[key]] = key;
   }
   return transposed;
@@ -7626,8 +7626,9 @@ goog.object.PROTOTYPE_FIELDS_ = [
  *     will be copied.
  */
 goog.object.extend = function(target, var_args) {
-  var key, source;
-  for (var i = 1; i < arguments.length; i++) {
+  let key;
+  let source;
+  for (let i = 1; i < arguments.length; i++) {
     source = arguments[i];
     for (key in source) {
       target[key] = source[key];
@@ -7639,7 +7640,7 @@ goog.object.extend = function(target, var_args) {
     // extend String and change 'replace' (not that it is common for anyone to
     // extend anything except Object).
 
-    for (var j = 0; j < goog.object.PROTOTYPE_FIELDS_.length; j++) {
+    for (let j = 0; j < goog.object.PROTOTYPE_FIELDS_.length; j++) {
       key = goog.object.PROTOTYPE_FIELDS_[j];
       if (Object.prototype.hasOwnProperty.call(source, key)) {
         target[key] = source[key];
@@ -7659,7 +7660,7 @@ goog.object.extend = function(target, var_args) {
  *     non array argument.
  */
 goog.object.create = function(var_args) {
-  var argLength = arguments.length;
+  const argLength = arguments.length;
   if (argLength == 1 && goog.isArray(arguments[0])) {
     return goog.object.create.apply(null, arguments[0]);
   }
@@ -7668,8 +7669,8 @@ goog.object.create = function(var_args) {
     throw new Error('Uneven number of arguments');
   }
 
-  var rv = {};
-  for (var i = 0; i < argLength; i += 2) {
+  const rv = {};
+  for (let i = 0; i < argLength; i += 2) {
     rv[arguments[i]] = arguments[i + 1];
   }
   return rv;
@@ -7685,13 +7686,13 @@ goog.object.create = function(var_args) {
  * @return {!Object} The new object.
  */
 goog.object.createSet = function(var_args) {
-  var argLength = arguments.length;
+  const argLength = arguments.length;
   if (argLength == 1 && goog.isArray(arguments[0])) {
     return goog.object.createSet.apply(null, arguments[0]);
   }
 
-  var rv = {};
-  for (var i = 0; i < argLength; i++) {
+  const rv = {};
+  for (let i = 0; i < argLength; i++) {
     rv[arguments[i]] = true;
   }
   return rv;
@@ -7711,7 +7712,7 @@ goog.object.createSet = function(var_args) {
  * @template K,V
  */
 goog.object.createImmutableView = function(obj) {
-  var result = obj;
+  let result = obj;
   if (Object.isFrozen && !Object.isFrozen(obj)) {
     result = Object.create(obj);
     Object.freeze(result);
@@ -7756,15 +7757,15 @@ goog.object.getAllPropertyNames = function(
     return goog.object.getKeys(obj);
   }
 
-  var visitedSet = {};
+  const visitedSet = {};
 
   // Traverse the prototype chain and add all properties to the visited set.
-  var proto = obj;
+  let proto = obj;
   while (proto &&
          (proto !== Object.prototype || !!opt_includeObjectPrototype) &&
          (proto !== Function.prototype || !!opt_includeFunctionPrototype)) {
-    var names = Object.getOwnPropertyNames(proto);
-    for (var i = 0; i < names.length; i++) {
+    const names = Object.getOwnPropertyNames(proto);
+    for (let i = 0; i < names.length; i++) {
       visitedSet[names[i]] = true;
     }
     proto = Object.getPrototypeOf(proto);
@@ -8668,7 +8669,7 @@ goog.functions.fail = function(err) {
 goog.functions.lock = function(f, opt_numArgs) {
   opt_numArgs = opt_numArgs || 0;
   return function() {
-    var self = /** @type {*} */ (this);
+    const self = /** @type {*} */ (this);
     return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
   };
 };
@@ -8700,10 +8701,10 @@ goog.functions.nth = function(n) {
  *     was invoked as a method of.
  */
 goog.functions.partialRight = function(fn, var_args) {
-  var rightArgs = Array.prototype.slice.call(arguments, 1);
+  const rightArgs = Array.prototype.slice.call(arguments, 1);
   return function() {
-    var self = /** @type {*} */ (this);
-    var newArgs = Array.prototype.slice.call(arguments);
+    const self = /** @type {*} */ (this);
+    const newArgs = Array.prototype.slice.call(arguments);
     newArgs.push.apply(newArgs, rightArgs);
     return fn.apply(self, newArgs);
   };
@@ -8750,16 +8751,16 @@ goog.functions.equalTo = function(value, opt_useLooseComparison) {
  * @template T
  */
 goog.functions.compose = function(fn, var_args) {
-  var functions = arguments;
-  var length = functions.length;
+  const functions = arguments;
+  const length = functions.length;
   return function() {
-    var self = /** @type {*} */ (this);
-    var result;
+    const self = /** @type {*} */ (this);
+    let result;
     if (length) {
       result = functions[length - 1].apply(self, arguments);
     }
 
-    for (var i = length - 2; i >= 0; i--) {
+    for (let i = length - 2; i >= 0; i--) {
       result = functions[i].call(self, result);
     }
     return result;
@@ -8775,12 +8776,12 @@ goog.functions.compose = function(fn, var_args) {
  * @return {!Function} A function that calls all inputs in sequence.
  */
 goog.functions.sequence = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
+  const functions = arguments;
+  const length = functions.length;
   return function() {
-    var self = /** @type {*} */ (this);
-    var result;
-    for (var i = 0; i < length; i++) {
+    const self = /** @type {*} */ (this);
+    let result;
+    for (let i = 0; i < length; i++) {
       result = functions[i].apply(self, arguments);
     }
     return result;
@@ -8798,11 +8799,11 @@ goog.functions.sequence = function(var_args) {
  *      functions.
  */
 goog.functions.and = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
+  const functions = arguments;
+  const length = functions.length;
   return function() {
-    var self = /** @type {*} */ (this);
-    for (var i = 0; i < length; i++) {
+    const self = /** @type {*} */ (this);
+    for (let i = 0; i < length; i++) {
       if (!functions[i].apply(self, arguments)) {
         return false;
       }
@@ -8822,11 +8823,11 @@ goog.functions.and = function(var_args) {
  *    functions.
  */
 goog.functions.or = function(var_args) {
-  var functions = arguments;
-  var length = functions.length;
+  const functions = arguments;
+  const length = functions.length;
   return function() {
-    var self = /** @type {*} */ (this);
-    for (var i = 0; i < length; i++) {
+    const self = /** @type {*} */ (this);
+    for (let i = 0; i < length; i++) {
       if (functions[i].apply(self, arguments)) {
         return true;
       }
@@ -8845,7 +8846,7 @@ goog.functions.or = function(var_args) {
  */
 goog.functions.not = function(f) {
   return function() {
-    var self = /** @type {*} */ (this);
+    const self = /** @type {*} */ (this);
     return !f.apply(self, arguments);
   };
 };
@@ -8869,12 +8870,12 @@ goog.functions.create = function(constructor, var_args) {
    * @constructor
    * @final
    */
-  var temp = function() {};
+  const temp = function() {};
   temp.prototype = constructor.prototype;
 
   // obj will have constructor's prototype in its chain and
   // 'obj instanceof constructor' will be true.
-  var obj = new temp();
+  const obj = new temp();
 
   // obj is initialized by constructor.
   // arguments is only array-like so lacks shift(), but can be used with
@@ -8908,8 +8909,8 @@ goog.functions.CACHE_RETURN_VALUE =
  * @template T
  */
 goog.functions.cacheReturnValue = function(fn) {
-  var called = false;
-  var value;
+  let called = false;
+  let value;
 
   return function() {
     if (!goog.functions.CACHE_RETURN_VALUE) {
@@ -8939,10 +8940,10 @@ goog.functions.cacheReturnValue = function(fn) {
 goog.functions.once = function(f) {
   // Keep a reference to the function that we null out when we're done with
   // it -- that way, the function can be GC'd when we're done with it.
-  var inner = f;
+  let inner = f;
   return function() {
     if (inner) {
-      var tmp = inner;
+      const tmp = inner;
       inner = null;
       tmp();
     }
@@ -8971,10 +8972,10 @@ goog.functions.once = function(f) {
  * @template SCOPE
  */
 goog.functions.debounce = function(f, interval, opt_scope) {
-  var timeout = 0;
+  let timeout = 0;
   return /** @type {function(...?)} */ (function(var_args) {
     goog.global.clearTimeout(timeout);
-    var args = arguments;
+    const args = arguments;
     timeout = goog.global.setTimeout(function() {
       f.apply(opt_scope, args);
     }, interval);
@@ -9000,11 +9001,11 @@ goog.functions.debounce = function(f, interval, opt_scope) {
  * @template SCOPE
  */
 goog.functions.throttle = function(f, interval, opt_scope) {
-  var timeout = 0;
-  var shouldFire = false;
-  var args = [];
+  let timeout = 0;
+  let shouldFire = false;
+  let args = [];
 
-  var handleTimeout = function() {
+  const handleTimeout = function() {
     timeout = 0;
     if (shouldFire) {
       shouldFire = false;
@@ -9012,7 +9013,7 @@ goog.functions.throttle = function(f, interval, opt_scope) {
     }
   };
 
-  var fire = function() {
+  const fire = function() {
     timeout = goog.global.setTimeout(handleTimeout, interval);
     f.apply(opt_scope, args);
   };
@@ -9047,9 +9048,9 @@ goog.functions.throttle = function(f, interval, opt_scope) {
  * @template SCOPE
  */
 goog.functions.rateLimit = function(f, interval, opt_scope) {
-  var timeout = 0;
+  let timeout = 0;
 
-  var handleTimeout = function() {
+  const handleTimeout = function() {
     timeout = 0;
   };
 
@@ -10354,7 +10355,7 @@ goog.fs.url.UrlObject_;
  * @private
  */
 goog.fs.url.getUrlObject_ = function() {
-  var urlObject = goog.fs.url.findUrlObject_();
+  const urlObject = goog.fs.url.findUrlObject_();
   if (urlObject != null) {
     return urlObject;
   } else {
@@ -11006,9 +11007,9 @@ goog.i18n.bidi.bracketGuardTextRe_ =
  * @return {string} The processed string, with all bracket guarded.
  */
 goog.i18n.bidi.guardBracketInText = function(s, opt_isRtlContext) {
-  var useRtl = opt_isRtlContext === undefined ? goog.i18n.bidi.hasAnyRtl(s) :
-                                                opt_isRtlContext;
-  var mark = useRtl ? goog.i18n.bidi.Format.RLM : goog.i18n.bidi.Format.LRM;
+  const useRtl = opt_isRtlContext === undefined ? goog.i18n.bidi.hasAnyRtl(s) :
+                                                  opt_isRtlContext;
+  const mark = useRtl ? goog.i18n.bidi.Format.RLM : goog.i18n.bidi.Format.LRM;
   return s.replace(goog.i18n.bidi.bracketGuardTextRe_, mark + '$&' + mark);
 };
 
@@ -11207,13 +11208,13 @@ goog.i18n.bidi.rtlDetectionThreshold_ = 0.40;
  * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
  */
 goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
-  var rtlCount = 0;
-  var totalCount = 0;
-  var hasWeaklyLtr = false;
-  var tokens = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-                   .split(goog.i18n.bidi.wordSeparatorRe_);
-  for (var i = 0; i < tokens.length; i++) {
-    var token = tokens[i];
+  let rtlCount = 0;
+  let totalCount = 0;
+  let hasWeaklyLtr = false;
+  const tokens = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
+                     .split(goog.i18n.bidi.wordSeparatorRe_);
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     if (goog.i18n.bidi.startsWithRtl(token)) {
       rtlCount++;
       totalCount++;
@@ -11262,7 +11263,7 @@ goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
  */
 goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
   if (element) {
-    var htmlElement = /** @type {!HTMLElement} */ (element);
+    const htmlElement = /** @type {!HTMLElement} */ (element);
     dir = goog.i18n.bidi.toDir(dir);
     if (dir) {
       htmlElement.style.textAlign = dir == goog.i18n.bidi.Dir.RTL ?
@@ -11280,7 +11281,7 @@ goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
  * @param {string} text
  */
 goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
-  var htmlElement = /** @type {!HTMLElement} */ (element);
+  const htmlElement = /** @type {!HTMLElement} */ (element);
   switch (goog.i18n.bidi.estimateDirection(text)) {
     case (goog.i18n.bidi.Dir.LTR):
       htmlElement.dir = 'ltr';
@@ -17569,7 +17570,7 @@ goog.reflect.canAccessProperty = function(obj, prop) {
  * @template V
  */
 goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
-  var storedKey = opt_keyFn ? opt_keyFn(key) : key;
+  const storedKey = opt_keyFn ? opt_keyFn(key) : key;
 
   if (Object.prototype.hasOwnProperty.call(cacheObj, storedKey)) {
     return cacheObj[storedKey];
@@ -19861,7 +19862,7 @@ goog.math.Size.prototype.round = function() {
  * @return {!goog.math.Size} This Size object after scaling.
  */
 goog.math.Size.prototype.scale = function(sx, opt_sy) {
-  var sy = goog.isNumber(opt_sy) ? opt_sy : sx;
+  const sy = goog.isNumber(opt_sy) ? opt_sy : sx;
   this.width *= sx;
   this.height *= sy;
   return this;
@@ -19879,7 +19880,7 @@ goog.math.Size.prototype.scale = function(sx, opt_sy) {
  * @return {!goog.math.Size} This Size object, after optional scaling.
  */
 goog.math.Size.prototype.scaleToCover = function(target) {
-  var s = this.aspectRatio() <= target.aspectRatio() ?
+  const s = this.aspectRatio() <= target.aspectRatio() ?
       target.width / this.width :
       target.height / this.height;
 
@@ -19896,7 +19897,7 @@ goog.math.Size.prototype.scaleToCover = function(target) {
  * @return {!goog.math.Size} This Size object, after optional scaling.
  */
 goog.math.Size.prototype.scaleToFit = function(target) {
-  var s = this.aspectRatio() > target.aspectRatio() ?
+  const s = this.aspectRatio() > target.aspectRatio() ?
       target.width / this.width :
       target.height / this.height;
 
@@ -23315,8 +23316,8 @@ goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
  * @return {string} The U+ notation of the given character.
  */
 goog.i18n.uChar.toHexString = function(ch) {
-  var chCode = goog.i18n.uChar.toCharCode(ch);
-  var chCodeStr = 'U+' +
+  const chCode = goog.i18n.uChar.toCharCode(ch);
+  const chCodeStr = 'U+' +
       goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
 
   return chCodeStr;
@@ -23367,22 +23368,23 @@ goog.i18n.uChar.fromCharCode = function(code) {
     // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
     // part (the rest of the bits, shifted down; note that for now this includes
     // the supplementary offset, also shifted down, to be subtracted off below).
-    var leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
-    var trailBits = code &
+    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
+    const trailBits = code &
         // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
         // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
         ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
 
     // Now we calculate the code point of each surrogate by adding each offset
     // to the corresponding base code point.
-    var leadCodePoint = leadBits +
+    const leadCodePoint = leadBits +
         (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
          // Subtract off the supplementary offset, which had been shifted down
          // with the rest of leadBits. We do this here instead of before the
          // shift in order to save a separate subtraction step.
          (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
           goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
-    var trailCodePoint = trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
+    const trailCodePoint =
+        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
 
     // Convert the code points into a 2-character long string.
     return String.fromCharCode(leadCodePoint) +
@@ -23426,20 +23428,20 @@ goog.i18n.uChar.fromCharCode = function(code) {
  * the pair.
  */
 goog.i18n.uChar.getCodePointAround = function(string, index) {
-  var charCode = string.charCodeAt(index);
+  const charCode = string.charCodeAt(index);
   if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
       index + 1 < string.length) {
-    var trail = string.charCodeAt(index + 1);
+    const trail = string.charCodeAt(index + 1);
     if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
       // Part of a surrogate pair.
       return /** @type {number} */ (
           goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
     }
   } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
-    var lead = string.charCodeAt(index - 1);
+    const lead = string.charCodeAt(index - 1);
     if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
       // Part of a surrogate pair.
-      var codepoint = /** @type {number} */ (
+      const codepoint = /** @type {number} */ (
           goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
       return -codepoint;
     }
@@ -23507,11 +23509,11 @@ goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
 goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
   if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
       goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-    var shiftedLeadOffset =
+    const shiftedLeadOffset =
         (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
         (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
          << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
-    var trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
+    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
         goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
     return shiftedLeadOffset + trailOffset;
   }

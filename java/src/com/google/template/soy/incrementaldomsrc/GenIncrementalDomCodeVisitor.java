@@ -1005,11 +1005,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       // Append code to stash the template object in this node.
       jsCodeBuilder.append(
           Statement.ifStatement(
-                  INCREMENTAL_DOM.dotAccess("shouldSkip").call(openTagExpr),
-                  Statement.of(
-                      INCREMENTAL_DOM.dotAccess("skip").call(ImmutableList.of()).asStatement(),
-                      INCREMENTAL_DOM_CLOSE.call().asStatement(),
-                      Statement.returnValue(Expression.LITERAL_TRUE)))
+                  INCREMENTAL_DOM.dotAccess("maybeSkip").call(INCREMENTAL_DOM, openTagExpr),
+                  Statement.returnValue(Expression.LITERAL_TRUE))
               .build());
     } else {
       jsCodeBuilder.append(openTagExpr);
