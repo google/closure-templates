@@ -24,7 +24,9 @@ import java.util.Set;
  * <p>Important: Implementing this interface by itself does nothing. Your function implementation
  * class needs to implement some of all of this interface's subinterfaces.
  *
+ * @deprecated Use {@link com.google.template.soy.plugin.restricted.SoySourceFunction} instead.
  */
+@Deprecated
 public interface SoyFunction {
 
   /**
@@ -32,7 +34,7 @@ public interface SoyFunction {
    *
    * @return The name of the Soy function.
    */
-  public String getName();
+  String getName();
 
   /**
    * Gets the set of valid args list sizes. For example, the set {0, 2} would indicate that this
@@ -40,5 +42,5 @@ public interface SoyFunction {
    *
    * @return The set of valid args list sizes.
    */
-  public Set<Integer> getValidArgsSizes();
+  Set<Integer> getValidArgsSizes();
 }

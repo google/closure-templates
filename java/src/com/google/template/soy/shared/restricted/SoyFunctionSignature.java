@@ -25,8 +25,8 @@ import java.lang.annotation.Target;
  * Annotation that contains a list of {@code Signature}. Soy functions/plugins can use this
  * annotation to get additional type check for the arguments and return types.
  *
- * <p>See {@link com.google.template.soy.basicfunctions.FloatFunction} and other functions in that
- * package for example usages.
+ * <p>See {@link com.google.template.soy.basicfunctions.ParseFloatFunction} and other functions in
+ * that package for example usages.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -39,4 +39,11 @@ public @interface SoyFunctionSignature {
    * any number of arguments.
    */
   Signature[] value();
+
+  /**
+   * If set to true this function will be callable from a Soy template as a print directive (of the
+   * same name). Print directives are deprecated so this is only meant to be used while migrating a
+   * print directive to a function.
+   */
+  boolean callableAsDeprecatedPrintDirective() default false;
 }
