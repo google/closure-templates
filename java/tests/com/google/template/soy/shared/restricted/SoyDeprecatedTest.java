@@ -33,7 +33,7 @@ public final class SoyDeprecatedTest {
   public void testSoyDeprecated() throws Exception {
 
     ErrorReporter reporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forTemplateContents("{deprecated() |deprecated}")
+    SoyFileSetParserBuilder.forTemplateContents("{deprecatedF() |deprecated}")
         .addSoyFunction(new DeprecatedFunction())
         .addPrintDirective(new DeprecatedPrintDirective())
         .errorReporter(reporter)
@@ -41,7 +41,7 @@ public final class SoyDeprecatedTest {
     assertThat(reporter.getErrors()).isEmpty();
     assertThat(reporter.getWarnings()).hasSize(2);
     assertThat(reporter.getWarnings().get(0).message())
-        .isEqualTo("deprecated is deprecated: please stop using this function.");
+        .isEqualTo("deprecatedF is deprecated: please stop using this function.");
     assertThat(reporter.getWarnings().get(1).message())
         .isEqualTo("|deprecated is deprecated: please stop using this directive.");
   }
@@ -50,7 +50,7 @@ public final class SoyDeprecatedTest {
   static final class DeprecatedFunction implements SoyFunction {
     @Override
     public String getName() {
-      return "deprecated";
+      return "deprecatedF";
     }
 
     @Override

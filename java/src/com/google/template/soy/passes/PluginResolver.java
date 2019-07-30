@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -81,6 +82,17 @@ public final class PluginResolver {
       SoyErrorKind.of(
           "Plugin class ''{0}'' uses callInstanceMethod for methods on multiple classes {1}. "
               + "SoyJavaSourceFunctions must only use a single class for callInstanceMethod.");
+
+  private static final SoyErrorKind FUNCTION_PRINT_DIRECTIVE_COLLISION =
+      SoyErrorKind.of("Plugin ''{0}'' named ''{1}'' collides with print directive ''{2}''.");
+
+  /**
+   * Whitelist for function name + print directive name collisions. We will not allow functions with
+   * these names to be callableAsDeprecatedPrintDirective=true.
+   */
+  private static final ImmutableSet<String> COLLISION_WHITELIST =
+      ImmutableSet.<String>builder()
+          .build();
 
   private static final SoySourceFunction ERROR_PLACEHOLDER_FUNCTION = new SoySourceFunction() {};
 
@@ -165,6 +177,21 @@ public final class PluginResolver {
                 instances);
           }
         }
+      }
+    }
+
+    for (String pdName : soyPrintDirectives.keySet()) {
+      String functionName = getFunctionNameEquivalentToPrintDirectiveName(pdName);
+      if (COLLISION_WHITELIST.contains(functionName)) {
+        continue;
+      }
+      if (functions.containsKey(functionName)) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            FUNCTION_PRINT_DIRECTIVE_COLLISION,
+            functions.get(functionName).getClass().getName(),
+            functionName,
+            soyPrintDirectives.get(pdName).getClass().getName());
       }
     }
   }
@@ -263,5 +290,11 @@ public final class PluginResolver {
         return validArgSizes;
       }
     };
+  }
+
+  /** Converts a | prepended print directive name to an equivalent function name. */
+  static String getFunctionNameEquivalentToPrintDirectiveName(String printDirectiveName) {
+    Preconditions.checkArgument(printDirectiveName.startsWith("|"));
+    return printDirectiveName.substring(1);
   }
 }
