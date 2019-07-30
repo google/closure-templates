@@ -129,7 +129,15 @@ public class SanitizedContent extends SoyData {
      * HTML.
      *
      * <p>In the soy type system, {@code TEXT} is equivalent to the string type.
+     *
+     * @deprecated There is no need to use this enum value any more. If you are rendering, you can
+     *     call the {@code renderText} method on {@code SoySauce} or {@code SoyTofu} to render a
+     *     template as text. If you are constructing SanitizedContent objects to pass into Soy for
+     *     rendering (or returning them from soy functions), then you should just pass {@link
+     *     String} objects instead. This is being removed in order to simplify the API for
+     *     SanitizedContent and make the types clearer.
      */
+    @Deprecated
     TEXT;
 
     /*
