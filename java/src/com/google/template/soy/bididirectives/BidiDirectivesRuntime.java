@@ -25,7 +25,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.NullData;
@@ -44,40 +43,33 @@ public final class BidiDirectivesRuntime {
   public static SoyValue bidiUnicodeWrap(BidiGlobalDir dir, SoyValue value) {
     // normalize null between tofu and jbcsrc
     value = value == null ? NullData.INSTANCE : value;
-    ContentKind valueKind = null;
+    // We treat the value as HTML if and only if it says it's HTML.
+    boolean isHtml = false;
     Dir valueDir = null;
     if (value instanceof SanitizedContent) {
       SanitizedContent sanitizedContent = (SanitizedContent) value;
-      valueKind = sanitizedContent.getContentKind();
+      isHtml = sanitizedContent.getContentKind() == ContentKind.HTML;
       valueDir = sanitizedContent.getContentDirection();
     }
     BidiFormatter bidiFormatter = BidiFormatter.getInstance(dir.toDir());
 
-    // We treat the value as HTML if and only if it says it's HTML.
-    boolean isHtml = valueKind == ContentKind.HTML;
     String wrappedValue = bidiFormatter.unicodeWrap(valueDir, value.coerceToString(), isHtml);
 
     // Unicode-wrapping UnsanitizedText gives UnsanitizedText.
     // Unicode-wrapping safe HTML.
-    if (valueKind == ContentKind.TEXT) {
-      return SanitizedContents.unsanitizedText(wrappedValue);
-    } else if (valueKind == ContentKind.HTML) {
+    if (isHtml) {
       // Bidi-wrapping a value converts it to the context directionality. Since it does not cost us
       // anything, we will indicate this known direction in the output SanitizedContent, even though
       // the intended consumer of that information - a bidi wrapping directive - has already been
       // run.
-      return UnsafeSanitizedContentOrdainer.ordainAsSafe(wrappedValue, valueKind, dir.toDir());
+      return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+          wrappedValue, ContentKind.HTML, dir.toDir());
     }
 
     // Unicode-wrapping does not conform to the syntax of the other types of content. For lack of
     // anything better to do, we output non-SanitizedContent.
-    // TODO(user): Consider throwing a runtime error on receipt of SanitizedContent other than
-    // TEXT, or HTML.
-    if (valueKind != null) {
-      return StringData.forValue(wrappedValue);
-    }
-
-    // The input was not SanitizedContent, so our output isn't SanitizedContent either.
+    // TODO(user): Consider throwing a runtime error on receipt of values other than string, or
+    // HTML.
     return StringData.forValue(wrappedValue);
   }
 

@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -48,7 +47,7 @@ public class BidiMarkAfterFunctionTest {
     assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo("");
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo("\u200E");
 
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo("");
+    assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo("");
     assertThat(
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.LTR)))
@@ -61,8 +60,7 @@ public class BidiMarkAfterFunctionTest {
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.RTL)))
         .isEqualTo("\u200E");
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0")))
-        .isEqualTo("\u200E");
+    assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo("\u200E");
     assertThat(
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.RTL)))
@@ -83,7 +81,7 @@ public class BidiMarkAfterFunctionTest {
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo("");
     assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo("\u200F");
 
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0"))).isEqualTo("");
+    assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo("");
     assertThat(
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.RTL)))
@@ -97,7 +95,7 @@ public class BidiMarkAfterFunctionTest {
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.LTR)))
         .isEqualTo("\u200F");
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo("\u200F");
+    assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo("\u200F");
     assertThat(
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.LTR)))

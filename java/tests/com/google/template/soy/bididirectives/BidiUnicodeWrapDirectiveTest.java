@@ -22,8 +22,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.data.Dir;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
@@ -56,7 +56,7 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
 
     assertTofuOutput(
         "\u202B\u05E0\u202C\u200E",
-        SanitizedContents.unsanitizedText("\u05E0"),
+        StringData.forValue("\u05E0"),
         BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_LTR);
     assertTofuOutput(
         "\u202B\u05E0\u202C\u200E",
@@ -81,7 +81,7 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
 
     assertTofuOutput(
         "\u202Ablah\u202C\u200F",
-        SanitizedContents.unsanitizedText("blah"),
+        StringData.forValue("blah"),
         BIDI_UNICODE_WRAP_DIRECTIVE_FOR_STATIC_RTL);
     assertTofuOutput(
         "\u202Ablah\u202C\u200F",

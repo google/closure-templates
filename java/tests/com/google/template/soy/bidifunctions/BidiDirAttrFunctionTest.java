@@ -50,7 +50,7 @@ public class BidiDirAttrFunctionTest {
     assertThat(tester.callFunction(StringData.EMPTY_STRING)).isEqualTo(empty);
     assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(empty);
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(rtl);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("\u05E0"))).isEqualTo(rtl);
+    assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(rtl);
     assertThat(
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("\u05E0", ContentKind.HTML, Dir.RTL)))
@@ -70,7 +70,7 @@ public class BidiDirAttrFunctionTest {
     assertThat(tester.callFunction(StringData.EMPTY_STRING)).isEqualTo(empty);
     assertThat(tester.callFunction(StringData.forValue("\u05E0"))).isEqualTo(empty);
     assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(ltr);
-    assertThat(tester.callFunction(SanitizedContents.unsanitizedText("a"))).isEqualTo(ltr);
+    assertThat(tester.callFunction(StringData.forValue("a"))).isEqualTo(ltr);
     assertThat(
             tester.callFunction(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe("a", ContentKind.HTML, Dir.LTR)))

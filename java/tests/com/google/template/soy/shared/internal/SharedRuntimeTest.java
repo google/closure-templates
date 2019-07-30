@@ -23,7 +23,6 @@ import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEq
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -65,11 +64,7 @@ public class SharedRuntimeTest {
         .isEqualTo("32");
 
     // SanitizedContent:
-    assertThat(
-            plus(
-                    SanitizedContents.unsanitizedText("Hello"),
-                    SanitizedContents.unsanitizedText("World"))
-                .stringValue())
+    assertThat(plus(StringData.forValue("Hello"), StringData.forValue("World")).stringValue())
         .isEqualTo("HelloWorld");
 
     // Even arrays:
