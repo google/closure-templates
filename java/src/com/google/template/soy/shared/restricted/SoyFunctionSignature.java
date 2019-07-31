@@ -44,6 +44,24 @@ public @interface SoyFunctionSignature {
    * If set to true this function will be callable from a Soy template as a print directive (of the
    * same name). Print directives are deprecated so this is only meant to be used while migrating a
    * print directive to a function.
+   *
+   * <p>Note that this will only allow the function to be called as a print directive if it is the
+   * first directive in an expression or if all preceding print directives are also functions. For
+   * example, if f1 and f2 are functions with callableAsDeprecatedPrintDirective=true and pd is a
+   * legacy print directive then these expressions are legal:
+   *
+   * <ul>
+   *   <li>"val |f1"
+   *   <li>"val |pd"
+   *   <li>"val |f1 |f2"
+   *   <li>"val |f1 |pd"
+   * </ul>
+   *
+   * <p>But this expression is illegal:
+   *
+   * <ul>
+   *   <li>"val |pd |f1"
+   * </ul>
    */
   boolean callableAsDeprecatedPrintDirective() default false;
 }

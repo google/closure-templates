@@ -38,6 +38,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /** Encapsulates the logic for looking up plugins. */
@@ -85,6 +86,11 @@ public final class PluginResolver {
 
   private static final SoyErrorKind FUNCTION_PRINT_DIRECTIVE_COLLISION =
       SoyErrorKind.of("Plugin ''{0}'' named ''{1}'' collides with print directive ''{2}''.");
+
+  private static final SoyErrorKind FUNCTION_NOT_CALLABLE =
+      SoyErrorKind.of(
+          "Function ''{0}'' cannot be called as a print directive."
+          );
 
   /**
    * Whitelist for function name + print directive name collisions. We will not allow functions with
@@ -214,6 +220,34 @@ public final class PluginResolver {
   }
 
   /**
+   * Returns a function equivalent to the print directive named {@code directiveName}, only if no
+   * print directive of that name exists and several other conditions are met.
+   */
+  Optional<SoySourceFunction> getFunctionCallableAsPrintDirective(
+      String directiveName, SourceLocation sourceLocation) {
+    if (printDirectives.containsKey(directiveName)) {
+      return Optional.empty();
+    }
+    String functionName = getFunctionNameEquivalentToPrintDirectiveName(directiveName);
+    if (COLLISION_WHITELIST.contains(functionName)) {
+      return Optional.empty();
+    }
+    Object function = functions.get(functionName);
+    if (function == null) {
+      return Optional.empty();
+    }
+    if (function instanceof SoySourceFunction) {
+      SoyFunctionSignature signature =
+          function.getClass().getAnnotation(SoyFunctionSignature.class);
+      if (signature.callableAsDeprecatedPrintDirective()) {
+        return Optional.of((SoySourceFunction) function);
+      }
+    }
+    reporter.report(sourceLocation, FUNCTION_NOT_CALLABLE, functionName);
+    return Optional.empty();
+  }
+
+  /**
    * Returns a function with the given name and arity.
    *
    * <p>An error will be reported according to the current {@link Mode} and a placeholder function
@@ -225,14 +259,7 @@ public final class PluginResolver {
       reportMissing(location, "function", name, functions.keySet());
       return ERROR_PLACEHOLDER_FUNCTION;
     }
-    Set<Integer> validArgsSize;
-    if (soyFunction instanceof SoyFunction) {
-      validArgsSize = ((SoyFunction) soyFunction).getValidArgsSizes();
-    } else {
-      validArgsSize =
-          getValidArgsSizes(
-              soyFunction.getClass().getAnnotation(SoyFunctionSignature.class).value());
-    }
+    Set<Integer> validArgsSize = getValidArgsSizes(soyFunction);
     checkNumArgs("function", validArgsSize, numArgs, location);
     warnIfDeprecated(name, soyFunction, location);
     return soyFunction;
@@ -251,6 +278,17 @@ public final class PluginResolver {
       case ALLOW_UNDEFINED:
         // do nothing :(
         break;
+    }
+  }
+
+  private static Set<Integer> getValidArgsSizes(Object soyFunction) {
+    if (soyFunction instanceof SoyFunction) {
+      return ((SoyFunction) soyFunction).getValidArgsSizes();
+    } else {
+      SoyFunctionSignature signature =
+          soyFunction.getClass().getAnnotation(SoyFunctionSignature.class);
+      Preconditions.checkArgument(signature != null);
+      return getValidArgsSizes(signature.value());
     }
   }
 

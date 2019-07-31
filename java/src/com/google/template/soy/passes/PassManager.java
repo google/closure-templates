@@ -288,7 +288,8 @@ public final class PassManager {
           singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
       // needs to come before SoyConformancePass
-      addPass(new ResolvePluginsPass(pluginResolver, registry), singleFilePassesBuilder);
+      addPass(
+          new ResolvePluginsPass(pluginResolver, registry, errorReporter), singleFilePassesBuilder);
       // The check conformance pass needs to run on the rewritten html nodes, so it must
       // run after HtmlRewritePass
       addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);

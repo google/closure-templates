@@ -240,7 +240,7 @@ been called.
 To mark a function as pure annotate it with
 [`SoyPureFunction`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/shared/restricted/SoyPureFunction.java).
 
-## Custom print directives, not recommended
+## Custom print directives, deprecated and not recommended
 
 Soy also allows the creation of custom print directives, for example, in
 `{$foo|truncate:100}` `truncate` is a print directive.
@@ -250,3 +250,42 @@ configuring a custom function (described above). However, it is no longer
 recommended for projects to create these. All the usecases for a custom print
 directive can be satisfied by a custom function and the syntax/behavior of those
 is more intuitive.
+
+### Migrating print directives to functions {#migrate}
+
+Soy print directives are deprecated and it is recommended to convert your print
+directives to functions. The Soy team will gradually do the same for built-in
+print directives.
+
+If your print directive is used in only a few places it may be feasible to
+convert your print directive and update all the templates that use it in one CL.
+This is the simplest option.
+
+If your print directive is used widely and you can't update all templates at
+once Soy provides features to help you migrate from print directives to
+functions. Follow the following steps for each print directive:
+
+1.  Rewrite the print directive as a `SoySourceFunction`.
+    1.  Give the function the same name as the print directive (without the
+        leading `|`)
+    1.  A function takes one more parameter than the equivalent print directive.
+        Do not make any other changes to the number, order, or type of
+        parameters.
+    1.  In the `@SoyFunctionSignature` annotation set
+        `callableAsDeprecatedPrintDirective = true`. This will allow the new
+        function to be called from a template as either a print directive or a
+        function.
+    1.  Remove the print directive from the plugin bundle and add the new
+        function.
+    1.  Submit the above changes as a single CL.
+1.  In any number of follow up changes, convert all templates that invoke the
+    function via print directive syntax (`|`) to invoke the function with call
+    syntax.
+1.  Once all templates have been updated remove
+    `callableAsDeprecatedPrintDirective` from the function signature.
+
+Warning: Print directives can be chained in a Soy expression. Calling a function
+(with `callableAsDeprecatedPrintDirective = true`) with print directive syntax
+is only supported when the print directive is the first in the chain, or if all
+preceding directives are also functions with
+`callableAsDeprecatedPrintDirective = true`.
