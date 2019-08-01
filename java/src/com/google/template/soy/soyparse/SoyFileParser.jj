@@ -1121,12 +1121,6 @@ TOKEN_MGR_DECLS: {
 <TEMPLATE_DEFAULT> TOKEN: {
   < UNEXPECTED_DOUBLE_BRACE : "{{" >
 | < UNEXPECTED_CLOSE_TAG    : "{/" >
-| < UNEXPECTED_ALIAS        : "{alias" >
-| < UNEXPECTED_NAMESPACE    : "{namespace" >
-| < UNEXPECTED_DELPACKAGE   : "{delpackage" >
-| < UNEXPECTED_TEMPLATE     : "{template" >
-| < UNEXPECTED_ELEMENT      : "{element" >
-| < UNEXPECTED_DELTEMPLATE  : "{deltemplate" >
 }
 
 

@@ -39,8 +39,6 @@ final class ParseErrors {
 
   private static final SoyErrorKind FOUND_DOUBLE_BRACE =
       SoyErrorKind.of("Soy '{{command}}' syntax is no longer supported. Use single braces.");
-  private static final SoyErrorKind INVALID_TEMPLATE_COMMAND =
-      SoyErrorKind.of("Command ''{0}'' cannot appear in templates.");
   private static final SoyErrorKind LEGACY_AND_ERROR =
       SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator.");
   private static final SoyErrorKind LEGACY_OR_ERROR =
@@ -105,13 +103,6 @@ final class ParseErrors {
         return;
       case SoyFileParserConstants.UNEXPECTED_CLOSE_TAG:
         reporter.report(location, UNEXPECTED_CLOSE_TAG);
-        return;
-      case SoyFileParserConstants.UNEXPECTED_ALIAS:
-      case SoyFileParserConstants.UNEXPECTED_NAMESPACE:
-      case SoyFileParserConstants.UNEXPECTED_DELPACKAGE:
-      case SoyFileParserConstants.UNEXPECTED_TEMPLATE:
-      case SoyFileParserConstants.UNEXPECTED_DELTEMPLATE:
-        reporter.report(location, INVALID_TEMPLATE_COMMAND, errorToken.image);
         return;
       case SoyFileParserConstants.UNEXPECTED_NEWLINE:
         reporter.report(location, UNEXPECTED_NEWLINE);
