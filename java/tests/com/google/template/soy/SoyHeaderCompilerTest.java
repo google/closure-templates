@@ -117,8 +117,8 @@ public class SoyHeaderCompilerTest {
                 + "{template .a}{@param foo: string}<{$foo}></{$foo}>{/template}");
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
-    assertThat(template.getHtmlElement().getTag()).isEqualTo("");
-    assertThat(template.getHtmlElement().getIsHtmlElement()).isFalse();
+    assertThat(template.getHtmlElement().getTag()).isEqualTo("?");
+    assertThat(template.getHtmlElement().getIsHtmlElement()).isTrue();
     assertThat(template.getHtmlElement().getIsVelogged()).isFalse();
     assertThat(template.getSoyElement().getIsSoyElement()).isFalse();
   }
