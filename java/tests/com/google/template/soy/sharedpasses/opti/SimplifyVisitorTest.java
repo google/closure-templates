@@ -128,9 +128,9 @@ public class SimplifyVisitorTest {
     soyCode = "{@param boo : ?}\n" + "{1 + 3 + $boo}";
     assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("{4 + $boo}");
 
-    // formatNum is not annotated as a SoyPurePrintDirective, so it should not be simplified.
-    soyCode = "{5 |formatNum}";
-    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("{5 |formatNum}");
+    // formatNum is not annotated as a SoyPureFunction, so it should not be simplified.
+    soyCode = "{formatNum(5)}";
+    assertThat(simplifySoyCode(soyCode).get(0).toSourceString()).isEqualTo("{formatNum(5)}");
 
     // Doesn't simplify PrintNode with non-constant directive arg.
     soyCode = "{@param boo : ?}\n" + "{'0123456789' |insertWordBreaks:$boo}";

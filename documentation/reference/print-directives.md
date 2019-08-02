@@ -79,31 +79,8 @@ corrupted when truncated.
 
 ### `|formatNum` {#formatNum}
 
-Formats a number using the current locale.
-
-It may take 4 optional arguments.
-
-1.  A lower-case string describing the type of format to apply, which can be one
-    of 'decimal', 'currency', 'percent', 'scientific', 'compact_short', or
-    'compact_long'. If this argument is not provided, the default 'decimal' will
-    be used.
-1.  The "numbers" keyword passed to the ICU4J's locale. For instance, it can be
-    "native" so that we show native characters in languages like arabic (this
-    argument is ignored for templates running in JavaScript).
-1.  The minimum number of fractional digits to display. If this is specified but
-    the fourth parameter (maximum number of fractional digits), then this is
-    interpreted as significant digits. If you wish to have trailing zeros
-    removed, minFractionalDigits should be set to 0.
-1.  The maximum number of fractional digits to display
-
-NOTE: min and max fractional digits are not supported in the python backend.
-
-For example:
-
-*   `{$value|formatNum}`
-*   `{$value|formatNum:'decimal'}`
-*   `{$value|formatNum:'decimal','native'}`
-*   `{$value|formatNum:'decimal','native', 2}`
+The formatNum function is also available as a print directive. See
+[formatNum()](functions.md#formatNum) for details.
 
 ### `|filterImageDataUri` {#filterImageDataUri}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Google Inc.
+ * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package com.google.template.soy.i18ndirectives;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 
-/** Lists all i18n directives. */
-public final class I18nDirectives {
-  private I18nDirectives() {}
+/** Lists all the functions in this package. */
+public final class I18nFunctions {
 
-  public static ImmutableSet<SoyPrintDirective> directives(Supplier<String> localeProvider) {
-    return ImmutableSet.of(new FormatNumDirective(localeProvider));
+  private I18nFunctions() {}
+
+  public static ImmutableList<SoySourceFunction> functions() {
+    return ImmutableList.of(new FormatNumFunction());
   }
 }

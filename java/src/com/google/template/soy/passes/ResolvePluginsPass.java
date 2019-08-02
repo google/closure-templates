@@ -101,6 +101,7 @@ final class ResolvePluginsPass extends CompilerFilePass {
   private void rewritePrintDirectiveAsFunction(
       PrintDirectiveNode directiveNode, SoySourceFunction function) {
     PrintNode printNode = (PrintNode) directiveNode.getParent();
+    // printNode.
     String functionName = function.getClass().getAnnotation(SoyFunctionSignature.class).name();
 
     // Only rewrite the print directive if it is the first in the chain. This avoids having to

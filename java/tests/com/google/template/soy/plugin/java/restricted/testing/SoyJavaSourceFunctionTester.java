@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
 
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -44,6 +45,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.JbcSrcJavaValues;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -61,6 +63,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
+import com.ibm.icu.util.ULocale;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +79,7 @@ public class SoyJavaSourceFunctionTester {
   public static class Builder {
     private final SoyJavaSourceFunction fn;
     @Nullable private BidiGlobalDir bidiGlobalDir;
+    private ULocale locale;
 
     public Builder(SoyJavaSourceFunction fn) {
       this.fn = checkNotNull(fn);
@@ -86,6 +90,11 @@ public class SoyJavaSourceFunctionTester {
       return this;
     }
 
+    public Builder withLocale(ULocale locale) {
+      this.locale = locale;
+      return this;
+    }
+
     public SoyJavaSourceFunctionTester build() {
       return new SoyJavaSourceFunctionTester(this);
     }
@@ -93,20 +102,23 @@ public class SoyJavaSourceFunctionTester {
 
   private final SoyJavaSourceFunction fn;
   @Nullable private final BidiGlobalDir bidiGlobalDir;
+  private final ULocale locale;
 
   public SoyJavaSourceFunctionTester(SoyJavaSourceFunction fn) {
     this.bidiGlobalDir = null;
     this.fn = checkNotNull(fn);
+    this.locale = null;
   }
 
   private SoyJavaSourceFunctionTester(Builder builder) {
     this.bidiGlobalDir = builder.bidiGlobalDir;
     this.fn = builder.fn;
+    this.locale = builder.locale;
   }
 
   /**
-   * Calls {@link SoyJavaSourceFunction#applyForJavaSource} (with a null context) on the function,
-   * returning the resolved result.
+   * Calls {@link SoyJavaSourceFunction#applyForJavaSource} on the function, returning the resolved
+   * result.
    */
   public Object callFunction(Object... args) {
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
@@ -143,6 +155,11 @@ public class SoyJavaSourceFunctionTester {
     } catch (ReflectiveOperationException roe) {
       throw new RuntimeException(roe);
     }
+  }
+
+  /** See {@link #callFunction(Object...)}. */
+  public final Object callFunction(Iterable<Object> args) {
+    return callFunction(Iterables.toArray(args, Object.class));
   }
 
   private SoyType parseType(String type) {
@@ -243,10 +260,13 @@ public class SoyJavaSourceFunctionTester {
     throw new UnsupportedOperationException("Not implemented yet");
   }
 
+  private static final ConstructorRef ULOCALE = ConstructorRef.create(ULocale.class, String.class);
+
   private class InternalContext implements JbcSrcPluginContext {
+
     @Override
     public Expression getULocale() {
-      throw new UnsupportedOperationException("Not implemented yet");
+      return ULOCALE.construct(BytecodeUtils.constant(locale.toString()));
     }
 
     /** Returns all required css namespaces. */

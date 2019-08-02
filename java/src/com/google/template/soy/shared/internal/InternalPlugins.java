@@ -26,12 +26,13 @@ import com.google.template.soy.basicfunctions.BasicFunctions;
 import com.google.template.soy.bididirectives.BidiDirectives;
 import com.google.template.soy.bidifunctions.BidiFunctions;
 import com.google.template.soy.coredirectives.CoreDirectives;
-import com.google.template.soy.i18ndirectives.I18nDirectives;
+import com.google.template.soy.i18ndirectives.I18nFunctions;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.Map;
 
 /** Lists all functions & directives shipped with Soy. */
 public final class InternalPlugins {
@@ -57,7 +58,24 @@ public final class InternalPlugins {
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
   public static ImmutableMap<String, SoySourceFunction> internalFunctionMap() {
     // TODO(b/19252021): Include BuiltInFunctions
-    return fromFunctions(Iterables.concat(BasicFunctions.functions(), BidiFunctions.functions()));
+    return fromFunctions(
+        Iterables.concat(
+            BasicFunctions.functions(), BidiFunctions.functions(), I18nFunctions.functions()));
+  }
+
+  /**
+   * Returns a map (whose key is the name of the directive) of the functions that can be called as
+   * print directives with Soy.
+   */
+  public static ImmutableMap<String, SoySourceFunction> internalAliasedDirectivesMap() {
+    return internalFunctionMap().entrySet().stream()
+        .filter(
+            e ->
+                e.getValue()
+                    .getClass()
+                    .getAnnotation(SoyFunctionSignature.class)
+                    .callableAsDeprecatedPrintDirective())
+        .collect(ImmutableMap.toImmutableMap(e -> "|" + e.getKey(), Map.Entry::getValue));
   }
 
   public static ImmutableMap<String, SoySourceFunction> fromFunctions(
@@ -74,13 +92,11 @@ public final class InternalPlugins {
   public static ImmutableMap<String, SoyPrintDirective> internalDirectiveMap(
       final SoyScopedData soyScopedData) {
     Supplier<BidiGlobalDir> bidiProvider = soyScopedData::getBidiGlobalDir;
-    Supplier<String> localeProvider = soyScopedData::getLocale;
     return fromDirectives(
         Iterables.concat(
             CoreDirectives.directives(),
             BasicDirectives.directives(),
-            BidiDirectives.directives(bidiProvider),
-            I18nDirectives.directives(localeProvider)));
+            BidiDirectives.directives(bidiProvider)));
   }
 
   public static ImmutableMap<String, SoyPrintDirective> fromDirectives(

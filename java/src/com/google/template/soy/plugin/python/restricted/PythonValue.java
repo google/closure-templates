@@ -16,6 +16,7 @@
 
 package com.google.template.soy.plugin.python.restricted;
 
+import com.google.common.collect.Iterables;
 import com.google.template.soy.plugin.restricted.SoySourceValue;
 import javax.annotation.Nullable;
 
@@ -26,6 +27,11 @@ public interface PythonValue extends SoySourceValue {
   PythonValue isNonNull();
 
   PythonValue call(PythonValue... args);
+
+  /** See {@link #call(PythonValue...)}. */
+  default PythonValue call(Iterable<PythonValue> args) {
+    return call(Iterables.toArray(args, PythonValue.class));
+  }
 
   PythonValue getProp(String ident);
 

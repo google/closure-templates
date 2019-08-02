@@ -16,6 +16,8 @@
 
 package com.google.template.soy.i18ndirectives;
 
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.restricted.NumberData;
 import com.ibm.icu.text.CompactDecimalFormat;
 import com.ibm.icu.text.CompactDecimalFormat.CompactStyle;
 import com.ibm.icu.text.NumberFormat;
@@ -27,11 +29,33 @@ public final class I18NDirectivesRuntime {
 
   private I18NDirectivesRuntime() {}
 
+  public static String formatNum(
+      ULocale uLocale,
+      @Nullable SoyValue number,
+      String formatType,
+      String numbersKeyword,
+      @Nullable NumberData minFractionDigits,
+      @Nullable NumberData maxFractionDigits) {
+    if (number == null) {
+      return "";
+    } else if (number instanceof NumberData) {
+      return formatInternal(
+          uLocale,
+          ((NumberData) number).toFloat(),
+          formatType,
+          numbersKeyword,
+          minFractionDigits != null ? (int) minFractionDigits.numberValue() : null,
+          maxFractionDigits != null ? (int) maxFractionDigits.numberValue() : null);
+    } else {
+      return "NaN";
+    }
+  }
+
   /**
    * Formats a number using ICU4J. Note: If min or max fraction digits is null, the param will be
    * ignored.
    */
-  public static String formatNum(
+  private static String formatInternal(
       ULocale uLocale,
       double number,
       String formatType,

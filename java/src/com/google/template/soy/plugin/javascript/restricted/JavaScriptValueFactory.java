@@ -16,6 +16,8 @@
 
 package com.google.template.soy.plugin.javascript.restricted;
 
+import com.google.common.collect.Iterables;
+
 /** A factory for instructing soy how to implement a {@link SoyJavaScriptSourceFunction}. */
 public abstract class JavaScriptValueFactory {
 
@@ -52,6 +54,13 @@ public abstract class JavaScriptValueFactory {
   public abstract JavaScriptValue callModuleFunction(
       String moduleName, String functionName, JavaScriptValue... params);
 
+  /** See {@link #callModuleFunction(String, String, JavaScriptValue...)}. */
+  public final JavaScriptValue callModuleFunction(
+      String moduleName, String functionName, Iterable<JavaScriptValue> params) {
+    return callModuleFunction(
+        moduleName, functionName, Iterables.toArray(params, JavaScriptValue.class));
+  }
+
   /**
    * Instructs Soy to call the given function which is provided by the {@code goog.provide}
    * namespace with the given parameters at runtime.
@@ -70,6 +79,13 @@ public abstract class JavaScriptValueFactory {
    */
   public abstract JavaScriptValue callNamespaceFunction(
       String googProvide, String fullFunctionName, JavaScriptValue... params);
+
+  /** See {@link #callNamespaceFunction(String, String, JavaScriptValue...)}. */
+  public final JavaScriptValue callNamespaceFunction(
+      String googProvide, String fullFunctionName, Iterable<JavaScriptValue> params) {
+    return callNamespaceFunction(
+        googProvide, fullFunctionName, Iterables.toArray(params, JavaScriptValue.class));
+  }
 
   /** Creates an integer constant. */
   public abstract JavaScriptValue constant(long num);

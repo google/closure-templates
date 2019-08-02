@@ -287,20 +287,21 @@ public final class PassManager {
               options.getExperimentalFeatures().contains("skipNode"), errorReporter),
           singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-      // needs to come before SoyConformancePass
-      addPass(
-          new ResolvePluginsPass(pluginResolver, registry, errorReporter), singleFilePassesBuilder);
-      // The check conformance pass needs to run on the rewritten html nodes, so it must
-      // run after HtmlRewritePass
-      addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
       // to create placeholders.
       addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
+      // needs to come before SoyConformancePass
+      addPass(
+          new ResolvePluginsPass(pluginResolver, registry, errorReporter), singleFilePassesBuilder);
+      // Must come after ResolvePluginsPass.
       addPass(new RewriteRemaindersPass(errorReporter), singleFilePassesBuilder);
       addPass(new RewriteGenderMsgsPass(errorReporter), singleFilePassesBuilder);
       // Needs to come after any pass that manipulates msg placeholders.
       addPass(new CalculateMsgSubstitutionInfoPass(errorReporter), singleFilePassesBuilder);
       addPass(new CheckNonEmptyMsgNodesPass(errorReporter), singleFilePassesBuilder);
+      // The check conformance pass needs to run on the rewritten html nodes, so it must
+      // run after HtmlRewritePass
+      addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
       // Run before the RewriteGlobalsPass as it removes some globals.
       addPass(new VeRewritePass(), singleFilePassesBuilder);
       addPass(

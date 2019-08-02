@@ -116,7 +116,7 @@ places; if `numDigitsAfterDecimalPoint` is negative, round to an integer with
 that many 0s at the end.
 
 BEST PRACTICE: Don't use this function to format numbers for display. Prefer
-things like [`|formatNum`](print-directives#formatNum) which are i18n friendly.
+things like [`formatNum`](#formatNum) which are i18n friendly.
 
 ## `floor(number)` {#floor}
 
@@ -316,6 +316,36 @@ JavaScript but all common HTML entities are supported.
 
 This function expects `kind="html"` values. If passed a string, it returns it
 unmodified.
+
+## `formatNum(value, opt_formatType, opt_numbersKeyword, opt_minDigits, opt_maxDigits)` {#formatNum}
+
+Formats a number using the current locale.
+
+It takes 1 required and 4 optional arguments.
+
+1.  The number to format.
+1.  A lower-case string describing the type of format to apply, which can be one
+    of 'decimal', 'currency', 'percent', 'scientific', 'compact_short', or
+    'compact_long'. If this argument is not provided, the default 'decimal' will
+    be used.
+1.  The "numbers" keyword passed to the ICU4J's locale. For instance, it can be
+    "native" so that we show native characters in languages like arabic (this
+    argument is ignored for templates running in JavaScript).
+1.  The minimum number of fractional digits to display. If this is specified but
+    the fourth parameter (maximum number of fractional digits), then this is
+    interpreted as significant digits. If you wish to have trailing zeros
+    removed, minFractionalDigits should be set to 0.
+1.  The maximum number of fractional digits to display.
+
+NOTE: min and max fractional digits are not supported in the python backend.
+
+For example:
+
+*   `{formatNum($value)}`
+*   `{formatNum($value), 'decimal')}`
+*   `{formatNum($value), 'decimal', 'native')}`
+*   `{formatNum($value), 'decimal', 'native', 2)}`
+*   `{formatNum($value), 'decimal', 'native', 0, 3)}`
 
 ## `bidiDirAttr(text, opt_isHtml)` {#bidiDirAttr}
 

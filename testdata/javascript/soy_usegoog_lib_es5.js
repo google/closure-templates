@@ -4284,7 +4284,6 @@ goog.dom.BrowserFeature.detectOffscreenCanvas_ = function(contextName) {
   return !1;
 };
 goog.dom.BrowserFeature.OFFSCREEN_CANVAS_2D = !goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS && (goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS || goog.dom.BrowserFeature.detectOffscreenCanvas_("2d"));
-goog.dom.BrowserFeature.OFFSCREEN_CANVAS_WEBGL = !goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS && (goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS || goog.dom.BrowserFeature.detectOffscreenCanvas_("webgl"));
 goog.dom.BrowserFeature.CAN_ADD_NAME_OR_TYPE_ATTRIBUTES = !goog.userAgent.IE || goog.userAgent.isDocumentModeOrHigher(9);
 goog.dom.BrowserFeature.CAN_USE_CHILDREN_ATTRIBUTE = !goog.userAgent.GECKO && !goog.userAgent.IE || goog.userAgent.IE && goog.userAgent.isDocumentModeOrHigher(9) || goog.userAgent.GECKO && goog.userAgent.isVersionOrHigher("1.9.1");
 goog.dom.BrowserFeature.CAN_USE_INNER_TEXT = goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("9");
@@ -5635,6 +5634,1791 @@ goog.i18n.BidiFormatter.prototype.mark = function() {
     default:
       return "";
   }
+};
+goog.i18n.CompactNumberFormatSymbols_af = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0k"}, 1E4:{other:"00\u00a0k"}, 1E5:{other:"000\u00a0k"}, 1E6:{other:"0\u00a0m"}, 1E7:{other:"00\u00a0m"}, 1E8:{other:"000\u00a0m"}, 1E9:{other:"0\u00a0mjd"}, 1E10:{other:"00\u00a0mjd"}, 1E11:{other:"000\u00a0mjd"}, 1E12:{other:"0\u00a0bn"}, 1E13:{other:"00\u00a0bn"}, 1E14:{other:"000\u00a0bn"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 duisend"}, 1E4:{other:"00 duisend"}, 1E5:{other:"000 duisend"}, 1E6:{other:"0 miljoen"}, 
+1E7:{other:"00 miljoen"}, 1E8:{other:"000 miljoen"}, 1E9:{other:"0 miljard"}, 1E10:{other:"00 miljard"}, 1E11:{other:"000 miljard"}, 1E12:{other:"0 biljoen"}, 1E13:{other:"00 biljoen"}, 1E14:{other:"000 biljoen"}}};
+goog.i18n.CompactNumberFormatSymbols_am = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u123a"}, 1E4:{other:"00\u00a0\u123a"}, 1E5:{other:"000\u00a0\u123a"}, 1E6:{other:"0\u00a0\u121c\u1275\u122d"}, 1E7:{other:"00\u00a0\u121c\u1275\u122d"}, 1E8:{other:"000\u121c"}, 1E9:{other:"0\u00a0\u1262"}, 1E10:{other:"00\u00a0\u1262"}, 1E11:{other:"000\u00a0\u1262"}, 1E12:{other:"0\u00a0\u1275"}, 1E13:{other:"00\u00a0\u1275"}, 1E14:{other:"000\u00a0\u1275"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u123a"}, 
+1E4:{other:"00 \u123a"}, 1E5:{other:"000 \u123a"}, 1E6:{other:"0 \u121a\u120a\u12ee\u1295"}, 1E7:{other:"00 \u121a\u120a\u12ee\u1295"}, 1E8:{other:"000 \u121a\u120a\u12ee\u1295"}, 1E9:{other:"0 \u1262\u120a\u12ee\u1295"}, 1E10:{other:"00 \u1262\u120a\u12ee\u1295"}, 1E11:{other:"000 \u1262\u120a\u12ee\u1295"}, 1E12:{other:"0 \u1275\u122a\u120a\u12ee\u1295"}, 1E13:{other:"00 \u1275\u122a\u120a\u12ee\u1295"}, 1E14:{other:"000 \u1275\u122a\u120a\u12ee\u1295"}}};
+goog.i18n.CompactNumberFormatSymbols_ar = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0623\u0644\u0641"}, 1E4:{other:"00\u00a0\u0623\u0644\u0641"}, 1E5:{other:"000\u00a0\u0623\u0644\u0641"}, 1E6:{other:"0\u00a0\u0645\u0644\u064a\u0648\u0646"}, 1E7:{other:"00\u00a0\u0645\u0644\u064a\u0648\u0646"}, 1E8:{other:"000\u00a0\u0645\u0644\u064a\u0648\u0646"}, 1E9:{other:"0\u00a0\u0645\u0644\u064a\u0627\u0631"}, 1E10:{other:"00\u00a0\u0645\u0644\u064a\u0627\u0631"}, 1E11:{other:"000\u00a0\u0645\u0644\u064a\u0627\u0631"}, 
+1E12:{other:"0\u00a0\u062a\u0631\u0644\u064a\u0648\u0646"}, 1E13:{other:"00\u00a0\u062a\u0631\u0644\u064a\u0648\u0646"}, 1E14:{other:"000\u00a0\u062a\u0631\u0644\u064a\u0648\u0646"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0623\u0644\u0641"}, 1E4:{other:"00 \u0623\u0644\u0641"}, 1E5:{other:"000 \u0623\u0644\u0641"}, 1E6:{other:"0 \u0645\u0644\u064a\u0648\u0646"}, 1E7:{other:"00 \u0645\u0644\u064a\u0648\u0646"}, 1E8:{other:"000 \u0645\u0644\u064a\u0648\u0646"}, 1E9:{other:"0 \u0645\u0644\u064a\u0627\u0631"}, 
+1E10:{other:"00 \u0645\u0644\u064a\u0627\u0631"}, 1E11:{other:"000 \u0645\u0644\u064a\u0627\u0631"}, 1E12:{other:"0 \u062a\u0631\u0644\u064a\u0648\u0646"}, 1E13:{other:"00 \u062a\u0631\u0644\u064a\u0648\u0646"}, 1E14:{other:"000 \u062a\u0631\u0644\u064a\u0648\u0646"}}};
+goog.i18n.CompactNumberFormatSymbols_ar_DZ = goog.i18n.CompactNumberFormatSymbols_ar;
+goog.i18n.CompactNumberFormatSymbols_ar_EG = goog.i18n.CompactNumberFormatSymbols_ar;
+goog.i18n.CompactNumberFormatSymbols_az = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0G"}, 1E10:{other:"00G"}, 1E11:{other:"000G"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 min"}, 1E4:{other:"00 min"}, 1E5:{other:"000 min"}, 1E6:{other:"0 milyon"}, 1E7:{other:"00 milyon"}, 1E8:{other:"000 milyon"}, 1E9:{other:"0 milyard"}, 
+1E10:{other:"00 milyard"}, 1E11:{other:"000 milyard"}, 1E12:{other:"0 trilyon"}, 1E13:{other:"00 trilyon"}, 1E14:{other:"000 trilyon"}}};
+goog.i18n.CompactNumberFormatSymbols_be = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0442\u044b\u0441."}, 1E4:{other:"00\u00a0\u0442\u044b\u0441."}, 1E5:{other:"000\u00a0\u0442\u044b\u0441."}, 1E6:{other:"0\u00a0\u043c\u043b\u043d"}, 1E7:{other:"00\u00a0\u043c\u043b\u043d"}, 1E8:{other:"000\u00a0\u043c\u043b\u043d"}, 1E9:{other:"0\u00a0\u043c\u043b\u0440\u0434"}, 1E10:{other:"00\u00a0\u043c\u043b\u0440\u0434"}, 1E11:{other:"000\u00a0\u043c\u043b\u0440\u0434"}, 1E12:{other:"0\u00a0\u0442\u0440\u043b\u043d"}, 
+1E13:{other:"00\u00a0\u0442\u0440\u043b\u043d"}, 1E14:{other:"000\u00a0\u0442\u0440\u043b\u043d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0442\u044b\u0441\u044f\u0447\u044b"}, 1E4:{other:"00 \u0442\u044b\u0441\u044f\u0447\u044b"}, 1E5:{other:"000 \u0442\u044b\u0441\u044f\u0447\u044b"}, 1E6:{other:"0 \u043c\u0456\u043b\u044c\u0451\u043d\u0430"}, 1E7:{other:"00 \u043c\u0456\u043b\u044c\u0451\u043d\u0430"}, 1E8:{other:"000 \u043c\u0456\u043b\u044c\u0451\u043d\u0430"}, 1E9:{other:"0 \u043c\u0456\u043b\u044c\u044f\u0440\u0434\u0430"}, 
+1E10:{other:"00 \u043c\u0456\u043b\u044c\u044f\u0440\u0434\u0430"}, 1E11:{other:"000 \u043c\u0456\u043b\u044c\u044f\u0440\u0434\u0430"}, 1E12:{other:"0 \u0442\u0440\u044b\u043b\u044c\u0451\u043d\u0430"}, 1E13:{other:"00 \u0442\u0440\u044b\u043b\u044c\u0451\u043d\u0430"}, 1E14:{other:"000 \u0442\u0440\u044b\u043b\u044c\u0451\u043d\u0430"}}};
+goog.i18n.CompactNumberFormatSymbols_bg = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0445\u0438\u043b."}, 1E4:{other:"00\u00a0\u0445\u0438\u043b."}, 1E5:{other:"000\u00a0\u0445\u0438\u043b."}, 1E6:{other:"0\u00a0\u043c\u043b\u043d."}, 1E7:{other:"00\u00a0\u043c\u043b\u043d."}, 1E8:{other:"000\u00a0\u043c\u043b\u043d."}, 1E9:{other:"0\u00a0\u043c\u043b\u0440\u0434."}, 1E10:{other:"00\u00a0\u043c\u043b\u0440\u0434."}, 1E11:{other:"000\u00a0\u043c\u043b\u0440\u0434."}, 1E12:{other:"0\u00a0\u0442\u0440\u043b\u043d."}, 
+1E13:{other:"00\u00a0\u0442\u0440\u043b\u043d."}, 1E14:{other:"000\u00a0\u0442\u0440\u043b\u043d."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0445\u0438\u043b\u044f\u0434\u0438"}, 1E4:{other:"00 \u0445\u0438\u043b\u044f\u0434\u0438"}, 1E5:{other:"000 \u0445\u0438\u043b\u044f\u0434\u0438"}, 1E6:{other:"0 \u043c\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E7:{other:"00 \u043c\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E8:{other:"000 \u043c\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E9:{other:"0 \u043c\u0438\u043b\u0438\u0430\u0440\u0434\u0430"}, 
+1E10:{other:"00 \u043c\u0438\u043b\u0438\u0430\u0440\u0434\u0430"}, 1E11:{other:"000 \u043c\u0438\u043b\u0438\u0430\u0440\u0434\u0430"}, 1E12:{other:"0 \u0442\u0440\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E13:{other:"00 \u0442\u0440\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E14:{other:"000 \u0442\u0440\u0438\u043b\u0438\u043e\u043d\u0430"}}};
+goog.i18n.CompactNumberFormatSymbols_bn = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u09b9\u09be"}, 1E4:{other:"00\u00a0\u09b9\u09be"}, 1E5:{other:"0\u00a0\u09b2\u09be"}, 1E6:{other:"00\u00a0\u09b2\u09be"}, 1E7:{other:"0\u00a0\u0995\u09cb"}, 1E8:{other:"00\u00a0\u0995\u09cb"}, 1E9:{other:"000\u00a0\u0995\u09cb"}, 1E10:{other:"0000\u00a0\u0995\u09cb"}, 1E11:{other:"00000\u00a0\u0995\u09cb"}, 1E12:{other:"0\u00a0\u09b2\u09be.\u0995\u09cb."}, 1E13:{other:"00\u00a0\u09b2\u09be.\u0995\u09cb."}, 
+1E14:{other:"000\u00a0\u09b2\u09be.\u0995\u09cb."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u09b9\u09be\u099c\u09be\u09b0"}, 1E4:{other:"00 \u09b9\u09be\u099c\u09be\u09b0"}, 1E5:{other:"0 \u09b2\u09be\u0996"}, 1E6:{other:"00 \u09b2\u09be\u0996"}, 1E7:{other:"0 \u0995\u09cb\u099f\u09bf"}, 1E8:{other:"00 \u0995\u09cb\u099f\u09bf"}, 1E9:{other:"000 \u0995\u09cb\u099f\u09bf"}, 1E10:{other:"0000 \u0995\u09cb\u099f\u09bf"}, 1E11:{other:"00000 \u0995\u09cb\u099f\u09bf"}, 1E12:{other:"0 \u09b2\u09be\u0996 \u0995\u09cb\u099f\u09bf"}, 
+1E13:{other:"00 \u09b2\u09be\u0996 \u0995\u09cb\u099f\u09bf"}, 1E14:{other:"000 \u09b2\u09be\u0996 \u0995\u09cb\u099f\u09bf"}}};
+goog.i18n.CompactNumberFormatSymbols_br = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0k"}, 1E4:{other:"00k"}, 1E5:{other:"000k"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0G"}, 1E10:{other:"00G"}, 1E11:{other:"000G"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 miliad"}, 1E4:{other:"00 miliad"}, 1E5:{other:"000 miliad"}, 1E6:{other:"0 milion"}, 1E7:{other:"00 milion"}, 1E8:{other:"000 milion"}, 1E9:{other:"0 miliard"}, 
+1E10:{other:"00 miliard"}, 1E11:{other:"000 miliard"}, 1E12:{other:"0 bilion"}, 1E13:{other:"00 bilion"}, 1E14:{other:"000 bilion"}}};
+goog.i18n.CompactNumberFormatSymbols_bs = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0hilj."}, 1E4:{other:"00\u00a0hilj."}, 1E5:{other:"000\u00a0hilj."}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mlr."}, 1E10:{other:"00\u00a0mlr."}, 1E11:{other:"000\u00a0mlr."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 hiljada"}, 1E4:{other:"00 hiljada"}, 1E5:{other:"000 hiljada"}, 
+1E6:{other:"0 miliona"}, 1E7:{other:"00 miliona"}, 1E8:{other:"000 miliona"}, 1E9:{other:"0 milijardi"}, 1E10:{other:"00 milijardi"}, 1E11:{other:"000 milijardi"}, 1E12:{other:"0 biliona"}, 1E13:{other:"00 biliona"}, 1E14:{other:"000 biliona"}}};
+goog.i18n.CompactNumberFormatSymbols_ca = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0m"}, 1E4:{other:"00m"}, 1E5:{other:"000m"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0000\u00a0M"}, 1E10:{other:"00mM"}, 1E11:{other:"000mM"}, 1E12:{other:"0\u00a0B"}, 1E13:{other:"00\u00a0B"}, 1E14:{other:"000\u00a0B"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 milers"}, 1E4:{other:"00 milers"}, 1E5:{other:"000 milers"}, 1E6:{other:"0 milions"}, 1E7:{other:"00 milions"}, 
+1E8:{other:"000 milions"}, 1E9:{other:"0 milers de milions"}, 1E10:{other:"00 milers de milions"}, 1E11:{other:"000 milers de milions"}, 1E12:{other:"0 bilions"}, 1E13:{other:"00 bilions"}, 1E14:{other:"000 bilions"}}};
+goog.i18n.CompactNumberFormatSymbols_chr = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u13a2\u13ef\u13a6\u13f4\u13b5"}, 1E4:{other:"00 \u13a2\u13ef\u13a6\u13f4\u13b5"}, 1E5:{other:"000 \u13a2\u13ef\u13a6\u13f4\u13b5"}, 1E6:{other:"0 \u13a2\u13f3\u13c6\u13d7\u13c5\u13db"}, 
+1E7:{other:"00 \u13a2\u13f3\u13c6\u13d7\u13c5\u13db"}, 1E8:{other:"000 \u13a2\u13f3\u13c6\u13d7\u13c5\u13db"}, 1E9:{other:"0 \u13a2\u13ef\u13d4\u13b3\u13d7\u13c5\u13db"}, 1E10:{other:"00 \u13a2\u13ef\u13d4\u13b3\u13d7\u13c5\u13db"}, 1E11:{other:"000 \u13a2\u13ef\u13d4\u13b3\u13d7\u13c5\u13db"}, 1E12:{other:"0 \u13a2\u13ef\u13e6\u13a0\u13d7\u13c5\u13db"}, 1E13:{other:"00 \u13a2\u13ef\u13e6\u13a0\u13d7\u13c5\u13db"}, 1E14:{other:"000 \u13a2\u13ef\u13e6\u13a0\u13d7\u13c5\u13db"}}};
+goog.i18n.CompactNumberFormatSymbols_cs = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tis."}, 1E4:{other:"00\u00a0tis."}, 1E5:{other:"000\u00a0tis."}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mld."}, 1E10:{other:"00\u00a0mld."}, 1E11:{other:"000\u00a0mld."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tis\u00edc"}, 1E4:{other:"00 tis\u00edc"}, 
+1E5:{other:"000 tis\u00edc"}, 1E6:{other:"0 milion\u016f"}, 1E7:{other:"00 milion\u016f"}, 1E8:{other:"000 milion\u016f"}, 1E9:{other:"0 miliard"}, 1E10:{other:"00 miliard"}, 1E11:{other:"000 miliard"}, 1E12:{other:"0 bilion\u016f"}, 1E13:{other:"00 bilion\u016f"}, 1E14:{other:"000 bilion\u016f"}}};
+goog.i18n.CompactNumberFormatSymbols_cy = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mil"}, 1E4:{other:"00 mil"}, 1E5:{other:"000 mil"}, 1E6:{other:"0 miliwn"}, 1E7:{other:"00 miliwn"}, 1E8:{other:"000 miliwn"}, 1E9:{other:"0 biliwn"}, 
+1E10:{other:"00 biliwn"}, 1E11:{other:"000 biliwn"}, 1E12:{other:"0 triliwn"}, 1E13:{other:"00 triliwn"}, 1E14:{other:"000 triliwn"}}};
+goog.i18n.CompactNumberFormatSymbols_da = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0t"}, 1E4:{other:"00\u00a0t"}, 1E5:{other:"000\u00a0t"}, 1E6:{other:"0\u00a0mio."}, 1E7:{other:"00\u00a0mio."}, 1E8:{other:"000\u00a0mio."}, 1E9:{other:"0\u00a0mia."}, 1E10:{other:"00\u00a0mia."}, 1E11:{other:"000\u00a0mia."}, 1E12:{other:"0\u00a0bio."}, 1E13:{other:"00\u00a0bio."}, 1E14:{other:"000\u00a0bio."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tusind"}, 1E4:{other:"00 tusind"}, 1E5:{other:"000 tusind"}, 
+1E6:{other:"0 millioner"}, 1E7:{other:"00 millioner"}, 1E8:{other:"000 millioner"}, 1E9:{other:"0 milliarder"}, 1E10:{other:"00 milliarder"}, 1E11:{other:"000 milliarder"}, 1E12:{other:"0 billioner"}, 1E13:{other:"00 billioner"}, 1E14:{other:"000 billioner"}}};
+goog.i18n.CompactNumberFormatSymbols_de = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0"}, 1E5:{other:"0"}, 1E6:{other:"0\u00a0Mio."}, 1E7:{other:"00\u00a0Mio."}, 1E8:{other:"000\u00a0Mio."}, 1E9:{other:"0\u00a0Mrd."}, 1E10:{other:"00\u00a0Mrd."}, 1E11:{other:"000\u00a0Mrd."}, 1E12:{other:"0\u00a0Bio."}, 1E13:{other:"00\u00a0Bio."}, 1E14:{other:"000\u00a0Bio."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 Tausend"}, 1E4:{other:"00 Tausend"}, 1E5:{other:"000 Tausend"}, 1E6:{other:"0 Millionen"}, 
+1E7:{other:"00 Millionen"}, 1E8:{other:"000 Millionen"}, 1E9:{other:"0 Milliarden"}, 1E10:{other:"00 Milliarden"}, 1E11:{other:"000 Milliarden"}, 1E12:{other:"0 Billionen"}, 1E13:{other:"00 Billionen"}, 1E14:{other:"000 Billionen"}}};
+goog.i18n.CompactNumberFormatSymbols_de_AT = goog.i18n.CompactNumberFormatSymbols_de;
+goog.i18n.CompactNumberFormatSymbols_de_CH = goog.i18n.CompactNumberFormatSymbols_de;
+goog.i18n.CompactNumberFormatSymbols_el = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u03c7\u03b9\u03bb."}, 1E4:{other:"00\u00a0\u03c7\u03b9\u03bb."}, 1E5:{other:"000\u00a0\u03c7\u03b9\u03bb."}, 1E6:{other:"0\u00a0\u03b5\u03ba."}, 1E7:{other:"00\u00a0\u03b5\u03ba."}, 1E8:{other:"000\u00a0\u03b5\u03ba."}, 1E9:{other:"0\u00a0\u03b4\u03b9\u03c3."}, 1E10:{other:"00\u00a0\u03b4\u03b9\u03c3."}, 1E11:{other:"000\u00a0\u03b4\u03b9\u03c3."}, 1E12:{other:"0\u00a0\u03c4\u03c1\u03b9\u03c3."}, 1E13:{other:"00\u00a0\u03c4\u03c1\u03b9\u03c3."}, 
+1E14:{other:"000\u00a0\u03c4\u03c1\u03b9\u03c3."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u03c7\u03b9\u03bb\u03b9\u03ac\u03b4\u03b5\u03c2"}, 1E4:{other:"00 \u03c7\u03b9\u03bb\u03b9\u03ac\u03b4\u03b5\u03c2"}, 1E5:{other:"000 \u03c7\u03b9\u03bb\u03b9\u03ac\u03b4\u03b5\u03c2"}, 1E6:{other:"0 \u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 1E7:{other:"00 \u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 1E8:{other:"000 \u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 
+1E9:{other:"0 \u03b4\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 1E10:{other:"00 \u03b4\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 1E11:{other:"000 \u03b4\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 1E12:{other:"0 \u03c4\u03c1\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 1E13:{other:"00 \u03c4\u03c1\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}, 
+1E14:{other:"000 \u03c4\u03c1\u03b9\u03c3\u03b5\u03ba\u03b1\u03c4\u03bf\u03bc\u03bc\u03cd\u03c1\u03b9\u03b1"}}};
+goog.i18n.CompactNumberFormatSymbols_en = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 thousand"}, 1E4:{other:"00 thousand"}, 1E5:{other:"000 thousand"}, 1E6:{other:"0 million"}, 1E7:{other:"00 million"}, 1E8:{other:"000 million"}, 1E9:{other:"0 billion"}, 
+1E10:{other:"00 billion"}, 1E11:{other:"000 billion"}, 1E12:{other:"0 trillion"}, 1E13:{other:"00 trillion"}, 1E14:{other:"000 trillion"}}};
+goog.i18n.CompactNumberFormatSymbols_en_AU = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_CA = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_GB = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_IE = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_IN = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_SG = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_US = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_en_ZA = goog.i18n.CompactNumberFormatSymbols_en;
+goog.i18n.CompactNumberFormatSymbols_es = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0mil"}, 1E4:{other:"00\u00a0mil"}, 1E5:{other:"000\u00a0mil"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0000\u00a0M"}, 1E10:{other:"00\u00a0mil\u00a0M"}, 1E11:{other:"000\u00a0mil\u00a0M"}, 1E12:{other:"0\u00a0B"}, 1E13:{other:"00\u00a0B"}, 1E14:{other:"000\u00a0B"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mil"}, 1E4:{other:"00 mil"}, 1E5:{other:"000 mil"}, 
+1E6:{other:"0 millones"}, 1E7:{other:"00 millones"}, 1E8:{other:"000 millones"}, 1E9:{other:"0 mil millones"}, 1E10:{other:"00 mil millones"}, 1E11:{other:"000 mil millones"}, 1E12:{other:"0 billones"}, 1E13:{other:"00 billones"}, 1E14:{other:"000 billones"}}};
+goog.i18n.CompactNumberFormatSymbols_es_419 = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0K"}, 1E4:{other:"00\u00a0k"}, 1E5:{other:"000\u00a0k"}, 1E9:{other:"0k\u00a0M"}, 1E10:{other:"00k\u00a0M"}, 1E11:{other:"000k\u00a0M"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E12:{other:"0 bill\u00f3n"}, 1E13:{other:"00 billones"}, 1E14:{other:"000 billones"}}};
+goog.i18n.CompactNumberFormatSymbols_es_ES = goog.i18n.CompactNumberFormatSymbols_es;
+goog.i18n.CompactNumberFormatSymbols_es_MX = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0k"}, 1E4:{other:"00\u00a0k"}, 1E5:{other:"000\u00a0k"}, 1E9:{other:"0000\u00a0M"}, 1E10:{other:"00\u00a0mil\u00a0M"}, 1E11:{other:"000\u00a0mil\u00a0M"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E12:{other:"0 billones"}}};
+goog.i18n.CompactNumberFormatSymbols_es_US = {COMPACT_DECIMAL_SHORT_PATTERN:{1E4:{other:"00\u00a0K"}, 1E5:{other:"000\u00a0K"}, 1E9:{other:"0\u00a0B"}, 1E10:{other:"00\u00a0B"}, 1E11:{other:"000\u00a0B"}, 1E12:{other:"0\u00a0T"}, 1E13:{other:"00\u00a0T"}, 1E14:{other:"000\u00a0T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E9:{other:"0 billones"}, 1E10:{other:"00 billones"}, 1E11:{other:"000 billones"}, 1E12:{other:"0 trillones"}, 1E13:{other:"00 trillones"}, 1E14:{other:"000 trillones"}}};
+goog.i18n.CompactNumberFormatSymbols_et = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tuh"}, 1E4:{other:"00\u00a0tuh"}, 1E5:{other:"000\u00a0tuh"}, 1E6:{other:"0\u00a0mln"}, 1E7:{other:"00\u00a0mln"}, 1E8:{other:"000\u00a0mln"}, 1E9:{other:"0\u00a0mld"}, 1E10:{other:"00\u00a0mld"}, 1E11:{other:"000\u00a0mld"}, 1E12:{other:"0\u00a0trl"}, 1E13:{other:"00\u00a0trl"}, 1E14:{other:"000\u00a0trl"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tuhat"}, 1E4:{other:"00 tuhat"}, 1E5:{other:"000 tuhat"}, 
+1E6:{other:"0 miljonit"}, 1E7:{other:"00 miljonit"}, 1E8:{other:"000 miljonit"}, 1E9:{other:"0 miljardit"}, 1E10:{other:"00 miljardit"}, 1E11:{other:"000 miljardit"}, 1E12:{other:"0 triljonit"}, 1E13:{other:"00 triljonit"}, 1E14:{other:"000 triljonit"}}};
+goog.i18n.CompactNumberFormatSymbols_eu = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0000"}, 1E4:{other:"00000"}, 1E5:{other:"000000"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0000\u00a0M"}, 1E10:{other:"00000\u00a0M"}, 1E11:{other:"000000\u00a0M"}, 1E12:{other:"0\u00a0B"}, 1E13:{other:"00\u00a0B"}, 1E14:{other:"000\u00a0B"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0000"}, 1E4:{other:"00000"}, 1E5:{other:"000000"}, 1E6:{other:"0 milioi"}, 1E7:{other:"00 milioi"}, 
+1E8:{other:"000 milioi"}, 1E9:{other:"0000 milioi"}, 1E10:{other:"00000 milioi"}, 1E11:{other:"000000 milioi"}, 1E12:{other:"0 bilioi"}, 1E13:{other:"00 bilioi"}, 1E14:{other:"000 bilioi"}}};
+goog.i18n.CompactNumberFormatSymbols_fa = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0647\u0632\u0627\u0631"}, 1E4:{other:"00\u00a0\u0647\u0632\u0627\u0631"}, 1E5:{other:"000\u00a0\u0647\u0632\u0627\u0631"}, 1E6:{other:"0\u00a0\u0645\u06cc\u0644\u06cc\u0648\u0646"}, 1E7:{other:"00\u00a0\u0645\u06cc\u0644\u06cc\u0648\u0646"}, 1E8:{other:"000\u00a0\u0645"}, 1E9:{other:"0\u00a0\u0645"}, 1E10:{other:"00\u00a0\u0645"}, 1E11:{other:"000\u00a0\u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}, 1E12:{other:"0\u00a0\u062a\u0631\u06cc\u0644\u06cc\u0648\u0646"}, 
+1E13:{other:"00\u00a0\u062a"}, 1E14:{other:"000\u00a0\u062a"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0647\u0632\u0627\u0631"}, 1E4:{other:"00 \u0647\u0632\u0627\u0631"}, 1E5:{other:"000 \u0647\u0632\u0627\u0631"}, 1E6:{other:"0 \u0645\u06cc\u0644\u06cc\u0648\u0646"}, 1E7:{other:"00 \u0645\u06cc\u0644\u06cc\u0648\u0646"}, 1E8:{other:"000 \u0645\u06cc\u0644\u06cc\u0648\u0646"}, 1E9:{other:"0 \u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}, 1E10:{other:"00 \u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}, 
+1E11:{other:"000 \u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}, 1E12:{other:"0 \u0647\u0632\u0627\u0631\u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}, 1E13:{other:"00 \u0647\u0632\u0627\u0631\u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}, 1E14:{other:"000 \u0647\u0632\u0627\u0631\u0645\u06cc\u0644\u06cc\u0627\u0631\u062f"}}};
+goog.i18n.CompactNumberFormatSymbols_fi = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0t."}, 1E4:{other:"00\u00a0t."}, 1E5:{other:"000\u00a0t."}, 1E6:{other:"0\u00a0milj."}, 1E7:{other:"00\u00a0milj."}, 1E8:{other:"000\u00a0milj."}, 1E9:{other:"0\u00a0mrd."}, 1E10:{other:"00\u00a0mrd."}, 1E11:{other:"000\u00a0mrd."}, 1E12:{other:"0\u00a0bilj."}, 1E13:{other:"00\u00a0bilj."}, 1E14:{other:"000\u00a0bilj."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tuhatta"}, 1E4:{other:"00 tuhatta"}, 1E5:{other:"000 tuhatta"}, 
+1E6:{other:"0 miljoonaa"}, 1E7:{other:"00 miljoonaa"}, 1E8:{other:"000 miljoonaa"}, 1E9:{other:"0 miljardia"}, 1E10:{other:"00 miljardia"}, 1E11:{other:"000 miljardia"}, 1E12:{other:"0 biljoonaa"}, 1E13:{other:"00 biljoonaa"}, 1E14:{other:"000 biljoonaa"}}};
+goog.i18n.CompactNumberFormatSymbols_fil = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 na libo"}, 1E4:{other:"00 na libo"}, 1E5:{other:"000 na libo"}, 1E6:{other:"0 na milyon"}, 1E7:{other:"00 na milyon"}, 1E8:{other:"000 na milyon"}, 
+1E9:{other:"0 na bilyon"}, 1E10:{other:"00 na bilyon"}, 1E11:{other:"000 na bilyon"}, 1E12:{other:"0 na trilyon"}, 1E13:{other:"00 na trilyon"}, 1E14:{other:"000 na trilyon"}}};
+goog.i18n.CompactNumberFormatSymbols_fr = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0k"}, 1E4:{other:"00\u00a0k"}, 1E5:{other:"000\u00a0k"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0\u00a0Md"}, 1E10:{other:"00\u00a0Md"}, 1E11:{other:"000\u00a0Md"}, 1E12:{other:"0\u00a0Bn"}, 1E13:{other:"00\u00a0Bn"}, 1E14:{other:"000\u00a0Bn"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mille"}, 1E4:{other:"00 mille"}, 1E5:{other:"000 mille"}, 1E6:{other:"0 millions"}, 
+1E7:{other:"00 millions"}, 1E8:{other:"000 millions"}, 1E9:{other:"0 milliards"}, 1E10:{other:"00 milliards"}, 1E11:{other:"000 milliards"}, 1E12:{other:"0 billions"}, 1E13:{other:"00 billions"}, 1E14:{other:"000 billions"}}};
+goog.i18n.CompactNumberFormatSymbols_fr_CA = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0k"}, 1E4:{other:"00\u00a0k"}, 1E5:{other:"000\u00a0k"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0\u00a0G"}, 1E10:{other:"00\u00a0G"}, 1E11:{other:"000\u00a0G"}, 1E12:{other:"0\u00a0T"}, 1E13:{other:"00\u00a0T"}, 1E14:{other:"000\u00a0T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mille"}, 1E4:{other:"00 mille"}, 1E5:{other:"000 mille"}, 1E6:{other:"0 millions"}, 
+1E7:{other:"00 millions"}, 1E8:{other:"000 millions"}}};
+goog.i18n.CompactNumberFormatSymbols_ga = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0k"}, 1E4:{other:"00k"}, 1E5:{other:"000k"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 m\u00edle"}, 1E4:{other:"00 m\u00edle"}, 1E5:{other:"000 m\u00edle"}, 1E6:{other:"0 milli\u00fan"}, 1E7:{other:"00 milli\u00fan"}, 1E8:{other:"000 milli\u00fan"}, 
+1E9:{other:"0 billi\u00fan"}, 1E10:{other:"00 billi\u00fan"}, 1E11:{other:"000 billi\u00fan"}, 1E12:{other:"0 trilli\u00fan"}, 1E13:{other:"00 trilli\u00fan"}, 1E14:{other:"000 trilli\u00fan"}}};
+goog.i18n.CompactNumberFormatSymbols_gl = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0"}, 1E5:{other:"0"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0"}, 1E10:{other:"0"}, 1E11:{other:"0"}, 1E12:{other:"0\u00a0B"}, 1E13:{other:"00\u00a0B"}, 1E14:{other:"000\u00a0B"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0"}, 1E5:{other:"0"}, 1E6:{other:"0 mill\u00f3ns"}, 1E7:{other:"00 mill\u00f3ns"}, 1E8:{other:"000 mill\u00f3ns"}, 
+1E9:{other:"0"}, 1E10:{other:"0"}, 1E11:{other:"0"}, 1E12:{other:"0 bill\u00f3ns"}, 1E13:{other:"00 bill\u00f3ns"}, 1E14:{other:"000 bill\u00f3ns"}}};
+goog.i18n.CompactNumberFormatSymbols_gsw = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0Tsg."}, 1E4:{other:"00\u00a0Tsg."}, 1E5:{other:"000\u00a0Tsg."}, 1E6:{other:"0\u00a0Mio."}, 1E7:{other:"00\u00a0Mio."}, 1E8:{other:"000\u00a0Mio."}, 1E9:{other:"0\u00a0Mrd."}, 1E10:{other:"00\u00a0Mrd."}, 1E11:{other:"000\u00a0Mrd."}, 1E12:{other:"0\u00a0Bio."}, 1E13:{other:"00\u00a0Bio."}, 1E14:{other:"000\u00a0Bio."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 Tuusig"}, 1E4:{other:"00 Tuusig"}, 1E5:{other:"000 Tuusig"}, 
+1E6:{other:"0 Millioone"}, 1E7:{other:"00 Millioone"}, 1E8:{other:"000 Millioone"}, 1E9:{other:"0 Milliarde"}, 1E10:{other:"00 Milliarde"}, 1E11:{other:"000 Milliarde"}, 1E12:{other:"0 Billioone"}, 1E13:{other:"00 Billioone"}, 1E14:{other:"000 Billioone"}}};
+goog.i18n.CompactNumberFormatSymbols_gu = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0ab9\u0a9c\u0abe\u0ab0"}, 1E4:{other:"00\u00a0\u0ab9\u0a9c\u0abe\u0ab0"}, 1E5:{other:"0\u00a0\u0ab2\u0abe\u0a96"}, 1E6:{other:"00\u00a0\u0ab2\u0abe\u0a96"}, 1E7:{other:"0\u00a0\u0a95\u0ab0\u0acb\u0aa1"}, 1E8:{other:"00\u00a0\u0a95\u0ab0\u0acb\u0aa1"}, 1E9:{other:"0\u00a0\u0a85\u0aac\u0a9c"}, 1E10:{other:"00\u00a0\u0a85\u0aac\u0a9c"}, 1E11:{other:"0\u00a0\u0aa8\u0abf\u0a96\u0ab0\u0acd\u0ab5"}, 1E12:{other:"0\u00a0\u0aae\u0ab9\u0abe\u0aaa\u0aa6\u0acd\u0aae"}, 
+1E13:{other:"0\u00a0\u0ab6\u0a82\u0a95\u0ac1"}, 1E14:{other:"0\u00a0\u0a9c\u0ab2\u0aa7\u0abf"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0ab9\u0a9c\u0abe\u0ab0"}, 1E4:{other:"00 \u0ab9\u0a9c\u0abe\u0ab0"}, 1E5:{other:"0 \u0ab2\u0abe\u0a96"}, 1E6:{other:"00 \u0ab2\u0abe\u0a96"}, 1E7:{other:"0 \u0a95\u0ab0\u0acb\u0aa1"}, 1E8:{other:"00 \u0a95\u0ab0\u0acb\u0aa1"}, 1E9:{other:"0 \u0a85\u0aac\u0a9c"}, 1E10:{other:"00 \u0a85\u0aac\u0a9c"}, 1E11:{other:"0 \u0aa8\u0abf\u0a96\u0ab0\u0acd\u0ab5"}, 1E12:{other:"0 \u0aae\u0ab9\u0abe\u0aaa\u0aa6\u0acd\u0aae"}, 
+1E13:{other:"0 \u0ab6\u0a82\u0a95\u0ac1"}, 1E14:{other:"0 \u0a9c\u0ab2\u0aa7\u0abf"}}};
+goog.i18n.CompactNumberFormatSymbols_haw = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0G"}, 1E10:{other:"00G"}, 1E11:{other:"000G"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}};
+goog.i18n.CompactNumberFormatSymbols_he = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"\u200f0 \u05d0\u05dc\u05e3"}, 1E4:{other:"\u200f00 \u05d0\u05dc\u05e3"}, 1E5:{other:"\u200f000 \u05d0\u05dc\u05e3"}, 1E6:{other:"\u200f0 \u05de\u05d9\u05dc\u05d9\u05d5\u05df"}, 
+1E7:{other:"\u200f00 \u05de\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E8:{other:"\u200f000 \u05de\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E9:{other:"\u200f0 \u05de\u05d9\u05dc\u05d9\u05d0\u05e8\u05d3"}, 1E10:{other:"\u200f00 \u05de\u05d9\u05dc\u05d9\u05d0\u05e8\u05d3"}, 1E11:{other:"\u200f000 \u05de\u05d9\u05dc\u05d9\u05d0\u05e8\u05d3"}, 1E12:{other:"\u200f0 \u05d8\u05e8\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E13:{other:"\u200f00 \u05d8\u05e8\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E14:{other:"\u200f000 \u05d8\u05e8\u05d9\u05dc\u05d9\u05d5\u05df"}}};
+goog.i18n.CompactNumberFormatSymbols_hi = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0939\u091c\u093c\u093e\u0930"}, 1E4:{other:"00\u00a0\u0939\u091c\u093c\u093e\u0930"}, 1E5:{other:"0\u00a0\u0932\u093e\u0916"}, 1E6:{other:"00\u00a0\u0932\u093e\u0916"}, 1E7:{other:"0\u00a0\u0915\u0970"}, 1E8:{other:"00\u00a0\u0915\u0970"}, 1E9:{other:"0\u00a0\u0905\u0970"}, 1E10:{other:"00\u00a0\u0905\u0970"}, 1E11:{other:"0\u00a0\u0916\u0970"}, 1E12:{other:"00\u00a0\u0916\u0970"}, 1E13:{other:"0\u00a0\u0928\u0940\u0932"}, 
+1E14:{other:"00\u00a0\u0928\u0940\u0932"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0939\u091c\u093c\u093e\u0930"}, 1E4:{other:"00 \u0939\u091c\u093c\u093e\u0930"}, 1E5:{other:"0 \u0932\u093e\u0916"}, 1E6:{other:"00 \u0932\u093e\u0916"}, 1E7:{other:"0 \u0915\u0930\u094b\u0921\u093c"}, 1E8:{other:"00 \u0915\u0930\u094b\u0921\u093c"}, 1E9:{other:"0 \u0905\u0930\u092c"}, 1E10:{other:"00 \u0905\u0930\u092c"}, 1E11:{other:"0 \u0916\u0930\u092c"}, 1E12:{other:"00 \u0916\u0930\u092c"}, 1E13:{other:"000 \u0916\u0930\u092c"}, 
+1E14:{other:"0000 \u0916\u0930\u092c"}}};
+goog.i18n.CompactNumberFormatSymbols_hr = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tis."}, 1E4:{other:"00\u00a0tis."}, 1E5:{other:"000\u00a0tis."}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mlr."}, 1E10:{other:"00\u00a0mlr."}, 1E11:{other:"000\u00a0mlr."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tisu\u0107a"}, 1E4:{other:"00 tisu\u0107a"}, 
+1E5:{other:"000 tisu\u0107a"}, 1E6:{other:"0 milijuna"}, 1E7:{other:"00 milijuna"}, 1E8:{other:"000 milijuna"}, 1E9:{other:"0 milijardi"}, 1E10:{other:"00 milijardi"}, 1E11:{other:"000 milijardi"}, 1E12:{other:"0 bilijuna"}, 1E13:{other:"00 bilijuna"}, 1E14:{other:"000 bilijuna"}}};
+goog.i18n.CompactNumberFormatSymbols_hu = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0E"}, 1E4:{other:"00\u00a0E"}, 1E5:{other:"000\u00a0E"}, 1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0\u00a0Mrd"}, 1E10:{other:"00\u00a0Mrd"}, 1E11:{other:"000\u00a0Mrd"}, 1E12:{other:"0\u00a0B"}, 1E13:{other:"00\u00a0B"}, 1E14:{other:"000\u00a0B"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 ezer"}, 1E4:{other:"00 ezer"}, 1E5:{other:"000 ezer"}, 1E6:{other:"0 milli\u00f3"}, 
+1E7:{other:"00 milli\u00f3"}, 1E8:{other:"000 milli\u00f3"}, 1E9:{other:"0 milli\u00e1rd"}, 1E10:{other:"00 milli\u00e1rd"}, 1E11:{other:"000 milli\u00e1rd"}, 1E12:{other:"0 billi\u00f3"}, 1E13:{other:"00 billi\u00f3"}, 1E14:{other:"000 billi\u00f3"}}};
+goog.i18n.CompactNumberFormatSymbols_hy = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0570\u0566\u0580"}, 1E4:{other:"00\u00a0\u0570\u0566\u0580"}, 1E5:{other:"000\u00a0\u0570\u0566\u0580"}, 1E6:{other:"0\u00a0\u0574\u056c\u0576"}, 1E7:{other:"00\u00a0\u0574\u056c\u0576"}, 1E8:{other:"000\u00a0\u0574\u056c\u0576"}, 1E9:{other:"0\u00a0\u0574\u056c\u0580\u0564"}, 1E10:{other:"00\u00a0\u0574\u056c\u0580\u0564"}, 1E11:{other:"000\u00a0\u0574\u056c\u0580\u0564"}, 1E12:{other:"0\u00a0\u057f\u0580\u056c\u0576"}, 
+1E13:{other:"00\u00a0\u057f\u0580\u056c\u0576"}, 1E14:{other:"000\u00a0\u057f\u0580\u056c\u0576"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0570\u0561\u0566\u0561\u0580"}, 1E4:{other:"00 \u0570\u0561\u0566\u0561\u0580"}, 1E5:{other:"000 \u0570\u0561\u0566\u0561\u0580"}, 1E6:{other:"0 \u0574\u056b\u056c\u056b\u0578\u0576"}, 1E7:{other:"00 \u0574\u056b\u056c\u056b\u0578\u0576"}, 1E8:{other:"000 \u0574\u056b\u056c\u056b\u0578\u0576"}, 1E9:{other:"0 \u0574\u056b\u056c\u056b\u0561\u0580\u0564"}, 
+1E10:{other:"00 \u0574\u056b\u056c\u056b\u0561\u0580\u0564"}, 1E11:{other:"000 \u0574\u056b\u056c\u056b\u0561\u0580\u0564"}, 1E12:{other:"0 \u057f\u0580\u056b\u056c\u056b\u0578\u0576"}, 1E13:{other:"00 \u057f\u0580\u056b\u056c\u056b\u0578\u0576"}, 1E14:{other:"000 \u057f\u0580\u056b\u056c\u056b\u0578\u0576"}}};
+goog.i18n.CompactNumberFormatSymbols_id = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0rb"}, 1E4:{other:"00\u00a0rb"}, 1E5:{other:"000\u00a0rb"}, 1E6:{other:"0\u00a0jt"}, 1E7:{other:"00\u00a0jt"}, 1E8:{other:"000\u00a0jt"}, 1E9:{other:"0\u00a0M"}, 1E10:{other:"00\u00a0M"}, 1E11:{other:"000\u00a0M"}, 1E12:{other:"0\u00a0T"}, 1E13:{other:"00\u00a0T"}, 1E14:{other:"000\u00a0T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 ribu"}, 1E4:{other:"00 ribu"}, 1E5:{other:"000 ribu"}, 1E6:{other:"0 juta"}, 
+1E7:{other:"00 juta"}, 1E8:{other:"000 juta"}, 1E9:{other:"0 miliar"}, 1E10:{other:"00 miliar"}, 1E11:{other:"000 miliar"}, 1E12:{other:"0 triliun"}, 1E13:{other:"00 triliun"}, 1E14:{other:"000 triliun"}}};
+goog.i18n.CompactNumberFormatSymbols_in = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0rb"}, 1E4:{other:"00\u00a0rb"}, 1E5:{other:"000\u00a0rb"}, 1E6:{other:"0\u00a0jt"}, 1E7:{other:"00\u00a0jt"}, 1E8:{other:"000\u00a0jt"}, 1E9:{other:"0\u00a0M"}, 1E10:{other:"00\u00a0M"}, 1E11:{other:"000\u00a0M"}, 1E12:{other:"0\u00a0T"}, 1E13:{other:"00\u00a0T"}, 1E14:{other:"000\u00a0T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 ribu"}, 1E4:{other:"00 ribu"}, 1E5:{other:"000 ribu"}, 1E6:{other:"0 juta"}, 
+1E7:{other:"00 juta"}, 1E8:{other:"000 juta"}, 1E9:{other:"0 miliar"}, 1E10:{other:"00 miliar"}, 1E11:{other:"000 miliar"}, 1E12:{other:"0 triliun"}, 1E13:{other:"00 triliun"}, 1E14:{other:"000 triliun"}}};
+goog.i18n.CompactNumberFormatSymbols_is = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u00fe."}, 1E4:{other:"00\u00a0\u00fe."}, 1E5:{other:"000\u00a0\u00fe."}, 1E6:{other:"0\u00a0m."}, 1E7:{other:"00\u00a0m."}, 1E8:{other:"000\u00a0m."}, 1E9:{other:"0\u00a0ma."}, 1E10:{other:"00\u00a0ma."}, 1E11:{other:"000\u00a0ma."}, 1E12:{other:"0\u00a0bn"}, 1E13:{other:"00\u00a0bn"}, 1E14:{other:"000\u00a0bn"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u00fe\u00fasund"}, 1E4:{other:"00 \u00fe\u00fasund"}, 
+1E5:{other:"000 \u00fe\u00fasund"}, 1E6:{other:"0 millj\u00f3nir"}, 1E7:{other:"00 millj\u00f3nir"}, 1E8:{other:"000 millj\u00f3nir"}, 1E9:{other:"0 milljar\u00f0ar"}, 1E10:{other:"00 milljar\u00f0ar"}, 1E11:{other:"000 milljar\u00f0ar"}, 1E12:{other:"0 billj\u00f3nir"}, 1E13:{other:"00 billj\u00f3nir"}, 1E14:{other:"000 billj\u00f3nir"}}};
+goog.i18n.CompactNumberFormatSymbols_it = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0"}, 1E5:{other:"0"}, 1E6:{other:"0\u00a0Mln"}, 1E7:{other:"00\u00a0Mln"}, 1E8:{other:"000\u00a0Mln"}, 1E9:{other:"0\u00a0Mrd"}, 1E10:{other:"00\u00a0Mrd"}, 1E11:{other:"000\u00a0Mrd"}, 1E12:{other:"0\u00a0Bln"}, 1E13:{other:"00\u00a0Bln"}, 1E14:{other:"000\u00a0Bln"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mila"}, 1E4:{other:"00 mila"}, 1E5:{other:"000 mila"}, 1E6:{other:"0 milioni"}, 1E7:{other:"00 milioni"}, 
+1E8:{other:"000 milioni"}, 1E9:{other:"0 miliardi"}, 1E10:{other:"00 miliardi"}, 1E11:{other:"000 miliardi"}, 1E12:{other:"0 mila miliardi"}, 1E13:{other:"00 mila miliardi"}, 1E14:{other:"000 mila miliardi"}}};
+goog.i18n.CompactNumberFormatSymbols_iw = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"\u200f0 \u05d0\u05dc\u05e3"}, 1E4:{other:"\u200f00 \u05d0\u05dc\u05e3"}, 1E5:{other:"\u200f000 \u05d0\u05dc\u05e3"}, 1E6:{other:"\u200f0 \u05de\u05d9\u05dc\u05d9\u05d5\u05df"}, 
+1E7:{other:"\u200f00 \u05de\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E8:{other:"\u200f000 \u05de\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E9:{other:"\u200f0 \u05de\u05d9\u05dc\u05d9\u05d0\u05e8\u05d3"}, 1E10:{other:"\u200f00 \u05de\u05d9\u05dc\u05d9\u05d0\u05e8\u05d3"}, 1E11:{other:"\u200f000 \u05de\u05d9\u05dc\u05d9\u05d0\u05e8\u05d3"}, 1E12:{other:"\u200f0 \u05d8\u05e8\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E13:{other:"\u200f00 \u05d8\u05e8\u05d9\u05dc\u05d9\u05d5\u05df"}, 1E14:{other:"\u200f000 \u05d8\u05e8\u05d9\u05dc\u05d9\u05d5\u05df"}}};
+goog.i18n.CompactNumberFormatSymbols_ja = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u4e07"}, 1E5:{other:"00\u4e07"}, 1E6:{other:"000\u4e07"}, 1E7:{other:"0000\u4e07"}, 1E8:{other:"0\u5104"}, 1E9:{other:"00\u5104"}, 1E10:{other:"000\u5104"}, 1E11:{other:"0000\u5104"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u4e07"}, 1E5:{other:"00\u4e07"}, 1E6:{other:"000\u4e07"}, 1E7:{other:"0000\u4e07"}, 
+1E8:{other:"0\u5104"}, 1E9:{other:"00\u5104"}, 1E10:{other:"000\u5104"}, 1E11:{other:"0000\u5104"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}};
+goog.i18n.CompactNumberFormatSymbols_ka = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u10d0\u10d7."}, 1E4:{other:"00\u00a0\u10d0\u10d7."}, 1E5:{other:"000\u00a0\u10d0\u10d7."}, 1E6:{other:"0\u00a0\u10db\u10da\u10dc."}, 1E7:{other:"00\u00a0\u10db\u10da\u10dc."}, 1E8:{other:"000\u00a0\u10db\u10da\u10dc."}, 1E9:{other:"0\u00a0\u10db\u10da\u10e0\u10d3."}, 1E10:{other:"00\u00a0\u10db\u10da\u10e0\u10d3."}, 1E11:{other:"000\u00a0\u10db\u10da\u10e0."}, 1E12:{other:"0\u00a0\u10e2\u10e0\u10da."}, 1E13:{other:"00\u00a0\u10e2\u10e0\u10da."}, 
+1E14:{other:"000\u00a0\u10e2\u10e0\u10da."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u10d0\u10d7\u10d0\u10e1\u10d8"}, 1E4:{other:"00 \u10d0\u10d7\u10d0\u10e1\u10d8"}, 1E5:{other:"000 \u10d0\u10d7\u10d0\u10e1\u10d8"}, 1E6:{other:"0 \u10db\u10d8\u10da\u10d8\u10dd\u10dc\u10d8"}, 1E7:{other:"00 \u10db\u10d8\u10da\u10d8\u10dd\u10dc\u10d8"}, 1E8:{other:"000 \u10db\u10d8\u10da\u10d8\u10dd\u10dc\u10d8"}, 1E9:{other:"0 \u10db\u10d8\u10da\u10d8\u10d0\u10e0\u10d3\u10d8"}, 1E10:{other:"00 \u10db\u10d8\u10da\u10d8\u10d0\u10e0\u10d3\u10d8"}, 
+1E11:{other:"000 \u10db\u10d8\u10da\u10d8\u10d0\u10e0\u10d3\u10d8"}, 1E12:{other:"0 \u10e2\u10e0\u10d8\u10da\u10d8\u10dd\u10dc\u10d8"}, 1E13:{other:"00 \u10e2\u10e0\u10d8\u10da\u10d8\u10dd\u10dc\u10d8"}, 1E14:{other:"000 \u10e2\u10e0\u10d8\u10da\u10d8\u10dd\u10dc\u10d8"}}};
+goog.i18n.CompactNumberFormatSymbols_kk = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u043c\u044b\u04a3"}, 1E4:{other:"00\u00a0\u043c\u044b\u04a3"}, 1E5:{other:"000\u00a0\u043c."}, 1E6:{other:"0\u00a0\u043c\u043b\u043d"}, 1E7:{other:"00\u00a0\u043c\u043b\u043d"}, 1E8:{other:"000\u00a0\u043c\u043b\u043d"}, 1E9:{other:"0\u00a0\u043c\u043b\u0440\u0434"}, 1E10:{other:"00\u00a0\u043c\u043b\u0440\u0434"}, 1E11:{other:"000\u00a0\u043c\u043b\u0440\u0434"}, 1E12:{other:"0\u00a0\u0442\u0440\u043b\u043d"}, 
+1E13:{other:"00\u00a0\u0442\u0440\u043b\u043d"}, 1E14:{other:"000\u00a0\u0442\u0440\u043b\u043d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u043c\u044b\u04a3"}, 1E4:{other:"00 \u043c\u044b\u04a3"}, 1E5:{other:"000 \u043c\u044b\u04a3"}, 1E6:{other:"0 \u043c\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E7:{other:"00 \u043c\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E8:{other:"000 \u043c\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E9:{other:"0 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434"}, 1E10:{other:"00 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434"}, 
+1E11:{other:"000 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434"}, 1E12:{other:"0 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E13:{other:"00 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E14:{other:"000 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d"}}};
+goog.i18n.CompactNumberFormatSymbols_km = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u1796\u17b6\u1793\u17cb"}, 1E4:{other:"00\u00a0\u1796\u17b6\u1793\u17cb"}, 1E5:{other:"000\u00a0\u1796\u17b6\u1793\u17cb"}, 1E6:{other:"0\u00a0\u179b\u17b6\u1793"}, 1E7:{other:"00\u00a0\u179b\u17b6\u1793"}, 1E8:{other:"000\u00a0\u179b\u17b6\u1793"}, 1E9:{other:"0\u00a0\u1794\u17ca\u17b8\u179b\u17b6\u1793"}, 1E10:{other:"00\u00a0\u1794\u17ca\u17b8\u179b\u17b6\u1793"}, 1E11:{other:"000\u00a0\u1794\u17ca\u17b8\u179b\u17b6\u1793"}, 
+1E12:{other:"0\u00a0\u1791\u17d2\u179a\u17b8\u179b\u17b6\u1793"}, 1E13:{other:"00\u00a0\u1791\u17d2\u179a\u17b8\u179b\u17b6\u1793"}, 1E14:{other:"000\u00a0\u1791\u17d2\u179a\u17b8\u179b\u17b6\u1793"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u1796\u17b6\u1793\u17cb"}, 1E4:{other:"00 \u1796\u17b6\u1793\u17cb"}, 1E5:{other:"000\u1796\u17b6\u1793\u17cb"}, 1E6:{other:"0 \u179b\u17b6\u1793"}, 1E7:{other:"00 \u179b\u17b6\u1793"}, 1E8:{other:"000 \u179b\u17b6\u1793"}, 1E9:{other:"0 \u1794\u17ca\u17b8\u179b\u17b6\u1793"}, 
+1E10:{other:"00 \u1794\u17ca\u17b8\u179b\u17b6\u1793"}, 1E11:{other:"000 \u1794\u17ca\u17b8\u179b\u17b6\u1793"}, 1E12:{other:"0 \u1791\u17d2\u179a\u17b8\u179b\u17b6\u1793"}, 1E13:{other:"00 \u1791\u17d2\u179a\u17b8\u179b\u17b6\u1793"}, 1E14:{other:"000 \u1791\u17d2\u179a\u17b8\u179b\u17b6\u1793"}}};
+goog.i18n.CompactNumberFormatSymbols_kn = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u0cb8\u0cbe"}, 1E4:{other:"00\u0cb8\u0cbe"}, 1E5:{other:"000\u0cb8\u0cbe"}, 1E6:{other:"0\u0cae\u0cbf"}, 1E7:{other:"00\u0cae\u0cbf"}, 1E8:{other:"000\u0cae\u0cbf"}, 1E9:{other:"0\u0cac\u0cbf"}, 1E10:{other:"00\u0cac\u0cbf"}, 1E11:{other:"000\u0cac\u0cbf"}, 1E12:{other:"0\u0c9f\u0ccd\u0cb0\u0cbf"}, 1E13:{other:"00\u0c9f\u0ccd\u0cb0\u0cbf"}, 1E14:{other:"000\u0c9f\u0ccd\u0cb0\u0cbf"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0cb8\u0cbe\u0cb5\u0cbf\u0cb0"}, 
+1E4:{other:"00 \u0cb8\u0cbe\u0cb5\u0cbf\u0cb0"}, 1E5:{other:"000 \u0cb8\u0cbe\u0cb5\u0cbf\u0cb0"}, 1E6:{other:"0 \u0cae\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd"}, 1E7:{other:"00 \u0cae\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd"}, 1E8:{other:"000 \u0cae\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd"}, 1E9:{other:"0 \u0cac\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd"}, 1E10:{other:"00 \u0cac\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd"}, 1E11:{other:"000 \u0cac\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd"}, 1E12:{other:"0 \u0c9f\u0ccd\u0cb0\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd\u200c"}, 
+1E13:{other:"00 \u0c9f\u0ccd\u0cb0\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd\u200c"}, 1E14:{other:"000 \u0c9f\u0ccd\u0cb0\u0cbf\u0cb2\u0cbf\u0caf\u0ca8\u0ccd\u200c"}}};
+goog.i18n.CompactNumberFormatSymbols_ko = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\ucc9c"}, 1E4:{other:"0\ub9cc"}, 1E5:{other:"00\ub9cc"}, 1E6:{other:"000\ub9cc"}, 1E7:{other:"0000\ub9cc"}, 1E8:{other:"0\uc5b5"}, 1E9:{other:"00\uc5b5"}, 1E10:{other:"000\uc5b5"}, 1E11:{other:"0000\uc5b5"}, 1E12:{other:"0\uc870"}, 1E13:{other:"00\uc870"}, 1E14:{other:"000\uc870"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0\ucc9c"}, 1E4:{other:"0\ub9cc"}, 1E5:{other:"00\ub9cc"}, 1E6:{other:"000\ub9cc"}, 1E7:{other:"0000\ub9cc"}, 
+1E8:{other:"0\uc5b5"}, 1E9:{other:"00\uc5b5"}, 1E10:{other:"000\uc5b5"}, 1E11:{other:"0000\uc5b5"}, 1E12:{other:"0\uc870"}, 1E13:{other:"00\uc870"}, 1E14:{other:"000\uc870"}}};
+goog.i18n.CompactNumberFormatSymbols_ky = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u043c\u0438\u04a3"}, 1E4:{other:"00\u00a0\u043c\u0438\u04a3"}, 1E5:{other:"000\u00a0\u043c\u0438\u04a3"}, 1E6:{other:"0\u00a0\u043c\u043b\u043d"}, 1E7:{other:"00\u00a0\u043c\u043b\u043d"}, 1E8:{other:"000\u00a0\u043c\u043b\u043d"}, 1E9:{other:"0\u00a0\u043c\u043b\u0434"}, 1E10:{other:"00\u00a0\u043c\u043b\u0434"}, 1E11:{other:"000\u00a0\u043c\u043b\u0434"}, 1E12:{other:"0\u00a0\u0442\u0440\u043b\u043d"}, 
+1E13:{other:"00\u00a0\u0442\u0440\u043b\u043d"}, 1E14:{other:"000\u00a0\u0442\u0440\u043b\u043d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u043c\u0438\u04a3"}, 1E4:{other:"00 \u043c\u0438\u04a3"}, 1E5:{other:"000 \u043c\u0438\u04a3"}, 1E6:{other:"0 \u043c\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E7:{other:"00 \u043c\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E8:{other:"000 \u043c\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E9:{other:"0 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434"}, 1E10:{other:"00 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434"}, 
+1E11:{other:"000 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434"}, 1E12:{other:"0 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E13:{other:"00 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d"}, 1E14:{other:"000 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d"}}};
+goog.i18n.CompactNumberFormatSymbols_ln = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0G"}, 1E10:{other:"00G"}, 1E11:{other:"000G"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}};
+goog.i18n.CompactNumberFormatSymbols_lo = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0e9e\u0eb1\u0e99"}, 1E4:{other:"00\u00a0\u0e9e\u0eb1\u0e99"}, 1E5:{other:"000\u00a0\u0e81\u0eb5\u0e9a"}, 1E6:{other:"0\u00a0\u0ea5\u0ec9\u0eb2\u0e99"}, 1E7:{other:"00\u00a0\u0ea5\u0ec9\u0eb2\u0e99"}, 1E8:{other:"000\u00a0\u0ea5\u0ec9\u0eb2\u0e99"}, 1E9:{other:"0\u00a0\u0e95\u0eb7\u0ec9"}, 1E10:{other:"00\u00a0\u0e95\u0eb7\u0ec9"}, 1E11:{other:"000\u00a0\u0e95\u0eb7\u0ec9"}, 1E12:{other:"0\u00a0\u0ea5\u0ec9\u0eb2\u0e99\u0ea5\u0ec9\u0eb2\u0e99"}, 
+1E13:{other:"00\u0ea5\u0ea5"}, 1E14:{other:"000\u0ea5\u0ea5"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0e9e\u0eb1\u0e99"}, 1E4:{other:"00 \u0e9e\u0eb1\u0e99"}, 1E5:{other:"0 \u0ec1\u0eaa\u0e99"}, 1E6:{other:"0 \u0ea5\u0ec9\u0eb2\u0e99"}, 1E7:{other:"00 \u0ea5\u0ec9\u0eb2\u0e99"}, 1E8:{other:"000 \u0ea5\u0ec9\u0eb2\u0e99"}, 1E9:{other:"0 \u0e95\u0eb7\u0ec9"}, 1E10:{other:"00 \u0e95\u0eb7\u0ec9"}, 1E11:{other:"000 \u0e95\u0eb7\u0ec9"}, 1E12:{other:"0 \u0ea5\u0ec9\u0eb2\u0e99\u0ea5\u0ec9\u0eb2\u0e99"}, 
+1E13:{other:"00 \u0ea5\u0ec9\u0eb2\u0e99\u0ea5\u0ec9\u0eb2\u0e99"}, 1E14:{other:"000 \u0ea5\u0ec9\u0eb2\u0e99\u0ea5\u0ec9\u0eb2\u0e99"}}};
+goog.i18n.CompactNumberFormatSymbols_lt = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0t\u016bkst."}, 1E4:{other:"00\u00a0t\u016bkst."}, 1E5:{other:"000\u00a0t\u016bkst."}, 1E6:{other:"0\u00a0mln."}, 1E7:{other:"00\u00a0mln."}, 1E8:{other:"000\u00a0mln."}, 1E9:{other:"0\u00a0mlrd."}, 1E10:{other:"00\u00a0mlrd."}, 1E11:{other:"000\u00a0mlrd."}, 1E12:{other:"0\u00a0trln."}, 1E13:{other:"00\u00a0trln."}, 1E14:{other:"000\u00a0trln."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 t\u016bkstan\u010di\u0173"}, 
+1E4:{other:"00 t\u016bkstan\u010di\u0173"}, 1E5:{other:"000 t\u016bkstan\u010di\u0173"}, 1E6:{other:"0 milijon\u0173"}, 1E7:{other:"00 milijon\u0173"}, 1E8:{other:"000 milijon\u0173"}, 1E9:{other:"0 milijard\u0173"}, 1E10:{other:"00 milijard\u0173"}, 1E11:{other:"000 milijard\u0173"}, 1E12:{other:"0 trilijon\u0173"}, 1E13:{other:"00 trilijon\u0173"}, 1E14:{other:"000 trilijon\u0173"}}};
+goog.i18n.CompactNumberFormatSymbols_lv = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0t\u016bkst."}, 1E4:{other:"00\u00a0t\u016bkst."}, 1E5:{other:"000\u00a0t\u016bkst."}, 1E6:{other:"0\u00a0milj."}, 1E7:{other:"00\u00a0milj."}, 1E8:{other:"000\u00a0milj."}, 1E9:{other:"0\u00a0mljrd."}, 1E10:{other:"00\u00a0mljrd."}, 1E11:{other:"000\u00a0mljrd."}, 1E12:{other:"0\u00a0trilj."}, 1E13:{other:"00\u00a0trilj."}, 1E14:{other:"000\u00a0trilj."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 t\u016bksto\u0161i"}, 
+1E4:{other:"00 t\u016bksto\u0161i"}, 1E5:{other:"000 t\u016bksto\u0161i"}, 1E6:{other:"0 miljoni"}, 1E7:{other:"00 miljoni"}, 1E8:{other:"000 miljoni"}, 1E9:{other:"0 miljardi"}, 1E10:{other:"00 miljardi"}, 1E11:{other:"000 miljardi"}, 1E12:{other:"0 triljoni"}, 1E13:{other:"00 triljoni"}, 1E14:{other:"000 triljoni"}}};
+goog.i18n.CompactNumberFormatSymbols_mk = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0438\u043b\u0458."}, 1E4:{other:"00\u00a0\u0438\u043b\u0458."}, 1E5:{other:"000\u00a0\u0438\u043b\u0458."}, 1E6:{other:"0\u00a0\u043c\u0438\u043b."}, 1E7:{other:"00\u00a0\u043c\u0438\u043b."}, 1E8:{other:"000\u00a0\u041c"}, 1E9:{other:"0\u00a0\u043c\u0438\u043b\u0458."}, 1E10:{other:"00\u00a0\u043c\u0438\u043b\u0458."}, 1E11:{other:"000\u00a0\u043c\u0438."}, 1E12:{other:"0\u00a0\u0431\u0438\u043b."}, 1E13:{other:"00\u00a0\u0431\u0438\u043b."}, 
+1E14:{other:"000\u00a0\u0431\u0438\u043b."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0438\u043b\u0458\u0430\u0434\u0438"}, 1E4:{other:"00 \u0438\u043b\u0458\u0430\u0434\u0438"}, 1E5:{other:"000 \u0438\u043b\u0458\u0430\u0434\u0438"}, 1E6:{other:"0 \u043c\u0438\u043b\u0438\u043e\u043d\u0438"}, 1E7:{other:"00 \u043c\u0438\u043b\u0438\u043e\u043d\u0438"}, 1E8:{other:"000 \u043c\u0438\u043b\u0438\u043e\u043d\u0438"}, 1E9:{other:"0 \u043c\u0438\u043b\u0438\u0458\u0430\u0440\u0434\u0438"}, 1E10:{other:"00 \u043c\u0438\u043b\u0438\u0458\u0430\u0440\u0434\u0438"}, 
+1E11:{other:"000 \u043c\u0438\u043b\u0438\u0458\u0430\u0440\u0434\u0438"}, 1E12:{other:"0 \u0431\u0438\u043b\u0438\u043e\u043d\u0438"}, 1E13:{other:"00 \u0431\u0438\u043b\u0438\u043e\u043d\u0438"}, 1E14:{other:"000 \u0431\u0438\u043b\u0438\u043e\u043d\u0438"}}};
+goog.i18n.CompactNumberFormatSymbols_ml = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0d06\u0d2f\u0d3f\u0d30\u0d02"}, 1E4:{other:"00 \u0d06\u0d2f\u0d3f\u0d30\u0d02"}, 1E5:{other:"000 \u0d06\u0d2f\u0d3f\u0d30\u0d02"}, 1E6:{other:"0 \u0d26\u0d36\u0d32\u0d15\u0d4d\u0d37\u0d02"}, 
+1E7:{other:"00 \u0d26\u0d36\u0d32\u0d15\u0d4d\u0d37\u0d02"}, 1E8:{other:"000 \u0d26\u0d36\u0d32\u0d15\u0d4d\u0d37\u0d02"}, 1E9:{other:"0 \u0d32\u0d15\u0d4d\u0d37\u0d02 \u0d15\u0d4b\u0d1f\u0d3f"}, 1E10:{other:"00 \u0d32\u0d15\u0d4d\u0d37\u0d02 \u0d15\u0d4b\u0d1f\u0d3f"}, 1E11:{other:"000 \u0d32\u0d15\u0d4d\u0d37\u0d02 \u0d15\u0d4b\u0d1f\u0d3f"}, 1E12:{other:"0 \u0d1f\u0d4d\u0d30\u0d3f\u0d32\u0d4d\u0d2f\u0d7a"}, 1E13:{other:"00 \u0d1f\u0d4d\u0d30\u0d3f\u0d32\u0d4d\u0d2f\u0d7a"}, 1E14:{other:"000 \u0d1f\u0d4d\u0d30\u0d3f\u0d32\u0d4d\u0d2f\u0d7a"}}};
+goog.i18n.CompactNumberFormatSymbols_mn = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u043c\u044f\u043d\u0433\u0430"}, 1E4:{other:"00\u00a0\u043c\u044f\u043d\u0433\u0430"}, 1E5:{other:"000\u00a0\u043c\u044f\u043d\u0433\u0430"}, 1E6:{other:"0\u00a0\u0441\u0430\u044f"}, 1E7:{other:"00\u00a0\u0441\u0430\u044f"}, 1E8:{other:"000\u00a0\u0441\u0430\u044f"}, 1E9:{other:"0\u00a0\u0442\u044d\u0440\u0431\u0443\u043c"}, 1E10:{other:"00\u00a0\u0442\u044d\u0440\u0431\u0443\u043c"}, 1E11:{other:"000\u0422"}, 
+1E12:{other:"0\u0418\u041d"}, 1E13:{other:"00\u0418\u041d"}, 1E14:{other:"000\u0418\u041d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u043c\u044f\u043d\u0433\u0430"}, 1E4:{other:"00 \u043c\u044f\u043d\u0433\u0430"}, 1E5:{other:"000 \u043c\u044f\u043d\u0433\u0430"}, 1E6:{other:"0 \u0441\u0430\u044f"}, 1E7:{other:"00 \u0441\u0430\u044f"}, 1E8:{other:"000 \u0441\u0430\u044f"}, 1E9:{other:"0 \u0442\u044d\u0440\u0431\u0443\u043c"}, 1E10:{other:"00 \u0442\u044d\u0440\u0431\u0443\u043c"}, 1E11:{other:"000 \u0442\u044d\u0440\u0431\u0443\u043c"}, 
+1E12:{other:"0 \u0438\u0445 \u043d\u0430\u044f\u0434"}, 1E13:{other:"00 \u0438\u0445 \u043d\u0430\u044f\u0434"}, 1E14:{other:"000 \u0438\u0445 \u043d\u0430\u044f\u0434"}}};
+goog.i18n.CompactNumberFormatSymbols_mo = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0K"}, 1E4:{other:"00\u00a0K"}, 1E5:{other:"000\u00a0K"}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mld."}, 1E10:{other:"00\u00a0mld."}, 1E11:{other:"000\u00a0mld."}, 1E12:{other:"0\u00a0tril."}, 1E13:{other:"00\u00a0tril."}, 1E14:{other:"000\u00a0tril."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 de mii"}, 1E4:{other:"00 de mii"}, 1E5:{other:"000 de mii"}, 
+1E6:{other:"0 de milioane"}, 1E7:{other:"00 de milioane"}, 1E8:{other:"000 de milioane"}, 1E9:{other:"0 de miliarde"}, 1E10:{other:"00 de miliarde"}, 1E11:{other:"000 de miliarde"}, 1E12:{other:"0 de trilioane"}, 1E13:{other:"00 de trilioane"}, 1E14:{other:"000 de trilioane"}}};
+goog.i18n.CompactNumberFormatSymbols_mr = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0939"}, 1E4:{other:"00\u00a0\u0939"}, 1E5:{other:"0\u00a0\u0932\u093e\u0916"}, 1E6:{other:"00\u00a0\u0932\u093e\u0916"}, 1E7:{other:"0\u00a0\u0915\u094b\u091f\u0940"}, 1E8:{other:"00\u00a0\u0915\u094b\u091f\u0940"}, 1E9:{other:"0\u00a0\u0905\u092c\u094d\u091c"}, 1E10:{other:"00\u00a0\u0905\u092c\u094d\u091c"}, 1E11:{other:"0\u00a0\u0916\u0930\u094d\u0935"}, 1E12:{other:"00\u00a0\u0916\u0930\u094d\u0935"}, 
+1E13:{other:"0\u00a0\u092a\u0926\u094d\u092e"}, 1E14:{other:"00\u00a0\u092a\u0926\u094d\u092e"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0939\u091c\u093e\u0930"}, 1E4:{other:"00 \u0939\u091c\u093e\u0930"}, 1E5:{other:"0 \u0932\u093e\u0916"}, 1E6:{other:"00 \u0932\u093e\u0916"}, 1E7:{other:"0 \u0915\u094b\u091f\u0940"}, 1E8:{other:"00 \u0915\u094b\u091f\u0940"}, 1E9:{other:"0 \u0905\u092c\u094d\u091c"}, 1E10:{other:"00 \u0905\u092c\u094d\u091c"}, 1E11:{other:"0 \u0916\u0930\u094d\u0935"}, 1E12:{other:"00 \u0916\u0930\u094d\u0935"}, 
+1E13:{other:"0 \u092a\u0926\u094d\u092e"}, 1E14:{other:"00 \u092a\u0926\u094d\u092e"}}};
+goog.i18n.CompactNumberFormatSymbols_ms = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0J"}, 1E7:{other:"00J"}, 1E8:{other:"000J"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 ribu"}, 1E4:{other:"00 ribu"}, 1E5:{other:"000 ribu"}, 1E6:{other:"0 juta"}, 1E7:{other:"00 juta"}, 1E8:{other:"000 juta"}, 1E9:{other:"0 bilion"}, 1E10:{other:"00 bilion"}, 
+1E11:{other:"000 bilion"}, 1E12:{other:"0 trilion"}, 1E13:{other:"00 trilion"}, 1E14:{other:"000 trilion"}}};
+goog.i18n.CompactNumberFormatSymbols_mt = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0G"}, 1E10:{other:"00G"}, 1E11:{other:"000G"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}};
+goog.i18n.CompactNumberFormatSymbols_my = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u1011\u1031\u102c\u1004\u103a"}, 1E4:{other:"0\u101e\u1031\u102c\u1004\u103a\u1038"}, 1E5:{other:"0\u101e\u102d\u1014\u103a\u1038"}, 1E6:{other:"0\u101e\u1014\u103a\u1038"}, 1E7:{other:"0\u1000\u102f\u100b\u1031"}, 1E8:{other:"00\u1000\u102f\u100b\u1031"}, 1E9:{other:"\u1000\u102f\u100b\u1031000"}, 1E10:{other:"\u1000\u102f\u100b\u10310\u1011"}, 1E11:{other:"\u1000\u102f\u100b\u10310\u101e"}, 1E12:{other:"\u100b\u10310\u101e\u102d\u1014\u103a\u1038"}, 
+1E13:{other:"\u100b\u10310\u101e\u1014\u103a\u1038"}, 1E14:{other:"0\u1000\u1031\u102c\u100b\u102d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0\u1011\u1031\u102c\u1004\u103a"}, 1E4:{other:"0\u101e\u1031\u102c\u1004\u103a\u1038"}, 1E5:{other:"0\u101e\u102d\u1014\u103a\u1038"}, 1E6:{other:"0\u101e\u1014\u103a\u1038"}, 1E7:{other:"0\u1000\u102f\u100b\u1031"}, 1E8:{other:"00\u1000\u102f\u100b\u1031"}, 1E9:{other:"\u1000\u102f\u100b\u1031000"}, 1E10:{other:"\u1000\u102f\u100b\u10310000"}, 1E11:{other:"\u1000\u102f\u100b\u10310\u101e\u1031\u102c\u1004\u103a\u1038"}, 
+1E12:{other:"\u1000\u102f\u100b\u10310\u101e\u102d\u1014\u103a\u1038"}, 1E13:{other:"\u1000\u102f\u100b\u10310\u101e\u1014\u103a\u1038"}, 1E14:{other:"0\u1000\u1031\u102c\u100b\u102d"}}};
+goog.i18n.CompactNumberFormatSymbols_nb = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0k"}, 1E4:{other:"00k"}, 1E5:{other:"000k"}, 1E6:{other:"0\u00a0mill."}, 1E7:{other:"00\u00a0mill."}, 1E8:{other:"000\u00a0mill."}, 1E9:{other:"0\u00a0mrd."}, 1E10:{other:"00\u00a0mrd."}, 1E11:{other:"000\u00a0mrd."}, 1E12:{other:"0\u00a0bill."}, 1E13:{other:"00\u00a0bill."}, 1E14:{other:"000\u00a0bill."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tusen"}, 1E4:{other:"00 tusen"}, 1E5:{other:"000 tusen"}, 1E6:{other:"0 millioner"}, 
+1E7:{other:"00 millioner"}, 1E8:{other:"000 millioner"}, 1E9:{other:"0 milliarder"}, 1E10:{other:"00 milliarder"}, 1E11:{other:"000 milliarder"}, 1E12:{other:"0 billioner"}, 1E13:{other:"00 billioner"}, 1E14:{other:"000 billioner"}}};
+goog.i18n.CompactNumberFormatSymbols_ne = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0939\u091c\u093e\u0930"}, 1E4:{other:"00\u00a0\u0939\u091c\u093e\u0930"}, 1E5:{other:"0\u00a0\u0932\u093e\u0916"}, 1E6:{other:"00\u00a0\u0932\u093e\u0916"}, 1E7:{other:"0\u00a0\u0915\u0930\u094b\u0921"}, 1E8:{other:"00\u00a0\u0915\u0930\u094b\u0921"}, 1E9:{other:"0\u00a0\u0905\u0930\u092c"}, 1E10:{other:"00\u00a0\u0905\u0930\u092c"}, 1E11:{other:"0\u00a0\u0916\u0930\u092c"}, 1E12:{other:"00\u00a0\u0916\u0930\u092c"}, 
+1E13:{other:"0\u00a0\u0936\u0902\u0916"}, 1E14:{other:"00\u00a0\u0936\u0902\u0916"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0939\u091c\u093e\u0930"}, 1E4:{other:"00 \u0939\u091c\u093e\u0930"}, 1E5:{other:"0 \u0932\u093e\u0916"}, 1E6:{other:"0 \u0915\u0930\u094b\u0921"}, 1E7:{other:"00 \u0915\u0930\u094b\u0921"}, 1E8:{other:"000 \u0915\u0930\u094b\u0921"}, 1E9:{other:"0 \u0905\u0930\u092c"}, 1E10:{other:"00 \u0905\u0930\u092c"}, 1E11:{other:"000 \u0905\u0930\u092c"}, 1E12:{other:"00 \u0916\u0930\u092c"}, 
+1E13:{other:"0 \u0936\u0902\u0916"}, 1E14:{other:"00 \u0936\u0902\u0916"}}};
+goog.i18n.CompactNumberFormatSymbols_nl = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0\u00a0mln."}, 1E7:{other:"00\u00a0mln."}, 1E8:{other:"000\u00a0mln."}, 1E9:{other:"0\u00a0mld."}, 1E10:{other:"00\u00a0mld."}, 1E11:{other:"000\u00a0mld."}, 1E12:{other:"0\u00a0bln."}, 1E13:{other:"00\u00a0bln."}, 1E14:{other:"000\u00a0bln."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 duizend"}, 1E4:{other:"00 duizend"}, 1E5:{other:"000 duizend"}, 1E6:{other:"0 miljoen"}, 
+1E7:{other:"00 miljoen"}, 1E8:{other:"000 miljoen"}, 1E9:{other:"0 miljard"}, 1E10:{other:"00 miljard"}, 1E11:{other:"000 miljard"}, 1E12:{other:"0 biljoen"}, 1E13:{other:"00 biljoen"}, 1E14:{other:"000 biljoen"}}};
+goog.i18n.CompactNumberFormatSymbols_no = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0k"}, 1E4:{other:"00k"}, 1E5:{other:"000k"}, 1E6:{other:"0\u00a0mill."}, 1E7:{other:"00\u00a0mill."}, 1E8:{other:"000\u00a0mill."}, 1E9:{other:"0\u00a0mrd."}, 1E10:{other:"00\u00a0mrd."}, 1E11:{other:"000\u00a0mrd."}, 1E12:{other:"0\u00a0bill."}, 1E13:{other:"00\u00a0bill."}, 1E14:{other:"000\u00a0bill."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tusen"}, 1E4:{other:"00 tusen"}, 1E5:{other:"000 tusen"}, 1E6:{other:"0 millioner"}, 
+1E7:{other:"00 millioner"}, 1E8:{other:"000 millioner"}, 1E9:{other:"0 milliarder"}, 1E10:{other:"00 milliarder"}, 1E11:{other:"000 milliarder"}, 1E12:{other:"0 billioner"}, 1E13:{other:"00 billioner"}, 1E14:{other:"000 billioner"}}};
+goog.i18n.CompactNumberFormatSymbols_no_NO = goog.i18n.CompactNumberFormatSymbols_no;
+goog.i18n.CompactNumberFormatSymbols_or = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u0b39"}, 1E4:{other:"00\u0b39"}, 1E5:{other:"000\u0b39"}, 1E6:{other:"0\u0b28\u0b3f"}, 1E7:{other:"00\u0b28\u0b3f"}, 1E8:{other:"000\u0b28\u0b3f"}, 1E9:{other:"0\u0b2c\u0b3f"}, 1E10:{other:"00\u0b2c\u0b3f"}, 1E11:{other:"000\u0b2c\u0b3f"}, 1E12:{other:"0\u0b1f\u0b4d\u0b30\u0b3f"}, 1E13:{other:"00\u0b1f\u0b4d\u0b30\u0b3f"}, 1E14:{other:"000\u0b1f\u0b4d\u0b30\u0b3f"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0b39\u0b1c\u0b3e\u0b30"}, 
+1E4:{other:"00 \u0b39\u0b1c\u0b3e\u0b30"}, 1E5:{other:"000 \u0b39\u0b1c\u0b3e\u0b30"}, 1E6:{other:"0 \u0b28\u0b3f\u0b5f\u0b41\u0b24"}, 1E7:{other:"00 \u0b28\u0b3f\u0b5f\u0b41\u0b24"}, 1E8:{other:"000 \u0b28\u0b3f\u0b5f\u0b41\u0b24"}, 1E9:{other:"0 \u0b36\u0b39\u0b15\u0b4b\u0b1f\u0b3f"}, 1E10:{other:"00 \u0b36\u0b39\u0b15\u0b4b\u0b1f\u0b3f"}, 1E11:{other:"000 \u0b36\u0b39\u0b15\u0b4b\u0b1f\u0b3f"}, 1E12:{other:"0 \u0b32\u0b15\u0b4d\u0b37\u0b15\u0b4b\u0b1f\u0b3f"}, 1E13:{other:"00 \u0b32\u0b15\u0b4d\u0b37\u0b15\u0b4b\u0b1f\u0b3f"}, 
+1E14:{other:"000 \u0b32\u0b15\u0b4d\u0b37\u0b15\u0b4b\u0b1f\u0b3f"}}};
+goog.i18n.CompactNumberFormatSymbols_pa = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0a39\u0a1c\u0a3c\u0a3e\u0a30"}, 1E4:{other:"00\u00a0\u0a39\u0a1c\u0a3c\u0a3e\u0a30"}, 1E5:{other:"0\u00a0\u0a32\u0a71\u0a16"}, 1E6:{other:"00\u00a0\u0a32\u0a71\u0a16"}, 1E7:{other:"0\u00a0\u0a15\u0a30\u0a4b\u0a5c"}, 1E8:{other:"00\u00a0\u0a15\u0a30\u0a4b\u0a5c"}, 1E9:{other:"0\u00a0\u0a05\u0a30\u0a2c"}, 1E10:{other:"00\u00a0\u0a05\u0a30\u0a2c"}, 1E11:{other:"0\u00a0\u0a16\u0a30\u0a2c"}, 1E12:{other:"00\u00a0\u0a16\u0a30\u0a2c"}, 
+1E13:{other:"0\u00a0\u0a28\u0a40\u0a32"}, 1E14:{other:"00\u00a0\u0a28\u0a40\u0a32"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0a39\u0a1c\u0a3c\u0a3e\u0a30"}, 1E4:{other:"00 \u0a39\u0a1c\u0a3c\u0a3e\u0a30"}, 1E5:{other:"0 \u0a32\u0a71\u0a16"}, 1E6:{other:"00 \u0a32\u0a71\u0a16"}, 1E7:{other:"0 \u0a15\u0a30\u0a4b\u0a5c"}, 1E8:{other:"00 \u0a15\u0a30\u0a4b\u0a5c"}, 1E9:{other:"0 \u0a05\u0a30\u0a2c"}, 1E10:{other:"00 \u0a05\u0a30\u0a2c"}, 1E11:{other:"0 \u0a16\u0a30\u0a2c"}, 1E12:{other:"00 \u0a16\u0a30\u0a2c"}, 
+1E13:{other:"0 \u0a28\u0a40\u0a32"}, 1E14:{other:"00 \u0a28\u0a40\u0a32"}}};
+goog.i18n.CompactNumberFormatSymbols_pl = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tys."}, 1E4:{other:"00\u00a0tys."}, 1E5:{other:"000\u00a0tys."}, 1E6:{other:"0\u00a0mln"}, 1E7:{other:"00\u00a0mln"}, 1E8:{other:"000\u00a0mln"}, 1E9:{other:"0\u00a0mld"}, 1E10:{other:"00\u00a0mld"}, 1E11:{other:"000\u00a0mld"}, 1E12:{other:"0\u00a0bln"}, 1E13:{other:"00\u00a0bln"}, 1E14:{other:"000\u00a0bln"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tysi\u0105ca"}, 1E4:{other:"00 tysi\u0105ca"}, 1E5:{other:"000 tysi\u0105ca"}, 
+1E6:{other:"0 miliona"}, 1E7:{other:"00 miliona"}, 1E8:{other:"000 miliona"}, 1E9:{other:"0 miliarda"}, 1E10:{other:"00 miliarda"}, 1E11:{other:"000 miliarda"}, 1E12:{other:"0 biliona"}, 1E13:{other:"00 biliona"}, 1E14:{other:"000 biliona"}}};
+goog.i18n.CompactNumberFormatSymbols_pt = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0mil"}, 1E4:{other:"00\u00a0mil"}, 1E5:{other:"000\u00a0mil"}, 1E6:{other:"0\u00a0mi"}, 1E7:{other:"00\u00a0mi"}, 1E8:{other:"000\u00a0mi"}, 1E9:{other:"0\u00a0bi"}, 1E10:{other:"00\u00a0bi"}, 1E11:{other:"000\u00a0bi"}, 1E12:{other:"0\u00a0tri"}, 1E13:{other:"00\u00a0tri"}, 1E14:{other:"000\u00a0tri"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mil"}, 1E4:{other:"00 mil"}, 1E5:{other:"000 mil"}, 1E6:{other:"0 milh\u00f5es"}, 
+1E7:{other:"00 milh\u00f5es"}, 1E8:{other:"000 milh\u00f5es"}, 1E9:{other:"0 bilh\u00f5es"}, 1E10:{other:"00 bilh\u00f5es"}, 1E11:{other:"000 bilh\u00f5es"}, 1E12:{other:"0 trilh\u00f5es"}, 1E13:{other:"00 trilh\u00f5es"}, 1E14:{other:"000 trilh\u00f5es"}}};
+goog.i18n.CompactNumberFormatSymbols_pt_BR = goog.i18n.CompactNumberFormatSymbols_pt;
+goog.i18n.CompactNumberFormatSymbols_pt_PT = {COMPACT_DECIMAL_SHORT_PATTERN:{1E6:{other:"0\u00a0M"}, 1E7:{other:"00\u00a0M"}, 1E8:{other:"000\u00a0M"}, 1E9:{other:"0\u00a0mM"}, 1E10:{other:"00\u00a0mM"}, 1E11:{other:"000\u00a0mM"}, 1E12:{other:"0\u00a0Bi"}, 1E13:{other:"00\u00a0Bi"}, 1E14:{other:"000\u00a0Bi"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E6:{other:"0 milh\u00f5es"}, 1E7:{other:"00 milh\u00f5es"}, 1E8:{other:"000 milh\u00f5es"}, 1E9:{other:"0 mil milh\u00f5es"}, 1E10:{other:"00 mil milh\u00f5es"}, 
+1E11:{other:"000 mil milh\u00f5es"}, 1E12:{other:"0 bili\u00f5es"}, 1E13:{other:"00 bili\u00f5es"}, 1E14:{other:"000 bili\u00f5es"}}};
+goog.i18n.CompactNumberFormatSymbols_ro = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0K"}, 1E4:{other:"00\u00a0K"}, 1E5:{other:"000\u00a0K"}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mld."}, 1E10:{other:"00\u00a0mld."}, 1E11:{other:"000\u00a0mld."}, 1E12:{other:"0\u00a0tril."}, 1E13:{other:"00\u00a0tril."}, 1E14:{other:"000\u00a0tril."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 de mii"}, 1E4:{other:"00 de mii"}, 1E5:{other:"000 de mii"}, 
+1E6:{other:"0 de milioane"}, 1E7:{other:"00 de milioane"}, 1E8:{other:"000 de milioane"}, 1E9:{other:"0 de miliarde"}, 1E10:{other:"00 de miliarde"}, 1E11:{other:"000 de miliarde"}, 1E12:{other:"0 de trilioane"}, 1E13:{other:"00 de trilioane"}, 1E14:{other:"000 de trilioane"}}};
+goog.i18n.CompactNumberFormatSymbols_ru = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0442\u044b\u0441."}, 1E4:{other:"00\u00a0\u0442\u044b\u0441."}, 1E5:{other:"000\u00a0\u0442\u044b\u0441."}, 1E6:{other:"0\u00a0\u043c\u043b\u043d"}, 1E7:{other:"00\u00a0\u043c\u043b\u043d"}, 1E8:{other:"000\u00a0\u043c\u043b\u043d"}, 1E9:{other:"0\u00a0\u043c\u043b\u0440\u0434"}, 1E10:{other:"00\u00a0\u043c\u043b\u0440\u0434"}, 1E11:{other:"000\u00a0\u043c\u043b\u0440\u0434"}, 1E12:{other:"0\u00a0\u0442\u0440\u043b\u043d"}, 
+1E13:{other:"00\u00a0\u0442\u0440\u043b\u043d"}, 1E14:{other:"000\u00a0\u0442\u0440\u043b\u043d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0442\u044b\u0441\u044f\u0447\u0438"}, 1E4:{other:"00 \u0442\u044b\u0441\u044f\u0447\u0438"}, 1E5:{other:"000 \u0442\u044b\u0441\u044f\u0447\u0438"}, 1E6:{other:"0 \u043c\u0438\u043b\u043b\u0438\u043e\u043d\u0430"}, 1E7:{other:"00 \u043c\u0438\u043b\u043b\u0438\u043e\u043d\u0430"}, 1E8:{other:"000 \u043c\u0438\u043b\u043b\u0438\u043e\u043d\u0430"}, 1E9:{other:"0 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434\u0430"}, 
+1E10:{other:"00 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434\u0430"}, 1E11:{other:"000 \u043c\u0438\u043b\u043b\u0438\u0430\u0440\u0434\u0430"}, 1E12:{other:"0 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d\u0430"}, 1E13:{other:"00 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d\u0430"}, 1E14:{other:"000 \u0442\u0440\u0438\u043b\u043b\u0438\u043e\u043d\u0430"}}};
+goog.i18n.CompactNumberFormatSymbols_sh = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0hilj."}, 1E4:{other:"00\u00a0hilj."}, 1E5:{other:"000\u00a0hilj."}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mlrd."}, 1E10:{other:"00\u00a0mlrd."}, 1E11:{other:"000\u00a0mlrd."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 hiljada"}, 1E4:{other:"00 hiljada"}, 
+1E5:{other:"000 hiljada"}, 1E6:{other:"0 miliona"}, 1E7:{other:"00 miliona"}, 1E8:{other:"000 miliona"}, 1E9:{other:"0 milijardi"}, 1E10:{other:"00 milijardi"}, 1E11:{other:"000 milijardi"}, 1E12:{other:"0 biliona"}, 1E13:{other:"00 biliona"}, 1E14:{other:"000 biliona"}}};
+goog.i18n.CompactNumberFormatSymbols_si = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"\u0daf0"}, 1E4:{other:"\u0daf00"}, 1E5:{other:"\u0daf000"}, 1E6:{other:"\u0db8\u0dd20"}, 1E7:{other:"\u0db8\u0dd200"}, 1E8:{other:"\u0db8\u0dd2000"}, 1E9:{other:"\u0db6\u0dd20"}, 1E10:{other:"\u0db6\u0dd200"}, 1E11:{other:"\u0db6\u0dd2000"}, 1E12:{other:"\u0da7\u0dca\u200d\u0dbb\u0dd20"}, 1E13:{other:"\u0da7\u0dca\u200d\u0dbb\u0dd200"}, 1E14:{other:"\u0da7\u0dca\u200d\u0dbb\u0dd2000"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"\u0daf\u0dc4\u0dc3 0"}, 
+1E4:{other:"\u0daf\u0dc4\u0dc3 00"}, 1E5:{other:"\u0daf\u0dc4\u0dc3 000"}, 1E6:{other:"\u0db8\u0dd2\u0dbd\u0dd2\u0dba\u0db1 0"}, 1E7:{other:"\u0db8\u0dd2\u0dbd\u0dd2\u0dba\u0db1 00"}, 1E8:{other:"\u0db8\u0dd2\u0dbd\u0dd2\u0dba\u0db1 000"}, 1E9:{other:"\u0db6\u0dd2\u0dbd\u0dd2\u0dba\u0db1 0"}, 1E10:{other:"\u0db6\u0dd2\u0dbd\u0dd2\u0dba\u0db1 00"}, 1E11:{other:"\u0db6\u0dd2\u0dbd\u0dd2\u0dba\u0db1 000"}, 1E12:{other:"\u0da7\u0dca\u200d\u0dbb\u0dd2\u0dbd\u0dd2\u0dba\u0db1 0"}, 1E13:{other:"\u0da7\u0dca\u200d\u0dbb\u0dd2\u0dbd\u0dd2\u0dba\u0db1 00"}, 
+1E14:{other:"\u0da7\u0dca\u200d\u0dbb\u0dd2\u0dbd\u0dd2\u0dba\u0db1 000"}}};
+goog.i18n.CompactNumberFormatSymbols_sk = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tis."}, 1E4:{other:"00\u00a0tis."}, 1E5:{other:"000\u00a0tis."}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mld."}, 1E10:{other:"00\u00a0mld."}, 1E11:{other:"000\u00a0mld."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tis\u00edc"}, 1E4:{other:"00 tis\u00edc"}, 
+1E5:{other:"000 tis\u00edc"}, 1E6:{other:"0 mili\u00f3nov"}, 1E7:{other:"00 mili\u00f3nov"}, 1E8:{other:"000 mili\u00f3nov"}, 1E9:{other:"0 mili\u00e1rd"}, 1E10:{other:"00 mili\u00e1rd"}, 1E11:{other:"000 mili\u00e1rd"}, 1E12:{other:"0 bili\u00f3nov"}, 1E13:{other:"00 bili\u00f3nov"}, 1E14:{other:"000 bili\u00f3nov"}}};
+goog.i18n.CompactNumberFormatSymbols_sl = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tis."}, 1E4:{other:"00\u00a0tis."}, 1E5:{other:"000\u00a0tis."}, 1E6:{other:"0\u00a0mio."}, 1E7:{other:"00\u00a0mio."}, 1E8:{other:"000\u00a0mio."}, 1E9:{other:"0\u00a0mrd."}, 1E10:{other:"00\u00a0mrd."}, 1E11:{other:"000\u00a0mrd."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tiso\u010d"}, 1E4:{other:"00 tiso\u010d"}, 
+1E5:{other:"000 tiso\u010d"}, 1E6:{other:"0 milijonov"}, 1E7:{other:"00 milijonov"}, 1E8:{other:"000 milijonov"}, 1E9:{other:"0 milijard"}, 1E10:{other:"00 milijard"}, 1E11:{other:"000 milijard"}, 1E12:{other:"0 bilijonov"}, 1E13:{other:"00 bilijonov"}, 1E14:{other:"000 bilijonov"}}};
+goog.i18n.CompactNumberFormatSymbols_sq = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0mij\u00eb"}, 1E4:{other:"00\u00a0mij\u00eb"}, 1E5:{other:"000\u00a0mij\u00eb"}, 1E6:{other:"0\u00a0mln"}, 1E7:{other:"00\u00a0mln"}, 1E8:{other:"000\u00a0mln"}, 1E9:{other:"0\u00a0mld"}, 1E10:{other:"00\u00a0mld"}, 1E11:{other:"000\u00a0mld"}, 1E12:{other:"0\u00a0bln"}, 1E13:{other:"00\u00a0bln"}, 1E14:{other:"000\u00a0bln"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 mij\u00eb"}, 1E4:{other:"00 mij\u00eb"}, 
+1E5:{other:"000 mij\u00eb"}, 1E6:{other:"0 milion"}, 1E7:{other:"00 milion"}, 1E8:{other:"000 milion"}, 1E9:{other:"0 miliard"}, 1E10:{other:"00 miliard"}, 1E11:{other:"000 miliard"}, 1E12:{other:"0 bilion"}, 1E13:{other:"00 bilion"}, 1E14:{other:"000 bilion"}}};
+goog.i18n.CompactNumberFormatSymbols_sr = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0445\u0438\u0459."}, 1E4:{other:"00\u00a0\u0445\u0438\u0459."}, 1E5:{other:"000\u00a0\u0445\u0438\u0459."}, 1E6:{other:"0\u00a0\u043c\u0438\u043b."}, 1E7:{other:"00\u00a0\u043c\u0438\u043b."}, 1E8:{other:"000\u00a0\u043c\u0438\u043b."}, 1E9:{other:"0\u00a0\u043c\u043b\u0440\u0434."}, 1E10:{other:"00\u00a0\u043c\u043b\u0440\u0434."}, 1E11:{other:"000\u00a0\u043c\u043b\u0440\u0434."}, 1E12:{other:"0\u00a0\u0431\u0438\u043b."}, 
+1E13:{other:"00\u00a0\u0431\u0438\u043b."}, 1E14:{other:"000\u00a0\u0431\u0438\u043b."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0445\u0438\u0459\u0430\u0434\u0430"}, 1E4:{other:"00 \u0445\u0438\u0459\u0430\u0434\u0430"}, 1E5:{other:"000 \u0445\u0438\u0459\u0430\u0434\u0430"}, 1E6:{other:"0 \u043c\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E7:{other:"00 \u043c\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E8:{other:"000 \u043c\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E9:{other:"0 \u043c\u0438\u043b\u0438\u0458\u0430\u0440\u0434\u0438"}, 
+1E10:{other:"00 \u043c\u0438\u043b\u0438\u0458\u0430\u0440\u0434\u0438"}, 1E11:{other:"000 \u043c\u0438\u043b\u0438\u0458\u0430\u0440\u0434\u0438"}, 1E12:{other:"0 \u0431\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E13:{other:"00 \u0431\u0438\u043b\u0438\u043e\u043d\u0430"}, 1E14:{other:"000 \u0431\u0438\u043b\u0438\u043e\u043d\u0430"}}};
+goog.i18n.CompactNumberFormatSymbols_sr_Latn = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0hilj."}, 1E4:{other:"00\u00a0hilj."}, 1E5:{other:"000\u00a0hilj."}, 1E6:{other:"0\u00a0mil."}, 1E7:{other:"00\u00a0mil."}, 1E8:{other:"000\u00a0mil."}, 1E9:{other:"0\u00a0mlrd."}, 1E10:{other:"00\u00a0mlrd."}, 1E11:{other:"000\u00a0mlrd."}, 1E12:{other:"0\u00a0bil."}, 1E13:{other:"00\u00a0bil."}, 1E14:{other:"000\u00a0bil."}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 hiljada"}, 1E4:{other:"00 hiljada"}, 
+1E5:{other:"000 hiljada"}, 1E6:{other:"0 miliona"}, 1E7:{other:"00 miliona"}, 1E8:{other:"000 miliona"}, 1E9:{other:"0 milijardi"}, 1E10:{other:"00 milijardi"}, 1E11:{other:"000 milijardi"}, 1E12:{other:"0 biliona"}, 1E13:{other:"00 biliona"}, 1E14:{other:"000 biliona"}}};
+goog.i18n.CompactNumberFormatSymbols_sv = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tn"}, 1E4:{other:"00\u00a0tn"}, 1E5:{other:"000\u00a0tn"}, 1E6:{other:"0\u00a0mn"}, 1E7:{other:"00\u00a0mn"}, 1E8:{other:"000\u00a0mn"}, 1E9:{other:"0\u00a0md"}, 1E10:{other:"00\u00a0md"}, 1E11:{other:"000\u00a0md"}, 1E12:{other:"0\u00a0bn"}, 1E13:{other:"00\u00a0bn"}, 1E14:{other:"000\u00a0bn"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tusen"}, 1E4:{other:"00 tusen"}, 1E5:{other:"000 tusen"}, 1E6:{other:"0 miljoner"}, 
+1E7:{other:"00 miljoner"}, 1E8:{other:"000 miljoner"}, 1E9:{other:"0 miljarder"}, 1E10:{other:"00 miljarder"}, 1E11:{other:"000 miljarder"}, 1E12:{other:"0 biljoner"}, 1E13:{other:"00 biljoner"}, 1E14:{other:"000 biljoner"}}};
+goog.i18n.CompactNumberFormatSymbols_sw = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"elfu\u00a00;elfu\u00a0-0"}, 1E4:{other:"elfu\u00a000;elfu\u00a0-00"}, 1E5:{other:"elfu\u00a0000;elfu\u00a0-000"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B;-0B"}, 1E10:{other:"00B;-00B"}, 1E11:{other:"000B;-000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"elfu 0;elfu -0"}, 1E4:{other:"elfu 00;elfu -00"}, 1E5:{other:"elfu 000;elfu -000"}, 
+1E6:{other:"milioni 0;milioni -0"}, 1E7:{other:"milioni 00;milioni -00"}, 1E8:{other:"milioni 000;milioni -000"}, 1E9:{other:"bilioni 0;bilioni -0"}, 1E10:{other:"bilioni 00;bilioni -00"}, 1E11:{other:"bilioni 000;bilioni -000"}, 1E12:{other:"trilioni 0;trilioni -0"}, 1E13:{other:"trilioni 00;trilioni -00"}, 1E14:{other:"trilioni 000;trilioni -000"}}};
+goog.i18n.CompactNumberFormatSymbols_ta = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u0b86"}, 1E4:{other:"00\u0b86"}, 1E5:{other:"000\u0b86"}, 1E6:{other:"0\u0bae\u0bbf"}, 1E7:{other:"00\u0bae\u0bbf"}, 1E8:{other:"000\u0bae\u0bbf"}, 1E9:{other:"0\u0baa\u0bbf"}, 1E10:{other:"00\u0baa\u0bbf"}, 1E11:{other:"000\u0baa\u0bbf"}, 1E12:{other:"0\u0b9f\u0bbf"}, 1E13:{other:"00\u0b9f\u0bbf"}, 1E14:{other:"000\u0b9f\u0bbf"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0b86\u0baf\u0bbf\u0bb0\u0bae\u0bcd"}, 
+1E4:{other:"00 \u0b86\u0baf\u0bbf\u0bb0\u0bae\u0bcd"}, 1E5:{other:"000 \u0b86\u0baf\u0bbf\u0bb0\u0bae\u0bcd"}, 1E6:{other:"0 \u0bae\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E7:{other:"00 \u0bae\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E8:{other:"000 \u0bae\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E9:{other:"0 \u0baa\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E10:{other:"00 \u0baa\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E11:{other:"000 \u0baa\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 
+1E12:{other:"0 \u0b9f\u0bbf\u0bb0\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E13:{other:"00 \u0b9f\u0bbf\u0bb0\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E14:{other:"000 \u0b9f\u0bbf\u0bb0\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}}};
+goog.i18n.CompactNumberFormatSymbols_te = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u0c35\u0c47"}, 1E4:{other:"00\u0c35\u0c47"}, 1E5:{other:"000\u0c35\u0c47"}, 1E6:{other:"0\u0c2e\u0c3f"}, 1E7:{other:"00\u0c2e\u0c3f"}, 1E8:{other:"000\u0c2e\u0c3f"}, 1E9:{other:"0\u0c2c\u0c3f"}, 1E10:{other:"00\u0c2c\u0c3f"}, 1E11:{other:"000\u0c2c\u0c3f"}, 1E12:{other:"0\u0c1f\u0c4d\u0c30\u0c3f"}, 1E13:{other:"00\u0c1f\u0c4d\u0c30\u0c3f"}, 1E14:{other:"000\u0c1f\u0c4d\u0c30\u0c3f"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0c35\u0c47\u0c32\u0c41"}, 
+1E4:{other:"00 \u0c35\u0c47\u0c32\u0c41"}, 1E5:{other:"000 \u0c35\u0c47\u0c32\u0c41"}, 1E6:{other:"0 \u0c2e\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E7:{other:"00 \u0c2e\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E8:{other:"000 \u0c2e\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E9:{other:"0 \u0c2c\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E10:{other:"00 \u0c2c\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E11:{other:"000 \u0c2c\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 
+1E12:{other:"0 \u0c1f\u0c4d\u0c30\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E13:{other:"00 \u0c1f\u0c4d\u0c30\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}, 1E14:{other:"000 \u0c1f\u0c4d\u0c30\u0c3f\u0c32\u0c3f\u0c2f\u0c28\u0c4d\u0c32\u0c41"}}};
+goog.i18n.CompactNumberFormatSymbols_th = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0e1e\u0e31\u0e19"}, 1E4:{other:"0 \u0e2b\u0e21\u0e37\u0e48\u0e19"}, 1E5:{other:"0 \u0e41\u0e2a\u0e19"}, 1E6:{other:"0 \u0e25\u0e49\u0e32\u0e19"}, 1E7:{other:"00 \u0e25\u0e49\u0e32\u0e19"}, 
+1E8:{other:"000 \u0e25\u0e49\u0e32\u0e19"}, 1E9:{other:"0 \u0e1e\u0e31\u0e19\u0e25\u0e49\u0e32\u0e19"}, 1E10:{other:"0 \u0e2b\u0e21\u0e37\u0e48\u0e19\u0e25\u0e49\u0e32\u0e19"}, 1E11:{other:"0 \u0e41\u0e2a\u0e19\u0e25\u0e49\u0e32\u0e19"}, 1E12:{other:"0 \u0e25\u0e49\u0e32\u0e19\u0e25\u0e49\u0e32\u0e19"}, 1E13:{other:"00 \u0e25\u0e49\u0e32\u0e19\u0e25\u0e49\u0e32\u0e19"}, 1E14:{other:"000 \u0e25\u0e49\u0e32\u0e19\u0e25\u0e49\u0e32\u0e19"}}};
+goog.i18n.CompactNumberFormatSymbols_tl = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 na libo"}, 1E4:{other:"00 na libo"}, 1E5:{other:"000 na libo"}, 1E6:{other:"0 na milyon"}, 1E7:{other:"00 na milyon"}, 1E8:{other:"000 na milyon"}, 1E9:{other:"0 na bilyon"}, 
+1E10:{other:"00 na bilyon"}, 1E11:{other:"000 na bilyon"}, 1E12:{other:"0 na trilyon"}, 1E13:{other:"00 na trilyon"}, 1E14:{other:"000 na trilyon"}}};
+goog.i18n.CompactNumberFormatSymbols_tr = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0B"}, 1E4:{other:"00\u00a0B"}, 1E5:{other:"000\u00a0B"}, 1E6:{other:"0\u00a0Mn"}, 1E7:{other:"00\u00a0Mn"}, 1E8:{other:"000\u00a0Mn"}, 1E9:{other:"0\u00a0Mr"}, 1E10:{other:"00\u00a0Mr"}, 1E11:{other:"000\u00a0Mr"}, 1E12:{other:"0\u00a0Tn"}, 1E13:{other:"00\u00a0Tn"}, 1E14:{other:"000\u00a0Tn"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 bin"}, 1E4:{other:"00 bin"}, 1E5:{other:"000 bin"}, 1E6:{other:"0 milyon"}, 
+1E7:{other:"00 milyon"}, 1E8:{other:"000 milyon"}, 1E9:{other:"0 milyar"}, 1E10:{other:"00 milyar"}, 1E11:{other:"000 milyar"}, 1E12:{other:"0 trilyon"}, 1E13:{other:"00 trilyon"}, 1E14:{other:"000 trilyon"}}};
+goog.i18n.CompactNumberFormatSymbols_uk = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u0442\u0438\u0441."}, 1E4:{other:"00\u00a0\u0442\u0438\u0441."}, 1E5:{other:"000\u00a0\u0442\u0438\u0441."}, 1E6:{other:"0\u00a0\u043c\u043b\u043d"}, 1E7:{other:"00\u00a0\u043c\u043b\u043d"}, 1E8:{other:"000\u00a0\u043c\u043b\u043d"}, 1E9:{other:"0\u00a0\u043c\u043b\u0440\u0434"}, 1E10:{other:"00\u00a0\u043c\u043b\u0440\u0434"}, 1E11:{other:"000\u00a0\u043c\u043b\u0440\u0434"}, 1E12:{other:"0\u00a0\u0442\u0440\u043b\u043d"}, 
+1E13:{other:"00\u00a0\u0442\u0440\u043b\u043d"}, 1E14:{other:"000\u00a0\u0442\u0440\u043b\u043d"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0442\u0438\u0441\u044f\u0447\u0456"}, 1E4:{other:"00 \u0442\u0438\u0441\u044f\u0447\u0456"}, 1E5:{other:"000 \u0442\u0438\u0441\u044f\u0447\u0456"}, 1E6:{other:"0 \u043c\u0456\u043b\u044c\u0439\u043e\u043d\u0430"}, 1E7:{other:"00 \u043c\u0456\u043b\u044c\u0439\u043e\u043d\u0430"}, 1E8:{other:"000 \u043c\u0456\u043b\u044c\u0439\u043e\u043d\u0430"}, 1E9:{other:"0 \u043c\u0456\u043b\u044c\u044f\u0440\u0434\u0430"}, 
+1E10:{other:"00 \u043c\u0456\u043b\u044c\u044f\u0440\u0434\u0430"}, 1E11:{other:"000 \u043c\u0456\u043b\u044c\u044f\u0440\u0434\u0430"}, 1E12:{other:"0 \u0442\u0440\u0438\u043b\u044c\u0439\u043e\u043d\u0430"}, 1E13:{other:"00 \u0442\u0440\u0438\u043b\u044c\u0439\u043e\u043d\u0430"}, 1E14:{other:"000 \u0442\u0440\u0438\u043b\u044c\u0439\u043e\u043d\u0430"}}};
+goog.i18n.CompactNumberFormatSymbols_ur = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0\u06c1\u0632\u0627\u0631"}, 1E4:{other:"00\u00a0\u06c1\u0632\u0627\u0631"}, 1E5:{other:"0\u00a0\u0644\u0627\u06a9\u06be"}, 1E6:{other:"00\u00a0\u0644\u0627\u06a9\u06be"}, 1E7:{other:"0\u00a0\u06a9\u0631\u0648\u0691"}, 1E8:{other:"00\u00a0\u06a9\u0631\u0648\u0691"}, 1E9:{other:"0\u00a0\u0627\u0631\u0628"}, 1E10:{other:"00\u00a0\u0627\u0631\u0628"}, 1E11:{other:"0\u00a0\u06a9\u06be\u0631\u0628"}, 1E12:{other:"00\u00a0\u06a9\u06be\u0631\u0628"}, 
+1E13:{other:"00\u00a0\u0679\u0631\u06cc\u0644\u06cc\u0646"}, 1E14:{other:"000\u00a0\u0679\u0631\u06cc\u0644\u06cc\u0646"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u06c1\u0632\u0627\u0631"}, 1E4:{other:"00 \u06c1\u0632\u0627\u0631"}, 1E5:{other:"0 \u0644\u0627\u06a9\u06be"}, 1E6:{other:"00 \u0644\u0627\u06a9\u06be"}, 1E7:{other:"0 \u06a9\u0631\u0648\u0691"}, 1E8:{other:"00 \u06a9\u0631\u0648\u0691"}, 1E9:{other:"0 \u0627\u0631\u0628"}, 1E10:{other:"00 \u0627\u0631\u0628"}, 1E11:{other:"0 \u06a9\u06be\u0631\u0628"}, 
+1E12:{other:"00 \u06a9\u06be\u0631\u0628"}, 1E13:{other:"00 \u0679\u0631\u06cc\u0644\u06cc\u0646"}, 1E14:{other:"000 \u0679\u0631\u06cc\u0644\u06cc\u0646"}}};
+goog.i18n.CompactNumberFormatSymbols_uz = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0ming"}, 1E4:{other:"00\u00a0ming"}, 1E5:{other:"000\u00a0ming"}, 1E6:{other:"0\u00a0mln"}, 1E7:{other:"00\u00a0mln"}, 1E8:{other:"000\u00a0mln"}, 1E9:{other:"0\u00a0mlrd"}, 1E10:{other:"00\u00a0mlrd"}, 1E11:{other:"000\u00a0mlrd"}, 1E12:{other:"0\u00a0trln"}, 1E13:{other:"00\u00a0trln"}, 1E14:{other:"000\u00a0trln"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 ming"}, 1E4:{other:"00 ming"}, 1E5:{other:"000 ming"}, 
+1E6:{other:"0 million"}, 1E7:{other:"00 million"}, 1E8:{other:"000 million"}, 1E9:{other:"0 milliard"}, 1E10:{other:"00 milliard"}, 1E11:{other:"000 milliard"}, 1E12:{other:"0 trillion"}, 1E13:{other:"00 trillion"}, 1E14:{other:"000 trillion"}}};
+goog.i18n.CompactNumberFormatSymbols_vi = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0N"}, 1E4:{other:"00\u00a0N"}, 1E5:{other:"000\u00a0N"}, 1E6:{other:"0\u00a0Tr"}, 1E7:{other:"00\u00a0Tr"}, 1E8:{other:"000\u00a0Tr"}, 1E9:{other:"0\u00a0T"}, 1E10:{other:"00\u00a0T"}, 1E11:{other:"000\u00a0T"}, 1E12:{other:"0\u00a0NT"}, 1E13:{other:"00\u00a0NT"}, 1E14:{other:"000\u00a0NT"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 ngh\u00ecn"}, 1E4:{other:"00 ngh\u00ecn"}, 1E5:{other:"000 ngh\u00ecn"}, 
+1E6:{other:"0 tri\u1ec7u"}, 1E7:{other:"00 tri\u1ec7u"}, 1E8:{other:"000 tri\u1ec7u"}, 1E9:{other:"0 t\u1ef7"}, 1E10:{other:"00 t\u1ef7"}, 1E11:{other:"000 t\u1ef7"}, 1E12:{other:"0 ngh\u00ecn t\u1ef7"}, 1E13:{other:"00 ngh\u00ecn t\u1ef7"}, 1E14:{other:"000 ngh\u00ecn t\u1ef7"}}};
+goog.i18n.CompactNumberFormatSymbols_zh = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u4e07"}, 1E5:{other:"00\u4e07"}, 1E6:{other:"000\u4e07"}, 1E7:{other:"0000\u4e07"}, 1E8:{other:"0\u4ebf"}, 1E9:{other:"00\u4ebf"}, 1E10:{other:"000\u4ebf"}, 1E11:{other:"0000\u4ebf"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u4e07"}, 1E5:{other:"00\u4e07"}, 1E6:{other:"000\u4e07"}, 1E7:{other:"0000\u4e07"}, 
+1E8:{other:"0\u4ebf"}, 1E9:{other:"00\u4ebf"}, 1E10:{other:"000\u4ebf"}, 1E11:{other:"0000\u4ebf"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}};
+goog.i18n.CompactNumberFormatSymbols_zh_CN = goog.i18n.CompactNumberFormatSymbols_zh;
+goog.i18n.CompactNumberFormatSymbols_zh_HK = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u842c"}, 1E5:{other:"00\u842c"}, 1E6:{other:"000\u842c"}, 1E7:{other:"0000\u842c"}, 1E8:{other:"0\u5104"}, 1E9:{other:"00\u5104"}, 
+1E10:{other:"000\u5104"}, 1E11:{other:"0000\u5104"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}};
+goog.i18n.CompactNumberFormatSymbols_zh_TW = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u842c"}, 1E5:{other:"00\u842c"}, 1E6:{other:"000\u842c"}, 1E7:{other:"0000\u842c"}, 1E8:{other:"0\u5104"}, 1E9:{other:"00\u5104"}, 1E10:{other:"000\u5104"}, 1E11:{other:"0000\u5104"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0"}, 1E4:{other:"0\u842c"}, 1E5:{other:"00\u842c"}, 1E6:{other:"000\u842c"}, 1E7:{other:"0000\u842c"}, 
+1E8:{other:"0\u5104"}, 1E9:{other:"00\u5104"}, 1E10:{other:"000\u5104"}, 1E11:{other:"0000\u5104"}, 1E12:{other:"0\u5146"}, 1E13:{other:"00\u5146"}, 1E14:{other:"000\u5146"}}};
+goog.i18n.CompactNumberFormatSymbols_zu = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0K"}, 1E4:{other:"00K"}, 1E5:{other:"000K"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 inkulungwane"}, 1E4:{other:"00 inkulungwane"}, 1E5:{other:"000 inkulungwane"}, 1E6:{other:"0 isigidi"}, 1E7:{other:"00 isigidi"}, 1E8:{other:"000 isigidi"}, 
+1E9:{other:"0 isigidi sezigidi"}, 1E10:{other:"00 isigidi sezigidi"}, 1E11:{other:"000 isigidi sezigidi"}, 1E12:{other:"0 isigidintathu"}, 1E13:{other:"00 isigidintathu"}, 1E14:{other:"000 isigidintathu"}}};
+goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en;
+switch(goog.LOCALE) {
+  case "af":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_af;
+    break;
+  case "am":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_am;
+    break;
+  case "ar":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ar;
+    break;
+  case "ar_DZ":
+  case "ar-DZ":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ar_DZ;
+    break;
+  case "ar_EG":
+  case "ar-EG":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ar_EG;
+    break;
+  case "az":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_az;
+    break;
+  case "be":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_be;
+    break;
+  case "bg":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_bg;
+    break;
+  case "bn":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_bn;
+    break;
+  case "br":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_br;
+    break;
+  case "bs":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_bs;
+    break;
+  case "ca":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ca;
+    break;
+  case "chr":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_chr;
+    break;
+  case "cs":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_cs;
+    break;
+  case "cy":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_cy;
+    break;
+  case "da":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_da;
+    break;
+  case "de":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_de;
+    break;
+  case "de_AT":
+  case "de-AT":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_de_AT;
+    break;
+  case "de_CH":
+  case "de-CH":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_de_CH;
+    break;
+  case "el":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_el;
+    break;
+  case "en":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en;
+    break;
+  case "en_AU":
+  case "en-AU":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_AU;
+    break;
+  case "en_CA":
+  case "en-CA":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_CA;
+    break;
+  case "en_GB":
+  case "en-GB":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_GB;
+    break;
+  case "en_IE":
+  case "en-IE":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_IE;
+    break;
+  case "en_IN":
+  case "en-IN":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_IN;
+    break;
+  case "en_SG":
+  case "en-SG":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_SG;
+    break;
+  case "en_US":
+  case "en-US":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_US;
+    break;
+  case "en_ZA":
+  case "en-ZA":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_en_ZA;
+    break;
+  case "es":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_es;
+    break;
+  case "es_419":
+  case "es-419":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_es_419;
+    break;
+  case "es_ES":
+  case "es-ES":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_es_ES;
+    break;
+  case "es_MX":
+  case "es-MX":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_es_MX;
+    break;
+  case "es_US":
+  case "es-US":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_es_US;
+    break;
+  case "et":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_et;
+    break;
+  case "eu":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_eu;
+    break;
+  case "fa":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_fa;
+    break;
+  case "fi":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_fi;
+    break;
+  case "fil":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_fil;
+    break;
+  case "fr":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_fr;
+    break;
+  case "fr_CA":
+  case "fr-CA":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_fr_CA;
+    break;
+  case "ga":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ga;
+    break;
+  case "gl":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_gl;
+    break;
+  case "gsw":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_gsw;
+    break;
+  case "gu":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_gu;
+    break;
+  case "haw":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_haw;
+    break;
+  case "he":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_he;
+    break;
+  case "hi":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_hi;
+    break;
+  case "hr":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_hr;
+    break;
+  case "hu":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_hu;
+    break;
+  case "hy":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_hy;
+    break;
+  case "id":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_id;
+    break;
+  case "in":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_in;
+    break;
+  case "is":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_is;
+    break;
+  case "it":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_it;
+    break;
+  case "iw":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_iw;
+    break;
+  case "ja":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ja;
+    break;
+  case "ka":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ka;
+    break;
+  case "kk":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_kk;
+    break;
+  case "km":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_km;
+    break;
+  case "kn":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_kn;
+    break;
+  case "ko":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ko;
+    break;
+  case "ky":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ky;
+    break;
+  case "ln":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ln;
+    break;
+  case "lo":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_lo;
+    break;
+  case "lt":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_lt;
+    break;
+  case "lv":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_lv;
+    break;
+  case "mk":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_mk;
+    break;
+  case "ml":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ml;
+    break;
+  case "mn":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_mn;
+    break;
+  case "mo":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_mo;
+    break;
+  case "mr":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_mr;
+    break;
+  case "ms":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ms;
+    break;
+  case "mt":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_mt;
+    break;
+  case "my":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_my;
+    break;
+  case "nb":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_nb;
+    break;
+  case "ne":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ne;
+    break;
+  case "nl":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_nl;
+    break;
+  case "no":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_no;
+    break;
+  case "no_NO":
+  case "no-NO":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_no_NO;
+    break;
+  case "or":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_or;
+    break;
+  case "pa":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_pa;
+    break;
+  case "pl":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_pl;
+    break;
+  case "pt":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_pt;
+    break;
+  case "pt_BR":
+  case "pt-BR":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_pt_BR;
+    break;
+  case "pt_PT":
+  case "pt-PT":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_pt_PT;
+    break;
+  case "ro":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ro;
+    break;
+  case "ru":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ru;
+    break;
+  case "sh":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sh;
+    break;
+  case "si":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_si;
+    break;
+  case "sk":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sk;
+    break;
+  case "sl":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sl;
+    break;
+  case "sq":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sq;
+    break;
+  case "sr":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sr;
+    break;
+  case "sr_Latn":
+  case "sr-Latn":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sr_Latn;
+    break;
+  case "sv":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sv;
+    break;
+  case "sw":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_sw;
+    break;
+  case "ta":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ta;
+    break;
+  case "te":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_te;
+    break;
+  case "th":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_th;
+    break;
+  case "tl":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_tl;
+    break;
+  case "tr":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_tr;
+    break;
+  case "uk":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_uk;
+    break;
+  case "ur":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_ur;
+    break;
+  case "uz":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_uz;
+    break;
+  case "vi":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_vi;
+    break;
+  case "zh":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_zh;
+    break;
+  case "zh_CN":
+  case "zh-CN":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_zh_CN;
+    break;
+  case "zh_HK":
+  case "zh-HK":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_zh_HK;
+    break;
+  case "zh_TW":
+  case "zh-TW":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_zh_TW;
+    break;
+  case "zu":
+    goog.i18n.CompactNumberFormatSymbols = goog.i18n.CompactNumberFormatSymbols_zu;
+}
+;goog.i18n.currency = {};
+goog.i18n.currency.PRECISION_MASK_ = 7;
+goog.i18n.currency.POSITION_FLAG_ = 16;
+goog.i18n.currency.SPACE_FLAG_ = 32;
+goog.i18n.currency.tier2Enabled_ = !1;
+goog.i18n.currency.isAvailable = function(currencyCode) {
+  return currencyCode in goog.i18n.currency.CurrencyInfo;
+};
+goog.i18n.currency.addTier2Support = function() {
+  if (!goog.i18n.currency.tier2Enabled_) {
+    for (var key in goog.i18n.currency.CurrencyInfoTier2) {
+      goog.i18n.currency.CurrencyInfo[key] = goog.i18n.currency.CurrencyInfoTier2[key];
+    }
+    goog.i18n.currency.tier2Enabled_ = !0;
+  }
+};
+goog.i18n.currency.getGlobalCurrencyPattern = function(currencyCode) {
+  var info = goog.i18n.currency.CurrencyInfo[currencyCode], patternNum = info[0];
+  return currencyCode == info[1] ? goog.i18n.currency.getCurrencyPattern_(patternNum, info[1]) : currencyCode + " " + goog.i18n.currency.getCurrencyPattern_(patternNum, info[1]);
+};
+goog.i18n.currency.getGlobalCurrencySign = function(currencyCode) {
+  var info = goog.i18n.currency.CurrencyInfo[currencyCode];
+  return currencyCode == info[1] ? currencyCode : currencyCode + " " + info[1];
+};
+goog.i18n.currency.getGlobalCurrencySignWithFallback = function(currencyCode) {
+  var info = goog.i18n.currency.CurrencyInfo[currencyCode];
+  return info ? currencyCode == info[1] ? currencyCode : currencyCode + " " + info[1] : currencyCode;
+};
+goog.i18n.currency.getLocalCurrencyPattern = function(currencyCode) {
+  var info = goog.i18n.currency.CurrencyInfo[currencyCode];
+  return goog.i18n.currency.getCurrencyPattern_(info[0], info[1]);
+};
+goog.i18n.currency.getLocalCurrencySign = function(currencyCode) {
+  return goog.i18n.currency.CurrencyInfo[currencyCode][1];
+};
+goog.i18n.currency.getLocalCurrencySignWithFallback = function(currencyCode) {
+  return currencyCode in goog.i18n.currency.CurrencyInfo ? goog.i18n.currency.CurrencyInfo[currencyCode][1] : currencyCode;
+};
+goog.i18n.currency.getPortableCurrencyPattern = function(currencyCode) {
+  var info = goog.i18n.currency.CurrencyInfo[currencyCode];
+  return goog.i18n.currency.getCurrencyPattern_(info[0], info[2]);
+};
+goog.i18n.currency.getPortableCurrencySign = function(currencyCode) {
+  return goog.i18n.currency.CurrencyInfo[currencyCode][2];
+};
+goog.i18n.currency.getPortableCurrencySignWithFallback = function(currencyCode) {
+  return currencyCode in goog.i18n.currency.CurrencyInfo ? goog.i18n.currency.CurrencyInfo[currencyCode][2] : currencyCode;
+};
+goog.i18n.currency.isPrefixSignPosition = function(currencyCode) {
+  return 0 == (goog.i18n.currency.CurrencyInfo[currencyCode][0] & goog.i18n.currency.POSITION_FLAG_);
+};
+goog.i18n.currency.getCurrencyPattern_ = function(patternNum, sign) {
+  var strParts = ["#,##0"], precision = patternNum & goog.i18n.currency.PRECISION_MASK_;
+  if (0 < precision) {
+    strParts.push(".");
+    for (var i = 0; i < precision; i++) {
+      strParts.push("0");
+    }
+  }
+  0 == (patternNum & goog.i18n.currency.POSITION_FLAG_) ? (strParts.unshift(patternNum & goog.i18n.currency.SPACE_FLAG_ ? "' " : "'"), strParts.unshift(sign), strParts.unshift("'")) : strParts.push(patternNum & goog.i18n.currency.SPACE_FLAG_ ? " '" : "'", sign, "'");
+  return strParts.join("");
+};
+goog.i18n.currency.adjustPrecision = function(pattern, currencyCode) {
+  var strParts = ["0"], info = goog.i18n.currency.CurrencyInfo[currencyCode];
+  if (!info) {
+    return pattern;
+  }
+  var precision = info[0] & goog.i18n.currency.PRECISION_MASK_;
+  if (0 < precision) {
+    strParts.push(".");
+    for (var i = 0; i < precision; i++) {
+      strParts.push("0");
+    }
+  }
+  return pattern.replace(/0.00/g, strParts.join(""));
+};
+goog.i18n.currency.CurrencyInfo = {AED:[2, "dh", "\u062f.\u0625."], ALL:[0, "Lek", "Lek"], AUD:[2, "$", "AU$"], BDT:[2, "\u09f3", "Tk"], BGN:[2, "lev", "lev"], BRL:[2, "R$", "R$"], CAD:[2, "$", "C$"], CDF:[2, "FrCD", "CDF"], CHF:[2, "CHF", "CHF"], CLP:[0, "$", "CL$"], CNY:[2, "\u00a5", "RMB\u00a5"], COP:[32, "$", "COL$"], CRC:[0, "\u20a1", "CR\u20a1"], CZK:[50, "K\u010d", "K\u010d"], DKK:[50, "kr.", "kr."], DOP:[2, "RD$", "RD$"], EGP:[2, "\u00a3", "LE"], ETB:[2, "Birr", "Birr"], EUR:[2, "\u20ac", 
+"\u20ac"], GBP:[2, "\u00a3", "GB\u00a3"], HKD:[2, "$", "HK$"], HRK:[2, "kn", "kn"], HUF:[34, "Ft", "Ft"], IDR:[0, "Rp", "Rp"], ILS:[34, "\u20aa", "IL\u20aa"], INR:[2, "\u20b9", "Rs"], IRR:[0, "Rial", "IRR"], ISK:[0, "kr", "kr"], JMD:[2, "$", "JA$"], JPY:[0, "\u00a5", "JP\u00a5"], KRW:[0, "\u20a9", "KR\u20a9"], LKR:[2, "Rs", "SLRs"], LTL:[2, "Lt", "Lt"], MNT:[0, "\u20ae", "MN\u20ae"], MVR:[2, "Rf", "MVR"], MXN:[2, "$", "Mex$"], MYR:[2, "RM", "RM"], NOK:[50, "kr", "NOkr"], PAB:[2, "B/.", "B/."], PEN:[2, 
+"S/.", "S/."], PHP:[2, "\u20b1", "PHP"], PKR:[0, "Rs", "PKRs."], PLN:[50, "z\u0142", "z\u0142"], RON:[2, "RON", "RON"], RSD:[0, "din", "RSD"], RUB:[50, "\u20bd", "RUB"], SAR:[2, "Rial", "Rial"], SEK:[50, "kr", "kr"], SGD:[2, "$", "S$"], THB:[2, "\u0e3f", "THB"], TRY:[2, "\u20ba", "TRY"], TWD:[2, "NT$", "NT$"], TZS:[0, "TSh", "TSh"], UAH:[2, "\u0433\u0440\u043d.", "UAH"], USD:[2, "$", "US$"], UYU:[2, "$", "$U"], VND:[48, "\u20ab", "VN\u20ab"], YER:[0, "Rial", "Rial"], ZAR:[2, "R", "ZAR"]};
+goog.i18n.currency.CurrencyInfoTier2 = {AFN:[48, "Af.", "AFN"], AMD:[32, "Dram", "dram"], ANG:[2, "NAf.", "ANG"], AOA:[2, "Kz", "Kz"], ARS:[34, "$", "AR$"], AWG:[2, "Afl.", "Afl."], AZN:[34, "\u20bc", "AZN"], BAM:[2, "KM", "KM"], BBD:[2, "$", "Bds$"], BHD:[3, "din", "din"], BIF:[0, "FBu", "FBu"], BMD:[2, "$", "BD$"], BND:[2, "$", "B$"], BOB:[2, "Bs", "Bs"], BSD:[2, "$", "BS$"], BTN:[2, "Nu.", "Nu."], BWP:[2, "P", "pula"], BYN:[50, "\u0440.", "BYN"], BYR:[48, "\u0440.", "BYR"], BZD:[2, "$", "BZ$"], 
+CNH:[2, "\u00a5", "RMB\u00a5"], CUC:[1, "$", "CUC$"], CUP:[2, "$", "CU$"], CVE:[2, "CVE", "Esc"], DJF:[0, "Fdj", "Fdj"], DZD:[2, "din", "din"], ERN:[2, "Nfk", "Nfk"], FJD:[2, "$", "FJ$"], FKP:[2, "\u00a3", "FK\u00a3"], GEL:[2, "GEL", "GEL"], GHS:[2, "GHS", "GHS"], GIP:[2, "\u00a3", "GI\u00a3"], GMD:[2, "GMD", "GMD"], GNF:[0, "FG", "FG"], GTQ:[2, "Q", "GTQ"], GYD:[0, "$", "GY$"], HNL:[2, "L", "HNL"], HTG:[2, "HTG", "HTG"], IQD:[0, "din", "IQD"], JOD:[3, "din", "JOD"], KES:[2, "Ksh", "Ksh"], KGS:[2, 
+"KGS", "KGS"], KHR:[2, "Riel", "KHR"], KMF:[0, "CF", "KMF"], KPW:[0, "\u20a9KP", "KPW"], KWD:[3, "din", "KWD"], KYD:[2, "$", "KY$"], KZT:[2, "\u20b8", "KZT"], LAK:[0, "\u20ad", "\u20ad"], LBP:[0, "L\u00a3", "LBP"], LRD:[2, "$", "L$"], LSL:[2, "LSL", "LSL"], LYD:[3, "din", "LD"], MAD:[2, "dh", "MAD"], MDL:[2, "MDL", "MDL"], MGA:[0, "Ar", "MGA"], MKD:[2, "din", "MKD"], MMK:[0, "K", "MMK"], MOP:[2, "MOP", "MOP$"], MRO:[0, "MRO", "MRO"], MUR:[0, "MURs", "MURs"], MWK:[2, "MWK", "MWK"], MZN:[2, "MTn", 
+"MTn"], NAD:[2, "$", "N$"], NGN:[2, "\u20a6", "NG\u20a6"], NIO:[2, "C$", "C$"], NPR:[2, "Rs", "NPRs"], NZD:[2, "$", "NZ$"], OMR:[3, "Rial", "OMR"], PGK:[2, "PGK", "PGK"], PYG:[16, "Gs.", "PYG"], QAR:[2, "Rial", "QR"], RWF:[0, "RF", "RF"], SBD:[2, "$", "SI$"], SCR:[2, "SCR", "SCR"], SDG:[2, "SDG", "SDG"], SHP:[2, "\u00a3", "SH\u00a3"], SLL:[0, "SLL", "SLL"], SOS:[0, "SOS", "SOS"], SRD:[2, "$", "SR$"], SSP:[2, "\u00a3", "SSP"], STD:[0, "Db", "Db"], SYP:[0, "\u00a3", "SY\u00a3"], SZL:[2, "SZL", "SZL"], 
+TJS:[2, "Som", "TJS"], TMT:[50, "m", "TMT"], TND:[3, "din", "DT"], TOP:[2, "T$", "T$"], TTD:[2, "$", "TT$"], UGX:[0, "UGX", "UGX"], UZS:[0, "so\u02bcm", "UZS"], VEF:[2, "Bs", "Bs"], VES:[2, "Bs", "Bs"], VUV:[0, "VUV", "VUV"], WST:[2, "WST", "WST"], XAF:[0, "FCFA", "FCFA"], XCD:[2, "$", "EC$"], XOF:[0, "CFA", "CFA"], XPF:[48, "FCFP", "FCFP"], ZMW:[0, "ZMW", "ZMW"], ZWD:[0, "$", "Z$"]};
+goog.i18n.NumberFormatSymbols_af = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"ZAR"};
+goog.i18n.NumberFormatSymbols_am = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"ETB"};
+goog.i18n.NumberFormatSymbols_ar = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"\u200e%\u200e", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0644\u064a\u0633\u00a0\u0631\u0642\u0645\u064b\u0627", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"EGP"};
+goog.i18n.NumberFormatSymbols_ar_DZ = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"\u200e%\u200e", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0644\u064a\u0633\u00a0\u0631\u0642\u0645\u064b\u0627", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"DZD"};
+goog.i18n.NumberFormatSymbols_ar_EG = {DECIMAL_SEP:"\u066b", GROUP_SEP:"\u066c", PERCENT:"\u066a\u061c", ZERO_DIGIT:"\u0660", PLUS_SIGN:"\u061c+", MINUS_SIGN:"\u061c-", EXP_SYMBOL:"\u0627\u0633", PERMILL:"\u0609", INFINITY:"\u221e", NAN:"\u0644\u064a\u0633\u00a0\u0631\u0642\u0645", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EGP"};
+goog.i18n.NumberFormatSymbols_ar_EG_u_nu_latn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"\u200e%\u200e", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0644\u064a\u0633\u00a0\u0631\u0642\u0645\u064b\u0627", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"EGP"};
+goog.i18n.NumberFormatSymbols_az = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"AZN"};
+goog.i18n.NumberFormatSymbols_be = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"BYN"};
+goog.i18n.NumberFormatSymbols_bg = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"BGN"};
+goog.i18n.NumberFormatSymbols_bn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"\u09e6", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##,##0.00\u00a4", DEF_CURRENCY_CODE:"BDT"};
+goog.i18n.NumberFormatSymbols_bn_u_nu_latn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##,##0%", CURRENCY_PATTERN:"#,##,##0.00\u00a4", DEF_CURRENCY_CODE:"BDT"};
+goog.i18n.NumberFormatSymbols_br = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_bs = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"BAM"};
+goog.i18n.NumberFormatSymbols_ca = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_chr = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"USD"};
+goog.i18n.NumberFormatSymbols_cs = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"CZK"};
+goog.i18n.NumberFormatSymbols_cy = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"GBP"};
+goog.i18n.NumberFormatSymbols_da = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"DKK"};
+goog.i18n.NumberFormatSymbols_de = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_de_AT = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_de_CH = {DECIMAL_SEP:".", GROUP_SEP:"\u2019", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00;\u00a4-#,##0.00", DEF_CURRENCY_CODE:"CHF"};
+goog.i18n.NumberFormatSymbols_el = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"e", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_en = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"USD"};
+goog.i18n.NumberFormatSymbols_en_AU = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"e", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"AUD"};
+goog.i18n.NumberFormatSymbols_en_CA = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"e", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"CAD"};
+goog.i18n.NumberFormatSymbols_en_GB = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"GBP"};
+goog.i18n.NumberFormatSymbols_en_IE = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_en_IN = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_en_SG = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"SGD"};
+goog.i18n.NumberFormatSymbols_en_US = goog.i18n.NumberFormatSymbols_en;
+goog.i18n.NumberFormatSymbols_en_ZA = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"ZAR"};
+goog.i18n.NumberFormatSymbols_es = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_es_419 = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"MXN"};
+goog.i18n.NumberFormatSymbols_es_ES = goog.i18n.NumberFormatSymbols_es;
+goog.i18n.NumberFormatSymbols_es_MX = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"MXN"};
+goog.i18n.NumberFormatSymbols_es_US = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"USD"};
+goog.i18n.NumberFormatSymbols_et = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"\u00d710^", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_eu = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"%\u00a0#,##0", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_fa = {DECIMAL_SEP:"\u066b", GROUP_SEP:"\u066c", PERCENT:"\u066a", ZERO_DIGIT:"\u06f0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e\u2212", EXP_SYMBOL:"\u00d7\u06f1\u06f0^", PERMILL:"\u0609", INFINITY:"\u221e", NAN:"\u0646\u0627\u0639\u062f\u062f", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u200e\u00a4#,##0.00", DEF_CURRENCY_CODE:"IRR"};
+goog.i18n.NumberFormatSymbols_fa_u_nu_latn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e\u2212", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0646\u0627\u0639\u062f\u062f", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u200e\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"IRR"};
+goog.i18n.NumberFormatSymbols_fi = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"ep\u00e4luku", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_fil = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"PHP"};
+goog.i18n.NumberFormatSymbols_fr = {DECIMAL_SEP:",", GROUP_SEP:"\u202f", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_fr_CA = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"CAD"};
+goog.i18n.NumberFormatSymbols_ga = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_gl = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_gsw = {DECIMAL_SEP:".", GROUP_SEP:"\u2019", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"CHF"};
+goog.i18n.NumberFormatSymbols_gu = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"[#E0]", PERCENT_PATTERN:"#,##,##0%", CURRENCY_PATTERN:"\u00a4#,##,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_haw = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"USD"};
+goog.i18n.NumberFormatSymbols_he = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u200f#,##0.00\u00a0\u00a4;\u200f-#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"ILS"};
+goog.i18n.NumberFormatSymbols_hi = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"[#E0]", PERCENT_PATTERN:"#,##,##0%", CURRENCY_PATTERN:"\u00a4#,##,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_hr = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"HRK"};
+goog.i18n.NumberFormatSymbols_hu = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"HUF"};
+goog.i18n.NumberFormatSymbols_hy = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0548\u0579\u0539", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"AMD"};
+goog.i18n.NumberFormatSymbols_id = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"IDR"};
+goog.i18n.NumberFormatSymbols_in = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"IDR"};
+goog.i18n.NumberFormatSymbols_is = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"ISK"};
+goog.i18n.NumberFormatSymbols_it = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_iw = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u200f#,##0.00\u00a0\u00a4;\u200f-#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"ILS"};
+goog.i18n.NumberFormatSymbols_ja = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"JPY"};
+goog.i18n.NumberFormatSymbols_ka = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u10d0\u10e0\u00a0\u10d0\u10e0\u10d8\u10e1\u00a0\u10e0\u10d8\u10ea\u10ee\u10d5\u10d8", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"GEL"};
+goog.i18n.NumberFormatSymbols_kk = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0441\u0430\u043d\u00a0\u0435\u043c\u0435\u0441", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"KZT"};
+goog.i18n.NumberFormatSymbols_km = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a4", DEF_CURRENCY_CODE:"KHR"};
+goog.i18n.NumberFormatSymbols_kn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_ko = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"KRW"};
+goog.i18n.NumberFormatSymbols_ky = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0441\u0430\u043d\u00a0\u044d\u043c\u0435\u0441", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"KGS"};
+goog.i18n.NumberFormatSymbols_ln = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"CDF"};
+goog.i18n.NumberFormatSymbols_lo = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u0e9a\u0ecd\u0ec8\u200b\u0ec1\u0ea1\u0ec8\u0e99\u200b\u0ec2\u0e95\u200b\u0ec0\u0ea5\u0e81", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00;\u00a4-#,##0.00", DEF_CURRENCY_CODE:"LAK"};
+goog.i18n.NumberFormatSymbols_lt = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"\u00d710^", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_lv = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NS", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_mk = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"MKD"};
+goog.i18n.NumberFormatSymbols_ml = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_mn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"MNT"};
+goog.i18n.NumberFormatSymbols_mo = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"MDL"};
+goog.i18n.NumberFormatSymbols_mr = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"\u0966", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"[#E0]", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_mr_u_nu_latn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"[#E0]", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_ms = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"MYR"};
+goog.i18n.NumberFormatSymbols_mt = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_my = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"\u1040", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u1002\u100f\u1014\u103a\u1038\u1019\u101f\u102f\u1010\u103a\u101e\u1031\u102c", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"MMK"};
+goog.i18n.NumberFormatSymbols_my_u_nu_latn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u1002\u100f\u1014\u103a\u1038\u1019\u101f\u102f\u1010\u103a\u101e\u1031\u102c", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"MMK"};
+goog.i18n.NumberFormatSymbols_nb = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"NOK"};
+goog.i18n.NumberFormatSymbols_ne = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"\u0966", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"NPR"};
+goog.i18n.NumberFormatSymbols_ne_u_nu_latn = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"NPR"};
+goog.i18n.NumberFormatSymbols_nl = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00;\u00a4\u00a0-#,##0.00", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_no = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"NOK"};
+goog.i18n.NumberFormatSymbols_no_NO = goog.i18n.NumberFormatSymbols_no;
+goog.i18n.NumberFormatSymbols_or = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_pa = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"[#E0]", PERCENT_PATTERN:"#,##,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_pl = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"PLN"};
+goog.i18n.NumberFormatSymbols_pt = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"BRL"};
+goog.i18n.NumberFormatSymbols_pt_BR = goog.i18n.NumberFormatSymbols_pt;
+goog.i18n.NumberFormatSymbols_pt_PT = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_ro = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"RON"};
+goog.i18n.NumberFormatSymbols_ru = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u043d\u0435\u00a0\u0447\u0438\u0441\u043b\u043e", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"RUB"};
+goog.i18n.NumberFormatSymbols_sh = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"RSD"};
+goog.i18n.NumberFormatSymbols_si = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"LKR"};
+goog.i18n.NumberFormatSymbols_sk = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"e", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_sl = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"e", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"EUR"};
+goog.i18n.NumberFormatSymbols_sq = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"ALL"};
+goog.i18n.NumberFormatSymbols_sr = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"RSD"};
+goog.i18n.NumberFormatSymbols_sr_Latn = goog.i18n.NumberFormatSymbols_sr;
+goog.i18n.NumberFormatSymbols_sv = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"\u2212", EXP_SYMBOL:"\u00d710^", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0\u00a0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"SEK"};
+goog.i18n.NumberFormatSymbols_sw = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"TZS"};
+goog.i18n.NumberFormatSymbols_ta = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_te = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##,##0.00", DEF_CURRENCY_CODE:"INR"};
+goog.i18n.NumberFormatSymbols_th = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"THB"};
+goog.i18n.NumberFormatSymbols_tl = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"PHP"};
+goog.i18n.NumberFormatSymbols_tr = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"%#,##0", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"TRY"};
+goog.i18n.NumberFormatSymbols_uk = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"\u0415", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"UAH"};
+goog.i18n.NumberFormatSymbols_ur = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"\u200e+", MINUS_SIGN:"\u200e-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4\u00a0#,##0.00", DEF_CURRENCY_CODE:"PKR"};
+goog.i18n.NumberFormatSymbols_uz = {DECIMAL_SEP:",", GROUP_SEP:"\u00a0", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"son\u00a0emas", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"UZS"};
+goog.i18n.NumberFormatSymbols_vi = {DECIMAL_SEP:",", GROUP_SEP:".", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"#,##0.00\u00a0\u00a4", DEF_CURRENCY_CODE:"VND"};
+goog.i18n.NumberFormatSymbols_zh = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"CNY"};
+goog.i18n.NumberFormatSymbols_zh_CN = goog.i18n.NumberFormatSymbols_zh;
+goog.i18n.NumberFormatSymbols_zh_HK = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u975e\u6578\u503c", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"HKD"};
+goog.i18n.NumberFormatSymbols_zh_TW = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"\u975e\u6578\u503c", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"TWD"};
+goog.i18n.NumberFormatSymbols_zu = {DECIMAL_SEP:".", GROUP_SEP:",", PERCENT:"%", ZERO_DIGIT:"0", PLUS_SIGN:"+", MINUS_SIGN:"-", EXP_SYMBOL:"E", PERMILL:"\u2030", INFINITY:"\u221e", NAN:"NaN", DECIMAL_PATTERN:"#,##0.###", SCIENTIFIC_PATTERN:"#E0", PERCENT_PATTERN:"#,##0%", CURRENCY_PATTERN:"\u00a4#,##0.00", DEF_CURRENCY_CODE:"ZAR"};
+goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en;
+goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en;
+switch(goog.LOCALE) {
+  case "af":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_af;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_af;
+    break;
+  case "am":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_am;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_am;
+    break;
+  case "ar":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ar;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ar;
+    break;
+  case "ar_DZ":
+  case "ar-DZ":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ar_DZ;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ar_DZ;
+    break;
+  case "ar_EG":
+  case "ar-EG":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ar_EG;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ar_EG_u_nu_latn;
+    break;
+  case "az":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_az;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_az;
+    break;
+  case "be":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_be;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_be;
+    break;
+  case "bg":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_bg;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_bg;
+    break;
+  case "bn":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_bn;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_bn_u_nu_latn;
+    break;
+  case "br":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_br;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_br;
+    break;
+  case "bs":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_bs;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_bs;
+    break;
+  case "ca":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ca;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ca;
+    break;
+  case "chr":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_chr;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_chr;
+    break;
+  case "cs":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_cs;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_cs;
+    break;
+  case "cy":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_cy;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_cy;
+    break;
+  case "da":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_da;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_da;
+    break;
+  case "de":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_de;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_de;
+    break;
+  case "de_AT":
+  case "de-AT":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_de_AT;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_de_AT;
+    break;
+  case "de_CH":
+  case "de-CH":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_de_CH;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_de_CH;
+    break;
+  case "el":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_el;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_el;
+    break;
+  case "en":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en;
+    break;
+  case "en_AU":
+  case "en-AU":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_AU;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_AU;
+    break;
+  case "en_CA":
+  case "en-CA":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_CA;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_CA;
+    break;
+  case "en_GB":
+  case "en-GB":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_GB;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_GB;
+    break;
+  case "en_IE":
+  case "en-IE":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_IE;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_IE;
+    break;
+  case "en_IN":
+  case "en-IN":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_IN;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_IN;
+    break;
+  case "en_SG":
+  case "en-SG":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_SG;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_SG;
+    break;
+  case "en_US":
+  case "en-US":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_US;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_US;
+    break;
+  case "en_ZA":
+  case "en-ZA":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_en_ZA;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_en_ZA;
+    break;
+  case "es":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_es;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_es;
+    break;
+  case "es_419":
+  case "es-419":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_es_419;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_es_419;
+    break;
+  case "es_ES":
+  case "es-ES":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_es_ES;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_es_ES;
+    break;
+  case "es_MX":
+  case "es-MX":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_es_MX;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_es_MX;
+    break;
+  case "es_US":
+  case "es-US":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_es_US;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_es_US;
+    break;
+  case "et":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_et;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_et;
+    break;
+  case "eu":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_eu;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_eu;
+    break;
+  case "fa":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_fa;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_fa_u_nu_latn;
+    break;
+  case "fi":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_fi;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_fi;
+    break;
+  case "fil":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_fil;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_fil;
+    break;
+  case "fr":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_fr;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_fr;
+    break;
+  case "fr_CA":
+  case "fr-CA":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_fr_CA;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_fr_CA;
+    break;
+  case "ga":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ga;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ga;
+    break;
+  case "gl":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_gl;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_gl;
+    break;
+  case "gsw":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_gsw;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_gsw;
+    break;
+  case "gu":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_gu;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_gu;
+    break;
+  case "haw":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_haw;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_haw;
+    break;
+  case "he":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_he;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_he;
+    break;
+  case "hi":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_hi;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_hi;
+    break;
+  case "hr":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_hr;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_hr;
+    break;
+  case "hu":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_hu;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_hu;
+    break;
+  case "hy":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_hy;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_hy;
+    break;
+  case "id":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_id;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_id;
+    break;
+  case "in":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_in;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_in;
+    break;
+  case "is":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_is;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_is;
+    break;
+  case "it":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_it;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_it;
+    break;
+  case "iw":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_iw;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_iw;
+    break;
+  case "ja":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ja;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ja;
+    break;
+  case "ka":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ka;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ka;
+    break;
+  case "kk":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_kk;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_kk;
+    break;
+  case "km":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_km;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_km;
+    break;
+  case "kn":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_kn;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_kn;
+    break;
+  case "ko":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ko;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ko;
+    break;
+  case "ky":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ky;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ky;
+    break;
+  case "ln":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ln;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ln;
+    break;
+  case "lo":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_lo;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_lo;
+    break;
+  case "lt":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_lt;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_lt;
+    break;
+  case "lv":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_lv;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_lv;
+    break;
+  case "mk":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_mk;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_mk;
+    break;
+  case "ml":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ml;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ml;
+    break;
+  case "mn":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_mn;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_mn;
+    break;
+  case "mo":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_mo;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_mo;
+    break;
+  case "mr":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_mr;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_mr_u_nu_latn;
+    break;
+  case "ms":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ms;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ms;
+    break;
+  case "mt":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_mt;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_mt;
+    break;
+  case "my":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_my;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_my_u_nu_latn;
+    break;
+  case "nb":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_nb;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_nb;
+    break;
+  case "ne":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ne;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ne_u_nu_latn;
+    break;
+  case "nl":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_nl;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_nl;
+    break;
+  case "no":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_no;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_no;
+    break;
+  case "no_NO":
+  case "no-NO":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_no_NO;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_no_NO;
+    break;
+  case "or":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_or;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_or;
+    break;
+  case "pa":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_pa;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_pa;
+    break;
+  case "pl":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_pl;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_pl;
+    break;
+  case "pt":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_pt;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_pt;
+    break;
+  case "pt_BR":
+  case "pt-BR":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_pt_BR;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_pt_BR;
+    break;
+  case "pt_PT":
+  case "pt-PT":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_pt_PT;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_pt_PT;
+    break;
+  case "ro":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ro;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ro;
+    break;
+  case "ru":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ru;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ru;
+    break;
+  case "sh":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sh;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sh;
+    break;
+  case "si":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_si;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_si;
+    break;
+  case "sk":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sk;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sk;
+    break;
+  case "sl":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sl;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sl;
+    break;
+  case "sq":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sq;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sq;
+    break;
+  case "sr":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sr;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sr;
+    break;
+  case "sr_Latn":
+  case "sr-Latn":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sr_Latn;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sr_Latn;
+    break;
+  case "sv":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sv;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sv;
+    break;
+  case "sw":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_sw;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_sw;
+    break;
+  case "ta":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ta;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ta;
+    break;
+  case "te":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_te;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_te;
+    break;
+  case "th":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_th;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_th;
+    break;
+  case "tl":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_tl;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_tl;
+    break;
+  case "tr":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_tr;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_tr;
+    break;
+  case "uk":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_uk;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_uk;
+    break;
+  case "ur":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_ur;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_ur;
+    break;
+  case "uz":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_uz;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_uz;
+    break;
+  case "vi":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_vi;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_vi;
+    break;
+  case "zh":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_zh;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_zh;
+    break;
+  case "zh_CN":
+  case "zh-CN":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_zh_CN;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_zh_CN;
+    break;
+  case "zh_HK":
+  case "zh-HK":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_zh_HK;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_zh_HK;
+    break;
+  case "zh_TW":
+  case "zh-TW":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_zh_TW;
+    goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_zh_TW;
+    break;
+  case "zu":
+    goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_zu, goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_zu;
+}
+;goog.i18n.NumberFormat = function(pattern, opt_currency, opt_currencyStyle, opt_symbols) {
+  this.intlCurrencyCode_ = opt_currency || null;
+  this.currencyStyle_ = opt_currencyStyle || goog.i18n.NumberFormat.CurrencyStyle.LOCAL;
+  this.overrideNumberFormatSymbols_ = opt_symbols || null;
+  this.maximumIntegerDigits_ = 40;
+  this.minimumIntegerDigits_ = 1;
+  this.significantDigits_ = 0;
+  this.maximumFractionDigits_ = 3;
+  this.minExponentDigits_ = this.minimumFractionDigits_ = 0;
+  this.showTrailingZeros_ = this.useSignForPositiveExponent_ = !1;
+  this.positiveSuffix_ = this.positivePrefix_ = "";
+  this.negativePrefix_ = this.getNumberFormatSymbols_().MINUS_SIGN;
+  this.negativeSuffix_ = "";
+  this.multiplier_ = 1;
+  this.negativePercentSignExpected_ = !1;
+  this.groupingArray_ = [];
+  this.useExponentialNotation_ = this.decimalSeparatorAlwaysShown_ = !1;
+  this.compactStyle_ = goog.i18n.NumberFormat.CompactStyle.NONE;
+  this.baseFormattingNumber_ = null;
+  "number" == typeof pattern ? this.applyStandardPattern_(pattern) : this.applyPattern_(pattern);
+};
+goog.i18n.NumberFormat.Format = {DECIMAL:1, SCIENTIFIC:2, PERCENT:3, CURRENCY:4, COMPACT_SHORT:5, COMPACT_LONG:6};
+goog.i18n.NumberFormat.CurrencyStyle = {LOCAL:0, PORTABLE:1, GLOBAL:2};
+goog.i18n.NumberFormat.CompactStyle = {NONE:0, SHORT:1, LONG:2};
+goog.i18n.NumberFormat.enforceAsciiDigits_ = !1;
+goog.i18n.NumberFormat.setEnforceAsciiDigits = function(doEnforce) {
+  goog.i18n.NumberFormat.enforceAsciiDigits_ = doEnforce;
+};
+goog.i18n.NumberFormat.isEnforceAsciiDigits = function() {
+  return goog.i18n.NumberFormat.enforceAsciiDigits_;
+};
+goog.i18n.NumberFormat.prototype.getNumberFormatSymbols_ = function() {
+  return this.overrideNumberFormatSymbols_ || (goog.i18n.NumberFormat.enforceAsciiDigits_ ? goog.i18n.NumberFormatSymbols_u_nu_latn : goog.i18n.NumberFormatSymbols);
+};
+goog.i18n.NumberFormat.prototype.getCurrencyCode_ = function() {
+  return this.intlCurrencyCode_ || this.getNumberFormatSymbols_().DEF_CURRENCY_CODE;
+};
+goog.i18n.NumberFormat.prototype.setMinimumFractionDigits = function(min) {
+  if (0 < this.significantDigits_ && 0 < min) {
+    throw Error("Can't combine significant digits and minimum fraction digits");
+  }
+  this.minimumFractionDigits_ = min;
+  return this;
+};
+goog.i18n.NumberFormat.prototype.setMaximumFractionDigits = function(max) {
+  if (308 < max) {
+    throw Error("Unsupported maximum fraction digits: " + max);
+  }
+  this.maximumFractionDigits_ = max;
+  return this;
+};
+goog.i18n.NumberFormat.prototype.setSignificantDigits = function(number) {
+  if (0 < this.minimumFractionDigits_ && 0 <= number) {
+    throw Error("Can't combine significant digits and minimum fraction digits");
+  }
+  this.significantDigits_ = number;
+  return this;
+};
+goog.i18n.NumberFormat.prototype.applyPattern_ = function(pattern) {
+  pattern.replace(/ /g, "\u00a0");
+  var pos = [0];
+  this.positivePrefix_ = this.parseAffix_(pattern, pos);
+  var trunkStart = pos[0];
+  this.parseTrunk_(pattern, pos);
+  var trunkLen = pos[0] - trunkStart;
+  this.positiveSuffix_ = this.parseAffix_(pattern, pos);
+  pos[0] < pattern.length && pattern.charAt(pos[0]) == goog.i18n.NumberFormat.PATTERN_SEPARATOR_ ? (pos[0]++, 1 != this.multiplier_ && (this.negativePercentSignExpected_ = !0), this.negativePrefix_ = this.parseAffix_(pattern, pos), pos[0] += trunkLen, this.negativeSuffix_ = this.parseAffix_(pattern, pos)) : (this.negativePrefix_ += this.positivePrefix_, this.negativeSuffix_ += this.positiveSuffix_);
+};
+goog.i18n.NumberFormat.prototype.applyStandardPattern_ = function(patternType) {
+  switch(patternType) {
+    case goog.i18n.NumberFormat.Format.DECIMAL:
+      this.applyPattern_(this.getNumberFormatSymbols_().DECIMAL_PATTERN);
+      break;
+    case goog.i18n.NumberFormat.Format.SCIENTIFIC:
+      this.applyPattern_(this.getNumberFormatSymbols_().SCIENTIFIC_PATTERN);
+      break;
+    case goog.i18n.NumberFormat.Format.PERCENT:
+      this.applyPattern_(this.getNumberFormatSymbols_().PERCENT_PATTERN);
+      break;
+    case goog.i18n.NumberFormat.Format.CURRENCY:
+      this.applyPattern_(goog.i18n.currency.adjustPrecision(this.getNumberFormatSymbols_().CURRENCY_PATTERN, this.getCurrencyCode_()));
+      break;
+    case goog.i18n.NumberFormat.Format.COMPACT_SHORT:
+      this.applyCompactStyle_(goog.i18n.NumberFormat.CompactStyle.SHORT);
+      break;
+    case goog.i18n.NumberFormat.Format.COMPACT_LONG:
+      this.applyCompactStyle_(goog.i18n.NumberFormat.CompactStyle.LONG);
+      break;
+    default:
+      throw Error("Unsupported pattern type.");
+  }
+};
+goog.i18n.NumberFormat.prototype.applyCompactStyle_ = function(style) {
+  this.compactStyle_ = style;
+  this.applyPattern_(this.getNumberFormatSymbols_().DECIMAL_PATTERN);
+  this.setMinimumFractionDigits(0);
+  this.setMaximumFractionDigits(2);
+  this.setSignificantDigits(2);
+};
+goog.i18n.NumberFormat.prototype.parse = function(text, opt_pos) {
+  var pos = opt_pos || [0];
+  if (this.compactStyle_ != goog.i18n.NumberFormat.CompactStyle.NONE) {
+    throw Error("Parsing of compact numbers is unimplemented");
+  }
+  text = text.replace(/ |\u202f/g, "\u00a0");
+  var gotPositive = text.indexOf(this.positivePrefix_, pos[0]) == pos[0], gotNegative = text.indexOf(this.negativePrefix_, pos[0]) == pos[0];
+  gotPositive && gotNegative && (this.positivePrefix_.length > this.negativePrefix_.length ? gotNegative = !1 : this.positivePrefix_.length < this.negativePrefix_.length && (gotPositive = !1));
+  gotPositive ? pos[0] += this.positivePrefix_.length : gotNegative && (pos[0] += this.negativePrefix_.length);
+  if (text.indexOf(this.getNumberFormatSymbols_().INFINITY, pos[0]) == pos[0]) {
+    pos[0] += this.getNumberFormatSymbols_().INFINITY.length;
+    var ret = Infinity;
+  } else {
+    ret = this.parseNumber_(text, pos);
+  }
+  if (gotPositive) {
+    if (text.indexOf(this.positiveSuffix_, pos[0]) != pos[0]) {
+      return NaN;
+    }
+    pos[0] += this.positiveSuffix_.length;
+  } else {
+    if (gotNegative) {
+      if (text.indexOf(this.negativeSuffix_, pos[0]) != pos[0]) {
+        return NaN;
+      }
+      pos[0] += this.negativeSuffix_.length;
+    }
+  }
+  return gotNegative ? -ret : ret;
+};
+goog.i18n.NumberFormat.prototype.parseNumber_ = function(text, pos) {
+  var sawDecimal = !1, sawExponent = !1, sawDigit = !1, exponentPos = -1, scale = 1, decimal = this.getNumberFormatSymbols_().DECIMAL_SEP, grouping = this.getNumberFormatSymbols_().GROUP_SEP, exponentChar = this.getNumberFormatSymbols_().EXP_SYMBOL;
+  if (this.compactStyle_ != goog.i18n.NumberFormat.CompactStyle.NONE) {
+    throw Error("Parsing of compact style numbers is not implemented");
+  }
+  grouping = grouping.replace(/\u202f/g, "\u00a0");
+  for (var normalizedText = ""; pos[0] < text.length; pos[0]++) {
+    var ch = text.charAt(pos[0]), digit = this.getDigit_(ch);
+    if (0 <= digit && 9 >= digit) {
+      normalizedText += digit, sawDigit = !0;
+    } else {
+      if (ch == decimal.charAt(0)) {
+        if (sawDecimal || sawExponent) {
+          break;
+        }
+        normalizedText += ".";
+        sawDecimal = !0;
+      } else {
+        if (ch == grouping.charAt(0) && ("\u00a0" != grouping.charAt(0) || pos[0] + 1 < text.length && 0 <= this.getDigit_(text.charAt(pos[0] + 1)))) {
+          if (sawDecimal || sawExponent) {
+            break;
+          }
+        } else {
+          if (ch == exponentChar.charAt(0)) {
+            if (sawExponent) {
+              break;
+            }
+            normalizedText += "E";
+            sawExponent = !0;
+            exponentPos = pos[0];
+          } else {
+            if ("+" == ch || "-" == ch) {
+              if (sawDigit && exponentPos != pos[0] - 1) {
+                break;
+              }
+              normalizedText += ch;
+            } else {
+              if (1 == this.multiplier_ && ch == this.getNumberFormatSymbols_().PERCENT.charAt(0)) {
+                if (1 != scale) {
+                  break;
+                }
+                scale = 100;
+                if (sawDigit) {
+                  pos[0]++;
+                  break;
+                }
+              } else {
+                if (1 == this.multiplier_ && ch == this.getNumberFormatSymbols_().PERMILL.charAt(0)) {
+                  if (1 != scale) {
+                    break;
+                  }
+                  scale = 1000;
+                  if (sawDigit) {
+                    pos[0]++;
+                    break;
+                  }
+                } else {
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  1 != this.multiplier_ && (scale = this.multiplier_);
+  return parseFloat(normalizedText) / scale;
+};
+goog.i18n.NumberFormat.prototype.format = function(number) {
+  if (isNaN(number)) {
+    return this.getNumberFormatSymbols_().NAN;
+  }
+  var parts = [], unit = this.getUnitAfterRounding_(goog.isNull(this.baseFormattingNumber_) ? number : this.baseFormattingNumber_, number);
+  number = goog.i18n.NumberFormat.decimalShift_(number, -unit.divisorBase);
+  parts.push(unit.prefix);
+  var isNegative = 0.0 > number || 0.0 == number && 0.0 > 1 / number;
+  parts.push(isNegative ? this.negativePrefix_ : this.positivePrefix_);
+  isFinite(number) ? (number = number * (isNegative ? -1 : 1) * this.multiplier_, this.useExponentialNotation_ ? this.subformatExponential_(number, parts) : this.subformatFixed_(number, this.minimumIntegerDigits_, parts)) : parts.push(this.getNumberFormatSymbols_().INFINITY);
+  parts.push(isNegative ? this.negativeSuffix_ : this.positiveSuffix_);
+  parts.push(unit.suffix);
+  return parts.join("");
+};
+goog.i18n.NumberFormat.prototype.roundNumber_ = function(number) {
+  var shift = goog.i18n.NumberFormat.decimalShift_, shiftedNumber = shift(number, this.maximumFractionDigits_);
+  0 < this.significantDigits_ && (shiftedNumber = this.roundToSignificantDigits_(shiftedNumber, this.significantDigits_, this.maximumFractionDigits_));
+  shiftedNumber = Math.round(shiftedNumber);
+  if (isFinite(shiftedNumber)) {
+    var intValue = Math.floor(shift(shiftedNumber, -this.maximumFractionDigits_));
+    var fracValue = Math.floor(shiftedNumber - shift(intValue, this.maximumFractionDigits_));
+  } else {
+    intValue = number, fracValue = 0;
+  }
+  return {intValue:intValue, fracValue:fracValue};
+};
+goog.i18n.NumberFormat.prototype.formatNumberGroupingRepeatingDigitsParts_ = function(parts, zeroCode, intPart, groupingArray, repeatedDigitLen) {
+  for (var nonRepeatedGroupCompleteCount = 0, currentGroupSizeIndex = 0, currentGroupSize, grouping = this.getNumberFormatSymbols_().GROUP_SEP, digitLen = intPart.length, i = 0; i < digitLen; i++) {
+    if (parts.push(String.fromCharCode(zeroCode + 1 * Number(intPart.charAt(i)))), 1 < digitLen - i) {
+      if (currentGroupSize = groupingArray[currentGroupSizeIndex], i < repeatedDigitLen) {
+        var repeatedDigitIndex = repeatedDigitLen - i;
+        (1 === currentGroupSize || 0 < currentGroupSize && 1 === repeatedDigitIndex % currentGroupSize) && parts.push(grouping);
+      } else {
+        currentGroupSizeIndex < groupingArray.length && (i === repeatedDigitLen ? currentGroupSizeIndex += 1 : currentGroupSize === i - repeatedDigitLen - nonRepeatedGroupCompleteCount + 1 && (parts.push(grouping), nonRepeatedGroupCompleteCount += currentGroupSize, currentGroupSizeIndex += 1));
+      }
+    }
+  }
+  return parts;
+};
+goog.i18n.NumberFormat.prototype.formatNumberGroupingNonRepeatingDigitsParts_ = function(parts, zeroCode, intPart, groupingArray) {
+  var grouping = this.getNumberFormatSymbols_().GROUP_SEP, currentGroupSizeIndex, digitLenLeft = intPart.length, rightToLeftParts = [];
+  for (currentGroupSizeIndex = groupingArray.length - 1; 0 <= currentGroupSizeIndex && 0 < digitLenLeft; currentGroupSizeIndex--) {
+    var currentGroupSize = groupingArray[currentGroupSizeIndex];
+    for (var rightDigitIndex = 0; rightDigitIndex < currentGroupSize && 0 <= digitLenLeft - rightDigitIndex - 1; rightDigitIndex++) {
+      rightToLeftParts.push(String.fromCharCode(zeroCode + 1 * Number(intPart.charAt(digitLenLeft - rightDigitIndex - 1))));
+    }
+    digitLenLeft -= currentGroupSize;
+    0 < digitLenLeft && rightToLeftParts.push(grouping);
+  }
+  parts.push.apply(parts, rightToLeftParts.reverse());
+  return parts;
+};
+goog.i18n.NumberFormat.prototype.subformatFixed_ = function(number, minIntDigits, parts) {
+  if (this.minimumFractionDigits_ > this.maximumFractionDigits_) {
+    throw Error("Min value must be less than max value");
+  }
+  parts || (parts = []);
+  var rounded = this.roundNumber_(number), intValue = rounded.intValue, fracValue = rounded.fracValue, numIntDigits = 0 == intValue ? 0 : this.intLog10_(intValue) + 1, fractionPresent = 0 < this.minimumFractionDigits_ || 0 < fracValue || this.showTrailingZeros_ && numIntDigits < this.significantDigits_, minimumFractionDigits = this.minimumFractionDigits_;
+  fractionPresent && (minimumFractionDigits = this.showTrailingZeros_ && 0 < this.significantDigits_ ? this.significantDigits_ - numIntDigits : this.minimumFractionDigits_);
+  for (var intPart = "", translatableInt = intValue; 1E20 < translatableInt;) {
+    intPart = "0" + intPart, translatableInt = Math.round(goog.i18n.NumberFormat.decimalShift_(translatableInt, -1));
+  }
+  intPart = translatableInt + intPart;
+  var decimal = this.getNumberFormatSymbols_().DECIMAL_SEP, zeroCode = this.getNumberFormatSymbols_().ZERO_DIGIT.charCodeAt(0), digitLen = intPart.length, nonRepeatedGroupCount = 0;
+  if (0 < intValue || 0 < minIntDigits) {
+    for (var i = digitLen; i < minIntDigits; i++) {
+      parts.push(String.fromCharCode(zeroCode));
+    }
+    if (2 <= this.groupingArray_.length) {
+      for (var j = 1; j < this.groupingArray_.length; j++) {
+        nonRepeatedGroupCount += this.groupingArray_[j];
+      }
+    }
+    var repeatedDigitLen = digitLen - nonRepeatedGroupCount;
+    parts = 0 < repeatedDigitLen ? this.formatNumberGroupingRepeatingDigitsParts_(parts, zeroCode, intPart, this.groupingArray_, repeatedDigitLen) : this.formatNumberGroupingNonRepeatingDigitsParts_(parts, zeroCode, intPart, this.groupingArray_);
+  } else {
+    fractionPresent || parts.push(String.fromCharCode(zeroCode));
+  }
+  (this.decimalSeparatorAlwaysShown_ || fractionPresent) && parts.push(decimal);
+  var fracPart = String(fracValue), fracPartSplit = fracPart.split("e+");
+  2 == fracPartSplit.length && (fracPart = String(this.roundToSignificantDigits_(parseFloat(fracPartSplit[0]), this.significantDigits_, 1)), fracPart = fracPart.replace(".", ""), fracPart += goog.string.repeat("0", parseInt(fracPartSplit[1], 10) - fracPart.length + 1));
+  this.maximumFractionDigits_ + 1 > fracPart.length && (fracPart = "1" + goog.string.repeat("0", this.maximumFractionDigits_ - fracPart.length) + fracPart);
+  for (var fracLen = fracPart.length; "0" == fracPart.charAt(fracLen - 1) && fracLen > minimumFractionDigits + 1;) {
+    fracLen--;
+  }
+  for (i = 1; i < fracLen; i++) {
+    parts.push(String.fromCharCode(zeroCode + 1 * Number(fracPart.charAt(i))));
+  }
+};
+goog.i18n.NumberFormat.prototype.addExponentPart_ = function(exponent, parts) {
+  parts.push(this.getNumberFormatSymbols_().EXP_SYMBOL);
+  0 > exponent ? (exponent = -exponent, parts.push(this.getNumberFormatSymbols_().MINUS_SIGN)) : this.useSignForPositiveExponent_ && parts.push(this.getNumberFormatSymbols_().PLUS_SIGN);
+  for (var exponentDigits = "" + exponent, zeroChar = this.getNumberFormatSymbols_().ZERO_DIGIT, i = exponentDigits.length; i < this.minExponentDigits_; i++) {
+    parts.push(zeroChar);
+  }
+  parts.push(exponentDigits);
+};
+goog.i18n.NumberFormat.prototype.getMantissa_ = function(value, exponent) {
+  return goog.i18n.NumberFormat.decimalShift_(value, -exponent);
+};
+goog.i18n.NumberFormat.prototype.subformatExponential_ = function(number, parts) {
+  if (0.0 == number) {
+    this.subformatFixed_(number, this.minimumIntegerDigits_, parts), this.addExponentPart_(0, parts);
+  } else {
+    var exponent = goog.math.safeFloor(Math.log(number) / Math.log(10));
+    number = this.getMantissa_(number, exponent);
+    var minIntDigits = this.minimumIntegerDigits_;
+    if (1 < this.maximumIntegerDigits_ && this.maximumIntegerDigits_ > this.minimumIntegerDigits_) {
+      var remainder = exponent % this.maximumIntegerDigits_;
+      0 > remainder && (remainder = this.maximumIntegerDigits_ + remainder);
+      number = goog.i18n.NumberFormat.decimalShift_(number, remainder);
+      exponent -= remainder;
+      minIntDigits = 1;
+    } else {
+      1 > this.minimumIntegerDigits_ ? (exponent++, number = goog.i18n.NumberFormat.decimalShift_(number, -1)) : (exponent -= this.minimumIntegerDigits_ - 1, number = goog.i18n.NumberFormat.decimalShift_(number, this.minimumIntegerDigits_ - 1));
+    }
+    this.subformatFixed_(number, minIntDigits, parts);
+    this.addExponentPart_(exponent, parts);
+  }
+};
+goog.i18n.NumberFormat.prototype.getDigit_ = function(ch) {
+  var code = ch.charCodeAt(0);
+  if (48 <= code && 58 > code) {
+    return code - 48;
+  }
+  var zeroCode = this.getNumberFormatSymbols_().ZERO_DIGIT.charCodeAt(0);
+  return zeroCode <= code && code < zeroCode + 10 ? code - zeroCode : -1;
+};
+goog.i18n.NumberFormat.PATTERN_ZERO_DIGIT_ = "0";
+goog.i18n.NumberFormat.PATTERN_GROUPING_SEPARATOR_ = ",";
+goog.i18n.NumberFormat.PATTERN_DECIMAL_SEPARATOR_ = ".";
+goog.i18n.NumberFormat.PATTERN_PER_MILLE_ = "\u2030";
+goog.i18n.NumberFormat.PATTERN_PERCENT_ = "%";
+goog.i18n.NumberFormat.PATTERN_DIGIT_ = "#";
+goog.i18n.NumberFormat.PATTERN_SEPARATOR_ = ";";
+goog.i18n.NumberFormat.PATTERN_EXPONENT_ = "E";
+goog.i18n.NumberFormat.PATTERN_PLUS_ = "+";
+goog.i18n.NumberFormat.PATTERN_CURRENCY_SIGN_ = "\u00a4";
+goog.i18n.NumberFormat.QUOTE_ = "'";
+goog.i18n.NumberFormat.prototype.parseAffix_ = function(pattern, pos) {
+  for (var affix = "", inQuote = !1, len = pattern.length; pos[0] < len; pos[0]++) {
+    var ch = pattern.charAt(pos[0]);
+    if (ch == goog.i18n.NumberFormat.QUOTE_) {
+      pos[0] + 1 < len && pattern.charAt(pos[0] + 1) == goog.i18n.NumberFormat.QUOTE_ ? (pos[0]++, affix += "'") : inQuote = !inQuote;
+    } else {
+      if (inQuote) {
+        affix += ch;
+      } else {
+        switch(ch) {
+          case goog.i18n.NumberFormat.PATTERN_DIGIT_:
+          case goog.i18n.NumberFormat.PATTERN_ZERO_DIGIT_:
+          case goog.i18n.NumberFormat.PATTERN_GROUPING_SEPARATOR_:
+          case goog.i18n.NumberFormat.PATTERN_DECIMAL_SEPARATOR_:
+          case goog.i18n.NumberFormat.PATTERN_SEPARATOR_:
+            return affix;
+          case goog.i18n.NumberFormat.PATTERN_CURRENCY_SIGN_:
+            if (pos[0] + 1 < len && pattern.charAt(pos[0] + 1) == goog.i18n.NumberFormat.PATTERN_CURRENCY_SIGN_) {
+              pos[0]++, affix += this.getCurrencyCode_();
+            } else {
+              switch(this.currencyStyle_) {
+                case goog.i18n.NumberFormat.CurrencyStyle.LOCAL:
+                  affix += goog.i18n.currency.getLocalCurrencySignWithFallback(this.getCurrencyCode_());
+                  break;
+                case goog.i18n.NumberFormat.CurrencyStyle.GLOBAL:
+                  affix += goog.i18n.currency.getGlobalCurrencySignWithFallback(this.getCurrencyCode_());
+                  break;
+                case goog.i18n.NumberFormat.CurrencyStyle.PORTABLE:
+                  affix += goog.i18n.currency.getPortableCurrencySignWithFallback(this.getCurrencyCode_());
+              }
+            }
+            break;
+          case goog.i18n.NumberFormat.PATTERN_PERCENT_:
+            if (!this.negativePercentSignExpected_ && 1 != this.multiplier_) {
+              throw Error("Too many percent/permill");
+            }
+            if (this.negativePercentSignExpected_ && 100 != this.multiplier_) {
+              throw Error("Inconsistent use of percent/permill characters");
+            }
+            this.multiplier_ = 100;
+            this.negativePercentSignExpected_ = !1;
+            affix += this.getNumberFormatSymbols_().PERCENT;
+            break;
+          case goog.i18n.NumberFormat.PATTERN_PER_MILLE_:
+            if (!this.negativePercentSignExpected_ && 1 != this.multiplier_) {
+              throw Error("Too many percent/permill");
+            }
+            if (this.negativePercentSignExpected_ && 1000 != this.multiplier_) {
+              throw Error("Inconsistent use of percent/permill characters");
+            }
+            this.multiplier_ = 1000;
+            this.negativePercentSignExpected_ = !1;
+            affix += this.getNumberFormatSymbols_().PERMILL;
+            break;
+          default:
+            affix += ch;
+        }
+      }
+    }
+  }
+  return affix;
+};
+goog.i18n.NumberFormat.prototype.parseTrunk_ = function(pattern, pos) {
+  for (var decimalPos = -1, digitLeftCount = 0, zeroDigitCount = 0, digitRightCount = 0, groupingCount = -1, len = pattern.length, loop = !0; pos[0] < len && loop; pos[0]++) {
+    switch(pattern.charAt(pos[0])) {
+      case goog.i18n.NumberFormat.PATTERN_DIGIT_:
+        0 < zeroDigitCount ? digitRightCount++ : digitLeftCount++;
+        0 <= groupingCount && 0 > decimalPos && groupingCount++;
+        break;
+      case goog.i18n.NumberFormat.PATTERN_ZERO_DIGIT_:
+        if (0 < digitRightCount) {
+          throw Error('Unexpected "0" in pattern "' + pattern + '"');
+        }
+        zeroDigitCount++;
+        0 <= groupingCount && 0 > decimalPos && groupingCount++;
+        break;
+      case goog.i18n.NumberFormat.PATTERN_GROUPING_SEPARATOR_:
+        0 < groupingCount && this.groupingArray_.push(groupingCount);
+        groupingCount = 0;
+        break;
+      case goog.i18n.NumberFormat.PATTERN_DECIMAL_SEPARATOR_:
+        if (0 <= decimalPos) {
+          throw Error('Multiple decimal separators in pattern "' + pattern + '"');
+        }
+        decimalPos = digitLeftCount + zeroDigitCount + digitRightCount;
+        break;
+      case goog.i18n.NumberFormat.PATTERN_EXPONENT_:
+        if (this.useExponentialNotation_) {
+          throw Error('Multiple exponential symbols in pattern "' + pattern + '"');
+        }
+        this.useExponentialNotation_ = !0;
+        this.minExponentDigits_ = 0;
+        pos[0] + 1 < len && pattern.charAt(pos[0] + 1) == goog.i18n.NumberFormat.PATTERN_PLUS_ && (pos[0]++, this.useSignForPositiveExponent_ = !0);
+        for (; pos[0] + 1 < len && pattern.charAt(pos[0] + 1) == goog.i18n.NumberFormat.PATTERN_ZERO_DIGIT_;) {
+          pos[0]++, this.minExponentDigits_++;
+        }
+        if (1 > digitLeftCount + zeroDigitCount || 1 > this.minExponentDigits_) {
+          throw Error('Malformed exponential pattern "' + pattern + '"');
+        }
+        loop = !1;
+        break;
+      default:
+        pos[0]--, loop = !1;
+    }
+  }
+  if (0 == zeroDigitCount && 0 < digitLeftCount && 0 <= decimalPos) {
+    var n = decimalPos;
+    0 == n && n++;
+    digitRightCount = digitLeftCount - n;
+    digitLeftCount = n - 1;
+    zeroDigitCount = 1;
+  }
+  if (0 > decimalPos && 0 < digitRightCount || 0 <= decimalPos && (decimalPos < digitLeftCount || decimalPos > digitLeftCount + zeroDigitCount) || 0 == groupingCount) {
+    throw Error('Malformed pattern "' + pattern + '"');
+  }
+  var totalDigits = digitLeftCount + zeroDigitCount + digitRightCount;
+  this.maximumFractionDigits_ = 0 <= decimalPos ? totalDigits - decimalPos : 0;
+  0 <= decimalPos && (this.minimumFractionDigits_ = digitLeftCount + zeroDigitCount - decimalPos, 0 > this.minimumFractionDigits_ && (this.minimumFractionDigits_ = 0));
+  this.minimumIntegerDigits_ = (0 <= decimalPos ? decimalPos : totalDigits) - digitLeftCount;
+  this.useExponentialNotation_ && (this.maximumIntegerDigits_ = digitLeftCount + this.minimumIntegerDigits_, 0 == this.maximumFractionDigits_ && 0 == this.minimumIntegerDigits_ && (this.minimumIntegerDigits_ = 1));
+  this.groupingArray_.push(Math.max(0, groupingCount));
+  this.decimalSeparatorAlwaysShown_ = 0 == decimalPos || decimalPos == totalDigits;
+};
+goog.i18n.NumberFormat.NULL_UNIT_ = {prefix:"", suffix:"", divisorBase:0};
+goog.i18n.NumberFormat.prototype.getUnitFor_ = function(base, plurality) {
+  var table = this.compactStyle_ == goog.i18n.NumberFormat.CompactStyle.SHORT ? goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_SHORT_PATTERN : goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_LONG_PATTERN;
+  goog.isDefAndNotNull(table) || (table = goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_SHORT_PATTERN);
+  if (3 > base) {
+    return goog.i18n.NumberFormat.NULL_UNIT_;
+  }
+  var shift = goog.i18n.NumberFormat.decimalShift_;
+  base = Math.min(14, base);
+  for (var patterns = table[shift(1, base)], previousNonNullBase = base - 1; !patterns && 3 <= previousNonNullBase;) {
+    patterns = table[shift(1, previousNonNullBase)], previousNonNullBase--;
+  }
+  if (!patterns) {
+    return goog.i18n.NumberFormat.NULL_UNIT_;
+  }
+  var pattern = patterns[plurality];
+  if (!pattern || "0" == pattern) {
+    return goog.i18n.NumberFormat.NULL_UNIT_;
+  }
+  var parts = /([^0]*)(0+)(.*)/.exec(pattern);
+  return parts ? {prefix:parts[1], suffix:parts[3], divisorBase:previousNonNullBase + 1 - (parts[2].length - 1)} : goog.i18n.NumberFormat.NULL_UNIT_;
+};
+goog.i18n.NumberFormat.prototype.getUnitAfterRounding_ = function(formattingNumber, pluralityNumber) {
+  if (this.compactStyle_ == goog.i18n.NumberFormat.CompactStyle.NONE) {
+    return goog.i18n.NumberFormat.NULL_UNIT_;
+  }
+  formattingNumber = Math.abs(formattingNumber);
+  pluralityNumber = Math.abs(pluralityNumber);
+  var initialDivisor = this.getUnitFor_(1 >= formattingNumber ? 0 : this.intLog10_(formattingNumber), "other").divisorBase, pluralityAttempt = goog.i18n.NumberFormat.decimalShift_(pluralityNumber, -initialDivisor);
+  this.roundNumber_(pluralityAttempt);
+  var formattingAttempt = goog.i18n.NumberFormat.decimalShift_(formattingNumber, -initialDivisor), formattingRounded = this.roundNumber_(formattingAttempt);
+  return this.getUnitFor_(initialDivisor + this.intLog10_(formattingRounded.intValue), "other");
+};
+goog.i18n.NumberFormat.prototype.intLog10_ = function(number) {
+  if (!isFinite(number)) {
+    return 0 < number ? number : 0;
+  }
+  for (var i = 0; 1 <= (number /= 10);) {
+    i++;
+  }
+  return i;
+};
+goog.i18n.NumberFormat.decimalShift_ = function(number, digitCount) {
+  goog.asserts.assert(0 == digitCount % 1, 'Cannot shift by fractional digits "%s".', digitCount);
+  if (!number || !isFinite(number) || 0 == digitCount) {
+    return number;
+  }
+  var numParts = String(number).split("e");
+  return parseFloat(numParts[0] + "e" + (parseInt(numParts[1] || 0, 10) + digitCount));
+};
+goog.i18n.NumberFormat.decimalRound_ = function(number, decimalCount) {
+  goog.asserts.assert(0 == decimalCount % 1, 'Cannot round to fractional digits "%s".', decimalCount);
+  if (!number || !isFinite(number)) {
+    return number;
+  }
+  var shift = goog.i18n.NumberFormat.decimalShift_;
+  return shift(Math.round(shift(number, decimalCount)), -decimalCount);
+};
+goog.i18n.NumberFormat.prototype.roundToSignificantDigits_ = function(number, significantDigits, scale) {
+  if (!number) {
+    return number;
+  }
+  var magnitude = significantDigits - this.intLog10_(number) - 1;
+  return magnitude < -scale ? goog.i18n.NumberFormat.decimalRound_(number, -scale) : goog.i18n.NumberFormat.decimalRound_(number, magnitude);
 };
 goog.iter = {};
 goog.iter.StopIteration = "StopIteration" in goog.global ? goog.global.StopIteration : {message:"StopIteration", stack:""};
@@ -7153,6 +8937,12 @@ soy.checks.isTrustedResourceURI = function(value) {
 };
 soy.checks.isURI = function(value) {
   return soy.checks.isContentKind_(value, goog.soy.data.SanitizedContentKind.URI, goog.soy.data.SanitizedUri);
+};
+soy.i18n = {};
+soy.i18n.$$formatNum = function(val, formatType, minDigits, maxDigits) {
+  var format = new goog.i18n.NumberFormat(formatType);
+  null != minDigits ? (format.setMinimumFractionDigits(minDigits), format.setMaximumFractionDigits(null != maxDigits ? maxDigits : minDigits)) : goog.i18n.NumberFormat.Format.COMPACT_SHORT !== formatType && goog.i18n.NumberFormat.Format.COMPACT_LONG !== formatType || format.setSignificantDigits(3);
+  return format.format(val);
 };
 soy.map = {};
 var module$contents$soy$map_SoyMap = function() {

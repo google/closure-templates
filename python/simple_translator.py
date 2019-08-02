@@ -93,7 +93,7 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
 
   def format_num(self,
                  value,
-                 target_format,
+                 target_format='decimal',
                  min_fraction_digits=None,
                  max_fraction_digits=None):
 

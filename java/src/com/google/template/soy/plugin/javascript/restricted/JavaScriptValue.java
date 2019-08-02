@@ -16,6 +16,7 @@
 
 package com.google.template.soy.plugin.javascript.restricted;
 
+import com.google.common.collect.Iterables;
 import com.google.template.soy.plugin.restricted.SoySourceValue;
 import java.util.Optional;
 
@@ -39,6 +40,11 @@ public interface JavaScriptValue extends SoySourceValue {
 
   /** Invokes a method on the given object. Useful for accessing String or Array methods. */
   JavaScriptValue invokeMethod(String ident, JavaScriptValue... args);
+
+  /** See {@link #invokeMethod(String, JavaScriptValue...)}. */
+  default JavaScriptValue invokeMethod(String ident, Iterable<JavaScriptValue> args) {
+    return invokeMethod(ident, Iterables.toArray(args, JavaScriptValue.class));
+  }
 
   /** Accesses a property on the given object. */
   JavaScriptValue accessProperty(String ident);
