@@ -4276,11 +4276,15 @@ goog.debug.freeze = function(arg) {
 goog.dom.BrowserFeature = {};
 goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS = !1;
 goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS = !1;
-goog.dom.BrowserFeature.detectOffscreenCanvas_ = function() {
-  return !0;
+goog.dom.BrowserFeature.detectOffscreenCanvas_ = function(contextName) {
+  try {
+    return !!(new self.OffscreenCanvas(0, 0)).getContext(contextName);
+  } catch (ex) {
+  }
+  return !1;
 };
-goog.dom.BrowserFeature.OFFSCREEN_CANVAS_2D = !goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS && (goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS || !0);
-goog.dom.BrowserFeature.OFFSCREEN_CANVAS_WEBGL = !goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS && (goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS || !0);
+goog.dom.BrowserFeature.OFFSCREEN_CANVAS_2D = !goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS && (goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS || goog.dom.BrowserFeature.detectOffscreenCanvas_("2d"));
+goog.dom.BrowserFeature.OFFSCREEN_CANVAS_WEBGL = !goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS && (goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS || goog.dom.BrowserFeature.detectOffscreenCanvas_("webgl"));
 goog.dom.BrowserFeature.CAN_ADD_NAME_OR_TYPE_ATTRIBUTES = !goog.userAgent.IE || goog.userAgent.isDocumentModeOrHigher(9);
 goog.dom.BrowserFeature.CAN_USE_CHILDREN_ATTRIBUTE = !goog.userAgent.GECKO && !goog.userAgent.IE || goog.userAgent.IE && goog.userAgent.isDocumentModeOrHigher(9) || goog.userAgent.GECKO && goog.userAgent.isVersionOrHigher("1.9.1");
 goog.dom.BrowserFeature.CAN_USE_INNER_TEXT = goog.userAgent.IE && !goog.userAgent.isVersionOrHigher("9");

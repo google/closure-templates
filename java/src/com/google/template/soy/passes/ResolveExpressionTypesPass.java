@@ -24,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -1143,14 +1142,13 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
         for (Identifier id : node.getParamNames()) {
           givenParams.add(id.identifier());
         }
-        for (FieldDescriptor field : protoType.getDescriptor().getFields()) {
-          if (field.isRequired() && !givenParams.contains(field.getName())) {
-            errorReporter.report(
-                node.getSourceLocation(), PROTO_MISSING_REQUIRED_FIELD, field.getName());
+        ImmutableSet<String> fields = protoType.getFieldNames();
+        for (String field : fields) {
+          if (protoType.getFieldDescriptor(field).isRequired() && !givenParams.contains(field)) {
+            errorReporter.report(node.getSourceLocation(), PROTO_MISSING_REQUIRED_FIELD, field);
           }
         }
 
-        ImmutableSet<String> fields = protoType.getFieldNames();
         for (int i = 0; i < node.numChildren(); i++) {
           Identifier fieldName = node.getParamNames().get(i);
           ExprNode expr = node.getChild(i);
