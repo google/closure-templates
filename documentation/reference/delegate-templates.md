@@ -47,8 +47,9 @@ you don't intend to send code for unused delegate implementations to the client
 ```soy
 {delpackage MyExperiment}
 {namespace ...}
- /** My experiment's implementation. */
-  {deltemplate aaa.bbb.myButton}
+
+/** My experiment's implementation. */
+{deltemplate aaa.bbb.myButton}
   ...
 {/deltemplate}
 ```
