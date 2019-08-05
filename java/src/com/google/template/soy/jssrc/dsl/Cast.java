@@ -64,4 +64,9 @@ abstract class Cast extends Expression {
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(expr());
   }
+
+  @Override
+  public boolean isCheap() {
+    return expr().isCheap();
+  }
 }
