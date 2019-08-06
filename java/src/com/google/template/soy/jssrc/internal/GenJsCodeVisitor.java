@@ -1561,7 +1561,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           paramChunk = generator.declarationBuilder().setRhs(paramChunk).build().ref();
         }
         declarations.add(
-            genParamDefault(param, paramChunk, alias, jsType, /* declareStatic= */ true));
+            genParamDefault(
+                param,
+                paramChunk,
+                alias,
+                getJsTypeForParamForDeclaration(paramType),
+                /* declareStatic= */ true));
       }
       // The param value to assign
       Expression value;
