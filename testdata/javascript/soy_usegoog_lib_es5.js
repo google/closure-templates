@@ -6269,6 +6269,18 @@ goog.i18n.currency.getPortableCurrencyPattern = function(currencyCode) {
 goog.i18n.currency.getPortableCurrencySign = function(currencyCode) {
   return goog.i18n.currency.CurrencyInfo[currencyCode][2];
 };
+goog.i18n.currency.isValid = function(currencyCode) {
+  if (!currencyCode || 3 !== currencyCode.length) {
+    return !1;
+  }
+  for (var i = 0; 3 > i; i++) {
+    var c = currencyCode[i];
+    if ("A" > c || "Z" < c && "a" > c || "z" < c) {
+      return !1;
+    }
+  }
+  return !0;
+};
 goog.i18n.currency.getPortableCurrencySignWithFallback = function(currencyCode) {
   return currencyCode in goog.i18n.currency.CurrencyInfo ? goog.i18n.currency.CurrencyInfo[currencyCode][2] : currencyCode;
 };
@@ -6896,7 +6908,10 @@ switch(goog.LOCALE) {
     goog.i18n.NumberFormatSymbols = goog.i18n.NumberFormatSymbols_zu, goog.i18n.NumberFormatSymbols_u_nu_latn = goog.i18n.NumberFormatSymbols_zu;
 }
 ;goog.i18n.NumberFormat = function(pattern, opt_currency, opt_currencyStyle, opt_symbols) {
-  this.intlCurrencyCode_ = opt_currency || null;
+  if (opt_currency && !goog.i18n.currency.isValid(opt_currency)) {
+    throw new TypeError("Currency must be valid ISO code");
+  }
+  this.intlCurrencyCode_ = opt_currency ? opt_currency.toUpperCase() : null;
   this.currencyStyle_ = opt_currencyStyle || goog.i18n.NumberFormat.CurrencyStyle.LOCAL;
   this.overrideNumberFormatSymbols_ = opt_symbols || null;
   this.maximumIntegerDigits_ = 40;

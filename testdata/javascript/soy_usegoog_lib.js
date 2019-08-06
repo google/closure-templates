@@ -33686,6 +33686,26 @@ goog.i18n.currency.getPortableCurrencySign = function(currencyCode) {
 
 
 /**
+ * Returns whether the string represents a valid ISO-4217 currency code.
+ *
+ * @param {string} currencyCode String to check.
+ * @return {boolean} Whether currencyCode is a 3-letter currency code.
+ */
+goog.i18n.currency.isValid = function(currencyCode) {
+  if (!currencyCode || currencyCode.length !== 3) {
+    return false;
+  }
+  for (let i = 0; i < 3; i++) {
+    const c = currencyCode[i];
+    if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z') {
+      return false;
+    }
+  }
+  return true;
+};
+
+
+/**
  * Return portable currency sign string for those applications that need to
  * handle currency sign themselves.
  *
@@ -37261,8 +37281,12 @@ goog.require('goog.string');
  */
 goog.i18n.NumberFormat = function(
     pattern, opt_currency, opt_currencyStyle, opt_symbols) {
+  if (opt_currency && !goog.i18n.currency.isValid(opt_currency)) {
+    throw new TypeError('Currency must be valid ISO code');
+  }
+
   /** @const @private {?string} */
-  this.intlCurrencyCode_ = opt_currency || null;
+  this.intlCurrencyCode_ = opt_currency ? opt_currency.toUpperCase() : null;
 
   /** @const @private {number} */
   this.currencyStyle_ =
