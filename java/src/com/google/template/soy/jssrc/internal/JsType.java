@@ -267,7 +267,7 @@ public final class JsType {
         JsType.Builder enumBuilder =
             builder()
                 .addType(enumTypeName)
-                .addRequire(GoogRequire.create(enumTypeName))
+                .addRequire(GoogRequire.createTypeRequire(enumTypeName))
                 .setPredicate(GOOG_IS_NUMBER);
         if (!isStrict) {
           // TODO(lukes): stop allowing number?, just allow the enum
