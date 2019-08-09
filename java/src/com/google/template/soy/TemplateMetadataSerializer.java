@@ -99,7 +99,6 @@ public final class TemplateMetadataSerializer {
       SoyFileP.Builder fileBuilder =
           SoyFileP.newBuilder()
               .setNamespace(file.getNamespace())
-              .addAllRequiredCssNames(file.getRequiredCssNamespaces())
               .setDelpackage(Strings.nullToEmpty(file.getDelPackageName()))
               .setFilePath(file.getFilePath());
       for (TemplateNode template : file.getChildren()) {
@@ -146,7 +145,6 @@ public final class TemplateMetadataSerializer {
                     : maybeShortenTemplateName(fileNode.getNamespace(), meta.getTemplateName()))
             .setTemplateKind(TEMPLATE_KIND_CONVERTER.reverse().convert(meta.getTemplateKind()))
             .setVisibility(VISIBILITY_CONVERTER.reverse().convert(meta.getVisibility()))
-            .addAllRequiredCssNames(meta.getRequiredCssNames())
             .setContentKind(
                 meta.getContentKind() == null
                     ? SanitizedContentKindP.NONE
@@ -199,7 +197,6 @@ public final class TemplateMetadataSerializer {
         .setHtmlElement(templateProto.getHtmlElement())
         .setSoyElement(templateProto.getSoyElement())
         .setStrictHtml(templateProto.getStrictHtml())
-        .setRequiredCssNames(ImmutableList.copyOf(templateProto.getRequiredCssNamesList()))
         .setTemplateKind(templateKind)
         .setSourceLocation(new SourceLocation(fileProto.getFilePath()))
         .setContentKind(

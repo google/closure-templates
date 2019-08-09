@@ -16,12 +16,23 @@
 
 package com.google.template.soy;
 
+import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.css.CssMetadata;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 import org.kohsuke.args4j.Option;
 
@@ -42,6 +53,13 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
               + " invocation will produce exactly one file containing all the TemplateMetadata")
   private File output;
 
+  @Option(
+      name = "--cssMetadataOutput",
+      usage =
+          "Where to write metadata about CSS.  This will be a file containing a gzipped"
+              + " CssMetadata proto")
+  private File cssMetadataOutput = null;
+
   SoyHeaderCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -59,6 +77,34 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
         new GZIPOutputStream(new FileOutputStream(output), /* buffer size */ 64 * 1024)) {
       unit.writeTo(os);
     }
+    if (cssMetadataOutput != null) {
+      try (OutputStream os =
+          new GZIPOutputStream(
+              new FileOutputStream(cssMetadataOutput), /* buffer size */ 64 * 1024)) {
+        calculateCssMetadata(result.fileSet()).writeTo(os);
+      }
+    }
+  }
+
+  private static CssMetadata calculateCssMetadata(SoyFileSetNode fileSet) {
+    // We need to remove duplicates and preserve order
+    Set<String> requiredCssNames = new LinkedHashSet<>();
+    Set<String> cssClassNames = new LinkedHashSet<>();
+    for (SoyFileNode file : fileSet.getChildren()) {
+      requiredCssNames.addAll(file.getRequiredCssNamespaces());
+      for (TemplateNode template : file.getChildren()) {
+        requiredCssNames.addAll(template.getRequiredCssNamespaces());
+        for (FunctionNode fn :
+            SoyTreeUtils.getAllFunctionInvocations(fileSet, BuiltinFunction.CSS)) {
+          cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue());
+        }
+      }
+    }
+
+    return CssMetadata.newBuilder()
+        .addAllRequireCssNames(requiredCssNames)
+        .addAllCssClassNames(cssClassNames)
+        .build();
   }
 
   /**

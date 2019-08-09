@@ -19,7 +19,9 @@ package com.google.template.soy;
 import static com.google.common.truth.Truth.assertThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.io.Files;
+import com.google.template.soy.css.CssMetadata;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
@@ -42,16 +44,30 @@ import org.junit.runners.JUnit4;
 public class SoyHeaderCompilerTest {
   @Rule public final TemporaryFolder temp = new TemporaryFolder();
 
-  private CompilationUnit getCompilationUnit(String content) throws Exception {
+  @AutoValue
+  abstract static class HeaderOutput {
+    static HeaderOutput create(CompilationUnit unit, CssMetadata cssMeta) {
+      return new AutoValue_SoyHeaderCompilerTest_HeaderOutput(unit, cssMeta);
+    }
+
+    abstract CompilationUnit unit();
+
+    abstract CssMetadata cssMeta();
+  }
+
+  private HeaderOutput getHeaderOutput(String content) throws Exception {
     File soyFile1 = temp.newFile("temp.soy");
     Files.asCharSink(soyFile1, UTF_8).write(content);
     File outputFile = temp.newFile("temp.soyh");
+    File cssMetadataOutputFile = temp.newFile("temp.css_meta");
 
     int exitCode =
         new SoyHeaderCompiler()
             .run(
                 new String[] {
-                  "--output", outputFile.toString(), "--srcs", soyFile1.toString(),
+                  "--output", outputFile.toString(),
+                  "--cssMetadataOutput", cssMetadataOutputFile.toString(),
+                  "--srcs", soyFile1.toString(),
                 },
                 System.err);
     assertThat(exitCode).isEqualTo(0);
@@ -61,29 +77,33 @@ public class SoyHeaderCompilerTest {
     } catch (Exception e) {
       return null;
     }
+    CssMetadata cssMetadata;
+    try (InputStream is = new GZIPInputStream(new FileInputStream(cssMetadataOutputFile))) {
+      cssMetadata = CssMetadata.parseFrom(is);
+    } catch (Exception e) {
+      return null;
+    }
     SoyFileP file = unit.getFile(0);
     assertThat(file.getFilePath()).isEqualTo(soyFile1.getPath());
-    return unit;
+    return HeaderOutput.create(unit, cssMetadata);
   }
 
   @Test
   public void testOutputFileFlag() throws Exception {
-    CompilationUnit unit =
-        getCompilationUnit(
+    HeaderOutput output =
+        getHeaderOutput(
             "{namespace ns requirecss=\"ns.foo\"}\n"
-                + "/***/\n"
                 + "{template .a requirecss=\"ns.bar\"}{@param p: string}{call .a"
-                + " data='all'/}{/template}");
+                + " data='all'/}<div class=\"{css('%foo')} {css('bar')}\"></div>{/template}");
+    CompilationUnit unit = output.unit();
     assertThat(unit.getFileList()).hasSize(1);
     SoyFileP file = unit.getFile(0);
     assertThat(file.getDelpackage()).isEmpty();
     assertThat(file.getNamespace()).isEqualTo("ns");
     assertThat(file.getTemplateList()).hasSize(1);
-    assertThat(file.getRequiredCssNamesList()).containsExactly("ns.foo");
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getTemplateName()).isEqualTo(".a");
     assertThat(template.getTemplateKind()).isEqualTo(TemplateKindP.BASIC);
-    assertThat(template.getRequiredCssNamesList()).containsExactly("ns.bar");
     assertThat(template.getContentKind()).isEqualTo(SanitizedContentKindP.HTML);
     assertThat(template.getParameterList())
         .containsExactly(
@@ -94,12 +114,16 @@ public class SoyHeaderCompilerTest {
                 .build());
     assertThat(template.getDataAllCallSituationList())
         .containsExactly(DataAllCallSituationP.newBuilder().setTemplateName(".a").build());
+
+    CssMetadata cssMeta = output.cssMeta();
+    assertThat(cssMeta.getRequireCssNamesList()).containsExactly("ns.foo", "ns.bar").inOrder();
+    assertThat(cssMeta.getCssClassNamesList()).containsExactly("nsFoofoo", "bar");
   }
 
   @Test
   public void testHtmlElementMetadata() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit("{namespace ns}\n" + "/***/\n" + "{template .a}<div></div>{/template}");
+        getHeaderOutput("{namespace ns}\n" + "{template .a}<div></div>{/template}").unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getHtmlElement().getTag()).isEqualTo("div");
@@ -111,10 +135,10 @@ public class SoyHeaderCompilerTest {
   @Test
   public void testHtmlElementDynamicTag() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit(
-            "{namespace ns}\n"
-                + "/***/\n"
-                + "{template .a}{@param foo: string}<{$foo}></{$foo}>{/template}");
+        getHeaderOutput(
+                "{namespace ns}\n"
+                    + "{template .a}{@param foo: string}<{$foo}></{$foo}>{/template}")
+            .unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getHtmlElement().getTag()).isEqualTo("?");
@@ -126,8 +150,8 @@ public class SoyHeaderCompilerTest {
   @Test
   public void testFragment() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit(
-            "{namespace ns}\n" + "/***/\n" + "{template .a}<div></div><div></div>{/template}");
+        getHeaderOutput("{namespace ns}\n" + "{template .a}<div></div><div></div>{/template}")
+            .unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getHtmlElement().getTag()).isEqualTo("");
@@ -139,7 +163,7 @@ public class SoyHeaderCompilerTest {
   @Test
   public void testSoyElementMetadata() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit("{namespace ns}\n" + "/***/\n" + "{element .a}<span></span>{/element}");
+        getHeaderOutput("{namespace ns}\n" + "{element .a}<span></span>{/element}").unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getSoyElement().getIsSoyElement()).isTrue();
@@ -150,7 +174,7 @@ public class SoyHeaderCompilerTest {
   @Test
   public void testSoyElementMetadataSelfClosingTag() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit("{namespace ns}\n" + "/***/\n" + "{element .a}<input />{/element}");
+        getHeaderOutput("{namespace ns}\n" + "{element .a}<input />{/element}").unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getSoyElement().getIsSoyElement()).isTrue();
@@ -161,11 +185,11 @@ public class SoyHeaderCompilerTest {
   @Test
   public void testSoyElementVelog() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit(
-            "{namespace ns}\n"
-                + "/***/\n"
-                + "{element .a}{@param vedata: ve_data}{velog"
-                + " $vedata}<span></span>{/velog}{/element}");
+        getHeaderOutput(
+                "{namespace ns}\n"
+                    + "{element .a}{@param vedata: ve_data}{velog"
+                    + " $vedata}<span></span>{/velog}{/element}")
+            .unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getSoyElement().getIsSoyElement()).isTrue();
@@ -176,15 +200,34 @@ public class SoyHeaderCompilerTest {
   @Test
   public void testTemplateVelog() throws Exception {
     CompilationUnit unit =
-        getCompilationUnit(
-            "{namespace ns}\n"
-                + "/***/\n"
-                + "{template .a}{@param vedata: ve_data}{velog"
-                + " $vedata}<span></span>{/velog}{/template}");
+        getHeaderOutput(
+                "{namespace ns}\n"
+                    + "{template .a}{@param vedata: ve_data}{velog"
+                    + " $vedata}<span></span>{/velog}{/template}")
+            .unit();
     SoyFileP file = unit.getFile(0);
     TemplateMetadataP template = file.getTemplate(0);
     assertThat(template.getSoyElement().getIsSoyElement()).isFalse();
     assertThat(template.getHtmlElement().getIsVelogged()).isTrue();
     assertThat(template.getHtmlElement().getTag()).isEqualTo("span");
+  }
+
+  @Test
+  public void testCssMetadata() throws Exception {
+    CssMetadata cssMeta =
+        getHeaderOutput(
+                "{namespace ns requirecss='a'}\n"
+                    + "{template .a requirecss='b,c,d' cssbase='Base'}"
+                    + "<div class='{css('%A')} {css('B')} {css('%C')}'>"
+                    + "</div>"
+                    + "{/template}"
+                    + "{template .b}"
+                    + "<div class='{css('%E')}'>"
+                    + "</div>"
+                    + "{/template}")
+            .cssMeta();
+
+    assertThat(cssMeta.getRequireCssNamesList()).containsExactly("a", "b", "c", "d").inOrder();
+    assertThat(cssMeta.getCssClassNamesList()).containsExactly("baseA", "B", "baseC", "aE");
   }
 }

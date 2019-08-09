@@ -1053,7 +1053,7 @@ goog.asserts.getType_ = function(value) {
 };
 goog.array = {};
 goog.NATIVE_ARRAY_PROTOTYPES = goog.TRUSTED_SITE;
-goog.array.ASSUME_NATIVE_FUNCTIONS = !1;
+goog.array.ASSUME_NATIVE_FUNCTIONS = 2012 < goog.FEATURESET_YEAR;
 goog.array.peek = function(array) {
   return array[array.length - 1];
 };

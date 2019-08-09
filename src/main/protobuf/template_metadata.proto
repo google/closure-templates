@@ -1,7 +1,10 @@
 // This file is a serialized dual of c.g.template.soy.soytree.TemplateMetadata
 //
 // This represents just enough information to accurately reconstruct those
-// objects for dependency templates.
+// objects for dependency templates.  While convenient, we should avoid adding
+// additional data to these protos that is not needed for compilation.  Consider
+// adding more alternate files (like css_metadata.proto) in order to preserve
+// this feature.
 //
 // This represents a non-stable compiler internal interface.  Users should not
 // rely on these objects to be stable between compiler releases.
@@ -22,11 +25,15 @@ message CompilationUnit {
 // File global information should be represented here to avoid duplicating data
 // across each template.
 message SoyFileP {
+  // The original file path for the soy file.
   string file_path = 1;
+  // The delpackage of the file, or "" if there was no delpackage
   string delpackage = 2;
+  // The namespace of the file
   string namespace = 3;
+  // The templates in the file
   repeated TemplateMetadataP template = 4;
-  repeated string required_css_names = 5;
+  reserved 5;
 }
 
 // A soy type
@@ -164,10 +171,9 @@ message TemplateMetadataP {
   VisibilityP visibility = 6;
   repeated ParameterP parameter = 7;
   repeated DataAllCallSituationP data_all_call_situation = 8;
-  repeated string required_css_names = 10;
 
   HtmlElementMetadataP html_element = 11;
   SoyElementMetadataP soy_element = 12;
 
-  reserved 9;
+  reserved 9, 10;
 }

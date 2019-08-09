@@ -1,0 +1,19 @@
+// This file contains metadata about how soy libraries use CSS
+// It is produced by the SoyHeader compiler and intended for use by tools other
+// than the soy compiler.
+syntax = "proto3";
+
+package soy.compiler;
+
+option java_package = "com.google.template.soy.css";
+option java_outer_classname = "CssMetadataProto";
+option java_multiple_files = true;
+
+// Data about how a soy library uses CSS
+message CssMetadata {
+  // All the namespaces required by soy files or templates
+  repeated string require_css_names = 1;
+
+  // All the class names renamed with the css() function
+  repeated string css_class_names = 2;
+}
