@@ -923,17 +923,22 @@ public final class SoyFileSet {
    * Compiles this Soy file set into JS source code files and returns these JS files as a list of
    * strings, one per file.
    *
-   * <p>TODO(lukes): deprecate and delete localized builds
-   *
    * @param jsSrcOptions The compilation options for the JS Src output target.
    * @param msgBundle The bundle of translated messages, or null to use the messages from the Soy
    *     source.
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Do not call. Use the command line API.
    */
   @SuppressWarnings("deprecation")
+  @Deprecated
   public List<String> compileToJsSrc(
+      SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
+    return compileToJsSrcInternal(jsSrcOptions, msgBundle);
+  }
+
+  List<String> compileToJsSrcInternal(
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
     return entryPoint(
         () -> {
@@ -962,8 +967,14 @@ public final class SoyFileSet {
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Do not call. Use the command line API.
    */
+  @Deprecated
   public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
+    return compileToIncrementalDomSrcInternal(jsSrcOptions);
+  }
+
+  List<String> compileToIncrementalDomSrcInternal(SoyIncrementalDomSrcOptions jsSrcOptions) {
     return entryPoint(
         () -> {
           // For incremental dom backend, we don't desugar HTML nodes since it requires HTML

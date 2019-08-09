@@ -63,6 +63,8 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     SoyFileSet sfs = sfsBuilder.build();
     outputFiles.writeFiles(
-        srcs, sfs.compileToIncrementalDomSrc(new SoyIncrementalDomSrcOptions()), /*locale=*/ null);
+        srcs,
+        sfs.compileToIncrementalDomSrcInternal(new SoyIncrementalDomSrcOptions()),
+        /*locale=*/ null);
   }
 }

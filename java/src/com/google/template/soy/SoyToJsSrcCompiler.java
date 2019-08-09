@@ -186,11 +186,11 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
             throw new IOException("Error opening or reading message file " + msgFilePath);
           }
         }
-        outputFiles.writeFiles(srcs, sfs.compileToJsSrc(jsSrcOptions, msgBundle), locale);
+        outputFiles.writeFiles(srcs, sfs.compileToJsSrcInternal(jsSrcOptions, msgBundle), locale);
       }
     } else {
       outputFiles.writeFiles(
-          srcs, sfs.compileToJsSrc(jsSrcOptions, /*msgBundle=*/ null), /*locale=*/ null);
+          srcs, sfs.compileToJsSrcInternal(jsSrcOptions, /*msgBundle=*/ null), /*locale=*/ null);
     }
   }
 }
