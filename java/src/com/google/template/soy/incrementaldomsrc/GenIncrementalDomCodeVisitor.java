@@ -25,6 +25,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_MAYBE_SKIP;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
@@ -949,66 +950,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   /**
-   * Visits the attributes of an HtmlOpenTagNode and wraps the resulting code in a pair of {@code
-   * incrementalDom.elementOpenStart} and {@code incrementalDom.elementOpenEnd} calls. If possible,
-   * emit only elementOpen when there are no dynamic attributes to consider.
-   */
-  private void emitOpenAndVisitAttributes(HtmlOpenTagNode node, Expression tagName) {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-
-    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
-    List<Expression> args = new ArrayList<>();
-    args.add(tagName);
-    Map<String, Expression> staticAttributes = getStaticAttributes(node);
-    ImmutableList.Builder<Expression> staticsBuilder = ImmutableList.builder();
-    for (Map.Entry<String, Expression> entry : staticAttributes.entrySet()) {
-      staticsBuilder.add(Expression.stringLiteral(entry.getKey()));
-      staticsBuilder.add(entry.getValue());
-    }
-
-    KeyNode keyNode = node.getKeyNode();
-    Expression key = Expression.LITERAL_UNDEFINED;
-    if (keyNode == null) {
-      key = incrementKeyForTemplate(template);
-    } else {
-      keyCounterStack.push(new Holder<>(0));
-    }
-    args.add(key);
-
-    Expression openTagExpr = INCREMENTAL_DOM_OPEN.call(args);
-    if (node.isElementRoot()) {
-      // Append code to stash the template object in this node.
-      jsCodeBuilder.append(
-          Statement.ifStatement(
-                  INCREMENTAL_DOM.dotAccess("maybeSkip").call(INCREMENTAL_DOM, openTagExpr),
-                  Statement.returnValue(Expression.LITERAL_TRUE))
-              .build());
-    } else {
-      jsCodeBuilder.append(openTagExpr);
-    }
-    jsCodeBuilder.increaseIndentTwice();
-    // Instead of inlining the array, place the variable declaration in the global scope
-    // and lazily initialize it in the template.
-    if (!staticAttributes.isEmpty()) {
-      String id = "_statics_" + staticsCounter++;
-      Expression idExpr = id(alias + id);
-      Expression lazyAssignment =
-          // Generator can be null because we know this evaluates to an or
-          // ie alias_statics_1 || alias_statics_1 = []
-          idExpr.or(
-              idExpr.assign(Expression.arrayLiteral(staticsBuilder.build())),
-              /* codeGenerator= */ null);
-      staticVarDeclarations.add(VariableDeclaration.builder(alias + id).build());
-      jsCodeBuilder.append(INCREMENTAL_DOM_APPLY_STATICS.call(lazyAssignment));
-    }
-    for (int i = 1; i < node.numChildren(); i++) {
-      visit(node.getChild(i));
-    }
-    jsCodeBuilder.append(INCREMENTAL_DOM_APPLY_ATTRS.call());
-    jsCodeBuilder.decreaseIndentTwice();
-  }
-
-  /**
    * Returns a unique key for the template. This has the side-effect of incrementing the current
    * keyCounter at the top of the stack.
    */
@@ -1085,9 +1026,57 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
   }
 
+  private Expression getOpenCall(HtmlOpenTagNode node) {
+    TemplateNode template = node.getNearestAncestor(TemplateNode.class);
+    List<Expression> args = new ArrayList<>();
+    args.add(getTagNameCodeChunk(node.getTagName()));
+
+    KeyNode keyNode = node.getKeyNode();
+    Expression key = Expression.LITERAL_UNDEFINED;
+    if (keyNode == null) {
+      key = incrementKeyForTemplate(template);
+    } else {
+      keyCounterStack.push(new Holder<>(0));
+    }
+    args.add(key);
+
+    return INCREMENTAL_DOM_OPEN.call(args);
+  }
+
+  private Optional<Expression> getApplyStaticAttributes(HtmlOpenTagNode node) {
+    Map<String, Expression> staticAttributes = getStaticAttributes(node);
+    ImmutableList.Builder<Expression> staticsBuilder = ImmutableList.builder();
+    for (Map.Entry<String, Expression> entry : staticAttributes.entrySet()) {
+      staticsBuilder.add(Expression.stringLiteral(entry.getKey()));
+      staticsBuilder.add(entry.getValue());
+    }
+    // Instead of inlining the array, place the variable declaration in the global scope
+    // and lazily initialize it in the template.
+    if (!staticAttributes.isEmpty()) {
+      String id = "_statics_" + staticsCounter++;
+      Expression idExpr = id(alias + id);
+      Expression lazyAssignment =
+          // Generator can be null because we know this evaluates to an or
+          // ie alias_statics_1 || alias_statics_1 = []
+          idExpr.or(
+              idExpr.assign(Expression.arrayLiteral(staticsBuilder.build())),
+              /* codeGenerator= */ null);
+      staticVarDeclarations.add(VariableDeclaration.builder(alias + id).build());
+      return Optional.of(INCREMENTAL_DOM_APPLY_STATICS.call(lazyAssignment));
+    }
+    return Optional.empty();
+  }
+
+  private Expression getApplyAttrs(HtmlOpenTagNode node) {
+    for (int i = 1; i < node.numChildren(); i++) {
+      visit(node.getChild(i));
+    }
+    return INCREMENTAL_DOM_APPLY_ATTRS.call();
+  }
+
   /**
-   * Visits an {@link HtmlOpenTagNode}, which occurs when an HTML tag is opened with no conditional
-   * attributes. For example:
+   * Visits an {@link HtmlOpenTagNode} and emits appropriate attr/staticAttr calls and maybe a self
+   * close tag.
    *
    * <pre>
    * &lt;div attr="value" attr2="{$someVar}"&gt;...&lt;/div&gt;
@@ -1096,14 +1085,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * generates
    *
    * <pre>
-   * IncrementalDom.elementOpen('div');
-   * IncrementalDom.attr('attr', 'value');
-   * IncrementalDom.attr('attr2', someVar);
-   * IncrementalDom.elementClose();
+   * open('div');
+   * attr('attr', 'value');
+   * attr('attr2', someVar);
+   * applyAttrs()
+   * ...
+   *
+   * close()
    * </pre>
    */
   @Override
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     if (node.getKeyNode() != null) {
       // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
       // we do not specify any key.
@@ -1111,15 +1104,35 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
     }
 
-    Expression tagCodeChunk = getTagNameCodeChunk(node.getTagName());
-    emitOpenAndVisitAttributes(node, tagCodeChunk);
+    Expression openTagExpr = getOpenCall(node);
+    if (node.isElementRoot()) {
+      // Append code to stash the template object in this node.
+      jsCodeBuilder.append(
+          Statement.ifStatement(
+                  INCREMENTAL_DOM_MAYBE_SKIP.call(INCREMENTAL_DOM, openTagExpr),
+                  Statement.returnValue(Expression.LITERAL_TRUE))
+              .build());
+    } else {
+      jsCodeBuilder.append(openTagExpr.asStatement());
+    }
+    jsCodeBuilder.append(getAttributeAndCloseCalls(node));
+  }
+
+  private Statement getAttributeAndCloseCalls(HtmlOpenTagNode node) {
+    List<Statement> statements = new ArrayList<>();
+    Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
+    if (maybeApplyStatics.isPresent()) {
+      statements.add(maybeApplyStatics.get().asStatement());
+    }
+    statements.add(getApplyAttrs(node).asStatement());
 
     // Whether or not it is valid for this tag to be self closing has already been validated by the
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      emitClose();
+      statements.add(INCREMENTAL_DOM_CLOSE.call().asStatement());
     }
+    return Statement.of(statements);
   }
 
   /**
