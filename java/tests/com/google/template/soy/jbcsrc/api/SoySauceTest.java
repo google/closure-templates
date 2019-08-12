@@ -267,15 +267,19 @@ public class SoySauceTest {
         .isEqualTo("Hello world");
     assertThat(sauce.renderTemplate("strict_test.helloHtml").renderStrict().get())
         .isEqualTo(ordainAsSafe("Hello world", ContentKind.HTML));
+
+    // Downcast to an impl because #setExpectedContentKind has been removed from the interface
+    // internally (but still exists for open source).
+    SoySauceImpl sauceImpl = (SoySauceImpl) sauce;
     assertThat(
-            sauce
+            sauceImpl
                 .renderTemplate("strict_test.helloHtml")
                 .setExpectedContentKind(ContentKind.TEXT)
                 .renderStrict()
                 .get())
         .isEqualTo(SanitizedContents.unsanitizedText("Hello world"));
     try {
-      sauce
+      sauceImpl
           .renderTemplate("strict_test.helloHtml")
           .setExpectedContentKind(ContentKind.JS)
           .renderStrict()
@@ -309,8 +313,12 @@ public class SoySauceTest {
           .isEqualTo(
               "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
     }
+
+    // Downcast to an impl because #setExpectedContentKind has been removed from the interface
+    // internally (but still exists for open source).
+    SoySauceImpl sauceImpl = (SoySauceImpl) sauce;
     assertThat(
-            sauce
+            sauceImpl
                 .renderTemplate("strict_test.helloJs")
                 .setExpectedContentKind(ContentKind.JS)
                 .renderStrict()
@@ -318,13 +326,13 @@ public class SoySauceTest {
         .isEqualTo(ordainAsSafe("'Hello world'", ContentKind.JS));
     assertEquals(
         ordainAsSafe("'Hello world'", ContentKind.TEXT),
-        sauce
+        sauceImpl
             .renderTemplate("strict_test.helloJs")
             .setExpectedContentKind(ContentKind.TEXT) // TEXT always works
             .renderStrict()
             .get());
     assertThat(
-            sauce
+            sauceImpl
                 .renderTemplate("strict_test.helloJs")
                 .setExpectedContentKind(ContentKind.TEXT)
                 .render()
