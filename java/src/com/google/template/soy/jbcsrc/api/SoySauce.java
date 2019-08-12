@@ -92,15 +92,14 @@ public interface SoySauce {
     /**
      * Sets the expected content kind.
      *
-     * <p>An attempt to render a template with a different kind will fail if this has
-     * been called.
+     * <p>An attempt to render a template with a different kind will fail if this has been called.
      *
-     * @deprecated Use type-specific render methods instead of setting an expected
-     *     content kind before rendering (e.g. {@link #renderHtml()},
-     *     {@link #renderCss()}, etc. will verify the content kind at render time).
-     * TODO(b/138750285): Delete this method in July 2020.
+     * @deprecated Use type-specific render methods instead of setting an expected content kind
+     *     before rendering (e.g. {@link #renderHtml()}, {@link #renderCss()}, etc. will verify the
+     *     content kind at render time).
      */
-    @Deprecated Renderer setExpectedContentKind(ContentKind kind);
+    @Deprecated
+    Renderer setExpectedContentKind(ContentKind kind);
 
     /** Configures the {@link SoyLogger} to use. */
     Renderer setSoyLogger(SoyLogger logger);

@@ -112,7 +112,7 @@ public final class SoySauceImpl implements SoySauce {
     return new RendererImpl(template, factory, templates.getTemplateContentKind(template));
   }
 
-  final class RendererImpl implements Renderer {
+  private final class RendererImpl implements Renderer {
     private final String templateName;
     private final CompiledTemplate.Factory templateFactory;
     private final ContentKind contentKind;
@@ -145,7 +145,7 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
-    public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+    public Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
       this.perRenderPluginInstances = checkNotNull(pluginInstances);
       return this;
     }
@@ -187,13 +187,14 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
-    public RendererImpl setSoyLogger(SoyLogger logger) {
+    public Renderer setSoyLogger(SoyLogger logger) {
       this.logger = checkNotNull(logger);
       this.contextBuilder.hasLogger(true);
       return this;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     public Renderer setExpectedContentKind(ContentKind expectedContentKind) {
       checkNotNull(expectedContentKind);
       this.expectedContentKind = expectedContentKind;
