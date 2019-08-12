@@ -54,6 +54,16 @@ code. The JavaScript backend will perform some simple textual replacements to
 make variable references work, but otherwise emit it as is in the generated
 JavaScript.
 
+## `unknownJsGlobal(stringLiteral)` {#unknownJsGlobal}
+
+The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
+access JavaScript global values outside of the normal support for globals.
+
+This function can only be used by the JavaScript backend in whitelisted files.
+When used the function must take a
+[string literal](expressions.md#string-literal) that contains some JS identifier
+reference.
+
 ## `remainder(length)` {#remainder}
 
 The `remainder` function is used in the context of plural messages. See the

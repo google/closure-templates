@@ -1571,6 +1571,10 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           // arg validation is already handled by the XidPass
           node.setType(StringType.getInstance());
           break;
+        case UNKNOWN_JS_GLOBAL:
+          checkArgIsStringLiteral(node, 0, builtinFunction);
+          node.setType(UnknownType.getInstance());
+          break;
         case V1_EXPRESSION:
           checkArgIsStringLiteral(node, 0, builtinFunction);
           node.setType(UnknownType.getInstance());

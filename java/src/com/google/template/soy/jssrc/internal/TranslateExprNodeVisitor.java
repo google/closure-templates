@@ -85,6 +85,7 @@ import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
+import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
@@ -563,6 +564,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitCssFunction(node);
         case XID:
           return visitXidFunction(node);
+        case UNKNOWN_JS_GLOBAL:
+          return visitUnknownJsGlobal(node);
         case V1_EXPRESSION:
           return visitV1ExpressionFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
@@ -664,6 +667,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         V1JsExprTranslator.translateToJsExpr(
             expr.getValue(), expr.getSourceLocation(), variableMappings, errorReporter);
     return Expression.fromExpr(jsExpr, ImmutableList.of());
+  }
+
+  private Expression visitUnknownJsGlobal(FunctionNode node) {
+    StringNode expr = (StringNode) node.getChild(0);
+    return codeGenerator
+        .declarationBuilder()
+        .setRhs(Expression.dottedIdNoRequire(expr.getValue()))
+        .setJsDoc(JsDoc.builder().addParameterizedAnnotation("suppress", "missingRequire").build())
+        .build()
+        .ref();
   }
 
   private Expression visitVeDataFunction(FunctionNode node) {

@@ -637,6 +637,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitXidFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
+        case UNKNOWN_JS_GLOBAL:
+          throw new UnsupportedOperationException(
+              "the unknownJsGlobal function can't be used in templates compiled to Java");
         case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the v1Expression function can't be used in templates compiled to Java");

@@ -135,6 +135,7 @@ public final class PassManager {
     private SoyGeneralOptions options;
     private boolean allowUnknownGlobals;
     private boolean allowV1Expression;
+    private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlAndStateNodes = true;
     private boolean optimize = true;
@@ -201,6 +202,16 @@ public final class PassManager {
      */
     public Builder allowV1Expression() {
       this.allowV1Expression = true;
+      return this;
+    }
+
+    /**
+     * Allows the unknownJsGlobal() function to be used.
+     *
+     * <p>This option is only available for backwards compatibility with legacy JS only templates.
+     */
+    public Builder allowUnknownJsGlobals() {
+      this.allowUnknownJsGlobals = true;
       return this;
     }
 
@@ -311,6 +322,8 @@ public final class PassManager {
       addPass(new XidPass(errorReporter), singleFilePassesBuilder);
       // Needs to be before ResolveNamesPass.
       addPass(new V1ExpressionPass(allowV1Expression, errorReporter), singleFilePassesBuilder);
+      addPass(
+          new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter), singleFilePassesBuilder);
       addPass(new ResolveNamesPass(errorReporter), singleFilePassesBuilder);
       // needs to be after ResolveNames and MsgsPass
       addPass(new MsgWithIdFunctionPass(errorReporter), singleFilePassesBuilder);

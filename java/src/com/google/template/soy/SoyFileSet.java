@@ -738,6 +738,7 @@ public final class SoyFileSet {
                 passManagerBuilder()
                     .allowUnknownGlobals()
                     .allowV1Expression()
+                    .allowUnknownJsGlobals()
                     .desugarHtmlAndStateNodes(false)
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                     // TODO(lukes): consider changing this to pass a null resolver instead of the
@@ -947,8 +948,10 @@ public final class SoyFileSet {
           // allow that but the cat is out of the bag.
           PassManager.Builder builder =
               passManagerBuilder()
+                  // TODO(lukes): remove this in favor of allowUnknownJsGlobals
                   .allowUnknownGlobals()
                   .allowV1Expression()
+                  .allowUnknownJsGlobals()
                   .desugarHtmlAndStateNodes(false);
           ParseResult result = parse(builder);
           throwIfErrorsPresent();
@@ -1021,7 +1024,9 @@ public final class SoyFileSet {
                 passManagerBuilder()
                     // Because we allow this for JS generated templates, we allow this for
                     // headers.
+                    // TODO(lukes): remove this in favor of allowUnknownJsGlobals
                     .allowUnknownGlobals()
+                    .allowUnknownJsGlobals()
                     // SoyElement pass adds additional information to TemplateNodes for
                     // serialization into headers.
                     .addPassContinuationRule(

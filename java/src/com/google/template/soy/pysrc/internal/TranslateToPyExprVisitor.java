@@ -499,6 +499,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case V1_EXPRESSION:
         throw new UnsupportedOperationException(
             "the v1Expression function can't be used in templates compiled to Python");
+      case UNKNOWN_JS_GLOBAL:
+        throw new UnsupportedOperationException(
+            "the unknownJsGlobal function can't be used in templates compiled to Python");
       case VE_DATA:
         return NONE;
       case MSG_WITH_ID:

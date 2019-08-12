@@ -43,6 +43,7 @@ public enum BuiltinFunction implements SoyFunction {
   CSS("css"),
   XID("xid"),
   V1_EXPRESSION("v1Expression"),
+  UNKNOWN_JS_GLOBAL("unknownJsGlobal"),
   REMAINDER("remainder"),
   MSG_WITH_ID("msgWithId"),
   VE_DATA("ve_data"),
@@ -103,6 +104,7 @@ public enum BuiltinFunction implements SoyFunction {
       case INDEX:
       case CHECK_NOT_NULL:
       case XID:
+      case UNKNOWN_JS_GLOBAL:
       case V1_EXPRESSION:
       case REMAINDER:
       case MSG_WITH_ID:
@@ -130,6 +132,7 @@ public enum BuiltinFunction implements SoyFunction {
       case INDEX: // implicitly depends on loop index
       case CSS: // implicitly depends on a renaming map or js compiler flag
       case XID: // implicitly depends on a renaming map or js compiler flag
+      case UNKNOWN_JS_GLOBAL: // this is a black box from the compiler perspective
       case V1_EXPRESSION: // this is a black box from the compiler perspective
       case REMAINDER: // implicitly depends on a plural value
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle

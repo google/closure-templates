@@ -100,8 +100,9 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
+        case UNKNOWN_JS_GLOBAL:
         case V1_EXPRESSION:
-          // V1 expressions should not exist in jbcsrc
+          // V1 expressions and unknownJsGlobals should not exist in jbcsrc
           throw new AssertionError();
       }
     }
