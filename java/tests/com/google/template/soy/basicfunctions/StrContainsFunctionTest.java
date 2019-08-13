@@ -17,9 +17,8 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,9 +40,7 @@ public class StrContainsFunctionTest {
   @Test
   public void testComputeForJavaSource_containsSanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
-    assertThat(
-            tester.callFunction(
-                ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("bar", ContentKind.TEXT)))
+    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), StringData.forValue("bar")))
         .isEqualTo(true);
   }
 
@@ -56,9 +53,7 @@ public class StrContainsFunctionTest {
   @Test
   public void testComputeForJavaSource_doesNotContainSanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrContainsFunction());
-    assertThat(
-            tester.callFunction(
-                ordainAsSafe("foobarfoo", ContentKind.TEXT), ordainAsSafe("baz", ContentKind.TEXT)))
+    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), StringData.forValue("baz")))
         .isEqualTo(false);
   }
 }

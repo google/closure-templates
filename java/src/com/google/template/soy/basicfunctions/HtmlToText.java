@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsanitizedString;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.internal.base.UnescapeUtils;
 import java.util.regex.Matcher;
@@ -53,7 +52,7 @@ public final class HtmlToText {
     if (value == null || value instanceof NullData) {
       return "";
     }
-    if (!(value instanceof SanitizedContent) || value instanceof UnsanitizedString) {
+    if (!(value instanceof SanitizedContent)) {
       return value.stringValue();
     }
     Preconditions.checkArgument(((SanitizedContent) value).getContentKind() == ContentKind.HTML);

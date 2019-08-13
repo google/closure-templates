@@ -18,7 +18,6 @@ package com.google.template.soy.shared.internal;
 
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.UnsanitizedString;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
@@ -40,10 +39,10 @@ public final class SharedRuntime {
     // Treat the case where either is a string specially.
     // TODO(gboyer): This should probably handle SanitizedContent == SanitizedContent, even though
     // Javascript doesn't handle that case properly. http://b/21461181
-    if (operand0 instanceof StringData || operand0 instanceof UnsanitizedString) {
+    if (operand0 instanceof StringData) {
       return compareString(operand0.stringValue(), operand1);
     }
-    if (operand1 instanceof StringData || operand1 instanceof UnsanitizedString) {
+    if (operand1 instanceof StringData) {
       return compareString(operand1.stringValue(), operand0);
     }
     return Objects.equals(operand0, operand1);

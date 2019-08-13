@@ -17,9 +17,8 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
-import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.plugin.java.restricted.testing.SoyJavaSourceFunctionTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,8 +40,7 @@ public class StrSubFunctionTest {
   @Test
   public void testComputeForJavaSource_noEndIndex_SanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
-    assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT), 2))
-        .isEqualTo("obarfoo");
+    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), 2)).isEqualTo("obarfoo");
   }
 
   @Test
@@ -54,7 +52,6 @@ public class StrSubFunctionTest {
   @Test
   public void testComputeForJavaSource_endIndex_SanitizedContent() {
     SoyJavaSourceFunctionTester tester = new SoyJavaSourceFunctionTester(new StrSubFunction());
-    assertThat(tester.callFunction(ordainAsSafe("foobarfoo", ContentKind.TEXT), 2, 7))
-        .isEqualTo("obarf");
+    assertThat(tester.callFunction(StringData.forValue("foobarfoo"), 2, 7)).isEqualTo("obarf");
   }
 }

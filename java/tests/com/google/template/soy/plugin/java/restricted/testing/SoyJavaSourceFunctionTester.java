@@ -25,13 +25,11 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.UnsanitizedString;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -208,14 +206,6 @@ public class SoyJavaSourceFunctionTester {
       SoyType type =
           SanitizedType.getTypeForContentKind(
               SanitizedContentKind.valueOf(content.getContentKind().name()));
-      // If the content is TEXT, we have to cast the expression to UnsanitizedString,
-      // otherwise forSoyValue fails because 'type' is StringType (which expects a SoyString),
-      // whereas the expression is a SanitizedContent (which doesn't implement SoyString).
-      // The expression is actually a UnsanitizedString, which implements both
-      // SoyString & SanitizedContent.
-      if (content.getContentKind() == ContentKind.TEXT) {
-        sanitizedExpr = sanitizedExpr.checkedCast(UnsanitizedString.class);
-      }
       return SoyExpression.forSoyValue(type, sanitizedExpr);
     } else if (value instanceof SoyDict) {
       List<Expression> keys = new ArrayList<>();
