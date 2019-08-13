@@ -278,7 +278,8 @@ public abstract class AbstractSoyCompiler {
       try {
         sfsBuilder.addFile(cache.read(src, CacheLoaders.SOY_FILE_LOADER, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
-        throw new CommandLineError("File: " + src.getPath() + " passed to --srcs does not exist");
+        throw new CommandLineError(
+            "File: " + src.getPath() + " passed to --srcs does not exist", fnfe);
       }
     }
     addCompilationUnitsToBuilder(sfsBuilder);
