@@ -124,7 +124,6 @@ goog.exportSymbol('goog.soy.data.SanitizedJs', goog.soy.data.SanitizedJs);
 goog.exportSymbol('goog.soy.data.SanitizedTrustedResourceUri', goog.soy.data.SanitizedTrustedResourceUri);
 goog.exportSymbol('goog.soy.data.SanitizedUri', goog.soy.data.SanitizedUri);
 goog.exportSymbol('goog.string.Const', goog.string.Const);
-goog.exportSymbol('goog.string.StringBuffer', goog.string.StringBuffer);
 goog.exportSymbol('goog.string.contains', goog.string.contains);
 goog.exportSymbol('goog.string.htmlEscape', goog.string.htmlEscape);
 goog.exportSymbol('goog.string.quote', goog.string.quote);
