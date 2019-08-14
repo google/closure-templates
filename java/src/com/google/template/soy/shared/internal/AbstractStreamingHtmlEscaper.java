@@ -81,6 +81,6 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
   }
 
   protected final boolean isInHtml() {
-    return getSantizedContentKind() == ContentKind.HTML;
+    return getSanitizedContentKind() == ContentKind.HTML;
   }
 }

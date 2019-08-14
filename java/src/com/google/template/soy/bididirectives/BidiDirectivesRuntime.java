@@ -187,7 +187,7 @@ public final class BidiDirectivesRuntime {
               formatter.unicodeWrappingText(
                   getSanitizedContentDirectionality(),
                   buffer.toString(),
-                  getSantizedContentKind() == ContentKind.HTML);
+                  getSanitizedContentKind() == ContentKind.HTML);
           break;
         default:
           throw new IllegalArgumentException("invalid wrap type: " + wrapType);

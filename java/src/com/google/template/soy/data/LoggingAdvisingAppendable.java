@@ -150,7 +150,7 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    *
    * @see #setSanitizedContentKind(ContentKind)
    */
-  public final @Nullable ContentKind getSantizedContentKind() {
+  public final @Nullable ContentKind getSanitizedContentKind() {
     return kind;
   }
 

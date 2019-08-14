@@ -801,7 +801,7 @@ public final class Sanitizers {
     public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
         LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
         throws IOException {
-      if (getSantizedContentKind() == ContentKind.ATTRIBUTES) {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         delegate.appendLoggingFunctionInvocation(funCall, escapers);
         // Reset lastChar to a dummy character so that we add a space after.
         lastChar = 'a';
@@ -822,7 +822,7 @@ public final class Sanitizers {
 
     @Override
     public void close() throws IOException {
-      if (getSantizedContentKind() == ContentKind.ATTRIBUTES) {
+      if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         if (lastChar != 0 && shouldAppendSpace(lastChar)) {
           delegate.append(' ');
         }
