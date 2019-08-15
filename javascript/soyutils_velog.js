@@ -30,7 +30,6 @@ goog.module.declareLegacyNamespace();
 
 const Message = goog.require('jspb.Message');
 const {assert} = goog.require('goog.asserts');
-const {getFirstElementChild, getNextElementSibling} = goog.require('goog.dom');
 const {startsWith} = goog.require('goog.string');
 
 /** @final */
@@ -195,55 +194,56 @@ function $$getLoggingFunctionAttribute(name, args, attr) {
  * @param {!Logger} logger The logger that actually does stuffs.
  */
 function emitLoggingCommands(element, logger) {
-  const keep = preOrderDomTraversal(element, logger);
-  if (!keep) {
-    element.parentElement.removeChild(element);
+  if (element instanceof Element) {
+    visit(element, logger);
+  } else {
+    const children = Array.from(element.childNodes);
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      if (child instanceof Element) {
+        visit(child, logger);
+      }
+    }
   }
 }
 
 /**
- * Helper method that traverses the DOM tree in pre-order and returns false
- * if the current element is log only.
  *
- * @param {!Element|!DocumentFragment} element The rendered HTML element.
+ * @param {!Node} element The rendered HTML element.
  * @param {!Logger} logger The logger that actually does stuffs.
- * @return {boolean} indicating whether or not current should be removed.
  */
-function preOrderDomTraversal(element, logger) {
+function visit(element, logger) {
   let logIndex = -1;
-  if (element instanceof Element) {
+  if (!(element instanceof Element)) {
+    return;
+  }
+  if (element.hasAttribute(ELEMENT_ATTR)) {
     logIndex = getDataAttribute(element, ELEMENT_ATTR);
     assert(metadata.elements.length > logIndex, 'Invalid logging attribute.');
     if (logIndex != -1) {
       logger.enter(metadata.elements[logIndex]);
     }
-    replaceFunctionAttributes(element, logger);
   }
-  let current = getFirstElementChild(element);
-  while (current) {
-    // TODO(user): Maybe we should pass around logOnly so that children
-    // of logOnly VEs do not need to manipulate the DOM.
-    const keep = preOrderDomTraversal(current, logger);
-    const next = getNextElementSibling(current);
-    // Remove the current element after we obtain nextElementSibling.
-    if (!keep) {
-      // IE does not support ChildNode.remove().
-      element.removeChild(current);
+  replaceFunctionAttributes(element, logger);
+  if (element.childNodes) {
+    const children = Array.from(element.childNodes);
+    for (let i = 0; i < children.length; i++) {
+      visit(children[i], logger);
     }
-    current = next;
   }
-  if (element instanceof Element) {
-    if (logIndex != -1) {
-      logger.exit();
-      // Remove logOnly elements from the DOM.
-      if (metadata.elements[logIndex].logOnly) {
-        return false;
-      }
-    }
-    // Always remove the data attribute.
+  if (logIndex === -1) {
+    return;
+  }
+  logger.exit();
+  if (metadata.elements[logIndex].logOnly) {
+    element.parentNode.removeChild(element);
+    return;
+  }
+  if (element.tagName !== 'VELOG') {
     element.removeAttribute(ELEMENT_ATTR);
+  } else {
+    element.parentNode.replaceChild(element.firstElementChild, element);
   }
-  return true;
 }
 
 /**
