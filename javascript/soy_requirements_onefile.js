@@ -176,24 +176,7 @@ if((n=11===q.nodeType||9===q.nodeType?q.activeElement:null)&&d.contains(n)){for(
 l,module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode=p,module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent=m,module$contents$google3$third_party$javascript$incremental_dom$src$core_focusPath=k}}};var module$contents$google3$third_party$javascript$incremental_dom$src$changes_buffer=[],module$contents$google3$third_party$javascript$incremental_dom$src$changes_bufferStart=0;
 function module$contents$google3$third_party$javascript$incremental_dom$src$changes_queueChange(a,b,c){module$contents$google3$third_party$javascript$incremental_dom$src$changes_buffer.push(module$contents$google3$third_party$javascript$incremental_dom$src$attributes_updateAttribute);module$contents$google3$third_party$javascript$incremental_dom$src$changes_buffer.push(a);module$contents$google3$third_party$javascript$incremental_dom$src$changes_buffer.push(b);module$contents$google3$third_party$javascript$incremental_dom$src$changes_buffer.push(c)}
 ;var module$contents$google3$third_party$javascript$incremental_dom$src$diff_prevValuesMap=new module$contents$google3$third_party$javascript$incremental_dom$src$util_Blank;function module$contents$google3$third_party$javascript$incremental_dom$src$virtual_elements_text(a,b){for(var c=1;c<arguments.length;++c);module$contents$google3$third_party$javascript$incremental_dom$src$core_alignWithDOM("#text",null);c=module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode;var d=module$contents$google3$third_party$javascript$incremental_dom$src$node_data_importSingleNode(c,void 0);if(d.text!==a){d=d.text=a;for(var e=1;e<arguments.length;e+=1)d=(0,arguments[e])(d);
-c.data!==d&&(c.data=d)}return c};/*
-
- @license
- Copyright 2018 The Incremental DOM Authors. All Rights Reserved.
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS-IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
-*/
-var module$contents$google3$javascript$template$soy$api_idom_patchConfig={matches:function(a,b,c,d,e){return b===c&&module$contents$google3$javascript$template$soy$api_idom_isMatchingKey(d,e)}},module$exports$google3$javascript$template$soy$api_idom$SKIP_TOKEN={},module$exports$google3$javascript$template$soy$api_idom$patchInner=function(a){return module$contents$google3$third_party$javascript$incremental_dom$src$core_createPatcher(function(b,c,d){module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent=
+c.data!==d&&(c.data=d)}return c};var module$contents$google3$javascript$template$soy$api_idom_patchConfig={matches:function(a,b,c,d,e){return b===c&&module$contents$google3$javascript$template$soy$api_idom_isMatchingKey(d,e)}},module$exports$google3$javascript$template$soy$api_idom$SKIP_TOKEN={},module$exports$google3$javascript$template$soy$api_idom$patchInner=function(a){return module$contents$google3$third_party$javascript$incremental_dom$src$core_createPatcher(function(b,c,d){module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent=
 module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode=b;module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode=null;c(d);module$contents$google3$third_party$javascript$incremental_dom$src$core_clearUnvisitedDOM(null);module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode=module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent;module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent=
 module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent.parentNode;return b},a)}(module$contents$google3$javascript$template$soy$api_idom_patchConfig),module$exports$google3$javascript$template$soy$api_idom$patchOuter=function(a){return module$contents$google3$third_party$javascript$incremental_dom$src$core_createPatcher(function(b,c,d){var e={nextSibling:b};module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode=e;c(d);module$contents$google3$third_party$javascript$incremental_dom$src$core_currentParent&&
 module$contents$google3$third_party$javascript$incremental_dom$src$core_clearUnvisitedDOM(b.nextSibling);return e===module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode?null:module$contents$google3$third_party$javascript$incremental_dom$src$core_currentNode},a)}(module$contents$google3$javascript$template$soy$api_idom_patchConfig),module$contents$google3$javascript$template$soy$api_idom_IncrementalDomRenderer=function(){this.keyStackHolder=[]};

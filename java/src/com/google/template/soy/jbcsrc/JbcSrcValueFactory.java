@@ -69,6 +69,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -215,6 +216,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       reporter.nullMethod("callStaticMethod");
       return errorValue();
     }
+    if (!Modifier.isStatic(method.getModifiers())) {
+      reporter.staticMismatch(method);
+      return errorValue();
+    }
+
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
     // This lets us more easily support users who want to compose multiple callXMethod calls, e.g:
@@ -232,6 +238,10 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
     if (method == null) {
       reporter.nullMethod("callInstanceMethod");
+      return errorValue();
+    }
+    if (Modifier.isStatic(method.getModifiers())) {
+      reporter.staticMismatch(method);
       return errorValue();
     }
 

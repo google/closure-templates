@@ -31,6 +31,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.SoyType;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Type;
@@ -106,6 +107,10 @@ final class JbcSrcValueErrorReporter {
       SoyErrorKind.of(
           formatPlain("Invalid call to {2}, {3} is incompatible with {4}."),
           StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind STATIC_MISMATCH =
+      SoyErrorKind.of(formatPlain("{2} method {3} passed to JavaValueFactory.{4}."));
+
   private static final SoyErrorKind UNEXPECTED_ERROR =
       SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
 
@@ -291,6 +296,19 @@ final class JbcSrcValueErrorReporter {
         "null",
         paramIdx + getOrdinalSuffix(paramIdx),
         simpleMethodName(method));
+  }
+
+  void staticMismatch(Method method) {
+    String expected;
+    String actual;
+    if (Modifier.isStatic(method.getModifiers())) {
+      expected = "callInstanceMethod";
+      actual = "Static";
+    } else {
+      expected = "callStaticMethod";
+      actual = "Instance";
+    }
+    report(STATIC_MISMATCH, actual, simpleMethodName(method), expected);
   }
 
   void unexpectedError(Throwable t) {
