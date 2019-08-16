@@ -1173,7 +1173,8 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
                 expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
           }
 
-          SoyType fieldType = protoType.getFieldType(fieldName.identifier());
+          SoyType fieldType =
+              protoType.getFieldType(fieldName.identifier(), errorReporter, fieldName.location());
 
           // Let args with unknown or error types pass
           if (argType.equals(UnknownType.getInstance())
@@ -1318,7 +1319,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
         case PROTO:
           {
             SoyProtoType protoType = (SoyProtoType) baseType;
-            SoyType fieldType = protoType.getFieldType(fieldName);
+            SoyType fieldType = protoType.getFieldType(fieldName, errorReporter, sourceLocation);
             if (fieldType != null) {
               return fieldType;
             } else {

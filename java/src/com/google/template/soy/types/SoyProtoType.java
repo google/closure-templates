@@ -23,7 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
@@ -153,7 +155,7 @@ public final class SoyProtoType extends SoyType {
       super(fieldDesc);
     }
 
-    abstract SoyType getType();
+    abstract SoyType getType(ErrorReporter reporter, SourceLocation location);
   }
 
   private static final class NormalFieldWithType extends FieldWithType {
@@ -170,7 +172,7 @@ public final class SoyProtoType extends SoyType {
     }
 
     @Override
-    synchronized SoyType getType() {
+    synchronized SoyType getType(ErrorReporter reporter, SourceLocation location) {
       if (type == null) {
         type = FieldVisitor.visitField(getDescriptor(), visitor);
         checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
@@ -189,8 +191,9 @@ public final class SoyProtoType extends SoyType {
     }
 
     @Override
-    SoyType getType() {
-      throw ambiguousFieldsError(getName(), fields);
+    SoyType getType(ErrorReporter reporter, SourceLocation location) {
+      Field.reportAmbiguousFieldsError(reporter, location, getName(), fields);
+      return ErrorType.getInstance();
     }
   }
 
@@ -255,9 +258,9 @@ public final class SoyProtoType extends SoyType {
 
   /** Returns the {@link SoyType} of the given field, or null if the field does not exist. */
   @Nullable
-  public SoyType getFieldType(String fieldName) {
+  public SoyType getFieldType(String fieldName, ErrorReporter reporter, SourceLocation location) {
     FieldWithType field = fields.get(fieldName);
-    return field != null ? field.getType() : null;
+    return field != null ? field.getType(reporter, location) : null;
   }
 
   /** Returns all the field names of this proto. */

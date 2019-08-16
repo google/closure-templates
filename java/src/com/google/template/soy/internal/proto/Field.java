@@ -27,6 +27,9 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -39,6 +42,14 @@ import java.util.logging.Logger;
  */
 public abstract class Field {
   private static final Logger logger = Logger.getLogger(Field.class.getName());
+
+  private static final SoyErrorKind AMBIGUOUS_FIELDS_ERROR =
+      SoyErrorKind.of(
+          "Cannot access {0}. It may refer to any one of the following extensions, "
+              + "and Soy does not have enough information to decide which.\n"
+              + "{1}\n"
+              + "To resolve ensure "
+              + "that all extension fields accessed from soy have unique names.");
 
   /** A factory for field types. */
   public interface Factory<T extends Field> {
@@ -56,22 +67,23 @@ public abstract class Field {
   /** Returns the set of fields indexed by soy accessor name for the given type. */
   public static <T extends Field> ImmutableMap<String, T> getFieldsForType(
       Descriptor descriptor, Set<FieldDescriptor> extensions, Factory<T> factory) {
-    ImmutableMap.Builder<String, T> fields = ImmutableMap.builder();
+    SetMultimap<String, T> fieldsBySoyName =
+        MultimapBuilder.hashKeys().linkedHashSetValues().build();
     for (FieldDescriptor fieldDescriptor : descriptor.getFields()) {
       if (ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
         continue;
       }
       T field = factory.create(fieldDescriptor);
-      fields.put(field.getName(), field);
+      fieldsBySoyName.put(field.getName(), field);
     }
 
-    SetMultimap<String, T> extensionsBySoyName = MultimapBuilder.hashKeys().hashSetValues().build();
     for (FieldDescriptor extension : extensions) {
       T field = factory.create(extension);
-      extensionsBySoyName.put(field.getName(), field);
+      fieldsBySoyName.put(field.getName(), field);
     }
 
-    for (Map.Entry<String, Set<T>> group : Multimaps.asMap(extensionsBySoyName).entrySet()) {
+    ImmutableMap.Builder<String, T> fields = ImmutableMap.builder();
+    for (Map.Entry<String, Set<T>> group : Multimaps.asMap(fieldsBySoyName).entrySet()) {
       Set<T> ambiguousFields = group.getValue();
       String fieldName = group.getKey();
       if (ambiguousFields.size() == 1) {
@@ -137,12 +149,12 @@ public abstract class Field {
   }
 
   protected static RuntimeException ambiguousFieldsError(String name, Set<? extends Field> fields) {
-    return new IllegalStateException(
-        String.format(
-            "Cannot access %s. It may refer to any one of the following extensions, "
-                + "and Soy doesn't have enough information to decide which.\n%s\nTo resolve ensure "
-                + "that all extension fields accessed from soy have unique names.",
-            name, fullFieldNames(fields)));
+    return new IllegalStateException(AMBIGUOUS_FIELDS_ERROR.format(name, fullFieldNames(fields)));
+  }
+
+  public static void reportAmbiguousFieldsError(
+      ErrorReporter reporter, SourceLocation location, String name, Set<? extends Field> fields) {
+    reporter.report(location, AMBIGUOUS_FIELDS_ERROR, name, fullFieldNames(fields));
   }
 
   private static ImmutableSet<String> fullFieldNames(Set<? extends Field> fields) {
