@@ -41,16 +41,21 @@ public final class GenPyExprsVisitorTest {
   @Test
   public void testCss() {
     assertThatSoyExpr("{css('primary')}")
-        .compilesTo(new PyExpr("runtime.get_css_name('primary')", Integer.MAX_VALUE));
+        .compilesTo(
+            new PyExpr("sanitize.escape_html(runtime.get_css_name('primary'))", Integer.MAX_VALUE));
 
     assertThatSoyExpr("{@param foo:?}\n{css($foo, 'bar')}")
-        .compilesTo(new PyExpr("runtime.get_css_name(data.get('foo'), 'bar')", Integer.MAX_VALUE));
+        .compilesTo(
+            new PyExpr(
+                "sanitize.escape_html(runtime.get_css_name(data.get('foo'), 'bar'))",
+                Integer.MAX_VALUE));
   }
 
   @Test
   public void testXid() {
     assertThatSoyExpr("{xid('primary')}")
-        .compilesTo(new PyExpr("runtime.get_xid_name('primary')", Integer.MAX_VALUE));
+        .compilesTo(
+            new PyExpr("sanitize.escape_html(runtime.get_xid_name('primary'))", Integer.MAX_VALUE));
   }
 
   @Test
@@ -156,7 +161,7 @@ public final class GenPyExprsVisitorTest {
         "translator_impl.render_literal("
             + "translator_impl.prepare_literal("
             + "###, "
-            + "'Archive'))";
+            + "'Archive'), True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -174,11 +179,11 @@ public final class GenPyExprsVisitorTest {
         "(translator_impl.render_literal("
             + "translator_impl.prepare_literal("
             + "###, "
-            + "'archive'))) "
+            + "'archive'), True)) "
             + "if (translator_impl.is_msg_available(###) or "
             + "not translator_impl.is_msg_available(###)) "
             + "else (translator_impl.render_literal("
-            + "translator_impl.prepare_literal(###, 'ARCHIVE')))";
+            + "translator_impl.prepare_literal(###, 'ARCHIVE'), True))";
 
     assertThatSoyExpr(soyCode)
         .compilesTo(
@@ -196,7 +201,7 @@ public final class GenPyExprsVisitorTest {
         "translator_impl.render_literal("
             + "translator_impl.prepare_literal("
             + "###, "
-            + "'Archive'))";
+            + "'Archive'), True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -214,7 +219,7 @@ public final class GenPyExprsVisitorTest {
         "translator_impl.render_literal("
             + "translator_impl.prepare_literal("
             + "###, "
-            + "'{{Archive}}'))";
+            + "'{{Archive}}'), True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -232,7 +237,7 @@ public final class GenPyExprsVisitorTest {
         "translator_impl.render_literal("
             + "translator_impl.prepare_literal("
             + "###, "
-            + "'Archive\\'s'))";
+            + "'Archive\\'s'), True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -251,7 +256,7 @@ public final class GenPyExprsVisitorTest {
             + "###, "
             + "'Hello {USERNAME}', "
             + "('USERNAME',)), "
-            + "{'USERNAME': str(data.get('username'))})";
+            + "{'USERNAME': str(sanitize.escape_html(data.get('username')))}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -272,9 +277,9 @@ public final class GenPyExprsVisitorTest {
             + "'{GREET} {USERNAME}', "
             + "('GREET', 'USERNAME')), "
             + "{"
-            + "'GREET': str(data.get('greet')), "
-            + "'USERNAME': str(data.get('username'))"
-            + "})";
+            + "'GREET': str(sanitize.escape_html(data.get('greet'))), "
+            + "'USERNAME': str(sanitize.escape_html(data.get('username')))"
+            + "}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -295,9 +300,9 @@ public final class GenPyExprsVisitorTest {
             + "'{GREET} {{{USERNAME}}}', "
             + "('GREET', 'USERNAME')), "
             + "{"
-            + "'GREET': str(data.get('greet')), "
-            + "'USERNAME': str(data.get('username'))"
-            + "})";
+            + "'GREET': str(sanitize.escape_html(data.get('greet'))), "
+            + "'USERNAME': str(sanitize.escape_html(data.get('username')))"
+            + "}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -316,7 +321,7 @@ public final class GenPyExprsVisitorTest {
             + "###, "
             + "'Hello {BAR}', "
             + "('BAR',)), "
-            + "{'BAR': str(data.get('foo').get('bar'))})";
+            + "{'BAR': str(sanitize.escape_html(data.get('foo').get('bar')))}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -335,7 +340,8 @@ public final class GenPyExprsVisitorTest {
             + "###, "
             + "'Hello {XXX}', "
             + "('XXX',)), "
-            + "{'XXX': str(runtime.type_safe_add(data.get('username'), 1))})";
+            + "{'XXX': str(sanitize.escape_html(runtime.type_safe_add(data.get('username'), 1)))}, "
+            + "True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -356,9 +362,10 @@ public final class GenPyExprsVisitorTest {
             + "'Please click {START_LINK}here{END_LINK}.', "
             + "('START_LINK', 'END_LINK')), "
             + "{"
-            + "'START_LINK': ''.join(['<a href=\\'',str(data.get('url')),'\\'>']), "
+            + "'START_LINK': ''.join(['<a href=\\'',str(sanitize.escape_html_attribute("
+            + "sanitize.filter_normalize_uri(data.get('url')))),'\\'>']), "
             + "'END_LINK': '</a>'"
-            + "})";
+            + "}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -388,8 +395,8 @@ public final class GenPyExprsVisitorTest {
             + "data.get('numDrafts'), "
             + "{"
             + "'NUM_DRAFTS_1': data.get('numDrafts'), "
-            + "'NUM_DRAFTS_2': str(data.get('numDrafts'))"
-            + "})";
+            + "'NUM_DRAFTS_2': str(sanitize.escape_html(data.get('numDrafts')))"
+            + "}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -419,8 +426,8 @@ public final class GenPyExprsVisitorTest {
             + "data.get('numDrafts'), "
             + "{"
             + "'NUM_DRAFTS': data.get('numDrafts'), "
-            + "'XXX': str(data.get('numDrafts') - 2)"
-            + "})";
+            + "'XXX': str(sanitize.escape_html(data.get('numDrafts') - 2))"
+            + "}, True)";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
@@ -477,7 +484,7 @@ public final class GenPyExprsVisitorTest {
             + "other{Reply to them.}}"
             + "}"
             + "}', "
-            + "('USER_GENDER', 'TARGET_GENDER')), "
+            + "('USER_GENDER', 'TARGET_GENDER'), True), "
             + "{"
             + "'USER_GENDER': data.get('userGender'), "
             + "'TARGET_GENDER': data.get('targetGender')"
@@ -501,8 +508,8 @@ public final class GenPyExprsVisitorTest {
 
     String expectedPyCode =
         "translator_impl.render_icu"
-            + "(translator_impl.prepare_icu"
-            + "(###, "
+            + "(translator_impl.prepare_icu("
+            + "###, "
             + "'{PEOPLE_0_GENDER,select,"
             + "female{{PEOPLE_1_GENDER,select,"
             + "female{{NUM,plural,"
@@ -565,7 +572,7 @@ public final class GenPyExprsVisitorTest {
             + "}"
             + "}"
             + "}', "
-            + "('PEOPLE_0_GENDER', 'PEOPLE_1_GENDER', 'NUM', 'NAME_1', 'NAME_2')), "
+            + "('PEOPLE_0_GENDER', 'PEOPLE_1_GENDER', 'NUM', 'NAME_1', 'NAME_2'), True), "
             + "{"
             + "'PEOPLE_0_GENDER': None "
             + "if runtime.key_safe_data_access(data.get('people'), 0) is None "
@@ -574,10 +581,11 @@ public final class GenPyExprsVisitorTest {
             + "if runtime.key_safe_data_access(data.get('people'), 1) is None "
             + "else runtime.key_safe_data_access(data.get('people'), 1).get('gender'), "
             + "'NUM': len(data.get('people')), "
-            + "'NAME_1': str(runtime.key_safe_data_access(data.get('people'), 0).get('name')), "
-            + "'NAME_2': str(None "
+            + "'NAME_1': str(sanitize.escape_html("
+            + "runtime.key_safe_data_access(data.get('people'), 0).get('name'))), "
+            + "'NAME_2': str(sanitize.escape_html(None "
             + "if runtime.key_safe_data_access(data.get('people'), 1) is None "
-            + "else runtime.key_safe_data_access(data.get('people'), 1).get('name'))"
+            + "else runtime.key_safe_data_access(data.get('people'), 1).get('name')))"
             + "}"
             + ")";
 

@@ -25,6 +25,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_I18N_MESSAGE
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -51,6 +52,7 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -310,22 +312,29 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // Generate goog.getMsg() call.
     VariableDeclaration.Builder builder =
         VariableDeclaration.builder(googMsgVarName).setJsDoc(jsDocBuilder.build());
-    if (msgNode.isPlrselMsg() || placeholderInfo.placeholders.isEmpty()) {
+    if (msgNode.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
+      // In HTML, we always pass three arguments to goog.getMsg().
+      builder.setRhs(
+          GOOG_GET_MSG.call(
+              googMsgContent,
+              msgNode.isPlrselMsg()
+                  ? Expression.EMPTY_OBJECT_LITERAL
+                  : placeholderInfo.placeholders.build(),
+              Expression.objectLiteral(ImmutableMap.of("html", Expression.LITERAL_TRUE))));
+    } else if (msgNode.isPlrselMsg() || placeholderInfo.placeholders.isEmpty()) {
       // For plural/select msgs, we're letting goog.i18n.MessageFormat handle all placeholder
       // replacements, even ones that have nothing to do with plural/select. Therefore, this case
       // is the same as having no placeholder replacements.
       builder.setRhs(GOOG_GET_MSG.call(googMsgContent));
-      return new GoogMsgCodeGenInfo(
-          builder.build().ref(),
-          googMsgVarName,
-          msgNode.isPlrselMsg()
-              ? placeholderInfo.pluralsAndSelects.putAll(placeholderInfo.placeholders).build()
-              : null);
     } else {
       // If there are placeholders, pass them as an arg to goog.getMsg.
       builder.setRhs(GOOG_GET_MSG.call(googMsgContent, placeholderInfo.placeholders.build()));
-      return new GoogMsgCodeGenInfo(builder.build().ref(), googMsgVarName, null);
     }
+    Expression placeholders =
+        msgNode.isPlrselMsg()
+            ? placeholderInfo.pluralsAndSelects.putAll(placeholderInfo.placeholders).build()
+            : null;
+    return new GoogMsgCodeGenInfo(builder.build().ref(), googMsgVarName, placeholders);
   }
 
   /**

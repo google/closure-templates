@@ -66,27 +66,27 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
     # use the string itself as the opaque object
     return msg_text
 
-  def render_literal(self, msg):
+  def render_literal(self, msg, is_html=False):
     # Calling format() to apply the same escape mechanism for '{' and '} as
     # formatted string
-    return msg.format()
+    return _maybe_escape(msg, is_html).format()
 
   def prepare(self, msg_id, msg_text, msg_placeholders):
     return msg_text
 
-  def render(self, msg, values):
-    return msg.format(**values)
+  def render(self, msg, values, is_html=False):
+    return _maybe_escape(msg, is_html).format(**values)
 
   def prepare_plural(self, msg_id, msg_cases, msg_placeholders):
     return msg_cases
 
-  def render_plural(self, msg, case_value, values):
+  def render_plural(self, msg, case_value, values, is_html=False):
     msg_text = (msg.get('=%d' % case_value)
                 if int(case_value) == case_value else None) or msg.get('other')
-    return msg_text.format(**values)
+    return _maybe_escape(msg_text, is_html).format(**values)
 
-  def prepare_icu(self, msg_id, msg_text, msg_fields):
-    return icu.MessageFormat(msg_text, icu.Locale('en'))
+  def prepare_icu(self, msg_id, msg_text, msg_fields, is_html=False):
+    return icu.MessageFormat(_maybe_escape(msg_text, is_html), icu.Locale('en'))
 
   def render_icu(self, msg, values):
     return msg.format(values.keys(), map(_format_icu, values.values()))
@@ -149,3 +149,11 @@ def _format_compact(value, short=True):
       else:
         pattern = '{0:.1f}' + suffix
       return pattern.format(value)
+
+
+def _maybe_escape(msg, is_html):
+  if is_html:
+    # Note that '&' is not replaced because the translation can contain HTML
+    # entities.
+    return msg.replace('<', '&lt;')
+  return msg

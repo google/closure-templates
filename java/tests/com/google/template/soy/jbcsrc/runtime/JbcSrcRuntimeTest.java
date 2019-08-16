@@ -161,6 +161,7 @@ public final class JbcSrcRuntimeTest {
     ImmutableList<SoyMsgPart> partsCopy = ImmutableList.copyOf(parts);
     int numPlaceholders =
         (int) partsCopy.stream().filter(p -> p instanceof SoyMsgPlaceholderPart).count();
-    return new JbcSrcRuntime.MsgRenderer(/* msgId=*/ 0L, partsCopy, ULocale.US, numPlaceholders);
+    return new JbcSrcRuntime.MsgRenderer(
+        /* msgId=*/ 0L, partsCopy, ULocale.US, numPlaceholders, /* htmlEscape= */ false);
   }
 }

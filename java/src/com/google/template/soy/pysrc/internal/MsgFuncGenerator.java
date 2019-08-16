@@ -36,6 +36,7 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.soytree.AbstractParentSoyNode;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -122,11 +123,15 @@ public final class MsgFuncGenerator {
     }
   }
 
+  private boolean isHtml() {
+    return msgNode.getEscapingMode() == EscapingMode.ESCAPE_HTML;
+  }
+
   private PyStringExpr pyFuncForRawTextMsg() {
     String pyMsgText = processMsgPartsHelper(msgParts, escaperForPyFormatString);
 
     prepareFunc.addArg(msgId).addArg(pyMsgText);
-    return renderFunc.addArg(prepareFunc.asPyExpr()).asPyStringExpr();
+    return renderFunc.addArg(prepareFunc.asPyExpr()).addArg(isHtml()).asPyStringExpr();
   }
 
   private PyStringExpr pyFuncForGeneralMsg() {
@@ -141,6 +146,7 @@ public final class MsgFuncGenerator {
     return renderFunc
         .addArg(prepareFunc.asPyExpr())
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
+        .addArg(isHtml())
         .asPyStringExpr();
   }
 
@@ -170,6 +176,7 @@ public final class MsgFuncGenerator {
         .addArg(prepareFunc.asPyExpr())
         .addArg(pluralPyExpr)
         .addArg(PyExprUtils.convertMapToPyExpr(nodePyVarToPyExprMap))
+        .addArg(isHtml())
         .asPyStringExpr();
   }
 
@@ -183,7 +190,8 @@ public final class MsgFuncGenerator {
     prepareFunc
         .addArg(msgId)
         .addArg(pyMsgText)
-        .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()));
+        .addArg(PyExprUtils.convertIterableToPyTupleExpr(nodePyVarToPyExprMap.keySet()))
+        .addArg(isHtml());
 
     return renderFunc
         .addArg(prepareFunc.asPyExpr())

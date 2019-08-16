@@ -148,6 +148,9 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** The substitution unit info (var name mappings, or null if not yet generated). */
   @Nullable private SubstUnitInfo substUnitInfo = null;
 
+  /** The EscapingMode where this message is used. */
+  @Nullable private EscapingMode escapingMode = null;
+
   public MsgNode(
       int id,
       SourceLocation location,
@@ -248,6 +251,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       this.substUnitInfo = orig.substUnitInfo.copy(oldToNew);
     }
     this.genderExprsString = orig.genderExprsString;
+    this.escapingMode = orig.escapingMode;
   }
 
   @Override
@@ -282,6 +286,14 @@ public final class MsgNode extends AbstractBlockCommandNode
       throw new IllegalStateException("calculateSubstitutionInfo hasn't been called yet.");
     }
     return substUnitInfo;
+  }
+
+  public EscapingMode getEscapingMode() {
+    return escapingMode;
+  }
+
+  public void setEscapingMode(EscapingMode escapingMode) {
+    this.escapingMode = escapingMode;
   }
 
   @Override

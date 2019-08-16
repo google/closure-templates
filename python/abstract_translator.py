@@ -20,7 +20,7 @@ class SimpleTranslator(AbstractTranslator):
   def prepare(self, msg_id, msg_text, msg_placeholders):
     ...
 
-  def render(self, msg, *values):
+  def render(self, msg, values, is_html=False):
     ...
 
 At python runtime, an instance of the actual implementation class should
@@ -109,7 +109,7 @@ class AbstractTranslator(object):
     """
     raise NotImplementedError('placeholder strings not supported')
 
-  def render(self, msg, values):
+  def render(self, msg, values, is_html=False):
     """Renders a prepared I18N string.
 
     This takes the opaque object returned by prepare() and
@@ -122,6 +122,7 @@ class AbstractTranslator(object):
       msg: A message object created by prepare.
       values: A dictionary contains names and values for the
         corresponding placeholders.
+      is_html: Whether the message is rendered in the HTML context.
 
     Returns:
       The rendered string.
@@ -144,11 +145,12 @@ class AbstractTranslator(object):
     """
     raise NotImplementedError('literal strings not supported')
 
-  def render_literal(self, msg):
+  def render_literal(self, msg, is_html=False):
     """Renders a prepared I18N literal string.
 
     Args:
       msg: A message object created by prepare_literal.
+      is_html: Whether the message is rendered in the HTML context.
     Returns:
       The rendered string.
     """
@@ -183,7 +185,7 @@ class AbstractTranslator(object):
     """
     raise NotImplementedError('ICU strings not supported')
 
-  def render_plural(self, msg, case_value, values):
+  def render_plural(self, msg, case_value, values, is_html=False):
     """Renders a prepared plural msg object.
 
     Args:
@@ -191,6 +193,7 @@ class AbstractTranslator(object):
       case_value: An integer for the case value.
       values: A dictionary contains names and values for the
         corresponding placeholders.
+      is_html: Whether the message is rendered in the HTML context.
 
     Returns:
       The rendered string.
@@ -199,7 +202,7 @@ class AbstractTranslator(object):
 
   # Arbitrary ICU strings.
 
-  def prepare_icu(self, msg_id, msg_text, msg_fields):
+  def prepare_icu(self, msg_id, msg_text, msg_fields, is_html=False):
     """Prepare an ICU string for rendering.
 
     Same as prepare(), but takes a string in ICU syntax for
@@ -209,6 +212,7 @@ class AbstractTranslator(object):
       msg_id: Message identifier.
       msg_text: An ICU string.
       msg_fields: A tuple containing the names of all configurable ICU fields.
+      is_html: Whether the message is rendered in the HTML context.
     Returns:
       An opaque object that's passed to the render_icu()
       method to render this string.

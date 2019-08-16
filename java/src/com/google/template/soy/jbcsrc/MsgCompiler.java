@@ -49,6 +49,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -177,7 +178,7 @@ final class MsgCompiler {
     Statement printMsg;
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
-      printMsg = handleBasicTranslation(escapingDirectives, soyMsgParts);
+      printMsg = handleBasicTranslation(msg, escapingDirectives, soyMsgParts);
     } else {
       // String translation + placeholders
       printMsg =
@@ -264,7 +265,7 @@ final class MsgCompiler {
 
   /** Handles a translation consisting of a single raw text node. */
   private Statement handleBasicTranslation(
-      List<SoyPrintDirective> escapingDirectives, Expression soyMsgParts) {
+      MsgNode msg, List<SoyPrintDirective> escapingDirectives, Expression soyMsgParts) {
     // optimize for simple constant translations (very common)
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =
@@ -275,6 +276,9 @@ final class MsgCompiler {
                 .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
     // Note: there is no point in trying to stream here, since we are starting with a constant
     // string.
+    if (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
+      text = SoyExpression.forString(MethodRef.MSG_RENDERER_ESCAPE_HTML.invoke(text));
+    }
     for (SoyPrintDirective directive : escapingDirectives) {
       text = parameterLookup.getRenderContext().applyPrintDirective(directive, text);
     }
@@ -307,7 +311,8 @@ final class MsgCompiler {
                     constant(partsAndId.id),
                     soyMsgParts,
                     locale,
-                    constant(placeholderNameToPutStatement.size())));
+                    constant(placeholderNameToPutStatement.size()),
+                    constant(msg.getEscapingMode() == EscapingMode.ESCAPE_HTML)));
     List<Statement> initializationStatements = new ArrayList<>();
     initializationStatements.add(initRendererStatement);
     for (Function<Expression, Statement> fn : placeholderNameToPutStatement.values()) {

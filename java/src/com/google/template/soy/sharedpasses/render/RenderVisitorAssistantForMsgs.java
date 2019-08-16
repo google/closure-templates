@@ -29,6 +29,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
+import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -99,7 +100,11 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  /** Private helper for visitMsgFallbackGroupNode() to render a message from its translation. */
+  /**
+   * Private helper for visitMsgFallbackGroupNode() to render a message from its translation.
+   *
+   * <p>TODO(lukes): Refactor this to share the implementation with the JbcSrcRuntime.
+   */
   private void renderMsgFromTranslation(
       MsgNode msg, ImmutableList<SoyMsgPart> msgParts, @Nullable ULocale locale) {
     SoyMsgPart firstPart = msgParts.get(0);
@@ -114,9 +119,12 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
       for (SoyMsgPart msgPart : msgParts) {
 
         if (msgPart instanceof SoyMsgRawTextPart) {
-          RenderVisitor.append(
-              master.getCurrOutputBufForUseByAssistants(),
-              ((SoyMsgRawTextPart) msgPart).getRawText());
+          String s = ((SoyMsgRawTextPart) msgPart).getRawText();
+          if (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
+            // Note that "&" is not replaced because the translation can contain HTML entities.
+            s = s.replace("<", "&lt;");
+          }
+          RenderVisitor.append(master.getCurrOutputBufForUseByAssistants(), s);
 
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
           String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();

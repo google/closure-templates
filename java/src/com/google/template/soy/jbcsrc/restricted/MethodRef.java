@@ -329,6 +329,9 @@ public abstract class MethodRef {
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
       create(JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, Object.class);
 
+  public static final MethodRef MSG_RENDERER_ESCAPE_HTML =
+      create(JbcSrcRuntime.MsgRenderer.class, "escapeHtml", String.class);
+
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING =
       create(
           JbcSrcRuntime.MsgRenderer.class,

@@ -167,6 +167,6 @@ public class TranslateToPyExprVisitorTest {
   @Test
   public void testDefaultParamAccess() {
     assertThatSoyExpr("{@param p:= 18}\n" + "  {$p}\n")
-        .compilesTo(new PyExpr("data.get('p', 18)", Integer.MAX_VALUE));
+        .compilesTo(new PyExpr("sanitize.escape_html(data.get('p', 18))", Integer.MAX_VALUE));
   }
 }

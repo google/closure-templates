@@ -327,12 +327,14 @@ public final class JbcSrcRuntime {
     // an optional map from a placeholder to another placeholder that must precede it.
     @Nullable SetMultimap<String, String> endPlaceholderToStartPlaceholder;
     private final long msgId;
+    private final boolean htmlEscape;
 
     public MsgRenderer(
         long msgId,
         ImmutableList<SoyMsgPart> msgParts,
         @Nullable ULocale locale,
-        int numPlaceholders) {
+        int numPlaceholders,
+        boolean htmlEscape) {
       // using a TEXT content kind which will cause our base class to box the value in a StringData
       // object
       super(ContentKind.TEXT);
@@ -340,6 +342,7 @@ public final class JbcSrcRuntime {
       this.msgParts = msgParts;
       this.locale = locale;
       this.placeholders = Maps.newLinkedHashMapWithExpectedSize(numPlaceholders);
+      this.htmlEscape = htmlEscape;
     }
 
     /**
@@ -361,6 +364,11 @@ public final class JbcSrcRuntime {
                 + " for key "
                 + placeholderName);
       }
+    }
+
+    public static String escapeHtml(String s) {
+      // Note that "&" is not replaced because the translation can contain HTML entities.
+      return s.replace("<", "&lt;");
     }
 
     /**
@@ -435,7 +443,11 @@ public final class JbcSrcRuntime {
       for (int i = partIndex; i < msgParts.size(); i++) {
         SoyMsgPart msgPart = msgParts.get(i);
         if (msgPart instanceof SoyMsgRawTextPart) {
-          out.append(((SoyMsgRawTextPart) msgPart).getRawText());
+          String s = ((SoyMsgRawTextPart) msgPart).getRawText();
+          if (htmlEscape) {
+            s = escapeHtml(s);
+          }
+          out.append(s);
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
           String placeholderName = ((SoyMsgPlaceholderPart) msgPart).getPlaceholderName();
           if (endPlaceholderToStartPlaceholder != null) {
@@ -509,8 +521,9 @@ public final class JbcSrcRuntime {
         long msgId,
         ImmutableList<SoyMsgPart> msgParts,
         @Nullable ULocale locale,
-        int numPlaceholders) {
-      super(msgId, msgParts, locale, numPlaceholders);
+        int numPlaceholders,
+        boolean htmlEscape) {
+      super(msgId, msgParts, locale, numPlaceholders, htmlEscape);
     }
 
     @Override

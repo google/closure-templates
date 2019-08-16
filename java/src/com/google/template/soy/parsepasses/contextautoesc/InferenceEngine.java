@@ -44,6 +44,7 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -213,6 +214,12 @@ final class InferenceEngine {
       if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
         uriStart = rawTextNode;
       }
+    }
+
+    @Override
+    protected void visitMsgNode(MsgNode node) {
+      node.setEscapingMode(context.state.getEscapingMode());
+      super.visitMsgNode(node);
     }
 
     @Override

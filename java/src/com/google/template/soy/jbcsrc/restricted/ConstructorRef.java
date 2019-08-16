@@ -87,14 +87,16 @@ public abstract class ConstructorRef {
           long.class,
           ImmutableList.class,
           ULocale.class,
-          int.class);
+          int.class,
+          boolean.class);
   public static final ConstructorRef PLRSEL_MSG_RENDERER =
       create(
           JbcSrcRuntime.PlrSelMsgRenderer.class,
           long.class,
           ImmutableList.class,
           ULocale.class,
-          int.class);
+          int.class,
+          boolean.class);
 
   public abstract TypeInfo instanceClass();
 

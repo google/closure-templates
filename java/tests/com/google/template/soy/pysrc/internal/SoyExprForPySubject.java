@@ -107,7 +107,8 @@ public final class SoyExprForPySubject extends Subject {
    * @param expectedPyExprs the expected result of compilation
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
-    SoyFileSetNode soyTree = SoyFileSetParserBuilder.forTemplateContents(actual).parse().fileSet();
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forTemplateContents(actual).runAutoescaper(true).parse().fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();
