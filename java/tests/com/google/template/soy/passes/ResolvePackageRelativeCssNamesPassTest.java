@@ -112,6 +112,51 @@ public final class ResolvePackageRelativeCssNamesPassTest {
         .isEqualTo("Package-relative class name '%AAA' cannot be used with component expression.");
   }
 
+  @Test
+  public void testNamespaceCssBaseOverRequireCss() {
+    TemplateNode template =
+        compileTemplate(
+            "{namespace boo requirecss='some.test.package' cssbase='some.other.package'}\n\n"
+                + "/** Test template. */\n"
+                + "{template .foo}\n"
+                + "  <p class=\"{css('%AAA')}\">\n"
+                + "{/template}\n");
+    PrintNode printNode =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
+    FunctionNode cssFn = (FunctionNode) printNode.getExpr().getRoot();
+    assertThat(((StringNode) cssFn.getChild(0)).getValue()).isEqualTo("someOtherPackageAAA");
+  }
+
+  @Test
+  public void testTemplateCssBaseOverRequireCssAndCssBase() {
+    TemplateNode template =
+        compileTemplate(
+            "{namespace boo requirecss='some.test.package' cssbase='some.other.package'}\n\n"
+                + "/** Test template. */\n"
+                + "{template .foo cssbase='the.actual.package'}\n"
+                + "  <p class=\"{css('%AAA')}\">\n"
+                + "{/template}\n");
+    PrintNode printNode =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
+    FunctionNode cssFn = (FunctionNode) printNode.getExpr().getRoot();
+    assertThat(((StringNode) cssFn.getChild(0)).getValue()).isEqualTo("theActualPackageAAA");
+  }
+
+  @Test
+  public void testIgnoreTemplateRequireCss() {
+    TemplateNode template =
+        compileTemplate(
+            "{namespace boo requirecss='some.test.package'}\n\n"
+                + "/** Test template. */\n"
+                + "{template .foo requirecss='some.other.package'}\n"
+                + "  <p class=\"{css('%AAA')}\">\n"
+                + "{/template}\n");
+    PrintNode printNode =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, PrintNode.class));
+    FunctionNode cssFn = (FunctionNode) printNode.getExpr().getRoot();
+    assertThat(((StringNode) cssFn.getChild(0)).getValue()).isEqualTo("someTestPackageAAA");
+  }
+
   private static TemplateNode compileTemplate(String templateText) {
     return compileTemplate(templateText, ErrorReporter.exploding());
   }
