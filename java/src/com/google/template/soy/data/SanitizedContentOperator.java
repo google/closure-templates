@@ -25,7 +25,12 @@ import javax.annotation.Nonnull;
  * directives that take sanitized content of a particular {@link SanitizedContent.ContentKind kind}
  * and wrap it to avoid over-escaping.
  *
+ * @deprecated This is only useful internally and for implementing print directives (which
+ *     themselves are deprecated). It is difficult to ensure the security of types using this
+ *     feature since it has somewhat subtle interactions with the autoescaper. Instead use Soy
+ *     functions and normal mechanisms for producing sanitized content.
  */
+@Deprecated
 public interface SanitizedContentOperator {
 
   /** The kind of content consumed and produced. */
