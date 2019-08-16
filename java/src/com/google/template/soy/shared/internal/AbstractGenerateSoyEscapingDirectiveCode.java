@@ -188,10 +188,10 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
           // Skip code between generated code markers so that this transformation is idempotent.
           // We can run an old output through this class, and get the latest version out.
           if (inGeneratedCode) {
-            if (GENERATED_CODE_END_MARKER.equals(line.trim())) {
+            if (generatedCodeEndMarker.equals(line.trim())) {
               inGeneratedCode = false;
             }
-          } else if (GENERATED_CODE_START_MARKER.equals(line.trim())) {
+          } else if (generatedCodeStartMarker.equals(line.trim())) {
             inGeneratedCode = true;
           } else {
             sb.append(line).append('\n');
@@ -217,11 +217,11 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
   }
 
   /** A line that precedes the rest of the generated code. */
-  final String GENERATED_CODE_START_MARKER =
+  public final String generatedCodeStartMarker =
       getLineCommentSyntax() + " START GENERATED CODE FOR ESCAPERS.";
 
   /** A line that follows the rest of the generated code. */
-  final String GENERATED_CODE_END_MARKER = getLineCommentSyntax() + " END GENERATED CODE";
+  public final String generatedCodeEndMarker = getLineCommentSyntax() + " END GENERATED CODE";
 
   /**
    * Appends Code to the given buffer.
@@ -246,9 +246,9 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
    * @param outputCode Receives output code.
    */
   @VisibleForTesting
-  void generateCode(Predicate<String> availableIdentifiers, StringBuilder outputCode) {
+  public void generateCode(Predicate<String> availableIdentifiers, StringBuilder outputCode) {
 
-    outputCode.append(GENERATED_CODE_START_MARKER).append('\n');
+    outputCode.append(generatedCodeStartMarker).append('\n');
 
     // Before entering the real logic, generate any needed prefix.
     generatePrefix(outputCode);
@@ -420,7 +420,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     // escaping convention.
     generateCommonConstants(outputCode);
 
-    outputCode.append('\n').append(GENERATED_CODE_END_MARKER).append('\n');
+    outputCode.append('\n').append(generatedCodeEndMarker).append('\n');
   }
 
   /**

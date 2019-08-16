@@ -32,7 +32,7 @@ import org.junit.runners.JUnit4;
  * @author brndn@google.com (Brendan Linn)
  */
 @RunWith(JUnit4.class)
-public final class CheckTemplateVisisbilityPassTest {
+public final class CheckTemplateVisibilityPassTest {
 
   @Test
   public void testCallPrivateTemplateFromSameFile() {

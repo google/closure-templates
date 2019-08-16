@@ -32,9 +32,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link ResolvePackageRelativeCssNamesVisitor}. */
+/** Tests for {@link ResolvePackageRelativeCssNamesPass}. */
 @RunWith(JUnit4.class)
-public final class ResolvePackageRelativeCssNamesVisitorTest {
+public final class ResolvePackageRelativeCssNamesPassTest {
 
   @Test
   public void testBaseCssOnNamespace() {

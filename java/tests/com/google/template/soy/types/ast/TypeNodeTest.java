@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.types;
+package com.google.template.soy.types.ast;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -23,13 +23,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soyparse.SoyFileParser;
-import com.google.template.soy.types.ast.GenericTypeNode;
-import com.google.template.soy.types.ast.NamedTypeNode;
-import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
-import com.google.template.soy.types.ast.TypeNode;
-import com.google.template.soy.types.ast.TypeNodeVisitor;
-import com.google.template.soy.types.ast.UnionTypeNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
