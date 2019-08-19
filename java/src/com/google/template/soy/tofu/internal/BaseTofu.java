@@ -18,7 +18,6 @@ package com.google.template.soy.tofu.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -186,12 +185,12 @@ public final class BaseTofu implements SoyTofu {
   }
 
   @Override
-  public Renderer newRenderer(SoyTemplateInfo templateInfo) {
+  public RendererImpl newRenderer(SoyTemplateInfo templateInfo) {
     return new RendererImpl(this, templateInfo.getName());
   }
 
   @Override
-  public Renderer newRenderer(String templateName) {
+  public RendererImpl newRenderer(String templateName) {
     return new RendererImpl(this, templateName);
   }
 
@@ -331,7 +330,7 @@ public final class BaseTofu implements SoyTofu {
 
   /** Simple implementation of the Renderer interface. */
   @SuppressWarnings("deprecation")
-  private static class RendererImpl implements Renderer {
+  static class RendererImpl implements Renderer {
 
     private final BaseTofu baseTofu;
     private final String templateName;
@@ -346,8 +345,7 @@ public final class BaseTofu implements SoyTofu {
     private Map<String, Supplier<Object>> perRenderPluginInstances;
 
     /**
-     * Constructs a {@code Renderer} instance for Tofu backends. By default, the content kind should
-     * be HTML, but this can also be overridden by {@code setContentKind} method.
+     * Constructs a {@code Renderer} instance for Tofu backends.
      *
      * @param baseTofu The underlying BaseTofu object used to perform the rendering.
      * @param templateName The full template name (including namespace).
@@ -359,68 +357,69 @@ public final class BaseTofu implements SoyTofu {
     }
 
     @Override
-    public Renderer setData(Map<String, ?> data) {
+    public RendererImpl setData(Map<String, ?> data) {
       this.data = (data == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(data);
       return this;
     }
 
     @Override
-    public Renderer setData(SoyRecord data) {
+    public RendererImpl setData(SoyRecord data) {
       this.data = data;
       return this;
     }
 
     @Override
-    public Renderer setIjData(Map<String, ?> ijData) {
+    public RendererImpl setIjData(Map<String, ?> ijData) {
       this.ijData = (ijData == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(ijData);
       return this;
     }
 
     @Override
-    public Renderer setIjData(SoyRecord ijData) {
+    public RendererImpl setIjData(SoyRecord ijData) {
       this.ijData = ijData;
       return this;
     }
 
     @Override
-    public Renderer setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
+    public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
       this.perRenderPluginInstances = checkNotNull(pluginInstances);
       return this;
     }
 
     @Override
-    public Renderer setActiveDelegatePackageSelector(Predicate<String> activeDelegatePackageNames) {
+    public RendererImpl setActiveDelegatePackageSelector(
+        Predicate<String> activeDelegatePackageNames) {
       this.activeDelPackageNames = activeDelegatePackageNames;
       return this;
     }
 
     @Override
-    public Renderer setMsgBundle(SoyMsgBundle msgBundle) {
+    public RendererImpl setMsgBundle(SoyMsgBundle msgBundle) {
       this.msgBundle = msgBundle;
       return this;
     }
 
     @Override
-    public Renderer setIdRenamingMap(SoyIdRenamingMap idRenamingMap) {
+    public RendererImpl setIdRenamingMap(SoyIdRenamingMap idRenamingMap) {
       this.idRenamingMap = idRenamingMap;
       return this;
     }
 
     @Override
-    public Renderer setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
+    public RendererImpl setCssRenamingMap(SoyCssRenamingMap cssRenamingMap) {
       this.cssRenamingMap = cssRenamingMap;
       return this;
     }
 
     @Override
-    public Renderer setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
+    public RendererImpl setDebugSoyTemplateInfo(boolean debugSoyTemplateInfo) {
       this.debugSoyTemplateInfo = debugSoyTemplateInfo;
       return this;
     }
 
     @Override
-    public Renderer setContentKind(SanitizedContent.ContentKind contentKind) {
-      this.expectedContentKind = Preconditions.checkNotNull(contentKind);
+    public RendererImpl setContentKind(SanitizedContent.ContentKind contentKind) {
+      this.expectedContentKind = checkNotNull(contentKind);
       return this;
     }
 

@@ -168,13 +168,14 @@ public interface SoyTofu {
     /**
      * Sets the expected content kind.
      *
-     * <p>An attempt to render a template with a different kind will fail if this has been called.
+     * <p>An attempt to render a template with a different kind will fail if this has
+     * been called.
      *
-     * @deprecated Use type-specific render methods instead of setting content kind before rendering
-     *     (e.g. {@link #renderHtml()}, {@link #renderCss()}, etc.).
+     * @deprecated Use type-specific render methods instead of setting content kind
+     *     before rendering (e.g. {@link #renderHtml()}, {@link #renderCss()}, etc.).
+     * TODO(b/138750285): Delete this method in July 2020.
      */
-    @Deprecated
-    Renderer setContentKind(SanitizedContent.ContentKind contentKind);
+     @Deprecated Renderer setContentKind(SanitizedContent.ContentKind contentKind);
 
     /**
      * Renders the configured html template to the given appendable.
