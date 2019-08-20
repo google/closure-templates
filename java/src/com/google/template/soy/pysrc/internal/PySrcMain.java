@@ -24,7 +24,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.internal.i18n.SoyBidiUtils;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -38,7 +40,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Main entry point for the Python Src backend (output target).
@@ -47,6 +51,10 @@ import java.util.List;
  *
  */
 public final class PySrcMain {
+
+  private static final SoyErrorKind DUPLICATE_NAMESPACE_ERROR =
+      SoyErrorKind.of(
+          "Multiple files are providing the same namespace: {0}. Soy namespaces must be unique.");
 
   /** The scope object that manages the API call scope. */
   private final SoyScopedData.Enterable apiCallScope;
@@ -106,7 +114,7 @@ public final class PySrcMain {
         MainEntryPointUtils.mapOutputsToSrcs(null, outputPathFormat, srcsToCompile);
 
     // Generate the manifest and add it to the current manifest.
-    ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs);
+    ImmutableMap<String, String> manifest = generateManifest(soyNamespaces, outputs, errorReporter);
 
     // Generate the Python source.
     List<String> pyFileContents = genPySrc(soyTree, pySrcOptions, manifest, errorReporter);
@@ -143,16 +151,21 @@ public final class PySrcMain {
    * import format.
    */
   private static ImmutableMap<String, String> generateManifest(
-      List<String> soyNamespaces, Multimap<String, Integer> outputs) {
-    ImmutableMap.Builder<String, String> manifest = new ImmutableMap.Builder<>();
+      List<String> soyNamespaces, Multimap<String, Integer> outputs, ErrorReporter errorReporter) {
+    Map<String, String> manifest = new HashMap<>();
     for (String outputFilePath : outputs.keySet()) {
       for (int inputFileIndex : outputs.get(outputFilePath)) {
         String pythonPath = outputFilePath.replace(".py", "").replace('/', '.');
 
-        manifest.put(soyNamespaces.get(inputFileIndex), pythonPath);
+        String namespace = soyNamespaces.get(inputFileIndex);
+        if (manifest.containsKey(namespace)) {
+          errorReporter.report(SourceLocation.UNKNOWN, DUPLICATE_NAMESPACE_ERROR, namespace);
+        }
+
+        manifest.put(namespace, pythonPath);
       }
     }
-    return manifest.build();
+    return ImmutableMap.copyOf(manifest);
   }
 
   private List<String> getSoyNamespaces(SoyFileSetNode soyTree) {
