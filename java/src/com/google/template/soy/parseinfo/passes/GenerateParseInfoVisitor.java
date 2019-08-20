@@ -19,6 +19,7 @@ package com.google.template.soy.parseinfo.passes;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
 import com.google.common.base.Splitter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -31,6 +32,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
@@ -58,18 +60,14 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.AbstractMapType;
-import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.UnionType;
-import com.google.template.soy.types.VeType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +79,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -323,7 +322,7 @@ public final class GenerateParseInfoVisitor
         paramKeyToTemplatesMultimap.put(param.name(), template);
       }
       for (TemplateHeaderVarDefn varDefn : template.getHeaderParams()) {
-        findProtoTypesRecurse(varDefn.type(), protoTypes);
+        protoTypes.addAll(findProtoTypes(varDefn.type()));
       }
       // TODO(b/77597955): Scan all expressions, to pick up types from function return values and
       // anything else that may have a type now or in the future.
@@ -746,79 +745,27 @@ public final class GenerateParseInfoVisitor
   /**
    * Recursively search for protocol buffer types within the given type.
    *
-   * @param type The type to search.
-   * @param protoTypes Output set.
+   * @param root The type to search.
    */
-  private void findProtoTypesRecurse(SoyType type, SortedSet<String> protoTypes) {
-    switch (type.getKind()) {
-      case PROTO:
-        protoTypes.add(((SoyProtoType) type).getDescriptorExpression());
-        break;
+  private Set<String> findProtoTypes(SoyType root) {
+    return Streams.stream(typeIterator(root))
+        .map(
+            type -> {
+              switch (type.getKind()) {
+                case PROTO:
+                  return ((SoyProtoType) type).getDescriptorExpression();
+                case PROTO_ENUM:
+                  return ((SoyProtoEnumType) type).getDescriptorExpression();
+                default:
+                  return null;
+              }
+            })
+        .filter(Predicates.notNull())
+        .collect(Collectors.toSet());
+  }
 
-      case PROTO_ENUM:
-        protoTypes.add(((SoyProtoEnumType) type).getDescriptorExpression());
-        break;
-
-      case UNION:
-        for (SoyType member : ((UnionType) type).getMembers()) {
-          findProtoTypesRecurse(member, protoTypes);
-        }
-        break;
-
-      case LIST:
-        {
-          ListType listType = (ListType) type;
-          findProtoTypesRecurse(listType.getElementType(), protoTypes);
-          break;
-        }
-
-      case MAP:
-      case LEGACY_OBJECT_MAP:
-        {
-          AbstractMapType mapType = (AbstractMapType) type;
-          findProtoTypesRecurse(mapType.getKeyType(), protoTypes);
-          findProtoTypesRecurse(mapType.getValueType(), protoTypes);
-          break;
-        }
-
-      case RECORD:
-        {
-          RecordType recordType = (RecordType) type;
-          for (SoyType fieldType : recordType.getMembers().values()) {
-            findProtoTypesRecurse(fieldType, protoTypes);
-          }
-          break;
-        }
-      case VE:
-        {
-          VeType veType = (VeType) type;
-          if (veType.getDataType().isPresent()) {
-            // Don't grab the proto type for ve<null>
-            SoyType soyType = typeRegistry.getType(veType.getDataType().get());
-            if (soyType.getKind() == Kind.PROTO) {
-              protoTypes.add(((SoyProtoType) soyType).getDescriptorExpression());
-            }
-          }
-          break;
-        }
-
-      case ANY:
-      case UNKNOWN:
-      case ERROR:
-      case NULL:
-      case BOOL:
-      case INT:
-      case FLOAT:
-      case STRING:
-      case HTML:
-      case ATTRIBUTES:
-      case JS:
-      case CSS:
-      case URI:
-      case TRUSTED_RESOURCE_URI:
-      case VE_DATA:
-        // continue
-    }
+  private Iterator<? extends SoyType> typeIterator(SoyType root) {
+    return SoyTypes.getTypeTraverser(root, typeRegistry);
   }
 
   /**

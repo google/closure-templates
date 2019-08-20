@@ -17,11 +17,15 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeGraphUtils.BreadthFirstIterator;
+import com.google.template.soy.types.SoyTypeGraphUtils.SoyTypeSuccessorsFunction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -392,5 +396,16 @@ public final class SoyTypes {
       Optional<SoyType> arithmeticType = SoyTypes.computeLowestCommonTypeArithmetic(left, right);
       return arithmeticType.orElse(null);
     }
+  }
+
+  /**
+   * Returns an iterator that traverses a soy type graph starting at {@code root} and following any
+   * union, list, map, record, or other composite type. The optional type registry parameter is used
+   * for resolving VE types.
+   */
+  public static Iterator<? extends SoyType> getTypeTraverser(
+      SoyType root, @Nullable SoyTypeRegistry registry) {
+    return new BreadthFirstIterator<>(
+        ImmutableList.of(root), new SoyTypeSuccessorsFunction(registry));
   }
 }
