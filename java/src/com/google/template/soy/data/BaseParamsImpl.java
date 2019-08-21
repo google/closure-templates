@@ -31,26 +31,26 @@ import java.util.Set;
 /**
  * The abstract superclass for generated per-template parameters classes. Each public template will
  * have a corresponding generated subtype of this class. Do not extend outside of the Soy compiler.
+ *
+ * <p>This class name purposefully does not end with "Params" so that it cannot collide with the
+ * names of generated subclasses.
  */
-public abstract class TemplateParams {
+public abstract class BaseParamsImpl implements TemplateParameters {
 
   private final String name;
   private final ImmutableMap<String, SoyValueProvider> data;
 
-  protected TemplateParams(String name, Map<String, SoyValueProvider> data) {
+  protected BaseParamsImpl(String name, Map<String, SoyValueProvider> data) {
     this.name = name;
     this.data = ImmutableMap.copyOf(data);
   }
 
-  /** Returns the name of the Soy template that this params object renders. */
+  @Override
   public String getTemplateName() {
     return name;
   }
 
-  /**
-   * Returns the parameters as a map. This method is only intended to be called by the Soy
-   * framework.
-   */
+  @Override
   public Map<String, SoyValueProvider> getParamsAsMap() {
     return data;
   }
@@ -63,7 +63,7 @@ public abstract class TemplateParams {
    * <p>Instances of this abstract class are not thread safe.
    */
   public abstract static class AbstractBuilder<
-      B extends AbstractBuilder<?, T>, T extends TemplateParams> {
+      B extends AbstractBuilder<?, T>, T extends BaseParamsImpl> {
     private final String templateName;
     private final ImmutableMap<String, Param> params;
     private final SoyValueConverter soyValueConverter;
@@ -145,18 +145,18 @@ public abstract class TemplateParams {
 
   /**
    * An internal representation of a parameter to a Soy template. This should not be used outside of
-   * {@link TemplateParams}.
+   * {@link BaseParamsImpl}.
    */
   @AutoValue
   public abstract static class Param {
     /** Creates an optional param with the given name. */
     public static Param optional(String name) {
-      return new AutoValue_TemplateParams_Param(name, false);
+      return new AutoValue_BaseParamsImpl_Param(name, false);
     }
 
     /** Creates a required param with the given name. */
     public static Param required(String name) {
-      return new AutoValue_TemplateParams_Param(name, true);
+      return new AutoValue_BaseParamsImpl_Param(name, true);
     }
 
     abstract String getName();

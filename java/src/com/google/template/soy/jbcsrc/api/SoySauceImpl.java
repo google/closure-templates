@@ -35,7 +35,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.TemplateParams;
+import com.google.template.soy.data.TemplateParameters;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory;
@@ -117,7 +117,7 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   @Override
-  public RendererImpl newRenderer(TemplateParams params) {
+  public RendererImpl newRenderer(TemplateParameters params) {
     String template = params.getTemplateName();
     CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
     return new RendererImpl(
