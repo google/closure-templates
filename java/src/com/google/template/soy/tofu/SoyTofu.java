@@ -16,10 +16,12 @@
 
 package com.google.template.soy.tofu;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.TemplateParams;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -87,6 +89,15 @@ public interface SoyTofu {
    * @return A new renderer for the given template.
    */
   Renderer newRenderer(String templateName);
+
+  /**
+   * Returns a new {@link Renderer} for configuring and rendering the given template. The returned
+   * renderer will have its data set and may not allow additional calls to {@link Renderer#setData}.
+   */
+  @Beta
+  default Renderer newRenderer(TemplateParams params) {
+    return newRenderer(params.getTemplateName()).setData(params.getParamsAsMap());
+  }
 
   /**
    * Gets the set of injected param keys used by a template (and its transitive callees).

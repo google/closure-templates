@@ -16,11 +16,13 @@
 
 package com.google.template.soy.jbcsrc.api;
 
+import com.google.common.annotations.Beta;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.TemplateParams;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -36,6 +38,15 @@ import javax.annotation.CheckReturnValue;
 public interface SoySauce {
   /** Returns a new {@link Renderer} for configuring and rendering the given template. */
   Renderer renderTemplate(String template);
+
+  /**
+   * Returns a new {@link Renderer} for configuring and rendering the given template. The returned
+   * renderer will have its data set and may not allow additional calls to {@link Renderer#setData}.
+   */
+  @Beta
+  default Renderer newRenderer(TemplateParams params) {
+    return renderTemplate(params.getTemplateName()).setData(params.getParamsAsMap());
+  }
 
   /**
    * Returns the transitive set of {@code $ij} params needed to render this template.

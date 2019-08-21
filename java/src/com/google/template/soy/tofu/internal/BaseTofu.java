@@ -18,6 +18,7 @@ package com.google.template.soy.tofu.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -28,6 +29,8 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.TemplateParams;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
@@ -186,12 +189,17 @@ public final class BaseTofu implements SoyTofu {
 
   @Override
   public RendererImpl newRenderer(SoyTemplateInfo templateInfo) {
-    return new RendererImpl(this, templateInfo.getName());
+    return new RendererImpl(this, templateInfo.getName(), null);
   }
 
   @Override
   public RendererImpl newRenderer(String templateName) {
-    return new RendererImpl(this, templateName);
+    return new RendererImpl(this, templateName, null);
+  }
+
+  @Override
+  public RendererImpl newRenderer(TemplateParams params) {
+    return new RendererImpl(this, params.getTemplateName(), params.getParamsAsMap());
   }
 
   @Override
@@ -262,7 +270,6 @@ public final class BaseTofu implements SoyTofu {
   /**
    * Renders a template and appends the result to a StringBuilder.
    *
-   * @param templateRegistry A registry of all templates.
    * @param outputBuf The Appendable to append the rendered text to.
    * @param templateName The full name of the template to render.
    * @param data The data to call the template with. Can be null if the template has no parameters.
@@ -343,23 +350,32 @@ public final class BaseTofu implements SoyTofu {
     private SanitizedContent.ContentKind expectedContentKind;
     private boolean debugSoyTemplateInfo;
     private Map<String, Supplier<Object>> perRenderPluginInstances;
+    private boolean dataSetInConstructor;
 
     /**
      * Constructs a {@code Renderer} instance for Tofu backends.
      *
      * @param baseTofu The underlying BaseTofu object used to perform the rendering.
      * @param templateName The full template name (including namespace).
+     * @param data Optionally provided template data.
      */
-    public RendererImpl(BaseTofu baseTofu, String templateName) {
+    RendererImpl(BaseTofu baseTofu, String templateName, Map<String, SoyValueProvider> data) {
       this.baseTofu = baseTofu;
       this.templateName = templateName;
       this.expectedContentKind = SanitizedContent.ContentKind.HTML;
+      if (data != null) {
+        setData(data);
+        this.dataSetInConstructor = true;
+      }
     }
 
     @Override
     public RendererImpl setData(Map<String, ?> data) {
-      this.data = (data == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(data);
-      return this;
+      Preconditions.checkState(
+          !dataSetInConstructor,
+          "May not call setData on a Renderer created from a TemplateParams");
+
+      return setData(SoyValueConverter.INSTANCE.newDictFromMap(data));
     }
 
     @Override
@@ -622,7 +638,7 @@ public final class BaseTofu implements SoyTofu {
   @Override
   public String render(
       SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return (new RendererImpl(this, templateInfo.getName()))
+    return new RendererImpl(this, templateInfo.getName(), null)
         .setData(data)
         .setMsgBundle(msgBundle)
         .render();
@@ -632,13 +648,19 @@ public final class BaseTofu implements SoyTofu {
   @Override
   public String render(
       String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
-    return (new RendererImpl(this, templateName)).setData(data).setMsgBundle(msgBundle).render();
+    return new RendererImpl(this, templateName, null)
+        .setData(data)
+        .setMsgBundle(msgBundle)
+        .render();
   }
 
   @Deprecated
   @Override
   public String render(
       String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return (new RendererImpl(this, templateName)).setData(data).setMsgBundle(msgBundle).render();
+    return new RendererImpl(this, templateName, null)
+        .setData(data)
+        .setMsgBundle(msgBundle)
+        .render();
   }
 }
