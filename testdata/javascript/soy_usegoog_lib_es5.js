@@ -939,18 +939,18 @@ goog.identity_ = function(s) {
   return s;
 };
 goog.createTrustedTypesPolicy = function(name) {
-  var policy = null;
-  if ("undefined" === typeof TrustedTypes || !TrustedTypes.createPolicy) {
+  var policy = null, policyFactory = goog.global.trustedTypes || goog.global.TrustedTypes;
+  if (!policyFactory || !policyFactory.createPolicy) {
     return policy;
   }
   try {
-    policy = TrustedTypes.createPolicy(name, {createHTML:goog.identity_, createScript:goog.identity_, createScriptURL:goog.identity_, createURL:goog.identity_});
+    policy = policyFactory.createPolicy(name, {createHTML:goog.identity_, createScript:goog.identity_, createScriptURL:goog.identity_, createURL:goog.identity_});
   } catch (e) {
     goog.logToConsole_(e.message);
   }
-  if ("undefined" !== typeof TrustedURL && TrustedTypes.getPolicyNames && -1 === TrustedTypes.getPolicyNames().indexOf("default")) {
+  if (goog.global.TrustedURL && policyFactory.getPolicyNames && -1 === policyFactory.getPolicyNames().indexOf("default")) {
     try {
-      TrustedTypes.createPolicy("default", {createURL:goog.identity_}, !0);
+      policyFactory.createPolicy("default", {createURL:goog.identity_}, !0);
     } catch (e$4) {
       goog.logToConsole_(e$4.message);
     }
