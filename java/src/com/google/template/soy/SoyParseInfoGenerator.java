@@ -18,15 +18,15 @@ package com.google.template.soy;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
+import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Map;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -124,20 +124,20 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
     SoyFileSet sfs = sfsBuilder.build();
 
-    ImmutableMap<String, String> parseInfo =
-        sfs.generateParseInfo(javaPackage, javaClassNameSource);
+    ImmutableList<GeneratedFile> genFiles = sfs.generateParseInfo(javaPackage, javaClassNameSource);
     if (outputSrcJar == null) {
-      for (Map.Entry<String, String> entry : parseInfo.entrySet()) {
-        File outputFile = new File(outputDirectory, entry.getKey());
+      for (GeneratedFile genFile : genFiles) {
+        File outputFile = new File(outputDirectory, genFile.fileName());
         BaseUtils.ensureDirsExistInPath(outputFile.getPath());
-        Files.asCharSink(outputFile, UTF_8).write(entry.getValue());
+        Files.asCharSink(outputFile, UTF_8).write(genFile.contents());
       }
     } else {
       String resourcePath = javaPackage.replace('.', '/') + "/";
       try (SoyJarFileWriter writer = new SoyJarFileWriter(new FileOutputStream(outputSrcJar))) {
-        for (Map.Entry<String, String> entry : parseInfo.entrySet()) {
+        for (GeneratedFile genFile : genFiles) {
           writer.writeEntry(
-              resourcePath + entry.getKey(), CharSource.wrap(entry.getValue()).asByteSource(UTF_8));
+              resourcePath + genFile.fileName(),
+              CharSource.wrap(genFile.contents()).asByteSource(UTF_8));
         }
       }
     }

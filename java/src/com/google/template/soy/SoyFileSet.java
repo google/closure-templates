@@ -70,6 +70,7 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
+import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CompilationUnit;
@@ -639,11 +640,10 @@ public final class SoyFileSet {
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
    *     "namespace", or "generic".
-   * @return A map from generated file name (of the form "<*>SoyInfo.java") to generated file
-   *     content.
+   * @return A list of generated files to write (of the form "<*>SoyInfo.java").
    * @throws SoyCompilationException If compilation fails.
    */
-  ImmutableMap<String, String> generateParseInfo(String javaPackage, String javaClassNameSource) {
+  ImmutableList<GeneratedFile> generateParseInfo(String javaPackage, String javaClassNameSource) {
     return entryPoint(
         () -> {
           // TODO(lukes): see if we can enforce that globals are provided at compile time here.

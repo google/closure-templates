@@ -23,15 +23,14 @@ import static com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor.
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.SharedTestUtils;
+import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -87,28 +86,6 @@ public final class GenerateParseInfoVisitorTest {
 
     soyFileNode = forFilePathAndNamespace("blah/bleh/boo-foo.soy", "ccc_ddd");
     assertThat(GENERIC.generateBaseClassName(soyFileNode)).isEqualTo("File");
-  }
-
-  @Test
-  public void testAppendJavadoc() {
-
-    String doc =
-        "Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah"
-            + " blah blah blah blah blah blah blahblahblahblahblahblahblahblahblahblahblahblahblah"
-            + "blahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah"
-            + "blahblahblah.";
-    String expectedJavadoc =
-        "    /**\n"
-            + "     * Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah "
-            + "blah blah blah\n"
-            + "     * blah blah blah blah blah\n"
-            + "     * blahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblahblah"
-            + "blahblahblahb\n"
-            + "     * lahblahblahblahblahblahblahblahblahblahblahblah.\n"
-            + "     */\n";
-    IndentedLinesBuilder ilb = new IndentedLinesBuilder(2, 4);
-    GenerateParseInfoVisitor.appendJavadoc(ilb, doc, false, true);
-    assertThat(ilb.toString()).isEqualTo(expectedJavadoc);
   }
 
   @Test
@@ -211,11 +188,18 @@ public final class GenerateParseInfoVisitorTest {
             .parse();
     TemplateRegistry registry = parseResult.registry();
 
-    ImmutableMap<String, String> parseInfos =
+    ImmutableList<GeneratedFile> parseInfos =
         new GenerateParseInfoVisitor("com.google.gpivtest", "filename", registry, typeRegistry)
             .exec(parseResult.fileSet());
 
-    assertThat(parseInfos).containsKey("NoPathSoyInfo.java");
-    return parseInfos.get("NoPathSoyInfo.java");
+    // Verify that exactly one generated file has the name "NoPathSoyInfo.java", and return it.
+    return parseInfos.stream()
+        .filter(file -> file.fileName().equals("NoPathSoyInfo.java"))
+        .reduce(
+            (a, b) -> {
+              throw new IllegalArgumentException("Two files with the name: NoPathSoyInfo.java");
+            })
+        .get()
+        .contents();
   }
 }
