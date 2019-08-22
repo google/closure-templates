@@ -16,6 +16,12 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.CharMatcher.whitespace;
+
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
+import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Module;
 import com.google.template.soy.msgs.SoyMsgPlugin;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -323,6 +329,82 @@ final class SoyCmdLineParser extends CmdLineParser {
     @Override
     public String getDefaultMetaVariable() {
       return "com.foo.bar.BazModule";
+    }
+  }
+
+  /**
+   * OptionHandler for args4j that handles a set multimap, where each entry is delimited by a
+   * semicolon, keys are delimited from values by an equal sign, and values are delimited by a
+   * comma. For example: {@code KEY=VALUE1,VALUE2;KEY2=VALUE3,VALUE4;...}.
+   */
+  abstract static class SetMultimapOptionHandler<K, V> extends OptionHandler<SetMultimap<K, V>> {
+
+    SetMultimapOptionHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super SetMultimap<K, V>> setter) {
+      super(parser, option, setter);
+    }
+
+    /**
+     * Parses one key from the multimap into the appropriate type.
+     *
+     * @param key One key from the multimap.
+     * @return The object representation of the key.
+     */
+    @ForOverride
+    protected abstract K parseKey(String key);
+
+    /**
+     * Parses one value from the multimap into the appropriate type.
+     *
+     * @param value One value from the multimap.
+     * @return The object representation of the value.
+     */
+    @ForOverride
+    protected abstract V parseValue(String value);
+
+    @Override
+    public int parseArguments(Parameters params) throws CmdLineException {
+      ImmutableSetMultimap.Builder<K, V> builder = ImmutableSetMultimap.builder();
+      String parameter = params.getParameter(0);
+      Splitter valueSplitter = Splitter.on(",");
+      for (String s : Splitter.on(";").omitEmptyStrings().split(parameter)) {
+        int index = s.indexOf("=");
+        if (index == -1) {
+          throw new CommandLineError("Invalid multimap flag entry.  No '=' found: " + s);
+        } else {
+          K key = parseKey(whitespace().trimFrom(s.substring(0, index)));
+          String allValStr = whitespace().trimFrom(s.substring(index + 1));
+          for (String valStr : valueSplitter.split(allValStr)) {
+            builder.put(key, parseValue(valStr));
+          }
+        }
+      }
+      setter.addValue(builder.build());
+      return 1;
+    }
+
+    @Override
+    public String getDefaultMetaVariable() {
+      return "KEY=VALUE1,VALUE2;KEY2=VALUE3,VALUE4;...";
+    }
+  }
+
+  /** OptionHandler for args4j that handles a set mulitmap with key strings and File values. */
+  public static final class StringFileSetMultimapHandler
+      extends SetMultimapOptionHandler<String, File> {
+    public StringFileSetMultimapHandler(
+        CmdLineParser parser, OptionDef option, Setter<? super SetMultimap<String, File>> setter) {
+      super(parser, option, setter);
+    }
+
+    @Override
+    protected String parseKey(String key) {
+      return key;
+    }
+
+    @Override
+    protected File parseValue(String value) {
+      return new File(value);
     }
   }
 
