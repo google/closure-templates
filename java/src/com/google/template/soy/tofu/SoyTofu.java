@@ -55,6 +55,15 @@ public interface SoyTofu {
   String getNamespace();
 
   /**
+   * Queries the current SoyTofu instance to see if it holds a given template. If the requested
+   * template is found, `true` is returned, otherwise, `false`.
+   *
+   * @param namespace Namespace to check for a template.
+   * @return Whether the template exists or not.
+   */
+  Boolean hasTemplate(String namespace);
+
+  /**
    * Gets a new SoyTofu instance with a different namespace (or no namespace). Note: The new SoyTofu
    * instance will still be backed by the same compiled Soy file set.
    *

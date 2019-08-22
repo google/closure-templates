@@ -100,6 +100,18 @@ public final class NamespacedTofu implements SoyTofu {
     return baseTofu.getUsedIjParamsForTemplate(getFullTemplateName(templateName));
   }
 
+  /**
+   * Queries the current SoyTofu instance to see if it holds a given template. If the requested
+   * template is found, `true` is returned, otherwise, `false`.
+   *
+   * @param namespace Namespace to check for a template.
+   * @return Whether the template exists or not.
+   */
+  @Override
+  public Boolean hasTemplate(String namespace) {
+    return this.baseTofu.hasTemplate(namespace);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Old render methods.
 
