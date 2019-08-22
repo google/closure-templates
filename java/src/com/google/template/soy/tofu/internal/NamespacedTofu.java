@@ -25,6 +25,7 @@ import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.tofu.SoyTofu;
 import java.util.Map;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -60,6 +61,18 @@ public final class NamespacedTofu implements SoyTofu {
   @Override
   public String getNamespace() {
     return namespace;
+  }
+
+  /**
+   * Queries the current SoyTofu instance to see if it holds a given template. If the requested
+   * template is found, `true` is returned, otherwise, `false`.
+   *
+   * @param namespace Namespace to check for a template.
+   * @return Whether the template exists or not.
+   */
+  @Override
+  public Boolean hasTemplate(@Nonnull String namespace) {
+    return baseTofu.hasTemplate(namespace);
   }
 
   @Override

@@ -59,6 +59,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -180,6 +181,18 @@ public final class BaseTofu implements SoyTofu {
   @Override
   public String getNamespace() {
     return null;
+  }
+
+  /**
+   * Queries the current SoyTofu instance to see if it holds a given template. If the requested
+   * template is found, `true` is returned, otherwise, `false`.
+   *
+   * @param namespace Namespace to check for a template.
+   * @return Whether the template exists or not.
+   */
+  @Override
+  public Boolean hasTemplate(@Nonnull String namespace) {
+    return this.basicTemplates.containsKey(namespace);
   }
 
   @Override

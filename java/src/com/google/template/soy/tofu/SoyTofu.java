@@ -28,6 +28,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -53,6 +54,15 @@ public interface SoyTofu {
    * @return The namespace of this SoyTofu object, or null if no namespace.
    */
   String getNamespace();
+
+  /**
+   * Queries the current SoyTofu instance to see if it holds a given template. If the requested
+   * template is found, `true` is returned, otherwise, `false`.
+   *
+   * @param namespace Namespace to check for a template.
+   * @return Whether the template exists or not.
+   */
+  Boolean hasTemplate(@Nonnull String namespace);
 
   /**
    * Gets a new SoyTofu instance with a different namespace (or no namespace). Note: The new SoyTofu
