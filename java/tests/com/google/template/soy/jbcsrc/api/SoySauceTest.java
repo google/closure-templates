@@ -52,6 +52,13 @@ public class SoySauceTest {
     sauce = builder.build().compileTemplates();
   }
 
+  /** Verifies SoySauce#hasTemplate(String). */
+  @Test
+  public void testHasTemplate() {
+    assertThat(sauce.hasTemplate("strict_test.helloHtml")).isTrue();
+    assertThat(sauce.hasTemplate("i.do.not.exist")).isFalse();
+  }
+
   /** Verifies SoySauce.Renderer#renderHtml(). */
   @Test
   public void testRenderHtml() {

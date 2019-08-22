@@ -63,6 +63,13 @@ public interface SoySauce {
   ImmutableList<String> getAllRequiredCssNamespaces(
       String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
 
+  /**
+   * Indicates whether the current {@link SoySauce} instance holds a given template.
+   *
+   * @return `true` if the template is valid and `false` if it is unrecognized.
+   */
+  Boolean hasTemplate(String template);
+
   /** A Renderer can configure rendering parameters and render the template. */
   interface Renderer {
     /** Configures the data to pass to template. */

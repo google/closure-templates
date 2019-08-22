@@ -111,6 +111,16 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   @Override
+  public Boolean hasTemplate(String template) {
+    try {
+      templates.getTemplateFactory(template);
+      return true;
+    } catch (IllegalArgumentException iae) {
+      return false;
+    }
+  }
+
+  @Override
   public RendererImpl renderTemplate(String template) {
     CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
     return new RendererImpl(template, factory, templates.getTemplateContentKind(template), null);
