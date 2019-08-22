@@ -78,21 +78,11 @@ public final class I18NDirectivesRuntime {
         numberFormat = NumberFormat.getScientificInstance(uLocale);
         break;
       case "compact_short":
-        {
-          CompactDecimalFormat compactNumberFormat =
-              CompactDecimalFormat.getInstance(uLocale, CompactStyle.SHORT);
-          compactNumberFormat.setMaximumSignificantDigits(3);
-          numberFormat = compactNumberFormat;
-          break;
-        }
+        numberFormat = CompactDecimalFormat.getInstance(uLocale, CompactStyle.SHORT);
+        break;
       case "compact_long":
-        {
-          CompactDecimalFormat compactNumberFormat =
-              CompactDecimalFormat.getInstance(uLocale, CompactStyle.LONG);
-          compactNumberFormat.setMaximumSignificantDigits(3);
-          numberFormat = compactNumberFormat;
-          break;
-        }
+        numberFormat = CompactDecimalFormat.getInstance(uLocale, CompactStyle.LONG);
+        break;
       default:
         throw new IllegalArgumentException(
             "First argument to formatNum must be "
@@ -100,15 +90,18 @@ public final class I18NDirectivesRuntime {
                 + "'compact_short', or 'compact_long'.");
     }
 
-    if (minFractionDigits != null) {
-      numberFormat.setMinimumFractionDigits(minFractionDigits);
-    }
-    if (maxFractionDigits == null) {
-      maxFractionDigits = minFractionDigits;
-    }
-    if (maxFractionDigits != null) {
+    if (minFractionDigits != null || maxFractionDigits != null) {
+      if (maxFractionDigits == null) {
+        maxFractionDigits = minFractionDigits;
+      }
+      if (minFractionDigits != null) {
+        numberFormat.setMinimumFractionDigits(minFractionDigits);
+      }
       numberFormat.setMaximumFractionDigits(maxFractionDigits);
+    } else if (numberFormat instanceof CompactDecimalFormat) {
+      ((CompactDecimalFormat) numberFormat).setMaximumSignificantDigits(3);
     }
+
     return numberFormat.format(number);
   }
 }

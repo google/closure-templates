@@ -44593,13 +44593,15 @@ const NumberFormat = goog.require('goog.i18n.NumberFormat');
  */
 function $$formatNum(val, formatType, minDigits, maxDigits) {
   const format = new NumberFormat(formatType);
+  if (NumberFormat.Format.COMPACT_SHORT === formatType ||
+      NumberFormat.Format.COMPACT_LONG === formatType) {
+    // Must set to 0 in order to call setMinimumFractionDigits.
+    // Note that setting to 3 trims trailing zeros.
+    format.setSignificantDigits(minDigits != null ? 0 : 3);
+  }
   if (minDigits != null) {
     format.setMinimumFractionDigits(minDigits);
     format.setMaximumFractionDigits(maxDigits != null ? maxDigits : minDigits);
-  } else if (
-      NumberFormat.Format.COMPACT_SHORT === formatType ||
-      NumberFormat.Format.COMPACT_LONG === formatType) {
-    format.setSignificantDigits(3);  // Note that this trims trailing zeros.
   }
   return format.format(val);
 }

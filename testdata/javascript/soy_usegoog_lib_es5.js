@@ -8963,7 +8963,8 @@ soy.checks.isURI = function(value) {
 soy.i18n = {};
 soy.i18n.$$formatNum = function(val, formatType, minDigits, maxDigits) {
   var format = new goog.i18n.NumberFormat(formatType);
-  null != minDigits ? (format.setMinimumFractionDigits(minDigits), format.setMaximumFractionDigits(null != maxDigits ? maxDigits : minDigits)) : goog.i18n.NumberFormat.Format.COMPACT_SHORT !== formatType && goog.i18n.NumberFormat.Format.COMPACT_LONG !== formatType || format.setSignificantDigits(3);
+  goog.i18n.NumberFormat.Format.COMPACT_SHORT !== formatType && goog.i18n.NumberFormat.Format.COMPACT_LONG !== formatType || format.setSignificantDigits(null != minDigits ? 0 : 3);
+  null != minDigits && (format.setMinimumFractionDigits(minDigits), format.setMaximumFractionDigits(null != maxDigits ? maxDigits : minDigits));
   return format.format(val);
 };
 soy.map = {};
