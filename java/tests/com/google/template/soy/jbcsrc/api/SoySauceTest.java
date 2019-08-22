@@ -18,8 +18,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
@@ -50,6 +49,13 @@ public class SoySauceTest {
     SoyFileSet.Builder builder = SoyFileSet.builder();
     builder.add(SoySauceTest.class.getResource("strict.soy"));
     sauce = builder.build().compileTemplates();
+  }
+
+  /** Verifies SoySauce#hasTemplate(String). */
+  @Test
+  public void testHasTemplate() {
+    assertTrue(sauce.hasTemplate("strict_test.helloHtml"));
+    assertFalse(sauce.hasTemplate("i.do.not.exist"));
   }
 
   /** Verifies SoySauce.Renderer#renderHtml(). */

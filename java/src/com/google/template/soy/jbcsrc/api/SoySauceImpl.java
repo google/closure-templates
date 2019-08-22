@@ -54,6 +54,7 @@ import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Main entry point for rendering Soy templates on the server. */
@@ -114,6 +115,16 @@ public final class SoySauceImpl implements SoySauce {
   public RendererImpl renderTemplate(String template) {
     CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
     return new RendererImpl(template, factory, templates.getTemplateContentKind(template), null);
+  }
+
+  @Override
+  public Boolean hasTemplate(@Nonnull String template) {
+    try {
+      templates.getTemplateFactory(template);
+      return true;
+    } catch (IllegalArgumentException iae) {
+      return false;
+    }
   }
 
   @Override

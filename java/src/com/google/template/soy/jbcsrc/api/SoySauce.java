@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Predicate;
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
 
 /**
  * Main entry point for rendering Soy templates on the server.
@@ -47,6 +48,13 @@ public interface SoySauce {
   default Renderer newRenderer(TemplateParameters params) {
     return renderTemplate(params.getTemplateName()).setData(params.getParamsAsMap());
   }
+
+  /**
+   * Indicates whether the current {@link SoySauce} instance holds a given template.
+   *
+   * @return `true` if the template is valid, `false` if it is unrecognized.
+   */
+  Boolean hasTemplate(@Nonnull String template);
 
   /**
    * Returns the transitive set of {@code $ij} params needed to render this template.
