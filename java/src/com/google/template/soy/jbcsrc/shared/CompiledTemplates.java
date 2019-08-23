@@ -133,10 +133,12 @@ public final class CompiledTemplates {
       Predicate<String> enabledDelpackages,
       boolean collectCssFromDelvariants) {
     TemplateData templateData = getTemplateData(templateName);
-    Set<TemplateData> all = Sets.newLinkedHashSet();
-    collectTransitiveCallees(templateData, all, enabledDelpackages, collectCssFromDelvariants);
+    Set<TemplateData> orderedTemplateCalls = Sets.newLinkedHashSet();
+    Set<TemplateData> visited = Sets.newLinkedHashSet();
+    collectTransitiveCallees(
+        templateData, orderedTemplateCalls, visited, enabledDelpackages, collectCssFromDelvariants);
     LinkedHashSet<String> requiredNamespaces = Sets.newLinkedHashSet();
-    for (TemplateData callee : all) {
+    for (TemplateData callee : orderedTemplateCalls) {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
     }
     ImmutableList<String> allRequiredCssNamespaces = ImmutableList.copyOf(requiredNamespaces);
@@ -204,18 +206,24 @@ public final class CompiledTemplates {
   /** Adds all transitively called templates to {@code visited} */
   private void collectTransitiveCallees(
       TemplateData templateData,
+      Set<TemplateData> orderedTemplateCalls,
       Set<TemplateData> visited,
       Predicate<String> enabledDelpackages,
       boolean collectCssFromDelvariants) {
-    if (visited.contains(templateData)) {
+    // templateData is null if a deltemplate has no implementation.
+    if (templateData == null || visited.contains(templateData)) {
       return; // avoids chasing recursive cycles
     }
-
+    visited.add(templateData);
     // TODO(tomnguyen) It may be important to collect css in lexical order instead of
     // separating templates and deltemplates.
     for (String callee : templateData.callees) {
       collectTransitiveCallees(
-          getTemplateData(callee), visited, enabledDelpackages, collectCssFromDelvariants);
+          getTemplateData(callee),
+          orderedTemplateCalls,
+          visited,
+          enabledDelpackages,
+          collectCssFromDelvariants);
     }
     for (String delCallee : templateData.delCallees) {
       selector.delTemplateNameToValues().get(delCallee).stream()
@@ -226,11 +234,12 @@ public final class CompiledTemplates {
               variant ->
                   collectTransitiveCallees(
                       selector.selectTemplate(delCallee, variant, enabledDelpackages),
+                      orderedTemplateCalls,
                       visited,
                       enabledDelpackages,
                       collectCssFromDelvariants));
     }
-    visited.add(templateData);
+    orderedTemplateCalls.add(templateData);
   }
 
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
