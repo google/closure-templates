@@ -148,6 +148,8 @@ message HtmlElementMetadataP {
   // The tag of an element. If the template is a fragment or a template
   // contains a dynamic tag, then this will be "?".
   string tag = 3;
+  // Whether or not a template contains an element with {skip} directive.
+  bool is_skip = 4;
 }
 
 // Metadata around whether the template is a Soy element or not.

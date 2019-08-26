@@ -30,9 +30,11 @@ import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.KeyNode;
+import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -47,6 +49,9 @@ import javax.annotation.Nullable;
 
 /** Validates restrictions specific to Soy elements. */
 public final class SoyElementPass extends CompilerFileSetPass {
+
+  private static final SoyErrorKind SOYELEMENT_CANNOT_BE_SKIPPED =
+      SoyErrorKind.of("Soy elements cannot be skipped.");
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_WRAP_ITSELF_RECURSIVELY =
       SoyErrorKind.of(
@@ -108,6 +113,9 @@ public final class SoyElementPass extends CompilerFileSetPass {
     for (TemplateNode template : templatesInLibrary.values()) {
       Set<TemplateNode> visited = new HashSet<>();
       getTemplateMetadata(template, templatesInLibrary, registry, visited);
+    }
+    if (errorReporter.hasErrors()) {
+      return Result.STOP;
     }
     return Result.CONTINUE;
   }
@@ -194,14 +202,27 @@ public final class SoyElementPass extends CompilerFileSetPass {
     // openTag being null means that the template isn't kind HTML.
     boolean isValid = openTag != null && closeTag != null;
     HtmlElementMetadataP.Builder builder = HtmlElementMetadataP.newBuilder();
+    boolean hasSkipNode = false;
     if (isValid) {
+      for (StandaloneNode child : openTag.getChildren()) {
+        if (child instanceof SkipNode) {
+          hasSkipNode = true;
+        }
+      }
       builder.setTag(
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
               : DYNAMIC_ELEMENT_TAG);
+      if (hasSkipNode && template instanceof TemplateElementNode) {
+        errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
+      }
     }
     HtmlElementMetadataP info =
-        builder.setIsHtmlElement(isValid).setIsVelogged(veLogNode != null).build();
+        builder
+            .setIsHtmlElement(isValid)
+            .setIsVelogged(veLogNode != null)
+            .setIsSkip(hasSkipNode)
+            .build();
     template.setHtmlElementMetadata(info);
     return info;
   }
@@ -243,18 +264,21 @@ public final class SoyElementPass extends CompilerFileSetPass {
     }
     template.setHtmlElementMetadata(calleeMetadata);
     if (template instanceof TemplateElementNode) {
+      if (calleeMetadata.getIsSkip()) {
+        errorReporter.report(call.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
+      }
       if (isCalleeSoyElement) {
-        errorReporter.report(template.getSourceLocation(), SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
+        errorReporter.report(call.getSourceLocation(), SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
       }
       if (!calleeMetadata.getIsHtmlElement()) {
-        errorReporter.report(template.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        errorReporter.report(call.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
       }
     }
     return calleeMetadata;
   }
 
   @Nullable
-  private static HtmlTagNode checkHtmlOpenTag(
+  static HtmlTagNode checkHtmlOpenTag(
       BlockNode parent,
       HtmlOpenTagNode openTagNode,
       ErrorReporter errorReporter,
@@ -268,6 +292,7 @@ public final class SoyElementPass extends CompilerFileSetPass {
             && openTagNode.getTaggedPairs().isEmpty())) {
       // simple void element, like <input> or <input />
       return openTagNode;
+      // This is a graceful fallback in case there is an error in HTML validation.
     } else if (openTagNode.getTaggedPairs().isEmpty()) {
       return openTagNode;
     } else {

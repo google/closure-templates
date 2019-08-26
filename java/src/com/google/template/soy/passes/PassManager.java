@@ -293,10 +293,6 @@ public final class PassManager {
       addPass(
           new ResolveTemplateParamTypesPass(registry, errorReporter, disableAllTypeChecking),
           singleFilePassesBuilder);
-      addPass(
-          new DesugarSkipNodesPass(
-              options.getExperimentalFeatures().contains("skipNode"), errorReporter),
-          singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
       // to create placeholders.
@@ -357,6 +353,7 @@ public final class PassManager {
           singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass.
       addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
+      addPass(new ValidateSkipNodesPass(errorReporter), singleFilePassesBuilder);
 
       // Fileset passes run on all sources files and have access to a partial template registry so
       // they can examine information about dependencies.

@@ -27,6 +27,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_MAYBE_SKIP;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_OPEN_SSR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_PARAM_NAME;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_KEY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_POP_MANUAL_KEY;
@@ -111,6 +112,7 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -1026,6 +1028,23 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     return CodeChunkUtils.concatChunksForceString(getAttributeValues(node));
   }
 
+  private Expression getOpenSSRCall(HtmlOpenTagNode node, SkipNode skip) {
+    List<Expression> args = new ArrayList<>();
+    args.add(getTagNameCodeChunk(node.getTagName()));
+
+    KeyNode keyNode = node.getKeyNode();
+    Expression key = Expression.LITERAL_UNDEFINED;
+    if (keyNode == null) {
+      args.add(JsRuntime.XID.call(Expression.stringLiteral(skip.getSkipId())));
+    } else {
+      // Key difference between getOpen and getOpenSSR
+      args.add(translateExpr(node.getKeyNode().getExpr()));
+    }
+    args.add(key);
+
+    return INCREMENTAL_DOM_OPEN_SSR.call(args);
+  }
+
   private Expression getOpenCall(HtmlOpenTagNode node) {
     TemplateNode template = node.getNearestAncestor(TemplateNode.class);
     List<Expression> args = new ArrayList<>();
@@ -1103,7 +1122,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       Expression key = translateExpr(node.getKeyNode().getExpr());
       getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
     }
-
     Expression openTagExpr = getOpenCall(node);
     if (node.isElementRoot()) {
       // Append code to stash the template object in this node.
@@ -1145,7 +1163,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * generates
    *
    * <pre>
-   * incrementalDom.elementClose('div');
+   * incrementalDom.close('div');
    * </pre>
    */
   @Override
@@ -1155,27 +1173,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // to the state before entering the keyed node.
     if (node.getTaggedPairs().size() == 1) {
       HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
-      if (openTag.getKeyNode() != null) {
+      if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
         keyCounterStack.pop();
         getJsCodeBuilder().append(INCREMENTAL_DOM_POP_MANUAL_KEY.call());
       }
     }
 
     if (!node.getTagName().isDefinitelyVoid()) {
-      emitClose();
+      getJsCodeBuilder().append(INCREMENTAL_DOM_CLOSE.call().asStatement());
     }
-  }
-
-  /**
-   * Emits a close tag. For example:
-   *
-   * <pre>
-   * &lt;incrementalDom.elementClose('div');&gt;
-   * </pre>
-   */
-  private void emitClose() {
-    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    jsCodeBuilder.append(INCREMENTAL_DOM_CLOSE.call());
   }
 
   /**
@@ -1266,6 +1272,20 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         super.visitPrintNode(node);
         break;
     }
+  }
+
+  @Override
+  protected void visitSkipNode(SkipNode node) {
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
+    Expression openTagExpr = getOpenSSRCall(openTag, node);
+    Statement attributesAndCloseTag = getAttributeAndCloseCalls(openTag);
+    node.removeChild(0);
+    Statement childStatements = visitChildrenReturningCodeChunk(node);
+    node.addChild(0, openTag);
+    jsCodeBuilder.append(
+        Statement.ifStatement(openTagExpr, Statement.of(attributesAndCloseTag, childStatements))
+            .build());
   }
 
   @Override

@@ -83,6 +83,7 @@ public class IncrementalDomSrcMain {
       }
 
       UnescapingVisitor.unescapeRawTextInHtml(soyTree);
+      TransformSkipNodeVisitor.reparentSkipNodes(soyTree);
 
       new RemoveUnnecessaryEscapingDirectives(bidiGlobalDir).run(soyTree);
       // some of the above passes may slice up raw text nodes, recombine them.

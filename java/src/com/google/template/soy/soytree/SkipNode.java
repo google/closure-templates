@@ -26,7 +26,12 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
-public final class SkipNode extends AbstractCommandNode implements StandaloneNode, StatementNode {
+public final class SkipNode extends AbstractParentCommandNode<StandaloneNode>
+    implements StatementNode {
+
+  // Serializes to a soy-server-key which is used for Incremental DOM to find the element this skip
+  // node is attached to.
+  private String skipId = "";
 
   public SkipNode(int id, SourceLocation location) {
     super(id, location, "skip");
@@ -39,6 +44,17 @@ public final class SkipNode extends AbstractCommandNode implements StandaloneNod
    */
   private SkipNode(SkipNode orig, CopyState copyState) {
     super(orig, copyState);
+    for (StandaloneNode node : this.getChildren()) {
+      addChild(node.copy(copyState));
+    }
+  }
+
+  public void setSkipId(String skipId) {
+    this.skipId = skipId;
+  }
+
+  public String getSkipId() {
+    return skipId;
   }
 
   @Override
@@ -48,12 +64,12 @@ public final class SkipNode extends AbstractCommandNode implements StandaloneNod
 
   @Override
   public String getCommandText() {
-    return toSourceString();
+    return "{skip}";
   }
 
   @Override
   public String toSourceString() {
-    return "{skip}";
+    return "{skip}{/skip}";
   }
 
   @SuppressWarnings("unchecked")

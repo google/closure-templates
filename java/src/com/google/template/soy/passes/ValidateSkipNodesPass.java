@@ -19,33 +19,35 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
-/** Downgrades {skip} nodes to being removed. To Be implemented later. */
-final class DesugarSkipNodesPass extends CompilerFilePass {
+/** Checks for validity of skip nodes wrt their host node. */
+final class ValidateSkipNodesPass extends CompilerFilePass {
 
-  private static final SoyErrorKind SKIP_NOT_NOT_IMPLEMENTED =
-      SoyErrorKind.of("Skip nodes have not been implemented yet.");
+  private static final SoyErrorKind SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS =
+      SoyErrorKind.of("Skip element open tags must map to exactly one close tag.");
 
-  private final boolean enableSkipNode;
   private final ErrorReporter errorReporter;
 
-  public DesugarSkipNodesPass(boolean enableSkipNode, ErrorReporter errorReporter) {
-    this.enableSkipNode = enableSkipNode;
+  public ValidateSkipNodesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : file.getChildren()) {
+      int id = 0;
       for (SkipNode skipNode : SoyTreeUtils.getAllNodesOfType(template, SkipNode.class)) {
-        if (!enableSkipNode) {
-          errorReporter.report(skipNode.getSourceLocation(), SKIP_NOT_NOT_IMPLEMENTED);
+        HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
+        if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
+          errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
+        } else {
+          skipNode.setSkipId(template.getTemplateName() + "-" + id++);
         }
-        skipNode.getParent().removeChild(skipNode);
       }
     }
   }
