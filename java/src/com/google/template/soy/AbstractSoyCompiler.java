@@ -71,8 +71,8 @@ public abstract class AbstractSoyCompiler {
   @Option(
       name = "--srcs",
       usage =
-          "The list of source Soy files. Extra arguments are treated as srcs. Sources"
-              + " are required from either this flag or as extra arguments.",
+          "The list of source Soy files (if applicable). Extra arguments are treated as srcs."
+              + " Sources are typically required and read from this flag or as extra arguments.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   List<File> srcs = new ArrayList<>();
 
@@ -198,7 +198,7 @@ public abstract class AbstractSoyCompiler {
       doMain(args, err);
       return 0;
     } catch (SoyCompilationException compilationException) {
-      err.println(compilationException.getMessage());
+      err.println(formatCompilationException(compilationException));
       return 1;
     } catch (CommandLineError e) {
       e.printStackTrace(err);
@@ -238,7 +238,7 @@ public abstract class AbstractSoyCompiler {
           "Found extra arguments passed on the command line. If these are sources, use --srcs=..."
               + " instead.");
     }
-    if (srcs.isEmpty()) {
+    if (requireSources() && srcs.isEmpty()) {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
@@ -445,10 +445,22 @@ public abstract class AbstractSoyCompiler {
   @ForOverride
   void validateFlags() {}
 
+  /** Extension point for subclasses to disable soy sources being required. */
+  @ForOverride
+  boolean requireSources() {
+    return true;
+  }
+
   /** Extension point for subtypes to register extra objects containing flag definitions. */
   @ForOverride
   Iterable<?> extraFlagsObjects() {
     return ImmutableList.of();
+  }
+
+  /** Extension point to allow subclasses to format the errors from a compilation exception. */
+  @ForOverride
+  String formatCompilationException(SoyCompilationException sce) {
+    return sce.getMessage();
   }
 
   /**

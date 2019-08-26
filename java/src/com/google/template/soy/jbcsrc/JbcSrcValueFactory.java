@@ -112,7 +112,8 @@ final class JbcSrcValueFactory extends JavaValueFactory {
         (SoyJavaSourceFunction) fnNode.getSoyFunction(),
         fnNode.getAllowedParamTypes(),
         fnNode.getType(),
-        fnNode.getSourceLocation());
+        fnNode.getSourceLocation(),
+        /* includeTriggeredInTemplateMsg= */ true);
     if (errorReporter.errorsSince(checkpoint)) {
       return SoyExpression.NULL_BOXED;
     }

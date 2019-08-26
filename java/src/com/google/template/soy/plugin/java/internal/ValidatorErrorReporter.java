@@ -37,7 +37,7 @@ final class ValidatorErrorReporter {
 
   private static final SoyErrorKind INVALID_RETURN_TYPE_WITH_METHOD =
       SoyErrorKind.of(
-          formatWithExpectedAndActual("Return type cannot be represented in Soy.\nMethod: {4}."),
+          formatWithExpectedAndActual("Return type cannot be represented in Soy.\nMethod: {5}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INVALID_RETURN_TYPE_NO_METHOD =
@@ -47,7 +47,7 @@ final class ValidatorErrorReporter {
 
   private static final SoyErrorKind INCOMPATIBLE_RETURN_TYPE_WITH_METHOD =
       SoyErrorKind.of(
-          formatWithExpectedAndActual("Type mismatch on return type of {4}."),
+          formatWithExpectedAndActual("Type mismatch on return type of {5}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INCOMPATIBLE_RETURN_TYPE_NO_METHOD =
@@ -57,84 +57,90 @@ final class ValidatorErrorReporter {
 
   private static final SoyErrorKind PARAMETER_LENGTH_MISMATCH =
       SoyErrorKind.of(
-          formatWithExpectedAndActual("Parameter length mismatch calling {4}."),
+          formatWithExpectedAndActual("Parameter length mismatch calling {5}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PARAM_MISMATCH_ONE =
       SoyErrorKind.of(
-          formatWithExpectedAndActual("Type mismatch on the {4} parameter of {5}."),
+          formatWithExpectedAndActual("Type mismatch on the {5} parameter of {6}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind PARAM_MISMATCH_MANY =
       SoyErrorKind.of(
-          formatWithExpectedListAndActual("Type mismatch on the {4} parameter of {5}."),
+          formatWithExpectedListAndActual("Type mismatch on the {5} parameter of {6}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind VE_PARAM_NOT_SUPPORTED =
       SoyErrorKind.of(
           formatPlain(
-              "Invalid type passed to the {3} parameter of {4}, "
+              "Invalid type passed to the {4} parameter of {5}, "
                   + "ve and ve_data types cannot be used by plugins."
-                  + "\n  passed: {2}"),
+                  + "\n  passed: {3}"),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_PARAM =
       SoyErrorKind.of(
-          formatWithExpectedAndActual("Passed null to the {4} parameter of {5}."),
+          formatWithExpectedAndActual("Passed null to the {5} parameter of {6}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_RETURN =
       SoyErrorKind.of(
-          formatPlain("{2}.applyForJavaSource returned null."), StyleAllowance.NO_PUNCTUATION);
+          formatPlain("{3}.applyForJavaSource returned null."), StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_METHOD =
       SoyErrorKind.of(
-          formatPlain("Passed a null method to JavaValueFactory.{2}."),
+          formatPlain("Passed a null method to JavaValueFactory.{3}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind NULL_VALUES =
       SoyErrorKind.of(
           formatPlain(
-              "Passed a null JavaValue[] to JavaValueFactory.{2} "
-                  + "while trying to call method: {3}."),
+              "Passed a null JavaValue[] to JavaValueFactory.{3} "
+                  + "while trying to call method: {4}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind INCOMPATIBLE_TYPES =
       SoyErrorKind.of(
-          formatPlain("Invalid call to {2}, {3} is incompatible with {4}."),
+          formatPlain("Invalid call to {3}, {4} is incompatible with {5}."),
           StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind STATIC_MISMATCH =
-      SoyErrorKind.of(formatPlain("{2} method {3} passed to JavaValueFactory.{4}."));
+      SoyErrorKind.of(
+          formatPlain("{3} method {4} passed to JavaValueFactory.{5}."),
+          StyleAllowance.NO_PUNCTUATION);
 
   private static final SoyErrorKind UNEXPECTED_ERROR =
-      SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(formatPlain("{3}"), StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter reporter;
   private final String fnName;
   private final Class<?> fnClass;
   private final SoyType expectedReturnType;
   private final SourceLocation sourceLocation;
+  private final boolean includeTriggeredInTemplateMsg;
 
   ValidatorErrorReporter(
       ErrorReporter reporter,
       String fnName,
       Class<?> fnClass,
       SoyType expectedReturnType,
-      SourceLocation sourceLocation) {
+      SourceLocation sourceLocation,
+      boolean includeTriggeredInTemplateMsg) {
     this.reporter = reporter;
     this.fnName = fnName;
     this.fnClass = fnClass;
     this.sourceLocation = sourceLocation;
     this.expectedReturnType = expectedReturnType;
+    this.includeTriggeredInTemplateMsg = includeTriggeredInTemplateMsg;
   }
 
   private void report(SoyErrorKind error, Object... additionalArgs) {
-    Object[] args = new Object[additionalArgs.length + 2];
+    Object[] args = new Object[additionalArgs.length + 3];
     args[0] = fnName;
     args[1] = fnClass.getName();
+    args[2] = includeTriggeredInTemplateMsg ? "\nTriggered by usage in template at:" : "";
     for (int i = 0; i < additionalArgs.length; i++) {
-      args[2 + i] = additionalArgs[i];
+      args[3 + i] = additionalArgs[i];
     }
     reporter.report(sourceLocation, error, args);
   }
@@ -320,27 +326,27 @@ final class ValidatorErrorReporter {
         + "\n"
         + innerFmt
         + "\nPlugin implementation: {1}"
-        + "\nTriggered by usage in template at:";
+        + "{2}";
   }
 
   private static String formatWithExpectedAndActual(String innerFmt) {
     return "Error in plugin implementation for function ''{0}''."
         + "\n"
         + innerFmt
-        + "\n  expected: {2}"
-        + "\n  actual:   {3}"
+        + "\n  expected: {3}"
+        + "\n  actual:   {4}"
         + "\nPlugin implementation: {1}"
-        + "\nTriggered by usage in template at:";
+        + "{2}";
   }
 
   private static String formatWithExpectedListAndActual(String innerFmt) {
     return "Error in plugin implementation for function ''{0}''."
         + "\n"
         + innerFmt
-        + "\n  expected one of: {2}"
-        + "\n  actual: {3}"
+        + "\n  expected one of: {3}"
+        + "\n  actual: {4}"
         + "\nPlugin implementation: {1}"
-        + "\nTriggered by usage in template at:";
+        + "{2}";
   }
 
   private static String simpleMethodName(Method method) {

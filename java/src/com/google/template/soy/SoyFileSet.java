@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteSink;
 import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
@@ -63,6 +64,7 @@ import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
 import com.google.template.soy.passes.SoyElementPass;
+import com.google.template.soy.plugin.internal.PluginValidator;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
 import com.google.template.soy.pysrc.internal.PySrcMain;
@@ -87,6 +89,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -577,9 +580,6 @@ public final class SoyFileSet {
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink) {
     this.scopedData = apiCallScopeProvider;
-
-    Preconditions.checkArgument(
-        !soyFileSuppliers.isEmpty(), "Must have non-zero number of input Soy files.");
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
     this.compilationUnits = compilationUnits;
@@ -676,6 +676,27 @@ public final class SoyFileSet {
           return new GenerateParseInfoVisitor(
                   javaPackage, javaClassNameSource, registry, typeRegistry)
               .exec(soyTree);
+        });
+  }
+
+  /** Validates any user SoySourceFunction plugins. */
+  void validateUserPlugins() {
+    entryPointVoid(
+        () -> {
+          // First resolve all the plugins to ensure they're well-formed (no bad names, etc.).
+          new PluginResolver(
+              PluginResolver.Mode.REQUIRE_DEFINITIONS,
+              getSoyPrintDirectives(),
+              getSoyFunctions(),
+              getSoySourceFunctions(),
+              errorReporter);
+          // Then validate the user-specified source functions.
+          Set<String> internalFunctionNames = InternalPlugins.internalFunctionMap().keySet();
+          new PluginValidator(errorReporter, typeRegistry)
+              .validate(
+                  Maps.filterKeys(
+                      getSoySourceFunctions(), name -> !internalFunctionNames.contains(name)));
+          throwIfErrorsPresent();
         });
   }
 

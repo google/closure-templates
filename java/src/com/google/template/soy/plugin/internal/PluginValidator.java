@@ -65,7 +65,12 @@ public final class PluginValidator {
               .collect(toImmutableList());
       SoyType returnType = typeFor(sig.returnType(), fn.getClass());
       javaValidator.validate(
-          fnName, fn, paramTypes, returnType, new SourceLocation(fn.getClass().getName()));
+          fnName,
+          fn,
+          paramTypes,
+          returnType,
+          new SourceLocation(fn.getClass().getName()),
+          /* includeTriggeredInTemplateMsg= */ false);
     }
   }
 

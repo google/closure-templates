@@ -54,10 +54,16 @@ public class JavaPluginValidator {
       SoyJavaSourceFunction fn,
       List<SoyType> expectedParams,
       SoyType expectedReturn,
-      SourceLocation sourceLocation) {
+      SourceLocation sourceLocation,
+      boolean includeTriggeredInTemplateMsg) {
     ValidatorErrorReporter reporter =
         new ValidatorErrorReporter(
-            baseReporter, fnName, fn.getClass(), expectedReturn, sourceLocation);
+            baseReporter,
+            fnName,
+            fn.getClass(),
+            expectedReturn,
+            sourceLocation,
+            includeTriggeredInTemplateMsg);
     ValidatorFactory factory = new ValidatorFactory(reporter);
     ValidatorContext context = new ValidatorContext(reporter);
     JavaValue result = null;

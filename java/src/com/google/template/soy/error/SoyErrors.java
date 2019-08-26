@@ -21,7 +21,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.Descriptor;
 import javax.annotation.Nullable;
 
@@ -149,6 +151,15 @@ public final class SoyErrors {
 
   /** Formats the errors in a standard way for displaying to a user. */
   public static String formatErrors(Iterable<SoyError> errors) {
+    return formatErrorsInternal(errors, false);
+  }
+
+  /** Formats the errors, including only the error message (not its location or snippet). */
+  public static String formatErrorsMessageOnly(Iterable<SoyError> errors) {
+    return formatErrorsInternal(errors, true);
+  }
+
+  private static String formatErrorsInternal(Iterable<SoyError> errors, boolean messageOnly) {
     int numErrors = 0;
     int numWarnings = 0;
     for (SoyError error : errors) {
@@ -164,7 +175,17 @@ public final class SoyErrors {
     StringBuilder sb =
         new StringBuilder(numErrors == 0 ? "warnings" : "errors")
             .append(" during Soy compilation\n");
-    Joiner.on('\n').appendTo(sb, errors);
+    if (messageOnly) {
+      Joiner.on("\n\n")
+          .appendTo(
+              sb,
+              Streams.stream(errors)
+                  .map(SoyError::message)
+                  .collect(ImmutableList.toImmutableList()))
+          .append('\n');
+    } else {
+      Joiner.on('\n').appendTo(sb, errors);
+    }
     if (numErrors > 0) {
       formatNumber(numErrors, "error", sb);
     }
