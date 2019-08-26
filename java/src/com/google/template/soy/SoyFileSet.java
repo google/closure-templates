@@ -42,6 +42,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.error.SoyInternalCompilerException;
 import com.google.template.soy.incrementaldomsrc.IncrementalDomSrcMain;
 import com.google.template.soy.incrementaldomsrc.SoyIncrementalDomSrcOptions;
+import com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVisitor;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
@@ -634,6 +635,25 @@ public final class SoyFileSet {
   }
 
   /**
+   * Generates Java classes containing template invocation builders for setting param values. There
+   * will be one Java file per Soy file.
+   *
+   * @param javaPackage The Java package for the generated classes.
+   * @return A list of generated files to write (of the form "<*>FooSoyTemplates.java").
+   * @throws SoyCompilationException If compilation fails.
+   */
+  ImmutableList<GeneratedFile> generateInvocationBuilders(String javaPackage) {
+    return entryPoint(
+        () -> {
+          SoyFileSetNode soyTree = parseForGenJava().fileSet();
+          throwIfErrorsPresent();
+
+          // Generate template invocation builders for the soy tree.
+          return new GenInvocationBuildersVisitor(javaPackage).exec(soyTree);
+        });
+  }
+
+  /**
    * Generates Java classes containing parse info (param names, template names, meta info). There
    * will be one Java class per Soy file.
    *
@@ -646,23 +666,7 @@ public final class SoyFileSet {
   ImmutableList<GeneratedFile> generateParseInfo(String javaPackage, String javaClassNameSource) {
     return entryPoint(
         () -> {
-          // TODO(lukes): see if we can enforce that globals are provided at compile time here.
-          // given that types have to be, this should be possible.  Currently it is disabled for
-          // backwards compatibility
-          // N.B. we do not run the optimizer here for 2 reasons:
-          // 1. it would just waste time, since we are not running code generation the optimization
-          //    work doesn't help anything
-          // 2. it potentially removes metadata from the tree by precalculating expressions. For
-          //     example, trivial print nodes are evaluated, which can remove globals from the tree,
-          //     but the
-          ParseResult result =
-              parse(
-                  passManagerBuilder()
-                      .allowUnknownGlobals()
-                      .optimize(false)
-                      // Don't desugar, this is a bit of a waste of time and it destroys type
-                      // information about @state parameters
-                      .desugarHtmlAndStateNodes(false));
+          ParseResult result = parseForGenJava();
           throwIfErrorsPresent();
 
           SoyFileSetNode soyTree = result.fileSet();
@@ -1045,6 +1049,29 @@ public final class SoyFileSet {
 
   ImmutableMap<String, SoySourceFunction> getSoySourceFunctions() {
     return soySourceFunctionMap;
+  }
+
+  /**
+   * Parses the file set with the options we need for writing generated java *SoyInfo and invocation
+   * builders.
+   */
+  private ParseResult parseForGenJava() {
+    // TODO(lukes): see if we can enforce that globals are provided at compile time here.
+    // given that types have to be, this should be possible.  Currently it is disabled for
+    // backwards compatibility
+    // N.B. we do not run the optimizer here for 2 reasons:
+    // 1. it would just waste time, since we are not running code generation the optimization
+    //    work doesn't help anything
+    // 2. it potentially removes metadata from the tree by precalculating expressions. For
+    //     example, trivial print nodes are evaluated, which can remove globals from the tree,
+    //     but the
+    return parse(
+        passManagerBuilder()
+            .allowUnknownGlobals()
+            .optimize(false)
+            // Don't desugar, this is a bit of a waste of time and it destroys type
+            // information about @state parameters
+            .desugarHtmlAndStateNodes(false));
   }
 
   // Parse the current file set.

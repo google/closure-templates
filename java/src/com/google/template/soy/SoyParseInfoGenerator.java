@@ -39,31 +39,45 @@ import org.kohsuke.args4j.Option;
 public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Option(
-    name = "--allowExternalCalls",
-    usage =
-        "Whether to allow external calls. New projects should set this to false, and"
-            + " existing projects should remove existing external calls and then set this"
-            + " to false. It will save you a lot of headaches. Currently defaults to true"
-            + " for backward compatibility."
-  )
+      name = "--generateInvocationBuilders",
+      usage =
+          "[Reqiured] Whether to generate the new java template invocation builders"
+              + " (FooTemplates.java). If false, generates the old FooSoyInfo.java files"
+              + " instead.")
+  private boolean generateInvocationBuilders = false;
+
+  @Option(
+      name = "--allowExternalCalls",
+      usage =
+          "Whether to allow external calls. New projects should set this to false, and existing"
+              + " projects should remove existing external calls and then set this to false. It"
+              + " will save you a lot of headaches.  For the new java invocation builders (i.e. if"
+              + "  --generateInvocationBuilders is true), this flag will be ignored and external"
+              + " calls will NOT be allowed. For *SoyInfo files, this currently defaults to true"
+              + " for backward compatibility. ")
   private boolean allowExternalCalls = true;
 
   @Option(
-    name = "--outputDirectory",
-    usage =
-        "[Optional] The path to the output directory. If files with the same names"
-            + " already exist at this location, they will be overwritten. "
-            + "Either --outputDirectory or --outputJar must be set"
-  )
+      name = "--outputDirectory",
+      usage =
+          "[Optional for *SoyInfo mode, Ignored for invocation builder mode (i.e. if"
+              + " --generateInvocationBuilders=true)] The path to the output directory. If files"
+              + " with the same names already exist at this location, they will be overwritten. If"
+              + " generating the old SoyInfo files (i.e. if --generateInvocationBuilders is"
+              + " false), either --outputDirectory or --outputJar must be set. If generating the"
+              + " new template invocation builders, this flag will be ignored and --outputSrcJar"
+              + " is required.")
   private String outputDirectory = "";
 
   @Option(
-    name = "--outputSrcJar",
-    usage =
-        "[Optional] The path to the source jar to write. If a file with the same name"
-            + " already exist at this location, it will be overwritten. "
-            + "Either --outputDirectory or --outputJar must be set"
-  )
+      name = "--outputSrcJar",
+      usage =
+          "[Optional for *SoyInfo mode, Required for invocation builder mode (i.e. if"
+              + " --generateInvocationBuilders=true)] The path to the source jar to write. If a"
+              + " file with the same name already exist at this location, it will be overwritten."
+              + " If generating the old SoyInfo files (i.e. if --generateInvocationBuilders is"
+              + " false), either --outputDirectory or --outputJar must be set. If generating the"
+              + " new template invocation builders, this flag is required.")
   private File outputSrcJar;
 
   @Option(
@@ -74,16 +88,16 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   private String javaPackage = "";
 
   @Option(
-    name = "--javaClassNameSource",
-    required = true,
-    usage =
-        "[Required] The source for the generated class names. Valid values are"
-            + " \"filename\", \"namespace\", and \"generic\". Option \"filename\" turns"
-            + " a Soy file name AaaBbb.soy or aaa_bbb.soy into AaaBbbSoyInfo. Option"
-            + " \"namespace\" turns a namespace aaa.bbb.cccDdd into CccDddSoyInfo (note"
-            + " it only uses the last part of the namespace). Option \"generic\" generates"
-            + " class names such as File1SoyInfo, File2SoyInfo."
-  )
+      name = "--javaClassNameSource",
+      required = true,
+      usage =
+          "[Required for *SoyInfo mode, Ignored for invocation builder mode (i.e. if"
+              + " --generateInvocationBuilders=true)]. The source for the"
+              + " generated class names. Valid values are \"filename\", \"namespace\", and"
+              + " \"generic\". Option \"filename\" turns a Soy file name AaaBbb.soy or aaa_bbb.soy"
+              + " into AaaBbbSoyInfo. Option \"namespace\" turns a namespace aaa.bbb.cccDdd into"
+              + " CccDddSoyInfo (note it only uses the last part of the namespace). Option"
+              + " \"generic\" generates class names such as File1SoyInfo, File2SoyInfo.")
   private String javaClassNameSource = "";
 
   SoyParseInfoGenerator(PluginLoader loader, SoyInputCache cache) {
@@ -107,14 +121,25 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
   @Override
   void validateFlags() {
-    if (outputDirectory.isEmpty() == (outputSrcJar == null)) {
-      exitWithError("Must provide exactly one of --outputDirectory or --outputSrcJar");
-    }
+    // Java package is always required.
     if (javaPackage.length() == 0) {
       exitWithError("Must provide Java package.");
     }
-    if (javaClassNameSource.length() == 0) {
-      exitWithError("Must provide Java class name source.");
+
+    if (generateInvocationBuilders) {
+      // Verify flags for template invocation builder generation.
+      if (outputSrcJar == null) {
+        exitWithError("Must provide --outputSrcJar");
+      }
+
+    } else {
+      // Verify flags for *SoyInfo generation.
+      if (outputDirectory.isEmpty() == (outputSrcJar == null)) {
+        exitWithError("Must provide exactly one of --outputDirectory or --outputSrcJar");
+      }
+      if (javaClassNameSource.length() == 0) {
+        exitWithError("Must provide Java class name source.");
+      }
     }
   }
 
@@ -124,7 +149,11 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
 
     SoyFileSet sfs = sfsBuilder.build();
 
-    ImmutableList<GeneratedFile> genFiles = sfs.generateParseInfo(javaPackage, javaClassNameSource);
+    ImmutableList<GeneratedFile> genFiles =
+        generateInvocationBuilders
+            ? sfs.generateInvocationBuilders(javaPackage)
+            : sfs.generateParseInfo(javaPackage, javaClassNameSource);
+
     if (outputSrcJar == null) {
       for (GeneratedFile genFile : genFiles) {
         File outputFile = new File(outputDirectory, genFile.fileName());
