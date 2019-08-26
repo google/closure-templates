@@ -28,8 +28,12 @@ import com.google.template.soy.base.SourceLocation;
  *
  * <p>This is either a full dotted identifier or a partial identifier.
  */
+// Errorprone can't handle that type() is memorized.
+// https://github.com/google/closure-templates/issues/183
 @AutoValue
+@AutoValue.CopyAnnotations
 @Immutable
+@SuppressWarnings("Immutable")
 public abstract class Identifier {
 
   /** What flavor of identifier this is. */
