@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,26 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.jbcsrc;
+package com.google.template.soy.plugin.java.internal;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.jbcsrc.JbcSrcValueFactory.ValidationResult;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.plugin.java.internal.ValidatorFactory.ValidationResult;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.types.SoyType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.objectweb.asm.Type;
 
-/** A wrapper over ErrorReporter for dealing with errors in JbcSrcValueFactory */
-final class JbcSrcValueErrorReporter {
+/** A wrapper over ErrorReporter for dealing with errors in plugin functions. */
+final class ValidatorErrorReporter {
 
   private static final SoyErrorKind INVALID_RETURN_TYPE_WITH_METHOD =
       SoyErrorKind.of(
@@ -115,21 +111,32 @@ final class JbcSrcValueErrorReporter {
       SoyErrorKind.of(formatPlain("{2}"), StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter reporter;
-  private final FunctionNode fnNode;
+  private final String fnName;
+  private final Class<?> fnClass;
+  private final SoyType expectedReturnType;
+  private final SourceLocation sourceLocation;
 
-  JbcSrcValueErrorReporter(ErrorReporter reporter, FunctionNode fnNode) {
+  ValidatorErrorReporter(
+      ErrorReporter reporter,
+      String fnName,
+      Class<?> fnClass,
+      SoyType expectedReturnType,
+      SourceLocation sourceLocation) {
     this.reporter = reporter;
-    this.fnNode = fnNode;
+    this.fnName = fnName;
+    this.fnClass = fnClass;
+    this.sourceLocation = sourceLocation;
+    this.expectedReturnType = expectedReturnType;
   }
 
   private void report(SoyErrorKind error, Object... additionalArgs) {
     Object[] args = new Object[additionalArgs.length + 2];
-    args[0] = fnNode.getFunctionName();
-    args[1] = fnNode.getSoyFunction().getClass().getName();
+    args[0] = fnName;
+    args[1] = fnClass.getName();
     for (int i = 0; i < additionalArgs.length; i++) {
       args[2 + i] = additionalArgs[i];
     }
-    reporter.report(fnNode.getSourceLocation(), error, args);
+    reporter.report(sourceLocation, error, args);
   }
 
   ErrorReporter.Checkpoint checkpoint() {
@@ -144,12 +151,12 @@ final class JbcSrcValueErrorReporter {
     if (method == null) {
       report(
           INVALID_RETURN_TYPE_NO_METHOD,
-          "soy type of '" + fnNode.getType() + "'",
+          "soy type of '" + expectedReturnType + "'",
           "java type of '" + returnType.getName() + "'");
     } else {
       report(
           INVALID_RETURN_TYPE_WITH_METHOD,
-          "soy type of '" + fnNode.getType() + "'",
+          "soy type of '" + expectedReturnType + "'",
           "java type of '" + returnType.getName() + "'",
           simpleMethodName(method));
     }
@@ -159,12 +166,12 @@ final class JbcSrcValueErrorReporter {
     if (method == null) {
       report(
           INCOMPATIBLE_RETURN_TYPE_NO_METHOD,
-          "soy type of '" + fnNode.getType() + "'",
+          "soy type of '" + expectedReturnType + "'",
           "soy type of '" + actualType + "'");
     } else {
       report(
           INCOMPATIBLE_RETURN_TYPE_WITH_METHOD,
-          "soy type of '" + fnNode.getType() + "'",
+          "soy type of '" + expectedReturnType + "'",
           "soy type of '" + actualType + "'",
           simpleMethodName(method));
     }
@@ -174,12 +181,12 @@ final class JbcSrcValueErrorReporter {
     if (method == null) {
       report(
           INCOMPATIBLE_RETURN_TYPE_NO_METHOD,
-          "soy type of '" + fnNode.getType() + "'",
+          "soy type of '" + expectedReturnType + "'",
           "java type of '" + actualJavaType.getName() + "'");
     } else {
       report(
           INCOMPATIBLE_RETURN_TYPE_WITH_METHOD,
-          "soy type of '" + fnNode.getType() + "'",
+          "soy type of '" + expectedReturnType + "'",
           "java type of '" + actualJavaType.getName() + "'",
           simpleMethodName(method));
     }
@@ -195,12 +202,7 @@ final class JbcSrcValueErrorReporter {
   }
 
   void invalidParameterType(
-      Method method, int paramIdx, Class<?> actualParamType, Expression expectedExprType) {
-    Type expectedType =
-        expectedExprType instanceof SoyExpression
-            ? ((SoyExpression) expectedExprType).soyRuntimeType().runtimeType()
-            : expectedExprType.resultType();
-    Class<?> expectedClass = BytecodeUtils.classFromAsmType(expectedType);
+      Method method, int paramIdx, Class<?> actualParamType, Class<?> expectedClass) {
     report(
         PARAM_MISMATCH_ONE,
         "'" + expectedClass.getName() + "'",
@@ -251,8 +253,7 @@ final class JbcSrcValueErrorReporter {
     }
   }
 
-  void nonSoyExpressionNotConvertible(Expression expr, SoyType newType, String methodName) {
-    Class<?> actualClass = BytecodeUtils.classFromAsmType(expr.resultType());
+  void nonSoyExpressionNotConvertible(Class<?> actualClass, SoyType newType, String methodName) {
     report(
         INCOMPATIBLE_TYPES,
         methodName,
@@ -260,8 +261,7 @@ final class JbcSrcValueErrorReporter {
         "soy type of '" + newType + "'");
   }
 
-  void nonSoyExpressionNotCoercible(Expression expr, SoyType newType, String methodName) {
-    Class<?> actualClass = BytecodeUtils.classFromAsmType(expr.resultType());
+  void nonSoyExpressionNotCoercible(Class<?> actualClass, SoyType newType, String methodName) {
     report(
         INCOMPATIBLE_TYPES,
         methodName,
@@ -278,7 +278,7 @@ final class JbcSrcValueErrorReporter {
   }
 
   void nullReturn() {
-    report(NULL_RETURN, fnNode.getSoyFunction().getClass().getSimpleName());
+    report(NULL_RETURN, fnClass.getSimpleName());
   }
 
   void nullMethod(String methodName) {
