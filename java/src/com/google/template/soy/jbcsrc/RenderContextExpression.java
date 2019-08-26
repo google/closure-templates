@@ -25,6 +25,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.UnknownType;
@@ -50,6 +51,12 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_PRINT_DIRECTIVE =
       MethodRef.create(RenderContext.class, "getPrintDirective", String.class);
+
+  private static final MethodRef ADD_RENDERED_TEMPLATE =
+      MethodRef.create(RenderContext.class, "addRenderedTemplate", String.class);
+
+  private static final MethodRef GET_RENDERED_CSS_NAMESPACES =
+      MethodRef.create(RenderContext.class, "getRenderedCssNamespaces").asNonNullable();
 
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
@@ -98,6 +105,15 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   @Override
   public Expression getAllRequiredCssNamespaces(Expression template) {
     return delegate.invoke(GET_ALL_REQUIRED_CSS_NAMESPACES, template);
+  }
+
+  @Override
+  public Expression getRenderedCssNamespaces() {
+    return delegate.invoke(GET_RENDERED_CSS_NAMESPACES);
+  }
+
+  public Statement addRenderedTemplate(String template) {
+    return delegate.invokeVoid(ADD_RENDERED_TEMPLATE, constant(template));
   }
 
   Expression getDebugSoyTemplateInfo() {

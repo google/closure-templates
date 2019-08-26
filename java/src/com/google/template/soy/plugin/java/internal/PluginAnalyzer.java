@@ -141,6 +141,12 @@ public final class PluginAnalyzer {
       accessed = true;
       return FinderValue.INSTANCE;
     }
+
+    @Override
+    public JavaValue getRenderedCssNamespaces() {
+      accessed = true;
+      return FinderValue.INSTANCE;
+    }
   }
 
   private static final class FinderValue implements JavaValue {

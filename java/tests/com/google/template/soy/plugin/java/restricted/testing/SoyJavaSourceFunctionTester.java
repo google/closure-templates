@@ -259,9 +259,13 @@ public class SoyJavaSourceFunctionTester {
       return ULOCALE.construct(BytecodeUtils.constant(locale.toString()));
     }
 
-    /** Returns all required css namespaces. */
     @Override
     public Expression getAllRequiredCssNamespaces(Expression template) {
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public Expression getRenderedCssNamespaces() {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 

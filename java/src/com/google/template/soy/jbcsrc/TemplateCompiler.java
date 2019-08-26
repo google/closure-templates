@@ -282,6 +282,8 @@ final class TemplateCompiler {
                 reporter,
                 soyTypeRegistry)
             .compile(templateNode);
+    final Statement visitNode =
+        variables.getRenderContext().addRenderedTemplate(templateNode.getTemplateName());
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override
@@ -289,6 +291,7 @@ final class TemplateCompiler {
         adapter.mark(start);
         methodBody.body().gen(adapter);
         adapter.mark(end);
+        visitNode.gen(adapter);
         returnDone.gen(adapter);
 
         thisVar.tableEntry(adapter);

@@ -36,6 +36,8 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -76,6 +78,7 @@ public final class RenderContext {
 
   private final boolean debugSoyTemplateInfo;
   private final boolean hasLogger;
+  private final List<String> renderedCssNamespaces = new ArrayList<>();
 
   private RenderContext(Builder builder) {
     this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
@@ -110,6 +113,19 @@ public final class RenderContext {
   public String renameXid(String id) {
     String string = xidRenamingMap.get(id);
     return string == null ? id + "_" : string;
+  }
+
+  public void addRenderedTemplate(String template) {
+    try {
+      this.renderedCssNamespaces.addAll(templates.getRequiredCssNamespaces(template));
+    } catch (Exception e) {
+      // This is possible because you can call templates that don't exist...
+      return;
+    }
+  }
+
+  public List<String> getRenderedCssNamespaces() {
+    return renderedCssNamespaces;
   }
 
   public Object getPluginInstance(String name) {

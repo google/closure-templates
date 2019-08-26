@@ -125,6 +125,11 @@ public final class CompiledTemplates {
     return transitiveIjParams;
   }
 
+  /** Returns the immediate css namespaces that might be used by this template. */
+  public ImmutableList<String> getRequiredCssNamespaces(String templateName) {
+    return getTemplateData(templateName).requiredCssNamespaces.asList();
+  }
+
   /**
    * Returns the transitive closure of all the css namespaces that might be used by this template.
    */

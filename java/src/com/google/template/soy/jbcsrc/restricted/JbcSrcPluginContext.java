@@ -29,4 +29,7 @@ public interface JbcSrcPluginContext {
 
   /** Returns all required css namespaces. */
   Expression getAllRequiredCssNamespaces(Expression template);
+
+  /** Returns rendered css namespaces so far. */
+  Expression getRenderedCssNamespaces();
 }

@@ -91,6 +91,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
             return JbcSrcJavaValue.of(
                 jbcPluginContext.getAllRequiredCssNamespaces(soyExpression.unboxAsString()));
           }
+
+          @Override
+          public JavaValue getRenderedCssNamespaces() {
+            return JbcSrcJavaValue.of(jbcPluginContext.getRenderedCssNamespaces());
+          }
         };
   }
 
