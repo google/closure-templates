@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Map;
 
 /**
@@ -32,4 +33,27 @@ public interface TemplateParameters {
    * framework.
    */
   Map<String, SoyValueProvider> getParamsAsMap();
+
+  /**
+   * Wraps a {@link TemplateParameters} but grants synchronous access to {@link #getTemplateName()}.
+   * This method should only be called by generated implementations of TemplateParameters.
+   */
+  final class AsyncWrapper<T extends TemplateParameters> {
+
+    private final String templateName;
+    private final ListenableFuture<T> templateFuture;
+
+    public AsyncWrapper(String templateName, ListenableFuture<T> templateFuture) {
+      this.templateName = templateName;
+      this.templateFuture = templateFuture;
+    }
+
+    public String getTemplateName() {
+      return templateName;
+    }
+
+    public ListenableFuture<T> getTemplateFuture() {
+      return templateFuture;
+    }
+  }
 }
