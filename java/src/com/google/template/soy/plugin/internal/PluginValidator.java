@@ -18,9 +18,12 @@ package com.google.template.soy.plugin.internal;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.plugin.java.internal.JavaPluginValidator;
+import com.google.template.soy.plugin.java.internal.ValidatorErrorReporter;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -57,27 +60,52 @@ public final class PluginValidator {
   }
 
   private void validateJavaFunction(String fnName, SoyJavaSourceFunction fn) {
+    SourceLocation location = new SourceLocation(fn.getClass().getName());
+    ValidatorErrorReporter validatorReporter =
+        new ValidatorErrorReporter(
+            errorReporter,
+            fnName,
+            fn.getClass(),
+            UnknownType.getInstance(),
+            location,
+            /* includeTriggeredInTemplateMsg= */ false);
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
     for (Signature sig : fnSig.value()) {
+      Checkpoint checkpoint = errorReporter.checkpoint();
       List<SoyType> paramTypes =
           Arrays.stream(sig.parameterTypes())
-              .map(p -> typeFor(p, fn.getClass()))
+              .map(p -> typeFor(p, fn.getClass(), validatorReporter))
               .collect(toImmutableList());
-      SoyType returnType = typeFor(sig.returnType(), fn.getClass());
-      javaValidator.validate(
-          fnName,
-          fn,
-          paramTypes,
-          returnType,
-          new SourceLocation(fn.getClass().getName()),
-          /* includeTriggeredInTemplateMsg= */ false);
+      SoyType returnType = typeFor(sig.returnType(), fn.getClass(), validatorReporter);
+      // If we errored just getting the types, then don't bother reporting more errors during
+      // validation.
+      if (!errorReporter.errorsSince(checkpoint)) {
+        javaValidator.validate(
+            fnName,
+            fn,
+            paramTypes,
+            returnType,
+            location,
+            /* includeTriggeredInTemplateMsg= */ false);
+      }
     }
   }
 
-  private SoyType typeFor(String typeStr, Class<? extends SoySourceFunction> fnClass) {
-    TypeNode typeNode = SoyFileParser.parseType(typeStr, fnClass.getName(), errorReporter);
-    return typeNode == null
-        ? UnknownType.getInstance()
-        : new TypeNodeConverter(errorReporter, typeRegistry).getOrCreateType(typeNode);
+  private SoyType typeFor(
+      String typeStr,
+      Class<? extends SoySourceFunction> fnClass,
+      ValidatorErrorReporter validatorReporter) {
+    ErrorReporter localReporter = ErrorReporter.create(ImmutableMap.of());
+    TypeNode typeNode = SoyFileParser.parseType(typeStr, fnClass.getName(), localReporter);
+    SoyType type =
+        typeNode == null
+            ? UnknownType.getInstance()
+            : new TypeNodeConverter(localReporter, typeRegistry).getOrCreateType(typeNode);
+    // If any errors occurred while parsing the signature, wrap the errors in a more meaningful
+    // message tailored to the plugin implementation.
+    validatorReporter.wrapErrors(localReporter.getErrors());
+    validatorReporter.wrapWarnings(localReporter.getWarnings());
+
+    return type;
   }
 }

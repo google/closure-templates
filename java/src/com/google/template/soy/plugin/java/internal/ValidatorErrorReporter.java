@@ -22,6 +22,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.plugin.java.internal.ValidatorFactory.ValidationResult;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** A wrapper over ErrorReporter for dealing with errors in plugin functions. */
-final class ValidatorErrorReporter {
+public final class ValidatorErrorReporter {
 
   private static final SoyErrorKind INVALID_RETURN_TYPE_WITH_METHOD =
       SoyErrorKind.of(
@@ -119,7 +120,7 @@ final class ValidatorErrorReporter {
   private final SourceLocation sourceLocation;
   private final boolean includeTriggeredInTemplateMsg;
 
-  ValidatorErrorReporter(
+  public ValidatorErrorReporter(
       ErrorReporter reporter,
       String fnName,
       Class<?> fnClass,
@@ -135,6 +136,14 @@ final class ValidatorErrorReporter {
   }
 
   private void report(SoyErrorKind error, Object... additionalArgs) {
+    reporter.report(sourceLocation, error, createArgs(additionalArgs));
+  }
+
+  private void warn(SoyErrorKind error, Object... additionalArgs) {
+    reporter.warn(sourceLocation, error, createArgs(additionalArgs));
+  }
+
+  private Object[] createArgs(Object... additionalArgs) {
     Object[] args = new Object[additionalArgs.length + 3];
     args[0] = fnName;
     args[1] = fnClass.getName();
@@ -142,7 +151,7 @@ final class ValidatorErrorReporter {
     for (int i = 0; i < additionalArgs.length; i++) {
       args[3 + i] = additionalArgs[i];
     }
-    reporter.report(sourceLocation, error, args);
+    return args;
   }
 
   ErrorReporter.Checkpoint checkpoint() {
@@ -378,5 +387,13 @@ final class ValidatorErrorReporter {
           return "th";
       }
     }
+  }
+
+  public void wrapErrors(Iterable<SoyError> errors) {
+    errors.forEach(e -> report(UNEXPECTED_ERROR, e.message()));
+  }
+
+  public void wrapWarnings(Iterable<SoyError> warnings) {
+    warnings.forEach(e -> warn(UNEXPECTED_ERROR, e.message()));
   }
 }

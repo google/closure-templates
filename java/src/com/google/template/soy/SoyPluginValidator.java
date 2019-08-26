@@ -16,11 +16,26 @@
 
 package com.google.template.soy;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyErrors;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import org.kohsuke.args4j.Option;
 
 /** Executable that validates SoySourceFunctions. */
 public final class SoyPluginValidator extends AbstractSoyCompiler {
+  // bazel requires we have an output, so we need a path to write an output to.
+  @Option(
+      name = "--output",
+      required = true,
+      usage =
+          "[Required] The file name of the output file to be written. "
+              + "This will only contain the word 'true'.")
+  private File output;
 
   SoyPluginValidator(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
@@ -43,7 +58,8 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
   }
 
   @Override
-  protected void compile(SoyFileSet.Builder sfsBuilder) {
+  protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
     sfsBuilder.build().validateUserPlugins();
+    Files.write(output.toPath(), ImmutableList.of("true"), UTF_8);
   }
 }
