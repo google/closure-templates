@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
-import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -36,29 +35,16 @@ public final class PluginAnalyzer {
   /** Simple metadata about the plugin. */
   @AutoValue
   public abstract static class PluginMetadata {
-    static PluginMetadata create(
-        boolean accessesContext,
-        Iterable<String> pluginInstances,
-        Iterable<MethodSignature> instanceMethodSignatures,
-        Iterable<MethodSignature> staticMethodSignatures) {
+    static PluginMetadata create(boolean accessesContext, Iterable<Class<?>> pluginInstances) {
       return new AutoValue_PluginAnalyzer_PluginMetadata(
-          accessesContext,
-          ImmutableSet.copyOf(pluginInstances),
-          ImmutableSet.copyOf(instanceMethodSignatures),
-          ImmutableSet.copyOf(staticMethodSignatures));
+          accessesContext, ImmutableSet.copyOf(pluginInstances));
     }
 
     /** Whether or not this plugin depends on the {@link JavaPluginContext}. */
     public abstract boolean accessesContext();
 
-    /** The set of plugin instances class names required for this plugin at runtime. */
-    public abstract ImmutableSet<String> pluginInstanceNames();
-
-    /** The set of non-null instance method signatures required by this plugin at runtime. */
-    public abstract ImmutableSet<MethodSignature> instanceMethodSignatures();
-
-    /** The set of non-null static method signatures required by this plugin at runtime. */
-    public abstract ImmutableSet<MethodSignature> staticMethodSignatures();
+    /** The set of plugin instances classes required for this plugin at runtime. */
+    public abstract ImmutableSet<Class<?>> pluginInstances();
   }
 
   private PluginAnalyzer() {}
@@ -75,8 +61,7 @@ public final class PluginAnalyzer {
       List<JavaValue> args = Collections.nCopies(sig.parameterTypes().length, FinderValue.INSTANCE);
       ssf.applyForJavaSource(factory, args, context);
     }
-    return PluginMetadata.create(
-        context.accessed, factory.instances, factory.instanceMethodSigs, factory.staticMethodSigs);
+    return PluginMetadata.create(context.accessed, factory.instances);
   }
 
   /**
@@ -88,37 +73,15 @@ public final class PluginAnalyzer {
     FinderContext context = new FinderContext();
     List<JavaValue> args = Collections.nCopies(argCount, FinderValue.INSTANCE);
     ssf.applyForJavaSource(factory, args, context);
-    return PluginMetadata.create(
-        context.accessed, factory.instances, factory.instanceMethodSigs, factory.staticMethodSigs);
+    return PluginMetadata.create(context.accessed, factory.instances);
   }
 
   private static class FinderFactory extends JavaValueFactory {
-    Set<String> instances = new LinkedHashSet<>();
-    Set<MethodSignature> instanceMethodSigs = new LinkedHashSet<>();
-    Set<MethodSignature> staticMethodSigs = new LinkedHashSet<>();
-
-    @Override
-    public JavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
-      if (methodSig != null) {
-        instances.add(methodSig.fullyQualifiedClassName());
-        instanceMethodSigs.add(methodSig);
-      }
-      return FinderValue.INSTANCE;
-    }
+    Set<Class<?>> instances = new LinkedHashSet<>();
 
     @Override
     public FinderValue callInstanceMethod(Method method, JavaValue... params) {
-      if (method != null) {
-        instances.add(method.getDeclaringClass().getName());
-      }
-      return FinderValue.INSTANCE;
-    }
-
-    @Override
-    public JavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
-      if (methodSig != null) {
-        staticMethodSigs.add(methodSig);
-      }
+      instances.add(method.getDeclaringClass());
       return FinderValue.INSTANCE;
     }
 

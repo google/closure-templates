@@ -18,12 +18,12 @@ package com.google.template.soy.plugin.internal;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.plugin.java.internal.JavaPluginValidator;
-import com.google.template.soy.plugin.java.internal.MethodSignatureValidator;
 import com.google.template.soy.plugin.java.internal.ValidatorErrorReporter;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -45,15 +45,15 @@ public final class PluginValidator {
 
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
+  private final ImmutableList<File> pluginRuntimeJars; // TODO(b/136201469): use this
   private final JavaPluginValidator javaValidator;
-  private final MethodSignatureValidator methodSignatureValidator;
 
   public PluginValidator(
       ErrorReporter errorReporter, SoyTypeRegistry typeRegistry, List<File> pluginRuntimeJars) {
     this.typeRegistry = typeRegistry;
     this.errorReporter = errorReporter;
+    this.pluginRuntimeJars = ImmutableList.copyOf(pluginRuntimeJars);
     this.javaValidator = new JavaPluginValidator(errorReporter, typeRegistry);
-    this.methodSignatureValidator = new MethodSignatureValidator(pluginRuntimeJars, errorReporter);
   }
 
   public void validate(Map<String, SoySourceFunction> fns) {
@@ -66,13 +66,12 @@ public final class PluginValidator {
 
   private void validateJavaFunction(String fnName, SoyJavaSourceFunction fn) {
     SourceLocation location = new SourceLocation(fn.getClass().getName());
-    methodSignatureValidator.validate(
-        fnName, fn, location, /* includeTriggeredInTemplateMsg= */ false);
     ValidatorErrorReporter validatorReporter =
         new ValidatorErrorReporter(
             errorReporter,
             fnName,
             fn.getClass(),
+            UnknownType.getInstance(),
             location,
             /* includeTriggeredInTemplateMsg= */ false);
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);

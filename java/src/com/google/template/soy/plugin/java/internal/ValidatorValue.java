@@ -18,12 +18,12 @@ package com.google.template.soy.plugin.java.internal;
 
 import com.google.auto.value.AutoOneOf;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
-import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
+import java.lang.reflect.Method;
 import javax.annotation.Nullable;
 
 /** A JavaValue for validating plugins. */
@@ -31,7 +31,7 @@ final class ValidatorValue implements JavaValue {
   private final boolean error;
   private final ValueType valueType;
   private final ValidatorErrorReporter reporter;
-  private final MethodSignature methodSignature;
+  private final Method method;
 
   static ValidatorValue forConstantNull(ValidatorErrorReporter reporter) {
     return new ValidatorValue(
@@ -73,22 +73,21 @@ final class ValidatorValue implements JavaValue {
         reporter);
   }
 
-  static ValidatorValue forMethodReturnType(
-      MethodSignature method, ValidatorErrorReporter reporter) {
+  static ValidatorValue forMethodReturnType(Method method, ValidatorErrorReporter reporter) {
     SoyType type = null;
-    if (method.returnType() == boolean.class) {
+    if (method.getReturnType() == boolean.class) {
       type = BoolType.getInstance();
     }
-    if (method.returnType() == int.class || method.returnType() == long.class) {
+    if (method.getReturnType() == int.class || method.getReturnType() == long.class) {
       type = IntType.getInstance();
     }
-    if (method.returnType() == int.class) {
+    if (method.getReturnType() == int.class) {
       type = IntType.getInstance();
     }
-    if (method.returnType() == double.class) {
+    if (method.getReturnType() == double.class) {
       type = FloatType.getInstance();
     }
-    if (method.returnType() == String.class) {
+    if (method.getReturnType() == String.class) {
       type = StringType.getInstance();
     }
     if (type != null) {
@@ -96,18 +95,18 @@ final class ValidatorValue implements JavaValue {
           AutoOneOf_ValidatorValue_ValueType.soyType(type), /* error= */ false, method, reporter);
     }
     return new ValidatorValue(
-        AutoOneOf_ValidatorValue_ValueType.clazz(method.returnType()),
+        AutoOneOf_ValidatorValue_ValueType.clazz(method.getReturnType()),
         /* error= */ false,
         method,
         reporter);
   }
 
   private ValidatorValue(
-      ValueType valueType, boolean error, MethodSignature method, ValidatorErrorReporter reporter) {
+      ValueType valueType, boolean error, Method method, ValidatorErrorReporter reporter) {
     this.valueType = valueType;
     this.reporter = reporter;
     this.error = error;
-    this.methodSignature = method;
+    this.method = method;
   }
 
   @Override
@@ -178,8 +177,8 @@ final class ValidatorValue implements JavaValue {
   }
 
   @Nullable
-  MethodSignature methodInfo() {
-    return methodSignature;
+  Method methodInfo() {
+    return method;
   }
 
   boolean isError() {

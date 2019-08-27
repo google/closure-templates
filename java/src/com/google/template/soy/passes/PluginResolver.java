@@ -173,8 +173,8 @@ public final class PluginResolver {
         } else if (function instanceof SoyJavaSourceFunction) {
           // Also make sure that the applyForJavaSource impl uses a single plugin instance.
           // We don't support multiple instances.
-          Set<String> instances =
-              PluginAnalyzer.analyze((SoyJavaSourceFunction) function).pluginInstanceNames();
+          Set<Class<?>> instances =
+              PluginAnalyzer.analyze((SoyJavaSourceFunction) function).pluginInstances();
           if (instances.size() > 1) {
             reporter.report(
                 SourceLocation.UNKNOWN,
