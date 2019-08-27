@@ -76,6 +76,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
   }
 
   private final ExprRootNode veDataExpr;
+  private boolean callsTemplate = false;
   @Nullable private final ExprRootNode logonlyExpr;
 
   public VeLogNode(
@@ -113,10 +114,19 @@ public final class VeLogNode extends AbstractBlockCommandNode
     super(orig, copyState);
     this.veDataExpr = orig.veDataExpr.copy(copyState);
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
+    this.callsTemplate = orig.callsTemplate;
   }
 
   SamenessKey getSamenessKey() {
     return new SamenessKey(this);
+  }
+
+  public void setCallsTemplate(boolean callsTemplate) {
+    this.callsTemplate = callsTemplate;
+  }
+
+  public boolean callsTemplate() {
+    return callsTemplate;
   }
 
   /** Returns a reference to the VE expression. */

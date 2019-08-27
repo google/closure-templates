@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.ActiveEdge;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
@@ -51,15 +50,12 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -69,12 +65,6 @@ import javax.annotation.Nullable;
  * <p>Note: This pass requires that the {@link SoyConformancePass} has already been run.
  */
 public final class StrictHtmlValidationPass extends CompilerFilePass {
-  private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
-      SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
-  private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
-      SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
-  private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
-      SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
 
   private final ErrorReporter errorReporter;
 
@@ -104,53 +94,13 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
               /** parentBlockType */
               null)
           .run(htmlMatcherGraph);
-      for (VeLogNode veNode : SoyTreeUtils.getAllNodesOfType(node, VeLogNode.class)) {
-        checkVeLogNode(veNode);
-      }
+
     }
   }
 
   @VisibleForTesting
   public Optional<HtmlMatcherGraph> getHtmlMatcherGraph() {
     return Optional.ofNullable(htmlMatcherGraph);
-  }
-
-  private void checkVeLogNode(VeLogNode node) {
-    // {velog} cannot be empty.
-    if (node.numChildren() == 0) {
-      errorReporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-      return;
-    }
-
-    HtmlOpenTagNode firstTag = node.getOpenTagNode();
-    // The first child of {velog} must be an open tag.
-    if (firstTag == null) {
-      errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
-      return;
-    }
-
-    // If the first child is self-closing or is a void tag, reports an error if we see anything
-    // after it. If it is the only thing, the velog is valid.
-    if (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid()) {
-      if (node.numChildren() > 1) {
-        errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-      }
-      return;
-    }
-
-    SoyNode lastChild = node.getChild(node.numChildren() - 1);
-    HtmlCloseTagNode lastTag = node.getCloseTagNode();
-    // The last child must be a close tag.
-    if (lastTag == null) {
-      errorReporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
-      return;
-    }
-    // This check make sures that there is exactly one top-level element -- the last tag must
-    // close the first tag within {velog} command.
-    if (lastTag.getTaggedPairs().size() != 1
-        || !Objects.equals(lastTag.getTaggedPairs().get(0), firstTag)) {
-      errorReporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-    }
   }
 
   private static final class HtmlTagVisitor extends AbstractSoyNodeVisitor<HtmlMatcherGraph> {

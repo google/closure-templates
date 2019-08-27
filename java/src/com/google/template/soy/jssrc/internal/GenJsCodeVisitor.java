@@ -44,12 +44,15 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeMultimap;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
+import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -1395,7 +1398,28 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitVeLogNode(VeLogNode node) {
     // no need to do anything, the VeLogInstrumentationVisitor has already handled these.
+    if (!node.callsTemplate()) {
+      visitChildren(node);
+      return;
+    }
+    // We are in a {velog} wrapped around a call. Create synthetic velog nodes. These will be
+    // removed in JS.
+    FunctionNode funcNode =
+        new FunctionNode(
+            Identifier.create(VeLogFunction.NAME, node.getSourceLocation()),
+            VeLogFunction.INSTANCE,
+            node.getSourceLocation());
+    funcNode.addChild(node.getVeDataExpression().copy(new CopyState()));
+    if (node.getLogonlyExpression() != null) {
+      funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
+    }
+    jsCodeBuilder.addChunksToOutputVar(
+        ImmutableList.of(
+            Expression.stringLiteral("<velog"),
+            getExprTranslator().exec(funcNode),
+            Expression.stringLiteral(">")));
     visitChildren(node);
+    jsCodeBuilder.addChunksToOutputVar(ImmutableList.of(Expression.stringLiteral("</velog>")));
   }
 
   @Override

@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -77,7 +76,7 @@ public final class SoyElementPass extends CompilerFileSetPass {
               + " templates (but not deltemplates) that contain one top-level HTML element are"
               + " also allowed.");
 
-  private static final ImmutableSet<SoyNode.Kind> ALLOWED_CHILD_NODES =
+  static final ImmutableSet<SoyNode.Kind> ALLOWED_CHILD_NODES =
       Sets.immutableEnumSet(
           SoyNode.Kind.LET_CONTENT_NODE,
           SoyNode.Kind.LET_VALUE_NODE,
@@ -113,9 +112,6 @@ public final class SoyElementPass extends CompilerFileSetPass {
     for (TemplateNode template : templatesInLibrary.values()) {
       Set<TemplateNode> visited = new HashSet<>();
       getTemplateMetadata(template, templatesInLibrary, registry, visited);
-    }
-    if (errorReporter.hasErrors()) {
-      return Result.STOP;
     }
     return Result.CONTINUE;
   }
@@ -173,14 +169,10 @@ public final class SoyElementPass extends CompilerFileSetPass {
         // jump ahead to just after the close tag
         i = template.getChildIndex(closeTag);
         openTag = ((HtmlOpenTagNode) child);
-        // TODO(b/136030093): Allow template calls in velog nodes.
       } else if (openTag == null && child instanceof VeLogNode) {
         veLogNode = (VeLogNode) child;
         HtmlOpenTagNode maybeOpenTagNode = veLogNode.getOpenTagNode();
-        if (maybeOpenTagNode == null) {
-          // ve log validation should have failed already
-          checkState(errorReporter.hasErrors());
-        } else {
+        if (maybeOpenTagNode != null) {
           closeTag = checkHtmlOpenTag(veLogNode, maybeOpenTagNode, errorReporter, isSoyElement);
           if (closeTag == null) {
             break; // skip reporting additional errors

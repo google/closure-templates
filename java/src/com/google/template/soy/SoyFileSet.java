@@ -58,12 +58,12 @@ import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
 import com.google.template.soy.msgs.internal.ExtractMsgsVisitor;
 import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
+import com.google.template.soy.passes.CheckTemplateHeaderVarsPass;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
-import com.google.template.soy.passes.SoyElementPass;
 import com.google.template.soy.plugin.internal.PluginValidator;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -1067,10 +1067,9 @@ public final class SoyFileSet {
                     // TODO(lukes): remove this in favor of allowUnknownJsGlobals
                     .allowUnknownGlobals()
                     .allowUnknownJsGlobals()
-                    // SoyElement pass adds additional information to TemplateNodes for
-                    // serialization into headers.
+                    // Only run passes that not cross template checking.
                     .addPassContinuationRule(
-                        SoyElementPass.class, PassContinuationRule.STOP_AFTER_PASS)
+                        CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
                     .allowV1Expression(),
                 typeRegistry));
   }

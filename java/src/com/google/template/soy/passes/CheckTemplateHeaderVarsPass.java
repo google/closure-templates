@@ -48,7 +48,7 @@ import java.util.Set;
  *
  * <p>Note this visitor only works for code in Soy V2 syntax.
  */
-final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
+public final class CheckTemplateHeaderVarsPass extends CompilerFileSetPass {
 
   private static final SoyErrorKind UNDECLARED_DATA_KEY =
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);

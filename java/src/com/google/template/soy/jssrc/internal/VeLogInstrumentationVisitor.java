@@ -75,8 +75,12 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
   /** Adds data-soylog attribute to the top-level DOM node in this {velog} block. */
   @Override
   protected void visitVeLogNode(VeLogNode node) {
-    // VeLogValidationPass enforces that the first child is either an open tag, or a placeholder for
-    // an open tag. So this will be non-null at this point.
+    // VeLogValidationPass enforces that the first child is either an open tag or a call. Calls
+    // are handled separately in GenJSCodeVisitor, so this only handles the case where
+    // the open tag is visible.
+    if (node.callsTemplate()) {
+      return;
+    }
     HtmlOpenTagNode tag = node.getOpenTagNode();
     SourceLocation insertionLocation =
         tag.getSourceLocation()

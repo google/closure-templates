@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -23,6 +25,11 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlElementMetadataP;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -31,8 +38,11 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.SoyType;
@@ -40,6 +50,10 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.VeType;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Validates uses of the {@code velog} command and {@code ve_data} expression.
@@ -54,7 +68,7 @@ import com.google.template.soy.types.VeType;
  *   <li>VeLogRewritePass since that rewrites more VE syntactic sugar
  * </ul>
  */
-final class VeLogValidationPass extends CompilerFilePass {
+final class VeLogValidationPass extends CompilerFileSetPass {
   private static final SoyErrorKind UNEXPECTED_DATA =
       SoyErrorKind.of(
           "Unexpected data argument. The VE is type ''{0}'' which means there cannot be any data. "
@@ -93,6 +107,17 @@ final class VeLogValidationPass extends CompilerFilePass {
   private static final SoyErrorKind VE_UNION_WITH_DATA =
       SoyErrorKind.of(
           "It is illegal to set the data parameter if the ve type is a union (''{0}'').");
+  private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
+      SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
+  private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
+      SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
+  private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
+      SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
+
+  private static final SoyErrorKind VELOG_NODE_CANNOT_CALL_VELOG_NODE =
+      SoyErrorKind.of("'{velog'} must not call another template that has a '{velog'}.");
+  private static final SoyErrorKind VELOG_NODE_CANNOT_CALL_DELTEMPLATE =
+      SoyErrorKind.of("'{velog'} must not call a deltemplate..");
 
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
@@ -103,34 +128,54 @@ final class VeLogValidationPass extends CompilerFilePass {
   }
 
   @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode template : file.getChildren()) {
-      for (FunctionNode node :
-          SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
-        validateVeDataFunctionNode(node);
+  public Result run(
+      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    Map<String, TemplateNode> templatesInLibrary = new LinkedHashMap<>();
+    for (SoyFileNode file : sourceFiles) {
+      // Create an intermediary data structure for template name -> template node so that
+      // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
+      for (TemplateNode template : file.getChildren()) {
+        templatesInLibrary.put(template.getTemplateName(), template);
       }
-      for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
-        if (template.isStrictHtml()) {
-          validateVeLogNode(node);
-        } else {
-          reporter.report(node.getVeDataExpression().getSourceLocation(), REQUIRE_STRICTHTML);
-        }
+    }
+    for (TemplateNode template : templatesInLibrary.values()) {
+      run(template, templatesInLibrary, registry);
+    }
+    if (reporter.hasErrors()) {
+      return Result.STOP;
+    }
+    return Result.CONTINUE;
+  }
+
+  private void run(
+      TemplateNode template,
+      Map<String, TemplateNode> templatesInLibrary,
+      TemplateRegistry registry) {
+    for (FunctionNode node :
+        SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
+      validateVeDataFunctionNode(node);
+    }
+    for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
+      if (template.isStrictHtml()) {
+        validateVeLogNode(node);
+        validateVelogElementStructure(node, templatesInLibrary, registry);
+      } else {
+        reporter.report(node.getVeDataExpression().getSourceLocation(), REQUIRE_STRICTHTML);
       }
-      // We need to validate logging functions.  The rules are
-      // 1. logging functions can only be the direct children of PrintNodes
-      // 2. the print nodes must be direct children of HtmlAttributeValueNodes
-      //
-      // However, because there is no way (currently) to navigate from an ExprNode to the SoyNode
-      // which owns it, we need to do this multi-phase traversal to ensure the correct parenting
-      // hierarchy.
-      for (ExprHolderNode holderNode :
-          SoyTreeUtils.getAllNodesOfType(template, SoyNode.ExprHolderNode.class)) {
-        for (ExprRootNode rootNode : holderNode.getExprList()) {
-          for (FunctionNode function :
-              SoyTreeUtils.getAllNodesOfType(rootNode, FunctionNode.class)) {
-            if (function.getSoyFunction() instanceof LoggingFunction) {
-              validateLoggingFunction(holderNode, function);
-            }
+    }
+    // We need to validate logging functions.  The rules are
+    // 1. logging functions can only be the direct children of PrintNodes
+    // 2. the print nodes must be direct children of HtmlAttributeValueNodes
+    //
+    // However, because there is no way (currently) to navigate from an ExprNode to the SoyNode
+    // which owns it, we need to do this multi-phase traversal to ensure the correct parenting
+    // hierarchy.
+    for (ExprHolderNode holderNode :
+        SoyTreeUtils.getAllNodesOfType(template, SoyNode.ExprHolderNode.class)) {
+      for (ExprRootNode rootNode : holderNode.getExprList()) {
+        for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(rootNode, FunctionNode.class)) {
+          if (function.getSoyFunction() instanceof LoggingFunction) {
+            validateLoggingFunction(holderNode, function);
           }
         }
       }
@@ -176,6 +221,80 @@ final class VeLogValidationPass extends CompilerFilePass {
           function.getFunctionName(),
           " It has sibling nodes in the attribute value.");
       return;
+    }
+  }
+
+  private void validateVelogElementStructure(
+      VeLogNode node, Map<String, TemplateNode> templatesInLibrary, TemplateRegistry registry) {
+
+    List<StandaloneNode> children =
+        node.getChildren().stream()
+            .filter(child -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(child.getKind()))
+            .collect(ImmutableList.toImmutableList());
+    // TODO(b/133428199): Support {velog} around calls in messages.
+    if (node.getNearestAncestor(MsgFallbackGroupNode.class) == null
+        && children.size() == 1
+        && Iterables.getLast(children) instanceof CallBasicNode) {
+      CallBasicNode callee = (CallBasicNode) Iterables.getLast(children);
+      HtmlElementMetadataP calleeMetadata = null;
+      TemplateMetadata templateMetadata =
+          registry.getBasicTemplateOrElement(callee.getCalleeName());
+      if (templateMetadata != null) {
+        calleeMetadata = templateMetadata.getHtmlElement();
+      } else if (templatesInLibrary.containsKey(callee.getCalleeName())) {
+        TemplateNode calledTemplate = templatesInLibrary.get(callee.getCalleeName());
+        calleeMetadata = calledTemplate.getHtmlElementMetadata();
+      }
+      if (calleeMetadata == null) {
+        reporter.report(node.getSourceLocation(), VELOG_NODE_CANNOT_CALL_DELTEMPLATE);
+        return;
+      }
+      if (!calleeMetadata.getIsHtmlElement()) {
+        reporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+        return;
+      }
+      if (calleeMetadata.getIsVelogged()) {
+        reporter.report(node.getSourceLocation(), VELOG_NODE_CANNOT_CALL_VELOG_NODE);
+        return;
+      }
+      node.setCallsTemplate(true);
+      return;
+    }
+
+    // {velog} cannot be empty.
+    if (node.numChildren() == 0) {
+      reporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      return;
+    }
+
+    HtmlOpenTagNode firstTag = node.getOpenTagNode();
+    // The first child of {velog} must be an open tag.
+    if (firstTag == null) {
+      reporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
+      return;
+    }
+
+    // If the first child is self-closing or is a void tag, reports an error if we see anything
+    // after it. If it is the only thing, the velog is valid.
+    if (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid()) {
+      if (node.numChildren() > 1) {
+        reporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      }
+      return;
+    }
+
+    SoyNode lastChild = node.getChild(node.numChildren() - 1);
+    HtmlCloseTagNode lastTag = node.getCloseTagNode();
+    // The last child must be a close tag.
+    if (lastTag == null) {
+      reporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
+      return;
+    }
+    // This check make sures that there is exactly one top-level element -- the last tag must
+    // close the first tag within {velog} command.
+    if (lastTag.getTaggedPairs().size() != 1
+        || !Objects.equals(lastTag.getTaggedPairs().get(0), firstTag)) {
+      reporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
     }
   }
 
