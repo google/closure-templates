@@ -24,15 +24,34 @@ import java.util.stream.Collectors;
 /** A factory for instructing soy how to implement a {@link SoyJavaSourceFunction}. */
 public abstract class JavaValueFactory {
 
-  /** Instructs Soy to call the given static {@code method} with the given params at runtime. */
+  /**
+   * Instructs Soy to call the given static {@code method} with the given params at runtime.
+   *
+   * <p>Warning: This method requires a compile-time dependency on the runtime logic and may bloat
+   * your build actions. Prefer using the variant that takes a {@link MethodSignature} instead.
+   */
   public abstract JavaValue callStaticMethod(Method method, JavaValue... params);
+
+  /** Instructs Soy to call the given static {@code method} with the given params at runtime. */
+  public abstract JavaValue callStaticMethod(MethodSignature methodSignature, JavaValue... params);
+
+  /**
+   * Instructs Soy to call the given {@code method} with the given params on the registered plugin
+   * instance at runtime. In the SoySauce backend, instances are registered in the
+   * SoySauce.Renderer, in the Tofu backend, instances are registered in the SoyTofu.Renderer.
+   *
+   * <p>Warning: This method requires a compile-time dependency on the runtime logic and may bloat
+   * your build actions. Prefer using the variant that takes a {@link MethodSignature} instead.
+   */
+  public abstract JavaValue callInstanceMethod(Method method, JavaValue... params);
 
   /**
    * Instructs Soy to call the given {@code method} with the given params on the registered plugin
    * instance at runtime. In the SoySauce backend, instances are registered in the
    * SoySauce.Renderer, in the Tofu backend, instances are registered in the SoyTofu.Renderer.
    */
-  public abstract JavaValue callInstanceMethod(Method method, JavaValue... params);
+  public abstract JavaValue callInstanceMethod(
+      MethodSignature methodSignature, JavaValue... params);
 
   /**
    * Returns a JavaValue that corresponds to a list containing each of the values. The values will

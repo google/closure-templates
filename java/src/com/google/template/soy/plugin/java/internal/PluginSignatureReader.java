@@ -37,11 +37,15 @@ interface PluginSignatureReader {
     /** True if the method is an instance method, false if it's static. */
     abstract boolean instanceMethod();
 
+    /** True if the declaring class is an interface, false if it's not. */
+    abstract boolean classIsInterface();
+
     /** The return type of the method. */
     abstract String returnType();
 
-    static ReadMethodData create(boolean instance, String returnType) {
-      return new AutoValue_PluginSignatureReader_ReadMethodData(instance, returnType);
+    static ReadMethodData create(boolean instance, boolean classIsInterface, String returnType) {
+      return new AutoValue_PluginSignatureReader_ReadMethodData(
+          instance, classIsInterface, returnType);
     }
   }
 }

@@ -479,6 +479,16 @@ public abstract class MethodRef {
         Features.of());
   }
 
+  public static MethodRef createInterfaceMethod(TypeInfo owner, Method method) {
+    return new AutoValue_MethodRef(
+        Opcodes.INVOKEINTERFACE,
+        owner,
+        method,
+        method.getReturnType(),
+        ImmutableList.<Type>builder().add(owner.type()).add(method.getArgumentTypes()).build(),
+        Features.of());
+  }
+
   public static MethodRef createInstanceMethod(TypeInfo owner, Method method) {
     return new AutoValue_MethodRef(
         Opcodes.INVOKEVIRTUAL,

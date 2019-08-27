@@ -59,11 +59,22 @@ public abstract class MethodSignature {
    */
   public abstract ImmutableList<Class<?>> arguments();
 
+  /** True if this signature refers to a method on an interface. */
+  public abstract boolean inInterface();
+
   MethodSignature() {} // package-private cxtor to users can't manually instantiate this.
 
-  /** Constructs a new MethodSignature. */
+  /** Constructs a new MethodSignature for a method on a class. */
   public static MethodSignature create(
       String classFqn, String method, Class<?> returnType, Class<?>... args) {
-    return new AutoValue_MethodSignature(classFqn, method, returnType, ImmutableList.copyOf(args));
+    return new AutoValue_MethodSignature(
+        classFqn, method, returnType, ImmutableList.copyOf(args), /* inInterface= */ false);
+  }
+
+  /** Constructs a new MethodSignature for a method on an interface. */
+  public static MethodSignature createInterfaceMethod(
+      String classFqn, String method, Class<?> returnType, Class<?>... args) {
+    return new AutoValue_MethodSignature(
+        classFqn, method, returnType, ImmutableList.copyOf(args), /* inInterface= */ true);
   }
 }

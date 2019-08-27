@@ -311,15 +311,14 @@ public final class GenerateParseInfoVisitor
       for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
         if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction
             && !pluginInstances.containsKey(fnNode.getFunctionName())) {
-          Set<Class<?>> instances =
+          Set<String> instances =
               PluginAnalyzer.analyze(
                       (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
-                  .pluginInstances();
+                  .pluginInstanceNames();
           if (!instances.isEmpty()) {
             // We guarantee there's either 0 or 1 instances in the plugin because we already
             // passed through PluginResolver, which checked this.
-            pluginInstances.put(
-                fnNode.getFunctionName(), Iterables.getOnlyElement(instances).getName());
+            pluginInstances.put(fnNode.getFunctionName(), Iterables.getOnlyElement(instances));
           }
         }
       }

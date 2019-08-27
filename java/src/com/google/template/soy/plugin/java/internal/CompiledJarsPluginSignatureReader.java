@@ -127,7 +127,9 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
         signatures.add(
             PartialSignature.create(m),
             ReadMethodData.create(
-                !Modifier.isStatic(m.getModifiers()), m.getReturnType().getName()));
+                !Modifier.isStatic(m.getModifiers()),
+                clazz.isInterface(),
+                m.getReturnType().getName()));
       }
       return signatures.build();
     } catch (ClassNotFoundException | SecurityException e) {
@@ -138,9 +140,21 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
   /** Visits the methods in a class, storing the public methods that plugins can use. */
   private static class Visitor extends ClassVisitor {
     final ClassSignatures.Builder signatures = new ClassSignatures.Builder();
+    boolean classIsInterface;
 
     Visitor() {
       super(Opcodes.ASM7);
+    }
+
+    @Override
+    public void visit(
+        int version,
+        int access,
+        String name,
+        String signature,
+        String superName,
+        String[] interfaces) {
+      classIsInterface = Modifier.isInterface(access);
     }
 
     @Override
@@ -154,7 +168,9 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
       signatures.add(
           PartialSignature.create(name, methodType),
           ReadMethodData.create(
-              !Modifier.isStatic(access), methodType.getReturnType().getClassName()));
+              !Modifier.isStatic(access),
+              classIsInterface,
+              methodType.getReturnType().getClassName()));
       return null;
     }
   }

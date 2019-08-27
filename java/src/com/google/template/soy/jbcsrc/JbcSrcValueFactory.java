@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.protobuf.Message;
@@ -32,10 +33,12 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.plugin.java.internal.JavaPluginValidator;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyType;
@@ -126,29 +129,78 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   @Override
   public JbcSrcJavaValue callStaticMethod(Method method, JavaValue... params) {
+    return callPluginMethod(/* instance= */ false, toMethodSignature(method), params);
+  }
+
+  @Override
+  public JbcSrcJavaValue callStaticMethod(MethodSignature methodSignature, JavaValue... params) {
+    return callPluginMethod(/* instance= */ false, methodSignature, params);
+  }
+
+  @Override
+  public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
+    return callPluginMethod(/* instance= */ true, toMethodSignature(method), params);
+  }
+
+  @Override
+  public JbcSrcJavaValue callInstanceMethod(MethodSignature methodSignature, JavaValue... params) {
+    return callPluginMethod(/* instance= */ true, methodSignature, params);
+  }
+
+  /**
+   * Adapts the parameters to Expressions and generates the correct invocation for calling the
+   * plugin.
+   */
+  private JbcSrcJavaValue callPluginMethod(
+      boolean instance, MethodSignature methodSignature, JavaValue... params) {
     // Attempt to eagerly convert the result to a SoyExpression to make life easier for ourselves.
     // (We can take various shortcuts if things are SoyExpressions.)
     // This lets us more easily support users who want to compose multiple callXMethod calls, e.g:
     //   callXMethod(METHOD1, callXMethod(METHOD2, arg1), callXMethod(METHOD3, arg2));
     // ... which would call METHOD1 with the results of METHOD2 & METHOD3.
-    Expression[] adapted = adaptParams(method, params);
-    return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(MethodRef.create(method).invoke(adapted)), method);
+    Expression[] adapted = adaptParams(methodSignature, params);
+    TypeInfo owner = TypeInfo.create(methodSignature.fullyQualifiedClassName());
+    org.objectweb.asm.commons.Method asmMethod =
+        new org.objectweb.asm.commons.Method(
+            methodSignature.methodName(),
+            Type.getType(methodSignature.returnType()),
+            methodSignature.arguments().stream()
+                .map(Type::getType)
+                .collect(toImmutableList())
+                .toArray(new Type[0]));
+    Expression methodCall;
+    if (instance) {
+      // We need to cast to the method's declaring class in order for the owner type
+      // to be correct when calling the method, otherwise the JVM won't be able to dispatch
+      // the method because the type will just be 'Object'.
+      Expression runtime =
+          pluginInstanceLookup
+              .getPluginInstance(fnNode.getFunctionName())
+              .checkedCast(owner.type());
+      MethodRef methodRef =
+          methodSignature.inInterface()
+              ? MethodRef.createInterfaceMethod(owner, asmMethod)
+              : MethodRef.createInstanceMethod(owner, asmMethod);
+      methodCall = runtime.invoke(methodRef, adapted);
+    } else {
+      methodCall = MethodRef.createStaticMethod(owner, asmMethod).invoke(adapted);
+    }
+    return JbcSrcJavaValue.of(tryToWrapInSoyExpression(methodCall), methodSignature);
   }
 
-  @Override
-  public JbcSrcJavaValue callInstanceMethod(Method method, JavaValue... params) {
-    // We need to cast to the method's declaring class in order for the owner type
-    // to be correct when calling the method, otherwise the JVM won't be able to dispatch
-    // the method because the type will just be 'Object'.
-    Expression runtime =
-        pluginInstanceLookup
-            .getPluginInstance(fnNode.getFunctionName())
-            .checkedCast(method.getDeclaringClass());
-    // See the note in callStaticMethod for why we eagerly try to wrap the result into a SoyExpr.
-    Expression[] adapted = adaptParams(method, params);
-    return JbcSrcJavaValue.of(
-        tryToWrapInSoyExpression(runtime.invoke(MethodRef.create(method), adapted)), method);
+  private static MethodSignature toMethodSignature(Method method) {
+    if (method.getDeclaringClass().isInterface()) {
+      return MethodSignature.createInterfaceMethod(
+          method.getDeclaringClass().getName(),
+          method.getName(),
+          method.getReturnType(),
+          method.getParameterTypes());
+    }
+    return MethodSignature.create(
+        method.getDeclaringClass().getName(),
+        method.getName(),
+        method.getReturnType(),
+        method.getParameterTypes());
   }
 
   @Override
@@ -183,11 +235,11 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     return JbcSrcJavaValue.ofConstantNull();
   }
 
-  private static Expression[] adaptParams(Method method, JavaValue[] userParams) {
-    Class<?>[] methodParams = method.getParameterTypes();
+  private static Expression[] adaptParams(MethodSignature method, JavaValue[] userParams) {
+    ImmutableList<Class<?>> methodParams = method.arguments();
     Expression[] params = new Expression[userParams.length];
     for (int i = 0; i < userParams.length; i++) {
-      Class<?> methodParam = methodParams[i];
+      Class<?> methodParam = methodParams.get(i);
       JbcSrcJavaValue jbcJv = (JbcSrcJavaValue) userParams[i];
       Expression expr = jbcJv.expr();
       if (expr instanceof SoyExpression) {
@@ -309,9 +361,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
       Class<?> type;
       // Preferentially try to get the type from the method of Expr, since classFromAsmType
       // uses BytecodeUtils' classloader, which may not include the return value's type.
-      Method method = pluginReturnValue.methodInfo();
+      MethodSignature method = pluginReturnValue.methodInfo();
       if (method != null) {
-        type = method.getReturnType();
+        type = method.returnType();
       } else {
         type = BytecodeUtils.classFromAsmType(expr.resultType());
       }

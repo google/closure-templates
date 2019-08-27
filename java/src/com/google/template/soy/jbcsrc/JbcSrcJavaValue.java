@@ -23,7 +23,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
-import java.lang.reflect.Method;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import javax.annotation.Nullable;
 
 /** Adapts an Expression to a JavaValue. */
@@ -31,16 +31,16 @@ final class JbcSrcJavaValue implements JavaValue {
 
   /** Constructs a JbcSrcJavaValue based on the Expression. */
   static JbcSrcJavaValue of(Expression expr) {
-    return new JbcSrcJavaValue(expr, /* method= */ null, /* constantNull= */ false);
+    return new JbcSrcJavaValue(expr, /* methodSignature= */ null, /* constantNull= */ false);
   }
 
   /**
    * Constructs a JbcSrcJavaValue based on the Expression. The method is used to display helpful
    * error messages to the user if necessary. It is not invoked.
    */
-  static JbcSrcJavaValue of(Expression expr, Method method) {
-    checkNotNull(method);
-    return new JbcSrcJavaValue(expr, method, /* constantNull= */ false);
+  static JbcSrcJavaValue of(Expression expr, MethodSignature methodSignature) {
+    checkNotNull(methodSignature);
+    return new JbcSrcJavaValue(expr, methodSignature, /* constantNull= */ false);
   }
 
   /**
@@ -49,16 +49,17 @@ final class JbcSrcJavaValue implements JavaValue {
    * we have a separate bool to indicate it.
    */
   static JbcSrcJavaValue ofConstantNull() {
-    return new JbcSrcJavaValue(SoyExpression.NULL, /* method= */ null, /* constantNull= */ true);
+    return new JbcSrcJavaValue(
+        SoyExpression.NULL, /* methodSignature= */ null, /* constantNull= */ true);
   }
 
   private final Expression expr;
-  @Nullable private final Method method;
+  @Nullable private final MethodSignature methodSignature;
   private final boolean constantNull;
 
-  private JbcSrcJavaValue(Expression expr, Method method, boolean constantNull) {
+  private JbcSrcJavaValue(Expression expr, MethodSignature methodSignature, boolean constantNull) {
     this.expr = checkNotNull(expr);
-    this.method = method;
+    this.methodSignature = methodSignature;
     this.constantNull = constantNull;
   }
 
@@ -76,8 +77,8 @@ final class JbcSrcJavaValue implements JavaValue {
    * display helpful error messages to the user, if necessary.
    */
   @Nullable
-  Method methodInfo() {
-    return method;
+  MethodSignature methodInfo() {
+    return methodSignature;
   }
 
   @Override
@@ -113,18 +114,18 @@ final class JbcSrcJavaValue implements JavaValue {
   @Override
   public JbcSrcJavaValue coerceToSoyBoolean() {
     return new JbcSrcJavaValue(
-        ((SoyExpression) expr).coerceToBoolean(), method, /* constantNull= */ false);
+        ((SoyExpression) expr).coerceToBoolean(), methodSignature, /* constantNull= */ false);
   }
 
   @Override
   public JbcSrcJavaValue coerceToSoyString() {
     return new JbcSrcJavaValue(
-        ((SoyExpression) expr).coerceToString(), method, /* constantNull= */ false);
+        ((SoyExpression) expr).coerceToString(), methodSignature, /* constantNull= */ false);
   }
 
   @Override
   public String toString() {
-    String methodStr = method == null ? "" : (", method= " + method);
+    String methodStr = methodSignature == null ? "" : (", methodSignature= " + methodSignature);
     return "JbcSrcJavaValue[expr=" + expr + methodStr + "]";
   }
 }

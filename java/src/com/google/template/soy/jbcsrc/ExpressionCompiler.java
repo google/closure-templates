@@ -1272,7 +1272,7 @@ final class ExpressionCompiler {
               PluginAnalyzer.analyze((SoyJavaSourceFunction) node.getSoyFunction());
           // the plugin can be generated as a constant expression if it doesn't access the context
           // or require an instance function.
-          return metadata.pluginInstances().isEmpty() && !metadata.accessesContext();
+          return metadata.pluginInstanceNames().isEmpty() && !metadata.accessesContext();
         } catch (Throwable ignored) {
           // sort of lame but this just means that we will report the error when we try to generate
           // actual code.
