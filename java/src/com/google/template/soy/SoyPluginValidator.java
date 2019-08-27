@@ -24,6 +24,7 @@ import com.google.template.soy.error.SoyErrors;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 import org.kohsuke.args4j.Option;
 
 /** Executable that validates SoySourceFunctions. */
@@ -36,6 +37,16 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
           "[Required] The file name of the output file to be written. "
               + "This will only contain the word 'true'.")
   private File output;
+
+  @Option(
+      name = "--pluginRuntimeJars",
+      required = false,
+      usage =
+          "[Optional] The list of jars that contain the plugin runtime"
+              + " logic, for use validating plugin dependencies at compile time. If not set,"
+              + " runtime jars are assumed to be on the classpath.",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> pluginRuntimeJars;
 
   SoyPluginValidator(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
@@ -59,6 +70,9 @@ public final class SoyPluginValidator extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
+    if (pluginRuntimeJars != null) {
+      sfsBuilder.setPluginRuntimeJars(pluginRuntimeJars);
+    }
     sfsBuilder.build().validateUserPlugins();
     Files.write(output.toPath(), ImmutableList.of("true"), UTF_8);
   }

@@ -164,6 +164,8 @@ public final class SoyFileSet {
 
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
 
+    private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
+
     private final ImmutableSet.Builder<SoyFunction> extraSoyFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoyPrintDirective> extraSoyPrintDirectives =
         ImmutableSet.builder();
@@ -233,7 +235,8 @@ public final class SoyFileSet {
           cache,
           conformanceConfig,
           loggingConfig,
-          warningSink);
+          warningSink,
+          pluginRuntimeJars);
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
@@ -541,6 +544,15 @@ public final class SoyFileSet {
       this.loggingConfig = checkNotNull(parseLoggingConfigs);
       return this;
     }
+
+    /**
+     * Sets the location of the jars containing plugin runtime code, for use validating plugin
+     * MethodRefs.
+     */
+    Builder setPluginRuntimeJars(List<File> pluginRuntimeJars) {
+      this.pluginRuntimeJars = ImmutableList.copyOf(pluginRuntimeJars);
+      return this;
+    }
   }
 
   private final SoyScopedData scopedData;
@@ -556,6 +568,7 @@ public final class SoyFileSet {
 
   private final ValidatedConformanceConfig conformanceConfig;
   private final ValidatedLoggingConfig loggingConfig;
+  private final ImmutableList<File> pluginRuntimeJars;
 
   private final ImmutableMap<String, SoyFunction> soyFunctionMap;
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
@@ -578,7 +591,8 @@ public final class SoyFileSet {
       @Nullable SoyAstCache cache,
       ValidatedConformanceConfig conformanceConfig,
       ValidatedLoggingConfig loggingConfig,
-      @Nullable Appendable warningSink) {
+      @Nullable Appendable warningSink,
+      ImmutableList<File> pluginRuntimeJars) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
@@ -591,6 +605,7 @@ public final class SoyFileSet {
     this.conformanceConfig = checkNotNull(conformanceConfig);
     this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
+    this.pluginRuntimeJars = pluginRuntimeJars;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -692,7 +707,7 @@ public final class SoyFileSet {
               errorReporter);
           // Then validate the user-specified source functions.
           Set<String> internalFunctionNames = InternalPlugins.internalFunctionMap().keySet();
-          new PluginValidator(errorReporter, typeRegistry)
+          new PluginValidator(errorReporter, typeRegistry, pluginRuntimeJars)
               .validate(
                   Maps.filterKeys(
                       getSoySourceFunctions(), name -> !internalFunctionNames.contains(name)));
