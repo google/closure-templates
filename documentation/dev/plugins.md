@@ -70,7 +70,7 @@ implement any of the following interfaces:
 
 1.  `SoyJavaScriptSourceFunction` for generating JS code
 1.  `SoyJavaSourceFunction` for generating Java bytecode
-1.  `SoyPySrcFunction` for generating Python code
+1.  `SoyPythonSourceFunction` for generating Python code
 1.  _experimental_ `LoggingFunction` for interacting with a `SoyLogger`. See the
     [doc-logging](doc-logging#logging_function) guide for more information
 
@@ -78,19 +78,21 @@ For example, if you wanted to have an implementation for both Java and JS you
 would implement both those interfaces and write something like
 
 ```java
-@SoyFunctionSignature(
-    name = "uniqueId",
-    value = @Signature(returnType="string"))
-public class UniqueIdFunction implements
-    SoyJavaSourceFunction, SoyJavaScriptSourceFunction {
+public class UniqueIdFunctionRuntime {
   private static final AtomicLong counter = new AtomicLong();
 
   public static String nextId() {
     return "id-" + counter.incrementAndGet();
   }
+}
 
-  private static final Method NEXT_ID =
-      JavaValueFactory.createMethod(UniqueIdFunction.class, "nextId");
+@SoyFunctionSignature(
+    name = "uniqueId",
+    value = @Signature(returnType="string"))
+public class UniqueIdFunction implements
+    SoyJavaSourceFunction, SoyJavaScriptSourceFunction {
+  private static final MethodSignature NEXT_ID =
+      MethodSignature.create("example.package.UniqueIdFunctionRuntime", "nextId", String.class);
 
   @Override
   public JavaValue applyForJavaSource(
@@ -113,21 +115,34 @@ rendering, and the `computeForJsSrc` method will be invoked by the compiler to
 generate JS code for client-side rendering (the implementation will call the
 given JS library function).
 
-If the Java implementation needs any non-static dependencies at runtime (e.g, a
-`NextIdService`), the `applyForJavaSource` method can use
-`JavaValueFactory.callInstanceMethod`.For rendering to work, the instance the
-plugin will use must be passed to the `SoySauce` or `SoyTofu` constructor, or if
-that is impossible the Renderer's `setPluginInstances` method. For example,
+If the Java implementation needs any non-static dependencies at runtime, the
+`applyForJavaSource` method can use `JavaValueFactory.callInstanceMethod`. For
+rendering to work, the instance the plugin will use must be passed to the
+`SoySauce` or `SoyTofu` constructor, or if that is impossible the Renderer's
+`setPluginInstances` method. For example,
 
 ```java
+public class UniqueIdFunctionRuntime {
+  private final AtomicLong counter = new AtomicLong();
+  private final String prefix;
+
+  @Inject UniqueIdFunctionRuntime(@Named("prefix") String prefix) {
+    this.prefix = prefix;
+  }
+
+  public String nextId() {
+    return prefix + counter.incrementAndGet();
+  }
+}
+
 @SoyFunctionSignature(
     name = "uniqueId",
     value = @Signature(returnType="string"))
 public class UniqueIdFunction implements
     SoyJavaSourceFunction, SoyJavaScriptSourceFunction {
 
-  private static final Method NEXT_ID =
-      JavaValueFactory.createMethod(NextIdService.class, "nextId");
+  private static final MethodSignature NEXT_ID =
+      MethodSignature.create("example.package.UniqueIdFunctionRuntime", "nextId", String.class);
 
   @Override
   public JavaValue applyForJavaSource(
@@ -140,14 +155,6 @@ public class UniqueIdFunction implements
      JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     // Note: If the library isn't provided by goog.module, use callNamespaceFunction instead.
     return factory.callModuleFunction("some.js.lib", "uniqueId");
-  }
-}
-
-class NextIdService {
-  private final AtomicLong counter = new AtomicLong();
-
-  public String nextId() {
-    return "id-" + counter.incrementAndGet();
   }
 }
 ```
