@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
@@ -34,7 +35,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,12 +58,7 @@ public class JavaPluginValidator {
       boolean includeTriggeredInTemplateMsg) {
     ValidatorErrorReporter reporter =
         new ValidatorErrorReporter(
-            baseReporter,
-            fnName,
-            fn.getClass(),
-            expectedReturn,
-            sourceLocation,
-            includeTriggeredInTemplateMsg);
+            baseReporter, fnName, fn.getClass(), sourceLocation, includeTriggeredInTemplateMsg);
     ValidatorFactory factory = new ValidatorFactory(reporter);
     ValidatorContext context = new ValidatorContext(reporter);
     JavaValue result = null;
@@ -109,9 +104,9 @@ public class JavaPluginValidator {
     }
     if (actualSoyType == null) {
       Class<?> actualClass;
-      Method method = pluginReturnValue.methodInfo();
+      MethodSignature method = pluginReturnValue.methodInfo();
       if (method != null) {
-        actualClass = method.getReturnType();
+        actualClass = method.returnType();
       } else {
         actualClass = pluginReturnValue.valueType().clazz();
       }
@@ -122,7 +117,7 @@ public class JavaPluginValidator {
             || expectedType.getKind() == SoyType.Kind.ANY) {
           actualSoyType = ListType.of(UnknownType.getInstance());
         } else {
-          reporter.invalidReturnType(actualClass, method);
+          reporter.invalidReturnType(actualClass, expectedType, method);
           return;
         }
       } else if (SoyValue.class.isAssignableFrom(actualClass)) {
@@ -130,25 +125,27 @@ public class JavaPluginValidator {
         // at compile time too.
         actualSoyType = expectedType;
       } else if (Message.class.isAssignableFrom(actualClass)) {
-        Optional<SoyType> returnType = soyTypeForProtoOrEnum(actualClass, method, reporter);
+        Optional<SoyType> returnType =
+            soyTypeForProtoOrEnum(actualClass, expectedType, method, reporter);
         if (!returnType.isPresent()) {
           return; // error already reported
         }
         actualSoyType = returnType.get();
       } else if (actualClass.isEnum() && ProtocolMessageEnum.class.isAssignableFrom(actualClass)) {
-        Optional<SoyType> returnType = soyTypeForProtoOrEnum(actualClass, method, reporter);
+        Optional<SoyType> returnType =
+            soyTypeForProtoOrEnum(actualClass, expectedType, method, reporter);
         if (!returnType.isPresent()) {
           return; // error already reported
         }
         if (!expectedType.isAssignableFrom(returnType.get())) {
-          reporter.incompatibleReturnType(returnType.get(), method);
+          reporter.incompatibleReturnType(returnType.get(), expectedType, method);
           return;
         }
         // TODO(lukes): SoyExpression should have a way to track type information with an unboxed
         // int that is actually a proto enum.  Like we do with SanitizedContents
         actualSoyType = IntType.getInstance();
       } else {
-        reporter.invalidReturnType(actualClass, method);
+        reporter.invalidReturnType(actualClass, expectedType, method);
         return;
       }
     }
@@ -159,7 +156,7 @@ public class JavaPluginValidator {
         actualSoyType.getKind() == SoyType.Kind.INT
             && isOrContains(expectedType, SoyType.Kind.PROTO_ENUM);
     if (!isPossibleProtoEnum && !expectedType.isAssignableFrom(actualSoyType)) {
-      reporter.incompatibleReturnType(actualSoyType, pluginReturnValue.methodInfo());
+      reporter.incompatibleReturnType(actualSoyType, expectedType, pluginReturnValue.methodInfo());
     }
   }
 
@@ -167,20 +164,23 @@ public class JavaPluginValidator {
    * Attempts to discover the SoyType for a proto or proto enum, reporting an error if unable to.
    */
   private Optional<SoyType> soyTypeForProtoOrEnum(
-      Class<?> type, Method method, ValidatorErrorReporter reporter) {
+      Class<?> actualType,
+      SoyType expectedType,
+      MethodSignature method,
+      ValidatorErrorReporter reporter) {
     // Message isn't supported because we can't get a descriptor from it.
-    if (type == Message.class) {
-      reporter.invalidReturnType(Message.class, method);
+    if (actualType == Message.class) {
+      reporter.invalidReturnType(Message.class, expectedType, method);
       return Optional.empty();
     }
-    Optional<String> fullName = nameFromDescriptor(type);
+    Optional<String> fullName = nameFromDescriptor(actualType);
     if (!fullName.isPresent()) {
-      reporter.incompatibleReturnType(type, method);
+      reporter.incompatibleReturnType(actualType, expectedType, method);
       return Optional.empty();
     }
     SoyType returnType = typeRegistry.getType(fullName.get());
     if (returnType == null) {
-      reporter.incompatibleReturnType(type, method);
+      reporter.incompatibleReturnType(actualType, expectedType, method);
       return Optional.empty();
     }
     return Optional.of(returnType);

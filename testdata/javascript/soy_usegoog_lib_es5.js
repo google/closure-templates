@@ -948,13 +948,6 @@ goog.createTrustedTypesPolicy = function(name) {
   } catch (e) {
     goog.logToConsole_(e.message);
   }
-  if (goog.global.TrustedURL && policyFactory.getPolicyNames && -1 === policyFactory.getPolicyNames().indexOf("default")) {
-    try {
-      policyFactory.createPolicy("default", {createURL:goog.identity_}, !0);
-    } catch (e$4) {
-      goog.logToConsole_(e$4.message);
-    }
-  }
   return policy;
 };
 goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ? goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + "#base") : null;
@@ -1761,8 +1754,8 @@ goog.object.equals = function(a, b) {
       return !1;
     }
   }
-  for (var k$5 in b) {
-    if (!(k$5 in a)) {
+  for (var k$4 in b) {
+    if (!(k$4 in a)) {
       return !1;
     }
   }
@@ -4028,9 +4021,9 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
   return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-var JSCompiler_inline_result$jscomp$8;
-JSCompiler_inline_result$jscomp$8 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
-goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$8;
+var JSCompiler_inline_result$jscomp$7;
+JSCompiler_inline_result$jscomp$7 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
+goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$7;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
@@ -4132,7 +4125,7 @@ goog.debug.normalizeErrorObject = function(err) {
   }
   try {
     var fileName = err.fileName || err.filename || err.sourceURL || goog.global.$googDebugFname || href;
-  } catch (e$6) {
+  } catch (e$5) {
     fileName = "Not available", threwError = !0;
   }
   if (!(!threwError && err.lineNumber && err.fileName && err.stack && err.message && err.name)) {
@@ -7491,9 +7484,9 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
       for (;;) {
         f.call(opt_obj, iterable.next(), void 0, iterable);
       }
-    } catch (ex$7) {
-      if (ex$7 !== goog.iter.StopIteration) {
-        throw ex$7;
+    } catch (ex$6) {
+      if (ex$6 !== goog.iter.StopIteration) {
+        throw ex$6;
       }
     }
   }

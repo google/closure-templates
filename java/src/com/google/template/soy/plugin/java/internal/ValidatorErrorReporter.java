@@ -27,9 +27,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.plugin.java.internal.ValidatorFactory.ValidationResult;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.types.SoyType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
@@ -110,13 +109,24 @@ public final class ValidatorErrorReporter {
           formatPlain("{3} method {4} passed to JavaValueFactory.{5}."),
           StyleAllowance.NO_PUNCTUATION);
 
+  private static final SoyErrorKind INVALID_PLUGIN_METHOD =
+      SoyErrorKind.of(
+          formatPlain(
+              "Can''t find a public method with signature ''{3}''{4} "
+                  + "in the plugin''s java deps."),
+          StyleAllowance.NO_PUNCTUATION);
+
+  private static final SoyErrorKind WRONG_PLUGIN_METHOD_RETURN_TYPE =
+      SoyErrorKind.of(
+          formatPlain("Plugin runtime method {3} returns a {4}, not a {5}."),
+          StyleAllowance.NO_PUNCTUATION);
+
   private static final SoyErrorKind UNEXPECTED_ERROR =
       SoyErrorKind.of(formatPlain("{3}"), StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter reporter;
   private final String fnName;
   private final Class<?> fnClass;
-  private final SoyType expectedReturnType;
   private final SourceLocation sourceLocation;
   private final boolean includeTriggeredInTemplateMsg;
 
@@ -124,14 +134,12 @@ public final class ValidatorErrorReporter {
       ErrorReporter reporter,
       String fnName,
       Class<?> fnClass,
-      SoyType expectedReturnType,
       SourceLocation sourceLocation,
       boolean includeTriggeredInTemplateMsg) {
     this.reporter = reporter;
     this.fnName = fnName;
     this.fnClass = fnClass;
     this.sourceLocation = sourceLocation;
-    this.expectedReturnType = expectedReturnType;
     this.includeTriggeredInTemplateMsg = includeTriggeredInTemplateMsg;
   }
 
@@ -162,22 +170,24 @@ public final class ValidatorErrorReporter {
     return reporter.errorsSince(checkpoint);
   }
 
-  void invalidReturnType(Class<?> returnType, @Nullable Method method) {
+  void invalidReturnType(
+      Class<?> actualReturnType, SoyType expectedReturnType, @Nullable MethodSignature method) {
     if (method == null) {
       report(
           INVALID_RETURN_TYPE_NO_METHOD,
           "soy type of '" + expectedReturnType + "'",
-          "java type of '" + returnType.getName() + "'");
+          "java type of '" + actualReturnType.getName() + "'");
     } else {
       report(
           INVALID_RETURN_TYPE_WITH_METHOD,
           "soy type of '" + expectedReturnType + "'",
-          "java type of '" + returnType.getName() + "'",
+          "java type of '" + actualReturnType.getName() + "'",
           simpleMethodName(method));
     }
   }
 
-  void incompatibleReturnType(SoyType actualType, @Nullable Method method) {
+  void incompatibleReturnType(
+      SoyType actualType, SoyType expectedReturnType, @Nullable MethodSignature method) {
     if (method == null) {
       report(
           INCOMPATIBLE_RETURN_TYPE_NO_METHOD,
@@ -192,7 +202,8 @@ public final class ValidatorErrorReporter {
     }
   }
 
-  void incompatibleReturnType(Class<?> actualJavaType, @Nullable Method method) {
+  void incompatibleReturnType(
+      Class<?> actualJavaType, SoyType expectedReturnType, @Nullable MethodSignature method) {
     if (method == null) {
       report(
           INCOMPATIBLE_RETURN_TYPE_NO_METHOD,
@@ -207,17 +218,15 @@ public final class ValidatorErrorReporter {
     }
   }
 
-  void invalidParameterLength(Method method, JavaValue[] actualParams) {
+  void invalidParameterLength(MethodSignature method, JavaValue[] actualParams) {
     String expected =
-        method.getParameterTypes().length == 1
-            ? "1 parameter"
-            : method.getParameterTypes().length + " parameters";
+        method.arguments().size() == 1 ? "1 parameter" : method.arguments().size() + " parameters";
     String actual = actualParams.length == 1 ? "1 parameter" : actualParams.length + " parameters";
     report(PARAMETER_LENGTH_MISMATCH, expected, actual, simpleMethodName(method));
   }
 
   void invalidParameterType(
-      Method method, int paramIdx, Class<?> actualParamType, Class<?> expectedClass) {
+      MethodSignature method, int paramIdx, Class<?> actualParamType, Class<?> expectedClass) {
     report(
         PARAM_MISMATCH_ONE,
         "'" + expectedClass.getName() + "'",
@@ -227,7 +236,7 @@ public final class ValidatorErrorReporter {
   }
 
   void invalidParameterType(
-      Method method, int paramIdx, Class<?> expectedType, ValidationResult result) {
+      MethodSignature method, int paramIdx, Class<?> expectedType, ValidationResult result) {
     switch (result.result()) {
       case VALID:
         throw new IllegalStateException("unexpected valid result");
@@ -300,11 +309,11 @@ public final class ValidatorErrorReporter {
     report(NULL_METHOD, methodName);
   }
 
-  void nullParamArray(Method method, String methodName) {
+  void nullParamArray(MethodSignature method, String methodName) {
     report(NULL_VALUES, methodName, simpleMethodName(method));
   }
 
-  void nullParam(Method method, int paramIdx, Class<?> expectedType) {
+  void nullParam(MethodSignature method, int paramIdx, Class<?> expectedType) {
     report(
         NULL_PARAM,
         "'" + expectedType.getName() + "'",
@@ -313,10 +322,10 @@ public final class ValidatorErrorReporter {
         simpleMethodName(method));
   }
 
-  void staticMismatch(Method method) {
+  void staticMismatch(MethodSignature method, boolean expectedInstance) {
     String expected;
     String actual;
-    if (Modifier.isStatic(method.getModifiers())) {
+    if (expectedInstance) {
       expected = "callInstanceMethod";
       actual = "Static";
     } else {
@@ -324,6 +333,27 @@ public final class ValidatorErrorReporter {
       actual = "Instance";
     }
     report(STATIC_MISMATCH, actual, simpleMethodName(method), expected);
+  }
+
+  void invalidPluginMethod(MethodSignature method) {
+    String signature =
+        String.format(
+            "%s.%s(%s)",
+            method.fullyQualifiedClassName(),
+            method.methodName(),
+            method.arguments().stream().map(Class::getName).collect(Collectors.joining(", ")));
+    report(
+        INVALID_PLUGIN_METHOD,
+        signature,
+        method.arguments().isEmpty() ? " (with no parameters)" : "");
+  }
+
+  void wrongPluginMethodReturnType(String actualReturnType, MethodSignature expectedMethod) {
+    report(
+        WRONG_PLUGIN_METHOD_RETURN_TYPE,
+        simpleMethodName(expectedMethod),
+        actualReturnType,
+        expectedMethod.returnType().getName());
   }
 
   void unexpectedError(Throwable t) {
@@ -358,8 +388,8 @@ public final class ValidatorErrorReporter {
         + "{2}";
   }
 
-  private static String simpleMethodName(Method method) {
-    return "'" + method.getDeclaringClass().getName() + "." + method.getName() + "'";
+  private static String simpleMethodName(MethodSignature method) {
+    return "'" + method.fullyQualifiedClassName() + "." + method.methodName() + "'";
   }
 
   /**

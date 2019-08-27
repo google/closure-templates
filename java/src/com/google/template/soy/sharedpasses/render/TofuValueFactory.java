@@ -38,6 +38,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.ibm.icu.util.ULocale;
 import java.lang.reflect.InvocationTargetException;
@@ -70,12 +71,22 @@ class TofuValueFactory extends JavaValueFactory {
   }
 
   @Override
+  public JavaValue callStaticMethod(MethodSignature methodSig, JavaValue... params) {
+    return callStaticMethod(toMethod(methodSig), params);
+  }
+
+  @Override
   public TofuJavaValue callStaticMethod(Method method, JavaValue... params) {
     try {
       return wrapInTofuValue(method, method.invoke(null, adaptParams(method, params)));
     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
       throw RenderException.create("Unexpected exception", e);
     }
+  }
+
+  @Override
+  public JavaValue callInstanceMethod(MethodSignature methodSig, JavaValue... params) {
+    return callInstanceMethod(toMethod(methodSig), params);
   }
 
   @Override
@@ -145,6 +156,27 @@ class TofuValueFactory extends JavaValueFactory {
           SoyValueConverter.INSTANCE.convert(object).resolve(), fn.getSourceLocation());
     } catch (SoyDataException e) {
       throw RenderException.create("Invalid return value from `" + method + "`", e);
+    }
+  }
+
+  private static Method toMethod(MethodSignature methodSig) {
+    try {
+      Class<?> clazz = Class.forName(methodSig.fullyQualifiedClassName());
+      Method method =
+          clazz.getMethod(methodSig.methodName(), methodSig.arguments().toArray(new Class<?>[0]));
+      if (!method.getReturnType().equals(methodSig.returnType())) {
+        throw RenderException.create(
+            "Invalid methodSig: '"
+                + methodSig
+                + "'. Return type is '"
+                + method.getReturnType().getName()
+                + "', not '"
+                + methodSig.returnType()
+                + "'.");
+      }
+      return method;
+    } catch (ClassNotFoundException | NoSuchMethodException | SecurityException e) {
+      throw RenderException.create("Invalid methodSig: '" + methodSig + "'.", e);
     }
   }
 

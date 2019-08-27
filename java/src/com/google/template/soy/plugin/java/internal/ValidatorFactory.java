@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Primitives;
@@ -45,6 +46,7 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
+import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -125,14 +127,27 @@ final class ValidatorFactory extends JavaValueFactory {
       reporter.nullMethod("callStaticMethod");
       return errorValue();
     }
+    MethodSignature methodSignature = toMethodSignature(method);
     if (!Modifier.isStatic(method.getModifiers())) {
-      reporter.staticMismatch(method);
+      reporter.staticMismatch(methodSignature, /* expectedInstance= */ false);
       return errorValue();
     }
-    if (!validateParams(method, params, "callStaticMethod")) {
+    if (!validateParams(methodSignature, params, "callStaticMethod")) {
       return errorValue();
     }
-    return ValidatorValue.forMethodReturnType(method, reporter);
+    return ValidatorValue.forMethodReturnType(methodSignature, reporter);
+  }
+
+  @Override
+  public JavaValue callStaticMethod(MethodSignature methodSignature, JavaValue... params) {
+    if (methodSignature == null) {
+      reporter.nullMethod("callStaticMethod");
+      return errorValue();
+    }
+    if (!validateParams(methodSignature, params, "callStaticMethod")) {
+      return errorValue();
+    }
+    return ValidatorValue.forMethodReturnType(methodSignature, reporter);
   }
 
   @Override
@@ -141,14 +156,32 @@ final class ValidatorFactory extends JavaValueFactory {
       reporter.nullMethod("callInstanceMethod");
       return errorValue();
     }
+    MethodSignature methodSignature = toMethodSignature(method);
     if (Modifier.isStatic(method.getModifiers())) {
-      reporter.staticMismatch(method);
+      reporter.staticMismatch(methodSignature, /* expectedInstance= */ true);
       return errorValue();
     }
-    if (!validateParams(method, params, "callInstanceMethod")) {
+    return ValidatorValue.forMethodReturnType(methodSignature, reporter);
+  }
+
+  @Override
+  public ValidatorValue callInstanceMethod(MethodSignature methodSignature, JavaValue... params) {
+    if (methodSignature == null) {
+      reporter.nullMethod("callInstanceMethod");
       return errorValue();
     }
-    return ValidatorValue.forMethodReturnType(method, reporter);
+    if (!validateParams(methodSignature, params, "callInstanceMethod")) {
+      return errorValue();
+    }
+    return ValidatorValue.forMethodReturnType(methodSignature, reporter);
+  }
+
+  private static MethodSignature toMethodSignature(Method method) {
+    return MethodSignature.create(
+        method.getDeclaringClass().getName(),
+        method.getName(),
+        method.getReturnType(),
+        method.getParameterTypes());
   }
 
   @Override
@@ -185,20 +218,21 @@ final class ValidatorFactory extends JavaValueFactory {
    * Returns true if we should continue doing more validation, false if the parameters were so
    * wildly invalid that we can't continue doing any more validation.
    */
-  private boolean validateParams(Method method, JavaValue[] userParams, String callerMethodName) {
+  private boolean validateParams(
+      MethodSignature method, JavaValue[] userParams, String callerMethodName) {
     if (userParams == null) {
       reporter.nullParamArray(method, callerMethodName);
       return false;
     }
 
-    Class<?>[] methodParams = method.getParameterTypes();
-    if (methodParams.length != userParams.length) {
+    ImmutableList<Class<?>> methodParams = method.arguments();
+    if (methodParams.size() != userParams.length) {
       reporter.invalidParameterLength(method, userParams);
       return false;
     }
 
     for (int i = 0; i < userParams.length; i++) {
-      Class<?> methodParam = methodParams[i];
+      Class<?> methodParam = methodParams.get(i);
       if (userParams[i] == null) {
         reporter.nullParam(method, i + 1, methodParam);
         continue;
@@ -220,7 +254,7 @@ final class ValidatorFactory extends JavaValueFactory {
   }
 
   private void validateParameter(
-      Method method, int paramIdx, Class<?> expectedParamType, ValidatorValue value) {
+      MethodSignature method, int paramIdx, Class<?> expectedParamType, ValidatorValue value) {
     // First we validate that the type is allowed based on the function's signature (if any).
     ValidationResult validationResult;
     if (value.isConstantNull()) {
