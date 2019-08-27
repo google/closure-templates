@@ -16,6 +16,10 @@
 
 package com.google.template.soy.parseinfo.passes;
 
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableMap;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSet;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
@@ -112,13 +116,6 @@ public final class GenerateParseInfoVisitor
 
     /** File1SoyInfo, File2SoyInfo, etc. */
     GENERIC;
-
-    /** Pattern for an all-upper-case word in a file name or identifier. */
-
-    /** Pattern for an all-lower-case word in a file name or identifier. */
-    // Note: Char after an all-lower word can be an upper letter (e.g. first word of camel case).
-
-    /** Pattern for a character that's not a letter nor a digit. */
 
     /**
      * Generates the base Java class name for the given Soy file.
@@ -393,7 +390,8 @@ public final class GenerateParseInfoVisitor
       // Note we use fully-qualified names instead of imports to avoid potential collisions.
       List<String> defaultInstances = Lists.newArrayList();
       defaultInstances.addAll(protoTypes);
-      appendListOrSetHelper(ilb, "return ImmutableList.<GenericDescriptor>of", defaultInstances);
+      ilb.appendLineStart("return ");
+      appendImmutableListInline(ilb, "<GenericDescriptor>", defaultInstances);
       ilb.appendLineEnd(";");
       ilb.decreaseIndent();
       ilb.appendLine("}");
@@ -487,7 +485,7 @@ public final class GenerateParseInfoVisitor
         collectCssNames(node).stream()
             .map(s -> String.format("\"%s\"", s))
             .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
-    appendListOrSetHelper(ilb, "ImmutableSet.<String>of", cssNames);
+    appendImmutableSet(ilb, "<String>", cssNames);
     ilb.appendLineEnd(",");
 
     // Plugin Instances
@@ -770,69 +768,6 @@ public final class GenerateParseInfoVisitor
     }
 
     return resultSb.toString();
-  }
-
-  /**
-   * Private helper to append an ImmutableList to the code.
-   *
-   * @param ilb The builder for the code.
-   * @param typeParamSnippet The type parameter for the ImmutableList.
-   * @param itemSnippets Code snippets for the items to put into the ImmutableList.
-   */
-  private static void appendImmutableList(
-      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
-    appendListOrSetHelper(ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
-  }
-
-  /**
-   * Private helper for appendImmutableList() and appendImmutableSortedSet().
-   *
-   * @param ilb The builder for the code.
-   * @param creationFunctionSnippet Code snippet for the qualified name of the list or set creation
-   *     function (without trailing parentheses).
-   * @param itemSnippets Code snippets for the items to put into the list or set.
-   */
-  private static void appendListOrSetHelper(
-      IndentedLinesBuilder ilb, String creationFunctionSnippet, Collection<String> itemSnippets) {
-    if (itemSnippets.isEmpty()) {
-      ilb.appendLineStart(creationFunctionSnippet, "()");
-
-    } else {
-      ilb.appendLine(creationFunctionSnippet, "(");
-      boolean isFirst = true;
-      for (String item : itemSnippets) {
-        if (isFirst) {
-          isFirst = false;
-        } else {
-          ilb.appendLineEnd(",");
-        }
-        ilb.appendLineStart("    ", item);
-      }
-      ilb.append(")");
-    }
-  }
-
-  /**
-   * Private helper to append an ImmutableMap to the code.
-   *
-   * @param ilb The builder for the code.
-   * @param typeParamSnippet The type parameter for the ImmutableMap.
-   * @param entrySnippetPairs Pairs of (key, value) code snippets for the entries to put into the
-   *     ImmutableMap.
-   */
-  private static void appendImmutableMap(
-      IndentedLinesBuilder ilb, String typeParamSnippet, Map<String, String> entrySnippetPairs) {
-    if (entrySnippetPairs.isEmpty()) {
-      ilb.appendLineStart("ImmutableMap.", typeParamSnippet, "of()");
-
-    } else {
-      ilb.appendLine("ImmutableMap.", typeParamSnippet, "builder()");
-      for (Map.Entry<String, String> entrySnippetPair : entrySnippetPairs.entrySet()) {
-        ilb.appendLine(
-            "    .put(", entrySnippetPair.getKey(), ", ", entrySnippetPair.getValue(), ")");
-      }
-      ilb.appendLineStart("    .build()");
-    }
   }
 
   private static SortedSet<String> collectCssNames(SoyNode node) {

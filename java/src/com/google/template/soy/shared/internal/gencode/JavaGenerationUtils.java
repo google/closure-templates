@@ -15,11 +15,15 @@
  */
 package com.google.template.soy.shared.internal.gencode;
 
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSetInline;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -130,5 +134,111 @@ public final class JavaGenerationUtils {
     wordMatcher.appendTail(sb);
 
     return sb.toString();
+  }
+
+  /**
+   * Private helper to append an ImmutableList to the code, on a new line.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableList.
+   * @param itemSnippets Code snippets for the items to put into the ImmutableList.
+   */
+  public static void appendImmutableList(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
+    ilb.appendLineStart("");
+    appendImmutableListInline(ilb, typeParamSnippet, itemSnippets);
+  }
+
+  /**
+   * Private helper to append an ImmutableList to the code, inline.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableList.
+   * @param itemSnippets Code snippets for the items to put into the ImmutableList.
+   */
+  public static void appendImmutableListInline(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
+    appendFunctionCallWithParamsOnNewLines(
+        ilb, "ImmutableList." + typeParamSnippet + "of", itemSnippets);
+  }
+
+  /**
+   * Private helper to append an ImmutableSet to the code, on a new line.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableList.
+   * @param itemSnippets Code snippets for the items to put into the ImmutableList.
+   */
+  public static void appendImmutableSet(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
+    ilb.appendLineStart("");
+    appendImmutableSetInline(ilb, typeParamSnippet, itemSnippets);
+  }
+
+  /**
+   * Private helper to append an ImmutableSet to the code, inline.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableList.
+   * @param itemSnippets Code snippets for the items to put into the ImmutableList.
+   */
+  public static void appendImmutableSetInline(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Collection<String> itemSnippets) {
+    appendFunctionCallWithParamsOnNewLines(
+        ilb, "ImmutableSet." + typeParamSnippet + "of", itemSnippets);
+  }
+
+  /**
+   * Private helper to append an ImmutableMap to the code.
+   *
+   * @param ilb The builder for the code.
+   * @param typeParamSnippet The type parameter for the ImmutableMap.
+   * @param entrySnippetPairs Pairs of (key, value) code snippets for the entries to put into the
+   *     ImmutableMap.
+   */
+  public static void appendImmutableMap(
+      IndentedLinesBuilder ilb, String typeParamSnippet, Map<String, String> entrySnippetPairs) {
+    if (entrySnippetPairs.isEmpty()) {
+      ilb.appendLineStart("ImmutableMap.", typeParamSnippet, "of()");
+
+    } else {
+      ilb.appendLine("ImmutableMap.", typeParamSnippet, "builder()");
+      ilb.increaseIndent(2);
+      for (Map.Entry<String, String> entrySnippetPair : entrySnippetPairs.entrySet()) {
+        ilb.appendLine(".put(", entrySnippetPair.getKey(), ", ", entrySnippetPair.getValue(), ")");
+      }
+      ilb.appendLineStart(".build()");
+      ilb.decreaseIndent(2);
+    }
+  }
+
+  /**
+   * Private helper for appendImmutableList() and appendImmutableSet().
+   *
+   * @param ilb The builder for the code.
+   * @param functionCallSnippet Code snippet for the function call (without parenthesis or params).
+   * @param params Params to put in parenthesis for the function call.
+   */
+  private static void appendFunctionCallWithParamsOnNewLines(
+      IndentedLinesBuilder ilb, String functionCallSnippet, Collection<String> params) {
+
+    if (params.isEmpty()) {
+      ilb.appendParts(functionCallSnippet, "()");
+      return;
+    }
+
+    ilb.appendLineEnd(functionCallSnippet, "(");
+    ilb.increaseIndent(2); // Double indent each param.
+    boolean isFirst = true;
+    for (String param : params) {
+      if (isFirst) {
+        isFirst = false;
+      } else {
+        ilb.appendLineEnd(",");
+      }
+      ilb.appendLineStart(param);
+    }
+    ilb.append(")");
+    ilb.decreaseIndent(2);
   }
 }

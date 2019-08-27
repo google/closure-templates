@@ -16,19 +16,23 @@
 package com.google.template.soy.invocationbuilders.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSetInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.data.BaseParamsImpl;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
-import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SoyType;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -36,10 +40,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Visitor for generating Java template parameter builders (see {@link
- * com.google.template.soy.data.BaseParamsImpl}) that can be used for invoking Soy templates from
- * Java. One java file will be generated for each soy file, containing template param builders for
- * each template in the soy file.
+ * Visitor for generating Java template parameter builders (see {@link BaseParamsImpl}) that can be
+ * used for invoking Soy templates from Java. One java file will be generated for each soy file,
+ * containing template param builders for each template in the soy file.
  *
  * <p>For example, "foo.soy" containing templates "bar" and "baz" would result in FooTemplates.java,
  * with inner classes BarParams and BazParams.
@@ -131,9 +134,8 @@ public final class GenInvocationBuildersVisitor
   }
 
   /**
-   * Writes a FooParams subclass for the given template. The class extends {@link
-   * com.google.template.soy.data.BaseParamsImpl}, which implements {@link
-   * com.google.template.soy.data.TemplateParameters}.
+   * Writes a FooParams subclass for the given template. The class extends {@link BaseParamsImpl},
+   * which implements {@link com.google.template.soy.data.TemplateParameters}.
    */
   @Override
   protected void visitTemplateNode(TemplateNode template) {
@@ -147,6 +149,7 @@ public final class GenInvocationBuildersVisitor
 
     // Start of FooParams class.
     String templateDescription = template.getSoyDocDesc();
+    ilb.appendLine();
     appendJavadoc(
         ilb,
         "Template params for "
@@ -154,19 +157,25 @@ public final class GenInvocationBuildersVisitor
             + (templateDescription != null ? ": " + templateDescription : "."),
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
-    ilb.appendLine("public static final class " + paramsClass + " extends BaseParamsImpl {");
+    ilb.appendLine(
+        "public static final class " + templateParamsClassname.get() + " extends BaseParamsImpl {");
     ilb.increaseIndent();
     ilb.appendLine();
+    ilb.appendLine(
+        "public static final String TEMPLATE_NAME = \"" + template.getTemplateName() + "\";");
+    ilb.appendLine();
 
-    appendFutureWrapperMethod(template, paramsClass);
+    appendFutureWrapperMethod(paramsClass);
 
     // Constructor for FooParams.
-    ilb.appendLine(
-        "public " + paramsClass + "(String templateName, Map<String, SoyValueProvider> data) {");
+    ilb.appendLine("private " + paramsClass + "(Map<String, SoyValueProvider> data) {");
     ilb.increaseIndent();
-    ilb.appendLine("super(templateName, data);");
+    ilb.appendLine("super(TEMPLATE_NAME, data);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
+
+    ilb.appendLine();
+    appendParamsBuilderClass(template, templateParamsClassname.get());
 
     // End of FooParams class.
     ilb.decreaseIndent();
@@ -181,7 +190,7 @@ public final class GenInvocationBuildersVisitor
    *
    * @see com.google.apps.framework.template.StructuredPageResponse
    */
-  private void appendFutureWrapperMethod(TemplateNode template, String paramsClass) {
+  private void appendFutureWrapperMethod(String paramsClass) {
     appendJavadoc(
         ilb,
         "Wraps a ListenableFuture<"
@@ -198,13 +207,67 @@ public final class GenInvocationBuildersVisitor
             + paramsClass
             + "> paramsFuture) {");
     ilb.increaseIndent();
-    ilb.appendLine(
-        "return new TemplateParameters.AsyncWrapper<>(\""
-            + template.getTemplateName()
-            + "\", paramsFuture);");
+    ilb.appendLine("return new TemplateParameters.AsyncWrapper<>(TEMPLATE_NAME, paramsFuture);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
+  }
+
+  /**
+   * Appends a builder class for template "foo" with parameter setting methods. This class extends
+   * the {@link BaseParamsImpl.AbstractBuilder} class.
+   */
+  private void appendParamsBuilderClass(TemplateNode template, String templateParamsClassname) {
+    // Start of FooParams.Builder class.
+    ilb.appendLine(
+        "public static class Builder extends AbstractBuilder<Builder, "
+            + templateParamsClassname
+            + "> {");
+    ilb.appendLine();
+    ilb.increaseIndent();
+
+    // Add a constant ImmutableSet of type {@link BaseParamsImpl.Param} containing metadata about
+    // the template's params.
+    String paramsSetConstantName = "PARAMS";
+    appendParamsImmutableSetConstant(paramsSetConstantName, template.getParams());
+
+    // Constructor for FooParams.Builder.
+    ilb.appendLine("public Builder() {");
+    ilb.increaseIndent();
+    ilb.appendLine("super(TEMPLATE_NAME, " + paramsSetConstantName + ");");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+    ilb.appendLine();
+
+    // #buildInternal() for FooTemplateParams.Builder.
+    ilb.appendLine("@Override");
+    ilb.appendLine(
+        "protected "
+            + templateParamsClassname
+            + " buildInternal(String name, ImmutableMap<String, SoyValueProvider> data) {");
+    ilb.increaseIndent();
+    ilb.appendLine("return new " + templateParamsClassname + "(data);");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+
+    // Add setters for each direct template param.
+    Set<String> paramUpperCamelCaseNamesUsed = new HashSet<>(); // To prevent collisions.
+    template
+        .getParams()
+        .forEach(
+            param ->
+                writeSettersForParam(
+                    param.name(),
+                    param.type(),
+                    Optional.ofNullable(param.desc()),
+                    paramUpperCamelCaseNamesUsed,
+                    template.getTemplateName()));
+
+    ilb.appendLine();
+
+    // End of FooTemplateInvocation.Builder class.
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
   }
 
   /** Appends the file header and imports for the generated *FooTemplates.java */
@@ -219,13 +282,104 @@ public final class GenInvocationBuildersVisitor
 
     // Imports.
     ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
-    ilb.appendLine("import com.google.template.soy.data.BaseParamsImpl;");
+    ilb.appendLine("import com.google.common.collect.ImmutableMap;");
+    ilb.appendLine("import com.google.common.collect.ImmutableSet;");
+    ilb.appendLine("import com.google.common.html.types.SafeHtml;");
+    ilb.appendLine("import com.google.common.html.types.SafeScript;");
+    ilb.appendLine("import com.google.common.html.types.SafeStyle;");
+    ilb.appendLine("import com.google.common.html.types.SafeStyleSheet;");
+    ilb.appendLine("import com.google.common.html.types.SafeUrl;");
+    ilb.appendLine("import com.google.common.html.types.TrustedResourceUrl;");
+    ilb.appendLine("import com.google.template.soy.data.SanitizedContent;");
     ilb.appendLine("import com.google.template.soy.data.SoyValueProvider;");
+    ilb.appendLine("import com.google.template.soy.data.SoyValueConverter;");
     ilb.appendLine("import com.google.template.soy.data.TemplateParameters;");
-    ilb.appendLine("import javax.annotation.Generated;");
+    ilb.appendLine("import com.google.template.soy.data.BaseParamsImpl;");
     ilb.appendLine("import java.util.Map;");
+    ilb.appendLine("import java.util.Objects;");
+    ilb.appendLine("import java.util.concurrent.Future;");
+    ilb.appendLine("import javax.annotation.Generated;");
     ilb.appendLine();
     ilb.appendLine();
+  }
+
+  /**
+   * Appends a constant ImmutableSet of type {@link BaseParamsImpl.Param} containing metadata about
+   * the template's params.
+   */
+  private void appendParamsImmutableSetConstant(
+      String constantName, ImmutableList<TemplateParam> params) {
+    ImmutableList<String> genCodeForCreatingParams =
+        params.stream()
+            .map(
+                p ->
+                    p.isRequired()
+                        ? "BaseParamsImpl.Param.required(\"" + p.name() + "\")"
+                        : "BaseParamsImpl.Param.optional(\"" + p.name() + "\")")
+            .collect(toImmutableList());
+
+    ilb.appendLineStart("private static final ImmutableSet<Param> " + constantName + " = ");
+    appendImmutableSetInline(ilb, "<BaseParamsImpl.Param>", genCodeForCreatingParams);
+    ilb.appendLineEnd(";");
+    ilb.appendLine();
+  }
+
+  /**
+   * Writes setter methods each of the java types that this param can be (e.g union int | string
+   * would generate setFoo(int) and setFoo(string)).
+   *
+   * <p>TODO(b/77550695): Update docs for how we handle futures.
+   */
+  private void writeSettersForParam(
+      String templateParamName,
+      SoyType soyType,
+      Optional<String> paramDescription,
+      Set<String> paramUpperCamelCaseNamesUsed,
+      String templateName) {
+
+    // Convert the param name to upper camel case. If this generates the same name as another param,
+    // log a warning and skip over this param.
+    String upperCamelCaseName = makeUpperCamelCase(templateParamName);
+    if (!paramUpperCamelCaseNamesUsed.add(upperCamelCaseName)) {
+      logDuplicateParamNameWarning(templateParamName, upperCamelCaseName, templateName);
+      return;
+    }
+
+    // Add setters for this param.
+    InvocationBuilderTypeUtils.getJavaTypes(soyType)
+        .forEach(
+            (javaType) ->
+                writeSetter(
+                    ilb, templateParamName, upperCamelCaseName, paramDescription, javaType));
+    // TODO(b/77550695): Add future setter once we add supertype impl.
+  }
+
+  /** Writes a setter method for the given param and java type. */
+  private static void writeSetter(
+      IndentedLinesBuilder ilb,
+      String originalParamName,
+      String paramNameInUpperCamelCase,
+      Optional<String> paramDescription,
+      String javaType) {
+    ilb.appendLine();
+    appendJavadoc(
+        ilb,
+        "Sets "
+            + originalParamName
+            + (paramDescription.isPresent() ? ": " + paramDescription : "."),
+        /* forceMultiline= */ false,
+        /* wrapAt100Chars= */ true);
+    ilb.appendLine(
+        ("public Builder set" + paramNameInUpperCamelCase) + ("(" + javaType + " value) {"));
+    ilb.increaseIndent();
+
+    boolean isPrimitiveType = Character.isLowerCase(javaType.charAt(0));
+    if (!isPrimitiveType) {
+      ilb.appendLine("Objects.requireNonNull(value);");
+    }
+    ilb.appendLine("return setParam(\"" + originalParamName + "\", value);");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
   }
 
   /** Converts a soy file name to its corresponding *Templates java classname. */
@@ -239,7 +393,7 @@ public final class GenInvocationBuildersVisitor
     if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
       fileName = fileName.substring(0, fileName.length() - 4);
     }
-    return JavaGenerationUtils.makeUpperCamelCase(fileName) + "Templates";
+    return makeUpperCamelCase(fileName) + "Templates";
   }
 
   /**
@@ -255,7 +409,7 @@ public final class GenInvocationBuildersVisitor
 
     // Convert the template name to upper camel case (stripping non-alphanumeric characters), and
     // append "Params" (e.g. template "foo" -> "FooParams").
-    String className = JavaGenerationUtils.makeUpperCamelCase(templateName) + "Params";
+    String className = makeUpperCamelCase(templateName) + "Params";
 
     // If this class name has already been used, log a warning and return an empty optional (we will
     // skip over this template).
@@ -284,6 +438,25 @@ public final class GenInvocationBuildersVisitor
             + "The generated Java class name was: "
             + generatedClassName
             + ".");
+  }
+
+  /**
+   * Logs a warning if two params generate the same upper camel case name (which means we need to
+   * skip over the param and not generate setters for it.
+   */
+  private static void logDuplicateParamNameWarning(
+      String templateParamName, String nameAsUpperCamelCase, String templateName) {
+    logger.warning(
+        "When generating soy java invocation builders, soy template: "
+            + templateName
+            + " had multiple parameters that converted to the same upper camel case name: "
+            + nameAsUpperCamelCase
+            + ".\nParam: "
+            + templateParamName
+            + " is being skipped (no setters will be generated for this param).\n"
+            + " To use this api, all parameter names for a given template should be"
+            + " unique when converted to UpperCamelCase (with non-alphanumeric characters"
+            + " stripped).\n");
   }
 
   /** Logs a warning if two soy files mapped to the same generated java file name. */
