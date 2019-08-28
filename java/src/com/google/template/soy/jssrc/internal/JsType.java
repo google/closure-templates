@@ -532,10 +532,9 @@ public final class JsType {
     }
     Expression coercion =
         value.castAs("?").dotAccess("$jspbMessageInstance").or(value, codeGenerator);
-    // if there is a matching default expression treat the parameter as though it was nullable.
-    return (coercionStrategies.contains(ValueCoercionStrategy.NULL) || hasDefault)
-        ? value.and(coercion, codeGenerator)
-        : coercion;
+    // If the value is null, return null instead of throwing. The assertion will catch the null with
+    // a readable error message.
+    return value.and(coercion, codeGenerator);
   }
 
   private static JsType createSanitized(final SanitizedContentKind kind, boolean isStrict) {
