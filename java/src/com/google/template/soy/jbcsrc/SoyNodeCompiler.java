@@ -895,6 +895,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           // veData: SoyVisualElementData
           // LS: LogStatement
           // A: appendable
+          // RC: RenderContext
           //
           // Each en end of line comments represents the state of the stack  _after_ the instruction
           // is executed, the top of the stack is on the left.
@@ -909,6 +910,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           veData.gen(cb); // veData, LO
           cb.swap(); // LO, veData
           MethodRef.CREATE_LOG_STATEMENT.invokeUnchecked(cb); // LS
+          parameterLookup.getRenderContext().gen(cb); // RC, LS
+          cb.swap(); // LS, RC
+          RenderContextExpression.ENTER_LOGONLY.invokeUnchecked(cb); // LS
           appendableExpression.gen(cb); // A, LS
           cb.swap(); // LS, A
           AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // A
@@ -923,6 +927,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           cb.mark(bodyLabel);
 
           body.gen(cb);
+          parameterLookup.getRenderContext().gen(cb); // RC
+          RenderContextExpression.EXIT_LOGONLY.invokeUnchecked(cb); // LS
           exitStatement.gen(cb);
         }
       };

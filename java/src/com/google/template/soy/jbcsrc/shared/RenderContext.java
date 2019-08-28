@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
@@ -36,6 +37,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +81,17 @@ public final class RenderContext {
   private final boolean debugSoyTemplateInfo;
   private final boolean hasLogger;
   private final List<String> renderedCssNamespaces = new ArrayList<>();
+  /**
+   * Whenever we visit a template call, we know that it will be rendered. The main exception is in
+   * the case of logOnly. Whenever logOnly is true, we do execute the templates with the knowledge
+   * that it *won't* be rendered. To emulate that, we keep a stack of shouldRender booleans (the
+   * opposite of logOnly). It starts off at [true] and if we encounter a logOnly, it changes to
+   * [true, false]. Subsequent evaluations may make it [true, false, true]. In order to decide if a
+   * template should collect CSS, we take the union of the stack, so [true, false, true] would
+   * evaluate to true & false & true, which is false. When we exit a log statement, we pop off the
+   * top and eventually we will end up back at [true].
+   */
+  private final ArrayDeque<Boolean> renderCounter = new ArrayDeque<>();
 
   private RenderContext(Builder builder) {
     this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
@@ -115,7 +128,19 @@ public final class RenderContext {
     return string == null ? id + "_" : string;
   }
 
+  public LogStatement enterLogOnly(LogStatement logStatement) {
+    renderCounter.push(!logStatement.logOnly());
+    return logStatement;
+  }
+
+  public void exitLogOnly() {
+    renderCounter.pop();
+  }
+
   public void addRenderedTemplate(String template) {
+    if (!shouldRender()) {
+      return;
+    }
     try {
       this.renderedCssNamespaces.addAll(templates.getRequiredCssNamespaces(template));
     } catch (Exception e) {
@@ -200,6 +225,16 @@ public final class RenderContext {
     // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
     return !msgBundle.getMsgParts(msgId).isEmpty() || msgBundle.getMsgParts(fallbackId).isEmpty();
+  }
+
+  private boolean shouldRender() {
+    if (renderCounter.isEmpty()) {
+      return true;
+    }
+    if (renderCounter.size() == 1) {
+      return renderCounter.peek();
+    }
+    return renderCounter.stream().reduce((a, b) -> a && b).orElse(true);
   }
 
   /**
