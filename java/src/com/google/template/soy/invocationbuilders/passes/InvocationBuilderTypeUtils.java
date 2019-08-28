@@ -20,6 +20,7 @@ import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import java.util.List;
 
 /** Utils for handling types used in Soy Java invocation builders. */
 final class InvocationBuilderTypeUtils {
@@ -31,7 +32,7 @@ final class InvocationBuilderTypeUtils {
    *
    * <p>NOTE: TODO(b/140064271): Add handling for composite types + tests for this file.
    */
-  static final ImmutableList<String> getJavaTypes(SoyType soyType) {
+  static List<String> getJavaTypes(SoyType soyType) {
     switch (soyType.getKind()) {
       case BOOL:
         return ImmutableList.of("Boolean");
@@ -55,6 +56,8 @@ final class InvocationBuilderTypeUtils {
       case PROTO_ENUM:
         SoyProtoEnumType asProtoEnum = (SoyProtoEnumType) soyType;
         return ImmutableList.of(JavaQualifiedNames.getQualifiedName(asProtoEnum.getDescriptor()));
+      case UNKNOWN:
+        return ImmutableList.of("Object");
       case ATTRIBUTES:
       case CSS:
       case LIST:
@@ -63,7 +66,6 @@ final class InvocationBuilderTypeUtils {
       case MAP:
       case UNION:
       case ANY:
-      case UNKNOWN:
       case ERROR:
       case NULL:
       case VE:
