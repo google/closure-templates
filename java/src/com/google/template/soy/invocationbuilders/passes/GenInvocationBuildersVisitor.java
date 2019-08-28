@@ -218,6 +218,31 @@ public final class GenInvocationBuildersVisitor
    * the {@link BaseParamsImpl.AbstractBuilder} class.
    */
   private void appendParamsBuilderClass(TemplateNode template, String templateParamsClassname) {
+    appendJavadoc(ilb, "Creates a new Builder instance.", false, true);
+    ilb.appendLine("public static Builder builder() {");
+    ilb.increaseIndent();
+    ilb.appendLine("return new Builder();");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+    ilb.appendLine();
+
+    if (template.getParams().stream().noneMatch(TemplateParam::isRequired)) {
+      appendJavadoc(
+          ilb,
+          "Creates a new instance of "
+              + templateParamsClassname
+              + " with no parameters set. This method was generated because all template"
+              + " parameters are optional.",
+          false,
+          true);
+      ilb.appendLine("public static " + templateParamsClassname + " getDefaultInstance() {");
+      ilb.increaseIndent();
+      ilb.appendLine("return builder().build();");
+      ilb.decreaseIndent();
+      ilb.appendLine("}");
+      ilb.appendLine();
+    }
+
     // Start of FooParams.Builder class.
     ilb.appendLine(
         "public static class Builder extends AbstractBuilder<Builder, "
@@ -232,7 +257,7 @@ public final class GenInvocationBuildersVisitor
     appendParamsImmutableSetConstant(paramsSetConstantName, template.getParams());
 
     // Constructor for FooParams.Builder.
-    ilb.appendLine("public Builder() {");
+    ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
     ilb.appendLine("super(TEMPLATE_NAME, " + paramsSetConstantName + ");");
     ilb.decreaseIndent();
