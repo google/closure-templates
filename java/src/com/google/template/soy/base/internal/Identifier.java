@@ -27,9 +27,14 @@ import com.google.template.soy.base.SourceLocation;
  * A simple tuple of an identifier and a source location.
  *
  * <p>This is either a full dotted identifier or a partial identifier.
+ *
+ * <p>Errorprone can't handle that type() is memorized. See
+ * https://github.com/google/closure-templates/issues/183
  */
+@AutoValue.CopyAnnotations
 @AutoValue
 @Immutable
+@SuppressWarnings("Immutable")
 public abstract class Identifier {
 
   /** What flavor of identifier this is. */
@@ -61,7 +66,7 @@ public abstract class Identifier {
   public abstract SourceLocation location();
 
   @Override
-  public String toString() {
+  public final String toString() {
     return identifier();
   }
 
