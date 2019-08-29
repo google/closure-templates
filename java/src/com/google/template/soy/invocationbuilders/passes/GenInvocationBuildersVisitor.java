@@ -23,7 +23,6 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.data.BaseParamsImpl;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -40,9 +39,10 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Visitor for generating Java template parameter builders (see {@link BaseParamsImpl}) that can be
- * used for invoking Soy templates from Java. One java file will be generated for each soy file,
- * containing template param builders for each template in the soy file.
+ * Visitor for generating Java template parameter builders (see {@link
+ * com.google.template.soy.data.BaseParamsImpl}) that can be used for invoking Soy templates from
+ * Java. One java file will be generated for each soy file, containing template param builders for
+ * each template in the soy file.
  *
  * <p>For example, "foo.soy" containing templates "bar" and "baz" would result in FooTemplates.java,
  * with inner classes BarParams and BazParams.
@@ -134,8 +134,9 @@ public final class GenInvocationBuildersVisitor
   }
 
   /**
-   * Writes a FooParams subclass for the given template. The class extends {@link BaseParamsImpl},
-   * which implements {@link com.google.template.soy.data.TemplateParameters}.
+   * Writes a FooParams subclass for the given template. The class extends {@link
+   * com.google.template.soy.data.BaseParamsImpl}, which implements {@link
+   * com.google.template.soy.data.TemplateParameters}.
    */
   @Override
   protected void visitTemplateNode(TemplateNode template) {
@@ -215,7 +216,7 @@ public final class GenInvocationBuildersVisitor
 
   /**
    * Appends a builder class for template "foo" with parameter setting methods. This class extends
-   * the {@link BaseParamsImpl.AbstractBuilder} class.
+   * the {@link com.google.template.soy.data.BaseParamsImpl.AbstractBuilder} class.
    */
   private void appendParamsBuilderClass(TemplateNode template, String templateParamsClassname) {
     appendJavadoc(ilb, "Creates a new Builder instance.", false, true);
@@ -251,8 +252,8 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
     ilb.increaseIndent();
 
-    // Add a constant ImmutableSet of type {@link BaseParamsImpl.Param} containing metadata about
-    // the template's params.
+    // Add a constant ImmutableSet of type {@link com.google.template.soy.data.BaseParamsImpl.Param}
+    // containing metadata about the template's params.
     String paramsSetConstantName = "PARAMS";
     appendParamsImmutableSetConstant(paramsSetConstantName, template.getParams());
 
@@ -329,8 +330,9 @@ public final class GenInvocationBuildersVisitor
   }
 
   /**
-   * Appends a constant ImmutableSet of type {@link BaseParamsImpl.Param} containing metadata about
-   * the template's params.
+   * Appends a constant ImmutableSet of type {@link
+   * com.google.template.soy.data.BaseParamsImpl.Param} containing metadata about the template's
+   * params.
    */
   private void appendParamsImmutableSetConstant(
       String constantName, ImmutableList<TemplateParam> params) {
