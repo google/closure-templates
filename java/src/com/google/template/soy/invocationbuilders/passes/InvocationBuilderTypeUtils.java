@@ -35,9 +35,9 @@ final class InvocationBuilderTypeUtils {
   static List<String> getJavaTypes(SoyType soyType) {
     switch (soyType.getKind()) {
       case BOOL:
-        return ImmutableList.of("Boolean");
+        return ImmutableList.of("boolean");
       case INT:
-        return ImmutableList.of("long"); // Use primitive type because int doesn't autobox to Long.
+        return ImmutableList.of("long");
       case FLOAT:
         return ImmutableList.of("double");
       case STRING:
