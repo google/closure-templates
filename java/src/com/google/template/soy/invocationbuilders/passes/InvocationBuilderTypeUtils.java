@@ -15,12 +15,16 @@
  */
 package com.google.template.soy.invocationbuilders.passes;
 
-import com.google.common.collect.ImmutableList;
-import com.google.template.soy.internal.proto.JavaQualifiedNames;
+import com.google.template.soy.invocationbuilders.javatypes.JavaType;
+import com.google.template.soy.invocationbuilders.javatypes.ListJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.SimpleJavaType;
+import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import java.util.List;
+import java.util.Optional;
 
 /** Utils for handling types used in Soy Java invocation builders. */
 final class InvocationBuilderTypeUtils {
@@ -28,49 +32,52 @@ final class InvocationBuilderTypeUtils {
   private InvocationBuilderTypeUtils() {}
 
   /**
-   * Gets Java types from Soy type.
+   * Gets Java type from Soy type.
    *
-   * <p>NOTE: TODO(b/140064271): Add handling for composite types + tests for this file.
+   * <p>NOTE: TODO(b/140064271): Add handling for composite types. Update this method's javadoc when
+   * this returns a list of java types (for handling unions).
    */
-  static List<String> getJavaTypes(SoyType soyType) {
+  static final Optional<JavaType> getJavaType(SoyType soyType) {
     switch (soyType.getKind()) {
       case BOOL:
-        return ImmutableList.of("boolean");
+        return Optional.of(SimpleJavaType.BOOLEAN);
       case INT:
-        return ImmutableList.of("long");
+        return Optional.of(SimpleJavaType.LONG);
       case FLOAT:
-        return ImmutableList.of("double");
+        return Optional.of(SimpleJavaType.DOUBLE);
       case STRING:
-        return ImmutableList.of("String");
+        return Optional.of(SimpleJavaType.STRING);
       case HTML:
-        return ImmutableList.of("SafeHtml");
+        return Optional.of(SimpleJavaType.HTML);
       case JS:
-        return ImmutableList.of("SafeScript");
+        return Optional.of(SimpleJavaType.JS);
       case URI:
-        return ImmutableList.of("SafeUrl");
+        return Optional.of(SimpleJavaType.URL);
       case TRUSTED_RESOURCE_URI:
-        return ImmutableList.of("TrustedResourceUrl");
+        return Optional.of(SimpleJavaType.TRUSTED_RESOURCE_URL);
       case PROTO:
         SoyProtoType asProto = (SoyProtoType) soyType;
-        return ImmutableList.of(JavaQualifiedNames.getQualifiedName(asProto.getDescriptor()));
+        return Optional.of(new ProtoJavaType(asProto.getDescriptor()));
       case PROTO_ENUM:
         SoyProtoEnumType asProtoEnum = (SoyProtoEnumType) soyType;
-        return ImmutableList.of(JavaQualifiedNames.getQualifiedName(asProtoEnum.getDescriptor()));
+        return Optional.of(new ProtoEnumJavaType(asProtoEnum.getDescriptor()));
+      case LIST:
+        Optional<JavaType> listElementType = getJavaType(((ListType) soyType).getElementType());
+        return listElementType.map(elementType -> new ListJavaType(elementType));
+      case ANY:
       case UNKNOWN:
-        return ImmutableList.of("Object");
+        return Optional.of(SimpleJavaType.OBJECT);
       case ATTRIBUTES:
       case CSS:
-      case LIST:
       case RECORD:
       case LEGACY_OBJECT_MAP:
       case MAP:
       case UNION:
-      case ANY:
       case ERROR:
       case NULL:
       case VE:
       case VE_DATA:
-        return ImmutableList.of();
+        return Optional.empty();
     }
     throw new AssertionError("impossible");
   }

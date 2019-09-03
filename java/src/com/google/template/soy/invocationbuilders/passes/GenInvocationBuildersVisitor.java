@@ -23,6 +23,7 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -307,9 +308,12 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
 
     // Imports.
+    ilb.appendLine("import static com.google.common.collect.ImmutableList.toImmutableList;");
     ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
+    ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
     ilb.appendLine("import com.google.common.collect.ImmutableSet;");
+    ilb.appendLine("import com.google.common.collect.Streams;");
     ilb.appendLine("import com.google.common.html.types.SafeHtml;");
     ilb.appendLine("import com.google.common.html.types.SafeScript;");
     ilb.appendLine("import com.google.common.html.types.SafeStyle;");
@@ -373,8 +377,8 @@ public final class GenInvocationBuildersVisitor
     }
 
     // Add setters for this param.
-    InvocationBuilderTypeUtils.getJavaTypes(soyType)
-        .forEach(
+    InvocationBuilderTypeUtils.getJavaType(soyType)
+        .ifPresent(
             (javaType) ->
                 writeSetter(
                     ilb, templateParamName, upperCamelCaseName, paramDescription, javaType));
@@ -387,7 +391,9 @@ public final class GenInvocationBuildersVisitor
       String originalParamName,
       String paramNameInUpperCamelCase,
       Optional<String> paramDescription,
-      String javaType) {
+      JavaType javaType) {
+
+    String javaTypeString = javaType.toJavaTypeString();
     ilb.appendLine();
     appendJavadoc(
         ilb,
@@ -397,14 +403,11 @@ public final class GenInvocationBuildersVisitor
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
     ilb.appendLine(
-        ("public Builder set" + paramNameInUpperCamelCase) + ("(" + javaType + " value) {"));
+        ("public Builder set" + paramNameInUpperCamelCase) + ("(" + javaTypeString + " value) {"));
     ilb.increaseIndent();
 
-    boolean isPrimitiveType = Character.isLowerCase(javaType.charAt(0));
-    if (!isPrimitiveType) {
-      ilb.appendLine("Objects.requireNonNull(value);");
-    }
-    ilb.appendLine("return setParam(\"" + originalParamName + "\", value);");
+    String newVariableName = javaType.appendRunTimeOperations(ilb, "value");
+    ilb.appendLine("return setParam(\"" + originalParamName + "\", " + newVariableName + ");");
     ilb.decreaseIndent();
     ilb.appendLine("}");
   }
