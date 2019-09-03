@@ -15,8 +15,6 @@
  */
 package com.google.template.soy.shared.internal.gencode;
 
-import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSetInline;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;

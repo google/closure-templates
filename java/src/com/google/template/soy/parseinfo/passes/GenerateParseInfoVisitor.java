@@ -27,6 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
+import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -49,6 +50,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVisitor;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
@@ -173,6 +175,8 @@ public final class GenerateParseInfoVisitor
   /** Builder for the generated code. */
   private IndentedLinesBuilder ilb;
 
+  private GenInvocationBuildersVisitor.Report builderReport;
+
   /**
    * @param javaPackage The Java package for the generated classes.
    * @param javaClassNameSource Source of the generated class names. Must be one of "filename",
@@ -250,6 +254,7 @@ public final class GenerateParseInfoVisitor
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
     String javaClassName = soyFileToJavaClassNameMap.get(node);
+    builderReport = new GenInvocationBuildersVisitor(javaPackage).getReport(node);
 
     // Collect the following:
     // + all the public basic/element templates (non-private, non-delegate) in a map from the
@@ -367,8 +372,16 @@ public final class GenerateParseInfoVisitor
     // ------ Class start. ------
     ilb.appendLine();
     ilb.appendLine();
-    appendJavadoc(ilb, "Soy parse info for " + node.getFileName() + ".", true, false);
+    appendJavadoc(
+        ilb,
+        deprecatedJavaDoc(
+            "Soy parse" + " info" + " for " + node.getFileName() + ".",
+            builderReport.complete(),
+            builderReport.className()),
+        true,
+        false);
 
+    deprecatedAnnotation(ilb, builderReport.complete());
     ilb.appendLine("@Generated(\"com.google.template.soy.SoyParseInfoGenerator\")");
     ilb.appendLine("public final class ", javaClassName, " extends SoyFileInfo {");
     ilb.increaseIndent();
@@ -399,6 +412,7 @@ public final class GenerateParseInfoVisitor
     // ------ Template names. ------
     ilb.appendLine();
     ilb.appendLine();
+    deprecatedAnnotation(ilb, builderReport.complete());
     ilb.appendLine("public static final class TemplateName {");
     ilb.increaseIndent();
     ilb.appendLine("private TemplateName() {}");
@@ -428,6 +442,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("/**");
     ilb.appendLine(" * Param names from all templates in this Soy file.");
     ilb.appendLine(" */");
+    deprecatedAnnotation(ilb, builderReport.complete());
     ilb.appendLine("public static final class Param {");
     ilb.increaseIndent();
     ilb.appendLine("private Param() {}");
@@ -549,10 +564,20 @@ public final class GenerateParseInfoVisitor
         CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, upperUnderscoreName)
             + "SoyTemplateInfo";
 
+    boolean isDeprecated = builderReport.isTemplateComplete(node);
+
     // ------ *SoyTemplateInfo class start. ------
     ilb.appendLine();
     ilb.appendLine();
-    appendJavadoc(ilb, Optional.ofNullable(node.getSoyDocDesc()).orElse(""), true, false);
+    appendJavadoc(
+        ilb,
+        deprecatedJavaDoc(
+            Optional.ofNullable(node.getSoyDocDesc()).orElse(""),
+            isDeprecated,
+            builderReport.getClassName(node)),
+        true,
+        false);
+    deprecatedAnnotation(ilb, isDeprecated);
     ilb.appendLine(
         "public static final class ", templateInfoClassName, " extends SoyTemplateInfo {");
     ilb.increaseIndent();
@@ -672,10 +697,25 @@ public final class GenerateParseInfoVisitor
     // ------ Static field with instance of *SoyTemplateInfo class. ------
     ilb.appendLine();
     ilb.appendLine("/** Same as ", templateInfoClassName, ".getInstance(). */");
+    deprecatedAnnotation(ilb, isDeprecated);
     ilb.appendLine("public static final ", templateInfoClassName, " ", upperUnderscoreName, " =");
     ilb.increaseIndent(2);
     ilb.appendLine(templateInfoClassName, ".getInstance();");
     ilb.decreaseIndent(2);
+  }
+
+  private static void deprecatedAnnotation(IndentedLinesBuilder ilb, boolean deprecated) {
+    if (deprecated) {
+      ilb.appendLine("@Deprecated");
+    }
+  }
+
+  private static String deprecatedJavaDoc(String content, boolean deprecated, String useInstead) {
+    if (deprecated && !Strings.isNullOrEmpty(useInstead)) {
+      String dep = "@deprecated Use {@link " + useInstead + "} instead.";
+      return content.isEmpty() ? dep : content + "\n\n" + dep;
+    }
+    return content;
   }
 
   /**
@@ -719,7 +759,6 @@ public final class GenerateParseInfoVisitor
   private Iterator<? extends SoyType> typeIterator(SoyType root) {
     return SoyTypes.getTypeTraverser(root, typeRegistry);
   }
-
 
   // -----------------------------------------------------------------------------------------------
   // General helpers.

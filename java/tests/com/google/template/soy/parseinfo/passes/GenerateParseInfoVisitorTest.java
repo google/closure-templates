@@ -166,6 +166,32 @@ public final class GenerateParseInfoVisitorTest {
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
   }
 
+  @Test
+  public void testDeprecated() {
+    String parseInfoContent =
+        createParseInfo(ImmutableList.of(), "{@param simple: string}", "{$simple}");
+
+    assertThat(parseInfoContent).contains("@Deprecated");
+    assertThat(parseInfoContent)
+        .contains("@deprecated Use {@link com.google.gpivtest.NoPathTemplates} instead.");
+    assertThat(parseInfoContent)
+        .contains(
+            "@deprecated Use {@link com.google.gpivtest.NoPathTemplates.BrittleTestTemplateParams}"
+                + " instead.");
+  }
+
+  @Test
+  public void testNotDeprecated() {
+    // Will need to update this test as params builders support more types in
+    // InvocationBuilderTypeUtils.
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<soy.test.Foo>}", "{$ve}");
+
+    assertThat(parseInfoContent).doesNotContain("@Deprecated");
+    assertThat(parseInfoContent).doesNotContain("@deprecated");
+  }
+
   private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
     return new SoyFileNode(
         0,

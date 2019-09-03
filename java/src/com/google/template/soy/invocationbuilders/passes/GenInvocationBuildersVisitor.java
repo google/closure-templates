@@ -20,8 +20,11 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
@@ -33,7 +36,9 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -108,7 +113,7 @@ public final class GenInvocationBuildersVisitor
     ilb.increaseIndent();
 
     // Add FooParams subclasses for the templates in this file.
-    generateFooParamsClassesForEachTemplate(soyFile);
+    generateParamsClassesForEachTemplate(soyFile);
 
     // End of *FooTemplates class.
     ilb.decreaseIndent();
@@ -124,7 +129,7 @@ public final class GenInvocationBuildersVisitor
    * For each public, non-delegate template in the given soy file, generates a FooParams inner
    * class.
    */
-  private void generateFooParamsClassesForEachTemplate(SoyFileNode soyFile) {
+  private void generateParamsClassesForEachTemplate(SoyFileNode soyFile) {
     paramsClassNamesUsed = new HashSet<>();
     for (TemplateNode template : soyFile.getChildren()) {
       if (template.getVisibility() == Visibility.PUBLIC
@@ -134,6 +139,73 @@ public final class GenInvocationBuildersVisitor
     }
   }
 
+  /** A report encapsulating how a template file is handled by this class. */
+  @AutoValue
+  public abstract static class Report {
+    protected abstract ImmutableMap<TemplateNode, Boolean> completePerTemplate();
+
+    /** Returns whether all templates in the file are fully handled. */
+    public abstract boolean complete();
+
+    protected abstract ImmutableMap<TemplateNode, String> classNamePerTemplate();
+
+    /**
+     * Returns the name of the outer class created to hold the TemplateParameters implementations.
+     */
+    public abstract String className();
+
+    public boolean isTemplateComplete(TemplateNode node) {
+      return Boolean.TRUE.equals(completePerTemplate().get(node));
+    }
+
+    public String getClassName(TemplateNode value) {
+      return classNamePerTemplate().get(value);
+    }
+  }
+
+  public Report getReport(SoyFileNode soyFile) {
+    boolean allComplete = true;
+    String baseClassName = javaPackage + "." + convertSoyFileNameToJavaClassName(soyFile);
+    Map<TemplateNode, Boolean> templateComplete = new HashMap<>();
+    Map<TemplateNode, String> classNames = new HashMap<>();
+    Set<String> allClassNames = new HashSet<>();
+    for (TemplateNode template : soyFile.getChildren()) {
+      if (template.getVisibility() == Visibility.PUBLIC
+          && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
+        boolean complete = templateFullyHandled(template, allClassNames);
+        templateComplete.put(template, complete);
+        allComplete = allComplete && complete;
+        if (complete) {
+          classNames.put(template, baseClassName + "." + generateBaseParamsImplClassName(template));
+        }
+      }
+    }
+    return new AutoValue_GenInvocationBuildersVisitor_Report(
+        ImmutableMap.copyOf(templateComplete),
+        allComplete,
+        ImmutableMap.copyOf(classNames),
+        baseClassName);
+  }
+
+  private static boolean templateFullyHandled(TemplateNode template, Set<String> allClassNames) {
+    if (!allClassNames.add(generateBaseParamsImplClassName(template))) {
+      return false;
+    }
+    Set<String> allParamNames = new HashSet<>();
+    for (TemplateParam param : template.getParams()) {
+      if (!paramHandled(param, allParamNames)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @VisibleForTesting
+  static boolean paramHandled(TemplateParam param, Set<String> allParamNames) {
+    return allParamNames.add(getParamSetterSuffix(param.name()))
+        && InvocationBuilderTypeUtils.getJavaType(param.type()).isPresent();
+  }
+
   /**
    * Writes a FooParams subclass for the given template. The class extends {@link
    * com.google.template.soy.data.BaseParamsImpl}, which implements {@link
@@ -141,7 +213,7 @@ public final class GenInvocationBuildersVisitor
    */
   @Override
   protected void visitTemplateNode(TemplateNode template) {
-    Optional<String> templateParamsClassname = generateBaseParamsImplClassName(template);
+    Optional<String> templateParamsClassname = getParamsClassNameIfUnique(template);
 
     // If no java class name was generated for this template, skip over this template.
     if (!templateParamsClassname.isPresent()) {
@@ -370,7 +442,7 @@ public final class GenInvocationBuildersVisitor
 
     // Convert the param name to upper camel case. If this generates the same name as another param,
     // log a warning and skip over this param.
-    String upperCamelCaseName = makeUpperCamelCase(templateParamName);
+    String upperCamelCaseName = getParamSetterSuffix(templateParamName);
     if (!paramUpperCamelCaseNamesUsed.add(upperCamelCaseName)) {
       logDuplicateParamNameWarning(templateParamName, upperCamelCaseName, templateName);
       return;
@@ -379,10 +451,14 @@ public final class GenInvocationBuildersVisitor
     // Add setters for this param.
     InvocationBuilderTypeUtils.getJavaType(soyType)
         .ifPresent(
-            (javaType) ->
+            javaType ->
                 writeSetter(
                     ilb, templateParamName, upperCamelCaseName, paramDescription, javaType));
     // TODO(b/77550695): Add future setter once we add supertype impl.
+  }
+
+  private static String getParamSetterSuffix(String paramName) {
+    return makeUpperCamelCase(paramName);
   }
 
   /** Writes a setter method for the given param and java type. */
@@ -432,15 +508,8 @@ public final class GenInvocationBuildersVisitor
    * <p>NOTE: If the java class name has already been used, this returns an empty optional. See
    * {@link #paramsClassNamesUsed} for more info about when this happens.
    */
-  private Optional<String> generateBaseParamsImplClassName(TemplateNode template) {
-    String namespacedTemplateName = template.getTemplateName();
-    String templateName =
-        namespacedTemplateName.substring(namespacedTemplateName.lastIndexOf('.') + 1);
-
-    // Convert the template name to upper camel case (stripping non-alphanumeric characters), and
-    // append "Params" (e.g. template "foo" -> "FooParams").
-    String className = makeUpperCamelCase(templateName) + "Params";
-
+  private Optional<String> getParamsClassNameIfUnique(TemplateNode template) {
+    String className = generateBaseParamsImplClassName(template);
     // If this class name has already been used, log a warning and return an empty optional (we will
     // skip over this template).
     if (!paramsClassNamesUsed.add(className)) {
@@ -448,6 +517,16 @@ public final class GenInvocationBuildersVisitor
       return Optional.empty();
     }
     return Optional.of(className);
+  }
+
+  private static String generateBaseParamsImplClassName(TemplateNode template) {
+    String namespacedTemplateName = template.getTemplateName();
+    String templateName =
+        namespacedTemplateName.substring(namespacedTemplateName.lastIndexOf('.') + 1);
+
+    // Convert the template name to upper camel case (stripping non-alphanumeric characters), and
+    // append "Params" (e.g. template "foo" -> "FooParams").
+    return makeUpperCamelCase(templateName) + "Params";
   }
 
   /**
