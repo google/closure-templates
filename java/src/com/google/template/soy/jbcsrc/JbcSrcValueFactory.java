@@ -41,6 +41,7 @@ import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
@@ -232,7 +233,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   @Override
   public JbcSrcJavaValue constantNull() {
-    return JbcSrcJavaValue.ofConstantNull();
+    return JbcSrcJavaValue.of(SoyExpression.NULL);
   }
 
   private static Expression[] adaptParams(MethodSignature method, JavaValue[] userParams) {
@@ -256,9 +257,9 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     // safe because we've already validated the parameter type against the allowed soy types.
     SoyExpression actualParam = (SoyExpression) value.expr();
 
-    // For "constant null", we can just cast w/o doing any other work.
+    // For explicit null types, we can just cast w/o doing any other work.
     // We already validated that it isn't primitive types.
-    if (value.isConstantNull()) {
+    if (actualParam.soyRuntimeType().soyType().equals(NullType.getInstance())) {
       return actualParam.checkedCast(expectedParamType);
     }
 

@@ -22,7 +22,6 @@ import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
-import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import javax.annotation.Nullable;
 
@@ -31,7 +30,7 @@ final class JbcSrcJavaValue implements JavaValue {
 
   /** Constructs a JbcSrcJavaValue based on the Expression. */
   static JbcSrcJavaValue of(Expression expr) {
-    return new JbcSrcJavaValue(expr, /* methodSignature= */ null, /* constantNull= */ false);
+    return new JbcSrcJavaValue(expr, /* methodSignature= */ null);
   }
 
   /**
@@ -40,36 +39,19 @@ final class JbcSrcJavaValue implements JavaValue {
    */
   static JbcSrcJavaValue of(Expression expr, MethodSignature methodSignature) {
     checkNotNull(methodSignature);
-    return new JbcSrcJavaValue(expr, methodSignature, /* constantNull= */ false);
-  }
-
-  /**
-   * Constructs a JbcSrcJavaValue specifically for 'constantNull'. There's no SoyType we can use to
-   * indicate this, and we can't construct our own SoyType because the cxtor is package-private, so
-   * we have a separate bool to indicate it.
-   */
-  static JbcSrcJavaValue ofConstantNull() {
-    return new JbcSrcJavaValue(
-        SoyExpression.NULL, /* methodSignature= */ null, /* constantNull= */ true);
+    return new JbcSrcJavaValue(expr, methodSignature);
   }
 
   private final Expression expr;
   @Nullable private final MethodSignature methodSignature;
-  private final boolean constantNull;
 
-  private JbcSrcJavaValue(Expression expr, MethodSignature methodSignature, boolean constantNull) {
+  private JbcSrcJavaValue(Expression expr, MethodSignature methodSignature) {
     this.expr = checkNotNull(expr);
     this.methodSignature = methodSignature;
-    this.constantNull = constantNull;
   }
 
   Expression expr() {
     return expr;
-  }
-
-  /** Returns true if this is the JbcSrcValue for a {@link JavaValueFactory#constantNull} call. */
-  public boolean isConstantNull() {
-    return constantNull;
   }
 
   /**
@@ -113,14 +95,12 @@ final class JbcSrcJavaValue implements JavaValue {
 
   @Override
   public JbcSrcJavaValue coerceToSoyBoolean() {
-    return new JbcSrcJavaValue(
-        ((SoyExpression) expr).coerceToBoolean(), methodSignature, /* constantNull= */ false);
+    return new JbcSrcJavaValue(((SoyExpression) expr).coerceToBoolean(), methodSignature);
   }
 
   @Override
   public JbcSrcJavaValue coerceToSoyString() {
-    return new JbcSrcJavaValue(
-        ((SoyExpression) expr).coerceToString(), methodSignature, /* constantNull= */ false);
+    return new JbcSrcJavaValue(((SoyExpression) expr).coerceToString(), methodSignature);
   }
 
   @Override
