@@ -53,6 +53,7 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -234,6 +235,13 @@ public final class StrictHtmlValidationPass extends CompilerFilePass {
       htmlMatcherGraph.addNode(
           new HtmlMatcherBlockNode(
               new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "loop"));
+    }
+
+    @Override
+    protected void visitVeLogNode(VeLogNode node) {
+      htmlMatcherGraph.addNode(
+          new HtmlMatcherBlockNode(
+              new HtmlTagVisitor(idGenerator, errorReporter).exec(node), "velog"));
     }
 
     // These two blocks are explicitly not affected by foreign content, so just run the pass

@@ -241,8 +241,12 @@ function visit(element, logger) {
   }
   if (element.tagName !== 'VELOG') {
     element.removeAttribute(ELEMENT_ATTR);
-  } else {
-    element.parentNode.replaceChild(element.firstElementChild, element);
+  } else if (element.childNodes) {
+    const children = Array.from(element.childNodes);
+    for (let i = 0; i < children.length; i++) {
+      element.parentNode.insertBefore(children[i], element);
+    }
+    element.parentNode.removeChild(element);
   }
 }
 

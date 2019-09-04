@@ -107,17 +107,12 @@ final class VeLogValidationPass extends CompilerFileSetPass {
   private static final SoyErrorKind VE_UNION_WITH_DATA =
       SoyErrorKind.of(
           "It is illegal to set the data parameter if the ve type is a union (''{0}'').");
-  private static final SoyErrorKind VELOG_NODE_FIRST_CHILD_NOT_TAG =
-      SoyErrorKind.of("The first child of '{velog'} must be a HTML open tag.");
-  private static final SoyErrorKind VELOG_NODE_LAST_CHILD_NOT_TAG =
-      SoyErrorKind.of("The last child of '{velog'} must be a HTML close tag.");
-  private static final SoyErrorKind VELOG_NODE_EXACTLY_ONE_TAG =
-      SoyErrorKind.of("'{velog'} must contain exactly one top-level HTML element.");
 
-  private static final SoyErrorKind VELOG_NODE_CANNOT_CALL_VELOG_NODE =
-      SoyErrorKind.of("'{velog'} must not call another template that has a '{velog'}.");
   private static final SoyErrorKind VELOG_NODE_CANNOT_CALL_DELTEMPLATE =
       SoyErrorKind.of("'{velog'} must not call a deltemplate..");
+
+  private static final SoyErrorKind LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT =
+      SoyErrorKind.of("'{velog'} within '{msg'} must directly wrap an HTML element.");
 
   private final ErrorReporter reporter;
   private final SoyTypeRegistry typeRegistry;
@@ -157,8 +152,8 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     }
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
       if (template.isStrictHtml()) {
-        validateVeLogNode(node);
         validateVelogElementStructure(node, templatesInLibrary, registry);
+        validateVeLogNode(node);
       } else {
         reporter.report(node.getVeDataExpression().getSourceLocation(), REQUIRE_STRICTHTML);
       }
@@ -249,52 +244,45 @@ final class VeLogValidationPass extends CompilerFileSetPass {
         reporter.report(node.getSourceLocation(), VELOG_NODE_CANNOT_CALL_DELTEMPLATE);
         return;
       }
-      if (!calleeMetadata.getIsHtmlElement()) {
-        reporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
-        return;
-      }
-      if (calleeMetadata.getIsVelogged()) {
-        reporter.report(node.getSourceLocation(), VELOG_NODE_CANNOT_CALL_VELOG_NODE);
-        return;
-      }
-      node.setCallsTemplate(true);
+      node.setNeedsSyntheticVelogNode(true);
       return;
     }
 
-    // {velog} cannot be empty.
+    // If {velog} is empty, or does not have a single root, we must output a synthetic VE log node
+    // on the client.
     if (node.numChildren() == 0) {
-      reporter.report(node.getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      node.setNeedsSyntheticVelogNode(true);
       return;
     }
 
     HtmlOpenTagNode firstTag = node.getOpenTagNode();
-    // The first child of {velog} must be an open tag.
+    // If the first child of {velog} is not an open tag, output a synthetic VE log node.
     if (firstTag == null) {
-      reporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_FIRST_CHILD_NOT_TAG);
+      node.setNeedsSyntheticVelogNode(true);
       return;
     }
 
-    // If the first child is self-closing or is a void tag, reports an error if we see anything
-    // after it. If it is the only thing, the velog is valid.
+    // If the first child is self-closing or is a void tag, output a synthetic VE log node if we see
+    // anything after it. If it is the only thing, we don't need a synthetic VE log node.
     if (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid()) {
       if (node.numChildren() > 1) {
-        reporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+        node.setNeedsSyntheticVelogNode(true);
       }
       return;
     }
 
-    SoyNode lastChild = node.getChild(node.numChildren() - 1);
     HtmlCloseTagNode lastTag = node.getCloseTagNode();
-    // The last child must be a close tag.
+    // If the last child is not a close tag, output a synthetic VE log node.
     if (lastTag == null) {
-      reporter.report(lastChild.getSourceLocation(), VELOG_NODE_LAST_CHILD_NOT_TAG);
+      node.setNeedsSyntheticVelogNode(true);
       return;
     }
     // This check make sures that there is exactly one top-level element -- the last tag must
-    // close the first tag within {velog} command.
+    // close the first tag within {velog} command. Otherwise, we need to output a synthetic VE log
+    // node.
     if (lastTag.getTaggedPairs().size() != 1
         || !Objects.equals(lastTag.getTaggedPairs().get(0), firstTag)) {
-      reporter.report(node.getChild(0).getSourceLocation(), VELOG_NODE_EXACTLY_ONE_TAG);
+      node.setNeedsSyntheticVelogNode(true);
     }
   }
 
@@ -305,6 +293,9 @@ final class VeLogValidationPass extends CompilerFileSetPass {
           node.getVeDataExpression().getSourceLocation(),
           INVALID_VE,
           node.getVeDataExpression().getRoot().getType());
+    }
+    if (node.needsSyntheticVelogNode() && isInMsgNode(node)) {
+      reporter.report(node.getSourceLocation(), LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT);
     }
     if (node.getLogonlyExpression() != null) {
       // check to see if it is in a msg node.  logonly is disallowed in msg nodes because we don't

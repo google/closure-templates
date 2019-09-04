@@ -1398,12 +1398,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitVeLogNode(VeLogNode node) {
     // no need to do anything, the VeLogInstrumentationVisitor has already handled these.
-    if (!node.callsTemplate()) {
+    if (!node.needsSyntheticVelogNode()) {
       visitChildren(node);
       return;
     }
-    // We are in a {velog} wrapped around a call. Create synthetic velog nodes. These will be
-    // removed in JS.
+    // Create synthetic velog nodes. These will be removed in JS.
     FunctionNode funcNode =
         new FunctionNode(
             Identifier.create(VeLogFunction.NAME, node.getSourceLocation()),
