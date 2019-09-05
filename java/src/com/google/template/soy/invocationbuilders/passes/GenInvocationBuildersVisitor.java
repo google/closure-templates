@@ -381,6 +381,7 @@ public final class GenInvocationBuildersVisitor
 
     // Imports.
     ilb.appendLine("import static com.google.common.collect.ImmutableList.toImmutableList;");
+    ilb.appendLine("import static com.google.common.collect.ImmutableMap.toImmutableMap;");
     ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
     ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");

@@ -44,25 +44,19 @@ public final class ListJavaType extends JavaType {
   @Override
   public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
     String name = super.appendRunTimeOperations(ilb, variableName);
-    if (elementType == SimpleJavaType.LONG) {
-
-      // Convert Iterable<? extends Number> to ImmutableList<Long>.
+    if (elementType instanceof PrimitiveJavaNumberType) {
+      // Convert Iterable<? extends Number> to ImmutableList<Long> or ImmutableList<Double>.
+      PrimitiveJavaNumberType primitiveElementType = (PrimitiveJavaNumberType) elementType;
       ilb.appendLine(
-          "ImmutableList<Long> listOfLongs ="
+          "ImmutableList<"
+              + primitiveElementType.getBoxedTypeNameString()
+              + "> stronglyTypedList ="
               + " Streams.stream("
               + name
-              + ").map(Number::longValue).collect(toImmutableList());");
-      return "listOfLongs";
-    }
-    if (elementType == SimpleJavaType.DOUBLE) {
-
-      // Convert Iterable<? extends Number> to ImmutableList<Double>.
-      ilb.appendLine(
-          "ImmutableList<Double> listOfDoubles ="
-              + " Streams.stream("
-              + name
-              + ").map(Number::doubleValue).collect(toImmutableList());");
-      return "listOfDoubles";
+              + ").map((num) -> "
+              + primitiveElementType.transformNumberTypeToStricterSubtype("num")
+              + ").collect(toImmutableList());");
+      return "stronglyTypedList";
     }
 
     // Otherwise just do ImmutableList.copyOf();

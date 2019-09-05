@@ -17,10 +17,13 @@ package com.google.template.soy.invocationbuilders.passes;
 
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ListJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.MapJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.PrimitiveJavaNumberType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.SimpleJavaType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -42,9 +45,10 @@ final class InvocationBuilderTypeUtils {
       case BOOL:
         return Optional.of(SimpleJavaType.BOOLEAN);
       case INT:
-        return Optional.of(SimpleJavaType.LONG);
+        return Optional.of(PrimitiveJavaNumberType.LONG);
       case FLOAT:
-        return Optional.of(SimpleJavaType.DOUBLE);
+        return Optional.of(PrimitiveJavaNumberType.DOUBLE);
+
       case STRING:
         return Optional.of(SimpleJavaType.STRING);
       case HTML:
@@ -64,6 +68,15 @@ final class InvocationBuilderTypeUtils {
       case LIST:
         Optional<JavaType> listElementType = getJavaType(((ListType) soyType).getElementType());
         return listElementType.map(elementType -> new ListJavaType(elementType));
+      case MAP:
+        Optional<JavaType> keyType = getJavaType(((MapType) soyType).getKeyType());
+        Optional<JavaType> valueType = getJavaType(((MapType) soyType).getValueType());
+        if (keyType.isPresent() && valueType.isPresent()) {
+          return Optional.of(
+              new MapJavaType(keyType.get(), valueType.get(), /* shouldMarkAsSoyMap= */ true));
+        }
+        return Optional.empty();
+
       case ANY:
       case UNKNOWN:
         return Optional.of(SimpleJavaType.OBJECT);
@@ -71,7 +84,6 @@ final class InvocationBuilderTypeUtils {
       case CSS:
       case RECORD:
       case LEGACY_OBJECT_MAP:
-      case MAP:
       case UNION:
       case ERROR:
       case NULL:

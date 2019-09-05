@@ -18,10 +18,13 @@ package com.google.template.soy.invocationbuilders.javatypes;
 import com.google.common.base.Preconditions;
 
 /**
- * Class for simple java types (e.g. boolean, double, long, Number, SafeHtml) that do not need
- * specialized / complex logic. There are static constants at the top of this class for each of the
- * types we support. Callers must use these constants and cannot instantiate new instances of this
- * class.
+ * Class for simple java types (e.g. boolean, String, Number, SafeHtml) that do not need specialized
+ * / complex logic. There are static constants at the top of this class for each of the types we
+ * support. Callers must use these constants and cannot instantiate new instances of this class.
+ *
+ * <p>NOTE: For doubles and longs, see {@link PrimitiveJavaNumberType.DOUBLE} and {@link
+ * PrimitiveJavaNumberType.LONG}. These are not simple types because they need special logic for
+ * coercing {@code Number} types to{@code Long} or {@code Double} at runtime.
  */
 public class SimpleJavaType extends JavaType {
   /** Constants for all of the simple types we support. */
@@ -30,20 +33,6 @@ public class SimpleJavaType extends JavaType {
           .setIsPrimitive(true)
           .setJavaTypeString("boolean")
           .setGenericsTypeArgumentString("Boolean")
-          .build();
-
-  public static final SimpleJavaType DOUBLE =
-      SimpleJavaType.builder()
-          .setIsPrimitive(true)
-          .setJavaTypeString("double")
-          .setGenericsTypeArgumentString("? extends Number")
-          .build();
-
-  public static final SimpleJavaType LONG =
-      SimpleJavaType.builder()
-          .setIsPrimitive(true)
-          .setJavaTypeString("long")
-          .setGenericsTypeArgumentString("? extends Number")
           .build();
 
   public static final SimpleJavaType NUMBER =
