@@ -2363,9 +2363,9 @@ goog.string.Const.prototype.implementsGoogStringTypedString = !0;
 goog.string.Const.prototype.getTypedStringValue = function() {
   return this.stringConstValueWithSecurityContract__googStringSecurityPrivate_;
 };
-goog.string.Const.prototype.toString = function() {
+goog.DEBUG && (goog.string.Const.prototype.toString = function() {
   return "Const{" + this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ + "}";
-};
+});
 goog.string.Const.unwrap = function(stringConst) {
   if (stringConst instanceof goog.string.Const && stringConst.constructor === goog.string.Const && stringConst.STRING_CONST_TYPE_MARKER__GOOG_STRING_SECURITY_PRIVATE_ === goog.string.Const.TYPE_MARKER_) {
     return stringConst.stringConstValueWithSecurityContract__googStringSecurityPrivate_;
@@ -3004,6 +3004,8 @@ goog.html.SafeHtml = function() {
   this.SAFE_HTML_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
   this.dir_ = null;
 };
+goog.html.SafeHtml.ENABLE_ERROR_MESSAGES = goog.DEBUG;
+goog.html.SafeHtml.SUPPORT_STYLE_ATTRIBUTE = !0;
 goog.html.SafeHtml.prototype.implementsGoogI18nBidiDirectionalString = !0;
 goog.html.SafeHtml.prototype.getDirection = function() {
   return this.dir_;
@@ -3057,10 +3059,10 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
 };
 goog.html.SafeHtml.verifyTagName = function(tagName) {
   if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(tagName)) {
-    throw Error("Invalid tag name <" + tagName + ">.");
+    throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? "Invalid tag name <" + tagName + ">." : "");
   }
   if (tagName.toUpperCase() in goog.html.SafeHtml.NOT_ALLOWED_TAG_NAMES_) {
-    throw Error("Tag name <" + tagName + "> is not allowed for SafeHtml.");
+    throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? "Tag name <" + tagName + "> is not allowed for SafeHtml." : "");
   }
 };
 goog.html.SafeHtml.createIframe = function(opt_src, opt_srcdoc, opt_attributes, opt_content) {
@@ -3073,7 +3075,7 @@ goog.html.SafeHtml.createIframe = function(opt_src, opt_srcdoc, opt_attributes, 
 };
 goog.html.SafeHtml.createSandboxIframe = function(opt_src, opt_srcdoc, opt_attributes, opt_content) {
   if (!goog.html.SafeHtml.canUseSandboxIframe()) {
-    throw Error("The browser does not support sandboxed iframes.");
+    throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? "The browser does not support sandboxed iframes." : "");
   }
   var fixedAttributes = {};
   fixedAttributes.src = opt_src ? goog.html.SafeUrl.unwrap(goog.html.SafeUrl.sanitize(opt_src)) : null;
@@ -3094,7 +3096,7 @@ goog.html.SafeHtml.createScript = function(script, opt_attributes) {
   for (var attr in opt_attributes) {
     var attrLower = attr.toLowerCase();
     if ("language" == attrLower || "src" == attrLower || "text" == attrLower || "type" == attrLower) {
-      throw Error('Cannot set "' + attrLower + '" attribute');
+      throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'Cannot set "' + attrLower + '" attribute' : "");
     }
   }
   var content = "";
@@ -3124,10 +3126,14 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
     value = goog.string.Const.unwrap(value);
   } else {
     if ("style" == name.toLowerCase()) {
-      value = goog.html.SafeHtml.getStyleValue_(value);
+      if (goog.html.SafeHtml.SUPPORT_STYLE_ATTRIBUTE) {
+        value = goog.html.SafeHtml.getStyleValue_(value);
+      } else {
+        throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'Attribute "style" not supported.' : "");
+      }
     } else {
       if (/^on/i.test(name)) {
-        throw Error('Attribute "' + name + '" requires goog.string.Const value, "' + value + '" given.');
+        throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'Attribute "' + name + '" requires goog.string.Const value, "' + value + '" given.' : "");
       }
       if (name.toLowerCase() in goog.html.SafeHtml.URL_ATTRIBUTES_) {
         if (value instanceof goog.html.TrustedResourceUrl) {
@@ -3139,7 +3145,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
             if (goog.isString(value)) {
               value = goog.html.SafeUrl.sanitize(value).getTypedStringValue();
             } else {
-              throw Error('Attribute "' + name + '" on tag "' + tagName + '" requires goog.html.SafeUrl, goog.string.Const, or string, value "' + value + '" given.');
+              throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'Attribute "' + name + '" on tag "' + tagName + '" requires goog.html.SafeUrl, goog.string.Const, or string, value "' + value + '" given.' : "");
             }
           }
         }
@@ -3152,7 +3158,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
 };
 goog.html.SafeHtml.getStyleValue_ = function(value) {
   if (!goog.isObject(value)) {
-    throw Error('The "style" attribute requires goog.html.SafeStyle or map of style properties, ' + typeof value + " given: " + value);
+    throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'The "style" attribute requires goog.html.SafeStyle or map of style properties, ' + typeof value + " given: " + value : "");
   }
   value instanceof goog.html.SafeStyle || (value = goog.html.SafeStyle.create(value));
   return goog.html.SafeStyle.unwrap(value);
@@ -3214,7 +3220,7 @@ goog.html.SafeHtml.stringifyAttributes = function(tagName, opt_attributes) {
   if (opt_attributes) {
     for (var name in opt_attributes) {
       if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(name)) {
-        throw Error('Invalid attribute name "' + name + '".');
+        throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'Invalid attribute name "' + name + '".' : "");
       }
       var value = opt_attributes[name];
       goog.isDefAndNotNull(value) && (result += " " + goog.html.SafeHtml.getAttrNameAndValue_(tagName, name, value));
@@ -3230,13 +3236,15 @@ goog.html.SafeHtml.combineAttributes = function(fixedAttributes, defaultAttribut
   for (name in defaultAttributes) {
     goog.asserts.assert(name.toLowerCase() == name, "Must be lower case"), combinedAttributes[name] = defaultAttributes[name];
   }
-  for (name in opt_attributes) {
-    var nameLower = name.toLowerCase();
-    if (nameLower in fixedAttributes) {
-      throw Error('Cannot override "' + nameLower + '" attribute, got "' + name + '" with value "' + opt_attributes[name] + '"');
+  if (opt_attributes) {
+    for (name in opt_attributes) {
+      var nameLower = name.toLowerCase();
+      if (nameLower in fixedAttributes) {
+        throw Error(goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ? 'Cannot override "' + nameLower + '" attribute, got "' + name + '" with value "' + opt_attributes[name] + '"' : "");
+      }
+      nameLower in defaultAttributes && delete combinedAttributes[nameLower];
+      combinedAttributes[name] = opt_attributes[name];
     }
-    nameLower in defaultAttributes && delete combinedAttributes[nameLower];
-    combinedAttributes[name] = opt_attributes[name];
   }
   return combinedAttributes;
 };
