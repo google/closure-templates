@@ -21,10 +21,11 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
@@ -43,6 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Visitor for generating Java template parameter builders (see {@link
@@ -154,6 +156,8 @@ public final class GenInvocationBuildersVisitor
      */
     public abstract String className();
 
+    protected abstract ImmutableSetMultimap<TemplateNode, ParamReport> paramReports();
+
     public boolean isTemplateComplete(TemplateNode node) {
       return Boolean.TRUE.equals(completePerTemplate().get(node));
     }
@@ -161,6 +165,29 @@ public final class GenInvocationBuildersVisitor
     public String getClassName(TemplateNode value) {
       return classNamePerTemplate().get(value);
     }
+
+    public Set<TemplateNode> getTemplates() {
+      return completePerTemplate().keySet();
+    }
+
+    public Set<ParamReport> getParams(TemplateNode node) {
+      return paramReports().get(node);
+    }
+  }
+
+  /** See {@link GenInvocationBuildersVisitor.ParamReport} */
+  public enum ParamStatus {
+    HANDLED,
+    NAME_COLLISION,
+    UNHANDLED_TYPE
+  }
+
+  /** See {@link GenInvocationBuildersVisitor.Report#getParams} */
+  @AutoValue
+  public abstract static class ParamReport {
+    public abstract TemplateParam param();
+
+    public abstract ParamStatus status();
   }
 
   public Report getReport(SoyFileNode soyFile) {
@@ -168,14 +195,17 @@ public final class GenInvocationBuildersVisitor
     String baseClassName = javaPackage + "." + convertSoyFileNameToJavaClassName(soyFile);
     Map<TemplateNode, Boolean> templateComplete = new HashMap<>();
     Map<TemplateNode, String> classNames = new HashMap<>();
+    ImmutableSetMultimap.Builder<TemplateNode, ParamReport> paramReports =
+        ImmutableSetMultimap.builder();
     Set<String> allClassNames = new HashSet<>();
     for (TemplateNode template : soyFile.getChildren()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
-        boolean complete = templateFullyHandled(template, allClassNames);
+        boolean nameCollision = !allClassNames.add(generateBaseParamsImplClassName(template));
+        boolean complete = templateFullyHandled(template, paramReports) && !nameCollision;
         templateComplete.put(template, complete);
         allComplete = allComplete && complete;
-        if (complete) {
+        if (!nameCollision) {
           classNames.put(template, baseClassName + "." + generateBaseParamsImplClassName(template));
         }
       }
@@ -184,26 +214,30 @@ public final class GenInvocationBuildersVisitor
         ImmutableMap.copyOf(templateComplete),
         allComplete,
         ImmutableMap.copyOf(classNames),
-        baseClassName);
+        baseClassName,
+        paramReports.build());
   }
 
-  private static boolean templateFullyHandled(TemplateNode template, Set<String> allClassNames) {
-    if (!allClassNames.add(generateBaseParamsImplClassName(template))) {
-      return false;
-    }
+  private static boolean templateFullyHandled(
+      TemplateNode template, ImmutableSetMultimap.Builder<TemplateNode, ParamReport> paramReports) {
+    boolean ok = true;
     Set<String> allParamNames = new HashSet<>();
     for (TemplateParam param : template.getParams()) {
-      if (!paramHandled(param, allParamNames)) {
-        return false;
+      ParamStatus status;
+      if (!allParamNames.add(getParamSetterSuffix(param.name()))) {
+        status = ParamStatus.NAME_COLLISION;
+        ok = false;
+      } else if (InvocationBuilderTypeUtils.getJavaType(param.type()).isPresent()) {
+        status = ParamStatus.HANDLED;
+      } else {
+        status = ParamStatus.UNHANDLED_TYPE;
+        ok = false;
       }
-    }
-    return true;
-  }
 
-  @VisibleForTesting
-  static boolean paramHandled(TemplateParam param, Set<String> allParamNames) {
-    return allParamNames.add(getParamSetterSuffix(param.name()))
-        && InvocationBuilderTypeUtils.getJavaType(param.type()).isPresent();
+      paramReports.put(
+          template, new AutoValue_GenInvocationBuildersVisitor_ParamReport(param, status));
+    }
+    return ok;
   }
 
   /**
@@ -358,7 +392,7 @@ public final class GenInvocationBuildersVisitor
                 writeSettersForParam(
                     param.name(),
                     param.type(),
-                    Optional.ofNullable(param.desc()),
+                    param.desc(),
                     paramUpperCamelCaseNamesUsed,
                     template.getTemplateName()));
 
@@ -437,7 +471,7 @@ public final class GenInvocationBuildersVisitor
   private void writeSettersForParam(
       String templateParamName,
       SoyType soyType,
-      Optional<String> paramDescription,
+      @Nullable String paramDescription,
       Set<String> paramUpperCamelCaseNamesUsed,
       String templateName) {
 
@@ -467,7 +501,7 @@ public final class GenInvocationBuildersVisitor
       IndentedLinesBuilder ilb,
       String originalParamName,
       String paramNameInUpperCamelCase,
-      Optional<String> paramDescription,
+      @Nullable String paramDescription,
       JavaType javaType) {
 
     String javaTypeString = javaType.toJavaTypeString();
@@ -476,7 +510,7 @@ public final class GenInvocationBuildersVisitor
         ilb,
         "Sets "
             + originalParamName
-            + (paramDescription.isPresent() ? ": " + paramDescription : "."),
+            + (Strings.isNullOrEmpty(paramDescription) ? "." : ": " + paramDescription),
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
     ilb.appendLine(
