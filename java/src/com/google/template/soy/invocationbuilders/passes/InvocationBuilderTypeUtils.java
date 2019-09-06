@@ -22,8 +22,8 @@ import com.google.template.soy.invocationbuilders.javatypes.PrimitiveJavaNumberT
 import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.SimpleJavaType;
+import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.ListType;
-import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -40,7 +40,9 @@ final class InvocationBuilderTypeUtils {
    * <p>NOTE: TODO(b/140064271): Add handling for composite types. Update this method's javadoc when
    * this returns a list of java types (for handling unions).
    */
-  static final Optional<JavaType> getJavaType(SoyType soyType) {
+  static Optional<JavaType> getJavaType(SoyType soyType) {
+    boolean nonLegacyMap = true;
+
     switch (soyType.getKind()) {
       case BOOL:
         return Optional.of(SimpleJavaType.BOOLEAN);
@@ -66,14 +68,17 @@ final class InvocationBuilderTypeUtils {
         SoyProtoEnumType asProtoEnum = (SoyProtoEnumType) soyType;
         return Optional.of(new ProtoEnumJavaType(asProtoEnum.getDescriptor()));
       case LIST:
-        Optional<JavaType> listElementType = getJavaType(((ListType) soyType).getElementType());
-        return listElementType.map(elementType -> new ListJavaType(elementType));
+        Optional<JavaType> listElementType =
+            getJavaGenericType(((ListType) soyType).getElementType());
+        return listElementType.map(ListJavaType::new);
+      case LEGACY_OBJECT_MAP:
+        nonLegacyMap = false; // fall through
       case MAP:
-        Optional<JavaType> keyType = getJavaType(((MapType) soyType).getKeyType());
-        Optional<JavaType> valueType = getJavaType(((MapType) soyType).getValueType());
+        Optional<JavaType> keyType = getJavaGenericType(((AbstractMapType) soyType).getKeyType());
+        Optional<JavaType> valueType =
+            getJavaGenericType(((AbstractMapType) soyType).getValueType());
         if (keyType.isPresent() && valueType.isPresent()) {
-          return Optional.of(
-              new MapJavaType(keyType.get(), valueType.get(), /* shouldMarkAsSoyMap= */ true));
+          return Optional.of(new MapJavaType(keyType.get(), valueType.get(), nonLegacyMap));
         }
         return Optional.empty();
 
@@ -81,9 +86,9 @@ final class InvocationBuilderTypeUtils {
       case UNKNOWN:
         return Optional.of(SimpleJavaType.OBJECT);
       case ATTRIBUTES:
+        return Optional.of(SimpleJavaType.ATTRIBUTES);
       case CSS:
       case RECORD:
-      case LEGACY_OBJECT_MAP:
       case UNION:
       case ERROR:
       case NULL:
@@ -92,5 +97,23 @@ final class InvocationBuilderTypeUtils {
         return Optional.empty();
     }
     throw new AssertionError("impossible");
+  }
+
+  /**
+   * Returns whether {@code type} is unsettable from Java. Params of this type should not count
+   * against whether a template is fully handled by this generated API.
+   */
+  public static boolean isJavaIncompatible(SoyType type) {
+    switch (type.getKind()) {
+      case VE:
+      case VE_DATA:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private static Optional<JavaType> getJavaGenericType(SoyType soyType) {
+    return getJavaType(soyType).filter(JavaType::isGenericsTypeSupported);
   }
 }

@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.invocationbuilders.javatypes;
 
+import com.google.common.base.Strings;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 
 /** Abstract base class representing a Java type used for invocation builders. */
@@ -44,12 +45,12 @@ public abstract class JavaType {
    */
   public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
     if (!isPrimitive()) {
-      ilb.appendLine("Objects.requireNonNull(" + variableName + ");");
+      ilb.appendLine("Preconditions.checkNotNull(" + variableName + ");");
     }
     return variableName;
   }
 
-  /** Whether this is a primitive type (if not, we add an Objects.requireNonNull check). */
+  /** Whether this is a primitive type (if not, we add an Preconditions.checkNotNull check). */
   abstract boolean isPrimitive();
 
   /**
@@ -61,4 +62,8 @@ public abstract class JavaType {
    * <>).
    */
   abstract String asGenericsTypeArgumentString();
+
+  public boolean isGenericsTypeSupported() {
+    return !Strings.isNullOrEmpty(asGenericsTypeArgumentString());
+  }
 }

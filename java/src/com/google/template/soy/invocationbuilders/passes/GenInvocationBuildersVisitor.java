@@ -179,7 +179,8 @@ public final class GenInvocationBuildersVisitor
   public enum ParamStatus {
     HANDLED,
     NAME_COLLISION,
-    UNHANDLED_TYPE
+    UNHANDLED_TYPE,
+    JAVA_INCOMPATIBLE
   }
 
   /** See {@link GenInvocationBuildersVisitor.Report#getParams} */
@@ -224,7 +225,9 @@ public final class GenInvocationBuildersVisitor
     Set<String> allParamNames = new HashSet<>();
     for (TemplateParam param : template.getParams()) {
       ParamStatus status;
-      if (!allParamNames.add(getParamSetterSuffix(param.name()))) {
+      if (InvocationBuilderTypeUtils.isJavaIncompatible(param.type())) {
+        status = ParamStatus.JAVA_INCOMPATIBLE;
+      } else if (!allParamNames.add(getParamSetterSuffix(param.name()))) {
         status = ParamStatus.NAME_COLLISION;
         ok = false;
       } else if (InvocationBuilderTypeUtils.getJavaType(param.type()).isPresent()) {
@@ -416,6 +419,8 @@ public final class GenInvocationBuildersVisitor
     // Imports.
     ilb.appendLine("import static com.google.common.collect.ImmutableList.toImmutableList;");
     ilb.appendLine("import static com.google.common.collect.ImmutableMap.toImmutableMap;");
+    ilb.appendLine();
+    ilb.appendLine("import com.google.common.base.Preconditions;");
     ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
     ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
@@ -434,7 +439,6 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.template.soy.data.BaseParamsImpl;");
     ilb.appendLine("import java.util.List;");
     ilb.appendLine("import java.util.Map;");
-    ilb.appendLine("import java.util.Objects;");
     ilb.appendLine("import java.util.concurrent.Future;");
     ilb.appendLine("import javax.annotation.Generated;");
     ilb.appendLine();

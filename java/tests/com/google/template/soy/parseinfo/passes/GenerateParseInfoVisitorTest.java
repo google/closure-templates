@@ -186,7 +186,7 @@ public final class GenerateParseInfoVisitorTest {
     // InvocationBuilderTypeUtils.
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<soy.test.Foo>}", "{$ve}");
+            ImmutableList.of(Foo.getDescriptor()), "{@param record: [f1:string]}", "{$record.f1}");
 
     assertThat(parseInfoContent).doesNotContain("@Deprecated");
     assertThat(parseInfoContent).doesNotContain("@deprecated");

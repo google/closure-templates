@@ -16,6 +16,7 @@
 package com.google.template.soy.invocationbuilders.javatypes;
 
 import com.google.common.base.Preconditions;
+import com.google.template.soy.base.internal.IndentedLinesBuilder;
 
 /**
  * Class for simple java types (e.g. boolean, String, Number, SafeHtml) that do not need specialized
@@ -82,6 +83,20 @@ public class SimpleJavaType extends JavaType {
           .setJavaTypeString("Object")
           .setGenericsTypeArgumentString("?")
           .build();
+
+  // Don't support as list/map type for now because we don't have a way of running the precondition
+  // over all values.
+  public static final SimpleJavaType ATTRIBUTES =
+      new SimpleJavaType("SanitizedContent", false, null) {
+        @Override
+        public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
+          ilb.appendLine(
+              "Preconditions.checkArgument("
+                  + variableName
+                  + ".getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);");
+          return variableName;
+        }
+      };
 
   private final String javaTypeString;
   private final boolean isPrimitive;
