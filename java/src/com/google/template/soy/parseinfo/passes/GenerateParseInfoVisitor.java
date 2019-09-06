@@ -28,7 +28,6 @@ import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -76,7 +75,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -167,7 +165,7 @@ public final class GenerateParseInfoVisitor
   private final SoyTypeRegistry typeRegistry;
 
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
-  private final Map<String, String> convertedIdents = Maps.newHashMap();
+  private final Map<String, String> convertedIdents = Maps.newLinkedHashMap();
 
   /** The contents of the generated Java files. */
   private ImmutableList.Builder<GeneratedFile> generatedFiles;
@@ -224,7 +222,7 @@ public final class GenerateParseInfoVisitor
   protected void visitSoyFileSetNode(SoyFileSetNode node) {
     // Figure out the generated class name for each Soy file, including adding number suffixes
     // to resolve collisions, and then adding the common suffix "SoyInfo".
-    Multimap<String, SoyFileNode> baseGeneratedClassNameToSoyFilesMap = HashMultimap.create();
+    Multimap<String, SoyFileNode> baseGeneratedClassNameToSoyFilesMap = LinkedHashMultimap.create();
     for (SoyFileNode soyFile : node.getChildren()) {
       baseGeneratedClassNameToSoyFilesMap.put(
           javaClassNameSource.generateBaseClassName(soyFile), soyFile);
@@ -264,7 +262,7 @@ public final class GenerateParseInfoVisitor
     // + for any params whose type is a proto, get the proto name and Java class name.
     // + all plugin instances used by any SoyJavaSourceFunctions
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
-    Set<String> allParamKeys = Sets.newHashSet();
+    Set<String> allParamKeys = Sets.newLinkedHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
     SortedSet<String> protoTypes = Sets.newTreeSet();
     Map<String, String> pluginInstances = new TreeMap<>();
@@ -546,7 +544,7 @@ public final class GenerateParseInfoVisitor
     }
 
     // First build list of all transitive params (direct and indirect).
-    Set<String> directParamNames = new HashSet<>();
+    Set<String> directParamNames = Sets.newHashSet();
     // Direct params.
     for (TemplateParam param : node.getParams()) {
       directParamNames.add(param.name());
@@ -656,7 +654,7 @@ public final class GenerateParseInfoVisitor
 
     if (!nodeMetadata.getParameters().isEmpty() || !indirectParamsInfo.indirectParams.isEmpty()) {
       ImmutableMap.Builder<String, String> entrySnippetPairs = ImmutableMap.builder();
-      Set<String> seenParams = new HashSet<>();
+      Set<String> seenParams = Sets.newHashSet();
       for (Parameter param :
           Iterables.concat(
               nodeMetadata.getParameters(), indirectParamsInfo.indirectParams.values())) {
