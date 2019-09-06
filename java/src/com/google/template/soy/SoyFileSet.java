@@ -660,11 +660,13 @@ public final class SoyFileSet {
   ImmutableList<GeneratedFile> generateInvocationBuilders(String javaPackage) {
     return entryPoint(
         () -> {
-          SoyFileSetNode soyTree = parseForGenJava().fileSet();
+          ParseResult result = parseForGenJava();
+          TemplateRegistry registry = result.registry();
+          SoyFileSetNode soyTree = result.fileSet();
           throwIfErrorsPresent();
 
           // Generate template invocation builders for the soy tree.
-          return new GenInvocationBuildersVisitor(javaPackage).exec(soyTree);
+          return new GenInvocationBuildersVisitor(javaPackage, registry).exec(soyTree);
         });
   }
 

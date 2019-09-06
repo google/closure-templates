@@ -97,6 +97,14 @@ public abstract class TemplateMetadata {
    */
   @AutoValue
   public abstract static class Parameter {
+    public static Parameter fromParam(TemplateParam param) {
+      return builder()
+          .setName(param.name())
+          .setType(param.type())
+          .setRequired(param.isRequired())
+          .build();
+    }
+
     /**
      * A simple wrapper so that Parameter continues to have correct equals/hashCode methods even
      * though we might only lazily calculate the type.
@@ -153,12 +161,7 @@ public abstract class TemplateMetadata {
     static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
       ImmutableList.Builder<Parameter> params = ImmutableList.builder();
       for (TemplateParam param : node.getParams()) {
-        params.add(
-            builder()
-                .setName(param.name())
-                .setType(param.type())
-                .setRequired(param.isRequired())
-                .build());
+        params.add(fromParam(param));
       }
       return params.build();
     }

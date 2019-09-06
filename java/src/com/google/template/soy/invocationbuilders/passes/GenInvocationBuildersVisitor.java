@@ -28,12 +28,16 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
+import com.google.template.soy.passes.IndirectParamsCalculator;
+import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
@@ -61,8 +65,11 @@ public final class GenInvocationBuildersVisitor
   private static final Logger logger =
       Logger.getLogger(GenInvocationBuildersVisitor.class.getName());
 
-  private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private final String javaPackage; // The package name to use for the generated Java files.
+
+  private final IndirectParamsCalculator indirectParamsCalculator;
+
+  private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
   // Set of "FooParams" class names that we've used already. Occasionally template names will
@@ -72,8 +79,9 @@ public final class GenInvocationBuildersVisitor
   // template, and log a warning.
   private Set<String> paramsClassNamesUsed;
 
-  public GenInvocationBuildersVisitor(String javaPackage) {
+  public GenInvocationBuildersVisitor(String javaPackage, TemplateRegistry templateRegistry) {
     this.javaPackage = javaPackage;
+    this.indirectParamsCalculator = new IndirectParamsCalculator(templateRegistry);
   }
 
   @Override
@@ -179,6 +187,7 @@ public final class GenInvocationBuildersVisitor
   public enum ParamStatus {
     HANDLED,
     NAME_COLLISION,
+    INDIRECT,
     UNHANDLED_TYPE,
     JAVA_INCOMPATIBLE
   }
@@ -186,7 +195,7 @@ public final class GenInvocationBuildersVisitor
   /** See {@link GenInvocationBuildersVisitor.Report#getParams} */
   @AutoValue
   public abstract static class ParamReport {
-    public abstract TemplateParam param();
+    public abstract TemplateMetadata.Parameter param();
 
     public abstract ParamStatus status();
   }
@@ -219,15 +228,17 @@ public final class GenInvocationBuildersVisitor
         paramReports.build());
   }
 
-  private static boolean templateFullyHandled(
+  private boolean templateFullyHandled(
       TemplateNode template, ImmutableSetMultimap.Builder<TemplateNode, ParamReport> paramReports) {
     boolean ok = true;
-    Set<String> allParamNames = new HashSet<>();
+    Set<String> allNativeNames = new HashSet<>();
+    Set<String> allJavaNames = new HashSet<>();
     for (TemplateParam param : template.getParams()) {
+      allNativeNames.add(param.name());
       ParamStatus status;
       if (InvocationBuilderTypeUtils.isJavaIncompatible(param.type())) {
         status = ParamStatus.JAVA_INCOMPATIBLE;
-      } else if (!allParamNames.add(getParamSetterSuffix(param.name()))) {
+      } else if (!allJavaNames.add(getParamSetterSuffix(param.name()))) {
         status = ParamStatus.NAME_COLLISION;
         ok = false;
       } else if (InvocationBuilderTypeUtils.getJavaType(param.type()).isPresent()) {
@@ -238,8 +249,24 @@ public final class GenInvocationBuildersVisitor
       }
 
       paramReports.put(
-          template, new AutoValue_GenInvocationBuildersVisitor_ParamReport(param, status));
+          template,
+          new AutoValue_GenInvocationBuildersVisitor_ParamReport(
+              TemplateMetadata.Parameter.fromParam(param), status));
     }
+
+    IndirectParamsInfo idi =
+        indirectParamsCalculator.calculateIndirectParams(TemplateMetadata.fromTemplate(template));
+    for (String key : idi.indirectParams.keySet()) {
+      if (allNativeNames.contains(key)) {
+        continue;
+      }
+      paramReports.put(
+          template,
+          new AutoValue_GenInvocationBuildersVisitor_ParamReport(
+              idi.indirectParams.get(key), ParamStatus.INDIRECT));
+      ok = false;
+    }
+
     return ok;
   }
 

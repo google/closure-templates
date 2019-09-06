@@ -162,6 +162,8 @@ public final class GenerateParseInfoVisitor
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;
 
+  private final GenInvocationBuildersVisitor invocationBuildersVisitor;
+
   private final SoyTypeRegistry typeRegistry;
 
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
@@ -205,6 +207,7 @@ public final class GenerateParseInfoVisitor
                 + "\""
                 + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
+    invocationBuildersVisitor = new GenInvocationBuildersVisitor(javaPackage, templateRegistry);
   }
 
   @Override
@@ -252,7 +255,7 @@ public final class GenerateParseInfoVisitor
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
     String javaClassName = soyFileToJavaClassNameMap.get(node);
-    builderReport = new GenInvocationBuildersVisitor(javaPackage).getReport(node);
+    builderReport = invocationBuildersVisitor.getReport(node);
 
     // Collect the following:
     // + all the public basic/element templates (non-private, non-delegate) in a map from the
