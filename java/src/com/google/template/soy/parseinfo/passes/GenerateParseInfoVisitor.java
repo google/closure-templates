@@ -373,7 +373,7 @@ public final class GenerateParseInfoVisitor
     appendJavadoc(
         ilb,
         deprecatedJavaDoc(
-            "Soy parse" + " info" + " for " + node.getFileName() + ".",
+            "Soy parse info for " + node.getFileName() + ".",
             builderReport.complete(),
             builderReport.className()),
         true,
@@ -709,8 +709,14 @@ public final class GenerateParseInfoVisitor
   }
 
   private static String deprecatedJavaDoc(String content, boolean deprecated, String useInstead) {
-    if (deprecated && !Strings.isNullOrEmpty(useInstead)) {
-      String dep = "@deprecated Use {@link " + useInstead + "} instead.";
+    if (deprecated) {
+      String instead = "";
+      String link = "";
+      if (!Strings.isNullOrEmpty(useInstead)) {
+        instead = " Use {@link " + useInstead + "} instead.";
+      }
+
+      String dep = "@deprecated" + instead + link;
       return content.isEmpty() ? dep : content + "\n\n" + dep;
     }
     return content;

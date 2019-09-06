@@ -13,16 +13,14 @@ Follow these steps to create a simple Hello World template and use it in Java:
     ├── pom.xml
     └── src
         └── main
-            ├── java
-            │   └── example
-            │       └── HelloWorld.java
-            └── resources
-                └── example
+            └── java
+                └── example
+                    └── HelloWorld.java
                     └── simple.soy
     ```
 
 2.  All files that contain Soy end with the `.soy` file extension and are called
-    Soy files. Create `src/main/resources/example/simple.soy` containing the
+    Soy files. Create `src/main/java/example/simple.soy` containing the
     following line:
 
         {namespace examples.simple}
@@ -30,8 +28,8 @@ Follow these steps to create a simple Hello World template and use it in Java:
     This line declares a namespace for all the templates that you define in this
     file.
 
-3.  Copy the following template to `src/main/resources/example/simple.soy`,
-    making sure that it appears after the namespace declaration:
+3.  Copy the following template to `src/main/java/example/simple.soy`, making
+    sure that it appears after the namespace declaration:
 
         {template .helloWorld}
           Hello world!
@@ -248,8 +246,8 @@ section would start like this (with three additional import lines not shown):
 
 You might find it error-prone to type hard-coded strings for template names and
 template parameters. If so, you can use `SoyParseInfoGenerator` to generate Java
-constants for the template and parameter names in your templates. Follow the
-steps below to use `SoyParseInfoGenerator` with the Hello World example:
+classes for the template and parameter names in your templates. Follow the steps
+below to use `SoyParseInfoGenerator` with the Hello World example:
 
 1.  Download the latest version of `SoyParseInfoGenerator.jar` from
     [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22soy%22)
@@ -265,35 +263,26 @@ steps below to use `SoyParseInfoGenerator` with the Hello World example:
     Run `SoyParseInfoGenerator` with the following flags:
 
         $ java -jar SoyParseInfoGenerator.jar \
-            --outputDirectory src/main/java/example \
+            --generateInvocationBuilders
             --javaPackage example \
-            --javaClassNameSource filename \
-            --srcs src/main/resources/example/simple.soy
+            --srcs src/main/java/example/simple.soy
 
-    This step creates the file `src/main/java/example/SimpleSoyInfo.java`. This
-    file contains mappings between the generated constants and their
-    corresponding strings.
+    This step creates the file `src/main/java/example/SimpleTemplates.java`.
 
-    Open `src/main/java/example/SimpleSoyInfo.java` and look at the constants
-    that `SoyParseInfoGenerator` generated for each of the templates and their
-    parameters. For example, the Java constant `HELLO_NAME` maps to a
-    `SoyTemplateInfo` object that represents the `.helloName` template, and the
-    constant `HELLO_NAME.NAME` maps to the `.helloName` template's parameter
-    `name`.
+    Open `src/main/java/example/SimpleTemplates.java` and look at the inner
+    class that `SoyParseInfoGenerator` generated for each of the templates. For
+    example, the class `HelloNameParams` represents the `.helloName` template
+    and `HelloNameParams.Builder#setName` represents the `.helloName` template's
+    parameter `name`.
 
-2.  Edit `src.main/java/example/HelloWorld.java` to looks like this:
+2.  Edit `src/main/java/example/HelloWorld.java` to look like this:
 
-~~~ {.prettyprint}
+``` {.prettyprint}
 package example;
-
-import static example.SimpleSoyInfo.HELLO_NAME;
-import static example.SimpleSoyInfo.HELLO_NAMES;
-import static example.SimpleSoyInfo.HELLO_WORLD;
 
 import com.google.template.soy.SoyFileSet;
 import com.google.template.soy.tofu.SoyTofu;
-import example.SimpleSoyInfo.HelloNameSoyTemplateInfo;
-import example.SimpleSoyInfo.HelloNamesSoyTemplateInfo;
+import example.SimpleTemplates;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -306,27 +295,29 @@ public class HelloWorld {
         .add(HelloWorld.class.getResource("simple.soy"))
         .build();
     SoyTofu tofu = sfs.compileToTofu();
-    System.out.println(tofu.newRenderer(SimpleSoyInfo.HELLO_WORLD).render());
+    System.out.println(
+        tofu.newRenderer(SimpleTemplates.HelloWorldParams.getDefaultInstance()).render());
 
     SoyTofu simpleTofu = tofu.forNamespace("examples.simple");
-    Map<String, Object> data = new HashMap<>();
-    data.put(HelloNameSoyTemplateInfo.NAME, "Ana");
+    System.out.println("-----------------");
     System.out.println(
         simpleTofu
-            .newRenderer(SimpleSoyInfo.HELLO_NAME)
-            .setData(data)
+            .newRenderer(SimpleTemplates.HelloNameParams.builder().setName("Ana").build())
             .render());
 
     List<String> additionalNames = Arrays.asList("Bob", "Cid", "Dee");
-    data.put(HelloNamesSoyTemplateInfo.ADDITIONAL_NAMES, additionalNames);
+    System.out.println("-----------------");
     System.out.println(
         simpleTofu
-            .newRenderer(SimpleSoyInfo.HELLO_NAMES)
-            .setData(data)
+            .newRenderer(
+                SimpleTemplates.HelloNamesParams.builder()
+                    .setName("Ana")
+                    .setAdditionalNames(additionalNames)
+                    .build())
             .render());
   }
 }
-~~~
+```
 
 3.  Run `mvn package` at the root of your project. You should see the same
     message as before:
