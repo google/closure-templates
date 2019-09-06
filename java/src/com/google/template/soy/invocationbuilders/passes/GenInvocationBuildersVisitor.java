@@ -432,6 +432,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.template.soy.data.SoyValueConverter;");
     ilb.appendLine("import com.google.template.soy.data.TemplateParameters;");
     ilb.appendLine("import com.google.template.soy.data.BaseParamsImpl;");
+    ilb.appendLine("import java.util.List;");
     ilb.appendLine("import java.util.Map;");
     ilb.appendLine("import java.util.Objects;");
     ilb.appendLine("import java.util.concurrent.Future;");
