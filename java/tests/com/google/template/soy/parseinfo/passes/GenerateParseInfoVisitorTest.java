@@ -176,7 +176,7 @@ public final class GenerateParseInfoVisitorTest {
         .contains("@deprecated Use {@link com.google.gpivtest.NoPathTemplates} instead.");
     assertThat(parseInfoContent)
         .contains(
-            "@deprecated Use {@link com.google.gpivtest.NoPathTemplates.BrittleTestTemplateParams}"
+            "@deprecated Use {@link com.google.gpivtest.NoPathTemplates.BrittleTestTemplate}"
                 + " instead.");
   }
 

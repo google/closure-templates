@@ -178,7 +178,7 @@ Perform these steps:
     ?>` for the template data, use the corresponding builder class.
 
     ```java
-    MainTemplates.IndexParams params = MainTemplates.IndexParams.builder()
+    MainTemplates.Index params = MainTemplates.Index.builder()
         .setTitle(...)
         .setMessage(...)
         .setCount(...)
@@ -190,17 +190,17 @@ Perform these steps:
     may be necessary to get this to compile.
 
     If the template has zero parameters you can use
-    `MainTemplates.IndexParams.getDefaultInstance()` as a shortcut.
+    `MainTemplates.Index.getDefaultInstance()` as a shortcut.
 
 1.  Update the invocation of the rendering API. Locate the overloaded method in
     the rendering API that takes a `TemplateParameters` and call it
-    (`MainTemplates.IndexParams` implements `TemplateParameters`). For example,
-    you would call the SoySauce rendering API as follows:
+    (`MainTemplates.Index` implements `TemplateParameters`). For example, you
+    would call the SoySauce rendering API as follows:
 
     ```java
     soySauce.newRenderer(params).renderHtml();
     ```
 
     Note that you don't explicitly pass "template name" in the new API as this
-    information is now contained in the IndexParams class.
+    information is now contained in the `Index` class.
 

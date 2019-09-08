@@ -39,7 +39,7 @@ public final class MapJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "Map<"
+    return "java.util.Map<"
         + keyType.asGenericsTypeArgumentString()
         + ", "
         + valueType.asGenericsTypeArgumentString()

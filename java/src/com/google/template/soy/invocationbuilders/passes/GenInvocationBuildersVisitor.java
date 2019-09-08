@@ -25,6 +25,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
@@ -57,7 +58,7 @@ import javax.annotation.Nullable;
  * each template in the soy file.
  *
  * <p>For example, "foo.soy" containing templates "bar" and "baz" would result in FooTemplates.java,
- * with inner classes BarParams and BazParams.
+ * with inner classes Bar and Baz.
  */
 public final class GenInvocationBuildersVisitor
     extends AbstractSoyNodeVisitor<ImmutableList<GeneratedFile>> {
@@ -72,9 +73,9 @@ public final class GenInvocationBuildersVisitor
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
-  // Set of "FooParams" class names that we've used already. Occasionally template names will
+  // Set of "Foo" class names that we've used already. Occasionally template names will
   // generate the same Java class name (e.g."foo" and "foo_" would both try to generate a
-  // "FooParams" class, so if "foo_" is not actually marked as visibility="private", then we'd have
+  // "Foo" class, so if "foo_" is not actually marked as visibility="private", then we'd have
   // a collision). For now, we ignore templates that would generate the same name as a previous
   // template, and log a warning.
   private Set<String> paramsClassNamesUsed;
@@ -135,10 +136,7 @@ public final class GenInvocationBuildersVisitor
     ilb = null;
   }
 
-  /**
-   * For each public, non-delegate template in the given soy file, generates a FooParams inner
-   * class.
-   */
+  /** For each public, non-delegate template in the given soy file, generates a Foo inner class. */
   private void generateParamsClassesForEachTemplate(SoyFileNode soyFile) {
     paramsClassNamesUsed = new HashSet<>();
     for (TemplateNode template : soyFile.getChildren()) {
@@ -271,7 +269,7 @@ public final class GenInvocationBuildersVisitor
   }
 
   /**
-   * Writes a FooParams subclass for the given template. The class extends {@link
+   * Writes a Foo subclass for the given template. The class extends {@link
    * com.google.template.soy.data.BaseParamsImpl}, which implements {@link
    * com.google.template.soy.data.TemplateParameters}.
    */
@@ -285,7 +283,7 @@ public final class GenInvocationBuildersVisitor
     }
     String paramsClass = templateParamsClassname.get();
 
-    // Start of FooParams class.
+    // Start of Foo class.
     String templateDescription = template.getSoyDocDesc();
     ilb.appendLine();
     appendJavadoc(
@@ -305,8 +303,8 @@ public final class GenInvocationBuildersVisitor
 
     appendFutureWrapperMethod(paramsClass);
 
-    // Constructor for FooParams.
-    ilb.appendLine("private " + paramsClass + "(Map<String, SoyValueProvider> data) {");
+    // Constructor for Foo.
+    ilb.appendLine("private " + paramsClass + "(java.util.Map<String, SoyValueProvider> data) {");
     ilb.increaseIndent();
     ilb.appendLine("super(TEMPLATE_NAME, data);");
     ilb.decreaseIndent();
@@ -315,7 +313,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
     appendParamsBuilderClass(template, templateParamsClassname.get());
 
-    // End of FooParams class.
+    // End of Foo class.
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
@@ -323,8 +321,8 @@ public final class GenInvocationBuildersVisitor
 
   /**
    * Adds a static method to each Params class: {@code public static
-   * TemplateParameters.AsyncWrapper<FooParams> wrapFuture(ListenableFuture<FooParams>)}. This
-   * utility is needed for supporting Producers + some Apps Framework utility classes.
+   * TemplateParameters.AsyncWrapper<Foo> wrapFuture(ListenableFuture<Foo>)}. This utility is needed
+   * for supporting Producers + some Apps Framework utility classes.
    *
    * @see com.google.apps.framework.template.StructuredPageResponse
    */
@@ -381,7 +379,7 @@ public final class GenInvocationBuildersVisitor
       ilb.appendLine();
     }
 
-    // Start of FooParams.Builder class.
+    // Start of Foo.Builder class.
     ilb.appendLine(
         "public static class Builder extends AbstractBuilder<Builder, "
             + templateParamsClassname
@@ -394,7 +392,7 @@ public final class GenInvocationBuildersVisitor
     String paramsSetConstantName = "PARAMS";
     appendParamsImmutableSetConstant(paramsSetConstantName, template.getParams());
 
-    // Constructor for FooParams.Builder.
+    // Constructor for Foo.Builder.
     ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
     ilb.appendLine("super(TEMPLATE_NAME, " + paramsSetConstantName + ");");
@@ -402,7 +400,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("}");
     ilb.appendLine();
 
-    // #buildInternal() for FooTemplateParams.Builder.
+    // #buildInternal() for FooTemplate.Builder.
     ilb.appendLine("@Override");
     ilb.appendLine(
         "protected "
@@ -464,8 +462,6 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.template.soy.data.SoyValueConverter;");
     ilb.appendLine("import com.google.template.soy.data.TemplateParameters;");
     ilb.appendLine("import com.google.template.soy.data.BaseParamsImpl;");
-    ilb.appendLine("import java.util.List;");
-    ilb.appendLine("import java.util.Map;");
     ilb.appendLine("import java.util.concurrent.Future;");
     ilb.appendLine("import javax.annotation.Generated;");
     ilb.appendLine();
@@ -569,8 +565,13 @@ public final class GenInvocationBuildersVisitor
     return makeUpperCamelCase(fileName) + "Templates";
   }
 
+  // This list should include all short names of classes imported as well as any class in java.lang.
+  // For now this gets all targets to compile.
+  private static final ImmutableSet<String> RESERVED_NAMES =
+      ImmutableSet.of("String", "Override", "Number", "Integer", "Long", "Future");
+
   /**
-   * Converts a template name to its corresponding FooParams class name.
+   * Converts a template name to its corresponding Foo class name.
    *
    * <p>NOTE: If the java class name has already been used, this returns an empty optional. See
    * {@link #paramsClassNamesUsed} for more info about when this happens.
@@ -582,6 +583,12 @@ public final class GenInvocationBuildersVisitor
     if (!paramsClassNamesUsed.add(className)) {
       logDuplicateTemplateNameWarning(template.getTemplateNameForUserMsgs(), className);
       return Optional.empty();
+    } else if (RESERVED_NAMES.contains(className)) {
+      logger.warning(
+          "When generating soy java invocation builders, soy template: "
+              + template.getTemplateNameForUserMsgs()
+              + " generated a Java UpperCamelCase that is reserved.");
+      return Optional.empty();
     }
     return Optional.of(className);
   }
@@ -591,9 +598,9 @@ public final class GenInvocationBuildersVisitor
     String templateName =
         namespacedTemplateName.substring(namespacedTemplateName.lastIndexOf('.') + 1);
 
-    // Convert the template name to upper camel case (stripping non-alphanumeric characters), and
-    // append "Params" (e.g. template "foo" -> "FooParams").
-    return makeUpperCamelCase(templateName) + "Params";
+    // Convert the template name to upper camel case (stripping non-alphanumeric characters),  (e.g.
+    // template "foo" -> "Foo").
+    return makeUpperCamelCase(templateName);
   }
 
   /**

@@ -271,9 +271,9 @@ below to use `SoyParseInfoGenerator` with the Hello World example:
 
     Open `src/main/java/example/SimpleTemplates.java` and look at the inner
     class that `SoyParseInfoGenerator` generated for each of the templates. For
-    example, the class `HelloNameParams` represents the `.helloName` template
-    and `HelloNameParams.Builder#setName` represents the `.helloName` template's
-    parameter `name`.
+    example, the class `HelloName` represents the `.helloName` template and
+    `HelloName.Builder#setName` represents the `.helloName` template's parameter
+    `name`.
 
 2.  Edit `src/main/java/example/HelloWorld.java` to look like this:
 
@@ -296,13 +296,13 @@ public class HelloWorld {
         .build();
     SoyTofu tofu = sfs.compileToTofu();
     System.out.println(
-        tofu.newRenderer(SimpleTemplates.HelloWorldParams.getDefaultInstance()).render());
+        tofu.newRenderer(SimpleTemplates.HelloWorld.getDefaultInstance()).render());
 
     SoyTofu simpleTofu = tofu.forNamespace("examples.simple");
     System.out.println("-----------------");
     System.out.println(
         simpleTofu
-            .newRenderer(SimpleTemplates.HelloNameParams.builder().setName("Ana").build())
+            .newRenderer(SimpleTemplates.HelloName.builder().setName("Ana").build())
             .render());
 
     List<String> additionalNames = Arrays.asList("Bob", "Cid", "Dee");
@@ -310,7 +310,7 @@ public class HelloWorld {
     System.out.println(
         simpleTofu
             .newRenderer(
-                SimpleTemplates.HelloNamesParams.builder()
+                SimpleTemplates.HelloNames.builder()
                     .setName("Ana")
                     .setAdditionalNames(additionalNames)
                     .build())
