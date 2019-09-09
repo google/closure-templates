@@ -21,7 +21,11 @@ import com.google.template.soy.base.internal.IndentedLinesBuilder;
 /** Abstract base class representing a Java type used for invocation builders. */
 public abstract class JavaType {
 
-  JavaType() {}
+  private final boolean isNullable;
+
+  JavaType(boolean isNullable) {
+    this.isNullable = isNullable;
+  }
 
   /** Returns the type as a generated Java string. */
   public abstract String toJavaTypeString();
@@ -44,14 +48,22 @@ public abstract class JavaType {
    * <p>The return value would be "myListAsLong".
    */
   public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
-    if (!isPrimitive()) {
+    if (!isNullable() && !isPrimitive()) {
       ilb.appendLine("Preconditions.checkNotNull(" + variableName + ");");
     }
     return variableName;
   }
 
-  /** Whether this is a primitive type (if not, we add an Preconditions.checkNotNull check). */
+  /** Whether the type should be treated as {@code @Nullable}). */
+  public boolean isNullable() {
+    return isNullable;
+  }
+
+  /** Whether this is a primitive type. */
   abstract boolean isPrimitive();
+
+  /** Returns this type as a nullable type. Primitive should make sure to switch to a boxed type. */
+  public abstract JavaType asNullable();
 
   /**
    * Returns the string to use if this is a type argument for a generic type (e.g. "? extends

@@ -24,9 +24,15 @@ public final class MapJavaType extends JavaType {
   private final JavaType keyType; // The type of the map's keys.
   private final JavaType valueType; // The type of the map's values.
 
-  final boolean shouldMarkAsSoyMap;
+  private final boolean shouldMarkAsSoyMap;
 
   public MapJavaType(JavaType keyType, JavaType valueType, boolean shouldMarkAsSoyMap) {
+    this(keyType, valueType, shouldMarkAsSoyMap, /* isNullable= */ false);
+  }
+
+  public MapJavaType(
+      JavaType keyType, JavaType valueType, boolean shouldMarkAsSoyMap, boolean isNullable) {
+    super(isNullable);
     this.keyType = keyType;
     this.valueType = valueType;
     this.shouldMarkAsSoyMap = shouldMarkAsSoyMap;
@@ -57,8 +63,7 @@ public final class MapJavaType extends JavaType {
 
     // If the map's key and/or value type is long or double, convert "? extends Number" -> Long or
     // Double.
-    if (keyType instanceof PrimitiveJavaNumberType
-        || valueType instanceof PrimitiveJavaNumberType) {
+    if (keyType instanceof JavaNumberSubtype || valueType instanceof JavaNumberSubtype) {
       mapRef = appendMapUsingLongOrDoubleInsteadOfNumber(ilb, variableName);
     } else {
       // Otherwise just make an immutable copy of the map.
@@ -98,9 +103,9 @@ public final class MapJavaType extends JavaType {
 
     ilb.appendLine(
         "ImmutableMap<"
-            + getBoxedTypeIfPrimitiveNum(keyType).orElse(keyType.asGenericsTypeArgumentString())
+            + maybeGetBoxedNumberSubtype(keyType).orElse(keyType.asGenericsTypeArgumentString())
             + ", "
-            + getBoxedTypeIfPrimitiveNum(valueType).orElse(valueType.asGenericsTypeArgumentString())
+            + maybeGetBoxedNumberSubtype(valueType).orElse(valueType.asGenericsTypeArgumentString())
             + "> stronglyTypedMap = ");
     ilb.increaseIndent(2);
     ilb.appendLine(mapVariableName + ".entrySet().stream()");
@@ -118,30 +123,35 @@ public final class MapJavaType extends JavaType {
   }
 
   /**
-   * If the given type is a primitive number, returns the corresponding boxed type (e.g. "Long" for
-   * long).
+   * If the given type is a {@link JavaNumberSubtype}, returns the corresponding boxed type name
+   * (e.g. "Long" or "Double" ).
    */
-  private static Optional<String> getBoxedTypeIfPrimitiveNum(JavaType t) {
-    if (t instanceof PrimitiveJavaNumberType) {
-      return Optional.of(((PrimitiveJavaNumberType) t).getBoxedTypeNameString());
+  private static Optional<String> maybeGetBoxedNumberSubtype(JavaType t) {
+    if (t instanceof JavaNumberSubtype) {
+      return Optional.of(((JavaNumberSubtype) t).getBoxedTypeNameString());
     }
 
     return Optional.empty();
   }
 
   /**
-   * If the given type is a primitive number, returns a generated code string to coerce a {@link
-   * Number} reference to a stricter subtype (e.g. Long or Double). For example, this might return
-   * "myNumVar.longValue()".
+   * If the given type is a {@link JavaNumberSubtype}, returns a generated code string to coerce a
+   * {@link Number} reference to a stricter subtype (e.g. Long or Double). For example, this might
+   * return "myNumVar.longValue()".
    */
   private static Optional<String> maybeTransformNumberToStricterType(
       JavaType t, String numberRefInGenCode) {
 
-    if (t instanceof PrimitiveJavaNumberType) {
+    if (t instanceof JavaNumberSubtype) {
       return Optional.of(
-          ((PrimitiveJavaNumberType) t).transformNumberTypeToStricterSubtype(numberRefInGenCode));
+          ((JavaNumberSubtype) t).transformNumberTypeToStricterSubtype(numberRefInGenCode));
     }
 
     return Optional.empty();
+  }
+
+  @Override
+  public MapJavaType asNullable() {
+    return new MapJavaType(keyType, valueType, shouldMarkAsSoyMap, /* isNullable= */ true);
   }
 }

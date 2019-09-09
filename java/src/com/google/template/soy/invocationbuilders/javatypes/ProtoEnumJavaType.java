@@ -23,6 +23,11 @@ public final class ProtoEnumJavaType extends JavaType {
   final EnumDescriptor enumDescriptor;
 
   public ProtoEnumJavaType(EnumDescriptor enumDescriptor) {
+    this(enumDescriptor, /* isNullable= */ false);
+  }
+
+  public ProtoEnumJavaType(EnumDescriptor enumDescriptor, boolean isNullable) {
+    super(isNullable);
     this.enumDescriptor = enumDescriptor;
   }
 
@@ -39,5 +44,10 @@ public final class ProtoEnumJavaType extends JavaType {
   @Override
   String asGenericsTypeArgumentString() {
     return toJavaTypeString();
+  }
+
+  @Override
+  public ProtoEnumJavaType asNullable() {
+    return new ProtoEnumJavaType(enumDescriptor, /* isNullable= */ true);
   }
 }

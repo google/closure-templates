@@ -23,6 +23,11 @@ public final class ProtoJavaType extends JavaType {
   final Descriptor protoDescriptor;
 
   public ProtoJavaType(Descriptor protoDescriptor) {
+    this(protoDescriptor, /* isNullable= */ false);
+  }
+
+  public ProtoJavaType(Descriptor protoDescriptor, boolean isNullable) {
+    super(isNullable);
     this.protoDescriptor = protoDescriptor;
   }
 
@@ -39,5 +44,10 @@ public final class ProtoJavaType extends JavaType {
   @Override
   String asGenericsTypeArgumentString() {
     return toJavaTypeString();
+  }
+
+  @Override
+  public ProtoJavaType asNullable() {
+    return new ProtoJavaType(protoDescriptor, /* isNullable= */ true);
   }
 }

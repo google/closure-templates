@@ -20,9 +20,14 @@ import com.google.template.soy.base.internal.IndentedLinesBuilder;
 /** Represents a list type for generated Soy Java invocation builders. */
 public final class ListJavaType extends JavaType {
 
-  final JavaType elementType; // The type of the list's elements.
+  private final JavaType elementType; // The type of the list's elements.
 
   public ListJavaType(JavaType elementType) {
+    this(elementType, /* isNullable= */ false);
+  }
+
+  public ListJavaType(JavaType elementType, boolean isNullable) {
+    super(isNullable);
     this.elementType = elementType;
   }
 
@@ -44,17 +49,17 @@ public final class ListJavaType extends JavaType {
   @Override
   public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
     String name = super.appendRunTimeOperations(ilb, variableName);
-    if (elementType instanceof PrimitiveJavaNumberType) {
+    if (elementType instanceof JavaNumberSubtype) {
       // Convert Iterable<? extends Number> to ImmutableList<Long> or ImmutableList<Double>.
-      PrimitiveJavaNumberType primitiveElementType = (PrimitiveJavaNumberType) elementType;
+      JavaNumberSubtype elementNumberType = (JavaNumberSubtype) elementType;
       ilb.appendLine(
           "ImmutableList<"
-              + primitiveElementType.getBoxedTypeNameString()
+              + elementNumberType.getBoxedTypeNameString()
               + "> stronglyTypedList ="
               + " Streams.stream("
               + name
               + ").map((num) -> "
-              + primitiveElementType.transformNumberTypeToStricterSubtype("num")
+              + elementNumberType.transformNumberTypeToStricterSubtype("num")
               + ").collect(toImmutableList());");
       return "stronglyTypedList";
     }
@@ -65,5 +70,10 @@ public final class ListJavaType extends JavaType {
 
   JavaType getElementType() {
     return elementType;
+  }
+
+  @Override
+  public ListJavaType asNullable() {
+    return new ListJavaType(elementType, true);
   }
 }

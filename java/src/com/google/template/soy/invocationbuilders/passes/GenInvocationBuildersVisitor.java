@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
+import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
@@ -41,7 +43,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyType;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -237,7 +238,9 @@ public final class GenInvocationBuildersVisitor
       } else if (!allJavaNames.add(getParamSetterSuffix(param.name()))) {
         status = ParamStatus.NAME_COLLISION;
         ok = false;
-      } else if (InvocationBuilderTypeUtils.getJavaType(param.type()).isPresent()) {
+      } else if (!InvocationBuilderTypeUtils.getJavaTypes(
+              param.type(), /* shouldMakeNullable= */ !param.isRequired())
+          .isEmpty()) {
         status = ParamStatus.HANDLED;
       } else {
         status = ParamStatus.UNHANDLED_TYPE;
@@ -419,11 +422,7 @@ public final class GenInvocationBuildersVisitor
         .forEach(
             param ->
                 writeSettersForParam(
-                    param.name(),
-                    param.type(),
-                    param.desc(),
-                    paramUpperCamelCaseNamesUsed,
-                    template.getTemplateName()));
+                    param, param.desc(), paramUpperCamelCaseNamesUsed, template.getTemplateName()));
 
     ilb.appendLine();
 
@@ -465,6 +464,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.template.soy.data.SoyValueProvider;");
     ilb.appendLine("import java.util.concurrent.Future;");
     ilb.appendLine("import javax.annotation.Generated;");
+    ilb.appendLine("import javax.annotation.Nullable;");
     ilb.appendLine();
     ilb.appendLine();
   }
@@ -498,26 +498,24 @@ public final class GenInvocationBuildersVisitor
    * <p>TODO(b/77550695): Update docs for how we handle futures.
    */
   private void writeSettersForParam(
-      String templateParamName,
-      SoyType soyType,
+      TemplateParam param,
       @Nullable String paramDescription,
       Set<String> paramUpperCamelCaseNamesUsed,
       String templateName) {
 
     // Convert the param name to upper camel case. If this generates the same name as another param,
     // log a warning and skip over this param.
-    String upperCamelCaseName = getParamSetterSuffix(templateParamName);
+    String upperCamelCaseName = getParamSetterSuffix(param.name());
     if (!paramUpperCamelCaseNamesUsed.add(upperCamelCaseName)) {
-      logDuplicateParamNameWarning(templateParamName, upperCamelCaseName, templateName);
+      logDuplicateParamNameWarning(param.name(), upperCamelCaseName, templateName);
       return;
     }
 
     // Add setters for this param.
-    InvocationBuilderTypeUtils.getJavaType(soyType)
-        .ifPresent(
+    InvocationBuilderTypeUtils.getJavaTypes(param.type(), /* shouldMakeNullable= */ false)
+        .forEach(
             javaType ->
-                writeSetter(
-                    ilb, templateParamName, upperCamelCaseName, paramDescription, javaType));
+                writeSetter(ilb, param.name(), upperCamelCaseName, paramDescription, javaType));
     // TODO(b/77550695): Add future setter once we add supertype impl.
   }
 
@@ -542,8 +540,20 @@ public final class GenInvocationBuildersVisitor
             + (Strings.isNullOrEmpty(paramDescription) ? "." : ": " + paramDescription),
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
-    ilb.appendLine(
-        ("public Builder set" + paramNameInUpperCamelCase) + ("(" + javaTypeString + " value) {"));
+
+    // Add @Nullable if the type is nullable AND this isn't a proto/proto enum.
+    // TODO(b/140632665): Add fix for inserting @Nullable after proto package and before proto name.
+    if (javaType.isNullable()
+        && !(javaType instanceof ProtoEnumJavaType)
+        && !(javaType instanceof ProtoJavaType)) {
+      ilb.appendLine(
+          ("public Builder set" + paramNameInUpperCamelCase)
+              + ("(@Nullable " + javaTypeString + " value) {"));
+    } else {
+      ilb.appendLine(
+          ("public Builder set" + paramNameInUpperCamelCase)
+              + ("(" + javaTypeString + " value) {"));
+    }
     ilb.increaseIndent();
 
     String newVariableName = javaType.appendRunTimeOperations(ilb, "value");

@@ -15,7 +15,6 @@
  */
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 
 /**
@@ -28,85 +27,66 @@ import com.google.template.soy.base.internal.IndentedLinesBuilder;
  * coercing {@code Number} types to{@code Long} or {@code Double} at runtime.
  */
 public class SimpleJavaType extends JavaType {
-  /** Constants for all of the simple types we support. */
-  public static final SimpleJavaType BOOLEAN =
-      SimpleJavaType.builder()
-          .setIsPrimitive(true)
-          .setJavaTypeString("boolean")
-          .setGenericsTypeArgumentString("Boolean")
-          .build();
+  /**
+   * Constants for all of the simple types we support. Use {@link #asNullable} to get the
+   * corresponding nullable type.
+   */
+  public static final SimpleJavaType BOOLEAN = new BooleanJavaType();
 
   public static final SimpleJavaType NUMBER =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("Number")
-          .setGenericsTypeArgumentString("? extends Number")
-          .build();
+      new SimpleJavaType(
+          "Number", /* genericsTypeArgumentString= */ "? extends Number", /* isPrimitive= */ false);
 
   public static final SimpleJavaType HTML =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("SafeHtml")
-          .setGenericsTypeArgumentString("SafeHtml")
-          .build();
-  public static final SimpleJavaType JS =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("SafeScript")
-          .setGenericsTypeArgumentString("SafeScript")
-          .build();
+      new SimpleJavaType("SafeHtml", /* isPrimitive= */ false);
 
-  public static final SimpleJavaType URL =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("SafeUrl")
-          .setGenericsTypeArgumentString("SafeUrl")
-          .build();
+  public static final SimpleJavaType JS =
+      new SimpleJavaType("SafeScript", /* isPrimitive= */ false);
+
+  public static final SimpleJavaType URL = new SimpleJavaType("SafeUrl", /* isPrimitive= */ false);
 
   public static final SimpleJavaType TRUSTED_RESOURCE_URL =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("TrustedResourceUrl")
-          .setGenericsTypeArgumentString("TrustedResourceUrl")
-          .build();
+      new SimpleJavaType("TrustedResourceUrl", /* isPrimitive= */ false);
 
   public static final SimpleJavaType STRING =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("String")
-          .setGenericsTypeArgumentString("String")
-          .build();
+      new SimpleJavaType("String", /* isPrimitive= */ false);
 
   public static final SimpleJavaType OBJECT =
-      SimpleJavaType.builder()
-          .setIsPrimitive(false)
-          .setJavaTypeString("Object")
-          .setGenericsTypeArgumentString("?")
-          .build();
+      new SimpleJavaType("Object", "?", /* isPrimitive= */ false);
 
-  // Don't support as list/map type for now because we don't have a way of running the precondition
-  // over all values.
-  public static final SimpleJavaType ATTRIBUTES =
-      new SimpleJavaType("SanitizedContent", false, null) {
-        @Override
-        public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
-          ilb.appendLine(
-              "Preconditions.checkArgument("
-                  + variableName
-                  + ".getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);");
-          return variableName;
-        }
-      };
+  public static final SimpleJavaType ATTRIBUTES = new AttributesJavaType();
 
   private final String javaTypeString;
-  private final boolean isPrimitive;
   private final String genericsTypeArgumentString;
+  private final boolean isPrimitive;
 
   private SimpleJavaType(
-      String javaTypeString, boolean isPrimitive, String genericsTypeArgumentString) {
+      String javaTypeString,
+      String genericsTypeArgumentString,
+      boolean isPrimitive,
+      boolean isNullable) {
+    super(isNullable);
     this.javaTypeString = javaTypeString;
-    this.isPrimitive = isPrimitive;
     this.genericsTypeArgumentString = genericsTypeArgumentString;
+    this.isPrimitive = isPrimitive;
+  }
+
+  /** Construct overload that =defaults to non-nullable. */
+  private SimpleJavaType(
+      String javaTypeString, String genericsTypeArgumentString, boolean isPrimitive) {
+    this(javaTypeString, genericsTypeArgumentString, isPrimitive, /* isNullable= */ false);
+  }
+
+  /**
+   * Construct overload that =defaults to non-nullable and uses {@code javaTypeString} as the {@code
+   * genericsTypeArgumentString} as well.
+   */
+  private SimpleJavaType(String javaTypeString, boolean isPrimitive) {
+    this(
+        javaTypeString,
+        /* genericsTypeArgumentString= */ javaTypeString,
+        isPrimitive,
+        /* isNullable= */ false);
   }
 
   @Override
@@ -124,40 +104,77 @@ public class SimpleJavaType extends JavaType {
     return genericsTypeArgumentString;
   }
 
-  private static Builder builder() {
-    return new Builder();
+  @Override
+  public SimpleJavaType asNullable() {
+    return new SimpleJavaType(
+        javaTypeString, genericsTypeArgumentString, isPrimitive, /* isNullable= */ true);
   }
 
-  private static class Builder {
-    private String javaTypeString;
-    private boolean isPrimitive;
-    private String genericsTypeArgumentString;
-
-    Builder() {}
-
-    Builder setJavaTypeString(String javaTypeString) {
-      this.javaTypeString = javaTypeString;
-      return this;
+  /**
+   * Special boolean subtype. Uses primitive unless the type needs to be nullable, and then we
+   * switch to the boxed Boolean.
+   */
+  private static final class BooleanJavaType extends SimpleJavaType {
+    BooleanJavaType(boolean isNullable) {
+      // Use boxed boolean if the type needs to be nullable. Otherwise use primitive boolean.
+      super(
+          /* javaTypeString= */ isNullable ? "Boolean" : "boolean",
+          /* genericsTypeArgumentString= */ "Boolean",
+          /* isPrimitive= */ !isNullable,
+          /* isNullable= */ isNullable);
     }
 
-    Builder setIsPrimitive(boolean isPrimitive) {
-      this.isPrimitive = isPrimitive;
-      return this;
+    BooleanJavaType() {
+      this(/* isNullable= */ false);
     }
 
-    Builder setGenericsTypeArgumentString(String genericsTypeArgumentString) {
-      this.genericsTypeArgumentString = genericsTypeArgumentString;
-      return this;
+    @Override
+    public BooleanJavaType asNullable() {
+      return new BooleanJavaType(true);
+    }
+  }
+
+  /**
+   * The Attributes type needs special runtime operations. This subclass preserves the {@link
+   * #appendRunTimeOperations} override when {@link #asNullable} is called.
+   */
+  private static final class AttributesJavaType extends SimpleJavaType {
+
+    AttributesJavaType(boolean isNullable) {
+      super(
+          "SanitizedContent",
+          /* genericsTypeArgumentString= */ null,
+          /* isPrimitive= */ false,
+          isNullable);
     }
 
-    SimpleJavaType build() {
-      Preconditions.checkState(
-          javaTypeString != null && !javaTypeString.isEmpty(),
-          "Must set javaTypeString to a non-empty string");
-      Preconditions.checkState(
-          genericsTypeArgumentString != null && !genericsTypeArgumentString.isEmpty(),
-          "Must set genericsTypeArgumentString to a non-empty string");
-      return new SimpleJavaType(javaTypeString, isPrimitive, genericsTypeArgumentString);
+    AttributesJavaType() {
+      this(/* isNullable= */ false);
+    }
+
+    @Override
+    public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
+      String sanitizedContentSubtypeCheck =
+          "Preconditions.checkArgument("
+              + variableName
+              + ".getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);";
+
+      if (!isNullable()) {
+        ilb.appendLine(sanitizedContentSubtypeCheck);
+      } else {
+        ilb.appendLine("if (" + variableName + " != null) {");
+        ilb.increaseIndent();
+
+        ilb.appendLine(sanitizedContentSubtypeCheck);
+        ilb.decreaseIndent();
+        ilb.appendLine("}");
+      }
+      return variableName;
+    }
+
+    @Override
+    public AttributesJavaType asNullable() {
+      return new AttributesJavaType(/* isNullable= */ true);
     }
   }
 }

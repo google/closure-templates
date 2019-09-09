@@ -23,41 +23,58 @@ package com.google.template.soy.invocationbuilders.javatypes;
  * construct. This class contains methods for writing generated code inside our setters to downcast
  * to a stricter type (e.g. Number -> Long).
  */
-public abstract class PrimitiveJavaNumberType extends JavaType {
+public class JavaNumberSubtype extends JavaType {
+  public static final JavaNumberSubtype DOUBLE =
+      new JavaNumberSubtype(NumberSubtype.DOUBLE, /* isNullable= */ false);
 
-  public static final PrimitiveJavaNumberType DOUBLE =
-      new PrimitiveJavaNumberType("double", "Double") {
-        @Override
-        String transformNumberTypeToStricterSubtype(String numberRef) {
-          return numberRef + ".doubleValue()";
-        }
-      };
+  public static final JavaNumberSubtype NULLABLE_DOUBLE =
+      new JavaNumberSubtype(NumberSubtype.DOUBLE, /* isNullable= */ true);
 
-  public static final PrimitiveJavaNumberType LONG =
-      new PrimitiveJavaNumberType("long", "Long") {
-        @Override
-        String transformNumberTypeToStricterSubtype(String numberRef) {
-          return numberRef + ".longValue()";
-        }
-      };
+  public static final JavaNumberSubtype LONG =
+      new JavaNumberSubtype(NumberSubtype.LONG, /* isNullable= */ false);
 
-  private final String primitiveTypeString; // E.g. "long" or "double".
-  private final String
-      boxedTypeNameString; // Corresponding boxed type name (e.g. "Long" or "Double").
+  public static final JavaNumberSubtype NULLABLE_LONG =
+      new JavaNumberSubtype(NumberSubtype.LONG, /* isNullable= */ true);
 
-  private PrimitiveJavaNumberType(String primitiveTypeString, String boxedTypeNameString) {
-    this.primitiveTypeString = primitiveTypeString;
-    this.boxedTypeNameString = boxedTypeNameString;
+  private enum NumberSubtype {
+    DOUBLE("double", "Double"),
+    LONG("long", "Long");
+
+    private final String primitiveTypeString;
+    private final String boxedTypeString;
+
+    NumberSubtype(String primitiveTypeString, String boxedTypeString) {
+      this.primitiveTypeString = primitiveTypeString;
+      this.boxedTypeString = boxedTypeString;
+    }
+
+    String toJavaTypeString(boolean isNullable) {
+      return isNullable ? boxedTypeString : primitiveTypeString;
+    }
+
+    String getBoxedTypeNameString() {
+      return boxedTypeString;
+    }
+  }
+
+  private final NumberSubtype type;
+
+  private final boolean isNullable;
+
+  private JavaNumberSubtype(NumberSubtype type, boolean isNullable) {
+    super(isNullable);
+    this.type = type;
+    this.isNullable = isNullable;
   }
 
   @Override
   public String toJavaTypeString() {
-    return primitiveTypeString;
+    return type.toJavaTypeString(isNullable);
   }
 
   @Override
   boolean isPrimitive() {
-    return true;
+    return !isNullable(); // If it's not nullable, we will use the primitive.
   }
 
   @Override
@@ -67,7 +84,7 @@ public abstract class PrimitiveJavaNumberType extends JavaType {
 
   /** Returns the boxed type name corresponding to this primitive type (e.g. "Long" or "Double"); */
   String getBoxedTypeNameString() {
-    return boxedTypeNameString;
+    return type.getBoxedTypeNameString();
   }
 
   /**
@@ -81,5 +98,18 @@ public abstract class PrimitiveJavaNumberType extends JavaType {
    *     the boxed number subtype corresponding to this primitive. For example, for numberRef
    *     "myNum", this might return "myNum.doubleValue()".
    */
-  abstract String transformNumberTypeToStricterSubtype(String numberRef);
+  String transformNumberTypeToStricterSubtype(String numberRef) {
+    switch (type) {
+      case DOUBLE:
+        return numberRef + ".doubleValue()";
+      case LONG:
+        return numberRef + ".longValue()";
+    }
+    throw new IllegalStateException("Impossible");
+  }
+
+  @Override
+  public JavaNumberSubtype asNullable() {
+    return new JavaNumberSubtype(type, true);
+  }
 }
