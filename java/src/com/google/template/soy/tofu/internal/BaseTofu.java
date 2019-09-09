@@ -28,9 +28,9 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.TemplateParameters;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
@@ -210,7 +210,7 @@ public final class BaseTofu implements SoyTofu {
   }
 
   @Override
-  public RendererImpl newRenderer(TemplateParameters params) {
+  public RendererImpl newRenderer(SoyTemplate params) {
     return new RendererImpl(this, params.getTemplateName(), params.getParamsAsMap());
   }
 

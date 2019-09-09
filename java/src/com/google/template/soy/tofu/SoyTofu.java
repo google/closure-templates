@@ -21,7 +21,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.TemplateParameters;
+import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -104,7 +104,7 @@ public interface SoyTofu {
    * renderer will have its data set and may not allow additional calls to {@link Renderer#setData}.
    */
   @Beta
-  default Renderer newRenderer(TemplateParameters params) {
+  default Renderer newRenderer(SoyTemplate params) {
     return newRenderer(params.getTemplateName()).setData(params.getParamsAsMap());
   }
 
