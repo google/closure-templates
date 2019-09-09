@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.TemplateParameters;
+import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -44,7 +44,7 @@ public interface SoySauce {
    * renderer will have its data set and may not allow additional calls to {@link Renderer#setData}.
    */
   @Beta
-  default Renderer newRenderer(TemplateParameters params) {
+  default Renderer newRenderer(SoyTemplate params) {
     return renderTemplate(params.getTemplateName()).setData(params.getParamsAsMap());
   }
 

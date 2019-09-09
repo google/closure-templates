@@ -35,12 +35,12 @@ import java.util.Set;
  * <p>This class name purposefully does not end with "Params" so that it cannot collide with the
  * names of generated subclasses.
  */
-public abstract class BaseParamsImpl implements TemplateParameters {
+public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
   private final String name;
   private final ImmutableMap<String, SoyValueProvider> data;
 
-  protected BaseParamsImpl(String name, Map<String, SoyValueProvider> data) {
+  protected BaseSoyTemplateImpl(String name, Map<String, SoyValueProvider> data) {
     this.name = name;
     this.data = ImmutableMap.copyOf(data);
   }
@@ -63,7 +63,7 @@ public abstract class BaseParamsImpl implements TemplateParameters {
    * <p>Instances of this abstract class are not thread safe.
    */
   public abstract static class AbstractBuilder<
-      B extends AbstractBuilder<?, T>, T extends BaseParamsImpl> {
+      B extends AbstractBuilder<?, T>, T extends BaseSoyTemplateImpl> {
     private final String templateName;
     private final ImmutableMap<String, Param> params;
     private final SoyValueConverter soyValueConverter;
@@ -145,18 +145,18 @@ public abstract class BaseParamsImpl implements TemplateParameters {
 
   /**
    * An internal representation of a parameter to a Soy template. This should not be used outside of
-   * {@link BaseParamsImpl}.
+   * {@link BaseSoyTemplateImpl}.
    */
   @AutoValue
   public abstract static class Param {
     /** Creates an optional param with the given name. */
     public static Param optional(String name) {
-      return new AutoValue_BaseParamsImpl_Param(name, false);
+      return new AutoValue_BaseSoyTemplateImpl_Param(name, false);
     }
 
     /** Creates a required param with the given name. */
     public static Param required(String name) {
-      return new AutoValue_BaseParamsImpl_Param(name, true);
+      return new AutoValue_BaseSoyTemplateImpl_Param(name, true);
     }
 
     abstract String getName();

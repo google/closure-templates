@@ -53,9 +53,9 @@ import javax.annotation.Nullable;
 
 /**
  * Visitor for generating Java template parameter builders (see {@link
- * com.google.template.soy.data.BaseParamsImpl}) that can be used for invoking Soy templates from
- * Java. One java file will be generated for each soy file, containing template param builders for
- * each template in the soy file.
+ * com.google.template.soy.data.BaseSoyTemplateImpl}) that can be used for invoking Soy templates
+ * from Java. One java file will be generated for each soy file, containing template param builders
+ * for each template in the soy file.
  *
  * <p>For example, "foo.soy" containing templates "bar" and "baz" would result in FooTemplates.java,
  * with inner classes Bar and Baz.
@@ -113,7 +113,7 @@ public final class GenInvocationBuildersVisitor
     // Start of *FooTemplates class.
     appendJavadoc(
         ilb,
-        "Wrapper class containing {@link BaseParamsImpl} builders for each template in: "
+        "Wrapper class containing {@link BaseSoyTemplateImpl} builders for each template in: "
             + soyFile.getFileName()
             + ".",
         /* forceMultiline= */ false,
@@ -157,9 +157,7 @@ public final class GenInvocationBuildersVisitor
 
     protected abstract ImmutableMap<TemplateNode, String> classNamePerTemplate();
 
-    /**
-     * Returns the name of the outer class created to hold the TemplateParameters implementations.
-     */
+    /** Returns the name of the outer class created to hold the SoyTemplate implementations. */
     public abstract String className();
 
     protected abstract ImmutableSetMultimap<TemplateNode, ParamReport> paramReports();
@@ -209,12 +207,12 @@ public final class GenInvocationBuildersVisitor
     for (TemplateNode template : soyFile.getChildren()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
-        boolean nameCollision = !allClassNames.add(generateBaseParamsImplClassName(template));
+        boolean nameCollision = !allClassNames.add(generateTemplateClassName(template));
         boolean complete = templateFullyHandled(template, paramReports) && !nameCollision;
         templateComplete.put(template, complete);
         allComplete = allComplete && complete;
         if (!nameCollision) {
-          classNames.put(template, baseClassName + "." + generateBaseParamsImplClassName(template));
+          classNames.put(template, baseClassName + "." + generateTemplateClassName(template));
         }
       }
     }
@@ -270,8 +268,8 @@ public final class GenInvocationBuildersVisitor
 
   /**
    * Writes a Foo subclass for the given template. The class extends {@link
-   * com.google.template.soy.data.BaseParamsImpl}, which implements {@link
-   * com.google.template.soy.data.TemplateParameters}.
+   * com.google.template.soy.data.BaseSoyTemplateImpl}, which implements {@link
+   * com.google.template.soy.data.SoyTemplate}.
    */
   @Override
   protected void visitTemplateNode(TemplateNode template) {
@@ -294,7 +292,9 @@ public final class GenInvocationBuildersVisitor
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
     ilb.appendLine(
-        "public static final class " + templateParamsClassname.get() + " extends BaseParamsImpl {");
+        "public static final class "
+            + templateParamsClassname.get()
+            + " extends BaseSoyTemplateImpl {");
     ilb.increaseIndent();
     ilb.appendLine();
     ilb.appendLine(
@@ -320,9 +320,9 @@ public final class GenInvocationBuildersVisitor
   }
 
   /**
-   * Adds a static method to each Params class: {@code public static
-   * TemplateParameters.AsyncWrapper<Foo> wrapFuture(ListenableFuture<Foo>)}. This utility is needed
-   * for supporting Producers + some Apps Framework utility classes.
+   * Adds a static method to each Params class: {@code public static SoyTemplate.AsyncWrapper<Foo>
+   * wrapFuture(ListenableFuture<Foo>)}. This utility is needed for supporting Producers + some Apps
+   * Framework utility classes.
    *
    * @see com.google.apps.framework.template.StructuredPageResponse
    */
@@ -331,19 +331,19 @@ public final class GenInvocationBuildersVisitor
         ilb,
         "Wraps a ListenableFuture<"
             + paramsClass
-            + "> as a TemplateParameters.AsyncWrapper<"
+            + "> as a SoyTemplate.AsyncWrapper<"
             + paramsClass
             + ">",
         false,
         true);
     ilb.appendLine(
-        "public static TemplateParameters.AsyncWrapper<"
+        "public static SoyTemplate.AsyncWrapper<"
             + paramsClass
             + "> wrapFuture(ListenableFuture<"
             + paramsClass
             + "> paramsFuture) {");
     ilb.increaseIndent();
-    ilb.appendLine("return new TemplateParameters.AsyncWrapper<>(TEMPLATE_NAME, paramsFuture);");
+    ilb.appendLine("return new SoyTemplate.AsyncWrapper<>(TEMPLATE_NAME, paramsFuture);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
@@ -351,7 +351,7 @@ public final class GenInvocationBuildersVisitor
 
   /**
    * Appends a builder class for template "foo" with parameter setting methods. This class extends
-   * the {@link com.google.template.soy.data.BaseParamsImpl.AbstractBuilder} class.
+   * the {@link com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder} class.
    */
   private void appendParamsBuilderClass(TemplateNode template, String templateParamsClassname) {
     appendJavadoc(ilb, "Creates a new Builder instance.", false, true);
@@ -387,7 +387,8 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
     ilb.increaseIndent();
 
-    // Add a constant ImmutableSet of type {@link com.google.template.soy.data.BaseParamsImpl.Param}
+    // Add a constant ImmutableSet of type {@link
+    // com.google.template.soy.data.BaseSoyTemplateImpl.Param}
     // containing metadata about the template's params.
     String paramsSetConstantName = "PARAMS";
     appendParamsImmutableSetConstant(paramsSetConstantName, template.getParams());
@@ -446,7 +447,6 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import static com.google.common.collect.ImmutableMap.toImmutableMap;");
     ilb.appendLine();
     ilb.appendLine("import com.google.common.base.Preconditions;");
-    ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
     ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
     ilb.appendLine("import com.google.common.collect.ImmutableSet;");
@@ -457,11 +457,12 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.common.html.types.SafeStyleSheet;");
     ilb.appendLine("import com.google.common.html.types.SafeUrl;");
     ilb.appendLine("import com.google.common.html.types.TrustedResourceUrl;");
+    ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
+    ilb.appendLine("import com.google.template.soy.data.BaseSoyTemplateImpl;");
     ilb.appendLine("import com.google.template.soy.data.SanitizedContent;");
-    ilb.appendLine("import com.google.template.soy.data.SoyValueProvider;");
+    ilb.appendLine("import com.google.template.soy.data.SoyTemplate;");
     ilb.appendLine("import com.google.template.soy.data.SoyValueConverter;");
-    ilb.appendLine("import com.google.template.soy.data.TemplateParameters;");
-    ilb.appendLine("import com.google.template.soy.data.BaseParamsImpl;");
+    ilb.appendLine("import com.google.template.soy.data.SoyValueProvider;");
     ilb.appendLine("import java.util.concurrent.Future;");
     ilb.appendLine("import javax.annotation.Generated;");
     ilb.appendLine();
@@ -470,8 +471,8 @@ public final class GenInvocationBuildersVisitor
 
   /**
    * Appends a constant ImmutableSet of type {@link
-   * com.google.template.soy.data.BaseParamsImpl.Param} containing metadata about the template's
-   * params.
+   * com.google.template.soy.data.BaseSoyTemplateImpl.Param} containing metadata about the
+   * template's params.
    */
   private void appendParamsImmutableSetConstant(
       String constantName, ImmutableList<TemplateParam> params) {
@@ -480,12 +481,12 @@ public final class GenInvocationBuildersVisitor
             .map(
                 p ->
                     p.isRequired()
-                        ? "BaseParamsImpl.Param.required(\"" + p.name() + "\")"
-                        : "BaseParamsImpl.Param.optional(\"" + p.name() + "\")")
+                        ? "BaseSoyTemplateImpl.Param.required(\"" + p.name() + "\")"
+                        : "BaseSoyTemplateImpl.Param.optional(\"" + p.name() + "\")")
             .collect(toImmutableList());
 
     ilb.appendLineStart("private static final ImmutableSet<Param> " + constantName + " = ");
-    appendImmutableSetInline(ilb, "<BaseParamsImpl.Param>", genCodeForCreatingParams);
+    appendImmutableSetInline(ilb, "<BaseSoyTemplateImpl.Param>", genCodeForCreatingParams);
     ilb.appendLineEnd(";");
     ilb.appendLine();
   }
@@ -577,7 +578,7 @@ public final class GenInvocationBuildersVisitor
    * {@link #paramsClassNamesUsed} for more info about when this happens.
    */
   private Optional<String> getParamsClassNameIfUnique(TemplateNode template) {
-    String className = generateBaseParamsImplClassName(template);
+    String className = generateTemplateClassName(template);
     // If this class name has already been used, log a warning and return an empty optional (we will
     // skip over this template).
     if (!paramsClassNamesUsed.add(className)) {
@@ -593,7 +594,7 @@ public final class GenInvocationBuildersVisitor
     return Optional.of(className);
   }
 
-  private static String generateBaseParamsImplClassName(TemplateNode template) {
+  private static String generateTemplateClassName(TemplateNode template) {
     String namespacedTemplateName = template.getTemplateName();
     String templateName =
         namespacedTemplateName.substring(namespacedTemplateName.lastIndexOf('.') + 1);
