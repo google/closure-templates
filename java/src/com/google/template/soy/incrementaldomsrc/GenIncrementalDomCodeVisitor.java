@@ -1033,15 +1033,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     args.add(getTagNameCodeChunk(node.getTagName()));
 
     KeyNode keyNode = node.getKeyNode();
-    Expression key = Expression.LITERAL_UNDEFINED;
     if (keyNode == null) {
       args.add(JsRuntime.XID.call(Expression.stringLiteral(skip.getSkipId())));
     } else {
       // Key difference between getOpen and getOpenSSR
       args.add(translateExpr(node.getKeyNode().getExpr()));
     }
-    args.add(key);
-
+    if (node.isElementRoot()) {
+      args.add(JsRuntime.OPT_DATA);
+    }
     return INCREMENTAL_DOM_OPEN_SSR.call(args);
   }
 
