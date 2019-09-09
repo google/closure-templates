@@ -193,9 +193,9 @@ Perform these steps:
     `MainTemplates.Index.getDefaultInstance()` as a shortcut.
 
 1.  Update the invocation of the rendering API. Locate the overloaded method in
-    the rendering API that takes a `SoyTemplate` and call it
-    (`MainTemplates.Index` implements `SoyTemplate`). For example, you would
-    call the SoySauce rendering API as follows:
+    the rendering API that takes a `TemplateParameters` and call it
+    (`MainTemplates.Index` implements `TemplateParameters`). For example, you
+    would call the SoySauce rendering API as follows:
 
     ```java
     soySauce.newRenderer(params).renderHtml();
