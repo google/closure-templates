@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
@@ -45,6 +46,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -417,12 +419,20 @@ public final class GenInvocationBuildersVisitor
 
     // Add setters for each direct template param.
     Set<String> paramUpperCamelCaseNamesUsed = new HashSet<>(); // To prevent collisions.
+    Set<String> allParamNames =
+        template.getParams().stream()
+            .map(t -> makeUpperCamelCase(t.name()))
+            .collect(Collectors.toSet());
     template
         .getParams()
         .forEach(
             param ->
                 writeSettersForParam(
-                    param, param.desc(), paramUpperCamelCaseNamesUsed, template.getTemplateName()));
+                    param,
+                    param.desc(),
+                    allParamNames,
+                    paramUpperCamelCaseNamesUsed,
+                    template.getTemplateName()));
 
     ilb.appendLine();
 
@@ -500,6 +510,7 @@ public final class GenInvocationBuildersVisitor
   private void writeSettersForParam(
       TemplateParam param,
       @Nullable String paramDescription,
+      Set<String> allParamNames,
       Set<String> paramUpperCamelCaseNamesUsed,
       String templateName) {
 
@@ -512,11 +523,29 @@ public final class GenInvocationBuildersVisitor
     }
 
     // Add setters for this param.
-    InvocationBuilderTypeUtils.getJavaTypes(param.type(), /* shouldMakeNullable= */ false)
-        .forEach(
-            javaType ->
-                writeSetter(ilb, param.name(), upperCamelCaseName, paramDescription, javaType));
-    // TODO(b/77550695): Add future setter once we add supertype impl.
+    List<JavaType> javaTypes =
+        InvocationBuilderTypeUtils.getJavaTypes(param.type(), /* shouldMakeNullable= */ false);
+
+    javaTypes.forEach(
+        javaType -> writeSetter(ilb, param.name(), upperCamelCaseName, paramDescription, javaType));
+
+    // For now only write the future interface if the setter is not already overloaded
+    if (javaTypes.size() == 1) {
+      JavaType onlyType = javaTypes.get(0);
+      if (onlyType.isGenericsTypeSupported()) {
+        String futureCamel = upperCamelCaseName + "Future";
+        if (allParamNames.contains(futureCamel)) {
+          logger.warning(
+              String.format(
+                  "Achievement unlocked. You have a template with parameters named %s and"
+                      + " %sFuture, preventing a future setter from being created for the first"
+                      + " parameter.",
+                  param.name(), param.name()));
+        } else {
+          writeFutureSetter(ilb, param.name(), futureCamel, new FutureJavaType(onlyType));
+        }
+      }
+    }
   }
 
   private static String getParamSetterSuffix(String paramName) {
@@ -558,6 +587,34 @@ public final class GenInvocationBuildersVisitor
 
     String newVariableName = javaType.appendRunTimeOperations(ilb, "value");
     ilb.appendLine("return setParam(\"" + originalParamName + "\", " + newVariableName + ");");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+  }
+
+  /** Writes a setter method for the given param and java type. */
+  private static void writeFutureSetter(
+      IndentedLinesBuilder ilb,
+      String originalParamName,
+      String futureSetterName,
+      FutureJavaType javaType) {
+
+    ilb.appendLine();
+    appendJavadoc(
+        ilb,
+        "Future compatible version of {@link #set"
+            + makeUpperCamelCase(originalParamName)
+            + "("
+            + javaType.getType().toJavaTypeString()
+            + ")}.",
+        /* forceMultiline= */ false,
+        /* wrapAt100Chars= */ true);
+    ilb.appendLine(
+        ("public Builder set" + futureSetterName)
+            + ("(" + javaType.toJavaTypeString() + " future) {"));
+    ilb.increaseIndent();
+
+    ilb.appendLine(
+        "return setParam(\"" + originalParamName + "\", Preconditions.checkNotNull(future));");
     ilb.decreaseIndent();
     ilb.appendLine("}");
   }
