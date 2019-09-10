@@ -385,6 +385,7 @@ public final class GenInvocationBuildersVisitor
     }
 
     // Start of Foo.Builder class.
+    ilb.appendLine("@CanIgnoreReturnValue");
     ilb.appendLine(
         "public static class Builder extends AbstractBuilder<Builder, "
             + templateParamsClassname
@@ -467,6 +468,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.common.html.types.SafeUrl;");
     ilb.appendLine("import com.google.common.html.types.TrustedResourceUrl;");
     ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
+    ilb.appendLine("import com.google.errorprone.annotations.CanIgnoreReturnValue;");
     ilb.appendLine("import com.google.template.soy.data.BaseSoyTemplateImpl;");
     ilb.appendLine("import com.google.template.soy.data.SanitizedContent;");
     ilb.appendLine("import com.google.template.soy.data.SoyTemplate;");
