@@ -164,18 +164,16 @@ public class SimpleJavaType extends JavaType {
 
     @Override
     public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
-      String sanitizedContentSubtypeCheck =
-          "Preconditions.checkArgument("
-              + variableName
-              + ".getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);";
-
-      if (!isNullable()) {
-        ilb.appendLine(sanitizedContentSubtypeCheck);
-      } else {
+      if (isNullable()) {
         ilb.appendLine("if (" + variableName + " != null) {");
         ilb.increaseIndent();
+      }
+      ilb.appendLine(
+          "Preconditions.checkArgument("
+              + variableName
+              + ".getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);");
 
-        ilb.appendLine(sanitizedContentSubtypeCheck);
+      if (isNullable()) {
         ilb.decreaseIndent();
         ilb.appendLine("}");
       }
