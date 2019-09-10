@@ -117,6 +117,8 @@ final class InvocationBuilderTypeUtils {
         types = ImmutableList.of(SimpleJavaType.ATTRIBUTES);
         break;
       case CSS:
+        types = ImmutableList.of(SimpleJavaType.CSS);
+        break;
       case RECORD:
       case ERROR:
       case NULL:

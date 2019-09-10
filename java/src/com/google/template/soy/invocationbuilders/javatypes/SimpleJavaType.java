@@ -56,6 +56,16 @@ public class SimpleJavaType extends JavaType {
 
   public static final SimpleJavaType ATTRIBUTES = new AttributesJavaType();
 
+  // Don't support as list/map type for now because we don't have a way of running the toSoyValue
+  // over all values.
+  public static final SimpleJavaType CSS =
+      new SimpleJavaType("com.google.template.soy.data.CssParam", null, false) {
+        @Override
+        public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
+          return variableName + ".toSoyValue()";
+        }
+      };
+
   private final String javaTypeString;
   private final String genericsTypeArgumentString;
   private final boolean isPrimitive;
