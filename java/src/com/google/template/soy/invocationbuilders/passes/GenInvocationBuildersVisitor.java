@@ -303,7 +303,7 @@ public final class GenInvocationBuildersVisitor
     ilb.increaseIndent();
     ilb.appendLine();
     ilb.appendLine(
-        "public static final String TEMPLATE_NAME = \"" + template.getTemplateName() + "\";");
+        "private static final String TEMPLATE_NAME = \"" + template.getTemplateName() + "\";");
     ilb.appendLine();
 
     appendFutureWrapperMethod(paramsClass);
