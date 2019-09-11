@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
@@ -38,6 +39,8 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -299,7 +302,9 @@ public class SoyFileNodeTransformer {
       Optional<SoyType> superType = upcastTypesForIndirectParams(allTypes);
 
       // If we can't combine all those types into a single supported type then fail.
-      if (!superType.isPresent()) {
+      // Temporarily skip any indirect params with proto dependencies since they can cause java
+      // build errors.
+      if (!superType.isPresent() || hasProtoDep(superType.get())) {
         if (overridesDirectParam) {
           changeParamStatus(params, paramName, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES);
         } else {
@@ -327,6 +332,11 @@ public class SoyFileNodeTransformer {
                 true));
       }
     }
+  }
+
+  private static boolean hasProtoDep(SoyType type) {
+    return Streams.stream(SoyTypes.getTypeTraverser(type, null))
+        .anyMatch(t -> t.getKind() == Kind.PROTO || t.getKind() == Kind.PROTO_ENUM);
   }
 
   private static void updateParamStatuses(Map<String, ParamInfo> params) {

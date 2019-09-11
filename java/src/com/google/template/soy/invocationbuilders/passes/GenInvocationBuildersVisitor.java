@@ -231,7 +231,6 @@ public final class GenInvocationBuildersVisitor
     // they still end up in the generated list of params.
     List<ParamInfo> combinedParams =
         template.params().stream()
-            .filter(info -> !info.indirect())
             .filter(
                 info -> {
                   switch (info.status()) {
