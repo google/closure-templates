@@ -38,12 +38,14 @@ public final class ListJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "java.util.List<" + elementType.asGenericsTypeArgumentString() + ">";
+    return "Iterable<" + elementType.asGenericsTypeArgumentString() + ">";
   }
 
   @Override
   String asGenericsTypeArgumentString() {
-    return "? extends " + toJavaTypeString();
+    // For nested lists we require them to be of type Collection since that's what Soy requires and
+    // we can't convert arbitrarily nested object graphs.
+    return "? extends java.util.Collection<" + elementType.asGenericsTypeArgumentString() + ">";
   }
 
   @Override
@@ -52,20 +54,12 @@ public final class ListJavaType extends JavaType {
     if (elementType instanceof JavaNumberSubtype) {
       // Convert Iterable<? extends Number> to ImmutableList<Long> or ImmutableList<Double>.
       JavaNumberSubtype elementNumberType = (JavaNumberSubtype) elementType;
-      ilb.appendLine(
-          "ImmutableList<"
-              + elementNumberType.getBoxedTypeNameString()
-              + "> stronglyTypedList ="
-              + " Streams.stream("
-              + name
-              + ").map((num) -> "
-              + elementNumberType.transformNumberTypeToStricterSubtype("num")
-              + ").collect(toImmutableList());");
-      return "stronglyTypedList";
+      return elementNumberType.getListConverterMethod() + "(" + name + ")";
     }
 
-    // Otherwise just do ImmutableList.copyOf();
-    return "ImmutableList.copyOf(" + name + ")";
+    // Soy internals want a Java Collection for Soy list<> type. To support Iterable here we
+    // need to convert to Collection if necessary.
+    return "asCollection(" + name + ")";
   }
 
   JavaType getElementType() {

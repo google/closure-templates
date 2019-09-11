@@ -37,15 +37,17 @@ public class JavaNumberSubtype extends JavaType {
       new JavaNumberSubtype(NumberSubtype.LONG, /* isNullable= */ true);
 
   private enum NumberSubtype {
-    DOUBLE("double", "Double"),
-    LONG("long", "Long");
+    DOUBLE("double", "Double", "asListOfDoubles"),
+    LONG("long", "Long", "asListOfLongs");
 
     private final String primitiveTypeString;
     private final String boxedTypeString;
+    private final String listConverterMethod;
 
-    NumberSubtype(String primitiveTypeString, String boxedTypeString) {
+    NumberSubtype(String primitiveTypeString, String boxedTypeString, String listConverterMethod) {
       this.primitiveTypeString = primitiveTypeString;
       this.boxedTypeString = boxedTypeString;
+      this.listConverterMethod = listConverterMethod;
     }
 
     String toJavaTypeString(boolean isNullable) {
@@ -54,6 +56,10 @@ public class JavaNumberSubtype extends JavaType {
 
     String getBoxedTypeNameString() {
       return boxedTypeString;
+    }
+
+    String getListConverterMethod() {
+      return listConverterMethod;
     }
   }
 
@@ -106,6 +112,10 @@ public class JavaNumberSubtype extends JavaType {
         return numberRef + ".longValue()";
     }
     throw new IllegalStateException("Impossible");
+  }
+
+  String getListConverterMethod() {
+    return type.getListConverterMethod();
   }
 
   @Override

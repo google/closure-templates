@@ -16,15 +16,20 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.ForOverride;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -98,6 +103,23 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       SoyValueProvider soyValue = soyValueConverter.convert(value);
       data.put(name, soyValue);
       return (B) this;
+    }
+
+    /** Converts any Iterable to a Collection. Used by ListJavaType. */
+    protected <I> Collection<I> asCollection(Iterable<I> iterable) {
+      return iterable instanceof Collection
+          ? (Collection<I>) iterable
+          : ImmutableList.copyOf(iterable);
+    }
+
+    /** Used by ListJavaType. */
+    protected List<Double> asListOfDoubles(Iterable<? extends Number> value) {
+      return Streams.stream(value).map(Number::doubleValue).collect(toImmutableList());
+    }
+
+    /** Used by ListJavaType. */
+    protected List<Long> asListOfLongs(Iterable<? extends Number> value) {
+      return Streams.stream(value).map(Number::longValue).collect(toImmutableList());
     }
 
     private ImmutableMap<String, SoyValueProvider> buildDataMapWithChecks(
