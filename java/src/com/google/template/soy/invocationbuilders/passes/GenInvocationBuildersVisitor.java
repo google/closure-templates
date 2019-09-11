@@ -457,7 +457,7 @@ public final class GenInvocationBuildersVisitor
         "Future compatible version of {@link #"
             + param.setterName()
             + "("
-            + javaType.getType().toJavaTypeString()
+            + stripGenerics(javaType.getType().toJavaTypeString())
             + ")}.",
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
@@ -473,6 +473,15 @@ public final class GenInvocationBuildersVisitor
         "return setParam(\"" + param.name() + "\", Preconditions.checkNotNull(future));");
     ilb.decreaseIndent();
     ilb.appendLine("}");
+  }
+
+  private static String stripGenerics(String type) {
+    String newType = type;
+    do {
+      type = newType;
+      newType = type.replaceAll("<[^>]*>", "");
+    } while (!newType.equals(type));
+    return newType;
   }
 
   /**
