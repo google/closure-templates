@@ -49,7 +49,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVisitor;
+import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
@@ -162,7 +162,7 @@ public final class GenerateParseInfoVisitor
   /** Registry of all templates in the Soy tree. */
   private final TemplateRegistry templateRegistry;
 
-  private final GenInvocationBuildersVisitor invocationBuildersVisitor;
+  private final SoyFileNodeTransformer soyFileNodeTransformer;
 
   private final SoyTypeRegistry typeRegistry;
 
@@ -175,7 +175,7 @@ public final class GenerateParseInfoVisitor
   /** Builder for the generated code. */
   private IndentedLinesBuilder ilb;
 
-  private GenInvocationBuildersVisitor.Report builderReport;
+  private SoyFileNodeTransformer.FileInfo builderReport;
 
   /**
    * @param javaPackage The Java package for the generated classes.
@@ -207,7 +207,7 @@ public final class GenerateParseInfoVisitor
                 + "\""
                 + " (valid values are \"filename\", \"namespace\", and \"generic\").");
     }
-    invocationBuildersVisitor = new GenInvocationBuildersVisitor(javaPackage, templateRegistry);
+    soyFileNodeTransformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
   }
 
   @Override
@@ -255,7 +255,7 @@ public final class GenerateParseInfoVisitor
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
     String javaClassName = soyFileToJavaClassNameMap.get(node);
-    builderReport = invocationBuildersVisitor.getReport(node);
+    builderReport = soyFileNodeTransformer.transform(node);
 
     // Collect the following:
     // + all the public basic/element templates (non-private, non-delegate) in a map from the
@@ -378,7 +378,7 @@ public final class GenerateParseInfoVisitor
         deprecatedJavaDoc(
             "Soy parse info for " + node.getFileName() + ".",
             builderReport.complete(),
-            builderReport.className()),
+            builderReport.fqClassName()),
         true,
         false);
 
@@ -565,7 +565,8 @@ public final class GenerateParseInfoVisitor
         CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, upperUnderscoreName)
             + "SoyTemplateInfo";
 
-    boolean isDeprecated = builderReport.isTemplateComplete(node);
+    SoyFileNodeTransformer.TemplateInfo templateInfo = builderReport.findTemplate(node);
+    boolean isDeprecated = templateInfo.complete();
 
     // ------ *SoyTemplateInfo class start. ------
     ilb.appendLine();
@@ -575,7 +576,7 @@ public final class GenerateParseInfoVisitor
         deprecatedJavaDoc(
             Optional.ofNullable(node.getSoyDocDesc()).orElse(""),
             isDeprecated,
-            builderReport.getClassName(node)),
+            templateInfo.fqClassName()),
         true,
         false);
     deprecatedAnnotation(ilb, isDeprecated);

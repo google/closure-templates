@@ -151,16 +151,23 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public abstract static class Param {
     /** Creates an optional param with the given name. */
     public static Param optional(String name) {
-      return new AutoValue_BaseSoyTemplateImpl_Param(name, false);
+      return new AutoValue_BaseSoyTemplateImpl_Param(name, false, false);
     }
 
     /** Creates a required param with the given name. */
     public static Param required(String name) {
-      return new AutoValue_BaseSoyTemplateImpl_Param(name, true);
+      return new AutoValue_BaseSoyTemplateImpl_Param(name, true, false);
+    }
+
+    /** Creates a required param with the given name. */
+    public static Param indirect(String name) {
+      return new AutoValue_BaseSoyTemplateImpl_Param(name, false, true);
     }
 
     abstract String getName();
 
     abstract boolean isRequired();
+
+    abstract boolean isIndirect();
   }
 }

@@ -32,8 +32,8 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -129,7 +129,7 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
         }
         // Not first template encountered.
         Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
-        if (!currRequiredParamSet.equals(firstRequiredParamSet)) {
+        if (!paramSetsEqual(currRequiredParamSet, firstRequiredParamSet)) {
           errorReporter.report(
               firstDelTemplate.getSourceLocation(),
               DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS,
@@ -166,14 +166,17 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     }
   }
 
+  private static boolean paramSetsEqual(
+      Set<TemplateMetadata.Parameter> s1, Set<TemplateMetadata.Parameter> s2) {
+    // We can use Set equality because we normalize parameters with toComparable().
+    return s1.equals(s2);
+  }
+
   private static Set<TemplateMetadata.Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
-    Set<TemplateMetadata.Parameter> paramSet = new HashSet<>();
-    for (TemplateMetadata.Parameter param : delTemplate.getParameters()) {
-      if (param.isRequired()) {
-        paramSet.add(param);
-      }
-    }
-    return paramSet;
+    return delTemplate.getParameters().stream()
+        .filter(TemplateMetadata.Parameter::isRequired)
+        .map(TemplateMetadata.Parameter::toComparable)
+        .collect(Collectors.toSet());
   }
 
   private void checkCallBasicNode(
@@ -224,5 +227,4 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
       errorReporter.report(node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, delCalleeName);
     }
   }
-
 }

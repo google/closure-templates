@@ -102,6 +102,7 @@ public abstract class TemplateMetadata {
           .setName(param.name())
           .setType(param.type())
           .setRequired(param.isRequired())
+          .setDescription(param.desc())
           .build();
     }
 
@@ -182,6 +183,20 @@ public abstract class TemplateMetadata {
 
     public abstract boolean isRequired();
 
+    /**
+     * Note that description is not serialized by TemplateMetadataSerializer so this field will be
+     * null if this instance is created via deserialization.
+     */
+    @Nullable
+    public abstract String getDescription();
+
+    /** If comparing parameters (ignoring description), normalize instances with this method. */
+    public Parameter toComparable() {
+      return getDescription() == null ? this : toBuilder().setDescription(null).build();
+    }
+
+    public abstract Builder toBuilder();
+
     /** Builder for {@link Parameter} */
     @AutoValue.Builder
     public abstract static class Builder {
@@ -199,6 +214,8 @@ public abstract class TemplateMetadata {
       abstract Builder setTypeWrapper(LazyTypeWrapper typeWrapper);
 
       public abstract Builder setRequired(boolean isRequired);
+
+      public abstract Builder setDescription(String description);
 
       public abstract Parameter build();
     }

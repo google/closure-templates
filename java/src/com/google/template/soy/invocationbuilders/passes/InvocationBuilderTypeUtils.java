@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.invocationbuilders.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.invocationbuilders.javatypes.JavaNumberSubtype;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ListJavaType;
@@ -32,7 +34,11 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.UnknownType;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /** Utils for handling types used in Soy Java invocation builders. */
 final class InvocationBuilderTypeUtils {
@@ -145,6 +151,32 @@ final class InvocationBuilderTypeUtils {
       default:
         return false;
     }
+  }
+
+  static Optional<SoyType> upcastTypesForIndirectParams(Set<SoyType> allTypes) {
+    if (allTypes.size() == 1) {
+      return Optional.of(Iterables.getOnlyElement(allTypes));
+    }
+
+    // If any type is ? then just return that and create an setter that takes Object.
+    if (allTypes.contains(UnknownType.getInstance())) {
+      return Optional.of(UnknownType.getInstance());
+    }
+
+    // If one type is the nullable version of the other then return the nullable version.
+    if (allTypes.size() == 2) {
+      Iterator<SoyType> i = allTypes.iterator();
+      SoyType first = i.next();
+      SoyType second = i.next();
+      if (first.equals(UnionType.of(NullType.getInstance(), second))) {
+        return Optional.of(first);
+      }
+      if (second.equals(UnionType.of(NullType.getInstance(), first))) {
+        return Optional.of(second);
+      }
+    }
+
+    return Optional.empty();
   }
 
   /**
