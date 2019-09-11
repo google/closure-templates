@@ -69,7 +69,12 @@ public final class SkipNode extends AbstractParentCommandNode<StandaloneNode>
 
   @Override
   public String toSourceString() {
-    return "{skip}{/skip}";
+    StringBuilder builder = new StringBuilder();
+    builder.append("{skip}");
+    for (StandaloneNode node : this.getChildren()) {
+      builder.append(node.toSourceString());
+    }
+    return builder.append("{/skip}").toString();
   }
 
   @SuppressWarnings("unchecked")
