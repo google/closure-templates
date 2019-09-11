@@ -422,7 +422,7 @@ public class SoyFileNodeTransformer {
     }
     sb.append(": ");
     Joiner.on(", ")
-        .appendTo(sb, callees.stream().map(TemplateMetadata::getTemplateName).iterator());
+        .appendTo(sb, callees.stream().map(TemplateMetadata::getTemplateName).sorted().iterator());
     sb.append("]");
     return sb.toString();
   }
