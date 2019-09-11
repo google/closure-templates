@@ -415,7 +415,7 @@ goog.exportPath_ = function(name, opt_object, opt_objectToExportTo) {
   var parts = name.split("."), cur = opt_objectToExportTo || goog.global;
   parts[0] in cur || "undefined" == typeof cur.execScript || cur.execScript("var " + parts[0]);
   for (var part; parts.length && (part = parts.shift());) {
-    !parts.length && goog.isDef(opt_object) ? cur[part] = opt_object : cur = cur[part] && cur[part] !== Object.prototype[part] ? cur[part] : cur[part] = {};
+    parts.length || void 0 === opt_object ? cur = cur[part] && cur[part] !== Object.prototype[part] ? cur[part] : cur[part] = {} : cur[part] = opt_object;
   }
 };
 goog.define = function(name, defaultValue) {
@@ -458,7 +458,7 @@ goog.getScriptNonce_ = function(doc) {
 };
 goog.VALID_MODULE_RE_ = /^[a-zA-Z_$][a-zA-Z0-9._$]*$/;
 goog.module = function(name) {
-  if (!goog.isString(name) || !name || -1 == name.search(goog.VALID_MODULE_RE_)) {
+  if ("string" !== typeof name || !name || -1 == name.search(goog.VALID_MODULE_RE_)) {
     throw Error("Invalid module identifier");
   }
   if (!goog.isInGoogModuleLoader_()) {
@@ -514,7 +514,7 @@ goog.forwardDeclare = function() {
 };
 goog.getObjectByName = function(name, opt_obj) {
   for (var parts = name.split("."), cur = opt_obj || goog.global, i = 0; i < parts.length; i++) {
-    if (cur = cur[parts[i]], !goog.isDefAndNotNull(cur)) {
+    if (cur = cur[parts[i]], null == cur) {
       return null;
     }
   }
@@ -577,14 +577,14 @@ goog.loadModule = function(moduleDef) {
     if (goog.isFunction(moduleDef)) {
       var exports = moduleDef.call(void 0, {});
     } else {
-      if (goog.isString(moduleDef)) {
+      if ("string" === typeof moduleDef) {
         goog.useSafari10Workaround() && (moduleDef = goog.workaroundSafari10EvalBug(moduleDef)), exports = goog.loadModuleFromSource_.call(void 0, moduleDef);
       } else {
         throw Error("Invalid module definition");
       }
     }
     var moduleName = goog.moduleLoaderState_.moduleName;
-    if (goog.isString(moduleName) && moduleName) {
+    if ("string" === typeof moduleName && moduleName) {
       goog.moduleLoaderState_.declareLegacyNamespace ? goog.constructNamespace_(moduleName, exports) : goog.SEAL_MODULE_EXPORTS && Object.seal && "object" == typeof exports && null != exports && Object.seal(exports), goog.loadedModules_[moduleName] = {exports:exports, type:goog.ModuleType.GOOG, moduleId:goog.moduleLoaderState_.moduleName};
     } else {
       throw Error('Invalid module name "' + moduleName + '"');
