@@ -46,7 +46,7 @@ final class ValidateSkipNodesPass extends CompilerFilePass {
         if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
           errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
         } else {
-          skipNode.setSkipId(template.getTemplateName() + "-skip-" + id++);
+          skipNode.setSkipId(template.getTemplateName() + "-" + id++);
         }
       }
     }
