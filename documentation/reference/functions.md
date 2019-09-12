@@ -408,45 +408,6 @@ Checks the provided text for its overall (i.e. dominant) directionality. Returns
 optional second parameter to `true` if text contains or can contain HTML tags or
 HTML escape sequences (default `false`).
 
-## `msgId(var)` {#msgId}
-
-WARNING: deprecated, please migrate to [`msgWithId`](#msgWithId)
-
-The `msgId` function can be used to access the Id of a `{msg...}{/msg}` at
-runtime. Msg ids are usually just used as an implementation detail of the
-translation system, but occasionally it is useful to be able to reference these
-from an application. A few usecases might be:
-
-*   tracking which messages are actually displayed to users for auditing
-    purposes (e.g. what version of a particular text was seen by a given user)
-*   recording which texts were displayed as part of an A/B test.
-
-Users can use the `msgId` function to assist in these scenarios. Here is a
-simple example:
-
-```soy
-{let $text kind="text"}
-  {msg desc="..."}
-    ....
-  {/msg}
-{/let}
-<div data-text-id="{msgId($text)}">
-  {$text}
-</div>
-```
-
-This will render something like
-
-`<div data-text-id="f8H0BhzHc0E=">...</div>`
-
-The message Id will be encoded as a 64 bit integer that is encoded as a web safe
-base64 string. The Id will be the same value as what is provided to the message
-extractors, so it should be easy to correlate with the translation artifacts.
-
-IMPORTANT: In order to get the id of a particular message, you must associate
-the message with a `let` variable and it must be the only child of that let
-variable.
-
 ## `msgWithId(var)` {#msgWithId}
 
 The `msgWithId` function can be used to access the Id of a `{msg...}{/msg}` at
