@@ -43,10 +43,11 @@ final class ValidateSkipNodesPass extends CompilerFilePass {
       int id = 0;
       for (SkipNode skipNode : SoyTreeUtils.getAllNodesOfType(template, SkipNode.class)) {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
+        openTag.setSkipRoot();
         if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
           errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
         } else {
-          skipNode.setSkipId(template.getTemplateName() + "-" + id++);
+          skipNode.setSkipId(template.getTemplateName() + "-skip-" + id++);
         }
       }
     }

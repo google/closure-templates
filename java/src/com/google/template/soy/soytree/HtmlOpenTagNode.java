@@ -38,6 +38,9 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   /** Whether or not this node is the root of a soy element. Populated by the SoyElementPass. */
   private boolean isElementRoot;
 
+  /** Whether or not this node is the root of a skip node. Populated by ValidateSkipNodesPass. */
+  private boolean isSkipRoot;
+
   public HtmlOpenTagNode(
       int id,
       StandaloneNode node,
@@ -71,6 +74,16 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
   /** Marks this tag as an element root. */
   public void setElementRoot() {
     isElementRoot = true;
+  }
+
+  /** Returns true if this is an skip root. */
+  public boolean isSkipRoot() {
+    return isSkipRoot;
+  }
+
+  /** Marks this tag as an skip root. */
+  public void setSkipRoot() {
+    isSkipRoot = true;
   }
 
   public KeyNode getKeyNode() {

@@ -1116,22 +1116,24 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
-    if (node.getKeyNode() != null) {
-      // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
-      // we do not specify any key.
-      Expression key = translateExpr(node.getKeyNode().getExpr());
-      getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
-    }
-    Expression openTagExpr = getOpenCall(node);
-    if (node.isElementRoot()) {
-      // Append code to stash the template object in this node.
-      jsCodeBuilder.append(
-          Statement.ifStatement(
-                  INCREMENTAL_DOM_MAYBE_SKIP.call(INCREMENTAL_DOM, openTagExpr),
-                  Statement.returnValue(Expression.LITERAL_TRUE))
-              .build());
-    } else {
-      jsCodeBuilder.append(openTagExpr.asStatement());
+    if (!node.isSkipRoot()) {
+      if (node.getKeyNode() != null) {
+        // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
+        // we do not specify any key.
+        Expression key = translateExpr(node.getKeyNode().getExpr());
+        getJsCodeBuilder().append(INCREMENTAL_DOM_PUSH_MANUAL_KEY.call(key));
+      }
+      Expression openTagExpr = getOpenCall(node);
+      if (node.isElementRoot()) {
+        // Append code to stash the template object in this node.
+        jsCodeBuilder.append(
+            Statement.ifStatement(
+                    INCREMENTAL_DOM_MAYBE_SKIP.call(INCREMENTAL_DOM, openTagExpr),
+                    Statement.returnValue(Expression.LITERAL_TRUE))
+                .build());
+      } else {
+        jsCodeBuilder.append(openTagExpr.asStatement());
+      }
     }
     jsCodeBuilder.append(getAttributeAndCloseCalls(node));
   }
@@ -1279,13 +1281,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
     Expression openTagExpr = getOpenSSRCall(openTag, node);
-    Statement attributesAndCloseTag = getAttributeAndCloseCalls(openTag);
-    node.removeChild(0);
     Statement childStatements = visitChildrenReturningCodeChunk(node);
-    node.addChild(0, openTag);
-    jsCodeBuilder.append(
-        Statement.ifStatement(openTagExpr, Statement.of(attributesAndCloseTag, childStatements))
-            .build());
+    jsCodeBuilder.append(Statement.ifStatement(openTagExpr, Statement.of(childStatements)).build());
   }
 
   @Override
