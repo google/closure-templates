@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import java.util.Optional;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.TO_IMMUTABLE_MAP;
 
 /** Represents a map type for generated Soy Java invocation builders. */
 public final class MapJavaType extends JavaType {
@@ -58,23 +58,30 @@ public final class MapJavaType extends JavaType {
   }
 
   @Override
-  public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
-    String mapRef = super.appendRunTimeOperations(ilb, variableName);
+  public String asInlineCast(String variableName) {
+    String mapRef = variableName;
 
     // If the map's key and/or value type is long or double, convert "? extends Number" -> Long or
     // Double.
     if (keyType instanceof JavaNumberSubtype || valueType instanceof JavaNumberSubtype) {
-      mapRef = appendMapUsingLongOrDoubleInsteadOfNumber(ilb, variableName);
+      CodeGenUtils.Member arg1 =
+          keyType instanceof JavaNumberSubtype
+              ? ((JavaNumberSubtype) keyType).getMapperFunction()
+              : null;
+      CodeGenUtils.Member arg2 =
+          valueType instanceof JavaNumberSubtype
+              ? ((JavaNumberSubtype) valueType).getMapperFunction()
+              : null;
+      mapRef = CodeGenUtils.AS_MAP_OF_NUMBERS + "(" + mapRef + ", " + arg1 + ", " + arg2 + ")";
     } else {
       // Otherwise just make an immutable copy of the map.
-      mapRef = "ImmutableMap.copyOf(" + mapRef + ")";
+      mapRef = TO_IMMUTABLE_MAP + "(" + mapRef + ")";
     }
 
     if (shouldMarkAsSoyMap) {
       // Mark as a "soy map" (as opposed to soy records / legacy maps). This allows keys to be
       // non-strings.
-      ilb.appendLine("Object soyMap = SoyValueConverter.markAsSoyMap(" + mapRef + ");");
-      return "soyMap";
+      mapRef = CodeGenUtils.MARK_AS_SOY_MAP + "(" + mapRef + ")";
     }
 
     return mapRef;
@@ -88,66 +95,6 @@ public final class MapJavaType extends JavaType {
   /** Returns the map's value type. */
   JavaType getValueType() {
     return valueType;
-  }
-
-  /**
-   * Given a map variable name, appends code to coerce a map with key or value type "? extends
-   * Number" to use types Long or Double, if we know that the types should be more specific.
-   *
-   * <p>For example, if this map's keys are of type {@link JavaTypeEnum.STRING} and its values are
-   * of type {@link JavaTypeEnum.LONG}, this would convert a Map<String, ? extends Number> to an
-   * {@code ImmutableMap<String, Long>}.
-   */
-  private String appendMapUsingLongOrDoubleInsteadOfNumber(
-      IndentedLinesBuilder ilb, String mapVariableName) {
-
-    ilb.appendLine(
-        "ImmutableMap<"
-            + maybeGetBoxedNumberSubtype(keyType).orElse(keyType.asGenericsTypeArgumentString())
-            + ", "
-            + maybeGetBoxedNumberSubtype(valueType).orElse(valueType.asGenericsTypeArgumentString())
-            + "> stronglyTypedMap = ");
-    ilb.increaseIndent(2);
-    ilb.appendLine(mapVariableName + ".entrySet().stream()");
-    ilb.increaseIndent(2);
-    ilb.appendLine(".collect(");
-    ilb.increaseIndent(2);
-    ilb.appendLine(
-        "toImmutableMap(e -> "
-            + maybeTransformNumberToStricterType(keyType, "e.getKey()").orElse("e.getKey()")
-            + ", e -> "
-            + maybeTransformNumberToStricterType(valueType, "e.getValue()").orElse("e.getValue()")
-            + "));");
-    ilb.decreaseIndent(6);
-    return "stronglyTypedMap";
-  }
-
-  /**
-   * If the given type is a {@link JavaNumberSubtype}, returns the corresponding boxed type name
-   * (e.g. "Long" or "Double" ).
-   */
-  private static Optional<String> maybeGetBoxedNumberSubtype(JavaType t) {
-    if (t instanceof JavaNumberSubtype) {
-      return Optional.of(((JavaNumberSubtype) t).getBoxedTypeNameString());
-    }
-
-    return Optional.empty();
-  }
-
-  /**
-   * If the given type is a {@link JavaNumberSubtype}, returns a generated code string to coerce a
-   * {@link Number} reference to a stricter subtype (e.g. Long or Double). For example, this might
-   * return "myNumVar.longValue()".
-   */
-  private static Optional<String> maybeTransformNumberToStricterType(
-      JavaType t, String numberRefInGenCode) {
-
-    if (t instanceof JavaNumberSubtype) {
-      return Optional.of(
-          ((JavaNumberSubtype) t).transformNumberTypeToStricterSubtype(numberRefInGenCode));
-    }
-
-    return Optional.empty();
   }
 
   @Override

@@ -17,16 +17,24 @@
 package com.google.template.soy.invocationbuilders.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_RECORD;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.CHECK_NOT_NULL;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSetInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils;
 import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.RecordJavaType;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.FileInfo;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamInfo;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamStatus;
@@ -38,7 +46,9 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateRegistry;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -329,14 +339,11 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
 
     // Imports.
-    ilb.appendLine("import static com.google.common.collect.ImmutableList.toImmutableList;");
-    ilb.appendLine("import static com.google.common.collect.ImmutableMap.toImmutableMap;");
+    ilb.appendLine("import static com.google.common.base.Preconditions.checkNotNull;");
+    ilb.appendLine("import static com.google.template.soy.data.SoyValueConverter.markAsSoyMap;");
     ilb.appendLine();
-    ilb.appendLine("import com.google.common.base.Preconditions;");
-    ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
     ilb.appendLine("import com.google.common.collect.ImmutableSet;");
-    ilb.appendLine("import com.google.common.collect.Streams;");
     ilb.appendLine("import com.google.common.html.types.SafeHtml;");
     ilb.appendLine("import com.google.common.html.types.SafeScript;");
     ilb.appendLine("import com.google.common.html.types.SafeStyle;");
@@ -348,7 +355,6 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import com.google.template.soy.data.BaseSoyTemplateImpl;");
     ilb.appendLine("import com.google.template.soy.data.SanitizedContent;");
     ilb.appendLine("import com.google.template.soy.data.SoyTemplate;");
-    ilb.appendLine("import com.google.template.soy.data.SoyValueConverter;");
     ilb.appendLine("import com.google.template.soy.data.SoyValueProvider;");
     ilb.appendLine("import java.util.concurrent.Future;");
     ilb.appendLine("import javax.annotation.Generated;");
@@ -416,7 +422,6 @@ public final class GenInvocationBuildersVisitor
   /** Writes a setter method for the given param and java type. */
   private static void writeSetter(IndentedLinesBuilder ilb, ParamInfo param, JavaType javaType) {
     String paramName = param.name();
-    String javaTypeString = javaType.toJavaTypeString();
     String paramDescription = param.param().getDescription();
     ilb.appendLine();
     appendJavadoc(
@@ -427,22 +432,74 @@ public final class GenInvocationBuildersVisitor
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
 
-    // Add @Nullable if the type is nullable AND this isn't a proto/proto enum.
-    // TODO(b/140632665): Add fix for inserting @Nullable after proto package and before proto name.
-    if (javaType.isNullable()
-        && !(javaType instanceof ProtoEnumJavaType)
-        && !(javaType instanceof ProtoJavaType)) {
-      ilb.appendLine(
-          ("public Builder " + param.setterName())
-              + ("(@Nullable " + javaTypeString + " value) {"));
+    if (javaType instanceof RecordJavaType) {
+      writeRecordSetter(ilb, param, (RecordJavaType) javaType);
     } else {
+      String javaTypeString = javaType.toJavaTypeString();
+      // Add @Nullable if the type is nullable AND this isn't a proto/proto enum.
+      // TODO(b/140632665): Add fix for inserting @Nullable after proto package and before proto
+      // name.
+      boolean nullable =
+          javaType.isNullable()
+              && !(javaType instanceof ProtoEnumJavaType)
+              && !(javaType instanceof ProtoJavaType);
+
       ilb.appendLine(
-          ("public Builder " + param.setterName()) + ("(" + javaTypeString + " value) {"));
+          "public Builder "
+              + param.setterName()
+              + "("
+              + (nullable ? "@Nullable " : "")
+              + javaTypeString
+              + " value) {");
+      ilb.increaseIndent();
+
+      String newVariableName = javaType.asInlineCast("value");
+      ilb.appendLine("return " + SET_PARAM + "(\"", paramName, "\", ", newVariableName, ");");
+      ilb.decreaseIndent();
+      ilb.appendLine("}");
     }
+  }
+
+  private static void writeRecordSetter(
+      IndentedLinesBuilder ilb, ParamInfo param, RecordJavaType type) {
+    ilb.appendLineStart(
+        "public Builder ", type.isList() ? param.adderName() : param.setterName(), "(");
+
+    List<String> paramNames = type.getJavaTypeMap().keySet().asList();
+    List<String> javaParamNames = new ArrayList<>();
+
+    boolean first = true;
+    for (Map.Entry<String, JavaType> entry : type.getJavaTypeMap().entrySet()) {
+      String paramName = makeParamName(entry.getKey());
+      javaParamNames.add(paramName);
+
+      if (!first) {
+        ilb.append(", ");
+      }
+      JavaType paramType = entry.getValue();
+      if (paramType.isNullable()) {
+        ilb.append("@Nullable ");
+      }
+      ilb.append(paramType.toJavaTypeString()).append(" ").append(paramName);
+      first = false;
+    }
+    ilb.appendLineEnd(") {");
     ilb.increaseIndent();
 
-    String newVariableName = javaType.appendRunTimeOperations(ilb, "value");
-    ilb.appendLine("return setParam(\"" + paramName + "\", " + newVariableName + ");");
+    CodeGenUtils.Member delegate = type.isList() ? ADD_TO_LIST_PARAM : SET_PARAM;
+
+    ilb.appendLineStart("return ", delegate, "(\"", param.name(), "\", " + AS_RECORD + "(");
+    int numParams = paramNames.size();
+    for (int i = 0; i < numParams; i++) {
+      if (i != 0) {
+        ilb.append(", ");
+      }
+      ilb.append("\"")
+          .append(paramNames.get(i))
+          .append("\", ")
+          .append(type.getJavaTypeMap().get(paramNames.get(i)).asInlineCast(javaParamNames.get(i)));
+    }
+    ilb.appendLineEnd("));");
     ilb.decreaseIndent();
     ilb.appendLine("}");
   }
@@ -470,7 +527,7 @@ public final class GenInvocationBuildersVisitor
     ilb.increaseIndent();
 
     ilb.appendLine(
-        "return setParam(\"" + param.name() + "\", Preconditions.checkNotNull(future));");
+        "return " + SET_PARAM + "(\"" + param.name() + "\", " + CHECK_NOT_NULL + "(future));");
     ilb.decreaseIndent();
     ilb.appendLine("}");
   }
@@ -541,5 +598,64 @@ public final class GenInvocationBuildersVisitor
               + " To use this api, soy file names should be unique when"
               + " converted to UpperCamelCase (with non-alpha-numeric characters stripped).\n");
     }
+  }
+
+  private static final ImmutableSet<String> RESERVED_JAVA_WORDS =
+      ImmutableSet.of(
+          "abstract",
+          "assert",
+          "boolean",
+          "byte",
+          "case",
+          "catch",
+          "char",
+          "class",
+          "const",
+          "continue",
+          "default",
+          "do",
+          "double",
+          "else",
+          "extends",
+          "false",
+          "final",
+          "finally",
+          "float",
+          "for",
+          "goto",
+          "if",
+          "implements",
+          "import",
+          "instanceof",
+          "int",
+          "interface",
+          "long",
+          "native",
+          "new",
+          "null",
+          "package",
+          "private",
+          "protected",
+          "public",
+          "return",
+          "short",
+          "static",
+          "strictfp",
+          "super",
+          "switch",
+          "synchronized",
+          "this",
+          "throw",
+          "throws",
+          "transient",
+          "true",
+          "try",
+          "void",
+          "volatile",
+          "while");
+
+  private static String makeParamName(String s) {
+    s = makeLowerCamelCase(s);
+    return RESERVED_JAVA_WORDS.contains(s) ? s + "_" : s;
   }
 }

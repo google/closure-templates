@@ -204,6 +204,10 @@ public class SoyFileNodeTransformer {
       return "set" + makeUpperCamelCase(name());
     }
 
+    public String adderName() {
+      return "add" + makeUpperCamelCase(name());
+    }
+
     public String futureSetterName() {
       Preconditions.checkState(futureStatus() == ParamFutureStatus.HANDLED);
       return "set" + makeUpperCamelCase(name()) + "Future";
@@ -219,7 +223,7 @@ public class SoyFileNodeTransformer {
     }
 
     public List<JavaType> javaTypes() {
-      return InvocationBuilderTypeUtils.getJavaTypes(type(), false);
+      return InvocationBuilderTypeUtils.getJavaTypes(type());
     }
   }
 

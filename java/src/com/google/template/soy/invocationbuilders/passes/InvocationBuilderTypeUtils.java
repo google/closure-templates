@@ -19,24 +19,33 @@ package com.google.template.soy.invocationbuilders.passes;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.template.soy.invocationbuilders.javatypes.JavaNumberSubtype;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ListJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.MapJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
+import com.google.template.soy.invocationbuilders.javatypes.RecordJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.SimpleJavaType;
 import com.google.template.soy.types.AbstractMapType;
+import com.google.template.soy.types.FloatType;
+import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -45,13 +54,17 @@ final class InvocationBuilderTypeUtils {
 
   private InvocationBuilderTypeUtils() {}
 
+  static ImmutableList<JavaType> getJavaTypes(SoyType soyType) {
+    return getJavaTypes(soyType, false);
+  }
+
   /**
    * Gets Java type from Soy type.
    *
    * <p>NOTE: TODO(b/140064271): Add handling for composite types. Update this method's javadoc when
    * this returns a list of java types (for handling unions).
    */
-  static final ImmutableList<JavaType> getJavaTypes(SoyType soyType, boolean shouldMakeNullable) {
+  static ImmutableList<JavaType> getJavaTypes(SoyType soyType, boolean shouldMakeNullable) {
     boolean nonLegacyMap = true;
     ImmutableList<JavaType> types = ImmutableList.of();
     switch (soyType.getKind()) {
@@ -89,24 +102,28 @@ final class InvocationBuilderTypeUtils {
         types = ImmutableList.of(new ProtoEnumJavaType(asProtoEnum.getDescriptor()));
         break;
       case LIST:
-        List<JavaType> listElementTypes =
-            getJavaTypes(((ListType) soyType).getElementType(), /* shouldMakeNullable= */ false);
-        if (listElementTypes.size() == 1 && listElementTypes.get(0).isGenericsTypeSupported()) {
-          return ImmutableList.of(new ListJavaType(listElementTypes.get(0)));
-        } // Currently, we don't handle multiple element types b/c of type erasure.
-        types = ImmutableList.of();
+        SoyType elementType = ((ListType) soyType).getElementType();
+        if (elementType.getKind() == Kind.RECORD) {
+          // Hacky handling of list<record>. Probably less code than modifying ListJavaType to
+          // handle RecordJavaType element but should consider that alternative.
+          types = trySimpleRecordType((RecordType) elementType, true);
+        } else {
+          List<JavaType> listElementTypes = getJavaTypes(elementType);
+          if (listElementTypes.size() == 1 && listElementTypes.get(0).isGenericsTypeSupported()) {
+            return ImmutableList.of(new ListJavaType(listElementTypes.get(0)));
+          } // Currently, we don't handle multiple element types b/c of type erasure.
+          types = ImmutableList.of();
+        }
         break;
       case LEGACY_OBJECT_MAP:
         nonLegacyMap = false; // fall through
       case MAP:
         AbstractMapType soyAbstractMapType = (AbstractMapType) soyType;
-        List<JavaType> keyTypes =
-            getJavaTypes(soyAbstractMapType.getKeyType(), /* shouldMakeNullable= */ false);
+        List<JavaType> keyTypes = getJavaTypes(soyAbstractMapType.getKeyType());
         if (keyTypes.size() != 1 || !keyTypes.get(0).isGenericsTypeSupported()) {
           break;
         }
-        List<JavaType> valueTypes =
-            getJavaTypes(soyAbstractMapType.getValueType(), /* shouldMakeNullable= */ false);
+        List<JavaType> valueTypes = getJavaTypes(soyAbstractMapType.getValueType());
         if (valueTypes.size() != 1 || !valueTypes.get(0).isGenericsTypeSupported()) {
           break;
         }
@@ -126,6 +143,8 @@ final class InvocationBuilderTypeUtils {
         types = ImmutableList.of(SimpleJavaType.CSS);
         break;
       case RECORD:
+        types = trySimpleRecordType((RecordType) soyType, false);
+        break;
       case ERROR:
       case NULL:
       case VE:
@@ -137,6 +156,25 @@ final class InvocationBuilderTypeUtils {
       return types.stream().map(type -> type.asNullable()).collect(toImmutableList());
     }
     return types;
+  }
+
+  private static ImmutableList<JavaType> trySimpleRecordType(RecordType recordType, boolean list) {
+    // No records of records.
+    if (Streams.stream(SoyTypes.getTypeTraverser(recordType, null))
+        .anyMatch(t -> t.getKind() == Kind.RECORD && t != recordType)) {
+      return ImmutableList.of();
+    }
+
+    ImmutableMap.Builder<String, JavaType> javaTypeMap = ImmutableMap.builder();
+    for (Map.Entry<String, SoyType> entry : recordType.getMembers().entrySet()) {
+      List<JavaType> types = getJavaTypes(entry.getValue());
+      if (types.size() != 1) {
+        // No overloaded record setters.
+        return ImmutableList.of();
+      }
+      javaTypeMap.put(entry.getKey(), types.get(0));
+    }
+    return ImmutableList.of(new RecordJavaType(javaTypeMap.build(), list));
   }
 
   /**
@@ -191,6 +229,15 @@ final class InvocationBuilderTypeUtils {
    * over the entire union for now.
    */
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(UnionType unionType) {
+    if (unionType.equals(
+        UnionType.of(NullType.getInstance(), IntType.getInstance(), FloatType.getInstance()))) {
+      return ImmutableList.of(JavaNumberSubtype.NUMBER.asNullable());
+    }
+
+    if (unionType.equals(UnionType.of(IntType.getInstance(), FloatType.getInstance()))) {
+      return ImmutableList.of(JavaNumberSubtype.NUMBER);
+    }
+
     // Figure out if the union contains the {@link NullType}, which tells us if the param setters
     // should be nullable.
     boolean unionAllowsNull =

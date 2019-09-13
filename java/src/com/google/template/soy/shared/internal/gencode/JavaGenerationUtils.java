@@ -105,6 +105,11 @@ public final class JavaGenerationUtils {
     return str;
   }
 
+  public static String makeLowerCamelCase(String str) {
+    str = makeUpperCamelCase(str);
+    return Character.toLowerCase(str.charAt(0)) + str.substring(1);
+  }
+
   /**
    * Makes all the words in the given string into capitalized format (first letter capital, rest
    * lower case). Words are defined by the given regex pattern.

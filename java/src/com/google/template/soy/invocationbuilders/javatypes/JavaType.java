@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.template.soy.invocationbuilders.javatypes;
 
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.CHECK_NOT_NULL;
+
 import com.google.common.base.Strings;
-import com.google.template.soy.base.internal.IndentedLinesBuilder;
 
 /** Abstract base class representing a Java type used for invocation builders. */
 public abstract class JavaType {
@@ -47,9 +49,9 @@ public abstract class JavaType {
    *
    * <p>The return value would be "myListAsLong".
    */
-  public String appendRunTimeOperations(IndentedLinesBuilder ilb, String variableName) {
+  public String asInlineCast(String variableName) {
     if (!isNullable() && !isPrimitive()) {
-      ilb.appendLine("Preconditions.checkNotNull(" + variableName + ");");
+      return CHECK_NOT_NULL + "(" + variableName + ")";
     }
     return variableName;
   }
