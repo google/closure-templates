@@ -90,6 +90,15 @@ public abstract class SoyAbstractCachingValueProvider implements SoyValueProvide
         "SoyAbstractCachingValueProvider is unsuitable for use as a hash key.");
   }
 
+  /**
+   * Arbitrary method override to allow toString to be called without throwing
+   * UnsupportedOperationException (since {@link Object#toString} uses {@link #hashCode}.
+   */
+  @Override
+  public String toString() {
+    return getClass().toString();
+  }
+
   /** Returns {@code true} if the caching provider has already been calculated. */
   public final boolean isComputed() {
     return resolvedValue != null;
