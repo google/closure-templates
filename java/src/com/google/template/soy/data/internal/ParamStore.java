@@ -76,6 +76,15 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Arbitrary method override to allow toString to be called without throwing
+   * UnsupportedOperationException (since {@link Object#toString} uses {@link #hashCode}.
+   */
+  @Override
+  public String toString() {
+    return getClass().toString();
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Empty instance.
 
