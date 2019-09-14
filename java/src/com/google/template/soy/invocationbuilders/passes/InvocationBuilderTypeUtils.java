@@ -159,6 +159,11 @@ final class InvocationBuilderTypeUtils {
   }
 
   private static ImmutableList<JavaType> trySimpleRecordType(RecordType recordType, boolean list) {
+    // Empty records make no sense.
+    if (recordType.getMembers().isEmpty()) {
+      return ImmutableList.of();
+    }
+
     // No records of records.
     if (Streams.stream(SoyTypes.getTypeTraverser(recordType, null))
         .anyMatch(t -> t.getKind() == Kind.RECORD && t != recordType)) {
