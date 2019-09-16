@@ -1306,11 +1306,11 @@ goog.array.binarySelect = function(arr, evaluator, opt_obj) {
 };
 goog.array.binarySearch_ = function(arr, compareFn, isEvaluator, opt_target, opt_selfObj) {
   for (var left = 0, right = arr.length, found; left < right;) {
-    var middle = left + right >> 1;
+    var middle = left + (right - left >>> 1);
     var compareResult = isEvaluator ? compareFn.call(opt_selfObj, arr[middle], middle, arr) : compareFn(opt_target, arr[middle]);
     0 < compareResult ? left = middle + 1 : (right = middle, found = !compareResult);
   }
-  return found ? left : ~left;
+  return found ? left : -left - 1;
 };
 goog.array.sort = function(arr, opt_compareFn) {
   arr.sort(opt_compareFn || goog.array.defaultCompare);

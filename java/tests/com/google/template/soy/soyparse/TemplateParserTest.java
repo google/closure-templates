@@ -887,7 +887,7 @@ public final class TemplateParserTest {
 
     String templateHeaderAndBody =
         ""
-            + "  {@param boo: string}  // Something scary. (Not doc comment.)\n"
+            + "  {@param boo: string}  // Something scary. (Becomes a SoyDoc comment.)\n"
             + "  {@param foo: list<int>}  /** Something random. */\n"
             + "  {@param goo: string}/** Something\n"
             + "      slimy. */\n"
@@ -906,12 +906,12 @@ public final class TemplateParserTest {
     assertFalse(declInfos.get(0).isInjected());
     assertEquals("boo", declInfos.get(0).name());
     assertEquals("string", declInfos.get(0).type().toString());
-    assertEquals(null, declInfos.get(0).desc());
+    assertEquals("Something scary. (Becomes a SoyDoc comment.)", declInfos.get(0).desc());
     assertEquals("foo", declInfos.get(1).name());
     assertEquals("list<int>", declInfos.get(1).type().toString());
     assertEquals(null, declInfos.get(1).desc());
     assertEquals("Something random.", declInfos.get(2).desc());
-    assertEquals("Something\n      slimy.", declInfos.get(3).desc());
+    assertEquals("{@param commentedOut: string}", declInfos.get(3).desc());
     assertEquals("too", declInfos.get(4).name());
     assertEquals(null, declInfos.get(4).desc());
     assertEquals("woo", declInfos.get(5).name());

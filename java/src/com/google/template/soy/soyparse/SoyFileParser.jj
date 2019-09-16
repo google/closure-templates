@@ -99,6 +99,7 @@ import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.LineCommentNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -723,16 +724,6 @@ TOKEN_MGR_DECLS: {
 | < <LINE_COMMENT> >
 }
 
-// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT are only interpreted as such
-// if there is preceding whitespace.
-// Other lexical states don't have this requirement.  The fact that comments swallow leading
-// whitespace characters doesn't affect output because of how line joining works.
-<TEMPLATE_DEFAULT> SKIP: {
-  // In theory we only require a single whitespace character, but this rule will consume all
-  // preceeding whitespace. This is necessary to make this unambiguous with the TOKEN_WS definition.
-  < (<WS>)+ <LINE_COMMENT> >
-}
-
 // NOTE: we don't just configure this for state * because these comments shouldn't work in things
 // like string literals or attribute values
 <DEFAULT, TEMPLATE_DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SKIP: {
@@ -959,6 +950,14 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_VELOG              : "{/velog}"       >
 
 | < CMD_SKIP                     : "{skip}"         >
+
+// Due to ambiguity with uri schemes, line comments in TEMPLATE_DEFAULT are only interpreted as such
+// if there is preceding whitespace.
+// Other lexical states don't have this requirement.  The fact that comments swallow leading
+// whitespace characters doesn't affect output because of how line joining works.
+| < TEMPLATE_LINE_COMMENT        : (<WS>)+ <LINE_COMMENT> >
+// In theory we only require a single whitespace character, but this rule will consume all
+// preceeding whitespace. This is necessary to make this unambiguous with the TOKEN_WS definition.
 }
 
 
@@ -1541,6 +1540,7 @@ private void TemplateOpenTagHelper(
     // --- Set the SoyDoc. ---
     // special tokens are accessible from the non-special tokens that come after them.
     Token soyDoc = open.specialToken;
+    // TODO(b/134590934): Add support for FILE_LINE_COMMENT
     if (soyDoc != null && soyDoc.kind == SOYDOC) {
       builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
     }
@@ -1699,7 +1699,7 @@ private RawTextNode RawText() :
  * Important: The template header consists of a sequence of ParamDecls() separated by optional
  * whitespace.
  *
- * TemplateHeader -> ( Whitespace() | ParamDecl() )*
+ * TemplateHeader -> ( Whitespace() | ParamDecl() | LineComment() )*
  *
  * Whether or not a particular piece of whitespace is part of the header or part of an initial raw
  * text node is ambiguous.  So if there is a trailing piece of non-trivial whitespace it will be
@@ -1709,6 +1709,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
 {
   Token tok;
   TemplateHeaderVarDefn param;
+  LineCommentNode lineComment = null;
   List<TemplateHeaderVarDefn> params = ImmutableList.of();
   RawTextNode whitespace = null;
   String soyDoc = null;
@@ -1732,9 +1733,10 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
 
       { whitespace = builder.build(); }
     |
-      param = ParamDecl(soyDoc)
-      {
-        switch (param.kind()) {
+      (
+        param = ParamDecl(soyDoc)
+        {
+          switch (param.kind()) {
           case PARAM:
             // we just parsed a param, preceding whitespace/doc comments are not important
             whitespace = null;
@@ -1757,11 +1759,14 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
           case LOCAL_VAR:
           case UNDECLARED:
             throw new AssertionError("unexpected var kind: " + param.kind());
+          }
         }
-      }
+      |
+        lineComment = LineComment()
+        { soyDoc = lineComment.getEscapedCommentText(); }  // soyDoc often ends up between `/*` `*/`
+      )
     )
   )*
-
   {
     templateBuilder.addVarDefns(params);
     return whitespace;
@@ -1778,6 +1783,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
 private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
 {
   Token tagBegin, name;
+  LineCommentNode lineComment = null;
   TypeNode paramTypeNode = null;
   ExprNode value = null;
   boolean optional = false;
@@ -1814,6 +1820,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       value = Expr()
     )
     <CMD_END>
+    [ lineComment = LineComment() ]
   } catch (ParseException parseException) {
     reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
@@ -1821,7 +1828,18 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   {
     if (desc != null) {
       // trim the leading /** and trailing */ as well as the whitespace from the doc comment.
-      desc = desc.substring(3, desc.length() - 2).trim();
+      if (desc.startsWith("/**")) {
+        desc = desc.substring(3, desc.length() - 2);
+      }
+      desc = desc.trim();
+    }
+    if (lineComment != null) {
+      if (desc != null) {
+        desc += "\n";
+      } else {
+        desc = "";
+      }
+      desc += lineComment.getEscapedCommentText();
     }
     if (stateVar) {
       if (value == null) {
@@ -1946,7 +1964,7 @@ private StatementNode Stmt() :
 }
 
 /**
- * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt | KeyStmt
+ * NonPrintableStmt -> LetStmt | LogStmt | DebuggerStmt | KeyStmt | Comment
  */
 private StatementNode NonPrintableStmt() :
 {
@@ -1960,6 +1978,7 @@ private StatementNode NonPrintableStmt() :
   | stmt = VeLogStmt()
   | stmt = KeyStmt()
   | stmt = SkipStmt()
+  | stmt = LineComment()
   )
 
   { return stmt; }
@@ -2095,6 +2114,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
 
   // try to collect all leading whitespace into a raw text node on its own.
   // This will make it possible to detect if a leading {plural} or {select} was preceeded by content
+  ( LineComment() )*  // TODO(b/138658479): Make sure these comments make it into the AST.
   [ LOOKAHEAD(1)  // prefer taking this branch over skipping and consuming as RawText
     { Token tok;
       RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
@@ -2116,6 +2136,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
       msgPluralOrSelectNode = MsgPlural()
     | msgPluralOrSelectNode = MsgSelect()
     )
+    ( LineComment() )*  // TODO(b/138658479): Make sure these comments make it into the AST.
     SkipWhitespace()  // we want to ignore all whitespace after a plural or select, just expect it
     {
       if (firstNodeIsWhitespace) {
@@ -2219,7 +2240,11 @@ private MsgPluralNode MsgPlural() :
   // consume all whitespace between {plural} and the first {case}
   // later {case} and {default} tags will naturally consume whitespace due via RawText()
   SkipWhitespace()
-
+  (
+    // TODO(b/138658479): Make sure these comments make it into the AST.
+    LineComment()
+    SkipWhitespace()
+  )*
   try {
     (
       tagBegin = <CMD_BEGIN_CASE>
@@ -2783,17 +2808,24 @@ private SwitchNode SwitchStmt() :
 
   try {
     (
-      tagBegin = <CMD_BEGIN_CASE>
-      caseExprs = ExprList()
-      tagEnd = <CMD_END>
-      {
-        SwitchCaseNode caseNode =
-            new SwitchCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), caseExprs);
-        switchNode.addChild(caseNode);
-      }
+      (
+        LineComment()
+        SkipWhitespace()
+      )+
+    |
+      (
+        tagBegin = <CMD_BEGIN_CASE>
+        caseExprs = ExprList()
+        tagEnd = <CMD_END>
+        {
+          SwitchCaseNode caseNode =
+              new SwitchCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), caseExprs);
+          switchNode.addChild(caseNode);
+        }
 
-      templateBlock = TemplateBlock()
-      { caseNode.addChildren(templateBlock); }
+        templateBlock = TemplateBlock()
+        { caseNode.addChildren(templateBlock); }
+      )
     )+
 
     [
@@ -3007,6 +3039,12 @@ private List<CallParamNode> CallParams() :
   // consume all whitespace between {call}/{delcall} and the first {param} as well as between params
   SkipWhitespace()
   (
+    (
+      // TODO(b/138659631): Retain these comments.
+      LineComment()
+      SkipWhitespace()
+    )+
+    |
     paramNode = CallParam()
     {
       if (params.isEmpty()) {
@@ -3016,6 +3054,10 @@ private List<CallParamNode> CallParams() :
     }
 
     SkipWhitespace()
+    [
+      LineComment()
+      SkipWhitespace()
+    ]
   )*
 
   { return params; }
@@ -3130,6 +3172,15 @@ private DebuggerNode DebuggerStmt() :
 {
   token = <CMD_FULL_DEBUGGER>
   { return new DebuggerNode(nodeIdGen.genId(), createSrcLoc(token)); }
+}
+
+private LineCommentNode LineComment() :
+{
+  Token token;
+}
+{
+  token = <TEMPLATE_LINE_COMMENT>
+  { return new LineCommentNode(nodeIdGen.genId(), token.image, createSrcLoc(token)); }
 }
 
 

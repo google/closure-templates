@@ -138,6 +138,25 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
     return offsets == null ? false : offsets.getReasonAt(index) == SourceOffsets.Reason.WHITESPACE;
   }
 
+  /*
+   * Returns true if there was a text command such as {sp} or {nil} immediately
+   * prior to {@code index}.
+   *
+   * @param index the index in the raw text, this value should be in the range {@code [0,
+   *     rawText.length()]} if {@code rawText.length()} is passed, then this is equivalent to asking
+   *     if it ends with a commamnd.
+   * @throws IndexOutOfBoundsException if index is out of range.
+   * @return {@code true} if command executed
+   */
+  public boolean commandAt(int index) {
+    return offsets == null ? false : offsets.getReasonAt(index) == SourceOffsets.Reason.COMMAND;
+  }
+
+  @Nullable
+  public Reason getReasonAt(int index) {
+    return offsets == null ? null : offsets.getReasonAt(index);
+  }
+
   public Point locationOf(int i) {
     checkElementIndex(i, rawText.length(), "index");
     if (offsets == null) {

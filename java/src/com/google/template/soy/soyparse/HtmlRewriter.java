@@ -61,6 +61,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
+import com.google.template.soy.soytree.LineCommentNode;
 import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -1250,6 +1251,12 @@ final class HtmlRewriter {
     }
 
     @Override
+    protected void visitLineCommentNode(LineCommentNode node) {
+      processNonPrintableNode(
+          node); // otherwise InferenceEngine is unable to correctly infer escaping mode.
+    }
+
+    @Override
     protected void visitCallParamContentNode(CallParamContentNode node) {
       visitScopedBlock(node.getContentKind(), node, "param");
     }
@@ -1397,16 +1404,20 @@ final class HtmlRewriter {
           context.addTagChild(node);
           break;
         case BEFORE_ATTRIBUTE_VALUE:
-          errorReporter.report(
-              node.getSourceLocation(),
-              INVALID_LOCATION_FOR_NONPRINTABLE,
-              "move it before the start of the tag or after the tag name");
+          if (node.getKind() != Kind.LINE_COMMENT_NODE) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                INVALID_LOCATION_FOR_NONPRINTABLE,
+                "move it before the start of the tag or after the tag name");
+          }
           break;
         case HTML_TAG_NAME:
-          errorReporter.report(
-              node.getSourceLocation(),
-              INVALID_LOCATION_FOR_NONPRINTABLE,
-              "it creates ambiguity with an unquoted attribute value");
+          if (node.getKind() != Kind.LINE_COMMENT_NODE) {
+            errorReporter.report(
+                node.getSourceLocation(),
+                INVALID_LOCATION_FOR_NONPRINTABLE,
+                "it creates ambiguity with an unquoted attribute value");
+          }
           break;
         case UNQUOTED_ATTRIBUTE_VALUE:
         case DOUBLE_QUOTED_ATTRIBUTE_VALUE:

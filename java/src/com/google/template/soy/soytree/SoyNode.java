@@ -100,8 +100,9 @@ public interface SoyNode extends Node {
 
     LOG_NODE,
     DEBUGGER_NODE,
-  }
 
+    LINE_COMMENT_NODE,
+  }
 
   /** Returns this node's kind (corresponding to this node's specific type). */
   Kind getKind();

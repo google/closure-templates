@@ -285,6 +285,7 @@ public final class PassManager {
       // meaning that errors reported in earlier passes do not prevent running subsequent passes.
       building = true;
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
+      addPass(new StripSoyCommentsPass(), singleFilePassesBuilder);
       // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
       // autoescaping.
       addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);

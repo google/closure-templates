@@ -231,6 +231,9 @@ final class ParseErrors {
       case SoyFileParserConstants.DOLLAR_IDENT:
         return "variable";
 
+      case SoyFileParserConstants.TEMPLATE_LINE_COMMENT:
+        return null; // Comments are ubiquitous and unnessesery in error messages.
+
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
 

@@ -197,6 +197,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitDebuggerNode((DebuggerNode) node);
         break;
 
+      case LINE_COMMENT_NODE:
+        visitLineCommentNode((LineCommentNode) node);
+        break;
+
       default:
         visitSoyNode(node);
         break;
@@ -419,6 +423,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitDebuggerNode(DebuggerNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitLineCommentNode(LineCommentNode node) {
     visitSoyNode(node);
   }
 

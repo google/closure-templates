@@ -149,6 +149,9 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case DEBUGGER_NODE:
         return visitDebuggerNode((DebuggerNode) node);
 
+      case LINE_COMMENT_NODE:
+        return visitLineCommentNode((LineCommentNode) node);
+
       default:
         return visitSoyNode(node);
     }
@@ -342,6 +345,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitDebuggerNode(DebuggerNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitLineCommentNode(LineCommentNode node) {
     return visitSoyNode(node);
   }
 
