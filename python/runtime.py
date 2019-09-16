@@ -367,11 +367,15 @@ def type_safe_add(*args):
 
 
 def list_contains(l, item):
-  """Equivalent to `item in l` but using soy's equality algorithm."""
-  for el in l:
-    if type_safe_eq(item, el):
-      return True
-  return False
+  return list_indexof(l, item) >= 0
+
+
+def list_indexof(l, item):
+  """Equivalent getting the index of `item in l` but using soy's equality algorithm."""
+  for i in range(len(l)):
+    if type_safe_eq(l[i], item):
+      return i
+  return -1
 
 
 def type_safe_eq(first, second):

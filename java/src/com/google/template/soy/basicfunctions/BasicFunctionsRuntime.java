@@ -81,6 +81,11 @@ public final class BasicFunctionsRuntime {
     return list.asJavaList().contains(value);
   }
 
+  /** Checks if list contains a value. */
+  public static int listIndexOf(SoyList list, SoyValue value) {
+    return list.asJavaList().indexOf(value);
+  }
+
   /** Joins the list elements by a separator. */
   public static String join(SoyList list, String separator) {
     List<String> stringList = new ArrayList<>();

@@ -81,6 +81,10 @@ Joins two or more lists together.
 
 Checks if the given value is inside the list.
 
+## `listIndexOf(list, value)` {#listIndexOf}
+
+Return the index of the value in list, or -1.
+
 ## `join(list, separator)` {#join}
 
 Joins a list of strings or integers with a string separator.

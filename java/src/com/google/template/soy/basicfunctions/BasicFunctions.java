@@ -38,6 +38,7 @@ public class BasicFunctions {
         new LegacyObjectMapToMapFunction(),
         new LengthFunction(),
         new ListContainsFunction(),
+        new ListIndexOfFunction(),
         new MapKeysFunction(),
         new MaxFunction(),
         new MinFunction(),

@@ -1711,10 +1711,23 @@ soy.$$isLowSurrogate_ = function(cc) {
  * @template T
  */
 soy.$$listContains = function(list, val) {
+  return soy.$$listIndexOf(list, val) >= 0;
+};
+
+
+/**
+ * Returns the index of val in list or -1
+ * @param {!IArrayLike<?>} list
+ * @param {*} val
+ * @return {number}
+ * @template T
+ */
+soy.$$listIndexOf = function(list, val) {
   return goog.array.findIndex(list, function(el) {
     return soy.$$equals(val, el);
-  }) >= 0;
+  });
 };
+
 
 
 /**

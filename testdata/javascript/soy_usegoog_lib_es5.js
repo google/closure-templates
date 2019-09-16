@@ -9392,7 +9392,10 @@ soy.$$isLowSurrogate_ = function(cc) {
   return 56320 <= cc && 57343 >= cc;
 };
 soy.$$listContains = function(list, val) {
-  return 0 <= goog.array.findIndex(list, function(el) {
+  return 0 <= soy.$$listIndexOf(list, val);
+};
+soy.$$listIndexOf = function(list, val) {
+  return goog.array.findIndex(list, function(el) {
     return soy.$$equals(val, el);
   });
 };
