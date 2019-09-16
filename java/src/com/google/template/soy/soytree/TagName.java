@@ -63,6 +63,7 @@ public final class TagName {
       ImmutableSet.of(
           "area",
           "base",
+          "basefont",
           "br",
           "col",
           "command",
@@ -70,6 +71,7 @@ public final class TagName {
           "hr",
           "img",
           "input",
+          "isindex",
           "keygen",
           "link",
           "meta",
