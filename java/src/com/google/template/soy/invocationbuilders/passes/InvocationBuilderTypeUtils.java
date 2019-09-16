@@ -45,7 +45,6 @@ import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -160,7 +159,7 @@ final class InvocationBuilderTypeUtils {
 
   private static ImmutableList<JavaType> trySimpleRecordType(RecordType recordType, boolean list) {
     // Empty records make no sense.
-    if (recordType.getMembers().isEmpty()) {
+    if (recordType.getFieldNames().isEmpty()) {
       return ImmutableList.of();
     }
 
@@ -171,13 +170,14 @@ final class InvocationBuilderTypeUtils {
     }
 
     ImmutableMap.Builder<String, JavaType> javaTypeMap = ImmutableMap.builder();
-    for (Map.Entry<String, SoyType> entry : recordType.getMembers().entrySet()) {
-      List<JavaType> types = getJavaTypes(entry.getValue());
+    for (String fieldName : recordType.getFieldNames()) {
+      SoyType memberType = recordType.getMembers().get(fieldName);
+      List<JavaType> types = getJavaTypes(memberType);
       if (types.size() != 1) {
         // No overloaded record setters.
         return ImmutableList.of();
       }
-      javaTypeMap.put(entry.getKey(), types.get(0));
+      javaTypeMap.put(fieldName, types.get(0));
     }
     return ImmutableList.of(new RecordJavaType(javaTypeMap.build(), list));
   }
