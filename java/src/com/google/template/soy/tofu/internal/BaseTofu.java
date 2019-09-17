@@ -30,7 +30,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
@@ -371,7 +370,7 @@ public final class BaseTofu implements SoyTofu {
      * @param templateName The full template name (including namespace).
      * @param data Optionally provided template data.
      */
-    RendererImpl(BaseTofu baseTofu, String templateName, Map<String, SoyValueProvider> data) {
+    RendererImpl(BaseTofu baseTofu, String templateName, Map<String, ?> data) {
       this.baseTofu = baseTofu;
       this.templateName = templateName;
       this.expectedContentKind = SanitizedContent.ContentKind.HTML;

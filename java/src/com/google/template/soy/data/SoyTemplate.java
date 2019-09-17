@@ -32,7 +32,7 @@ public interface SoyTemplate {
    * Returns the parameters as a map. This method is only intended to be called by the Soy
    * framework.
    */
-  Map<String, SoyValueProvider> getParamsAsMap();
+  Map<String, ?> getParamsAsMap();
 
   /**
    * Wraps a {@link SoyTemplate} but grants synchronous access to {@link #getTemplateName()}. This

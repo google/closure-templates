@@ -35,7 +35,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
-import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory;
@@ -158,7 +157,7 @@ public final class SoySauceImpl implements SoySauce {
         String templateName,
         Factory templateFactory,
         ContentKind contentKind,
-        @Nullable Map<String, SoyValueProvider> data) {
+        @Nullable Map<String, ?> data) {
       this.templateName = templateName;
       this.templateFactory = checkNotNull(templateFactory);
       this.contentKind = contentKind;
