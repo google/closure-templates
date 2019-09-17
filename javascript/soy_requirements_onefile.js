@@ -121,20 +121,6 @@ goog$soy$data$SanitizedHtml.prototype.contentKind=goog$soy$data$SanitizedContent
 goog$inherits(goog$soy$data$SanitizedUri,goog$soy$data$SanitizedContent);goog$soy$data$SanitizedUri.prototype.contentKind=goog$soy$data$SanitizedContentKind$URI;goog$soy$data$SanitizedUri.prototype.contentDir=1;var goog$soy$data$SanitizedTrustedResourceUri=function(){goog$soy$data$SanitizedContent.call(this)};goog$inherits(goog$soy$data$SanitizedTrustedResourceUri,goog$soy$data$SanitizedContent);goog$soy$data$SanitizedTrustedResourceUri.prototype.contentKind=goog$soy$data$SanitizedContentKind$TRUSTED_RESOURCE_URI;
 goog$soy$data$SanitizedTrustedResourceUri.prototype.contentDir=1;var goog$soy$data$SanitizedHtmlAttribute=function(){goog$soy$data$SanitizedContent.call(this)};goog$inherits(goog$soy$data$SanitizedHtmlAttribute,goog$soy$data$SanitizedContent);goog$soy$data$SanitizedHtmlAttribute.prototype.contentKind=goog$soy$data$SanitizedContentKind$ATTRIBUTES;goog$soy$data$SanitizedHtmlAttribute.prototype.contentDir=1;var goog$soy$data$SanitizedCss=function(){goog$soy$data$SanitizedContent.call(this)};
 goog$inherits(goog$soy$data$SanitizedCss,goog$soy$data$SanitizedContent);goog$soy$data$SanitizedCss.prototype.contentKind=goog$soy$data$SanitizedContentKind$CSS;goog$soy$data$SanitizedCss.prototype.contentDir=1;/*
- Copyright (c) Microsoft Corporation. All rights reserved.
- Licensed under the Apache License, Version 2.0 (the "License"); you may not use
- this file except in compliance with the License. You may obtain a copy of the
- License at http://www.apache.org/licenses/LICENSE-2.0
-
- THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
- WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
- MERCHANTABLITY OR NON-INFRINGEMENT.
-
- See the Apache Version 2.0 License for specific language governing permissions
- and limitations under the License.
-*/
-/*
 
  Copyright 2018 The Incremental DOM Authors. All Rights Reserved.
 

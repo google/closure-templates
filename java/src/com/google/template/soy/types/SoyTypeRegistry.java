@@ -291,11 +291,11 @@ public class SoyTypeRegistry {
    * identical key/value types together, so asking for the same key/value type twice will return a
    * pointer to the same type object.
    *
-   * @param fields The map containing field names and types.
+   * @param members The list of members, in parse order.
    * @return The record type.
    */
-  public RecordType getOrCreateRecordType(Map<String, SoyType> fields) {
-    return recordTypes.intern(RecordType.of(fields));
+  public RecordType getOrCreateRecordType(Iterable<RecordType.Member> members) {
+    return recordTypes.intern(RecordType.of(members));
   }
 
   /**

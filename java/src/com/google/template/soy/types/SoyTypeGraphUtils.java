@@ -93,7 +93,7 @@ class SoyTypeGraphUtils {
           return ImmutableList.of(mapType.getKeyType(), mapType.getValueType());
 
         case RECORD:
-          return ((RecordType) type).getMembers().values();
+          return ((RecordType) type).getAlphabetizedMembers().values();
 
         case VE:
           VeType veType = (VeType) type;

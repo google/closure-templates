@@ -18,7 +18,7 @@ package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -92,16 +92,24 @@ public class SoyTypeRegistryTest {
   public void testCreateRecordType() {
     RecordType r1 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.of("a", IntType.getInstance(), "b", FloatType.getInstance()));
+            ImmutableList.of(
+                RecordType.memberOf("a", IntType.getInstance()),
+                RecordType.memberOf("b", FloatType.getInstance())));
     RecordType r2 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.of("a", IntType.getInstance(), "b", FloatType.getInstance()));
+            ImmutableList.of(
+                RecordType.memberOf("a", IntType.getInstance()),
+                RecordType.memberOf("b", FloatType.getInstance())));
     RecordType r3 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.of("a", IntType.getInstance(), "b", StringType.getInstance()));
+            ImmutableList.of(
+                RecordType.memberOf("a", IntType.getInstance()),
+                RecordType.memberOf("b", StringType.getInstance())));
     RecordType r4 =
         typeRegistry.getOrCreateRecordType(
-            ImmutableMap.of("a", IntType.getInstance(), "c", FloatType.getInstance()));
+            ImmutableList.of(
+                RecordType.memberOf("a", IntType.getInstance()),
+                RecordType.memberOf("c", FloatType.getInstance())));
 
     assertThat(r2).isSameInstanceAs(r1);
     assertThat(r3).isNotSameInstanceAs(r1);

@@ -377,12 +377,12 @@ public final class JsType {
       case RECORD:
         {
           RecordType recordType = (RecordType) soyType;
-          if (recordType.getMembers().isEmpty()) {
+          if (recordType.isEmpty()) {
             return RAW_OBJECT_TYPE;
           }
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
-          for (Map.Entry<String, SoyType> member : recordType.getMembers().entrySet()) {
+          for (Map.Entry<String, SoyType> member : recordType.getAlphabetizedMembers().entrySet()) {
             JsType forSoyType = forSoyType(member.getValue(), isIncrementalDom, isStrict);
             builder.addRequires(forSoyType.getGoogRequires());
             members.put(

@@ -29,6 +29,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ErrorType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
@@ -196,16 +197,18 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(RecordTypeNode node) {
-    Map<String, SoyType> map = Maps.newLinkedHashMap();
+    Map<String, RecordType.Member> map = Maps.newLinkedHashMap();
     for (RecordTypeNode.Property property : node.properties()) {
-      SoyType oldType = map.put(property.name(), property.type().accept(this));
+      RecordType.Member oldType =
+          map.put(
+              property.name(), RecordType.memberOf(property.name(), property.type().accept(this)));
       if (oldType != null) {
         errorReporter.report(property.nameLocation(), DUPLICATE_RECORD_FIELD, property.name());
         // restore old mapping and keep going
         map.put(property.name(), oldType);
       }
     }
-    SoyType type = typeRegistry.getOrCreateRecordType(map);
+    SoyType type = typeRegistry.getOrCreateRecordType(map.values());
     node.setResolvedType(type);
     return type;
   }

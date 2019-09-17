@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -53,6 +52,7 @@ import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
@@ -356,12 +356,14 @@ public final class TemplateMetadataSerializer {
         }
       case RECORD:
         {
-          ImmutableSortedMap.Builder<String, SoyType> members = ImmutableSortedMap.naturalOrder();
+          List<RecordType.Member> members = new ArrayList<>();
           for (Map.Entry<String, SoyTypeP> entry : proto.getRecord().getFieldMap().entrySet()) {
-            members.put(
-                entry.getKey(), fromProto(entry.getValue(), typeRegistry, filePath, errorReporter));
+            members.add(
+                RecordType.memberOf(
+                    entry.getKey(),
+                    fromProto(entry.getValue(), typeRegistry, filePath, errorReporter)));
           }
-          return typeRegistry.getOrCreateRecordType(members.build());
+          return typeRegistry.getOrCreateRecordType(members);
         }
       case UNION:
         {
