@@ -192,10 +192,23 @@ function $$getLoggingFunctionAttribute(name, args, attr) {
  *
  * @param {!Element|!DocumentFragment} element The rendered HTML element.
  * @param {!Logger} logger The logger that actually does stuffs.
+ * @return {!Element|!DocumentFragment}
  */
 function emitLoggingCommands(element, logger) {
   if (element instanceof Element) {
+    const children = Array.from(element.childNodes);
     visit(element, logger);
+    if (element.tagName !== 'VELOG') {
+      return element;
+    }
+    if (children.length === 1) {
+      return children[0];
+    }
+    const fragment = document.createDocumentFragment();
+    for (const child of children) {
+      fragment.appendChild(child);
+    }
+    return fragment;
   } else {
     const children = Array.from(element.childNodes);
     for (let i = 0; i < children.length; i++) {
@@ -204,6 +217,7 @@ function emitLoggingCommands(element, logger) {
         visit(child, logger);
       }
     }
+    return element;
   }
 }
 
