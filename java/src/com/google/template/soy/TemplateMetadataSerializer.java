@@ -357,6 +357,7 @@ public final class TemplateMetadataSerializer {
       case RECORD:
         {
           List<RecordType.Member> members = new ArrayList<>();
+          // Proto map insertion order iteration is important here.
           for (Map.Entry<String, SoyTypeP> entry : proto.getRecord().getFieldMap().entrySet()) {
             members.add(
                 RecordType.memberOf(

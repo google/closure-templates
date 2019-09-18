@@ -382,11 +382,10 @@ public final class JsType {
           }
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
-          for (Map.Entry<String, SoyType> member : recordType.getAlphabetizedMembers().entrySet()) {
-            JsType forSoyType = forSoyType(member.getValue(), isIncrementalDom, isStrict);
+          for (RecordType.Member member : recordType.getMembers()) {
+            JsType forSoyType = forSoyType(member.type(), isIncrementalDom, isStrict);
             builder.addRequires(forSoyType.getGoogRequires());
-            members.put(
-                member.getKey(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
+            members.put(member.name(), forSoyType.typeExprForRecordMember(/* isOptional= */ false));
           }
           return builder
               // trailing comma is important to prevent parsing ambiguity for the unknown type

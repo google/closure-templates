@@ -287,9 +287,8 @@ public class SoyTypeRegistry {
   }
 
   /**
-   * Factory function which creates a record type, given a map of fields. This folds map types with
-   * identical key/value types together, so asking for the same key/value type twice will return a
-   * pointer to the same type object.
+   * Factory function which creates a record type, given a list of fields. This folds identical
+   * record types together.
    *
    * @param members The list of members, in parse order.
    * @return The record type.

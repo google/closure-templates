@@ -21,12 +21,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Streams;
 import com.google.template.soy.soytree.SoyTypeP;
-import java.util.Comparator;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -51,19 +47,15 @@ public final class RecordType extends SoyType {
     return new AutoValue_RecordType_Member(name, type);
   }
 
-  public static final RecordType EMPTY_RECORD = RecordType.of(ImmutableMap.of());
+  public static final RecordType EMPTY_RECORD = RecordType.of(ImmutableList.of());
 
   private final ImmutableList<Member> members;
-  // TODO(user): Convert all remaining alphabetized iterators into parse order.
-  private final ImmutableSortedMap<String, SoyType> alphabetizedMembers;
+  private final ImmutableMap<String, SoyType> memberIndex;
 
   private RecordType(Iterable<Member> members) {
     this.members = ImmutableList.copyOf(members);
-    this.alphabetizedMembers =
-        Streams.stream(members)
-            .collect(
-                ImmutableSortedMap.toImmutableSortedMap(
-                    Comparator.naturalOrder(), Member::name, Member::type));
+    this.memberIndex =
+        Streams.stream(members).collect(ImmutableMap.toImmutableMap(Member::name, Member::type));
   }
 
   /**
@@ -72,7 +64,7 @@ public final class RecordType extends SoyType {
    */
   @VisibleForTesting
   public static RecordType of(ImmutableMap<String, ? extends SoyType> members) {
-    Preconditions.checkArgument(!(members instanceof NavigableMap));
+    Preconditions.checkArgument(!(members instanceof NavigableMap)); // Insertion-order only, please
     return new RecordType(
         members.entrySet().stream()
             .map(e -> memberOf(e.getKey(), e.getValue()))
@@ -94,9 +86,9 @@ public final class RecordType extends SoyType {
       RecordType srcRecord = (RecordType) srcType;
       // The source record must have at least all of the members in the dest
       // record.
-      for (Map.Entry<String, SoyType> entry : alphabetizedMembers.entrySet()) {
-        SoyType fieldType = srcRecord.alphabetizedMembers.get(entry.getKey());
-        if (fieldType == null || !entry.getValue().isAssignableFrom(fieldType)) {
+      for (Member mine : members) {
+        SoyType theirType = srcRecord.getMemberType(mine.name());
+        if (theirType == null || !mine.type().isAssignableFrom(theirType)) {
           return false;
         }
       }
@@ -113,17 +105,12 @@ public final class RecordType extends SoyType {
     return members;
   }
 
-  /** Return the members of this record type. */
-  public ImmutableSortedMap<String, SoyType> getAlphabetizedMembers() {
-    return alphabetizedMembers;
-  }
-
   public SoyType getMemberType(String fieldName) {
-    return alphabetizedMembers.get(fieldName);
+    return memberIndex.get(fieldName);
   }
 
-  public ImmutableSet<String> getAlphabetizedMemberNames() {
-    return alphabetizedMembers.keySet();
+  public Iterable<String> getMemberNames() {
+    return members.stream().map(Member::name).collect(Collectors.toList());
   }
 
   @Override
@@ -131,15 +118,15 @@ public final class RecordType extends SoyType {
     StringBuilder sb = new StringBuilder();
     sb.append("[");
     boolean first = true;
-    for (Map.Entry<String, SoyType> entry : alphabetizedMembers.entrySet()) {
+    for (Member member : members) {
       if (first) {
         first = false;
       } else {
         sb.append(", ");
       }
-      sb.append(entry.getKey());
+      sb.append(member.name());
       sb.append(": ");
-      sb.append(entry.getValue());
+      sb.append(member.type());
     }
     sb.append("]");
     return sb.toString();

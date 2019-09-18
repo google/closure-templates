@@ -22,6 +22,7 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 class SoyTypeGraphUtils {
@@ -93,7 +94,8 @@ class SoyTypeGraphUtils {
           return ImmutableList.of(mapType.getKeyType(), mapType.getValueType());
 
         case RECORD:
-          return ((RecordType) type).getAlphabetizedMembers().values();
+          return ((RecordType) type)
+              .getMembers().stream().map(RecordType.Member::type).collect(Collectors.toList());
 
         case VE:
           VeType veType = (VeType) type;

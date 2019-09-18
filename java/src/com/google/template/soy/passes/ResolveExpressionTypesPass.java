@@ -1305,8 +1305,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
               return fieldType;
             } else {
               String extraErrorMessage =
-                  SoyErrors.getDidYouMeanMessage(
-                      recordType.getAlphabetizedMemberNames(), fieldName);
+                  SoyErrors.getDidYouMeanMessage(recordType.getMemberNames(), fieldName);
               errorReporter.report(
                   sourceLocation,
                   UNDEFINED_FIELD_FOR_RECORD_TYPE,
