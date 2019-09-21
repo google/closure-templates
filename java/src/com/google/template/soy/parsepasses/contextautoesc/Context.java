@@ -85,6 +85,7 @@ public final class Context {
           "icon",
           "license",
           "next",
+          "preconnect",
           "prefetch",
           "preload",
           "prerender",
