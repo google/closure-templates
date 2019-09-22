@@ -97,10 +97,6 @@ export class IncrementalDomRenderer {
   // For users extending IncrementalDomRenderer
   visit(el: HTMLElement|void) {}
 
-  alignWithDOM(tagName: string, key: string) {
-    incrementaldom.alignWithDOM(tagName, key);
-  }
-
   /**
    * Called on the return value of open. This is only true if it is exactly
    * the skip token. This has the side effect of performing the skip.
@@ -281,8 +277,6 @@ export class NullRenderer extends IncrementalDomRenderer {
     return true;
   }
 
-  alignWithDOM(name: string, key: string) {}
-
   close() {}
 
   text(value: string) {}
@@ -371,5 +365,72 @@ New parameters: ${stringifiedParams}
 
 Element:
 ${el.dataset['debugSoy'] || el.outerHTML}`);
+  }
+}
+
+
+/**
+ * A Renderer that keeps track of whether it was ever called to render anything,
+ * but never actually does anything  This is used to check whether an HTML value
+ * is empty (if it's used in an `{if}` or conditional operator).
+ */
+export class FalsinessRenderer extends IncrementalDomRenderer {
+  private rendered = false;
+
+  /** Checks whether any DOM was rendered. */
+  didRender() {
+    return this.rendered;
+  }
+
+  open(nameOrCtor: string, key?: string) {
+    this.rendered = true;
+  }
+
+  openSSR(nameOrCtor: string, key?: string) {
+    this.rendered = true;
+    // Always skip, since we already know that we rendered things.
+    return false;
+  }
+
+  maybeSkip() {
+    this.rendered = true;
+    // Always skip, since we already know that we rendered things.
+    return true;
+  }
+
+  close() {
+    this.rendered = true;
+  }
+
+  text(value: string) {
+    this.rendered = true;
+  }
+
+  attr(name: string, value: string) {
+    this.rendered = true;
+  }
+
+  currentPointer() {
+    return null;
+  }
+
+  applyAttrs() {
+    this.rendered = true;
+  }
+
+  applyStatics(statics: incrementaldom.Statics) {
+    this.rendered = true;
+  }
+
+  skip() {
+    this.rendered = true;
+  }
+
+  key(val: string) {}
+
+  currentElement() {}
+
+  skipNode() {
+    this.rendered = true;
   }
 }

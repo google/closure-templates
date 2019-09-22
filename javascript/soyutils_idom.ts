@@ -20,21 +20,19 @@ import SanitizedContent from 'goog:goog.soy.data.SanitizedContent'; // from //ja
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
 import SanitizedHtml from 'goog:goog.soy.data.SanitizedHtml'; // from //javascript/closure/soy:data
 import SanitizedHtmlAttribute from 'goog:goog.soy.data.SanitizedHtmlAttribute'; // from //javascript/closure/soy:data
-import SanitizedJs from 'goog:goog.soy.data.SanitizedJs'; // from //javascript/closure/soy:data
-import SanitizedUri from 'goog:goog.soy.data.SanitizedUri'; // from //javascript/closure/soy:data
 import * as googString from 'goog:goog.string';  // from //javascript/closure/string
 import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:checks
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
-import {IncrementalDomRenderer, isMatchingKey, patch, patchOuter, serializeKey} from './api_idom';
+import {FalsinessRenderer, IncrementalDomRenderer, isMatchingKey, patch, patchOuter} from './api_idom';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
-const {attributes, getKey, isDataInitialized} = incrementaldom;
+const {attributes} = incrementaldom;
 
 const defaultIdomRenderer = new IncrementalDomRenderer();
 
@@ -104,7 +102,7 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
 function makeHtml(idomFn: any): IdomFunction {
   idomFn.toString = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       htmlToString(idomFn, renderer);
-  idomFn.toBoolean = () => toBoolean(idomFn);
+  idomFn.toBoolean = () => isTruthy(idomFn);
   idomFn.contentKind = SanitizedContentKind.HTML;
   return idomFn as IdomFunction;
 }
@@ -112,7 +110,7 @@ function makeHtml(idomFn: any): IdomFunction {
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
 function makeAttributes(idomFn: any): IdomFunction {
   idomFn.toString = () => attributesToString(idomFn);
-  idomFn.toBoolean = () => toBoolean(idomFn);
+  idomFn.toBoolean = () => isTruthy(idomFn);
   idomFn.contentKind = SanitizedContentKind.ATTRIBUTES;
   return idomFn as IdomFunction;
 }
@@ -155,10 +153,6 @@ function attributesToString(fn: PatchFunction): string {
   return s.sort().join(' ');
 }
 
-function toBoolean(fn: IdomFunction) {
-  return fn.toString().length > 0;
-}
-
 /**
  * Calls an expression in case of a function or outputs it as text content.
  */
@@ -187,7 +181,7 @@ const htmlAttributeRegExp: RegExp =
 
 function splitAttributes(attributes: string) {
   const nameValuePairs: string[][] = [];
-  String(attributes).replace(htmlAttributeRegExp, (_, name, dq, sq, uq) => {
+  String(attributes).replace(htmlAttributeRegExp, (s, name, dq, sq, uq) => {
     nameValuePairs.push(
         [name, googString.unescapeEntities(dq || sq || uq || '')]);
     return ' ';
@@ -363,8 +357,19 @@ function visitHtmlCommentNode(
   incrementaldom.skipNode();
 }
 
+function isTruthy(expr: unknown): boolean {
+  if (!expr) return false;
+  // true, numbers, strings, SanitizedContent objects.
+  if (typeof expr !== 'function') return !!String(expr);
+
+  const renderer = new FalsinessRenderer();
+  expr(renderer);
+  return renderer.didRender();
+}
+
 export {
   SoyElement as $SoyElement,
+  isTruthy as $$isTruthy,
   print as $$print,
   htmlToString as $$htmlToString,
   makeHtml as $$makeHtml,
