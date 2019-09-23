@@ -35,6 +35,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
@@ -49,6 +50,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
@@ -74,6 +76,7 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -104,6 +107,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -440,8 +444,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     //    an explicit coercion where we expect a boolean value.
     // 2. The soy 'and' operator is a boolean operator whereas the JS && operator has more complex
     //    semantics, so explicit coercions are necessary to ensure we get a boolean value.
-    Expression lhChunk = Truthiness.maybeCoerce(lhOperand.getType(), visit(lhOperand));
-    Expression rhChunk = Truthiness.maybeCoerce(rhOperand.getType(), visit(rhOperand));
+    Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
+    Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
     return lhChunk.and(rhChunk, codeGenerator);
   }
 
@@ -451,8 +455,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     ExprNode lhOperand = node.getChild(0);
     ExprNode rhOperand = node.getChild(1);
     // See comments in visitAndOpNode for why explicit coercions are required.
-    Expression lhChunk = Truthiness.maybeCoerce(lhOperand.getType(), visit(lhOperand));
-    Expression rhChunk = Truthiness.maybeCoerce(rhOperand.getType(), visit(rhOperand));
+    Expression lhChunk = maybeCoerceToBoolean(lhOperand.getType(), visit(lhOperand), true);
+    Expression rhChunk = maybeCoerceToBoolean(rhOperand.getType(), visit(rhOperand), true);
     return lhChunk.or(rhChunk, codeGenerator);
   }
 
@@ -460,7 +464,42 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   protected Expression visitConditionalOpNode(ConditionalOpNode node) {
     Preconditions.checkArgument(node.numChildren() == 3);
     return codeGenerator.conditionalExpression(
-        visit(node.getChild(0)), visit(node.getChild(1)), visit(node.getChild(2)));
+        maybeCoerceToBoolean(node.getChild(0).getType(), visit(node.getChild(0)), false),
+        visit(node.getChild(1)),
+        visit(node.getChild(2)));
+  }
+
+  @Override
+  protected Expression visitNotOpNode(NotOpNode node) {
+    Preconditions.checkArgument(node.numChildren() == 1);
+    ExprNode operand = node.getChild(0);
+    return operation(
+        node.getOperator(),
+        Arrays.asList(maybeCoerceToBoolean(operand.getType(), visit(operand), false)));
+  }
+
+  private static final ImmutableSet<Kind> TYPES_TO_COERCE_TO_BOOLEAN =
+      Sets.immutableEnumSet(
+          Kind.ANY,
+          Kind.UNKNOWN,
+          Kind.HTML,
+          Kind.ATTRIBUTES,
+          Kind.JS,
+          Kind.CSS,
+          Kind.URI,
+          Kind.TRUSTED_RESOURCE_URI);
+
+  /**
+   * Wraps an arbitrary expression to be checked for truthiness.
+   *
+   * @param force {@code true} to always coerce to boolean; {@code false} to only coerce for idom.
+   *     TODO(b/74192616): Remove this parameter and always convert.
+   */
+  protected Expression maybeCoerceToBoolean(SoyType type, Expression chunk, boolean force) {
+    if (force && SoyTypes.containsKinds(type, TYPES_TO_COERCE_TO_BOOLEAN)) {
+      return SOY_COERCE_TO_BOOLEAN.call(chunk);
+    }
+    return chunk;
   }
 
   @Override

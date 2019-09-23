@@ -16,10 +16,13 @@
 package com.google.template.soy.incrementaldomsrc;
 
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -32,6 +35,7 @@ import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
@@ -78,6 +82,19 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
       return visit(node.getValue());
     }
     return super.visit(node);
+  }
+
+  /** Types that might possibly be idom function callbacks, which always need custom truthiness. */
+  private static final ImmutableSet<Kind> FUNCTION_TYPES =
+      Sets.immutableEnumSet(Kind.HTML, Kind.ATTRIBUTES, Kind.UNKNOWN, Kind.ANY);
+
+  @Override
+  protected Expression maybeCoerceToBoolean(SoyType type, Expression chunk, boolean force) {
+    if (SoyTypes.containsKinds(type, FUNCTION_TYPES)) {
+      return SOY_IDOM_IS_TRUTHY.call(chunk);
+    }
+
+    return super.maybeCoerceToBoolean(type, chunk, force);
   }
 
   @Override

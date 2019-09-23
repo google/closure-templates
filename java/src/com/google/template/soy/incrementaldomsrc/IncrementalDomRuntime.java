@@ -107,6 +107,8 @@ final class IncrementalDomRuntime {
   public static final Expression SOY_IDOM_PRINT_DYNAMIC_ATTR =
       SOY_IDOM.dotAccess("$$printDynamicAttr");
 
+  public static final Expression SOY_IDOM_IS_TRUTHY = SOY_IDOM.dotAccess("$$isTruthy");
+
   public static final Expression SOY_IDOM_PRINT = SOY_IDOM.dotAccess("$$print");
 
   public static final Expression INCREMENTAL_DOM_EVAL_LOG_FN =
