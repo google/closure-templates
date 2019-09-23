@@ -60,7 +60,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   }
 
   @Override
-  public Map<String, SoyValueProvider> getParamsAsMap() {
+  public Map<String, ?> getParamsAsMap() {
     return data;
   }
 
