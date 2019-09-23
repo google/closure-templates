@@ -73,6 +73,12 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     incrementaldom: IncrementalDomRenderer,
     elementClassCtor: new (data: DATA, ij: unknown) => T,
     firstElementKey: string, data: DATA, ijData: unknown) {
+  // If we're just testing truthiness, record an element but don't do anythng.
+  if (incrementaldom instanceof FalsinessRenderer) {
+    incrementaldom.open('div');
+    incrementaldom.close();
+    return null;
+  }
   const soyElementKey = firstElementKey + incrementaldom.getCurrentKeyStack();
   let currentPointer = incrementaldom.currentPointer();
   let el: T|null = null;
@@ -359,12 +365,20 @@ function visitHtmlCommentNode(
 
 function isTruthy(expr: unknown): boolean {
   if (!expr) return false;
-  // true, numbers, strings, SanitizedContent objects.
-  if (typeof expr !== 'function') return !!String(expr);
+  if (expr instanceof SanitizedContent) return !!expr.getContent();
 
-  const renderer = new FalsinessRenderer();
-  expr(renderer);
-  return renderer.didRender();
+  // idom callbacks.
+  if (typeof expr === 'function') {
+    const renderer = new FalsinessRenderer();
+    expr(renderer);
+    return renderer.didRender();
+  }
+
+  // true, numbers, strings.
+  if (typeof expr !== 'object') return !!String(expr);
+
+  // Objects, arrays.
+  return true;
 }
 
 export {

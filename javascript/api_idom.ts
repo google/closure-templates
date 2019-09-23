@@ -38,12 +38,43 @@ export type Template<T> =
     // tslint:disable-next-line:no-any
     (renderer: IncrementalDomRenderer, args: T, ijData?: googSoy.IjData) => any;
 
+interface IdomRendererApi {
+  open(nameOrCtor: string, key?: string): void|HTMLElement;
+  openSSR(nameOrCtor: string, key?: string, data?: unknown): boolean;
+  visit(el: void|HTMLElement): void;
+  maybeSkip(renderer: IncrementalDomRenderer, val: unknown): boolean;
+  pushManualKey(key: incrementaldom.Key): void;
+  popManualKey(): void;
+  pushKey(key: string): string;
+  getNewKey(key: string): string;
+  popKey(oldKey: string): void;
+  getCurrentKeyStack(): string;
+  close(): void|Element;
+  text(value: string): void|Text;
+  attr(name: string, value: string): void;
+  currentPointer(): Node|null;
+  skip(): void;
+  currentElement(): void|Element;
+  skipNode(): void;
+  applyAttrs(): void;
+  applyStatics(statics: incrementaldom.Statics): void;
+  enter(veData: $$VisualElementData, logOnly: boolean): void;
+  exit(): void;
+  toNullRenderer(): IdomRendererApi;
+  toDefaultRenderer(): IdomRendererApi;
+  setLogger(logger: Logger|null): void;
+  getLogger(): Logger|null;
+  verifyLogOnly(logOnly: boolean): boolean;
+  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
+      string;
+}
+
 /**
  * Class that mostly delegates to global Incremental DOM runtime. This will
  * eventually take in a logger and conditionally mute. These methods may
  * return void when idom commands are muted for velogging.
  */
-export class IncrementalDomRenderer {
+export class IncrementalDomRenderer implements IdomRendererApi {
   // Stack (holder) of key stacks for the current template being rendered, which
   // has context on where the template was called from and is used to
   // key each template call (see go/soy-idom-diffing-semantics).
@@ -374,7 +405,39 @@ ${el.dataset['debugSoy'] || el.outerHTML}`);
  * but never actually does anything  This is used to check whether an HTML value
  * is empty (if it's used in an `{if}` or conditional operator).
  */
-export class FalsinessRenderer extends IncrementalDomRenderer {
+export class FalsinessRenderer implements IdomRendererApi {
+  visit(el: void|HTMLElement): void {}
+  pushManualKey(key: incrementaldom.Key) {}
+  popManualKey(): void {}
+  pushKey(key: string): string {
+    return '';
+  }
+  getNewKey(key: string): string {
+    return '';
+  }
+  popKey(oldKey: string): void {}
+  getCurrentKeyStack(): string {
+    return '';
+  }
+  enter(): void {}
+  exit(): void {}
+  toNullRenderer(): IdomRendererApi {
+    return this;
+  }
+  toDefaultRenderer(): IdomRendererApi {
+    return this;
+  }
+  setLogger(logger: Logger|null): void {}
+  getLogger(): Logger|null {
+    return null;
+  }
+  verifyLogOnly(logOnly: boolean): boolean {
+    throw new Error('Cannot evaluate VE functions in conditions.');
+  }
+  evalLoggingFunction(name: string, args: Array<{}>, placeHolder: string):
+      string {
+    return placeHolder;
+  }
   private rendered = false;
 
   /** Checks whether any DOM was rendered. */
