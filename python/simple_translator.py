@@ -89,7 +89,8 @@ class SimpleTranslator(abstract_translator.AbstractTranslator):
     return icu.MessageFormat(_maybe_escape(msg_text, is_html), icu.Locale('en'))
 
   def render_icu(self, msg, values):
-    return msg.format(values.keys(), map(_format_icu, values.values()))
+    return msg.format(
+        list(values.keys()), list(_format_icu(v) for v in values.values()))
 
   def format_num(self,
                  value,

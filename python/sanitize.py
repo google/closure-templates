@@ -599,6 +599,9 @@ class SanitizedContent(object):
   def __unicode__(self):
     return str(self.content)
 
+  def __hash__(self):
+    return hash((self.content, self.content_kind, self.content_dir))
+
 
 class SanitizedCss(SanitizedContent):
   content_kind = CONTENT_KIND.CSS

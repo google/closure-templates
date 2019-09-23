@@ -18,7 +18,6 @@ the Python compilers. These functions handle the runtime internals necessary to
 match JS behavior in module and function loading, along with type behavior.
 """
 
-# Emulate Python 3 style unicode string literals.
 from __future__ import unicode_literals
 
 __author__ = 'dcphillips@google.com (David Phillips)'
@@ -236,10 +235,17 @@ def namespaced_import(name, namespace=None, environment_path=None):
             continue
 
         # Strip the root path and the file extension.
-        module_path = os.path.relpath(f_path, sys_path).replace('/', '.')
+        module_path = six.ensure_str(os.path.relpath(f_path, sys_path)).replace(
+            '/', '.')
         module_name = os.path.splitext(f_name)[0]
+
+        # Python 2 performs relative or absolute imports. Beginning with
+        # Python 3.3, only absolute imports are possible. Compare the
+        # docs for the default value of the `level` argument of `__import__`:
+        # https://docs.python.org/2/library/functions.html#__import__
+        # https://docs.python.org/3/library/functions.html#__import__
         module = getattr(
-            __import__(module_path, globals(), locals(), [module_name], -1),
+            __import__(module_path, globals(), locals(), [module_name]),
             module_name)
         break
       if module:

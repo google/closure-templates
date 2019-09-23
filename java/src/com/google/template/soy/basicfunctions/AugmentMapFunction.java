@@ -80,6 +80,10 @@ public final class AugmentMapFunction
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
     return factory
         .global("dict")
-        .call(args.get(0).getProp("items").call().plus(args.get(1).getProp("items").call()));
+        .call(
+            factory
+                .global("list")
+                .call(args.get(0).getProp("items").call())
+                .plus(factory.global("list").call(args.get(1).getProp("items").call())));
   }
 }
