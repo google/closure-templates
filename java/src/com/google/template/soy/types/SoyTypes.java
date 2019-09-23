@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 /** Utility methods for operating on {@link SoyType} instances. */
@@ -250,6 +251,22 @@ public final class SoyTypes {
         }
       }
       return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the given type matches any of the given kinds, or is a union which includes any
+   * of the given kinds
+   */
+  public static boolean containsKinds(SoyType type, Set<Kind> kinds) {
+    if (kinds.contains(type.getKind())) {
+      return true;
+    }
+
+    if (type instanceof UnionType) {
+      return ((UnionType) type)
+          .getMembers().stream().map(SoyType::getKind).anyMatch(kinds::contains);
     }
     return false;
   }

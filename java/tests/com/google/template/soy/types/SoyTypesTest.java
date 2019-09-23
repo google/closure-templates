@@ -692,6 +692,47 @@ public class SoyTypesTest {
     assertThat(SoyTypes.isKindOrUnionOfKind(IntType.getInstance(), Kind.BOOL)).isFalse();
   }
 
+  @Test
+  public void testContainsKinds_singleKind() {
+    assertThat(SoyTypes.containsKinds(MapType.ANY_MAP, Sets.immutableEnumSet(Kind.MAP))).isTrue();
+  }
+
+  @Test
+  public void testContainsKinds_matchingUnion() {
+    assertThat(
+            SoyTypes.containsKinds(
+                UnionType.of(
+                    VeType.of("my.Proto"), VeType.of("my.OtherProto"), VeType.of("my.LastProto")),
+                Sets.immutableEnumSet(Kind.VE)))
+        .isTrue();
+  }
+
+  @Test
+  public void testContainsKinds_nonMatchingUnion() {
+    assertThat(
+            SoyTypes.containsKinds(
+                UnionType.of(
+                    VeType.of("my.Proto"), VeType.of("my.OtherProto"), NullType.getInstance()),
+                Sets.immutableEnumSet(Kind.INT)))
+        .isFalse();
+  }
+
+  @Test
+  public void testContainsKinds_multipleKinds() {
+    assertThat(
+            SoyTypes.containsKinds(
+                IntType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.STRING)))
+        .isFalse();
+  }
+
+  @Test
+  public void testContainsKinds_multipleNonMatchingKinds() {
+    assertThat(
+            SoyTypes.containsKinds(
+                IntType.getInstance(), Sets.immutableEnumSet(Kind.BOOL, Kind.INT)))
+        .isTrue();
+  }
+
   static SoyTypeSubject assertThatSoyType(String typeString) {
     return Truth.assertAbout(SoyTypeSubject::new).that(typeString);
   }

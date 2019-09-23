@@ -353,7 +353,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownListOrUnionOfLists() {
-    return isTypeOfKind(Kind.LIST);
+    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.LIST);
   }
 
   public final ListType asListType() {
@@ -372,11 +372,11 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownLegacyObjectMapOrUnionOfMaps() {
-    return isTypeOfKind(Kind.LEGACY_OBJECT_MAP);
+    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.LEGACY_OBJECT_MAP);
   }
 
   public final boolean isKnownMapOrUnionOfMaps() {
-    return isTypeOfKind(Kind.MAP);
+    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.MAP);
   }
 
   public final boolean isKnownBool() {
@@ -384,22 +384,7 @@ public abstract class SoyRuntimeType {
   }
 
   public final boolean isKnownProtoOrUnionOfProtos() {
-    return isTypeOfKind(Kind.PROTO);
-  }
-
-  private boolean isTypeOfKind(Kind kind) {
-    if (soyType.getKind() == kind) {
-      return true;
-    }
-    if (soyType.getKind() == Kind.UNION) {
-      for (SoyType member : ((UnionType) soyType).getMembers()) {
-        if (member.getKind() != kind) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
+    return SoyTypes.isKindOrUnionOfKind(soyType, Kind.PROTO);
   }
 
   /**
