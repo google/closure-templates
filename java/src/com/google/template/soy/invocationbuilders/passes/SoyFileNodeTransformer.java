@@ -306,22 +306,21 @@ public class SoyFileNodeTransformer {
       Optional<SoyType> superType = upcastTypesForIndirectParams(allTypes);
 
       // If we can't combine all those types into a single supported type then fail.
-      // Temporarily skip any indirect params with proto dependencies since they can cause java
-      // build errors.
-      if (!superType.isPresent() || hasProtoDep(superType.get())) {
-        if (overridesDirectParam) {
-          changeParamStatus(params, paramName, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES);
-        } else {
-          params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
-        }
-        continue;
-      }
-
       if (overridesDirectParam) {
+        if (!superType.isPresent()) {
+          changeParamStatus(params, paramName, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES);
+          continue;
+        }
         // Possibly upcast the existing direct parameter.
         changeParamType(params, paramName, superType.get());
       } else {
-        // Or create a new indirect parameter.
+        if (!superType.isPresent() || hasProtoDep(superType.get())) {
+          // Temporarily skip any indirect params with proto dependencies since they can cause java
+          // build errors.
+          params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
+          continue;
+        }
+        // Create a new indirect parameter.
         params.put(
             paramName,
             ParamInfo.of(
