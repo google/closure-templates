@@ -191,6 +191,7 @@ This escaping logic applies to:
     *   icon
     *   license
     *   next
+    *   preconnect
     *   prefetch
     *   preload
     *   prerender
