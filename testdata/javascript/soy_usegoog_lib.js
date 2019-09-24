@@ -1852,7 +1852,7 @@ goog.globalEval = function(script) {
       /** @type {!Document} */
       var doc = goog.global.document;
       var scriptElt =
-          /** @type {!HTMLScriptElement} */ (doc.createElement('SCRIPT'));
+          /** @type {!HTMLScriptElement} */ (doc.createElement('script'));
       scriptElt.type = 'text/javascript';
       scriptElt.defer = false;
       // Note(user): can't use .innerHTML since "t('<test>')" will fail and
@@ -20910,7 +20910,7 @@ goog.dom.createDom_ = function(doc, args) {
     tagName = tagNameArr.join('');
   }
 
-  var element = doc.createElement(tagName);
+  var element = goog.dom.createElement_(doc, tagName);
 
   if (attributes) {
     if (goog.isString(attributes)) {
@@ -21009,7 +21009,9 @@ goog.dom.createElement = function(name) {
  * @private
  */
 goog.dom.createElement_ = function(doc, name) {
-  return doc.createElement(String(name));
+  name = String(name);
+  if (doc.contentType === 'application/xhtml+xml') name = name.toLowerCase();
+  return doc.createElement(name);
 };
 
 

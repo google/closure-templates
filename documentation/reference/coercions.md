@@ -48,5 +48,6 @@ check), these mostly follow JavaScript semantics:
 *   '0' values are falsy, e.g. `null`, `""`, `0`
 *   all other values are truthy
 
-NOTE: there are some inconsistencies in how these work across backends.
-TODO(lukes): document the bugs
+NOTE: there are some inconsistencies in how these work across backends. For
+example, in Python, the empty list, empty record, and empty maps are all
+currently falsy (b/19271140).

@@ -790,7 +790,7 @@ goog.globalEval = function(script) {
       if (goog.evalWorksForGlobals_) {
         goog.global.eval(script);
       } else {
-        var doc = goog.global.document, scriptElt = doc.createElement("SCRIPT");
+        var doc = goog.global.document, scriptElt = doc.createElement("script");
         scriptElt.type = "text/javascript";
         scriptElt.defer = !1;
         scriptElt.appendChild(doc.createTextNode(script));
@@ -4676,7 +4676,7 @@ goog.dom.createDom_ = function(doc, args) {
     tagNameArr.push(">");
     tagName = tagNameArr.join("");
   }
-  var element = doc.createElement(tagName);
+  var element = goog.dom.createElement_(doc, tagName);
   attributes && (goog.isString(attributes) ? element.className = attributes : goog.isArray(attributes) ? element.className = attributes.join(" ") : goog.dom.setProperties(element, attributes));
   2 < args.length && goog.dom.append_(doc, element, args, 2);
   return element;
@@ -4695,7 +4695,9 @@ goog.dom.createElement = function(name) {
   return goog.dom.createElement_(document, name);
 };
 goog.dom.createElement_ = function(doc, name) {
-  return doc.createElement(String(name));
+  name = String(name);
+  "application/xhtml+xml" === doc.contentType && (name = name.toLowerCase());
+  return doc.createElement(name);
 };
 goog.dom.createTextNode = function(content) {
   return document.createTextNode(String(content));
