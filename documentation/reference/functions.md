@@ -356,10 +356,10 @@ NOTE: min and max fractional digits are not supported in the python backend.
 For example:
 
 *   `{formatNum($value)}`
-*   `{formatNum($value), 'decimal')}`
-*   `{formatNum($value), 'decimal', 'native')}`
-*   `{formatNum($value), 'decimal', 'native', 2)}`
-*   `{formatNum($value), 'decimal', 'native', 0, 3)}`
+*   `{formatNum($value, 'decimal')}`
+*   `{formatNum($value, 'decimal', 'native')}`
+*   `{formatNum($value, 'decimal', 'native', 2)}`
+*   `{formatNum($value, 'decimal', 'native', 0, 3)}`
 
 ## `bidiDirAttr(text, opt_isHtml)` {#bidiDirAttr}
 
