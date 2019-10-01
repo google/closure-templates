@@ -166,6 +166,8 @@ public final class SoyFileSet {
 
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
+    private boolean skipPluginValidation = false;
+
     private final ImmutableSet.Builder<SoyFunction> extraSoyFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoyPrintDirective> extraSoyPrintDirectives =
         ImmutableSet.builder();
@@ -236,7 +238,8 @@ public final class SoyFileSet {
           conformanceConfig,
           loggingConfig,
           warningSink,
-          pluginRuntimeJars);
+          pluginRuntimeJars,
+          skipPluginValidation);
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
@@ -553,6 +556,15 @@ public final class SoyFileSet {
       this.pluginRuntimeJars = ImmutableList.copyOf(pluginRuntimeJars);
       return this;
     }
+
+    /**
+     * Sets whether or not to skip plugin validation. Defaults to false. This should usually not be
+     * set unless you're doing something real funky.
+     */
+    public Builder setSkipPluginValidation(boolean skipPluginValidation) {
+      this.skipPluginValidation = skipPluginValidation;
+      return this;
+    }
   }
 
   private final SoyScopedData scopedData;
@@ -574,6 +586,8 @@ public final class SoyFileSet {
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, SoySourceFunction> soySourceFunctionMap;
 
+  private final boolean skipPluginValidation;
+
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
 
@@ -592,7 +606,8 @@ public final class SoyFileSet {
       ValidatedConformanceConfig conformanceConfig,
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink,
-      ImmutableList<File> pluginRuntimeJars) {
+      ImmutableList<File> pluginRuntimeJars,
+      boolean skipPluginValidation) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
@@ -606,6 +621,7 @@ public final class SoyFileSet {
     this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
     this.pluginRuntimeJars = pluginRuntimeJars;
+    this.skipPluginValidation = skipPluginValidation;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -1142,7 +1158,9 @@ public final class SoyFileSet {
         .setLoggingConfig(loggingConfig)
         .setPluginResolver(
             new PluginResolver(
-                PluginResolver.Mode.REQUIRE_DEFINITIONS,
+                skipPluginValidation
+                    ? PluginResolver.Mode.ALLOW_UNDEFINED
+                    : PluginResolver.Mode.REQUIRE_DEFINITIONS,
                 printDirectives,
                 soyFunctionMap,
                 soySourceFunctionMap,
