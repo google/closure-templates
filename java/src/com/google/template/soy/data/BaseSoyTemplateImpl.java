@@ -90,7 +90,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     private final ImmutableMap<String, Param> params;
     private final SoyValueConverter soyValueConverter;
     private final Map<String, SoyValueProvider> data;
-    private final Map<String, List<Object>> accummulatorData;
+    private final Map<String, List<SoyValueProvider>> accummulatorData;
 
     protected AbstractBuilder(String templateName, Iterable<Param> params) {
       this.templateName = templateName;
@@ -264,7 +264,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       // checkRequired=false could be used in the future for "build partial"
       ImmutableMap.Builder<String, SoyValueProvider> finalDataBuilder =
           ImmutableMap.<String, SoyValueProvider>builder().putAll(data);
-      for (Map.Entry<String, List<Object>> entry : accummulatorData.entrySet()) {
+      for (Map.Entry<String, List<SoyValueProvider>> entry : accummulatorData.entrySet()) {
         finalDataBuilder.put(entry.getKey(), soyValueConverter.convert(entry.getValue()));
       }
       ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.build();
