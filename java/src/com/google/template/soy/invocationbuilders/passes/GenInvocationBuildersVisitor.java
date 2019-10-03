@@ -20,8 +20,9 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_RECORD;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.CHECK_NOT_NULL;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INIT_LIST_PARAM;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM;
-import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSetInline;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
 
@@ -291,16 +292,15 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
     ilb.increaseIndent();
 
-    // Add a constant ImmutableSet of type {@link
-    // com.google.template.soy.data.BaseSoyTemplateImpl.Param}
+    // Add a constant ImmutableList of type BaseSoyTemplateImpl.Param
     // containing metadata about the template's params.
-    String paramsSetConstantName = "PARAMS";
-    appendParamsImmutableSetConstant(paramsSetConstantName, combinedParams);
+    appendParamsImmutableList(combinedParams);
 
     // Constructor for Foo.Builder.
     ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
-    ilb.appendLine("super(TEMPLATE_NAME, " + paramsSetConstantName + ");");
+    ilb.appendLine("super(TEMPLATE_NAME, PARAMS);");
+    appendRecordListInitializations(ilb, combinedParams);
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
@@ -319,13 +319,29 @@ public final class GenInvocationBuildersVisitor
     // Add setters for each direct template param.
     combinedParams.stream()
         .filter(p -> p.status() == ParamStatus.HANDLED)
-        .forEach(param -> writeSettersForParam(param));
+        .forEach(this::writeSettersForParam);
 
     ilb.appendLine();
 
     // End of FooTemplateInvocation.Builder class.
     ilb.decreaseIndent();
     ilb.appendLine("}");
+  }
+
+  private static void appendRecordListInitializations(
+      IndentedLinesBuilder ilb, List<ParamInfo> params) {
+    // For every required param that's of type list<[...]> (list of records), initialize the list
+    // so that upon building the template we do not throw an error for zero records.
+    for (ParamInfo param : params) {
+      if (param.param().isRequired()) {
+        List<JavaType> types = param.javaTypes();
+        if (types.size() == 1
+            && types.get(0) instanceof RecordJavaType
+            && ((RecordJavaType) types.get(0)).isList()) {
+          ilb.appendLine(String.format("%s(\"%s\");", INIT_LIST_PARAM, param.name()));
+        }
+      }
+    }
   }
 
   /** Appends the file header and imports for the generated *FooTemplates.java */
@@ -342,6 +358,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import static com.google.common.base.Preconditions.checkNotNull;");
     ilb.appendLine("import static com.google.template.soy.data.SoyValueConverter.markAsSoyMap;");
     ilb.appendLine();
+    ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
     ilb.appendLine("import com.google.common.collect.ImmutableSet;");
     ilb.appendLine("import com.google.common.html.types.SafeHtml;");
@@ -364,11 +381,11 @@ public final class GenInvocationBuildersVisitor
   }
 
   /**
-   * Appends a constant ImmutableSet of type {@link
+   * Appends a constant ImmutableList of type {@link
    * com.google.template.soy.data.BaseSoyTemplateImpl.Param} containing metadata about the
    * template's params.
    */
-  private void appendParamsImmutableSetConstant(String constantName, List<ParamInfo> params) {
+  private void appendParamsImmutableList(List<ParamInfo> params) {
     ImmutableList<String> genCodeForCreatingParams =
         params.stream()
             .map(
@@ -383,8 +400,8 @@ public final class GenInvocationBuildersVisitor
                 })
             .collect(toImmutableList());
 
-    ilb.appendLineStart("private static final ImmutableSet<Param> " + constantName + " = ");
-    appendImmutableSetInline(ilb, "<BaseSoyTemplateImpl.Param>", genCodeForCreatingParams);
+    ilb.appendLineStart("private static final ImmutableList<Param> PARAMS = ");
+    appendImmutableListInline(ilb, "<BaseSoyTemplateImpl.Param>", genCodeForCreatingParams);
     ilb.appendLineEnd(";");
     ilb.appendLine();
   }

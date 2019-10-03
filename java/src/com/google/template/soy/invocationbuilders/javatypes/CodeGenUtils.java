@@ -37,6 +37,8 @@ public final class CodeGenUtils {
   public static final Member SET_PARAM = MethodImpl.method(AbstractBuilder.class, "setParam");
   public static final Member ADD_TO_LIST_PARAM =
       MethodImpl.method(AbstractBuilder.class, "addToListParam");
+  public static final Member INIT_LIST_PARAM =
+      MethodImpl.method(AbstractBuilder.class, "initListParam");
   public static final Member CHECK_NOT_NULL =
       MethodImpl.method(Preconditions.class, "checkNotNull");
   public static final Member AS_RECORD = MethodImpl.method(AbstractBuilder.class, "asRecord");

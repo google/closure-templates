@@ -143,6 +143,13 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return (B) this;
     }
 
+    @SuppressWarnings("unchecked")
+    protected B initListParam(String name) {
+      Preconditions.checkNotNull(name);
+      accummulatorData.computeIfAbsent(name, s -> new ArrayList<>());
+      return (B) this;
+    }
+
     /** Converts any Iterable to a Collection. Used by ListJavaType. */
     protected <I> Collection<I> asCollection(Iterable<I> iterable) {
       return iterable instanceof Collection
