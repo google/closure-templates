@@ -60,24 +60,17 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   @Option(
       name = "--outputDirectory",
       usage =
-          "[Optional for *SoyInfo mode, Ignored for invocation builder mode (i.e. if"
-              + " --generateInvocationBuilders=true)] The path to the output directory. If files"
-              + " with the same names already exist at this location, they will be overwritten. If"
-              + " generating the old SoyInfo files (i.e. if --generateInvocationBuilders is"
-              + " false), either --outputDirectory or --outputJar must be set. If generating the"
-              + " new template invocation builders, this flag will be ignored and --outputSrcJar"
-              + " is required.")
+          "[Optional] The path to the output directory. If files with the same names already exist"
+              + " at this location, they will be overwritten. Either --outputDirectory or"
+              + " --outputJar must be set.")
   private String outputDirectory = "";
 
   @Option(
       name = "--outputSrcJar",
       usage =
-          "[Optional for *SoyInfo mode, Required for invocation builder mode (i.e. if"
-              + " --generateInvocationBuilders=true)] The path to the source jar to write. If a"
-              + " file with the same name already exist at this location, it will be overwritten."
-              + " If generating the old SoyInfo files (i.e. if --generateInvocationBuilders is"
-              + " false), either --outputDirectory or --outputJar must be set. If generating the"
-              + " new template invocation builders, this flag is required.")
+          "[Optional]  The path to the source jar to write. If a file with the same name already"
+              + " exists at this location, it will be overwritten. Either --outputDirectory or"
+              + " --outputJar must be set.")
   private File outputSrcJar;
 
   @Option(
@@ -126,20 +119,12 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
       exitWithError("Must provide Java package.");
     }
 
-    if (generateInvocationBuilders) {
-      // Verify flags for template invocation builder generation.
-      if (outputSrcJar == null) {
-        exitWithError("Must provide --outputSrcJar");
-      }
-
-    } else {
-      // Verify flags for *SoyInfo generation.
-      if (outputDirectory.isEmpty() == (outputSrcJar == null)) {
+    if (outputDirectory.isEmpty() == (outputSrcJar == null)) {
         exitWithError("Must provide exactly one of --outputDirectory or --outputSrcJar");
       }
-      if (javaClassNameSource.length() == 0) {
+
+    if (!generateInvocationBuilders && javaClassNameSource.isEmpty()) {
         exitWithError("Must provide Java class name source.");
-      }
     }
   }
 
