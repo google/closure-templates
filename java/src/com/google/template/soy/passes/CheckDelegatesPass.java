@@ -16,12 +16,15 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -29,9 +32,12 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -52,8 +58,9 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
       SoyErrorKind.of("''delcall'' to basic template ''{0}'' (expected ''call'').");
   private static final SoyErrorKind DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS =
       SoyErrorKind.of(
-          "Found delegate template with same name ''{0}'' but different param declarations "
-              + "compared to the definition at {1}.");
+          "Found delegate template with same name ''{0}'' but different param declarations"
+              + " compared to the definition at {1}.{2}",
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND =
       SoyErrorKind.of(
           "If one deltemplate has strict autoescaping, all its peers must also be strictly"
@@ -130,11 +137,18 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
         // Not first template encountered.
         Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
         if (!paramSetsEqual(currRequiredParamSet, firstRequiredParamSet)) {
+          List<Parameter> firstParamList = firstDelTemplate.getParameters();
+          List<Parameter> currParamList = delTemplate.getParameters();
+          Set<TemplateMetadata.Parameter> missingParamSet =
+              getRequiredParamsDifference(firstParamList, currParamList);
+          Set<TemplateMetadata.Parameter> unexpectedParamSet =
+              getRequiredParamsDifference(currParamList, firstParamList);
           errorReporter.report(
-              firstDelTemplate.getSourceLocation(),
+              delTemplate.getSourceLocation(),
               DELTEMPLATES_WITH_DIFFERENT_PARAM_DECLARATIONS,
               delTemplate.getDelTemplateName(),
-              delTemplate.getSourceLocation().toString());
+              firstDelTemplate.getSourceLocation().toString(),
+              getInconsistentParamMessage(missingParamSet, unexpectedParamSet));
         }
         if (delTemplate.getContentKind() != firstContentKind) {
           // TODO: This is only *truly* a requirement if the strict mode deltemplates are
@@ -226,5 +240,53 @@ final class CheckDelegatesPass extends CompilerFileSetPass {
     if (templateRegistry.getBasicTemplateOrElement(delCalleeName) != null) {
       errorReporter.report(node.getSourceLocation(), DELCALL_TO_BASIC_TEMPLATE, delCalleeName);
     }
+  }
+
+  private static String getInconsistentParamMessage(
+      Set<TemplateMetadata.Parameter> missingParamSet,
+      Set<TemplateMetadata.Parameter> unexpectedParamSet) {
+    StringBuilder message = new StringBuilder();
+    if (!missingParamSet.isEmpty()) {
+      message.append(String.format("\n  Missing params: %s", formatParamSet(missingParamSet)));
+    }
+    if (!unexpectedParamSet.isEmpty()) {
+      message.append(
+          String.format("\n  Unexpected params: %s", formatParamSet(unexpectedParamSet)));
+    }
+    return message.toString();
+  }
+
+  private static Set<String> formatParamSet(Set<TemplateMetadata.Parameter> paramSet) {
+    return paramSet.stream()
+        .map(
+            (param) -> {
+              String formattedParam = param.getName() + ": " + param.getType();
+              formattedParam += param.isRequired() ? "" : " (optional)";
+              return formattedParam;
+            })
+        .collect(Collectors.toSet());
+  }
+
+  private static Set<TemplateMetadata.Parameter> getRequiredParamsDifference(
+      List<Parameter> paramList1, List<Parameter> paramList2) {
+    Map<String, Parameter> nameToParamMap =
+        paramList2.stream()
+            .map(Parameter::toComparable)
+            .collect(toImmutableMap(Parameter::getName, param -> param));
+
+    return paramList1.stream()
+        .filter(
+            (param) -> {
+              String paramName = param.getName();
+              // Check that a required parameter in the first list exists in the second list.
+              if (!nameToParamMap.containsKey(paramName)) {
+                return param.isRequired();
+              }
+              // Check that at least one of the parameters are required and that parameters lists
+              // with the same name differ in either the type or isRequired.
+              Parameter param2 = nameToParamMap.get(paramName);
+              return !param.equals(param2) && (param.isRequired() || param2.isRequired());
+            })
+        .collect(Collectors.toSet());
   }
 }

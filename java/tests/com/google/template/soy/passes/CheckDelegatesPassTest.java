@@ -129,7 +129,8 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
             + "but different param declarations compared to the "
-            + "definition at no-path-2:4:1.",
+            + "definition at no-path:9:1."
+            + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -153,7 +154,9 @@ public final class CheckDelegatesPassTest {
 
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' but different param "
-            + "declarations compared to the definition at no-path-2:4:1.",
+            + "declarations compared to the definition at no-path:8:1."
+            + "\n  Missing params: [foo: ? (optional)]"
+            + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -180,7 +183,8 @@ public final class CheckDelegatesPassTest {
   public void testErrorParamsMismatchAcrossVariants() {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
-            + "but different param declarations compared to the definition at no-path:7:1.",
+            + "but different param declarations compared to the definition at no-path:4:1."
+            + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
             + "\n"
