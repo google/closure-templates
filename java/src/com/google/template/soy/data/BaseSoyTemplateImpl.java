@@ -107,6 +107,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return buildInternal(templateName, finalData);
     }
 
+    T buildPartialForTests() {
+      ImmutableMap<String, SoyValueProvider> finalData = buildDataMapWithChecks(false, false);
+      return buildInternal(templateName, finalData);
+    }
+
     @ForOverride
     protected abstract T buildInternal(String name, ImmutableMap<String, SoyValueProvider> data);
 
