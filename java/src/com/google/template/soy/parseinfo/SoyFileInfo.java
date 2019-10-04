@@ -19,7 +19,7 @@ package com.google.template.soy.parseinfo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
 
 /**
  * Parsed info about a Soy file.
@@ -90,7 +90,7 @@ public class SoyFileInfo {
    *
    * <p>The elements are either Descriptors or EnumDescriptor objects.
    */
-  public ImmutableList<GenericDescriptor> getProtoDescriptors() {
+  public ImmutableList<FileDescriptor> getProtoDescriptors() {
     return ImmutableList.of();
   }
 

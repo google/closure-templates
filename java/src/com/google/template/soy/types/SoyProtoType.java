@@ -243,12 +243,7 @@ public final class SoyProtoType extends SoyType {
    * @return The Java source expression for this type's descriptor.
    */
   public String getDescriptorExpression() {
-    // We only need to import the outermost descriptor.
-    Descriptor descriptor = typeDescriptor;
-    while (descriptor.getContainingType() != null) {
-      descriptor = descriptor.getContainingType();
-    }
-    return JavaQualifiedNames.getQualifiedName(descriptor) + ".getDescriptor()";
+    return ProtoUtils.getQualifiedOuterClassname(typeDescriptor);
   }
 
   /** Returns the {@link FieldDescriptor} of the given field. */

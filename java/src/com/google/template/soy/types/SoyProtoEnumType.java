@@ -19,7 +19,6 @@ package com.google.template.soy.types;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.soytree.SoyTypeP;
 
@@ -52,7 +51,7 @@ public final class SoyProtoEnumType extends SoyType {
       case JS_SRC:
         return ProtoUtils.calculateJsEnumName(descriptor);
       case TOFU:
-        return JavaQualifiedNames.getQualifiedName(descriptor) + ".getDescriptor()";
+        return ProtoUtils.getQualifiedOuterClassname(descriptor);
       case PYTHON_SRC:
       case JBC_SRC:
         throw new UnsupportedOperationException();

@@ -292,7 +292,7 @@ public final class GenerateParseInfoVisitor
           FieldDescriptor desc =
               ((SoyProtoType) baseType).getFieldDescriptor(fieldAccess.getFieldName());
           if (desc.isExtension()) {
-            protoTypes.add(ProtoUtils.getTofuExtensionImport(desc));
+            protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
           }
         }
       }
@@ -364,7 +364,7 @@ public final class GenerateParseInfoVisitor
     ilb.appendLine("import com.google.common.collect.ImmutableSet;");
     ilb.appendLine("import com.google.common.collect.ImmutableSortedSet;");
     if (!protoTypes.isEmpty()) {
-      ilb.appendLine("import com.google.protobuf.Descriptors.GenericDescriptor;");
+      ilb.appendLine("import com.google.protobuf.Descriptors.FileDescriptor;");
     }
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyFileInfo;");
     ilb.appendLine("import com.google.template.soy.parseinfo.SoyTemplateInfo;");
@@ -398,13 +398,13 @@ public final class GenerateParseInfoVisitor
       ilb.appendLine();
       ilb.appendLine();
       ilb.appendLine("/** Protocol buffer types used by these templates. */");
-      ilb.appendLine("@Override public ImmutableList<GenericDescriptor> getProtoDescriptors() {");
+      ilb.appendLine("@Override public ImmutableList<FileDescriptor> getProtoDescriptors() {");
       ilb.increaseIndent();
       // Note we use fully-qualified names instead of imports to avoid potential collisions.
       List<String> defaultInstances = Lists.newArrayList();
       defaultInstances.addAll(protoTypes);
       ilb.appendLineStart("return ");
-      appendImmutableListInline(ilb, "<GenericDescriptor>", defaultInstances);
+      appendImmutableListInline(ilb, /*typeParamSnippet=*/ "", defaultInstances);
       ilb.appendLineEnd(";");
       ilb.decreaseIndent();
       ilb.appendLine("}");

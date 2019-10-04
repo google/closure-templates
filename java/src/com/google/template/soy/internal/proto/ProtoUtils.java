@@ -95,23 +95,11 @@ public final class ProtoUtils {
   }
 
   /** Returns the proper .getDescriptor() call for parse info generation in Tofu. */
-  public static String getTofuExtensionImport(FieldDescriptor desc) {
-    // This is run by GenerateParseInfoVisitor, which doesn't necessarily have a classpath
-    // dependency on the proto, just a data dependency on the descriptor.
-
-    String extensionFieldName = JavaQualifiedNames.getFieldName(desc, false);
-
-    String extensionFieldHolderClassName;
-    if (desc.getExtensionScope() != null) {
-      extensionFieldHolderClassName = JavaQualifiedNames.getQualifiedName(desc.getExtensionScope());
-    } else {
-      // else we have a 'top level extension'
-      extensionFieldHolderClassName =
-          JavaQualifiedNames.getPackage(desc.getFile())
-              + "."
-              + JavaQualifiedNames.getOuterClassname(desc.getFile());
-    }
-    return extensionFieldHolderClassName + "." + extensionFieldName + ".getDescriptor()";
+  public static String getQualifiedOuterClassname(GenericDescriptor desc) {
+    return String.format(
+        "%s.%s.getDescriptor()",
+        JavaQualifiedNames.getPackage(desc.getFile()),
+        JavaQualifiedNames.getOuterClassname(desc.getFile()));
   }
 
   /** Returns the JS name of the import for the given extension, suitable for goog.require. */

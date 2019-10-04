@@ -96,7 +96,7 @@ public final class GenerateParseInfoVisitorTest {
             "{@param map: map<string, soy.test.Foo>}",
             "{$map}");
 
-    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
@@ -107,7 +107,7 @@ public final class GenerateParseInfoVisitorTest {
             "{@param map: legacy_object_map<string, soy.test.Foo>}",
             "{$map}");
 
-    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
@@ -118,8 +118,7 @@ public final class GenerateParseInfoVisitorTest {
             "{@param enum: soy.test.Foo.InnerEnum}",
             "{$enum}");
 
-    assertThat(parseInfoContent)
-        .contains("com.google.template.soy.testing.Foo.InnerEnum.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
@@ -130,7 +129,7 @@ public final class GenerateParseInfoVisitorTest {
             "{@param proto: bool}",
             "{$proto ? soy.test.Foo.InnerMessage(field: 27) : null}");
 
-    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
@@ -141,10 +140,7 @@ public final class GenerateParseInfoVisitorTest {
             "{@param extendable: soy.test.Extendable}",
             "{$extendable.extension.enumField}");
 
-    assertThat(parseInfoContent)
-        .contains("com.google.template.soy.testing.Extendable.getDescriptor()");
-    assertThat(parseInfoContent)
-        .contains("com.google.template.soy.testing.Extension.extension.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
@@ -153,8 +149,7 @@ public final class GenerateParseInfoVisitorTest {
         createParseInfo(
             ImmutableList.of(Foo.InnerEnum.getDescriptor()), "{soy.test.Foo.InnerEnum.THREE}");
 
-    assertThat(parseInfoContent)
-        .contains("com.google.template.soy.testing.Foo.InnerEnum.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
@@ -163,7 +158,7 @@ public final class GenerateParseInfoVisitorTest {
         createParseInfo(
             ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<soy.test.Foo>}", "{$ve}");
 
-    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Foo.getDescriptor()");
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
 
   @Test
