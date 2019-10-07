@@ -106,9 +106,6 @@ public final class ProtoUtils {
   public static String getJsExtensionImport(FieldDescriptor desc) {
     Descriptor scope = desc.getExtensionScope();
     if (scope != null) {
-      while (scope.getContainingType() != null) {
-        scope = scope.getContainingType();
-      }
       return calculateQualifiedJsName(scope);
     }
     return getJsPackage(desc.getFile()) + "." + computeJsExtensionName(desc);

@@ -33,6 +33,7 @@ import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeExtension;
+import com.google.template.soy.testing.SomeNestedExtension;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
 import org.junit.Test;
@@ -60,6 +61,7 @@ public final class JspbTest {
                   KvPair.getDescriptor(),
                   Proto3Message.getDescriptor(),
                   SomeExtension.getDescriptor(),
+                  SomeNestedExtension.getDescriptor(),
                   Foo.getDescriptor()))
           .build();
 
@@ -238,6 +240,7 @@ public final class JspbTest {
             + "{template .goo}\n"
             + "  {@param moo : example.ExampleExtendable}\n"
             + "  {$moo.someExtensionField}\n"
+            + "  {$moo.someNestedExtensionField}\n"
             + "{/template}\n";
 
     ParseResult parseResult =
@@ -261,6 +264,7 @@ public final class JspbTest {
             + "goog.requireType('goog.soy');\n"
             + "goog.require('proto.example.ExampleExtendable');\n"
             + "goog.require('proto.example.SomeExtension');\n"
+            + "goog.require('proto.example.SomeNestedExtension.NestedExtension');\n"
             + "goog.require('soy.asserts');\n"
             + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n"
@@ -282,7 +286,9 @@ public final class JspbTest {
             + " 'moo', $tmp, 'proto.example.ExampleExtendable');\n"
             + "  return"
             + " soydata.VERY_UNSAFE.ordainSanitizedHtml("
-            + "moo.getExtension(proto.example.SomeExtension.someExtensionField));\n"
+            + "moo.getExtension(proto.example.SomeExtension.someExtensionField) + "
+            + "moo.getExtension("
+            + "proto.example.SomeNestedExtension.NestedExtension.someNestedExtensionField));\n"
             + "};\n"
             + "/**\n"
             + " * @typedef {{\n"

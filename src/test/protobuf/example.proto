@@ -79,6 +79,15 @@ message SomeExtension {
   optional int32 some_extension_num = 1;
 }
 
+message SomeNestedExtension {
+  message NestedExtension {
+    extend ExampleExtendable {
+      optional NestedExtension some_nested_extension_field = 1234;
+    }
+    optional int32 some_nested_extension_num = 1;
+  }
+}
+
 message KvPair {
   optional string key = 1;
   optional string value = 2;
