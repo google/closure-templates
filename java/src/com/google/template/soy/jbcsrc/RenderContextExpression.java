@@ -91,6 +91,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef HAS_LOGGER =
       MethodRef.create(RenderContext.class, "hasLogger").asCheap();
 
+  private static final MethodRef GET_LOGGER = MethodRef.create(RenderContext.class, "getLogger");
+
   private final Expression delegate;
 
   RenderContextExpression(Expression renderContext) {
@@ -196,5 +198,9 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   public Expression hasLogger() {
     return delegate.invoke(HAS_LOGGER);
+  }
+
+  public Expression getLogger() {
+    return delegate.invoke(GET_LOGGER);
   }
 }

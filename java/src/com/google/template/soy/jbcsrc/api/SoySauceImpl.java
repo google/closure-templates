@@ -222,7 +222,6 @@ public final class SoySauceImpl implements SoySauce {
     @Override
     public RendererImpl setSoyLogger(SoyLogger logger) {
       this.logger = checkNotNull(logger);
-      this.contextBuilder.hasLogger(true);
       return this;
     }
 
@@ -362,6 +361,7 @@ public final class SoySauceImpl implements SoySauce {
           contextBuilder
               .withMessageBundle(msgs)
               .withActiveDelPackageSelector(activeDelegatePackages)
+              .withLogger(logger)
               .build();
       Scoper scoper =
           new Scoper(

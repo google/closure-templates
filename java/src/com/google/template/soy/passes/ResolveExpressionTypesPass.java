@@ -1003,6 +1003,8 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       } else if (knownFunction instanceof BuiltinFunction) {
         visitBuiltinFunction((BuiltinFunction) knownFunction, node);
       }
+
+
       // Always attempt to visit for internal soy functions, even if we already had a signature.
       visitInternalSoyFunction(knownFunction, node);
       tryApplySubstitution(node);

@@ -117,6 +117,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{velog Foo}<div data-id=1>{velog Bar}<div data-id=2></div>"
             + "{/velog}{velog Baz}<div data-id=3></div>{/velog}</div>{/velog}");
     assertThat(sb.toString())
@@ -131,6 +132,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{velog ve_data(Foo, soy.test.Foo(intField: 123))}<div data-id=1></div>{/velog}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div>");
     assertThat(testLogger.builder.toString())
@@ -143,6 +145,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}");
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEmpty();
@@ -156,6 +159,7 @@ public final class VeLoggingTest {
     renderTemplate(
         ImmutableMap.of("t", true, "f", false, "n", 0),
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{@param t : bool}",
         "{@param f : bool}",
         "{@param n : int}",
@@ -175,6 +179,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{let $foo kind=\"html\"}{velog Foo}<div data-id=1></div>{/velog}{/let}{$foo}{$foo}");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}\nvelog{id=1}");
     assertThat(sb.toString()).isEqualTo("<div data-id=1></div><div data-id=1></div>");
@@ -186,6 +191,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         ""
             + "{msg desc=\"a message!\"}\n"
             + "  Greetings, {velog Foo}<a href='./wiki?human'>Human</a>{/velog}\n"
@@ -200,6 +206,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{velog Foo logonly=\"true\"}<div data-id=1>{velog Foo logonly=\"false\"}<div data-id=1>"
             + "{velog Foo logonly=\"true\"}<div data-id=1>"
             + "{velog Foo logonly=\"true\"}<div data-id=1></div>{/velog}"
@@ -219,6 +226,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "<div data-depth={depth()}></div>"
             + "{velog Foo}<div data-depth={depth()}></div>{/velog}"
             + "<div data-depth={depth()}></div>");
@@ -233,6 +241,7 @@ public final class VeLoggingTest {
     TestLogger testLogger = new TestLogger();
     renderTemplate(
         OutputAppendable.create(sb, testLogger),
+        testLogger,
         "{let $html kind=\"html\"}{velog Foo}<div data-depth={depth()}></div>{/velog}{/let}"
             + "<script>{'' + $html}</script>");
     // nothing is logged because no elements were rendered
@@ -241,13 +250,13 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).contains("depth_placeholder");
   }
 
-  private void renderTemplate(OutputAppendable output, String... templateBodyLines)
-      throws IOException {
-    renderTemplate(ImmutableMap.of(), output, templateBodyLines);
+  private void renderTemplate(
+      OutputAppendable output, SoyLogger logger, String... templateBodyLines) throws IOException {
+    renderTemplate(ImmutableMap.of(), output, logger, templateBodyLines);
   }
 
   private void renderTemplate(
-      Map<String, ?> params, OutputAppendable output, String... templateBodyLines)
+      Map<String, ?> params, OutputAppendable output, SoyLogger logger, String... templateBodyLines)
       throws IOException {
     SoyTypeRegistry typeRegistry =
         new SoyTypeRegistry.Builder()
@@ -275,7 +284,7 @@ public final class VeLoggingTest {
                 typeRegistry)
             .get();
     RenderContext ctx =
-        TemplateTester.getDefaultContext(templates).toBuilder().hasLogger(true).build();
+        TemplateTester.getDefaultContext(templates).toBuilder().withLogger(logger).build();
     RenderResult result =
         templates
             .getTemplateFactory("ns.foo")

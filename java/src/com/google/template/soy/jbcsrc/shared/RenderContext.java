@@ -30,6 +30,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -79,7 +80,7 @@ public final class RenderContext {
   private final SoyMsgBundle msgBundle;
 
   private final boolean debugSoyTemplateInfo;
-  private final boolean hasLogger;
+  private final SoyLogger logger;
   private final List<String> renderedCssNamespaces = new ArrayList<>();
   /**
    * Whenever we visit a template call, we know that it will be rendered. The main exception is in
@@ -102,7 +103,7 @@ public final class RenderContext {
     this.pluginInstances = builder.pluginInstances;
     this.msgBundle = builder.msgBundle;
     this.debugSoyTemplateInfo = builder.debugSoyTemplateInfo;
-    this.hasLogger = builder.hasLogger;
+    this.logger = builder.logger;
   }
 
   @Nullable
@@ -199,7 +200,11 @@ public final class RenderContext {
 
   /** Returns a boolean indicating whether or not there is a logger configured. */
   public boolean hasLogger() {
-    return hasLogger;
+    return logger != SoyLogger.NO_OP;
+  }
+
+  public SoyLogger getLogger() {
+    return logger;
   }
 
   public CompiledTemplate getDelTemplate(
@@ -272,7 +277,7 @@ public final class RenderContext {
     private ImmutableMap<String, Supplier<Object>> pluginInstances = ImmutableMap.of();
     private SoyMsgBundle msgBundle = SoyMsgBundle.EMPTY;
     private boolean debugSoyTemplateInfo = false;
-    private boolean hasLogger;
+    private SoyLogger logger;
 
     public Builder withCompiledTemplates(CompiledTemplates templates) {
       this.templates = checkNotNull(templates);
@@ -314,8 +319,8 @@ public final class RenderContext {
       return this;
     }
 
-    public Builder hasLogger(boolean hasLogger) {
-      this.hasLogger = hasLogger;
+    public Builder withLogger(SoyLogger logger) {
+      this.logger = logger;
       return this;
     }
 

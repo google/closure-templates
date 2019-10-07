@@ -56,6 +56,7 @@ import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
@@ -440,6 +441,10 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE =
       MethodRef.create(SoyVisualElementData.class, "create", SoyVisualElement.class, Message.class);
+
+  public static final MethodRef FLUSH_LOGS_AND_RENDER =
+      MethodRef.create(
+          JbcSrcRuntime.class, "flushLogsAndRender", SoyValueProvider.class, SoyLogger.class);
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
