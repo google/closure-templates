@@ -1542,7 +1542,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             Statement.of(
                 Statement.assign(paramTempVar, staticVarRef),
                 Statement.ifStatement(
-                        Expression.not(JsRuntime.GOOG_IS_DEF.call(paramTempVar)),
+                        paramTempVar.tripleEquals(Expression.LITERAL_UNDEFINED),
                         Statement.assign(paramTempVar, staticVarRef.assign(defaultValue)))
                     .build());
       } else {
@@ -1555,7 +1555,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
     }
     return Statement.ifStatement(
-            Expression.not(JsRuntime.GOOG_IS_DEF.call(paramTempVar)), defaultValueAssignment)
+            paramTempVar.tripleEquals(Expression.LITERAL_UNDEFINED), defaultValueAssignment)
         .build();
   }
 

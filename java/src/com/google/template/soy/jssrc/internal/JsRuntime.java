@@ -69,19 +69,11 @@ public final class JsRuntime {
 
   public static final Expression GOOG_IS_ARRAY = dottedIdNoRequire("goog.isArray");
 
-  public static final Expression GOOG_IS_BOOLEAN = dottedIdNoRequire("goog.isBoolean");
-
   public static final Expression GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
 
-  public static final Expression GOOG_IS_NUMBER = dottedIdNoRequire("goog.isNumber");
-
   public static final Expression GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
-
-  public static final Expression GOOG_IS_STRING = dottedIdNoRequire("goog.isString");
-
-  public static final Expression GOOG_IS_DEF = dottedIdNoRequire("goog.isDef");
 
   public static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
 

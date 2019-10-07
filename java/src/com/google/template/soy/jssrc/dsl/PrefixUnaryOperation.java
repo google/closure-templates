@@ -39,6 +39,10 @@ abstract class PrefixUnaryOperation extends Operation {
     return new AutoValue_PrefixUnaryOperation(operator.getPrecedence(), operatorString, arg);
   }
 
+  static PrefixUnaryOperation create(String operatorString, int precedence, Expression arg) {
+    return new AutoValue_PrefixUnaryOperation(precedence, operatorString, arg);
+  }
+
   @Override
   Associativity associativity() {
     return LEFT; // it's unary, doesn't matter

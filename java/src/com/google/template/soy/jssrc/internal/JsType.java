@@ -22,11 +22,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_ARRAY;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_NUMBER;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_STRING;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSERTS_ASSERT_TYPE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_IS_SOY_MAP;
@@ -119,21 +116,22 @@ public final class JsType {
                   // TODO(lukes): we shouldn't allow numbers here, see if anyone relies on this
                   // 'feature'.
                   Optional.of(
-                      GOOG_IS_BOOLEAN
-                          .call(value)
+                      value
+                          .typeof()
+                          .tripleEquals(Expression.stringLiteral("boolean"))
                           .or(value.tripleEquals(number(1)), codeGenerator)
                           .or(value.tripleEquals(number(0)), codeGenerator)))
           .build();
 
   // Unlike BOOLEAN_TYPE, type assertion does not allow values of 0 or 1.
   private static final JsType BOOLEAN_TYPE_STRICT =
-      builder().addType("boolean").setPredicate(GOOG_IS_BOOLEAN).build();
+      builder().addType("boolean").setPredicate(typeofTypePredicate("boolean")).build();
 
   private static final JsType NUMBER_TYPE =
-      builder().addType("number").setPredicate(GOOG_IS_NUMBER).build();
+      builder().addType("number").setPredicate(typeofTypePredicate("number")).build();
 
   private static final JsType STRING_TYPE =
-      builder().addType("string").setPredicate(GOOG_IS_STRING).build();
+      builder().addType("string").setPredicate(typeofTypePredicate("string")).build();
 
   private static final JsType RAW_ARRAY_TYPE =
       builder().addType("!Array").setPredicate(GOOG_IS_ARRAY).build();
@@ -268,7 +266,7 @@ public final class JsType {
             builder()
                 .addType(enumTypeName)
                 .addRequire(GoogRequire.createTypeRequire(enumTypeName))
-                .setPredicate(GOOG_IS_NUMBER);
+                .setPredicate(typeofTypePredicate("number"));
         if (!isStrict) {
           // TODO(lukes): stop allowing number?, just allow the enum
           enumBuilder.addType("number");
@@ -459,6 +457,12 @@ public final class JsType {
      * be done.
      */
     Optional<Expression> maybeCheck(Expression value, Generator codeGenerator);
+  }
+
+  /** Builds and returns a TypePredicate comparing a value's 'typeof' against the given 'type' */
+  private static TypePredicate typeofTypePredicate(String type) {
+    return (value, codeGenerator) ->
+        Optional.of(value.typeof().tripleEquals(Expression.stringLiteral(type)));
   }
 
   private final ImmutableSortedSet<String> typeExpressions;

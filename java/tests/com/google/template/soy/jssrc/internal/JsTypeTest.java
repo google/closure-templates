@@ -150,13 +150,13 @@ public final class JsTypeTest {
 
   @Test
   public void testGetTypeAssertion() {
-    assertThat(getTypeAssertion(StringType.getInstance(), "x")).isEqualTo("goog.isString(x)");
-    assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("goog.isNumber(x)");
+    assertThat(getTypeAssertion(StringType.getInstance(), "x")).isEqualTo("typeof x === 'string'");
+    assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("typeof x === 'number'");
     assertThat(getTypeAssertion(BoolType.getInstance(), "x"))
-        .isEqualTo("goog.isBoolean(x) || x === 1 || x === 0");
+        .isEqualTo("typeof x === 'boolean' || x === 1 || x === 0");
 
     assertThat(getTypeAssertion(SoyTypes.makeNullable(BoolType.getInstance()), "x"))
-        .isEqualTo("x == null || (goog.isBoolean(x) || x === 1 || x === 0)");
+        .isEqualTo("x == null || (typeof x === 'boolean' || x === 1 || x === 0)");
     assertThat(getTypeAssertion(HtmlType.getInstance(), "x"))
         .isEqualTo("goog.soy.data.SanitizedHtml.isCompatibleWith(x)");
 
@@ -168,19 +168,19 @@ public final class JsTypeTest {
     assertThat(
             getTypeAssertion(
                 UnionType.of(StringType.getInstance(), ListType.of(IntType.getInstance())), "x"))
-        .isEqualTo("goog.isArray(x) || goog.isString(x)");
+        .isEqualTo("goog.isArray(x) || typeof x === 'string'");
   }
 
   @Test
   public void testGetSoyTypeAssertionStrict() {
     assertThat(getSoyTypeAssertionStrict(BoolType.getInstance(), "x"))
-        .isEqualTo("soy.asserts.assertType(goog.isBoolean(x), 'x', x, 'boolean')");
+        .isEqualTo("soy.asserts.assertType(typeof x === 'boolean', 'x', x, 'boolean')");
     assertThat(
             getSoyTypeAssertionStrict(
                 UnionType.of(BoolType.getInstance(), IntType.getInstance()), "x"))
         .isEqualTo(
             "soy.asserts.assertType("
-                + "goog.isBoolean(x) || goog.isNumber(x), 'x', x, 'boolean|number')");
+                + "typeof x === 'boolean' || typeof x === 'number', 'x', x, 'boolean|number')");
   }
 
   private static String getTypeAssertion(SoyType instance, String varName) {

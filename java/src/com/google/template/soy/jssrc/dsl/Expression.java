@@ -361,6 +361,10 @@ public abstract class Expression extends CodeChunk {
         "instanceof", Operator.LESS_THAN.getPrecedence(), Associativity.LEFT, this, identifier);
   }
 
+  public final Expression typeof() {
+    return PrefixUnaryOperation.create("typeof ", Operator.NOT.getPrecedence(), this);
+  }
+
   public final Expression assign(Expression rhs) {
     return BinaryOperation.create(
         "=",
