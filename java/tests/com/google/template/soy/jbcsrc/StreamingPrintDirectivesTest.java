@@ -19,7 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -176,19 +176,20 @@ public final class StreamingPrintDirectivesTest {
         .render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("(stream: notAnInt)");
 
-    try {
-      templates
-          .getTemplateFactory("ns.nonstreamable")
-          .create(badParam, EMPTY_DICT)
-          .render(output, context);
-      fail("Expected ClassCastException");
-    } catch (ClassCastException cce) {
-      assertThat(cce)
-          .hasMessageThat()
-          .isEqualTo(
-              "com.google.template.soy.data.restricted.StringData cannot be cast to "
-                  + "com.google.template.soy.data.restricted.IntegerData");
-    }
+    ClassCastException cce =
+        assertThrows(
+            ClassCastException.class,
+            () ->
+                templates
+                    .getTemplateFactory("ns.nonstreamable")
+                    .create(badParam, EMPTY_DICT)
+                    .render(output, context));
+    assertThat(cce)
+        .hasMessageThat()
+        .contains("com.google.template.soy.data.restricted.StringData cannot be cast to");
+    assertThat(cce)
+        .hasMessageThat()
+        .contains("com.google.template.soy.data.restricted.IntegerData");
   }
 
   @Test
