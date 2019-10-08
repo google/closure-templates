@@ -111,6 +111,11 @@ public class JavaNumberSubtype extends JavaType {
     return "? extends Number"; // For caller ease b/c of autoboxing.
   }
 
+  @Override
+  public String asTypeLiteralString() {
+    return type.boxedTypeString;
+  }
+
   CodeGenUtils.Member getListConverterMethod() {
     return type.getListConverterMethod();
   }

@@ -114,6 +114,11 @@ public class SimpleJavaType extends JavaType {
     public BooleanJavaType asNullable() {
       return new BooleanJavaType(true);
     }
+
+    @Override
+    public String asTypeLiteralString() {
+      return asGenericsTypeArgumentString();
+    }
   }
 
   /**
@@ -135,6 +140,11 @@ public class SimpleJavaType extends JavaType {
     public AttributesJavaType asNullable() {
       return new AttributesJavaType(true);
     }
+
+    @Override
+    public boolean isTypeLiteralSupported() {
+      return true;
+    }
   }
 
   private static final class CssJavaType extends SimpleJavaType {
@@ -151,6 +161,11 @@ public class SimpleJavaType extends JavaType {
     @Override
     public CssJavaType asNullable() {
       return new CssJavaType(true);
+    }
+
+    @Override
+    public boolean isTypeLiteralSupported() {
+      return false;
     }
   }
 }

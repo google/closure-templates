@@ -20,7 +20,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_RECORD;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.CHECK_NOT_NULL;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INDIRECT_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INIT_LIST_PARAM;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INJECTED_P;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.OPTIONAL_P;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.REQUIRED_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
@@ -29,6 +33,7 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils;
 import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
@@ -48,8 +53,10 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -67,6 +74,9 @@ public final class GenInvocationBuildersVisitor
 
   private static final Logger logger =
       Logger.getLogger(GenInvocationBuildersVisitor.class.getName());
+
+  private static final String TEMPLATE_NAME_FIELD = "__NAME__";
+  private static final String PARAMS_FIELD = "__PARAMS__";
 
   private final SoyFileNodeTransformer transformer;
 
@@ -174,7 +184,11 @@ public final class GenInvocationBuildersVisitor
     ilb.increaseIndent();
     ilb.appendLine();
     ilb.appendLine(
-        "private static final String TEMPLATE_NAME = \"" + template.templateName() + "\";");
+        "private static final String "
+            + TEMPLATE_NAME_FIELD
+            + " = \""
+            + template.templateName()
+            + "\";");
     ilb.appendLine();
 
     appendFutureWrapperMethod(paramsClass);
@@ -182,7 +196,7 @@ public final class GenInvocationBuildersVisitor
     // Constructor for Foo.
     ilb.appendLine("private " + paramsClass + "(java.util.Map<String, SoyValueProvider> data) {");
     ilb.increaseIndent();
-    ilb.appendLine("super(TEMPLATE_NAME, data);");
+    ilb.appendLine("super(" + TEMPLATE_NAME_FIELD + ", data);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
@@ -219,7 +233,8 @@ public final class GenInvocationBuildersVisitor
             + paramsClass
             + "> paramsFuture) {");
     ilb.increaseIndent();
-    ilb.appendLine("return new SoyTemplate.AsyncWrapper<>(TEMPLATE_NAME, paramsFuture);");
+    ilb.appendLine(
+        "return new SoyTemplate.AsyncWrapper<>(" + TEMPLATE_NAME_FIELD + ", paramsFuture);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
@@ -265,8 +280,10 @@ public final class GenInvocationBuildersVisitor
                   return false;
                 })
             .collect(Collectors.toList());
+    List<ParamInfo> nonInjectedParams =
+        combinedParams.stream().filter(p -> !p.injected()).collect(Collectors.toList());
 
-    if (combinedParams.stream().map(ParamInfo::param).noneMatch(Parameter::isRequired)) {
+    if (nonInjectedParams.stream().map(ParamInfo::param).noneMatch(Parameter::isRequired)) {
       appendJavadoc(
           ilb,
           "Creates a new instance of "
@@ -282,6 +299,7 @@ public final class GenInvocationBuildersVisitor
       ilb.appendLine("}");
       ilb.appendLine();
     }
+    appendParamConstants(ilb, combinedParams);
 
     // Start of Foo.Builder class.
     ilb.appendLine("@CanIgnoreReturnValue");
@@ -292,15 +310,11 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
     ilb.increaseIndent();
 
-    // Add a constant ImmutableList of type BaseSoyTemplateImpl.Param
-    // containing metadata about the template's params.
-    appendParamsImmutableList(combinedParams);
-
     // Constructor for Foo.Builder.
     ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
-    ilb.appendLine("super(TEMPLATE_NAME, PARAMS);");
-    appendRecordListInitializations(ilb, combinedParams);
+    ilb.appendLine("super(" + TEMPLATE_NAME_FIELD + ", " + PARAMS_FIELD + ");");
+    appendRecordListInitializations(ilb, nonInjectedParams);
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
@@ -317,7 +331,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("}");
 
     // Add setters for each direct template param.
-    combinedParams.stream()
+    nonInjectedParams.stream()
         .filter(p -> p.status() == ParamStatus.HANDLED)
         .forEach(this::writeSettersForParam);
 
@@ -326,6 +340,65 @@ public final class GenInvocationBuildersVisitor
     // End of FooTemplateInvocation.Builder class.
     ilb.decreaseIndent();
     ilb.appendLine("}");
+  }
+
+  private static void appendParamConstants(IndentedLinesBuilder ilb, List<ParamInfo> params) {
+    Set<String> usedNames = new LinkedHashSet<>();
+    List<String> nonInjected = new ArrayList<>();
+    for (ParamInfo param : params) {
+      String fieldName = BaseUtils.convertToUpperUnderscore(param.name());
+      // Naming collisions should not occur, but guard anyway.
+      if (!usedNames.add(fieldName)) {
+        continue;
+      }
+      if (!param.injected()) {
+        nonInjected.add(fieldName);
+      }
+
+      String genericType = "?";
+      List<JavaType> types = param.javaTypes();
+      if (types.size() == 1) {
+        JavaType javaType = types.get(0);
+        if (javaType.isTypeLiteralSupported()) {
+          genericType = javaType.asTypeLiteralString();
+        }
+      }
+
+      // Only injected params need to be public, so that they can be used with TemplateParamModule.
+      String visibility = param.injected() && !"?".equals(genericType) ? "public" : "private";
+
+      // These values correspond to static factory methods on SoyTemplateParam.
+      CodeGenUtils.Member factory = OPTIONAL_P;
+      if (param.injected()) {
+        factory = INJECTED_P;
+      } else if (param.param().isRequired()) {
+        factory = REQUIRED_P;
+      } else if (param.indirect()) {
+        factory = INDIRECT_P;
+      }
+
+      String typeToken =
+          "?".equals(genericType)
+              ? "TypeToken.of(Object.class)" // TODO(user): this should probably be a wildcard type
+              : (genericType.matches("\\w+")
+                  ? "TypeToken.of(" + genericType + ".class" + ")"
+                  : "new TypeToken<" + genericType + ">() {}");
+      ilb.appendLine(
+          String.format("/** {@%s %s} */", param.injected() ? "inject" : "param", param.name()));
+      ilb.appendLine(
+          String.format(
+              "%s static final SoyTemplateParam<%s> %s = ", visibility, genericType, fieldName));
+      ilb.appendLine(
+          String.format("    SoyTemplateParam.%s(\"%s\", %s);", factory, param.name(), typeToken));
+      ilb.appendLine();
+    }
+
+    ilb.appendLineStart(
+        "private static final ImmutableList<SoyTemplateParam<?>> " + PARAMS_FIELD + " = ");
+    // Omit injected params from the list of params passed to the builder.
+    appendImmutableListInline(ilb, "<SoyTemplateParam<?>>", nonInjected);
+    ilb.appendLineEnd(";");
+    ilb.appendLine();
   }
 
   private static void appendRecordListInitializations(
@@ -360,49 +433,24 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
     ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
-    ilb.appendLine("import com.google.common.collect.ImmutableSet;");
     ilb.appendLine("import com.google.common.html.types.SafeHtml;");
     ilb.appendLine("import com.google.common.html.types.SafeScript;");
     ilb.appendLine("import com.google.common.html.types.SafeStyle;");
     ilb.appendLine("import com.google.common.html.types.SafeStyleSheet;");
     ilb.appendLine("import com.google.common.html.types.SafeUrl;");
     ilb.appendLine("import com.google.common.html.types.TrustedResourceUrl;");
+    ilb.appendLine("import com.google.common.reflect.TypeToken;");
     ilb.appendLine("import com.google.common.util.concurrent.ListenableFuture;");
     ilb.appendLine("import com.google.errorprone.annotations.CanIgnoreReturnValue;");
     ilb.appendLine("import com.google.template.soy.data.BaseSoyTemplateImpl;");
     ilb.appendLine("import com.google.template.soy.data.SanitizedContent;");
     ilb.appendLine("import com.google.template.soy.data.SoyTemplate;");
+    ilb.appendLine("import com.google.template.soy.data.SoyTemplateParam;");
     ilb.appendLine("import com.google.template.soy.data.SoyValueProvider;");
     ilb.appendLine("import java.util.concurrent.Future;");
     ilb.appendLine("import javax.annotation.Generated;");
     ilb.appendLine("import javax.annotation.Nullable;");
     ilb.appendLine();
-    ilb.appendLine();
-  }
-
-  /**
-   * Appends a constant ImmutableList of type {@link
-   * com.google.template.soy.data.BaseSoyTemplateImpl.Param} containing metadata about the
-   * template's params.
-   */
-  private void appendParamsImmutableList(List<ParamInfo> params) {
-    ImmutableList<String> genCodeForCreatingParams =
-        params.stream()
-            .map(
-                p -> {
-                  String factory = "optional";
-                  if (p.param().isRequired()) {
-                    factory = "required";
-                  } else if (p.indirect()) {
-                    factory = "indirect";
-                  }
-                  return String.format("BaseSoyTemplateImpl.Param.%s(\"%s\")", factory, p.name());
-                })
-            .collect(toImmutableList());
-
-    ilb.appendLineStart("private static final ImmutableList<Param> PARAMS = ");
-    appendImmutableListInline(ilb, "<BaseSoyTemplateImpl.Param>", genCodeForCreatingParams);
-    ilb.appendLineEnd(";");
     ilb.appendLine();
   }
 

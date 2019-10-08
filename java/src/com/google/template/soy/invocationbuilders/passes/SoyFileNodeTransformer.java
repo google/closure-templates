@@ -173,19 +173,32 @@ public class SoyFileNodeTransformer {
   /** The transformed {@link TemplateParam}. */
   @AutoValue
   public abstract static class ParamInfo {
-    static ParamInfo of(Parameter param, ParamStatus status) {
-      return new AutoValue_SoyFileNodeTransformer_ParamInfo(
-          param, status, false, ParamFutureStatus.HANDLED);
+    static ParamInfo of(TemplateParam param, ParamStatus status) {
+      return of(
+          Parameter.fromParam(param), status, false, param.isInjected(), ParamFutureStatus.HANDLED);
+    }
+
+    static ParamInfo of(TemplateParam param, ParamStatus status, boolean indirect) {
+      return of(
+          Parameter.fromParam(param),
+          status,
+          indirect,
+          param.isInjected(),
+          ParamFutureStatus.HANDLED);
     }
 
     static ParamInfo of(Parameter param, ParamStatus status, boolean indirect) {
-      return new AutoValue_SoyFileNodeTransformer_ParamInfo(
-          param, status, indirect, ParamFutureStatus.HANDLED);
+      return of(param, status, indirect, false, ParamFutureStatus.HANDLED);
     }
 
     static ParamInfo of(
-        Parameter param, ParamStatus status, boolean indirect, ParamFutureStatus futureStatus) {
-      return new AutoValue_SoyFileNodeTransformer_ParamInfo(param, status, indirect, futureStatus);
+        Parameter param,
+        ParamStatus status,
+        boolean indirect,
+        boolean injected,
+        ParamFutureStatus futureStatus) {
+      return new AutoValue_SoyFileNodeTransformer_ParamInfo(
+          param, status, indirect, injected, futureStatus);
     }
 
     public abstract Parameter param();
@@ -193,6 +206,8 @@ public class SoyFileNodeTransformer {
     public abstract ParamStatus status();
 
     public abstract boolean indirect();
+
+    public abstract boolean injected();
 
     public abstract ParamFutureStatus futureStatus();
 
@@ -272,8 +287,8 @@ public class SoyFileNodeTransformer {
   private List<ParamInfo> getAllParams(TemplateNode template) {
     Map<String, ParamInfo> params = new LinkedHashMap<>();
 
-    for (TemplateParam param : template.getParams()) {
-      params.put(param.name(), ParamInfo.of(Parameter.fromParam(param), ParamStatus.HANDLED));
+    for (TemplateParam param : template.getAllParams()) {
+      params.put(param.name(), ParamInfo.of(param, ParamStatus.HANDLED));
     }
 
     addIndirectParams(template, params);
@@ -399,7 +414,12 @@ public class SoyFileNodeTransformer {
     ParamInfo previous = params.get(paramName);
     params.put(
         paramName,
-        ParamInfo.of(previous.param(), previous.status(), previous.indirect(), futureStatus));
+        ParamInfo.of(
+            previous.param(),
+            previous.status(),
+            previous.indirect(),
+            previous.injected(),
+            futureStatus));
   }
 
   private static void changeParamType(
@@ -411,6 +431,7 @@ public class SoyFileNodeTransformer {
             previous.param().toBuilder().setType(type).build(),
             previous.status(),
             previous.indirect(),
+            previous.injected(),
             previous.futureStatus()));
   }
 
@@ -419,7 +440,12 @@ public class SoyFileNodeTransformer {
     ParamInfo previous = params.get(paramName);
     params.put(
         paramName,
-        ParamInfo.of(previous.param(), newStatus, previous.indirect(), previous.futureStatus()));
+        ParamInfo.of(
+            previous.param(),
+            newStatus,
+            previous.indirect(),
+            previous.injected(),
+            previous.futureStatus()));
   }
 
   private static String modifyIndirectDesc(

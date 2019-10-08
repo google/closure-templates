@@ -19,6 +19,7 @@ package com.google.template.soy.invocationbuilders.javatypes;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder;
+import com.google.template.soy.data.SoyTemplateParam;
 import com.google.template.soy.data.SoyValueConverter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -68,6 +69,11 @@ public final class CodeGenUtils {
       MethodImpl.method(AbstractBuilder.class, "asNullableCss");
   public static final Member AS_CSS = MethodImpl.method(AbstractBuilder.class, "asCss");
   public static final Member TO_IMMUTABLE_MAP = unchecked("ImmutableMap.copyOf");
+
+  public static final Member OPTIONAL_P = MethodImpl.method(SoyTemplateParam.class, "optional");
+  public static final Member REQUIRED_P = MethodImpl.method(SoyTemplateParam.class, "required");
+  public static final Member INDIRECT_P = MethodImpl.method(SoyTemplateParam.class, "indirect");
+  public static final Member INJECTED_P = MethodImpl.method(SoyTemplateParam.class, "injected");
 
   /** A field or method that can be printed in code generation. */
   @Immutable

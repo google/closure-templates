@@ -65,4 +65,14 @@ public class RecordJavaType extends JavaType {
   public boolean isGenericsTypeSupported() {
     return false;
   }
+
+  @Override
+  public String asTypeLiteralString() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean isTypeLiteralSupported() {
+    return false;
+  }
 }

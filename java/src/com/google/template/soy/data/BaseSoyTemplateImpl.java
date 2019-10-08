@@ -18,7 +18,6 @@ package com.google.template.soy.data;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -87,16 +86,17 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public abstract static class AbstractBuilder<
       B extends AbstractBuilder<?, T>, T extends BaseSoyTemplateImpl> {
     private final String templateName;
-    private final ImmutableMap<String, Param> params;
+    private final ImmutableMap<String, SoyTemplateParam<?>> params;
     private final SoyValueConverter soyValueConverter;
     private final Map<String, SoyValueProvider> data;
     private final Map<String, List<SoyValueProvider>> accummulatorData;
 
-    protected AbstractBuilder(String templateName, Iterable<Param> params) {
+    protected AbstractBuilder(String templateName, Iterable<SoyTemplateParam<?>> params) {
       this.templateName = templateName;
       this.params =
           Streams.stream(params)
-              .collect(ImmutableMap.toImmutableMap(Param::getName, Functions.identity()));
+              .collect(
+                  ImmutableMap.toImmutableMap(SoyTemplateParam::getName, Functions.identity()));
       this.soyValueConverter = SoyValueConverter.INSTANCE;
       this.data = new HashMap<>();
       this.accummulatorData = new HashMap<>();
@@ -299,7 +299,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     private Set<String> getMissingParamNames(Map<String, ?> data) {
       Set<String> missing = new HashSet<>();
-      for (Param param : params.values()) {
+      for (SoyTemplateParam<?> param : params.values()) {
         if (param.isRequired() && !data.containsKey(param.getName())) {
           missing.add(param.getName());
         }
@@ -316,33 +316,5 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       }
       return extra;
     }
-  }
-
-  /**
-   * An internal representation of a parameter to a Soy template. This should not be used outside of
-   * {@link BaseSoyTemplateImpl}.
-   */
-  @AutoValue
-  public abstract static class Param {
-    /** Creates an optional param with the given name. */
-    public static Param optional(String name) {
-      return new AutoValue_BaseSoyTemplateImpl_Param(name, false, false);
-    }
-
-    /** Creates a required param with the given name. */
-    public static Param required(String name) {
-      return new AutoValue_BaseSoyTemplateImpl_Param(name, true, false);
-    }
-
-    /** Creates a required param with the given name. */
-    public static Param indirect(String name) {
-      return new AutoValue_BaseSoyTemplateImpl_Param(name, false, true);
-    }
-
-    abstract String getName();
-
-    abstract boolean isRequired();
-
-    abstract boolean isIndirect();
   }
 }

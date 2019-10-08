@@ -80,4 +80,24 @@ public abstract class JavaType {
   public boolean isGenericsTypeSupported() {
     return !Strings.isNullOrEmpty(asGenericsTypeArgumentString());
   }
+
+  /**
+   * Returns the token completing the expression "new TypeToken<%s>() {}", which should represent
+   * this type in Java.
+   */
+  public String asTypeLiteralString() {
+    return toJavaTypeString();
+  }
+
+  /**
+   * Whether this type supports being represented as a TypeLiteral, TypeToken etc and whether this
+   * field value can be provided via a Guice provider.
+   *
+   * <p>Union types will be excluded since unions cannot be represented in the Java generic system.
+   * Additionally, any wrapped value, like CssParam, must be excluded because there's no hook in
+   * Guice to unwrap the value.
+   */
+  public boolean isTypeLiteralSupported() {
+    return true;
+  }
 }
