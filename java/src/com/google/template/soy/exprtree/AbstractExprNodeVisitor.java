@@ -94,6 +94,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case LIST_LITERAL_NODE:
         visitListLiteralNode((ListLiteralNode) node);
         break;
+      case LIST_COMPREHENSION_NODE:
+        visitListComprehensionNode((ListComprehensionNode) node);
+        break;
       case MAP_LITERAL_NODE:
         visitMapLiteralNode((MapLiteralNode) node);
         break;
@@ -244,6 +247,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   // Implementations for collection nodes.
 
   protected void visitListLiteralNode(ListLiteralNode node) {
+    visitExprNode(node);
+  }
+
+  protected void visitListComprehensionNode(ListComprehensionNode node) {
     visitExprNode(node);
   }
 

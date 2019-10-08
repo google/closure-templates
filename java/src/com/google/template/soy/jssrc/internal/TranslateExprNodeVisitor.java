@@ -68,6 +68,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -268,6 +269,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitListLiteralNode(ListLiteralNode node) {
     return arrayLiteral(visitChildren(node));
+  }
+
+  @Override
+  protected Expression visitListComprehensionNode(ListComprehensionNode node) {
+    throw new IllegalStateException("List comprehensions are not implemented yet.");
   }
 
   @Override

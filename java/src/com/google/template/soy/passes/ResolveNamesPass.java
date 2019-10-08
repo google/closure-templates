@@ -222,6 +222,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
         return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
       case STATE:
         return Optional.of(((TemplateStateVar) varDefn).nameLocation());
+      case COMPREHENSION_VAR:
       case UNDECLARED:
         return Optional.empty();
     }

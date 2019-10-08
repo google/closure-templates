@@ -48,6 +48,7 @@ public interface ExprNode extends Node {
     STRING_NODE,
 
     LIST_LITERAL_NODE,
+    LIST_COMPREHENSION_NODE,
     MAP_LITERAL_NODE,
     RECORD_LITERAL_NODE,
 

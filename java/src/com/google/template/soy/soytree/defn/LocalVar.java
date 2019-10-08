@@ -16,9 +16,8 @@
 
 package com.google.template.soy.soytree.defn;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.types.SoyType;
 
@@ -26,58 +25,26 @@ import com.google.template.soy.types.SoyType;
  * A local variable declaration.
  *
  */
-public class LocalVar extends AbstractVarDefn {
-
-  /**
-   * {@link VarDen#name()} expects the name without the dollar sign, but LocalVar names are declared
-   * with the dollar sign.
-   */
-  private static String checkAndFixName(String name) {
-    checkArgument(name.charAt(0) == '$');
-    return name.substring(1);
-  }
-
-  private final LocalVarNode declaringNode;
+public class LocalVar extends AbstractLocalVarDefn<LocalVarNode> {
 
   /**
    * @param name The variable name.
+   * @param nameLocation The location where the variable name is declared.
    * @param declaringNode The statement in which this variable is defined.
    * @param type The data type of the variable.
    */
   public LocalVar(
       String name, SourceLocation nameLocation, LocalVarNode declaringNode, SoyType type) {
-    super(checkAndFixName(name), nameLocation, type);
-    this.declaringNode = declaringNode;
+    super(name, nameLocation, declaringNode, type);
   }
 
   /** Copy constructor for when the declaring node is being cloned. */
   public LocalVar(LocalVar localVar, LocalVarNode declaringNode) {
-    super(localVar);
-    checkArgument(localVar.declaringNode != declaringNode);
-    this.declaringNode = declaringNode;
+    super(localVar, declaringNode);
   }
 
   @Override
   public Kind kind() {
     return Kind.LOCAL_VAR;
-  }
-
-  /**
-   * Setter for the type - this is necessary because sometimes we don't know the variable type until
-   * after analysis.
-   *
-   * @param type The data type of the variable.
-   */
-  public void setType(SoyType type) {
-    this.type = type;
-  }
-
-  public LocalVarNode declaringNode() {
-    return declaringNode;
-  }
-
-  @Override
-  public boolean isInjected() {
-    return false;
   }
 }

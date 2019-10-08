@@ -37,6 +37,10 @@ public interface VarDefn {
     PARAM,
     // Local variable
     LOCAL_VAR,
+
+    // List/map comprehension var.
+    COMPREHENSION_VAR,
+
     // State variable
     STATE,
     // Undeclared variable reference (for legacy templates).

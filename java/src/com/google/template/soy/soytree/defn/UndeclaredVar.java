@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree.defn;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.types.UnknownType;
 
 /**
