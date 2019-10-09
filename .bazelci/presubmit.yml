@@ -1,0 +1,21 @@
+---
+platforms:
+  macos:
+    build_targets:
+      - "..."
+
+  rbe_ubuntu1604:
+    build_targets:
+      - "..."
+
+  ubuntu1604:
+    build_targets:
+      - "..."
+
+  ubuntu1804:
+    build_targets:
+      - "..."
+
+  windows:
+    build_targets:
+      - "..."
