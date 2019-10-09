@@ -11418,10 +11418,8 @@ goog.require('goog.string.TypedString');
  * @param {!Object=} opt_token package-internal implementation detail.
  * @param {!TrustedScriptURL|string=} opt_content package-internal
  *     implementation detail.
- * @param {?TrustedURL=} opt_trustedUrl package-internal implementation detail.
  */
-goog.html.TrustedResourceUrl = function(
-    opt_token, opt_content, opt_trustedUrl) {
+goog.html.TrustedResourceUrl = function(opt_token, opt_content) {
   /**
    * The contained value of this TrustedResourceUrl.  The field has a purposely
    * ugly name to make (non-compiled) code that attempts to directly access this
@@ -11434,17 +11432,6 @@ goog.html.TrustedResourceUrl = function(
         goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_) &&
        opt_content) ||
       '';
-
-  /**
-   * Value stored as TrustedURL. TrustedResourceURL corresponds to TrustedURL in
-   * some context thus we need to store it separately.
-   * @const
-   * @private {?TrustedURL}
-   */
-  this.trustedURL_ =
-      (opt_token === goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ &&
-       opt_trustedUrl) ||
-      null;
 
   /**
    * A type marker used to implement additional run-time type checking.
@@ -11604,19 +11591,6 @@ goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function(
         trustedResourceUrl + '\' of type ' + goog.typeOf(trustedResourceUrl));
     return 'type_error:TrustedResourceUrl';
   }
-};
-
-
-/**
- * Unwraps value as TrustedURL if supported or as a string if not.
- * @param {!goog.html.TrustedResourceUrl} trustedResourceUrl
- * @return {!TrustedURL|string}
- * @see goog.html.TrustedResourceUrl.unwrap
- */
-goog.html.TrustedResourceUrl.unwrapTrustedURL = function(trustedResourceUrl) {
-  return trustedResourceUrl.trustedURL_ ?
-      trustedResourceUrl.trustedURL_ :
-      goog.html.TrustedResourceUrl.unwrap(trustedResourceUrl);
 };
 
 
@@ -11832,13 +11806,8 @@ goog.html.TrustedResourceUrl
       goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY
           .createScriptURL(url) :
       url;
-  var trustedUrl = goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createURL(
-          url) :
-      null;
   return new goog.html.TrustedResourceUrl(
-      goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_, value,
-      trustedUrl);
+      goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_, value);
 };
 
 
@@ -11929,7 +11898,6 @@ goog.provide('goog.html.SafeUrl');
 goog.require('goog.asserts');
 goog.require('goog.fs.url');
 goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.html.trustedtypes');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
 goog.require('goog.string.Const');
@@ -11977,15 +11945,14 @@ goog.require('goog.string.internal');
  * @implements {goog.i18n.bidi.DirectionalString}
  * @implements {goog.string.TypedString}
  * @param {!Object=} opt_token package-internal implementation detail.
- * @param {!TrustedURL|string=} opt_content package-internal
- *     implementation detail.
+ * @param {string=} opt_content package-internal implementation detail.
  */
 goog.html.SafeUrl = function(opt_token, opt_content) {
   /**
    * The contained value of this SafeUrl.  The field has a purposely ugly
    * name to make (non-compiled) code that attempts to directly access this
    * field stand out.
-   * @private {!TrustedURL|string}
+   * @private {string}
    */
   this.privateDoNotAccessOrElseSafeUrlWrappedValue_ =
       ((opt_token === goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_) &&
@@ -12107,17 +12074,6 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeUrl.unwrap = function(safeUrl) {
-  return goog.html.SafeUrl.unwrapTrustedURL(safeUrl).toString();
-};
-
-
-/**
- * Unwraps value as TrustedURL if supported or as a string if not.
- * @param {!goog.html.SafeUrl} safeUrl
- * @return {!TrustedURL|string}
- * @see goog.html.SafeUrl.unwrap
- */
-goog.html.SafeUrl.unwrapTrustedURL = function(safeUrl) {
   // Perform additional Run-time type-checking to ensure that safeUrl is indeed
   // an instance of the expected type.  This provides some additional protection
   // against security bugs due to application code that disables type checks.
@@ -12627,11 +12583,7 @@ goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(
     url) {
   return new goog.html.SafeUrl(
-      goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_,
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
-          goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createURL(
-              url) :
-          url);
+      goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_, url);
 };
 
 
@@ -15182,7 +15134,7 @@ goog.dom.safe.setFormElementAction = function(form, url) {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
   goog.dom.asserts.assertIsHTMLFormElement(form).action =
-      goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+      goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 /**
@@ -15213,7 +15165,7 @@ goog.dom.safe.setButtonFormAction = function(button, url) {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
   goog.dom.asserts.assertIsHTMLButtonElement(button).formAction =
-      goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+      goog.html.SafeUrl.unwrap(safeUrl);
 };
 /**
  * Safely assigns a URL to an input element's formaction property.
@@ -15243,7 +15195,7 @@ goog.dom.safe.setInputFormAction = function(input, url) {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
   goog.dom.asserts.assertIsHTMLInputElement(input).formAction =
-      goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+      goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 /**
@@ -15295,7 +15247,7 @@ goog.dom.safe.setAnchorHref = function(anchor, url) {
   } else {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
-  anchor.href = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  anchor.href = goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 
@@ -15321,7 +15273,7 @@ goog.dom.safe.setImageSrc = function(imageElement, url) {
     var allowDataUrl = /^data:image\//i.test(url);
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
   }
-  imageElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  imageElement.src = goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 /**
@@ -15346,7 +15298,7 @@ goog.dom.safe.setAudioSrc = function(audioElement, url) {
     var allowDataUrl = /^data:audio\//i.test(url);
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
   }
-  audioElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  audioElement.src = goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 /**
@@ -15371,7 +15323,7 @@ goog.dom.safe.setVideoSrc = function(videoElement, url) {
     var allowDataUrl = /^data:video\//i.test(url);
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
   }
-  videoElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  videoElement.src = goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 /**
@@ -15410,7 +15362,7 @@ goog.dom.safe.setEmbedSrc = function(embed, url) {
  */
 goog.dom.safe.setFrameSrc = function(frame, url) {
   goog.dom.asserts.assertIsHTMLFrameElement(frame);
-  frame.src = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+  frame.src = goog.html.TrustedResourceUrl.unwrap(url);
 };
 
 
@@ -15430,7 +15382,7 @@ goog.dom.safe.setFrameSrc = function(frame, url) {
  */
 goog.dom.safe.setIframeSrc = function(iframe, url) {
   goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
-  iframe.src = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+  iframe.src = goog.html.TrustedResourceUrl.unwrap(url);
 };
 
 
@@ -15485,14 +15437,14 @@ goog.dom.safe.setLinkHrefAndRel = function(link, url, rel) {
     goog.asserts.assert(
         url instanceof goog.html.TrustedResourceUrl,
         'URL must be TrustedResourceUrl because "rel" contains "stylesheet"');
-    link.href = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+    link.href = goog.html.TrustedResourceUrl.unwrap(url);
   } else if (url instanceof goog.html.TrustedResourceUrl) {
-    link.href = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+    link.href = goog.html.TrustedResourceUrl.unwrap(url);
   } else if (url instanceof goog.html.SafeUrl) {
-    link.href = goog.html.SafeUrl.unwrapTrustedURL(url);
+    link.href = goog.html.SafeUrl.unwrap(url);
   } else {  // string
     // SafeUrl.sanitize must return legitimate SafeUrl when passed a string.
-    link.href = goog.html.SafeUrl.unwrapTrustedURL(
+    link.href = goog.html.SafeUrl.unwrap(
         goog.html.SafeUrl.sanitizeAssertUnchanged(url));
   }
 };
@@ -15600,7 +15552,7 @@ goog.dom.safe.setLocationHref = function(loc, url) {
   } else {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
-  loc.href = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  loc.href = goog.html.SafeUrl.unwrap(safeUrl);
 };
 
 /**
@@ -15633,7 +15585,7 @@ goog.dom.safe.assignLocation = function(loc, url) {
   } else {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
-  loc.assign(goog.html.SafeUrl.unwrapTrustedURL(safeUrl));
+  loc.assign(goog.html.SafeUrl.unwrap(safeUrl));
 };
 
 
@@ -15664,7 +15616,7 @@ goog.dom.safe.replaceLocation = function(loc, url) {
   } else {
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
-  loc.replace(goog.html.SafeUrl.unwrapTrustedURL(safeUrl));
+  loc.replace(goog.html.SafeUrl.unwrap(safeUrl));
 };
 
 
@@ -15707,7 +15659,7 @@ goog.dom.safe.openInWindow = function(
   }
   var win = opt_openerWin || goog.global;
   return win.open(
-      goog.html.SafeUrl.unwrapTrustedURL(safeUrl),
+      goog.html.SafeUrl.unwrap(safeUrl),
       // If opt_name is undefined, simply passing that in to open() causes IE to
       // reuse the current window instead of opening a new one. Thus we pass ''
       // in instead, which according to spec opens a new window. See

@@ -2576,9 +2576,8 @@ goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
 };
 goog.i18n.bidi.DirectionalString = function() {
 };
-goog.html.TrustedResourceUrl = function(opt_token, opt_content, opt_trustedUrl) {
+goog.html.TrustedResourceUrl = function(opt_token, opt_content) {
   this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = opt_token === goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ && opt_content || "";
-  this.trustedURL_ = opt_token === goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ && opt_trustedUrl || null;
   this.TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
 };
 goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = !0;
@@ -2605,9 +2604,6 @@ goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function(trustedResourceUr
   }
   goog.asserts.fail("expected object of type TrustedResourceUrl, got '" + trustedResourceUrl + "' of type " + goog.typeOf(trustedResourceUrl));
   return "type_error:TrustedResourceUrl";
-};
-goog.html.TrustedResourceUrl.unwrapTrustedURL = function(trustedResourceUrl) {
-  return trustedResourceUrl.trustedURL_ ? trustedResourceUrl.trustedURL_ : goog.html.TrustedResourceUrl.unwrap(trustedResourceUrl);
 };
 goog.html.TrustedResourceUrl.format = function(format, args) {
   var formatStr = goog.string.Const.unwrap(format);
@@ -2640,8 +2636,8 @@ goog.html.TrustedResourceUrl.fromConstants = function(parts) {
 };
 goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 goog.html.TrustedResourceUrl.createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
-  var value = goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ? goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createScriptURL(url) : url, trustedUrl = goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ? goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createURL(url) : null;
-  return new goog.html.TrustedResourceUrl(goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_, value, trustedUrl);
+  var value = goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ? goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createScriptURL(url) : url;
+  return new goog.html.TrustedResourceUrl(goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_, value);
 };
 goog.html.TrustedResourceUrl.stringifyParams_ = function(prefix, currentString, params) {
   if (null == params) {
@@ -2676,9 +2672,6 @@ goog.DEBUG && (goog.html.SafeUrl.prototype.toString = function() {
   return "SafeUrl{" + this.privateDoNotAccessOrElseSafeUrlWrappedValue_ + "}";
 });
 goog.html.SafeUrl.unwrap = function(safeUrl) {
-  return goog.html.SafeUrl.unwrapTrustedURL(safeUrl).toString();
-};
-goog.html.SafeUrl.unwrapTrustedURL = function(safeUrl) {
   if (safeUrl instanceof goog.html.SafeUrl && safeUrl.constructor === goog.html.SafeUrl && safeUrl.SAFE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ === goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
     return safeUrl.privateDoNotAccessOrElseSafeUrlWrappedValue_;
   }
@@ -2797,7 +2790,7 @@ goog.html.SafeUrl.sanitizeAssertUnchanged = function(url, opt_allowDataUrl) {
 };
 goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(url) {
-  return new goog.html.SafeUrl(goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_, goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ? goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createURL(url) : url);
+  return new goog.html.SafeUrl(goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_, url);
 };
 goog.html.SafeUrl.ABOUT_BLANK = goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse("about:blank");
 goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
@@ -3322,15 +3315,15 @@ goog.dom.safe.setOuterHtml = function(elem, html) {
 };
 goog.dom.safe.setFormElementAction = function(form, url) {
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  goog.dom.asserts.assertIsHTMLFormElement(form).action = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  goog.dom.asserts.assertIsHTMLFormElement(form).action = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setButtonFormAction = function(button, url) {
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  goog.dom.asserts.assertIsHTMLButtonElement(button).formAction = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  goog.dom.asserts.assertIsHTMLButtonElement(button).formAction = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setInputFormAction = function(input, url) {
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  goog.dom.asserts.assertIsHTMLInputElement(input).formAction = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  goog.dom.asserts.assertIsHTMLInputElement(input).formAction = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setStyle = function(elem, style) {
   elem.style.cssText = goog.html.SafeStyle.unwrap(style);
@@ -3341,22 +3334,22 @@ goog.dom.safe.documentWrite = function(doc, html) {
 goog.dom.safe.setAnchorHref = function(anchor, url) {
   goog.dom.asserts.assertIsHTMLAnchorElement(anchor);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  anchor.href = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  anchor.href = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setImageSrc = function(imageElement, url) {
   goog.dom.asserts.assertIsHTMLImageElement(imageElement);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url, /^data:image\//i.test(url));
-  imageElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  imageElement.src = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setAudioSrc = function(audioElement, url) {
   goog.dom.asserts.assertIsHTMLAudioElement(audioElement);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url, /^data:audio\//i.test(url));
-  audioElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  audioElement.src = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setVideoSrc = function(videoElement, url) {
   goog.dom.asserts.assertIsHTMLVideoElement(videoElement);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url, /^data:video\//i.test(url));
-  videoElement.src = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  videoElement.src = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.setEmbedSrc = function(embed, url) {
   goog.dom.asserts.assertIsHTMLEmbedElement(embed);
@@ -3364,11 +3357,11 @@ goog.dom.safe.setEmbedSrc = function(embed, url) {
 };
 goog.dom.safe.setFrameSrc = function(frame, url) {
   goog.dom.asserts.assertIsHTMLFrameElement(frame);
-  frame.src = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+  frame.src = goog.html.TrustedResourceUrl.unwrap(url);
 };
 goog.dom.safe.setIframeSrc = function(iframe, url) {
   goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
-  iframe.src = goog.html.TrustedResourceUrl.unwrapTrustedURL(url);
+  iframe.src = goog.html.TrustedResourceUrl.unwrap(url);
 };
 goog.dom.safe.setIframeSrcdoc = function(iframe, html) {
   goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
@@ -3377,7 +3370,7 @@ goog.dom.safe.setIframeSrcdoc = function(iframe, html) {
 goog.dom.safe.setLinkHrefAndRel = function(link, url, rel) {
   goog.dom.asserts.assertIsHTMLLinkElement(link);
   link.rel = rel;
-  goog.string.internal.caseInsensitiveContains(rel, "stylesheet") ? (goog.asserts.assert(url instanceof goog.html.TrustedResourceUrl, 'URL must be TrustedResourceUrl because "rel" contains "stylesheet"'), link.href = goog.html.TrustedResourceUrl.unwrapTrustedURL(url)) : link.href = url instanceof goog.html.TrustedResourceUrl ? goog.html.TrustedResourceUrl.unwrapTrustedURL(url) : url instanceof goog.html.SafeUrl ? goog.html.SafeUrl.unwrapTrustedURL(url) : goog.html.SafeUrl.unwrapTrustedURL(goog.html.SafeUrl.sanitizeAssertUnchanged(url));
+  goog.string.internal.caseInsensitiveContains(rel, "stylesheet") ? (goog.asserts.assert(url instanceof goog.html.TrustedResourceUrl, 'URL must be TrustedResourceUrl because "rel" contains "stylesheet"'), link.href = goog.html.TrustedResourceUrl.unwrap(url)) : link.href = url instanceof goog.html.TrustedResourceUrl ? goog.html.TrustedResourceUrl.unwrap(url) : url instanceof goog.html.SafeUrl ? goog.html.SafeUrl.unwrap(url) : goog.html.SafeUrl.unwrap(goog.html.SafeUrl.sanitizeAssertUnchanged(url));
 };
 goog.dom.safe.setObjectData = function(object, url) {
   goog.dom.asserts.assertIsHTMLObjectElement(object);
@@ -3398,21 +3391,21 @@ goog.dom.safe.setScriptContent = function(script, content) {
 goog.dom.safe.setLocationHref = function(loc, url) {
   goog.dom.asserts.assertIsLocation(loc);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  loc.href = goog.html.SafeUrl.unwrapTrustedURL(safeUrl);
+  loc.href = goog.html.SafeUrl.unwrap(safeUrl);
 };
 goog.dom.safe.assignLocation = function(loc, url) {
   goog.dom.asserts.assertIsLocation(loc);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  loc.assign(goog.html.SafeUrl.unwrapTrustedURL(safeUrl));
+  loc.assign(goog.html.SafeUrl.unwrap(safeUrl));
 };
 goog.dom.safe.replaceLocation = function(loc, url) {
   goog.dom.asserts.assertIsLocation(loc);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  loc.replace(goog.html.SafeUrl.unwrapTrustedURL(safeUrl));
+  loc.replace(goog.html.SafeUrl.unwrap(safeUrl));
 };
 goog.dom.safe.openInWindow = function(url, opt_openerWin, opt_name, opt_specs, opt_replace) {
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  return (opt_openerWin || goog.global).open(goog.html.SafeUrl.unwrapTrustedURL(safeUrl), opt_name ? goog.string.Const.unwrap(opt_name) : "", opt_specs, opt_replace);
+  return (opt_openerWin || goog.global).open(goog.html.SafeUrl.unwrap(safeUrl), opt_name ? goog.string.Const.unwrap(opt_name) : "", opt_specs, opt_replace);
 };
 goog.dom.safe.parseFromStringHtml = function(parser, html) {
   return goog.dom.safe.parseFromString(parser, html, "text/html");
