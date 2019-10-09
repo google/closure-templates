@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
+import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -149,6 +150,10 @@ public interface SoyTofu {
 
     /** Sets the injected data to call the template with. Can be null if not used. */
     Renderer setIjData(Map<String, ?> ijData);
+
+    default Renderer setIjData(SoyTemplateData ijData) {
+      return setIjData(ijData.getParamsAsMap());
+    }
 
     /**
      * Sets the injected data to call the template with. Can be null if not used.

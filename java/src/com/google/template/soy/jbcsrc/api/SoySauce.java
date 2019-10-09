@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyTemplate;
+import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -77,6 +78,10 @@ public interface SoySauce {
 
     /** Configures the {@code $ij} to pass to the template. */
     Renderer setIj(Map<String, ?> record);
+
+    default Renderer setIj(SoyTemplateData data) {
+      return setIj(data.getParamsAsMap());
+    }
 
     /**
      * Sets the plugin instances that will be used to for plugins that are implemented with {@code
