@@ -16,8 +16,6 @@
 
 package com.google.template.soy.exprtree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
@@ -51,7 +49,6 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   private ListComprehensionNode(ListComprehensionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.listIterVar = new ComprehensionVarDefn(orig.listIterVar, this);
-    copyState.updateRefs(orig.listIterVar, this.listIterVar);
   }
 
   @Override
@@ -63,21 +60,11 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
     return listIterVar;
   }
 
-  /** Gets the listExpr in "[itemExpr for $var in listExpr]". */
-  public ExprNode getListExpr() {
-    return checkNotNull(getChild(0));
-  }
-
-  /** Gets the itemExpr in "[itemExpr for $var in listExpr]". */
-  public ExprNode getListItemExpr() {
-    return checkNotNull(getChild(1));
-  }
-
   @Override
   public String toSourceString() {
     return String.format(
         "[%s for %s in %s]",
-        getListItemExpr().toSourceString(), listIterVar.name(), getListExpr().toSourceString());
+        getChild(0).toSourceString(), listIterVar.name(), getChild(1).toSourceString());
   }
 
   @Override

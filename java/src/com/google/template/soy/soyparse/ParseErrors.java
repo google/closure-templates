@@ -69,34 +69,15 @@ final class ParseErrors {
 
   private ParseErrors() {}
 
-  /** Reports a generic parsing exception (such as: "Error at '}': expected number, string..."). */
   static void reportSoyFileParseException(
       ErrorReporter reporter, String filePath, ParseException e, int currentLexicalState) {
-    reportSoyFileParseException(reporter, filePath, e, currentLexicalState, "");
-  }
-
-  /**
-   * Reports a parsing exception.
-   *
-   * <p>Takes in an optional "advice" message to give the user context-specific suggestions for
-   * common syntax errors (e.g. if the exception occurred while parsing a for-loop, the message
-   * might show the user correct for-loop syntax). This will be displayed after the generic "Error
-   * at '}': expected ..." message.
-   */
-  static void reportSoyFileParseException(
-      ErrorReporter reporter,
-      String filePath,
-      ParseException e,
-      int currentLexicalState,
-      String optionalAdvice) {
-
     Token currentToken = e.currentToken;
 
     // currentToken is the 'last successfully consumed token', but the error is usually due to the
     // first unsuccessful token.  use that for the source location
     Token errorToken = (currentToken.next != null) ? currentToken.next : currentToken;
     SourceLocation location = Tokens.createSrcLoc(filePath, errorToken);
-
+    String optionalAdvice = "";
     // handle a few special cases.
     switch (errorToken.kind) {
       case SoyFileParserConstants.XXX_BRACE_INVALID:
@@ -131,10 +112,10 @@ final class ParseErrors {
         errorToken.image = "eof";
         if (currentLexicalState == SoyFileParserConstants.IN_DQ_ATTRIBUTE_VALUE
             || currentLexicalState == SoyFileParserConstants.IN_SQ_ATTRIBUTE_VALUE) {
-          optionalAdvice += ". Did you forget to close an attribute?";
+          optionalAdvice = ". Did you forget to close an attribute?";
         } else if (currentLexicalState == SoyFileParserConstants.IN_MULTILINE_COMMENT
             || currentLexicalState == SoyFileParserConstants.IN_SOYDOC) {
-          optionalAdvice += ". Did you forget to close a comment?";
+          optionalAdvice = ". Did you forget to close a comment?";
         }
         // fall-through
       default:
@@ -249,13 +230,9 @@ final class ParseErrors {
         return "string";
       case SoyFileParserConstants.DOLLAR_IDENT:
         return "variable";
-      case SoyFileParserConstants.FOR:
-        return "\'for\'";
-      case SoyFileParserConstants.IN:
-        return "\'in\'";
 
       case SoyFileParserConstants.TEMPLATE_LINE_COMMENT:
-        return null; // Comments are ubiquitous and unneccessary in error messages.
+        return null; // Comments are ubiquitous and unnessesery in error messages.
 
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
