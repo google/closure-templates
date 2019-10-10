@@ -375,7 +375,6 @@ java_library(
         "//java/src/com/google/template/soy/internal/base",
         "//java/src/com/google/template/soy/internal/proto",
         "//java/src/com/google/template/soy/internal/targetexpr",
-        "//java/src/com/google/template/soy/invocationbuilders/passes",
         "//java/src/com/google/template/soy/plugin/restricted",
         "//java/src/com/google/template/soy/shared/internal/gencode",
         "//java/src/com/google/template/soy/soyparse",
