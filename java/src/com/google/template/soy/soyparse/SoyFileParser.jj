@@ -73,6 +73,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -606,7 +607,7 @@ public class SoyFileParser {
   }
 
   /**
-   * Reports the error and skips to the given token if it observes the end of a template, throws an
+   * Reports the error and skips to the given token if it observes the end of a template; throws an
    * exception to halt parsing.
    *
    * See https://javacc.org/tutorials/errorrecovery
@@ -614,6 +615,21 @@ public class SoyFileParser {
   private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... kinds) {
     ParseErrors.reportSoyFileParseException(
         errorReporter, filePath, error, token_source.curLexState);
+    return skipToTemplateToken(kinds);
+  }
+
+  /**
+   * Reports the error and skips to the given token if it observes the end of a template; throws an
+   * exception to halt parsing.
+   *
+   * Accepts an "adviceToUser" string to provide debugging tips for common syntax mistakes.
+   *
+   * See https://javacc.org/tutorials/errorrecovery
+   */
+    private Token reportTemplateBodyErrorAndSkipTo(ParseException error, String adviceToUser,
+        int... kinds) {
+    ParseErrors.reportSoyFileParseException(
+        errorReporter, filePath, error, token_source.curLexState, adviceToUser);
     return skipToTemplateToken(kinds);
   }
 
@@ -1092,6 +1108,8 @@ TOKEN_MGR_DECLS: {
 | < RBRACKET: "]" >
 | < QLBRACKET: "?[" >
 | < COMMA: "," >      // Not actually an operator, part of map/list literal syntax
+| < FOR: "for" > // Not actually an operator, part of map/list comprehension syntax.
+| < IN: "in" > // Not actually an operator, part of map/list comprehension syntax.
 | < LPAREN: "(" >
 | < RPAREN: ")" >
 | < VBAR: "|" >       // an operator for type unions
@@ -2870,12 +2888,16 @@ private ForNode ForStmt() :
         name = nameTok.image;
         nameLocation = createSrcLoc(nameTok);
     }
-    Keyword("in")
+    <IN>
     expr = Expr()
 
     tagEnd = <CMD_END>
   } catch (ParseException e) {
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    tagEnd =
+        reportTemplateBodyErrorAndSkipTo(
+            e,
+            "\nFor-loops should be formatted as: \"{for $foo in <listExpression>}\".",
+            CMD_END);
 
     if (name == null) {
       name = "$error";
@@ -3611,7 +3633,7 @@ private ExprNode Primary() :
   |
     primary = GlobalOrFunctionCallLike()
   |
-    primary = ListLiteral()
+    primary = List()
   |
     primary = Primitive()
   )
@@ -3840,27 +3862,91 @@ private ExprNode VeLiteral(Identifier ident) :
 }
 
 /**
- * Parses list literals, a primary expression that starts with "[".
  *
- * ListLiteral -> "[" ( "]" | Expr ( ( ("," Expr)* ) [","] "]" ) )
- */
-private ExprNode ListLiteral() :
+ * Parses a list node, which is either a list literal or a list comprehension (we don't know which
+ * until partway through parsing, so this method parses the common tokens until we have enough info
+ * to branch).
+*/
+private ExprNode List() :
 {
   Token begin, end;
-  ExprNode itemExpr;
-  List<ExprNode> items = ImmutableList.of();
+  ExprNode firstExpr;
+  ExprNode listNode;
 }
 {
   begin = <LBRACKET>
   (
-    // empty list
+      // Empty [] case.
+      end = <RBRACKET>
+      { return new ListLiteralNode(new ArrayList<ExprNode>(), createSrcLoc(begin, end)); }
+    |
+      firstExpr = Expr()
+      ( // After the first expr, we have enough info to branch: list comprehensions will have "FOR"
+        // as the next token; list literals will either have a comma or a closing "]".
+        listNode = ListComprehension(begin, firstExpr)
+        |
+        listNode = ListLiteral(begin, firstExpr)
+
+      )
+      { return listNode; }
+  )
+}
+
+/**
+ * Parses list comprehensions. ListComprehension -> [ Expr for $var in Expr]. The opening "[ Expr"
+ * has already been parsed by {@link #List()}.
+ *
+ * @param begin token for the opening left bracket ("[").
+ * @param itemExpr expr to perform on each item in the list (e.g. "$a+1" in [$a+1 for $a in $foo]).
+ */
+private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
+{
+  Token end, listIterVar = null;
+  ExprNode listExpr = null;
+  SourceLocation listIterVarIdentLocation = null;
+}
+{
+  // "[Expr" has already been matched. Now try to match " for $var in Expr]".
+  <FOR>
+  try {
+    listIterVar = <DOLLAR_IDENT>
+    <IN>
+    listExpr = Expr()
     end = <RBRACKET>
-    { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
-  |
-    // The first item of a non-empty list will be an expression
-    itemExpr = Expr()
+  } catch (ParseException e) {
+    end =
+        reportTemplateBodyErrorAndSkipTo(
+            e,
+            "\nList comprehensions should be formatted as:"
+               + " \"[$foo.bar for $foo in <listExpression>]\".",
+            RBRACKET);
+    return new ListComprehensionNode(errorExpr(begin), "$error", createSrcLoc(begin),
+        errorExpr(begin), createSrcLoc(begin, end));
+  }
+  { return new ListComprehensionNode(listExpr, listIterVar.image, createSrcLoc(listIterVar),
+       itemExpr, createSrcLoc(begin, end)); }
+}
+
+/**
+ * Parses list literals. The opening "[ Expr" has already been parsed by {@link #List()}.
+ *
+ * ListLiteral -> "[" ( "]" | Expr ( ( ("," Expr)* ) [","] "]" ) )
+ *
+ * @param begin token for the opening left bracket ("[").
+ * @param itemExpr first expr after the opening bracket.
+ */
+private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
+{
+  Token end;
+  ExprNode itemExpr;
+  List<ExprNode> items = ImmutableList.of();
+}
+{
+  (
+    // NOTE: "[Expr" has already been parsed.
+    // The first expr is the first item in the list.
     { items = new ArrayList<ExprNode>();
-      items.add(itemExpr);
+      items.add(firstItem);
     }
 
     (

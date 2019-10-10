@@ -61,6 +61,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -233,6 +234,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitListLiteralNode(ListLiteralNode node) {
     List<SoyValue> values = this.visitChildren(node);
     return ListImpl.forProviderList(values);
+  }
+
+  @Override
+  protected SoyValue visitListComprehensionNode(ListComprehensionNode node) {
+    // Unimplemented. Return an empty list for now.
+    return ListImpl.forProviderList(ImmutableList.of());
   }
 
   @Override

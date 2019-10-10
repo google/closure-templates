@@ -20,6 +20,7 @@ package com.google.template.soy.passes;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -27,6 +28,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -100,7 +102,7 @@ public final class ResolveNamesPass extends CompilerFilePass {
     }
 
     /** Defines a variable. */
-    boolean define(VarDefn defn, SoyNode definingNode) {
+    boolean define(VarDefn defn, Node definingNode) {
       // Search for the name to see if it is being redefined.
       VarDefn preexisting = lookup(defn.name());
       if (preexisting != null) {
@@ -220,9 +222,13 @@ public final class ResolveNamesPass extends CompilerFilePass {
         return Optional.of(((TemplateParam) varDefn).nameLocation());
       case LOCAL_VAR:
         return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
+      case COMPREHENSION_VAR:
+        return Optional.of(
+            ((ListComprehensionNode.ComprehensionVarDefn) varDefn)
+                .declaringNode()
+                .getSourceLocation());
       case STATE:
         return Optional.of(((TemplateStateVar) varDefn).nameLocation());
-      case COMPREHENSION_VAR:
       case UNDECLARED:
         return Optional.empty();
     }
@@ -255,6 +261,20 @@ public final class ResolveNamesPass extends CompilerFilePass {
       if (node instanceof ParentExprNode) {
         visitChildren((ParentExprNode) node);
       }
+    }
+
+    @Override
+    protected void visitListComprehensionNode(ListComprehensionNode node) {
+      // Visit the list expr.
+      visit(node.getChild(0));
+
+      // Define the list item variable.
+      localVariables.enterScope();
+      localVariables.define(node.getListIterVar(), node);
+
+      // Now we can visit the list item expression.
+      visit(node.getChild(1));
+      localVariables.exitScope();
     }
 
     @Override
