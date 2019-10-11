@@ -31,7 +31,7 @@ together in a single build rule. If templates are compiled individually,
 cross-template type checks are not done.
 
 This means that if two templates are compiled individually, but rely on one
-another, it could lead to static type errors.
+another, it could lead to runtime errors.
 
 ### Dynamic type checking
 
