@@ -18,6 +18,7 @@ package com.google.template.soy.passes.htmlmatcher;
 
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -32,9 +33,12 @@ import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.TagName;
+import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import javax.annotation.Nullable;
 
 /**
@@ -257,8 +261,13 @@ public final class HtmlTagMatchingPass {
     annotationMap.put(syntheticClose, Optional.of(optionalOpenTag));
   }
 
+  @FunctionalInterface
+  interface QueuedTask {
+    List<QueuedTask> run();
+  }
+
   /** Perform tag matching/error reporting for invalid HTML. */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherTagNode tagNode,
       Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
       HtmlStack stack) {
@@ -346,18 +355,14 @@ public final class HtmlTagMatchingPass {
         break;
     }
     Optional<HtmlMatcherGraphNode> nextNode = tagNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    if (nextNode.isPresent()) {
-      visit(nextNode.get(), exprValueMap, prev);
-    } else {
-      checkUnusedTags(prev);
-    }
+    return ImmutableList.of(visit(nextNode, exprValueMap, prev));
   }
 
   /**
    * Blocks must be internally balanced, but require knowing if they are in foreign content or not.
    * Recursively run the tag matcher and throw away the result.
    */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherBlockNode blockNode,
       Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
       HtmlStack stack) {
@@ -371,11 +376,7 @@ public final class HtmlTagMatchingPass {
           .run(blockNode.getGraph());
     }
     Optional<HtmlMatcherGraphNode> nextNode = blockNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    if (nextNode.isPresent()) {
-      visit(nextNode.get(), exprValueMap, stack);
-    } else {
-      checkUnusedTags(stack);
-    }
+    return ImmutableList.of(visit(nextNode, exprValueMap, stack));
   }
 
   /**
@@ -383,7 +384,7 @@ public final class HtmlTagMatchingPass {
    * However, if we have already visited a branch and concluded that it is internally balanced (in
    * foreign content or not), then don't revisit the branch.
    */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherConditionNode condNode,
       Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
       HtmlStack stack) {
@@ -401,50 +402,62 @@ public final class HtmlTagMatchingPass {
 
     Optional<HtmlMatcherGraphNode> nextNode = condNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     Optional<HtmlMatcherGraphNode> nextAltNode = condNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE);
+    ImmutableList.Builder<QueuedTask> tasks = ImmutableList.builder();
     if (!condNode.isInternallyBalanced(stack.inForeignContent, idGenerator)
         && nextNode.isPresent()
         && !Boolean.FALSE.equals(originalState)) {
       Map<Equivalence.Wrapper<ExprNode>, Boolean> lMap = new HashMap<>(exprValueMap);
       lMap.put(condition, true);
-      visit(nextNode.get(), lMap, stack);
+      tasks.add(visit(nextNode, lMap, stack));
     }
 
     if (nextAltNode.isPresent() && !Boolean.TRUE.equals(originalState)) {
       Map<Equivalence.Wrapper<ExprNode>, Boolean> rMap = new HashMap<>(exprValueMap);
       rMap.put(condition, false);
-      visit(nextAltNode.get(), rMap, stack);
+      tasks.add(visit(nextAltNode, rMap, stack));
     }
+    return tasks.build();
   }
 
   /** Accumulator nodes mostly work like HTMLMatcherTagNodes, but don't add any elements. */
-  private void visit(
+  private List<QueuedTask> visit(
       HtmlMatcherAccumulatorNode accNode,
       Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
       HtmlStack stack) {
     Optional<HtmlMatcherGraphNode> nextNode = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
-    if (nextNode.isPresent()) {
-      visit(nextNode.get(), exprValueMap, stack);
-    } else {
-      checkUnusedTags(stack);
-    }
+    return ImmutableList.of(visit(nextNode, exprValueMap, stack));
   }
 
   public void visit(HtmlMatcherGraphNode node) {
-    visit(node, new HashMap<>(), new HtmlStack(null, inForeignContent, null));
+    Queue<QueuedTask> stack = new ArrayDeque<>();
+    stack.add(
+        visit(Optional.of(node), new HashMap<>(), new HtmlStack(null, inForeignContent, null)));
+    while (!stack.isEmpty()) {
+      QueuedTask task = stack.remove();
+      List<QueuedTask> newTasks = task.run();
+      stack.addAll(newTasks);
+    }
   }
 
-  private void visit(
-      HtmlMatcherGraphNode node,
+  private QueuedTask visit(
+      Optional<HtmlMatcherGraphNode> maybeNode,
       Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
       HtmlStack stack) {
+    if (!maybeNode.isPresent()) {
+      return () -> {
+        checkUnusedTags(stack);
+        return ImmutableList.of();
+      };
+    }
+    HtmlMatcherGraphNode node = maybeNode.get();
     if (node instanceof HtmlMatcherTagNode) {
-      visit((HtmlMatcherTagNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherTagNode) node, exprValueMap, stack);
     } else if (node instanceof HtmlMatcherConditionNode) {
-      visit((HtmlMatcherConditionNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherConditionNode) node, exprValueMap, stack);
     } else if (node instanceof HtmlMatcherAccumulatorNode) {
-      visit((HtmlMatcherAccumulatorNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherAccumulatorNode) node, exprValueMap, stack);
     } else if (node instanceof HtmlMatcherBlockNode) {
-      visit((HtmlMatcherBlockNode) node, exprValueMap, stack);
+      return () -> visit((HtmlMatcherBlockNode) node, exprValueMap, stack);
     } else {
       throw new UnsupportedOperationException("No implementation for: " + node);
     }
