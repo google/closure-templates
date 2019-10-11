@@ -273,7 +273,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitListComprehensionNode(ListComprehensionNode node) {
-    throw new IllegalStateException("List comprehensions are not implemented yet.");
+    // Unimplemented. Return an empty list for now.
+    return Expression.LITERAL_EMPTY_LIST;
   }
 
   @Override

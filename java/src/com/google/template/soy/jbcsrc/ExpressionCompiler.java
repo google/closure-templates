@@ -25,6 +25,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNu
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -47,6 +48,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -360,6 +362,13 @@ final class ExpressionCompiler {
       // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
       return SoyExpression.forList(
           (ListType) node.getType(), SoyExpression.asBoxedList(visitChildren(node)));
+    }
+
+    @Override
+    protected final SoyExpression visitListComprehensionNode(ListComprehensionNode node) {
+      // Unimplemented. Return an empty list for now.
+      return SoyExpression.forList(
+          (ListType) node.getType(), SoyExpression.asBoxedList(ImmutableList.of()));
     }
 
     @Override
@@ -1229,6 +1238,11 @@ final class ExpressionCompiler {
     }
 
     @Override
+    protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
+      return areAllChildrenConstant(node);
+    }
+
+    @Override
     protected Boolean visitRecordLiteralNode(RecordLiteralNode node) {
       return areAllChildrenConstant(node);
     }
@@ -1303,6 +1317,11 @@ final class ExpressionCompiler {
 
     @Override
     Boolean visitForLoopVar(VarRefNode varRef, LocalVar local) {
+      return true;
+    }
+
+    @Override
+    protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
       return true;
     }
 
