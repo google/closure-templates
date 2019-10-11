@@ -92,8 +92,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           public JavaValue getAllRequiredCssNamespaces(JavaValue template) {
             JbcSrcJavaValue exprTemplate = (JbcSrcJavaValue) template;
             SoyExpression soyExpression = (SoyExpression) exprTemplate.expr();
-            return JbcSrcJavaValue.of(
-                jbcPluginContext.getAllRequiredCssNamespaces(soyExpression.unboxAsString()));
+            return JbcSrcJavaValue.of(jbcPluginContext.getAllRequiredCssNamespaces(soyExpression));
           }
 
           @Override

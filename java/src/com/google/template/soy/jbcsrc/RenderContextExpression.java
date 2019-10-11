@@ -83,7 +83,7 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
       MethodRef.create(RenderContext.class, "getBidiGlobalDir");
 
   private static final MethodRef GET_ALL_REQUIRED_CSS_NAMESPACES =
-      MethodRef.create(RenderContext.class, "getAllRequiredCssNamespaces", String.class);
+      MethodRef.create(RenderContext.class, "getAllRequiredCssNamespaces", Object.class);
 
   private static final MethodRef GET_ESCAPING_DIRECTIVE_AS_FUNCTION =
       MethodRef.create(RenderContext.class, "getEscapingDirectiveAsFunction", String.class);
