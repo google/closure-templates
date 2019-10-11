@@ -1489,7 +1489,7 @@ public final class Context {
      * Whereas for space delimited attributes like {@code width=32}, there is no non-empty suffix
      * that is part of the attribute but not part of the value.
      */
-    public final @Nullable String text;
+    @Nullable public final String text;
 
     AttributeEndDelimiter(String text) {
       this.text = text;
