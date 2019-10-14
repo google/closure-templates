@@ -78,7 +78,10 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
           return hashChildren(node);
         }
 
-        // TODO(b/142352366): Implement for ListComprehensionNode.
+        @Override
+        protected Integer visitListComprehensionNode(ListComprehensionNode node) {
+          return Objects.hash(node.getListIterVar(), node.getListExpr(), node.getListIterVar());
+        }
 
         @Override
         protected Integer visitRecordLiteralNode(RecordLiteralNode node) {

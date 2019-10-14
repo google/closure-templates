@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
+import javax.annotation.Nullable;
 
 /**
  * A node representing a list comprehension expr (e.g. "$a+1 for $a in $myList if $a >= 0").
@@ -71,6 +72,12 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   /** Gets the itemExpr in "[itemExpr for $var in listExpr]". */
   public ExprNode getListItemExpr() {
     return checkNotNull(getChild(1));
+  }
+
+  @Nullable
+  public ExprNode getFilterExpr() {
+    // TODO(user): Implement if filter
+    return null;
   }
 
   @Override

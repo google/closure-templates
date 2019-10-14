@@ -36,10 +36,12 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -62,6 +64,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -238,8 +241,26 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitListComprehensionNode(ListComprehensionNode node) {
-    // Unimplemented. Return an empty list for now.
-    return ListImpl.forProviderList(ImmutableList.of());
+    ExprNode listExpr = node.getListExpr();
+    SoyValue listValue = visit(listExpr);
+    if (!(listValue instanceof SoyList)) {
+      throw RenderException.create(String.format("List expression is not a list: %s", listValue));
+    }
+    ExprNode mapExpr = node.getListItemExpr();
+    ExprNode filterExpr = node.getFilterExpr();
+    ComprehensionVarDefn itemName = node.getListIterVar();
+    ImmutableList.Builder<SoyValueProvider> mappedValues = ImmutableList.builder();
+    for (SoyValueProvider soyValue : ((SoyList) listValue).asJavaList()) {
+      env.bind(itemName, soyValue);
+      if (filterExpr != null) {
+        if (!visit(filterExpr).booleanValue()) {
+          continue;
+        }
+      }
+      SoyValue mappedValue = visit(mapExpr);
+      mappedValues.add(mappedValue);
+    }
+    return ListImpl.forProviderList(mappedValues.build());
   }
 
   @Override
