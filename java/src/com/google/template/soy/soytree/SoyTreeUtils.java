@@ -26,9 +26,12 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -336,9 +339,44 @@ public final class SoyTreeUtils {
     @Override
     protected void visit(SoyNode node) {
       node.setId(nodeIdGen.genId());
+      if (node instanceof ExprHolderNode) {
+        ExprHolderNode exprHolderNode = (ExprHolderNode) node;
+        for (ExprRootNode expr : exprHolderNode.getExprList()) {
+          new GenNewIdsExprVisitor(nodeIdGen).exec(expr);
+        }
+      }
+
       if (node instanceof ParentSoyNode<?>) {
         visitChildren((ParentSoyNode<?>) node);
       }
+    }
+  }
+
+  private static class GenNewIdsExprVisitor extends AbstractExprNodeVisitor<Void> {
+    /** The generator for new node ids. */
+    private final IdGenerator nodeIdGen;
+
+    /** @param nodeIdGen The generator for new node ids. */
+    public GenNewIdsExprVisitor(IdGenerator nodeIdGen) {
+      this.nodeIdGen = nodeIdGen;
+    }
+
+    @Override
+    protected void visitExprRootNode(ExprRootNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitExprNode(ExprNode node) {
+      if (node instanceof ParentExprNode) {
+        visitChildren((ParentExprNode) node);
+      }
+    }
+
+    @Override
+    protected void visitListComprehensionNode(ListComprehensionNode node) {
+      node.setNodeId(nodeIdGen.genId());
+      visitChildren(node);
     }
   }
 

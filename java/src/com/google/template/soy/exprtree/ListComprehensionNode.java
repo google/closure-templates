@@ -30,15 +30,18 @@ import javax.annotation.Nullable;
  */
 public final class ListComprehensionNode extends AbstractParentExprNode {
   private final ComprehensionVarDefn listIterVar;
+  private int nodeId;
 
   public ListComprehensionNode(
       ExprNode listExpr,
       String listIterVarName,
       SourceLocation listIterVarNameLocation,
       ExprNode itemExpr,
-      SourceLocation sourceLocation) {
+      SourceLocation sourceLocation,
+      int nodeId) {
     super(sourceLocation);
     this.listIterVar = new ComprehensionVarDefn(listIterVarName, listIterVarNameLocation, this);
+    this.nodeId = nodeId;
 
     addChild(listExpr);
     addChild(itemExpr);
@@ -52,6 +55,7 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   private ListComprehensionNode(ListComprehensionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.listIterVar = new ComprehensionVarDefn(orig.listIterVar, this);
+    this.nodeId = orig.nodeId;
     copyState.updateRefs(orig.listIterVar, this.listIterVar);
   }
 
@@ -78,6 +82,14 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   public ExprNode getFilterExpr() {
     // TODO(user): Implement if filter
     return null;
+  }
+
+  public void setNodeId(int nodeId) {
+    this.nodeId = nodeId;
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   @Override

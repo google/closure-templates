@@ -80,7 +80,11 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
         @Override
         protected Integer visitListComprehensionNode(ListComprehensionNode node) {
-          return Objects.hash(node.getListIterVar(), node.getListExpr(), node.getListIterVar());
+          return Objects.hash(
+              node.getListIterVar(),
+              node.getListExpr(),
+              node.getListItemExpr(),
+              node.getFilterExpr());
         }
 
         @Override

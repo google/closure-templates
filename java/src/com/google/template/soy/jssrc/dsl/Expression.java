@@ -215,6 +215,12 @@ public abstract class Expression extends CodeChunk {
     return ArrayLiteral.create(ImmutableList.copyOf(elements));
   }
 
+  /** Creates a code chunk representing a javascript array comprehension. */
+  public static Expression arrayComprehension(
+      Expression listExpr, Expression itemExpr, Expression iterVarDeclTranslation) {
+    return ArrayComprehension.create(listExpr, itemExpr, iterVarDeclTranslation);
+  }
+
   /**
    * Creates a code chunk representing a javascript map literal: {@code {key1: value1, key2:
    * value2}}

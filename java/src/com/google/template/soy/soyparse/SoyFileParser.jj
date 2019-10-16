@@ -3921,10 +3921,10 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
                + " \"[$foo.bar for $foo in <listExpression>]\".",
             RBRACKET);
     return new ListComprehensionNode(errorExpr(begin), "$error", createSrcLoc(begin),
-        errorExpr(begin), createSrcLoc(begin, end));
+        errorExpr(begin), createSrcLoc(begin, end),  nodeIdGen.genId());
   }
   { return new ListComprehensionNode(listExpr, listIterVar.image, createSrcLoc(listIterVar),
-       itemExpr, createSrcLoc(begin, end)); }
+       itemExpr, createSrcLoc(begin, end),  nodeIdGen.genId()); }
 }
 
 /**
