@@ -387,7 +387,7 @@ public final class GenInvocationBuildersVisitor
           String.format("/** {@%s %s} */", param.injected() ? "inject" : "param", param.name()));
       ilb.appendLine(
           String.format(
-              "%s static final SoyTemplateParam<%s> %s = ", visibility, genericType, fieldName));
+              "%s static final SoyTemplateParam<%s> %s =", visibility, genericType, fieldName));
       ilb.appendLine(
           String.format("    SoyTemplateParam.%s(\"%s\", %s);", factory, param.name(), typeToken));
       ilb.appendLine();
