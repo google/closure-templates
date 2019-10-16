@@ -1108,8 +1108,9 @@ TOKEN_MGR_DECLS: {
 | < RBRACKET: "]" >
 | < QLBRACKET: "?[" >
 | < COMMA: "," >      // Not actually an operator, part of map/list literal syntax
-| < FOR: "for" > // Not actually an operator, part of map/list comprehension syntax.
-| < IN: "in" > // Not actually an operator, part of map/list comprehension syntax.
+| < FOR: "for" >      // Not actually an operator, part of map/list comprehension syntax.
+| < IN: "in" >        // Not actually an operator, part of map/list comprehension syntax.
+| < IF: "if" >        // Not actually an operator, part of map/list comprehension syntax.
 | < LPAREN: "(" >
 | < RPAREN: ")" >
 | < VBAR: "|" >       // an operator for type unions
@@ -3617,7 +3618,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary -> "(" Expr ")" | VarRef | GlobalOrFunctionCallLike | ListLiteral | Primitive
+ * Primary -> "(" Expr ")" | VarRef | GlobalOrFunctionCallLike | List | Primitive
  */
 private ExprNode Primary() :
 {
@@ -3893,8 +3894,8 @@ private ExprNode List() :
 }
 
 /**
- * Parses list comprehensions. ListComprehension -> [ Expr for $var in Expr]. The opening "[ Expr"
- * has already been parsed by {@link #List()}.
+ * Parses list comprehensions. ListComprehension -> "[" Expr for $var in Expr [ if Expr ] "]". The
+ * opening "[ Expr" has already been parsed by {@link #List()}.
  *
  * @param begin token for the opening left bracket ("[").
  * @param itemExpr expr to perform on each item in the list (e.g. "$a+1" in [$a+1 for $a in $foo]).
@@ -3903,6 +3904,7 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
 {
   Token end, listIterVar = null;
   ExprNode listExpr = null;
+  ExprNode filterExpr = null;
   SourceLocation listIterVarIdentLocation = null;
 }
 {
@@ -3912,6 +3914,10 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
     listIterVar = <DOLLAR_IDENT>
     <IN>
     listExpr = Expr()
+    [
+      <IF>
+      filterExpr = Expr()
+    ]
     end = <RBRACKET>
   } catch (ParseException e) {
     end =
@@ -3921,10 +3927,10 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
                + " \"[$foo.bar for $foo in <listExpression>]\".",
             RBRACKET);
     return new ListComprehensionNode(errorExpr(begin), "$error", createSrcLoc(begin),
-        errorExpr(begin), createSrcLoc(begin, end),  nodeIdGen.genId());
+        errorExpr(begin), errorExpr(begin), createSrcLoc(begin, end),  nodeIdGen.genId());
   }
   { return new ListComprehensionNode(listExpr, listIterVar.image, createSrcLoc(listIterVar),
-       itemExpr, createSrcLoc(begin, end),  nodeIdGen.genId()); }
+       itemExpr, filterExpr, createSrcLoc(begin, end),  nodeIdGen.genId()); }
 }
 
 /**

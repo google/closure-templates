@@ -37,6 +37,7 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
       String listIterVarName,
       SourceLocation listIterVarNameLocation,
       ExprNode itemExpr,
+      ExprNode filterExpr,
       SourceLocation sourceLocation,
       int nodeId) {
     super(sourceLocation);
