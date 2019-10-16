@@ -30,6 +30,7 @@ import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
@@ -57,6 +58,9 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
+
+  private static final SoyErrorKind SAFE_PROTO_TYPE =
+      SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
 
   private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES =
       ImmutableMap.of(
@@ -127,6 +131,11 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(NamedTypeNode node) {
     String name = node.name();
+    SanitizedType safeProtoType = SoyTypeRegistry.SAFE_PROTO_TO_SANITIZED_TYPE.get(name);
+    if (safeProtoType != null) {
+      String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();
+      errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
+    }
     SoyType type = typeRegistry.getType(name);
     if (type == null) {
       GenericTypeInfo genericType = GENERIC_TYPES.get(name);

@@ -95,7 +95,7 @@ public class SoyTypeRegistry {
           .put("ve_data", VeDataType.getInstance())
           .build();
 
-  private static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
+  public static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
       ImmutableMap.<String, SanitizedType>builder()
           .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
           .put(SafeScriptProto.getDescriptor().getFullName(), SanitizedType.JsType.getInstance())
