@@ -345,13 +345,18 @@ It takes 1 required and 4 optional arguments.
 1.  The "numbers" keyword passed to the ICU4J's locale. For instance, it can be
     "native" so that we show native characters in languages like arabic (this
     argument is ignored for templates running in JavaScript).
+
+    NOTE: see http://userguide.icu-project.org/locale for more "numbers"
+    keywords
+
 1.  The minimum number of fractional digits to display. If this is specified but
     the fourth parameter (maximum number of fractional digits), then this is
     interpreted as significant digits. If you wish to have trailing zeros
     removed, minFractionalDigits should be set to 0.
+
 1.  The maximum number of fractional digits to display.
 
-NOTE: min and max fractional digits are not supported in the python backend.
+    NOTE: min and max fractional digits are not supported in the python backend.
 
 For example:
 
