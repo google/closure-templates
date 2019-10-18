@@ -17,8 +17,9 @@
 package com.google.template.soy.jbcsrc;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.basetree.Node;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
-import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SwitchNode;
 
 /**
@@ -56,7 +57,23 @@ abstract class SyntheticVarName {
     return new AutoValue_SyntheticVarName(forNode.getVarName() + "_length", forNode);
   }
 
+  static SyntheticVarName listComprehensionList(ListComprehensionNode node) {
+    return new AutoValue_SyntheticVarName(node.getListIterVar().name() + "_list", node);
+  }
+
+  static SyntheticVarName listComprehensionIndex(ListComprehensionNode node) {
+    return new AutoValue_SyntheticVarName(node.getListIterVar().name() + "_index", node);
+  }
+
+  static SyntheticVarName listComprehensionLength(ListComprehensionNode node) {
+    return new AutoValue_SyntheticVarName(node.getListIterVar().name() + "_length", node);
+  }
+
+  static SyntheticVarName listComprehensionResult(ListComprehensionNode node) {
+    return new AutoValue_SyntheticVarName(node.getListIterVar().name() + "_result", node);
+  }
+
   abstract String name();
 
-  abstract SoyNode declaringNode();
+  abstract Node declaringNode();
 }

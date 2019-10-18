@@ -38,6 +38,7 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -65,7 +66,6 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -461,8 +461,7 @@ final class LazyClosureCompiler {
      * <p>This constructor is called by the generate factory classes.
      */
     Expression generateConstructor(
-        final Statement superClassConstructorInvocation,
-        Iterable<ParentCapture> captures) {
+        final Statement superClassConstructorInvocation, Iterable<ParentCapture> captures) {
       final Label start = new Label();
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
@@ -554,7 +553,7 @@ final class LazyClosureCompiler {
     // These fields track all the parent captures that we need to generate.
     // NOTE: TemplateParam and LocalVar have identity semantics.  But the AST is guaranteed to not
     // have multiple copies.
-    private final Map<LocalVar, ParentCapture> localFields = new LinkedHashMap<>();
+    private final Map<AbstractLocalVarDefn<?>, ParentCapture> localFields = new LinkedHashMap<>();
     private final Map<SyntheticVarName, ParentCapture> syntheticFields = new LinkedHashMap<>();
     private ParentCapture renderContextCapture;
     private ParentCapture templateCapture;
@@ -576,7 +575,7 @@ final class LazyClosureCompiler {
     }
 
     @Override
-    public Expression getLocal(LocalVar local) {
+    public Expression getLocal(AbstractLocalVarDefn<?> local) {
       if (isDescendantOf(local.declaringNode(), params.node)) {
         // in this case, we just delegate to VariableSet
         return variableSet.getVariable(local.name());

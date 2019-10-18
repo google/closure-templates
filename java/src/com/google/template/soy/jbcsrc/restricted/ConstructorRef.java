@@ -73,6 +73,7 @@ public abstract class ConstructorRef {
         type, Method.getMethod(c), ImmutableList.copyOf(constructorType.getArgumentTypes()));
   }
 
+  public static final ConstructorRef ARRAY_LIST = create(ArrayList.class);
   public static final ConstructorRef ARRAY_LIST_SIZE = create(ArrayList.class, int.class);
   public static final ConstructorRef HASH_MAP_CAPACITY = create(HashMap.class, int.class);
   public static final ConstructorRef LINKED_HASH_MAP_CAPACITY =

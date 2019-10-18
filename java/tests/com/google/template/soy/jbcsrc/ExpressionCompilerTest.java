@@ -44,6 +44,7 @@ import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -57,7 +58,6 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
@@ -129,7 +129,7 @@ public class ExpressionCompilerTest {
             }
 
             @Override
-            public Expression getLocal(LocalVar localName) {
+            public Expression getLocal(AbstractLocalVarDefn<?> localName) {
               throw new UnsupportedOperationException();
             }
 

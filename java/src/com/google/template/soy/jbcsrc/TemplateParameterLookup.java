@@ -18,9 +18,9 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 /** A mechanism to lookup expressions for accessing template parameters. */
@@ -37,7 +37,7 @@ interface TemplateParameterLookup {
    *
    * <p>The type of the expression will be based on the kind of variable being accessed.
    */
-  Expression getLocal(LocalVar local);
+  Expression getLocal(AbstractLocalVarDefn<?> local);
 
   /**
    * Returns an expression for a given {@code @param} or {@code @inject} parameter.

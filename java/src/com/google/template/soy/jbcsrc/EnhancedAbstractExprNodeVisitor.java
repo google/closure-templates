@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -65,7 +66,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       case STATE:
         throw new AssertionError("state should have been desugared");
       case COMPREHENSION_VAR:
-        throw new IllegalStateException("Comprehension vars are not supported by jbcsrc");
+        return visitListComprehensionVar(node, (ComprehensionVarDefn) defn);
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
     }
@@ -121,6 +122,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitParam(VarRefNode varRef, TemplateParam param) {
+    return visitExprNode(varRef);
+  }
+
+  T visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
     return visitExprNode(varRef);
   }
 

@@ -18,14 +18,17 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
+import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
+import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.firstNonNull;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -49,6 +52,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
@@ -75,14 +79,19 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
+import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.Expression;
+import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
+import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -366,9 +375,104 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitListComprehensionNode(ListComprehensionNode node) {
-      // Unimplemented. Return an empty list for now.
+      ExprNode listExpr = node.getListExpr();
+      SoyExpression soyList = visit(listExpr);
+      Expression javaList;
+      if (soyList.isBoxed()) {
+        javaList = soyList.unboxAsList();
+      } else {
+        javaList = soyList.checkedCast(LIST_TYPE);
+      }
+      ExprNode mapExpr = node.getListItemExpr();
+      ExprNode filterExpr = node.getFilterExpr();
+
+      SyntheticVarName list = SyntheticVarName.listComprehensionList(node);
+      SyntheticVarName i = SyntheticVarName.listComprehensionIndex(node);
+      SyntheticVarName length = SyntheticVarName.listComprehensionLength(node);
+      SyntheticVarName result = SyntheticVarName.listComprehensionResult(node);
+
+      Scope scope = ((TemplateVariableManager) varManager).enterScope();
+      Variable listVar = scope.createSynthetic(list, javaList, STORE);
+      Variable resultVar =
+          scope.createSynthetic(result, ConstructorRef.ARRAY_LIST.construct(), STORE);
+      Variable sizeVar =
+          scope.createSynthetic(length, MethodRef.LIST_SIZE.invoke(listVar.local()), DERIVED);
+      Variable indexVar = scope.createSynthetic(i, constant(0), STORE);
+      Variable itemVar =
+          scope.create(
+              node.getListIterVar().name(),
+              MethodRef.LIST_GET
+                  .invoke(listVar.local(), indexVar.local())
+                  .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+              DERIVED);
+
+      SoyExpression visitedMap = visit(mapExpr).box();
+      SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr) : null;
+      Statement exitScope = scope.exitScope();
+
+      /*
+
+      Generates byte code for a for loop that looks more or less like:
+
+      List<?> a_list = unwrap(...);
+      List<?> a_result = new ArrayList<>();
+      int a_length = a_list.size();
+      for (int a_i = 0; a_i < a_length; a_i++) {
+        Object a = a_list.get(a_i);
+        if (filterPredicate != null && !filterPredicate.test(a)) {
+          continue;
+        }
+        a_result.add(mapFunction.apply(a));
+      }
+      return a_result;
+
+      */
       return SoyExpression.forList(
-          (ListType) node.getType(), SoyExpression.asBoxedList(ImmutableList.of()));
+              (ListType) node.getType(),
+              new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_NULLABLE) {
+                @Override
+                protected void doGen(CodeBuilder adapter) {
+                  listVar.initializer().gen(adapter); //   List<?> a_list = ...;
+                  resultVar.initializer().gen(adapter); // List<?> a_result = new ArrayList<>();
+                  sizeVar.initializer().gen(adapter); //   int a_length = a_list.size();
+                  indexVar.initializer().gen(adapter); //  int a_i = 0;
+
+                  Label loopStart = new Label();
+                  Label loopContinue = new Label();
+                  Label loopEnd = new Label();
+
+                  adapter.mark(loopStart);
+
+                  indexVar.local().gen(adapter);
+                  sizeVar.local().gen(adapter);
+                  adapter.ifICmp(Opcodes.IFGE, loopEnd); // if (a_i >= a_length) break;
+
+                  itemVar.initializer().gen(adapter); // Object a = a_list.get(a_i);
+
+                  if (visitedFilter != null) {
+                    visitedFilter.gen(adapter);
+                    BytecodeUtils.constant(false).gen(adapter);
+                    adapter.ifICmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
+                  }
+
+                  resultVar.local().gen(adapter);
+                  visitedMap.gen(adapter);
+                  MethodRef.ARRAY_LIST_ADD.invokeUnchecked(adapter); // a_result.add(map.apply(a));
+                  adapter.pop(); // pop boolean return value of List.add()
+
+                  adapter.mark(loopContinue);
+
+                  adapter.iinc(indexVar.local().index(), 1); // a_i++
+                  adapter.goTo(loopStart);
+
+                  adapter.mark(loopEnd);
+
+                  resultVar.local().gen(adapter); // "return" a_result;
+                  // exit the loop
+                  exitScope.gen(adapter);
+                }
+              })
+          .box();
     }
 
     @Override
@@ -801,6 +905,16 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
       Expression expression = parameters.getLocal(local);
+      expression = detacher.resolveSoyValueProvider(expression);
+      return SoyExpression.forSoyValue(
+          varRef.getType(),
+          expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+    }
+
+    @Override
+    SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
+      // TODO(user): Why doesn't the code in visitLetNodeVar work here?
+      Expression expression = ((TemplateVariableManager) varManager).getVariable(var.name());
       expression = detacher.resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(
           varRef.getType(),

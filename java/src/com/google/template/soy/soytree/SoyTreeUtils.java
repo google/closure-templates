@@ -384,7 +384,7 @@ public final class SoyTreeUtils {
   // Miscellaneous.
 
   /** Returns true if {@code node} is a descendant of {@code ancestor}. */
-  public static boolean isDescendantOf(SoyNode node, SoyNode ancestor) {
+  public static boolean isDescendantOf(Node node, SoyNode ancestor) {
     for (; node != null; node = node.getParent()) {
       if (ancestor == node) {
         return true;
