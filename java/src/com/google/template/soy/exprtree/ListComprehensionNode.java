@@ -30,13 +30,14 @@ import javax.annotation.Nullable;
  */
 public final class ListComprehensionNode extends AbstractParentExprNode {
   private final ComprehensionVarDefn listIterVar;
+  private final boolean hasFilter;
   private int nodeId;
 
   public ListComprehensionNode(
       ExprNode listExpr,
       String listIterVarName,
       SourceLocation listIterVarNameLocation,
-      ExprNode itemExpr,
+      ExprNode itemMapExpr,
       ExprNode filterExpr,
       SourceLocation sourceLocation,
       int nodeId) {
@@ -45,7 +46,14 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
     this.nodeId = nodeId;
 
     addChild(listExpr);
-    addChild(itemExpr);
+    addChild(itemMapExpr);
+
+    if (filterExpr != null) {
+      hasFilter = true;
+      addChild(filterExpr);
+    } else {
+      hasFilter = false;
+    }
   }
 
   /**
@@ -56,6 +64,7 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   private ListComprehensionNode(ListComprehensionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.listIterVar = new ComprehensionVarDefn(orig.listIterVar, this);
+    this.hasFilter = orig.hasFilter;
     this.nodeId = orig.nodeId;
     copyState.updateRefs(orig.listIterVar, this.listIterVar);
   }
@@ -69,19 +78,22 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
     return listIterVar;
   }
 
-  /** Gets the listExpr in "[itemExpr for $var in listExpr]". */
+  /** Gets the listExpr in "[itemMapExpr for $var in listExpr]". */
   public ExprNode getListExpr() {
     return checkNotNull(getChild(0));
   }
 
-  /** Gets the itemExpr in "[itemExpr for $var in listExpr]". */
-  public ExprNode getListItemExpr() {
+  /** Gets the itemMapExpr in "[itemMapExpr for $var in listExpr]". */
+  public ExprNode getListItemTransformExpr() {
     return checkNotNull(getChild(1));
   }
 
+  /** Gets the filterExpr in "[itemMapExpr for $var in listExpr if filterExpr]". */
   @Nullable
   public ExprNode getFilterExpr() {
-    // TODO(user): Implement if filter
+    if (hasFilter) {
+      return checkNotNull(getChild(2));
+    }
     return null;
   }
 
@@ -95,9 +107,19 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
 
   @Override
   public String toSourceString() {
+    if (hasFilter) {
+      return String.format(
+          "[%s for %s in %s if %s]",
+          getListItemTransformExpr().toSourceString(),
+          listIterVar.name(),
+          getListExpr().toSourceString(),
+          getFilterExpr().toSourceString());
+    }
     return String.format(
         "[%s for %s in %s]",
-        getListItemExpr().toSourceString(), listIterVar.name(), getListExpr().toSourceString());
+        getListItemTransformExpr().toSourceString(),
+        listIterVar.name(),
+        getListExpr().toSourceString());
   }
 
   @Override

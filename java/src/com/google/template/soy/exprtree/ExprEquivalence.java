@@ -83,7 +83,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
           return Objects.hash(
               node.getListIterVar(),
               node.getListExpr(),
-              node.getListItemExpr(),
+              node.getListItemTransformExpr(),
               node.getFilterExpr());
         }
 

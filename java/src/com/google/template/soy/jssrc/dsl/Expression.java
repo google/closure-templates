@@ -217,8 +217,11 @@ public abstract class Expression extends CodeChunk {
 
   /** Creates a code chunk representing a javascript array comprehension. */
   public static Expression arrayComprehension(
-      Expression listExpr, Expression itemExpr, Expression iterVarDeclTranslation) {
-    return ArrayComprehension.create(listExpr, itemExpr, iterVarDeclTranslation);
+      Expression listExpr,
+      Expression itemExpr,
+      Expression iterVarDeclTranslation,
+      Expression filterExpr) {
+    return ArrayComprehension.create(listExpr, itemExpr, iterVarDeclTranslation, filterExpr);
   }
 
   /**

@@ -383,7 +383,7 @@ final class ExpressionCompiler {
       } else {
         javaList = soyList.checkedCast(LIST_TYPE);
       }
-      ExprNode mapExpr = node.getListItemExpr();
+      ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
       SyntheticVarName list = SyntheticVarName.listComprehensionList(node);
@@ -408,6 +408,7 @@ final class ExpressionCompiler {
 
       SoyExpression visitedMap = visit(mapExpr).box();
       SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr) : null;
+
       Statement exitScope = scope.exitScope();
 
       /*

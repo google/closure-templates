@@ -266,14 +266,17 @@ public final class ResolveNamesPass extends CompilerFilePass {
     @Override
     protected void visitListComprehensionNode(ListComprehensionNode node) {
       // Visit the list expr.
-      visit(node.getChild(0));
+      visit(node.getListExpr());
 
       // Define the list item variable.
       localVariables.enterScope();
       localVariables.define(node.getListIterVar(), node);
 
-      // Now we can visit the list item expression.
-      visit(node.getChild(1));
+      // Now we can visit the list item map and filter expressions.
+      if (node.getFilterExpr() != null) {
+        visit(node.getFilterExpr());
+      }
+      visit(node.getListItemTransformExpr());
       localVariables.exitScope();
     }
 

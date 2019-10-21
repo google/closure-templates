@@ -246,7 +246,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     if (!(listValue instanceof SoyList)) {
       throw RenderException.create(String.format("List expression is not a list: %s", listValue));
     }
-    ExprNode mapExpr = node.getListItemExpr();
+    ExprNode mapExpr = node.getListItemTransformExpr();
     ExprNode filterExpr = node.getFilterExpr();
     ComprehensionVarDefn itemName = node.getListIterVar();
     ImmutableList.Builder<SoyValueProvider> mappedValues = ImmutableList.builder();

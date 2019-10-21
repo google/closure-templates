@@ -277,7 +277,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression listIterVarTranslation = addMappingForComprehensionVarDecl(node);
 
     return arrayComprehension(
-        visit(node.getListExpr()), visit(node.getListItemExpr()), listIterVarTranslation);
+        visit(node.getListExpr()),
+        visit(node.getListItemTransformExpr()),
+        listIterVarTranslation,
+        node.getFilterExpr() == null ? null : visit(node.getFilterExpr()));
   }
 
   @Override
