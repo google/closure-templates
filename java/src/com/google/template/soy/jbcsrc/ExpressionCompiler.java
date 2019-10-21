@@ -449,11 +449,11 @@ final class ExpressionCompiler {
 
                   itemVar.initializer().gen(adapter); // Object a = a_list.get(a_i);
 
-                  if (visitedFilter != null) {
-                    visitedFilter.gen(adapter);
-                    BytecodeUtils.constant(false).gen(adapter);
-                    adapter.ifICmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
-                  }
+                  // if (visitedFilter != null) {
+                  //   visitedFilter.gen(adapter);
+                  //   BytecodeUtils.constant(false).gen(adapter);
+                  //   adapter.ifICmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
+                  // }
 
                   resultVar.local().gen(adapter);
                   visitedMap.gen(adapter);
