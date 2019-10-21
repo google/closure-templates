@@ -407,7 +407,7 @@ final class ExpressionCompiler {
               DERIVED);
 
       SoyExpression visitedMap = visit(mapExpr).box();
-      SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr) : null;
+      SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr).coerceToBoolean() : null;
 
       Statement exitScope = scope.exitScope();
 
@@ -450,11 +450,14 @@ final class ExpressionCompiler {
 
                   itemVar.initializer().gen(adapter); // Object a = a_list.get(a_i);
 
-                  // if (visitedFilter != null) {
-                  //   visitedFilter.gen(adapter);
-                  //   BytecodeUtils.constant(false).gen(adapter);
-                  //   adapter.ifICmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
-                  // }
+                  if (visitedFilter != null) {
+                    visitedFilter.gen(adapter);
+                    BytecodeUtils.constant(false).gen(adapter);
+                    adapter.ifCmp(
+                        Type.BOOLEAN_TYPE,
+                        Opcodes.IFEQ,
+                        loopContinue); // if (!filter.test(a)) continue;
+                  }
 
                   resultVar.local().gen(adapter);
                   visitedMap.gen(adapter);
