@@ -349,9 +349,9 @@ public final class ValidatorErrorReporter {
     if (method.inInterface()) {
       userMethod = "createInterfaceMethod";
       maybeNot = "not ";
-      correctMethod = "createMethod";
+      correctMethod = "create";
     } else {
-      userMethod = "createMethod";
+      userMethod = "create";
       maybeNot = "";
       correctMethod = "createInterfaceMethod";
     }
