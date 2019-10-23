@@ -4215,7 +4215,6 @@ goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ?
  *
  * You should never need to throw goog.debug.Error(msg) directly, Error(msg) is
  * sufficient.
- *
  */
 
 goog.provide('goog.debug.Error');
@@ -4356,8 +4355,6 @@ goog.dom.NodeType = {
  * goog.asserts.assert(value);
  * // "value" is of type {!Object} at this point.
  * </code>
- *
- * @author agrieve@google.com (Andrew Grieve)
  */
 
 goog.provide('goog.asserts');
@@ -4795,8 +4792,6 @@ goog.asserts.getType_ = function(value) {
 
 /**
  * @fileoverview Utilities for manipulating arrays.
- *
- * @author arv@google.com (Erik Arvidsson)
  */
 
 
@@ -6919,8 +6914,6 @@ goog.string.internal.compareElements_ = function(left, right) {
  * @visibility {//javascript/closure/useragent:__subpackages__}
  * @visibility {//testing/puppet/modules:__pkg__}
  * @visibility {:util_legacy_users}
- *
- * @author nnaze@google.com (Nathan Naze)
  */
 
 goog.provide('goog.labs.userAgent.util');
@@ -7066,7 +7059,6 @@ goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
 
 /**
  * @fileoverview Utilities for manipulating objects/maps/hashes.
- * @author arv@google.com (Erik Arvidsson)
  */
 
 goog.provide('goog.object');
@@ -7847,8 +7839,6 @@ goog.object.getSuperClass = function(constructor) {
  * For more information on rendering engine, platform, or device see the other
  * sub-namespaces in goog.labs.userAgent, goog.labs.userAgent.platform,
  * goog.labs.userAgent.device respectively.)
- *
- * @author martone@google.com (Andy Martone)
  */
 
 goog.provide('goog.labs.userAgent.browser');
@@ -8609,8 +8599,6 @@ goog.dom.asserts.getWindow_ = function(o) {
  *
  * More about these can be found at
  * https://github.com/google/guava/wiki/FunctionalExplained
- *
- * @author nicksantos@google.com (Nick Santos)
  */
 
 
@@ -15743,8 +15731,6 @@ goog.dom.safe.createImageFromBlob = function(blob) {
 
 /**
  * @fileoverview Utilities for string manipulation.
- * @author pupius@google.com (Daniel Pupius)
- * @author arv@google.com (Erik Arvidsson)
  */
 
 
@@ -17202,7 +17188,6 @@ goog.string.editDistance = function(a, b) {
  * @see http://en.wikipedia.org/wiki/User_agent
  * For more information on browser brand, platform, or device see the other
  * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
- *
  */
 
 goog.provide('goog.labs.userAgent.engine');
@@ -17362,7 +17347,6 @@ goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
  * For more information on browser brand, rendering engine, or device see the
  * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
  * respectively).
- *
  */
 
 goog.provide('goog.labs.userAgent.platform');
@@ -17544,8 +17528,6 @@ goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
 
 /**
  * @fileoverview Useful compiler idioms.
- *
- * @author johnlenz@google.com (John Lenz)
  */
 
 goog.provide('goog.reflect');
@@ -17687,7 +17669,6 @@ goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
  * @see <a href="http://www.useragentstring.com/">User agent strings</a>
  * For information on the browser brand (such as Safari versus Chrome), see
  * goog.userAgent.product.
- * @author arv@google.com (Erik Arvidsson)
  * @see ../demos/useragent.html
  */
 
@@ -18974,7 +18955,6 @@ goog.debug.freeze = function(arg) {
 
 /**
  * @fileoverview Browser capability checks for the dom package.
- *
  */
 
 
@@ -19821,7 +19801,6 @@ goog.math.Coordinate.prototype.rotateDegrees = function(degrees, opt_center) {
 
 /**
  * @fileoverview A utility class for representing two-dimensional sizes.
- * @author brenneman@google.com (Shawn Brenneman)
  */
 
 
@@ -20056,7 +20035,6 @@ goog.math.Size.prototype.scaleToFit = function(target) {
  * to a different document object.  This is useful if you are working with
  * frames or multiple windows.
  *
- * @author arv@google.com (Erik Arvidsson)
  * @suppress {strictMissingProperties}
  */
 
@@ -23372,7 +23350,6 @@ goog.dom.DomHelper.prototype.getCanvasContext2D = goog.dom.getCanvasContext2D;
 
 /**
  * @fileoverview Collection of utility functions for Unicode character.
- *
  */
 
 goog.provide('goog.i18n.uChar');
@@ -23669,7 +23646,6 @@ goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
 /**
  * @fileoverview Provides inversion and inversion map functionality for storing
  * integer ranges and corresponding values.
- *
  */
 
 goog.provide('goog.structs.InversionMap');
@@ -23829,7 +23805,6 @@ goog.structs.InversionMap.prototype.getLeast = function(intKey) {
  * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
  *
  * Reference: http://unicode.org/reports/tr29
- *
  */
 
 goog.provide('goog.i18n.GraphemeBreak');
@@ -24277,7 +24252,6 @@ goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
 
 /**
  * @fileoverview Provides utility functions for formatting strings, numbers etc.
- *
  */
 
 goog.provide('goog.format');
@@ -33554,7 +33528,6 @@ switch (goog.LOCALE) {
  * popular currencies (like USD, EUR) and currencies somewhat relevant in the
  * area (like CNY in HK, though native currency is HKD). There is no guarantee
  * of uniqueness.
- *
  */
 
 
@@ -38987,7 +38960,6 @@ goog.i18n.NumberFormat.prototype.isCurrencyCodeBeforeValue = function() {
 
 /**
  * @fileoverview Python style iteration utilities.
- * @author arv@google.com (Erik Arvidsson)
  */
 
 
@@ -40278,7 +40250,6 @@ goog.iter.combinationsWithReplacement = function(iterable, length) {
 /**
  * @fileoverview Datastructure: Hash Map.
  *
- * @author arv@google.com (Erik Arvidsson)
  *
  * This file contains an implementation of a Map structure. It implements a lot
  * of the methods used in goog.structs so those functions work on hashes. This
@@ -40734,7 +40705,6 @@ goog.structs.Map.hasKey_ = function(obj, key) {
 /**
  * @fileoverview Generics method for collection-like classes and objects.
  *
- * @author arv@google.com (Erik Arvidsson)
  *
  * This file contains functions to work with collections. It supports using
  * Map, Set, Array and Object and other classes that implement collection-like
@@ -41116,9 +41086,6 @@ goog.structs.every = function(col, f, opt_obj) {
  *
  * Uses features of RFC 3986 for parsing/formatting URIs:
  *   http://www.ietf.org/rfc/rfc3986.txt
- *
- * @author gboyer@google.com (Garrett Boyer) - The "lightened" design.
- * @author msamuel@google.com (Mike Samuel) - Domain knowledge and regexes.
  */
 
 goog.provide('goog.uri.utils');
@@ -42205,8 +42172,6 @@ goog.uri.utils.makeUnique = function(uri) {
  * Some changes have been made to the interface (more like .NETs), though the
  * internal representation is now of un-encoded parts, this will change the
  * behavior slightly.
- *
- * @author msamuel@google.com (Mike Samuel)
  */
 
 goog.provide('goog.Uri');
@@ -43727,8 +43692,6 @@ goog.Uri.QueryData.prototype.extend = function(var_args) {
  *
  * The goal is to encompass data types used by Soy, especially to mark content
  * as known to be "safe".
- *
- * @author gboyer@google.com (Garrett Boyer)
  */
 
 goog.provide('goog.soy.data.SanitizedContent');
@@ -44248,7 +44211,6 @@ goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
 
 /**
  * @fileoverview Provides utility methods to render soy template.
- * @author chrishenry@google.com (Chris Henry)
  */
 
 goog.provide('goog.soy');

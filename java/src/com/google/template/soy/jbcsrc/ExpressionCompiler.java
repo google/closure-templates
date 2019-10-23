@@ -391,6 +391,7 @@ final class ExpressionCompiler {
       SyntheticVarName length = SyntheticVarName.listComprehensionLength(node);
       SyntheticVarName result = SyntheticVarName.listComprehensionResult(node);
 
+      // TODO(b/143239042): Stop downcasting.
       Scope scope = ((TemplateVariableManager) varManager).enterScope();
       Variable listVar = scope.createSynthetic(list, javaList, STORE);
       Variable resultVar =
@@ -918,6 +919,7 @@ final class ExpressionCompiler {
     @Override
     SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
       // TODO(user): Why doesn't the code in visitLetNodeVar work here?
+      // TODO(b/143239042): Stop downcasting.
       Expression expression = ((TemplateVariableManager) varManager).getVariable(var.name());
       expression = detacher.resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(
@@ -1357,7 +1359,8 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
-      return areAllChildrenConstant(node);
+      // TODO(b/143239042): Return true when this is actually constant.
+      return false;
     }
 
     @Override
