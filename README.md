@@ -80,4 +80,3 @@ frameworks. Here are a few options for getting started:
   * https://github.com/andrewpmckenzie/generator-closure-stack
 * Bazel
   * https://github.com/bazelbuild/rules_closure/#closure_js_template_library
-  * https://github.com/mknichel/closure-templates-bazel
