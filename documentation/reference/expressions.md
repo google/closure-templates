@@ -378,6 +378,27 @@ NOTE: The checks done by the binary operator `?:` and the ternary operator `? :`
 are different. Specifically, `$a ?: $b` is not equivalent to `$a ? $a : $b`.
 Rather, the former expression is equivalent to `isNonnull($a) ? $a : $b`.
 
+## List Comprehensions
+
+List comprehensions can be used to transform and/or filter a list into a new
+list.
+
+For example:
+
+`[$a + 1 for $a in $myList]`
+
+If `$myList` were `[1, 2, 3, 4, 5]`, the expression above would evaluate to:
+
+`[2, 3, 4, 5, 6]`
+
+List comprehensions also accept an optional **filter expression**, such as:
+
+`[$a + 1 for $a in $myList if $a >= 3]`
+
+For the original `$myList` value above, this would evaluate to:
+
+`[4, 5, 6]`
+
 ## Function calls
 
 Function calls consist of an identifier with a number of positional parameters:
