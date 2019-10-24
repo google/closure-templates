@@ -250,6 +250,24 @@ public final class PyExprUtils {
     return new PyExpr("{" + joiner.join(values) + "}", Integer.MAX_VALUE);
   }
 
+  public static PyExpr genPyListComprehensionExpr(
+      PyExpr listExpr, PyExpr transformExpr, PyExpr filterExpr, String varName) {
+
+    // Generate code for "[transformExpr for $foo in listExpr".
+    String genCodeString =
+        "[" + transformExpr.getText() + " for " + varName + " in " + listExpr.getText();
+
+    // Add the "if filterExpr", if present.
+    if (filterExpr != null) {
+      genCodeString += " if " + filterExpr.getText();
+    }
+
+    // Close the list comprehension.
+    genCodeString += "]";
+
+    return new PyExpr(genCodeString, Integer.MAX_VALUE);
+  }
+
   private static PyExpr convertIterableToPyExpr(Iterable<?> iterable, boolean asArray) {
     List<String> values = new ArrayList<>();
     String leftDelimiter = "[";
