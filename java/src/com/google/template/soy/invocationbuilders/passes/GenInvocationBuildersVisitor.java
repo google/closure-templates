@@ -364,8 +364,11 @@ public final class GenInvocationBuildersVisitor
         }
       }
 
-      // Only injected params need to be public, so that they can be used with TemplateParamModule.
-      String visibility = param.injected() && !"?".equals(genericType) ? "public" : "private";
+      // Make any param that supports type literal public so it can be used with
+      // TemplateParamModule, SoyTemplateData, AbstractBuilder, and tests. Union types, records, and
+      // CSS params will be private since they can't be represented as a single specific type
+      // literal.
+      String visibility = !"?".equals(genericType) ? "public" : "private";
 
       // These values correspond to static factory methods on SoyTemplateParam.
       CodeGenUtils.Member factory = OPTIONAL_P;

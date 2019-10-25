@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.ForOverride;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,7 +85,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
    * <p>Instances of this abstract class are not thread safe.
    */
   public abstract static class AbstractBuilder<
-      B extends AbstractBuilder<?, T>, T extends BaseSoyTemplateImpl> {
+      B extends AbstractBuilder<?, T>, T extends SoyTemplate> {
     private final String templateName;
     private final ImmutableMap<String, SoyTemplateParam<?>> params;
     private final SoyValueConverter soyValueConverter;
@@ -115,11 +116,6 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     @ForOverride
     protected abstract T buildInternal(String name, ImmutableMap<String, SoyValueProvider> data);
 
-    //
-    // The following are protected utility methods used by generated code in order to make the
-    // generated code more succinct and less error prone.
-    //
-
     /**
      * Sets an arbitrary parameter to an arbitrary value.
      *
@@ -133,6 +129,40 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       data.put(name, soyValue);
       return (B) this;
     }
+
+    /**
+     * Sets any template parameter of this builder. SoyTemplateParam ensures type safety.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    public <V> B setParam(SoyTemplateParam<? super V> param, V value) {
+      if (!params.containsValue(param)) {
+        throw new IllegalArgumentException(
+            "No param in " + this.getClass().getName() + " like " + param);
+      }
+      return setParam(param.getName(), value);
+    }
+
+    /**
+     * Sets any template parameter of this builder to a future value. SoyTemplateParam ensures type
+     * safety.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    public <V> B setParamFuture(SoyTemplateParam<? super V> param, ListenableFuture<V> value) {
+      if (!params.containsValue(param)) {
+        throw new IllegalArgumentException(
+            "No param in " + this.getClass().getName() + " like " + param);
+      }
+      return setParam(param.getName(), value);
+    }
+
+    //
+    // The following are protected utility methods used by generated code in order to make the
+    // generated code more succinct and less error prone.
+    //
 
     /**
      * Adds an arbitrary value to a list valued named parameter.

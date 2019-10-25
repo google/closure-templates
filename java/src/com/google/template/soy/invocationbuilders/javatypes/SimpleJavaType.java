@@ -140,11 +140,6 @@ public class SimpleJavaType extends JavaType {
     public AttributesJavaType asNullable() {
       return new AttributesJavaType(true);
     }
-
-    @Override
-    public boolean isTypeLiteralSupported() {
-      return true;
-    }
   }
 
   private static final class CssJavaType extends SimpleJavaType {
@@ -165,6 +160,7 @@ public class SimpleJavaType extends JavaType {
 
     @Override
     public boolean isTypeLiteralSupported() {
+      // Not supported because there's no hook to unwrap the value.
       return false;
     }
   }

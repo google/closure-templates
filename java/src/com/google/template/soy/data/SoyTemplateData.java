@@ -43,12 +43,13 @@ public final class SoyTemplateData {
       soyValueConverter = SoyValueConverter.INSTANCE;
     }
 
-    public <T> Builder setParam(SoyTemplateParam<T> param, T value) {
+    public <T> Builder setParam(SoyTemplateParam<? super T> param, T value) {
       data.put(param.getName(), soyValueConverter.convert(value));
       return this;
     }
 
-    public <T> Builder setParamFuture(SoyTemplateParam<T> param, ListenableFuture<T> value) {
+    public <T> Builder setParamFuture(
+        SoyTemplateParam<? super T> param, ListenableFuture<T> value) {
       data.put(param.getName(), soyValueConverter.convert(value));
       return this;
     }
