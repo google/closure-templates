@@ -1077,19 +1077,21 @@ public final class SoyFileSet {
    */
   ParseResult compileMinimallyForHeaders() {
     return entryPoint(
-        () ->
-            parse(
-                passManagerBuilder()
-                    // Because we allow this for JS generated templates, we allow this for
-                    // headers.
-                    // TODO(lukes): remove this in favor of allowUnknownJsGlobals
-                    .allowUnknownGlobals()
-                    .allowUnknownJsGlobals()
-                    // Only run passes that not cross template checking.
-                    .addPassContinuationRule(
-                        CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
-                    .allowV1Expression(),
-                typeRegistry));
+        () -> {
+          disallowExternalCalls();
+          return parse(
+              passManagerBuilder()
+                  // Because we allow this for JS generated templates, we allow this for
+                  // headers.
+                  // TODO(lukes): remove this in favor of allowUnknownJsGlobals
+                  .allowUnknownGlobals()
+                  .allowUnknownJsGlobals()
+                  // Only run passes that not cross template checking.
+                  .addPassContinuationRule(
+                      CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
+                  .allowV1Expression(),
+              typeRegistry);
+        });
   }
 
   ImmutableMap<String, SoyFunction> getSoyFunctions() {
