@@ -49,15 +49,24 @@ attributes['checked'] = (el: Element, name: string, value: any) => {
   //    the checked value should be true, but '' is falsy.
   // 2. If value is 'false', the checked value should be false, but
   //    'false' is truthy.
-  el.setAttribute('checked', value);
-  (el as HTMLInputElement).checked =
-      !(value === false || value === 'false' || value === undefined);
+  if (value == null) {
+    el.removeAttribute('checked');
+    (el as HTMLInputElement).checked = false;
+  } else {
+    el.setAttribute('checked', value);
+    (el as HTMLInputElement).checked = !(value === false || value === 'false');
+  }
 };
 
 // tslint:disable-next-line:no-any
 attributes['value'] = (el: Element, name: string, value: any) => {
-  (el as HTMLInputElement).value = value;
-  el.setAttribute('value', value);
+  if (value == null) {
+    el.removeAttribute('value');
+    (el as HTMLInputElement).value = '';
+  } else {
+    el.setAttribute('value', value);
+    (el as HTMLInputElement).value = value;
+  }
 };
 
 // Soy uses the {key} command syntax, rather than HTML attributes, to
