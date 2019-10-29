@@ -120,6 +120,7 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
       const skipHandler = this.skipHandler || maybeSkipHandler;
       if (skipHandler!
           (this as unknown as TInterface, newNode as unknown as TInterface)) {
+        this.data = newNode.data;
         return true;
       }
     }
