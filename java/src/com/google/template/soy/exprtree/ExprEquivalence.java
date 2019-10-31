@@ -105,6 +105,11 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         }
 
         @Override
+        protected Integer visitVeLiteralNode(VeLiteralNode node) {
+          return Objects.hash(node.getId(), node.getName(), node.getType().toString());
+        }
+
+        @Override
         protected Integer visitBooleanNode(BooleanNode node) {
           return Boolean.valueOf(node.getValue()).hashCode();
         }
@@ -227,6 +232,14 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         return false;
       }
       return protoInitFields(node).equals(protoInitFields(otherNode));
+    }
+
+    @Override
+    protected Boolean visitVeLiteralNode(VeLiteralNode node) {
+      VeLiteralNode otherNode = (VeLiteralNode) other;
+      return node.getId().equals(otherNode.getId())
+          && node.getName().equals(otherNode.getName())
+          && node.getType().toString().equals(otherNode.getType().toString());
     }
 
     @Override
