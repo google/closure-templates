@@ -798,10 +798,10 @@ public final class EscapingConventions {
      * Matches a CSS token that can appear unquoted as part of an ID, class, font-family-name, or
      * CSS keyword value.
      */
-    public static final Pattern CSS_WORD =
+    private static final Pattern CSS_WORD =
         Pattern.compile(
-            // See http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
-            // #RULE_.234_-_CSS_Escape_Before_Inserting_Untrusted_Data_into_HTML_Style_Property_Values
+            // See
+            // https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html#rule-4---css-escape-and-strictly-validate-before-inserting-untrusted-data-into-html-style-property-values
             // for an explanation of why expression and moz-binding are bad.
             "^(?!-*(?:expression|(?:moz-)?binding))"
                 + "(?:(?:"
@@ -813,8 +813,8 @@ public final class EscapingConventions {
                 "-?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[a-z]{1,4}|%)?|"
                 + // The special value !important.
                 "!important)"
-                + // Spaces.
-                "(?:\\s+|\\z)"
+                + // Spaces and commas (for property value lists).
+                "(?:\\s*[, ]\\s*|\\z)"
                 + ")*\\z",
             Pattern.CASE_INSENSITIVE);
 

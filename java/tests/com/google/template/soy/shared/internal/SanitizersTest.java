@@ -177,6 +177,16 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("#aabbcc")).isEqualTo("#aabbcc");
     assertThat(Sanitizers.filterCssValue("0px 5px 10px  rgba(0,0,0, 0.3)"))
         .isEqualTo("0px 5px 10px  rgba(0,0,0, 0.3)");
+    assertThat(Sanitizers.filterCssValue("hello, goodbye")).isEqualTo("hello, goodbye");
+    assertThat(Sanitizers.filterCssValue("hello, goodbye, ")).isEqualTo("hello, goodbye, ");
+    assertThat(Sanitizers.filterCssValue("hello,goodbye")).isEqualTo("hello,goodbye");
+    assertThat(Sanitizers.filterCssValue("hello, goodbye,")).isEqualTo("hello, goodbye,");
+    assertThat(Sanitizers.filterCssValue("rgb(1,2,3),hsl(4,5,6)"))
+        .isEqualTo("rgb(1,2,3),hsl(4,5,6)");
+    assertThat(Sanitizers.filterCssValue("rgb(1,2,3) 14px")).isEqualTo("rgb(1,2,3) 14px");
+    assertThat(Sanitizers.filterCssValue("hello  ,  maybe ,goodbye , "))
+        .isEqualTo("hello  ,  maybe ,goodbye , ");
+
     assertThat(Sanitizers.filterCssValue(" ")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("expression")).isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue(StringData.forValue("expression"))).isEqualTo("zSoyz");
@@ -187,6 +197,9 @@ public class SanitizersTest {
     assertThat(Sanitizers.filterCssValue("</style><script>alert('foo')</script>/*"))
         .isEqualTo("zSoyz");
     assertThat(Sanitizers.filterCssValue("color:expression('whatever')")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue(",hello")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterCssValue("rgb(1,2,3)14px")).isEqualTo("zSoyz");
+
     assertThat(
             Sanitizers.filterCssValue(
                 UnsafeSanitizedContentOrdainer.ordainAsSafe(
