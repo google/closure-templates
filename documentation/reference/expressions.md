@@ -378,7 +378,7 @@ NOTE: The checks done by the binary operator `?:` and the ternary operator `? :`
 are different. Specifically, `$a ?: $b` is not equivalent to `$a ? $a : $b`.
 Rather, the former expression is equivalent to `isNonnull($a) ? $a : $b`.
 
-## List Comprehensions
+## List comprehensions
 
 List comprehensions can be used to transform and/or filter a list into a new
 list.
