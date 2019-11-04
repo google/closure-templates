@@ -4686,6 +4686,7 @@ goog.asserts.assertBoolean = function(value, opt_message, var_args) {
  *     enabled.
  * @throws {goog.asserts.AssertionError} When the value is not an Element.
  * @closurePrimitive {asserts.matchesReturn}
+ * @deprecated Use goog.asserts.dom.assertIsElement instead.
  */
 goog.asserts.assertElement = function(value, opt_message, var_args) {
   if (goog.asserts.ENABLE_ASSERTS &&
@@ -4703,6 +4704,11 @@ goog.asserts.assertElement = function(value, opt_message, var_args) {
  * goog.asserts.ENABLE_ASSERTS is true.
  *
  * The compiler may tighten the type returned by this function.
+ *
+ * Do not use this to ensure a value is an HTMLElement or a subclass! Cross-
+ * document DOM inherits from separate - though identical - browser classes, and
+ * such a check will unexpectedly fail. Please use the methods in
+ * goog.asserts.dom for these purposes.
  *
  * @param {?} value The value to check.
  * @param {function(new: T, ...)} type A user-defined constructor.
@@ -8325,6 +8331,7 @@ goog.dom.asserts.assertIsElementType_ = function(o, typename) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLAnchorElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlAnchorElement instead.
  */
 goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
   return /** @type {!HTMLAnchorElement} */ (
@@ -8339,6 +8346,7 @@ goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLButtonElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlButtonElement instead.
  */
 goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
   return /** @type {!HTMLButtonElement} */ (
@@ -8353,6 +8361,7 @@ goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLLinkElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlLinkElement instead.
  */
 goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
   return /** @type {!HTMLLinkElement} */ (
@@ -8367,6 +8376,7 @@ goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLImageElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlImageElement instead.
  */
 goog.dom.asserts.assertIsHTMLImageElement = function(o) {
   return /** @type {!HTMLImageElement} */ (
@@ -8381,6 +8391,7 @@ goog.dom.asserts.assertIsHTMLImageElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLAudioElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlAudioElement instead.
  */
 goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
   return /** @type {!HTMLAudioElement} */ (
@@ -8395,6 +8406,7 @@ goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLVideoElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlVideoElement instead.
  */
 goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
   return /** @type {!HTMLVideoElement} */ (
@@ -8409,6 +8421,7 @@ goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLInputElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlInputElement instead.
  */
 goog.dom.asserts.assertIsHTMLInputElement = function(o) {
   return /** @type {!HTMLInputElement} */ (
@@ -8423,6 +8436,7 @@ goog.dom.asserts.assertIsHTMLInputElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLTextAreaElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlTextAreaElement instead.
  */
 goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
   return /** @type {!HTMLTextAreaElement} */ (
@@ -8437,6 +8451,7 @@ goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLCanvasElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlCanvasElement instead.
  */
 goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
   return /** @type {!HTMLCanvasElement} */ (
@@ -8451,6 +8466,7 @@ goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLEmbedElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlEmbedElement instead.
  */
 goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
   return /** @type {!HTMLEmbedElement} */ (
@@ -8465,6 +8481,7 @@ goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLFormElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlFormElement instead.
  */
 goog.dom.asserts.assertIsHTMLFormElement = function(o) {
   return /** @type {!HTMLFormElement} */ (
@@ -8479,6 +8496,7 @@ goog.dom.asserts.assertIsHTMLFormElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLFrameElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlFrameElement instead.
  */
 goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
   return /** @type {!HTMLFrameElement} */ (
@@ -8493,6 +8511,7 @@ goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLIFrameElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlIFrameElement instead.
  */
 goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
   return /** @type {!HTMLIFrameElement} */ (
@@ -8507,6 +8526,7 @@ goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLObjectElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlObjectElement instead.
  */
 goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
   return /** @type {!HTMLObjectElement} */ (
@@ -8521,6 +8541,7 @@ goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
  *
  * @param {?Object} o The object whose type to assert.
  * @return {!HTMLScriptElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlScriptElement instead.
  */
 goog.dom.asserts.assertIsHTMLScriptElement = function(o) {
   return /** @type {!HTMLScriptElement} */ (
