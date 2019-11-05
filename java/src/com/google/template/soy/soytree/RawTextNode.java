@@ -510,7 +510,11 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
       if (startTextIndex == endTextIndex) {
         // special case
         builder.setEndLocation(startLine, startColumn);
-        return builder.build(substringLength, startReason);
+
+        Reason afterLastCharacter =
+            endTextIndex + 1 == text.length() ? getReasonAt(text.length()) : startReason;
+
+        return builder.build(substringLength, /*reason=*/ afterLastCharacter);
       }
 
       // copy over all offsets, taking care to modify the indexes
@@ -531,6 +535,9 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
           break;
         }
         i++;
+      }
+      if (endTextIndex + 1 == text.length()) {
+        endReason = getReasonAt(text.length());
       }
 
       return builder.build(substringLength, endReason);

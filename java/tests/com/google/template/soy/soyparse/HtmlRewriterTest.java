@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soyparse;
 
+import static com.google.common.collect.Iterables.getLast;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -32,7 +33,9 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import java.io.StringReader;
@@ -572,6 +575,48 @@ public final class HtmlRewriterTest {
     }
   }
 
+  @Test
+  public void testLiteralPreserved() {
+    TemplateNode node = runPass("{literal}\n<style>div { color: red; }</style>   \n{/literal}");
+    assertThatASTString(node)
+        .isEqualTo(
+            ""
+                + "RAW_TEXT_NODE\n"
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "");
+    StandaloneNode last = getLast(node.getChildren());
+    assertThat(last).isInstanceOf(RawTextNode.class);
+    RawTextNode rtn = (RawTextNode) last;
+    assertThat(rtn.getRawText()).isEqualTo("   \n"); // must not be collapsed.
+    assertThat(rtn.getReasonAt(rtn.getRawText().length())).isEqualTo(Reason.LITERAL);
+  }
+
+  @Test
+  public void testOneCharLiteralPreserved() {
+    TemplateNode node = runPass("{literal}\n<style>div { color: red; }</style>\n{/literal}");
+    assertThatASTString(node)
+        .isEqualTo(
+            ""
+                + "RAW_TEXT_NODE\n"
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "");
+    StandaloneNode last = getLast(node.getChildren());
+    assertThat(last).isInstanceOf(RawTextNode.class);
+    RawTextNode rtn = (RawTextNode) last;
+    assertThat(rtn.getRawText()).isEqualTo("\n"); // must not be collapsed.
+    assertThat(rtn.getReasonAt(rtn.getRawText().length())).isEqualTo(Reason.LITERAL);
+  }
+
   private static TemplateNode runPass(String input) {
     return runPass(input, ErrorReporter.exploding());
   }
@@ -580,7 +625,8 @@ public final class HtmlRewriterTest {
   private static TemplateNode runPass(String input, ErrorReporter errorReporter) {
     String soyFile =
         Joiner.on('\n')
-            .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
+            .join(
+                "{namespace ns}", "", "{template .t stricthtml=\"false\"}" + input + "{/template}");
     SoyFileNode node =
         new SoyFileParser(
                 new IncrementingIdGenerator(), new StringReader(soyFile), "test.soy", errorReporter)
