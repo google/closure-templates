@@ -52,7 +52,7 @@ support.
 
 To get assistance you can use any of the following forums
 
-1. Look through the [documentation](https://developers.google.com/closure/templates/docs/overview).
+1. Look through the [documentation](https://github.com/google/closure-templates/tree/master/documentation).
 2. Post a question to the [closure-templates-discuss](https://groups.google.com/forum/#!forum/closure-templates-discuss)
    mailing list.
 3. File a [bug on github](https://github.com/google/closure-templates/issues)
