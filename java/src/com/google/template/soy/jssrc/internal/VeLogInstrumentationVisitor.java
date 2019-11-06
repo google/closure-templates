@@ -78,33 +78,32 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
     // VeLogValidationPass marks nodes where the first child is not either an open tag or a call as
     // needing a synthetic VE log node. Synthetic ve log nodes are handled separately in
     // GenJSCodeVisitor, so this only handles the case where the open tag is visible.
-    if (node.needsSyntheticVelogNode()) {
-      return;
+    if (!node.needsSyntheticVelogNode()) {
+      HtmlOpenTagNode tag = node.getOpenTagNode();
+      SourceLocation insertionLocation =
+          tag.getSourceLocation()
+              .getEndPoint()
+              .offset(0, tag.isSelfClosing() ? -2 : -1)
+              .asLocation(tag.getSourceLocation().getFilePath());
+      FunctionNode funcNode =
+          new FunctionNode(
+              Identifier.create(VeLogFunction.NAME, insertionLocation),
+              VeLogFunction.INSTANCE,
+              insertionLocation);
+      funcNode.addChild(node.getVeDataExpression().copy(new CopyState()));
+      if (node.getLogonlyExpression() != null) {
+        funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
+      }
+      PrintNode attributeNode =
+          new PrintNode(
+              nodeIdGen.genId(),
+              insertionLocation,
+              /* isImplicit= */ true,
+              /* expr= */ funcNode,
+              /* attributes= */ ImmutableList.of(),
+              ErrorReporter.exploding());
+      tag.addChild(attributeNode);
     }
-    HtmlOpenTagNode tag = node.getOpenTagNode();
-    SourceLocation insertionLocation =
-        tag.getSourceLocation()
-            .getEndPoint()
-            .offset(0, tag.isSelfClosing() ? -2 : -1)
-            .asLocation(tag.getSourceLocation().getFilePath());
-    FunctionNode funcNode =
-        new FunctionNode(
-            Identifier.create(VeLogFunction.NAME, insertionLocation),
-            VeLogFunction.INSTANCE,
-            insertionLocation);
-    funcNode.addChild(node.getVeDataExpression().copy(new CopyState()));
-    if (node.getLogonlyExpression() != null) {
-      funcNode.addChild(node.getLogonlyExpression().copy(new CopyState()));
-    }
-    PrintNode attributeNode =
-        new PrintNode(
-            nodeIdGen.genId(),
-            insertionLocation,
-            /* isImplicit= */ true,
-            /* expr= */ funcNode,
-            /* attributes= */ ImmutableList.of(),
-            ErrorReporter.exploding());
-    tag.addChild(attributeNode);
     visitChildrenAllowingConcurrentModification(node);
   }
 
