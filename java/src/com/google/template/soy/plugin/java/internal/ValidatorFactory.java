@@ -37,6 +37,8 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -114,6 +116,12 @@ final class ValidatorFactory extends JavaValueFactory {
 
   private static final ImmutableSet<Class<?>> PROTO_ENUM_TYPES =
       ImmutableSet.of(SoyValue.class, int.class);
+
+  private static final ImmutableSet<Class<?>> VE_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyVisualElement.class);
+
+  private static final ImmutableSet<Class<?>> VE_DATA_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyVisualElementData.class);
 
   private final ValidatorErrorReporter reporter;
 
@@ -280,7 +288,6 @@ final class ValidatorFactory extends JavaValueFactory {
       VALID,
       NULL_TO_PRIMITIVE,
       INVALID,
-      VE,
     }
 
     abstract Result result();
@@ -298,8 +305,6 @@ final class ValidatorFactory extends JavaValueFactory {
         case VALID:
           return other;
         case NULL_TO_PRIMITIVE:
-        case VE:
-          throw new IllegalStateException("unexpected merge " + this + " w/ " + other);
         case INVALID:
           // When merging, the allowed types are the intersection of each type.
           return ValidationResult.invalid(Sets.intersection(allowedTypes(), other.allowedTypes()));
@@ -320,10 +325,6 @@ final class ValidatorFactory extends JavaValueFactory {
       return new AutoValue_ValidatorFactory_ValidationResult(
           Result.INVALID, null, ImmutableSet.copyOf(allowedTypes));
     }
-
-    static ValidationResult ve(SoyType type) {
-      return new AutoValue_ValidatorFactory_ValidationResult(Result.VE, type, ImmutableSet.of());
-    }
   }
 
   /**
@@ -336,11 +337,6 @@ final class ValidatorFactory extends JavaValueFactory {
     // types, e.g, for int|null we can allow IntegerData (which will be passed as 'null').
     if (SoyTypes.isNullable(type) && Primitives.allPrimitiveTypes().contains(clazz)) {
       return ValidationResult.forNullToPrimitive(type);
-    }
-    // Also exit early if the type is a VE, since those aren't allowed as params.
-    if (SoyTypes.isKindOrUnionOfKind(type, SoyType.Kind.VE)
-        || SoyTypes.isKindOrUnionOfKind(type, SoyType.Kind.VE_DATA)) {
-      return ValidationResult.ve(type);
     }
 
     ImmutableSet<Class<?>> expectedClasses = null;
@@ -409,8 +405,11 @@ final class ValidatorFactory extends JavaValueFactory {
         }
         return result;
       case VE:
+        expectedClasses = VE_TYPES;
+        break;
       case VE_DATA:
-        throw new IllegalStateException("This should have been caught above");
+        expectedClasses = VE_DATA_TYPES;
+        break;
       case ERROR:
         throw new IllegalStateException("Cannot have error type from function signature");
     }

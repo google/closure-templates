@@ -70,14 +70,6 @@ public final class ValidatorErrorReporter {
           formatWithExpectedListAndActual("Type mismatch on the {5} parameter of {6}."),
           StyleAllowance.NO_PUNCTUATION);
 
-  private static final SoyErrorKind VE_PARAM_NOT_SUPPORTED =
-      SoyErrorKind.of(
-          formatPlain(
-              "Invalid type passed to the {4} parameter of {5}, "
-                  + "ve and ve_data types cannot be used by plugins."
-                  + "\n  passed: {3}"),
-          StyleAllowance.NO_PUNCTUATION);
-
   private static final SoyErrorKind NULL_PARAM =
       SoyErrorKind.of(
           formatWithExpectedAndActual("Passed null to the {5} parameter of {6}."),
@@ -263,13 +255,6 @@ public final class ValidatorErrorReporter {
             msg,
             expected,
             "'" + expectedType.getName() + "'",
-            (paramIdx + 1) + getOrdinalSuffix(paramIdx + 1),
-            simpleMethodName(method));
-        break;
-      case VE:
-        report(
-            VE_PARAM_NOT_SUPPORTED,
-            "soy type ('" + result.allowedSoyType() + "')",
             (paramIdx + 1) + getOrdinalSuffix(paramIdx + 1),
             simpleMethodName(method));
         break;
