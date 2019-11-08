@@ -339,7 +339,6 @@ class Logger {
 /** The ID of the UndefinedVe. */
 const UNDEFINED_VE_ID = -1;
 
-
 /**
  * Soy's runtime representation of objects of the Soy `ve` type.
  *
@@ -377,11 +376,6 @@ class $$VisualElement {
     } else {
       return 'zSoyVez';
     }
-  }
-
-  /** @package @return {string} */
-  getNameForDebugging() {
-    return goog.DEBUG ? this.name_ || '' : '';
   }
 }
 
