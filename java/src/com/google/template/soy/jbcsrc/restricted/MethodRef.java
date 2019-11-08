@@ -39,6 +39,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.SoyVisualElementFactory;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -437,7 +438,7 @@ public abstract class MethodRef {
       MethodRef.create(ProtocolMessageEnum.class, "getNumber").asCheap();
 
   public static final MethodRef SOY_VISUAL_ELEMENT_CREATE =
-      MethodRef.create(SoyVisualElement.class, "create", long.class, String.class);
+      MethodRef.create(SoyVisualElementFactory.class, "create", long.class, String.class);
 
   public static final MethodRef SOY_VISUAL_ELEMENT_DATA_CREATE =
       MethodRef.create(SoyVisualElementData.class, "create", SoyVisualElement.class, Message.class);
