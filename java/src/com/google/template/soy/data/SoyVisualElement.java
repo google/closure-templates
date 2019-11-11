@@ -23,7 +23,7 @@ import java.io.IOException;
 @AutoValue
 public abstract class SoyVisualElement extends SoyAbstractValue {
 
-  public static SoyVisualElement create(long id, String name) {
+  static SoyVisualElement create(long id, String name) {
     return new AutoValue_SoyVisualElement(id, name);
   }
 

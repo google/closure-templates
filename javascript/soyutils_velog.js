@@ -377,6 +377,11 @@ class $$VisualElement {
       return 'zSoyVez';
     }
   }
+
+  /** @return {string} */
+  getNameForDebugging() {
+    return goog.DEBUG ? this.name_ || '' : '';
+  }
 }
 
 /**
