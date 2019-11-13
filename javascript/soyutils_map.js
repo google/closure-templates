@@ -134,6 +134,7 @@ function $$populateMap(proto, jspbMap, map) {
  * Determines if the argument matches the soy.map.Map interface.
  * @param {?} map The object to check.
  * @return {boolean} True if it is a soy.map.Map, false otherwise.
+ * @suppress {missingProperties}
  */
 function $$isSoyMap(map) {
   return goog.isObject(map) && goog.isFunction(map.get) &&
