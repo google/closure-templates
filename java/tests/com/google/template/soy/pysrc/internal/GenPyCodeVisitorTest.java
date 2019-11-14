@@ -341,6 +341,54 @@ public final class GenPyCodeVisitorTest {
   }
 
   @Test
+  public void testEmptySwitch() {
+    String soyCode =
+        "{@param boo: ?}\n" + "{switch $boo}\n" + "  {case 0}\n" + "  {default}\n" + "{/switch}\n";
+    String expectedPyCode =
+        "switchValue = data.get('boo')\n"
+            + "if runtime.type_safe_eq(switchValue, 0):\n"
+            + "  pass\n"
+            + "else:\n"
+            + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptyFor() {
+    String soyCode = "{for $i in range(5)}\n" + "{/for}\n";
+    String expectedPyCode =
+        "iList### = range(5)\n" + "for iIndex###, iData### in enumerate(iList###):\n" + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptyForeach() {
+    String soyCode = "{@param booList: list<string>}\n" + "{for $boo in $booList}\n" + "{/for}\n";
+    String expectedPyCode =
+        "booList### = data.get('booList')\n"
+            + "for booIndex###, booData### in enumerate(booList###):\n"
+            + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
+  public void testEmptyForeach_ifempty() {
+    String soyCode =
+        "{@param booList: list<string>}\n"
+            + "{for $boo in $booList}\n"
+            + "{ifempty}\n"
+            + "{/for}\n";
+    String expectedPyCode =
+        "booList### = data.get('booList')\n"
+            + "if booList###:\n"
+            + "  for booIndex###, booData### in enumerate(booList###):\n"
+            + "    pass\n"
+            + "else:\n"
+            + "  pass\n";
+    assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
+  }
+
+  @Test
   public void testLetValue() {
     assertThatSoyCode("{@param boo : ?}\n" + "{let $foo: $boo /}\n")
         .compilesTo("foo__soy### = data.get('boo')\n");

@@ -51,6 +51,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -155,6 +156,11 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
      */
     @Override
     protected void visitChildren(ParentSoyNode<?> node) {
+      // If a conditional block is empty, add 'pass' to prevent indentation errors.
+      if (node.numChildren() == 0 && node instanceof ConditionalBlockNode) {
+        pyCodeBuilder.appendLine("pass");
+        return;
+      }
       // If the first child cannot be written as an expression, we need to init the output variable
       // first or face potential scoping issues with the output variable being initialized too late.
       if (node.numChildren() > 0 && !isComputableAsPyExprVisitor.exec(node.getChild(0))) {
