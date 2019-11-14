@@ -78,7 +78,8 @@ public final class ValidatedConformanceConfig {
         return createCustomRule(requirement.getCustom().getJavaClass(), error);
       case BANNED_CSS_SELECTOR:
         Requirement.BannedCssSelector bannedCss = requirement.getBannedCssSelector();
-        return new BannedCssSelector(ImmutableSet.copyOf(bannedCss.getSelectorList()), error);
+        return new BannedCssSelector(
+            ImmutableSet.copyOf(bannedCss.getSelectorList()), bannedCss.getWhenPrefix(), error);
       case BANNED_DIRECTIVE:
         Requirement.BannedDirective bannedDirective = requirement.getBannedDirective();
         return new BannedDirective(ImmutableSet.copyOf(bannedDirective.getDirectiveList()), error);

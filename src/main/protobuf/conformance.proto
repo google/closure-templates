@@ -31,6 +31,10 @@ message Requirement {
   message BannedCssSelector {
     // The banned CSS selectors.
     repeated string selector = 1;
+
+    // If true, bans the selector(s) if it is a prefix rather than a substring.
+    // Default false.
+    bool when_prefix = 2;
   }
 
   message BannedDirective {

@@ -131,6 +131,35 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void testBannedClassSelectorMdcPrefix() {
+    assertViolation(
+        "requirement: {\n"
+            + "  banned_css_selector: {\n"
+            + "    selector: 'mdc-'\n"
+            + "    when_prefix: true\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "{css('mdc-button')}\n" + "{/template}\n");
+  }
+
+  @Test
+  public void testBannedClassSelectorMdcSubstring() {
+    assertNoViolation(
+        "requirement: {\n"
+            + "  banned_css_selector: {\n"
+            + "    selector: 'mdc-'\n"
+            + "    when_prefix: true\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .foo}\n"
+            + "{css('other-prefix-mdc-button')}\n"
+            + "{/template}\n");
+  }
+
+  @Test
   public void testWhitelistedFileDoesNotCauseErrors() {
     assertNoViolation(
         "requirement: {\n"

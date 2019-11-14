@@ -31,10 +31,12 @@ import com.google.template.soy.exprtree.StringNode;
 final class BannedCssSelector extends Rule<FunctionNode> {
 
   private final ImmutableSet<String> bannedSelectors;
+  private final boolean whenPrefix;
 
-  BannedCssSelector(ImmutableSet<String> bannedSelectors, SoyErrorKind error) {
+  BannedCssSelector(ImmutableSet<String> bannedSelectors, boolean whenPrefix, SoyErrorKind error) {
     super(error);
     this.bannedSelectors = bannedSelectors;
+    this.whenPrefix = whenPrefix;
   }
 
   @Override
@@ -51,8 +53,17 @@ final class BannedCssSelector extends Rule<FunctionNode> {
     if (node.getFunctionName().equals("css")) {
       ExprNode selectorTextNode = node.numChildren() == 2 ? node.getChild(1) : node.getChild(0);
       if (selectorTextNode instanceof StringNode) {
-        if (bannedSelectors.contains(((StringNode) selectorTextNode).getValue())) {
-          errorReporter.report(selectorTextNode.getSourceLocation(), error);
+        String selector = ((StringNode) selectorTextNode).getValue();
+        if (this.whenPrefix) {
+          for (String bannedSelector : bannedSelectors) {
+            if (selector.startsWith(bannedSelector)) {
+              errorReporter.report(selectorTextNode.getSourceLocation(), error);
+            }
+          }
+        } else {
+          if (bannedSelectors.contains(selector)) {
+            errorReporter.report(selectorTextNode.getSourceLocation(), error);
+          }
         }
       }
     }
