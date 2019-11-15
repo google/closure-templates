@@ -15,6 +15,7 @@
  */
 
 // Usage of the simple examples.
+/** @fileoverview @suppress {lintChecks} */
 
 
 var numExamples = 0;

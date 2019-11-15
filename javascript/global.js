@@ -3,6 +3,7 @@
  *
  * Getters for Soy Idom runtime. Required because we don't want to incur a
  * runtime cost for requiring incrementaldom directly.
+ * @suppress {lintChecks}
  */
 goog.module('google3.javascript.template.soy.global');
 var module = module || { id: 'javascript/template/soy/global.js' };

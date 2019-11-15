@@ -37,7 +37,7 @@ _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND_
   '\x85': '&#133;',
   '\xa0': '&#160;',
   '\u2028': '&#8232;',
-  '\u2029': '&#8233;'
+  '\u2029': '&#8233;',
 }
 
 def _REPLACER_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE(match):
@@ -78,7 +78,7 @@ _ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX = {
   '}': '\\x7d',
   '\x85': '\\x85',
   '\u2028': '\\u2028',
-  '\u2029': '\\u2029'
+  '\u2029': '\\u2029',
 }
 
 def _REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX(match):
@@ -112,7 +112,7 @@ _ESCAPE_MAP_FOR_ESCAPE_CSS_STRING = {
   '\x85': '\\85 ',
   '\xa0': '\\a0 ',
   '\u2028': '\\2028 ',
-  '\u2029': '\\2029 '
+  '\u2029': '\\2029 ',
 }
 
 def _REPLACER_FOR_ESCAPE_CSS_STRING(match):
@@ -184,7 +184,7 @@ _ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_
   '\uff1f': '%EF%BC%9F',
   '\uff20': '%EF%BC%A0',
   '\uff3b': '%EF%BC%BB',
-  '\uff3d': '%EF%BC%BD'
+  '\uff3d': '%EF%BC%BD',
 }
 
 def _REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI(match):

@@ -384,14 +384,11 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
       outputCode.append(" = {");
       boolean needsComma = false;
       for (Map.Entry<Character, String> e : escapeMap.entrySet()) {
-        if (needsComma) {
-          outputCode.append(',');
-        }
         outputCode.append("\n  ");
         writeUnsafeStringLiteral(e.getKey(), outputCode);
         outputCode.append(": ");
         writeStringLiteral(e.getValue(), outputCode);
-        needsComma = true;
+        outputCode.append(",");
       }
       outputCode.append("\n}").append(getLineEndSyntax()).append("\n");
 

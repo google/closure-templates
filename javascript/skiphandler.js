@@ -4,6 +4,7 @@
  * Setters for optional Soy idom skip handlers. This is for code
  * that needs to run in hybrid idom + non-idom runtime. This allows setting
  * a skip handler if available in the Idom runtime.
+ * @suppress {lintChecks}
  */
 goog.module('google3.javascript.template.soy.skiphandler');
 var module = module || { id: 'javascript/template/soy/skiphandler.js' };

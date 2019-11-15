@@ -1,6 +1,7 @@
 /**
  * @fileoverview
  * Contains types and objects necessary for Soy-Idom runtime.
+ * @suppress {lintChecks}
  */
 goog.module('google3.javascript.template.soy.element_lib_idom');
 var module = module || { id: 'javascript/template/soy/element_lib_idom.js' };

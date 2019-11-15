@@ -2,6 +2,7 @@
  * @fileoverview
  *
  * Functions necessary to interact with the Soy-Idom runtime.
+ * @suppress {lintChecks}
  */
 goog.module('google3.javascript.template.soy.api_idom');
 var module = module || { id: 'javascript/template/soy/api_idom.js' };

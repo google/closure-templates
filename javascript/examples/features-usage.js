@@ -15,6 +15,7 @@
  */
 
 // Usage of the features examples.
+/** @fileoverview @suppress {lintChecks} */
 
 
 var GLOBAL_STR = 'This is a render-time global.';

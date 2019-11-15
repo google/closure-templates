@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @fileoverview @suppress {lintChecks} */
+
 goog.module('google3.javascript.template.soy.soyutils_directives');
 var module = module || { id: 'javascript/template/soy/soyutils_directives.js' };
 var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.SanitizedContentKind'); // from //javascript/closure/soy:data

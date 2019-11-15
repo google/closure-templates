@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @fileoverview @suppress {lintChecks} */
 goog.module('google3.javascript.template.soy.soyutils_idom');
 var module = module || { id: 'javascript/template/soy/soyutils_idom.js' };
 var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib_closure');
