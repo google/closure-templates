@@ -382,7 +382,6 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
       String escapeMapName = escapeMapNames.get(i);
       generateCharacterMapSignature(outputCode, escapeMapName);
       outputCode.append(" = {");
-      boolean needsComma = false;
       for (Map.Entry<Character, String> e : escapeMap.entrySet()) {
         outputCode.append("\n  ");
         writeUnsafeStringLiteral(e.getKey(), outputCode);
