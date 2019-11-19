@@ -27,7 +27,6 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -40,7 +39,6 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.VeLogNode;
@@ -50,9 +48,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.VeType;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -108,9 +104,6 @@ final class VeLogValidationPass extends CompilerFileSetPass {
       SoyErrorKind.of(
           "It is illegal to set the data parameter if the ve type is a union (''{0}'').");
 
-  private static final SoyErrorKind VELOG_NODE_CANNOT_CALL_DELTEMPLATE =
-      SoyErrorKind.of("'{velog'} must not call a deltemplate..");
-
   private static final SoyErrorKind LOG_WITHIN_MESSAGE_REQUIRES_ELEMENT =
       SoyErrorKind.of("'{velog'} within '{msg'} must directly wrap an HTML element.");
 
@@ -125,16 +118,10 @@ final class VeLogValidationPass extends CompilerFileSetPass {
   @Override
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    Map<String, TemplateNode> templatesInLibrary = new LinkedHashMap<>();
     for (SoyFileNode file : sourceFiles) {
-      // Create an intermediary data structure for template name -> template node so that
-      // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
       for (TemplateNode template : file.getChildren()) {
-        templatesInLibrary.put(template.getTemplateName(), template);
+        run(template);
       }
-    }
-    for (TemplateNode template : templatesInLibrary.values()) {
-      run(template, templatesInLibrary, registry);
     }
     if (reporter.hasErrors()) {
       return Result.STOP;
@@ -142,17 +129,14 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     return Result.CONTINUE;
   }
 
-  private void run(
-      TemplateNode template,
-      Map<String, TemplateNode> templatesInLibrary,
-      TemplateRegistry registry) {
+  private void run(TemplateNode template) {
     for (FunctionNode node :
         SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
       validateVeDataFunctionNode(node);
     }
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
       if (template.isStrictHtml()) {
-        validateVelogElementStructure(node, templatesInLibrary, registry);
+        validateVelogElementStructure(node);
         validateVeLogNode(node);
       } else {
         reporter.report(node.getVeDataExpression().getSourceLocation(), REQUIRE_STRICTHTML);
@@ -219,9 +203,7 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     }
   }
 
-  private void validateVelogElementStructure(
-      VeLogNode node, Map<String, TemplateNode> templatesInLibrary, TemplateRegistry registry) {
-
+  private void validateVelogElementStructure(VeLogNode node) {
     List<StandaloneNode> children =
         node.getChildren().stream()
             .filter(child -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(child.getKind()))
@@ -230,20 +212,6 @@ final class VeLogValidationPass extends CompilerFileSetPass {
     if (node.getNearestAncestor(MsgFallbackGroupNode.class) == null
         && children.size() == 1
         && Iterables.getLast(children) instanceof CallBasicNode) {
-      CallBasicNode callee = (CallBasicNode) Iterables.getLast(children);
-      HtmlElementMetadataP calleeMetadata = null;
-      TemplateMetadata templateMetadata =
-          registry.getBasicTemplateOrElement(callee.getCalleeName());
-      if (templateMetadata != null) {
-        calleeMetadata = templateMetadata.getHtmlElement();
-      } else if (templatesInLibrary.containsKey(callee.getCalleeName())) {
-        TemplateNode calledTemplate = templatesInLibrary.get(callee.getCalleeName());
-        calleeMetadata = calledTemplate.getHtmlElementMetadata();
-      }
-      if (calleeMetadata == null) {
-        reporter.report(node.getSourceLocation(), VELOG_NODE_CANNOT_CALL_DELTEMPLATE);
-        return;
-      }
       node.setNeedsSyntheticVelogNode(true);
       return;
     }
