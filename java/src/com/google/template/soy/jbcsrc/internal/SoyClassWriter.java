@@ -179,7 +179,7 @@ public final class SoyClassWriter extends ClassVisitor {
           return super.getCommonSuperClass(left, right);
         } catch (RuntimeException re) {
           throw new RuntimeException(
-              "unable to calculate common base class of: " + left + " and " + right);
+              "unable to calculate common base class of: " + left + " and " + right, re);
         }
       }
       // The only reason a generated type will get compared to a non-generated type is if they
