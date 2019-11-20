@@ -16,7 +16,6 @@
 
 package com.google.template.soy.data;
 
-import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder;
 import java.lang.reflect.Method;
 
 /** Reflective utilities related to {@link SoyTemplate}. */
@@ -33,7 +32,6 @@ public final class SoyTemplates {
   public static <T extends SoyTemplate> T getDefaultInstance(Class<T> type) {
     try {
       Method factory = type.getDeclaredMethod("getDefaultInstance");
-      @SuppressWarnings("unchecked")
       Object instance = factory.invoke(null);
       return type.cast(instance);
     } catch (NoSuchMethodException e) {
@@ -46,13 +44,11 @@ public final class SoyTemplates {
   }
 
   /** Reflectively creates a builder of a template type. */
-  public static <T extends SoyTemplate> BaseSoyTemplateImpl.AbstractBuilder<?, T> getBuilder(
-      Class<T> type) {
+  public static <T extends SoyTemplate> SoyTemplate.Builder<T> getBuilder(Class<T> type) {
     try {
       Method factory = type.getDeclaredMethod("builder");
       @SuppressWarnings("unchecked")
-      BaseSoyTemplateImpl.AbstractBuilder<?, T> instance =
-          (AbstractBuilder<?, T>) factory.invoke(null);
+      SoyTemplate.Builder<T> instance = (SoyTemplate.Builder<T>) factory.invoke(null);
       return instance;
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException(

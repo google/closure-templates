@@ -35,6 +35,33 @@ public interface SoyTemplate {
   Map<String, ?> getParamsAsMap();
 
   /**
+   * The superclass of all generated builders.
+   *
+   * @param <T> the type of template that this builder builds.
+   */
+  interface Builder<T extends SoyTemplate> {
+
+    T build();
+
+    /**
+     * Sets any template parameter of this builder. SoyTemplateParam ensures type safety.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    <V> Builder<T> setParam(SoyTemplateParam<? super V> param, V value);
+
+    /**
+     * Sets any template parameter of this builder to a future value. SoyTemplateParam ensures type
+     * safety.
+     *
+     * @throws IllegalArgumentException if the template corresponding to this builder does not have
+     *     a parameter equal to {@code param}.
+     */
+    <V> Builder<T> setParamFuture(SoyTemplateParam<? super V> param, ListenableFuture<V> value);
+  }
+
+  /**
    * Wraps a {@link SoyTemplate} but grants synchronous access to {@link #getTemplateName()}. This
    * method should only be called by generated implementations of TemplateParameters.
    */

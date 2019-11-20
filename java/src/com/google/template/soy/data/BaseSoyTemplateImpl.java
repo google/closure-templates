@@ -85,7 +85,8 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
    * <p>Instances of this abstract class are not thread safe.
    */
   public abstract static class AbstractBuilder<
-      B extends AbstractBuilder<?, T>, T extends SoyTemplate> {
+          B extends AbstractBuilder<?, T>, T extends SoyTemplate>
+      implements Builder<T> {
     private final String templateName;
     private final ImmutableMap<String, SoyTemplateParam<?>> params;
     private final SoyValueConverter soyValueConverter;
@@ -103,6 +104,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       this.accummulatorData = new HashMap<>();
     }
 
+    @Override
     public T build() {
       ImmutableMap<String, SoyValueProvider> finalData = buildDataMapWithChecks(true, false);
       return buildInternal(templateName, finalData);
@@ -130,12 +132,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return (B) this;
     }
 
-    /**
-     * Sets any template parameter of this builder. SoyTemplateParam ensures type safety.
-     *
-     * @throws IllegalArgumentException if the template corresponding to this builder does not have
-     *     a parameter equal to {@code param}.
-     */
+    @Override
     public <V> B setParam(SoyTemplateParam<? super V> param, V value) {
       if (!params.containsValue(param)) {
         throw new IllegalArgumentException(
@@ -144,13 +141,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return setParam(param.getName(), value);
     }
 
-    /**
-     * Sets any template parameter of this builder to a future value. SoyTemplateParam ensures type
-     * safety.
-     *
-     * @throws IllegalArgumentException if the template corresponding to this builder does not have
-     *     a parameter equal to {@code param}.
-     */
+    @Override
     public <V> B setParamFuture(SoyTemplateParam<? super V> param, ListenableFuture<V> value) {
       if (!params.containsValue(param)) {
         throw new IllegalArgumentException(
