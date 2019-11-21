@@ -359,10 +359,6 @@ def filter_trusted_resource_uri(value):
   return 'about:invalid#' + _INNOCUOUS_OUTPUT
 
 
-def bless_string_as_trusted_resource_url_for_legacy(value):
-  return value
-
-
 def normalize_html(value):
   return generated_sanitize.normalize_html_helper(value)
 
