@@ -108,22 +108,26 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   openSSR(nameOrCtor: string, key = '', data: unknown = null) {
     const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
-    if (goog.DEBUG) {
-      this.attr('soy-server-key', key);
-    }
-    // Data is only passed by {skip} elements that are roots of templates.
+
+    // `data` is only passed by {skip} elements that are roots of templates.
     if (goog.DEBUG && el && data) {
       maybeReportErrors(el, data);
     }
-    // Keep going since either elements are being created or continuing will
-    // be a no-op.
-    if (!el || !el.hasChildNodes()) {
-      return true;
-    }
+
+    // If the element has already been rendered, tell the template to skip it.
     // Caveat: if the element has only attributes, we will skip regardless.
-    this.skip();
-    this.close();
-    return false;
+    if (el && el.hasChildNodes()) {
+      this.skip();
+      // And exit its node so that we will continue with the next node.
+      this.close();
+      return false;
+    }
+    // If we have not yet populated this element, tell the template to do so.
+    // Only set the marker attribute when actually populating the element.
+    if (goog.DEBUG) {
+      this.attr('soy-server-key', key);
+    }
+    return true;
   }
 
   // For users extending IncrementalDomRenderer
