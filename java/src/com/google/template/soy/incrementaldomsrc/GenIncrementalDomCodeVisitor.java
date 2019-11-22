@@ -149,10 +149,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           HtmlContext.HTML_NORMAL_ATTR_VALUE);
 
   private static class Holder<T> {
-    T value;
+    T elementValue;
+    T callValue;
 
-    public Holder(T value) {
-      this.value = value;
+    public Holder(T value, T callValue) {
+      this.elementValue = value;
+      this.callValue = callValue;
     }
   }
 
@@ -270,7 +272,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     keyCounterStack = new ArrayDeque<>();
-    keyCounterStack.push(new Holder<>(0));
+    keyCounterStack.push(new Holder<>(0, 0));
     staticsCounter = 0;
     SanitizedContentKind kind = node.getContentKind();
     getJsCodeBuilder().setContentKind(kind);
@@ -829,7 +831,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           getJsCodeBuilder()
               .append(
                   VariableDeclaration.builder(keyVariable)
-                      .setRhs(INCREMENTAL_DOM_PUSH_KEY.call(incrementKeyForTemplate(template)))
+                      .setRhs(INCREMENTAL_DOM_PUSH_KEY.call(incrementKeyForCall(template)))
                       .build());
         }
       }
@@ -987,7 +989,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private Expression incrementKeyForTemplate(TemplateNode template) {
     Holder<Integer> keyCounter = keyCounterStack.peek();
     return JsRuntime.XID.call(
-        Expression.stringLiteral(template.getTemplateName() + "-" + keyCounter.value++));
+        Expression.stringLiteral(template.getTemplateName() + "-" + keyCounter.elementValue++));
+  }
+
+  /**
+   * Returns a unique key for the template. This has the side-effect of incrementing the current
+   * keyCounter at the top of the stack. This is for calls to disambugate between HTML nodes and
+   * calls.
+   */
+  private Expression incrementKeyForCall(TemplateNode template) {
+    Holder<Integer> keyCounter = keyCounterStack.peek();
+    return JsRuntime.XID.call(
+        Expression.stringLiteral(template.getTemplateName() + "-call-" + keyCounter.callValue++));
   }
 
   /**
@@ -1084,7 +1097,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (keyNode == null) {
       key = incrementKeyForTemplate(template);
     } else {
-      keyCounterStack.push(new Holder<>(0));
+      keyCounterStack.push(new Holder<>(0, 0));
     }
     args.add(key);
 
