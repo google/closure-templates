@@ -126,7 +126,7 @@ Backend    | type in host language
 JavaScript | `goog.soy.data.SanitizedHtml`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedHtml`
+Python     | `sanitize.SanitizedHtml`, `html_types.SafeHtml`
 
 
 ### `js` {#js}
@@ -139,7 +139,7 @@ Backend    | type in host language
 JavaScript | `goog.soy.data.SanitizedJs`, `goog.html.SafeScript`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedJs`
+Python     | `sanitize.SanitizedJs`, `html_types.SafeScript`
 
 
 ### `uri` {#uri}
@@ -250,7 +250,7 @@ Backend    | type in host language
 JavaScript | `goog.soy.data.SanitizedCss`, `goog.html.SafeStyle`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedCss`
+Python     | `sanitize.SanitizedCss`, `html_types.SafeStyleSheet`
 
 Additionally, all backends have support for coercing
 `webutil.html.types.SafeStyleSheetProto` and `webutil.html.types.SafeStyleProto`

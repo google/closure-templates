@@ -91,14 +91,15 @@ _HTML_RAW_CONTENT_HAZARD_REPLACEMENTS = {'</': r'<\/', ']]>': r']]\>'}
 
 
 def change_newline_to_br(value):
-  result = _NEWLINE_RE.sub('<br>', str(value))
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
 
-  if is_content_kind(value, CONTENT_KIND.HTML):
+  if html is not None:
+    result = _NEWLINE_RE.sub('<br>', html)
     approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
         'Persisting existing sanitization.')
     return SanitizedHtml(result, get_content_dir(value), approval=approval)
 
-  return result
+  return _NEWLINE_RE.sub('<br>', str(value))
 
 
 def clean_html(value, safe_tags=None):
@@ -109,8 +110,11 @@ def clean_html(value, safe_tags=None):
     safe_tags = list(
         set(safe_tags).union(generated_sanitize._SAFE_TAG_WHITELIST))
 
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return value
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+        'Persisting existing sanitization.')
+    return SanitizedHtml(html, get_content_dir(value), approval=approval)
 
   approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Escaped html is by nature sanitized.')
@@ -192,8 +196,11 @@ def escape_css_string(value):
 
 
 def escape_html(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return value
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+        'Persisting existing sanitization.')
+    return SanitizedHtml(html, get_content_dir(value), approval=approval)
 
   approval = IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
       'Escaped html is by nature sanitized.')
@@ -202,9 +209,9 @@ def escape_html(value):
 
 
 def escape_html_attribute(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return generated_sanitize.normalize_html_helper(
-        _strip_html_tags(value.content))
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    return generated_sanitize.normalize_html_helper(_strip_html_tags(html))
 
   return generated_sanitize.escape_html_helper(value)
 
@@ -223,16 +230,18 @@ def filter_number(value):
 
 
 def escape_html_attribute_nospace(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
     return generated_sanitize.normalize_html_nospace_helper(
-        _strip_html_tags(value.content))
+        _strip_html_tags(html))
 
   return generated_sanitize.escape_html_nospace_helper(value)
 
 
 def escape_html_rcdata(value):
-  if is_content_kind(value, CONTENT_KIND.HTML):
-    return generated_sanitize.normalize_html_helper(value.content)
+  html = _get_content_of_kind(value, CONTENT_KIND.HTML)
+  if html is not None:
+    return generated_sanitize.normalize_html_helper(html)
 
   return generated_sanitize.escape_html_helper(value)
 
@@ -254,8 +263,9 @@ def escape_js_value(value):
     # where there is no corresponding key.
     return ' null '
 
-  if is_content_kind(value, CONTENT_KIND.JS):
-    return value.content
+  js = _get_content_of_kind(value, CONTENT_KIND.JS)
+  if js is not None:
+    return js
 
   # We surround values with spaces so that they can't be interpolated into
   # identifiers by accident.
@@ -272,8 +282,9 @@ def escape_uri(value):
 
 
 def filter_css_value(value):
-  if is_content_kind(value, CONTENT_KIND.CSS):
-    return _embed_css_into_html(value.content)
+  css = _get_content_of_kind(value, CONTENT_KIND.CSS)
+  if css is not None:
+    return _embed_css_into_html(css)
 
   if value is None:
     return ''
@@ -334,19 +345,23 @@ def filter_tel_uri(value):
 
 
 def filter_normalize_uri(value):
-  if (is_content_kind(value, CONTENT_KIND.URI)
-      or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
-    return normalize_uri(value)
+  uri = _get_content_of_kind(value, CONTENT_KIND.URI)
+  if uri is None:
+    uri = _get_content_of_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)
+  if uri is None:
+    return generated_sanitize.filter_normalize_uri_helper(value)
 
-  return generated_sanitize.filter_normalize_uri_helper(value)
+  return normalize_uri(uri)
 
 
 def filter_normalize_media_uri(value):
-  if (is_content_kind(value, CONTENT_KIND.URI)
-      or is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)):
-    return normalize_uri(value)
+  uri = _get_content_of_kind(value, CONTENT_KIND.URI)
+  if uri is None:
+    uri = _get_content_of_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)
+  if uri is None:
+    return generated_sanitize.filter_normalize_media_uri_helper(value)
 
-  return generated_sanitize.filter_normalize_media_uri_helper(value)
+  return normalize_uri(uri)
 
 
 def filter_normalize_refresh_uri(value):
@@ -354,8 +369,9 @@ def filter_normalize_refresh_uri(value):
 
 
 def filter_trusted_resource_uri(value):
-  if is_content_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI):
-    return value.content
+  uri = _get_content_of_kind(value, CONTENT_KIND.TRUSTED_RESOURCE_URI)
+  if uri is not None:
+    return uri
   return 'about:invalid#' + _INNOCUOUS_OUTPUT
 
 
@@ -387,6 +403,24 @@ def is_content_kind(value, content_kind):
 #############################
 # Private Utility Functions #
 #############################
+
+
+def _get_content_of_kind(value, content_kind):
+  """Gets string content from value if it's of kind content_kind or compatible.
+
+  Args:
+    value: Value of any type.
+    content_kind: Desired content kind.
+
+  Returns:
+    String content of value or None if other kind.
+  """
+  if is_content_kind(value, content_kind):
+    return value.content
+
+
+  return None
+
 
 def _get_content_kind(value):
   """Get human-readable name for the kind of value.
