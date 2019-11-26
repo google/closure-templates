@@ -20,23 +20,18 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -51,8 +46,6 @@ import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.FloatType;
-import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -66,7 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -105,12 +97,6 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
 
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
-
-  private static final ImmutableTable<SoyType, SoyType, BuiltinFunction>
-      AVAILABLE_CALL_SITE_COERCIONS =
-          new ImmutableTable.Builder<SoyType, SoyType, BuiltinFunction>()
-              .put(IntType.getInstance(), FloatType.getInstance(), BuiltinFunction.TO_FLOAT)
-              .build();
 
   CheckTemplateCallsPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
@@ -216,7 +202,8 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
           CallParamValueNode node = (CallParamValueNode) callerParam;
           ExprNode expr = node.getExpr();
           if (expr != null) {
-            argType = maybeCoerceType(node, expr.getType(), declaredParamTypes);
+            argType =
+                RuntimeTypeCoercion.maybeCoerceType(node.getExpr().getRoot(), declaredParamTypes);
           }
         } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
           SanitizedContentKind contentKind = ((CallParamContentNode) callerParam).getContentKind();
@@ -287,68 +274,6 @@ final class CheckTemplateCallsPass extends CompilerFileSetPass {
       }
 
       return ImmutableSet.copyOf(paramNamesToRuntimeCheck)::contains;
-    }
-
-    /**
-     * For int values passed into template param float, perform automatic type coercion from the
-     * call param value to the template param type.
-     *
-     * <p>Supported coercions:
-     *
-     * <ul>
-     *   <li>int -> float
-     *   <li>int -> float|null
-     * </ul>
-     *
-     * @param paramNode Node containing the call param value
-     * @param argType Type of the call param value
-     * @param declaredTypes Types accepted by the template param
-     * @return the new coerced type
-     */
-    @CheckReturnValue
-    private SoyType maybeCoerceType(
-        CallParamValueNode paramNode, SoyType argType, Collection<SoyType> declaredTypes) {
-      if (AVAILABLE_CALL_SITE_COERCIONS.row(argType).isEmpty()) {
-        return argType;
-      }
-      for (SoyType formalType : declaredTypes) {
-        if (formalType.isAssignableFrom(argType)) {
-          return argType; // template already accepts value, no need to coerce
-        }
-      }
-      for (SoyType coercionTargetType : AVAILABLE_CALL_SITE_COERCIONS.row(argType).keySet()) {
-        BuiltinFunction function = null;
-        for (SoyType formalType : declaredTypes) {
-          if (!formalType.isAssignableFrom(coercionTargetType)) {
-            continue;
-          }
-          if (function == null) {
-            function = AVAILABLE_CALL_SITE_COERCIONS.get(argType, coercionTargetType);
-          } else {
-            // This is actually a bad state that shouldn't happen because there should only be one
-            // coercing function.
-            function = null;
-            break;
-          }
-        }
-        if (function == null) {
-          continue;
-        }
-        ExprRootNode root = paramNode.getExpr();
-
-        // create a node to wrap param in coercion
-        FunctionNode newParam =
-            new FunctionNode(
-                Identifier.create(function.getName(), root.getRoot().getSourceLocation()),
-                function,
-                root.getRoot().getSourceLocation());
-        newParam.setType(coercionTargetType);
-
-        newParam.addChild(root.getRoot());
-        root.addChild(newParam);
-        return coercionTargetType;
-      }
-      return argType;
     }
 
     /**

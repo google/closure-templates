@@ -1242,6 +1242,14 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
 
           SoyType expectedType = SoyTypes.makeNullable(fieldType);
           if (!expectedType.isAssignableFrom(argType)) {
+            argType =
+                RuntimeTypeCoercion.maybeCoerceType(
+                    expr,
+                    expectedType instanceof UnionType
+                        ? ((UnionType) expectedType).getMembers()
+                        : ImmutableList.of(expectedType));
+          }
+          if (!expectedType.isAssignableFrom(argType)) {
             errorReporter.report(
                 expr.getSourceLocation(),
                 ARGUMENT_TYPE_MISMATCH,
