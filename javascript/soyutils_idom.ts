@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import SafeHtml from 'goog:goog.html.SafeHtml'; // from //javascript/closure/html:safehtml
 import * as googSoy from 'goog:goog.soy';  // from //javascript/closure/soy
 import SanitizedContent from 'goog:goog.soy.data.SanitizedContent'; // from //javascript/closure/soy:data
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
@@ -334,11 +335,13 @@ declare global {
 function print(
     incrementaldom: IncrementalDomRenderer, expr: unknown,
     isSanitizedContent?: boolean|undefined) {
-  if (expr instanceof SanitizedHtml || isSanitizedContent) {
-    const content = String(expr);
+  if (expr instanceof SanitizedHtml || isSanitizedContent ||
+      expr instanceof SafeHtml) {
+    const content =
+        expr instanceof SafeHtml ? SafeHtml.unwrap(expr) : String(expr);
     // If the string has no < or &, it's definitely not HTML. Otherwise
     // proceed with caution.
-    if (content.indexOf('<') < 0 && content.indexOf('&') < 0) {
+    if (!content.includes('<') && !content.includes('&')) {
       incrementaldom.text(content);
     } else {
       // For HTML content we need to insert a custom element where we can place

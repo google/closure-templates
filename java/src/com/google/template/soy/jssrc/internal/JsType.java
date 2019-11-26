@@ -170,6 +170,8 @@ public final class JsType {
   private static final JsType IDOM_HTML =
       builder()
           .addType("!goog.soy.data.SanitizedHtml")
+          .addType("!goog.html.SafeHtml")
+          .addRequire(GoogRequire.createTypeRequire("goog.html.SafeHtml"))
           .addRequire(GoogRequire.createTypeRequire("goog.soy.data.SanitizedHtml"))
           .addType("!google3.javascript.template.soy.element_lib_idom.IdomFunction")
           .addRequire(

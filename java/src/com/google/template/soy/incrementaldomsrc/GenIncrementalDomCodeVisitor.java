@@ -462,8 +462,12 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
 
     ImmutableList.Builder<Statement> stateVarInitializations = ImmutableList.builder();
+    IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
       JsType jsType = JsType.forIncrementalDomState(stateVar.type());
+      for (GoogRequire require : jsType.getGoogRequires()) {
+        jsCodeBuilder.addGoogRequire(require);
+      }
       JsDoc stateVarJsdoc =
           JsDoc.builder().addParameterizedAnnotation("private", jsType.typeExpr()).build();
       Expression rhsValue;
