@@ -368,6 +368,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
           }
         }
 
+      case METHOD_NODE:
+        throw new UnsupportedOperationException("Methods are not implemented yet.");
+
       default:
         {
           PyExpr value = visit(node);

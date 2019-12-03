@@ -113,6 +113,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case ITEM_ACCESS_NODE:
         visitItemAccessNode((ItemAccessNode) node);
         break;
+      case METHOD_NODE:
+        visitMethodNode((MethodNode) node);
+        break;
 
       case GLOBAL_NODE:
         visitGlobalNode((GlobalNode) node);
@@ -278,6 +281,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitItemAccessNode(ItemAccessNode node) {
+    visitDataAccessNode(node);
+  }
+
+  protected void visitMethodNode(MethodNode node) {
     visitDataAccessNode(node);
   }
 

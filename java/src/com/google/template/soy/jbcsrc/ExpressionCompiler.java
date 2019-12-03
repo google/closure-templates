@@ -1253,6 +1253,8 @@ final class ExpressionCompiler {
               return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
                   .withSourceLocation(node.getSourceLocation());
             }
+          case METHOD_NODE:
+            throw new UnsupportedOperationException("Methods are not supported yet.");
           default:
             return CompilerVisitor.this.visit(node);
         }

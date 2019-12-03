@@ -350,6 +350,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       case ITEM_ACCESS_NODE:
         return visitNullSafeItemAccessNode((ItemAccessNode) node);
 
+      case METHOD_NODE:
+        throw new UnsupportedOperationException("Methods not supported yet.");
+
       default:
         return visit(node);
     }

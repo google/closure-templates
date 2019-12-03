@@ -88,7 +88,11 @@ public final class ParseExpressionTest {
       "function.with.Dots($arg).field",
       "proto().field",
       "pro.to(a: $a).field",
-      "record(a : 'b').a"
+      "record(a : 'b').a",
+      "$aaa.method()",
+      "$aaa?.method()",
+      "$aaa.method(1, 2, 3)",
+      "$aaa.method(A.b.c)"
     };
     for (String dataRef : dataRefs) {
       assertThatExpression(dataRef).isValidExpression();
@@ -266,7 +270,6 @@ public final class ParseExpressionTest {
     assertThatExpression("pro.to(a: 1, b: $foo, c: proto())").isValidExpression();
 
     assertThatExpression("$isFirst()").isNotValidExpression();
-    assertThatExpression("$boo.isFirst()").isNotValidExpression();
     assertThatExpression("proto.mixed($a, b: $b)").isNotValidExpression();
     assertThatExpression("proto.mixed(a: $a, $b)").isNotValidExpression();
   }

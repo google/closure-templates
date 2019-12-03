@@ -375,6 +375,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   // nullable proto field).  I could instead cast this to the map's key type.
                   visit(keyNode).castAs("?"), itemAccess.isNullSafe()); // vanilla bracket access
         }
+      case METHOD_NODE:
+        throw new UnsupportedOperationException("Methods are not implemented yet.");
 
       default:
         return new NullSafeAccumulator(visit(node));

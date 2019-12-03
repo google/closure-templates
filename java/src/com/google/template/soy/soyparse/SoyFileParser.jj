@@ -73,6 +73,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
@@ -3575,6 +3576,7 @@ private ExprNode PrecExpr8() :
 private ExprNode PrecExpr9() :
 {
   ExprNode expr, keyExpr;
+  ImmutableList<ExprNode> params = ImmutableList.of();
   Token ident, open, close, op;
 }
 {
@@ -3586,6 +3588,22 @@ private ExprNode PrecExpr9() :
       op = <QDOT>
     )
     ident = <IDENT>
+    [
+      <LPAREN>
+      [
+        params = ExprList()
+      ]
+      close = <RPAREN>
+      {
+        MethodNode methodNode = new MethodNode(
+            expr,
+            params,
+            ident.image,
+            createSrcLoc(op, close),
+            op.kind == QDOT);
+        return methodNode;
+      }
+    ]
     { // TODO(lukes):  add the source location of the ident as a separate field.  This would be
       // more useful for error messages about the access
       expr =
