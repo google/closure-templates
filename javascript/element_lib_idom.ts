@@ -8,6 +8,7 @@ import './skiphandler';
 import {assert} from 'goog:goog.asserts';  // from //javascript/closure/asserts
 import {IjData} from 'goog:goog.soy';      // from //javascript/closure/soy
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
+import {IdomFunctionMembers} from 'goog:soydata';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {IncrementalDomRenderer, patchOuter, SKIP_TOKEN} from './api_idom';
@@ -150,9 +151,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
  * Type for transforming idom functions into functions that can be coerced
  * to strings.
  */
-export interface IdomFunction {
-  invoke: (idom: IncrementalDomRenderer) => void;
-  isInvokableFn: boolean;
+export interface IdomFunction extends IdomFunctionMembers {
+  (idom: IncrementalDomRenderer): void;
   contentKind: SanitizedContentKind;
   toString: (renderer?: IncrementalDomRenderer) => string;
   toBoolean: () => boolean;

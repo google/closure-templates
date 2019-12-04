@@ -9091,7 +9091,7 @@ soy.$$parseInt = function(str) {
   return isNaN(parsed) ? null : parsed;
 };
 soy.$$equals = function(valueOne, valueTwo) {
-  return valueOne && valueTwo && valueOne.isInvokableFn && valueTwo.isInvokableFn ? valueOne.contentKind !== valueTwo.contentKind ? !1 : valueOne.toString() === valueTwo.toString() : valueOne instanceof goog.soy.data.SanitizedContent && valueTwo instanceof goog.soy.data.SanitizedContent ? valueOne.contentKind != valueTwo.contentKind ? !1 : valueOne.toString() == valueTwo.toString() : valueOne == valueTwo;
+  return goog.isFunction(valueOne) && goog.isFunction(valueTwo) ? valueOne.contentKind !== valueTwo.contentKind ? !1 : valueOne.toString() === valueTwo.toString() : valueOne instanceof goog.soy.data.SanitizedContent && valueTwo instanceof goog.soy.data.SanitizedContent ? valueOne.contentKind != valueTwo.contentKind ? !1 : valueOne.toString() == valueTwo.toString() : valueOne == valueTwo;
 };
 soy.$$parseFloat = function(str) {
   var parsed = parseFloat(str);

@@ -44919,8 +44919,18 @@ goog.requireType('goog.soy');
 // semantically distinct from the plain text string `"a<b>c"` and smart
 // templates can take that distinction into account.
 
+/**
+ * Properties added to all idom HTML / Attributes functions. The TypeScript type
+ * inherits this and adds a call signature (which is not really possible here).
+ * @typedef {{
+ *   toString: function(),
+ *   contentKind: !goog.soy.data.SanitizedContentKind
+ * }}
+ */
+soydata.IdomFunctionMembers;
 
-/** @typedef {!goog.soy.data.SanitizedContent|{isInvokableFn: boolean}} */
+
+/** @typedef {!soydata.IdomFunctionMembers|!Function} */
 soydata.IdomFunction;
 
 /**
@@ -45310,8 +45320,7 @@ soy.$$equals = function(valueOne, valueTwo) {
   // they are tagged with a type for ATTR or HTML. They both need to be
   // the same to be considered structurally equal. Beware, as this is a
   // very expensive function.
-  if ((valueOne && valueTwo) &&
-      (valueOne.isInvokableFn && valueTwo.isInvokableFn)) {
+  if (goog.isFunction(valueOne) && goog.isFunction(valueTwo)) {
     if ((/** @type {?} */ (valueOne)).contentKind !==
         (/** @type {?} */ (valueTwo)).contentKind) {
       return false;
