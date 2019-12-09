@@ -26,7 +26,8 @@ import {IdomFunction} from './element_lib_idom';
 function isIdomFunctionType(
 // tslint:disable-next-line:no-any
     value: any, type: SanitizedContentKind): value is IdomFunction {
-  return goog.isFunction(value) && (value as IdomFunction).contentKind === type;
+  return value && value.isInvokableFn &&
+      (value as IdomFunction).contentKind === type;
 }
 
 /**

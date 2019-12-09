@@ -116,19 +116,37 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
 function makeHtml(idomFn: any): IdomFunction {
-  idomFn.toString = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
+  const fn = (() => {
+               throw new Error('Should not be called directly');
+             }) as unknown as (SanitizedHtml & IdomFunction);
+  // tslint:disable-next-line:no-any Hack :(
+  (fn as any).prototype = SanitizedHtml;
+  fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
+      idomFn(renderer);
+  fn.toString = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
       htmlToString(idomFn, renderer);
-  idomFn.toBoolean = () => isTruthy(idomFn);
-  idomFn.contentKind = SanitizedContentKind.HTML;
-  return idomFn as IdomFunction;
+  fn.getContent = fn.toString;
+  fn.toBoolean = () => isTruthy(idomFn);
+  fn.contentKind = SanitizedContentKind.HTML;
+  fn.isInvokableFn = true;
+  return fn as IdomFunction;
 }
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
 function makeAttributes(idomFn: any): IdomFunction {
-  idomFn.toString = () => attributesToString(idomFn);
-  idomFn.toBoolean = () => isTruthy(idomFn);
-  idomFn.contentKind = SanitizedContentKind.ATTRIBUTES;
-  return idomFn as IdomFunction;
+  const fn = (() => {
+               throw new Error('Should not be called directly');
+             }) as unknown as (SanitizedHtmlAttribute & IdomFunction);
+  // tslint:disable-next-line:no-any Hack :(
+  (fn as any).prototype = SanitizedHtmlAttribute;
+  fn.invoke = (renderer: IncrementalDomRenderer = defaultIdomRenderer) =>
+      idomFn(renderer);
+  fn.toString = () => attributesToString(idomFn);
+  fn.getContent = fn.toString;
+  fn.toBoolean = () => isTruthy(idomFn);
+  fn.contentKind = SanitizedContentKind.ATTRIBUTES;
+  fn.isInvokableFn = true;
+  return fn as IdomFunction;
 }
 
 /**
@@ -173,11 +191,11 @@ function attributesToString(fn: PatchFunction): string {
  * Calls an expression in case of a function or outputs it as text content.
  */
 function renderDynamicContent(
-    incrementaldom: IncrementalDomRenderer, expr: unknown) {
+    incrementaldom: IncrementalDomRenderer, expr: IdomFunction) {
   // TODO(lukes): check content kind == html
-  if (typeof expr === 'function') {
+  if (expr && expr.isInvokableFn) {
     // The Soy compiler will validate the content kind of the parameter.
-    expr(incrementaldom);
+    expr.invoke(incrementaldom);
   } else {
     incrementaldom.text(String(expr));
   }
@@ -242,10 +260,10 @@ function callDynamicAttributes<A, B>(
 function printDynamicAttr(
     incrementaldom: IncrementalDomRenderer,
     expr: SanitizedHtmlAttribute|string|boolean|IdomFunction) {
-  if (goog.isFunction(expr) &&
+  if ((expr as IdomFunction).isInvokableFn &&
       (expr as IdomFunction).contentKind === SanitizedContentKind.ATTRIBUTES) {
     // tslint:disable-next-line:no-any
-    (expr as any as LetFunction)(incrementaldom);
+    (expr as IdomFunction).invoke(incrementaldom);
     return;
   }
   const attributes = splitAttributes(expr.toString());
@@ -355,7 +373,7 @@ function print(
       incrementaldom.close();
     }
   } else {
-    renderDynamicContent(incrementaldom, expr);
+    renderDynamicContent(incrementaldom, expr as IdomFunction);
   }
 }
 
@@ -380,9 +398,10 @@ function isTruthy(expr: unknown): boolean {
   if (expr instanceof SanitizedContent) return !!expr.getContent();
 
   // idom callbacks.
-  if (typeof expr === 'function') {
+  if ((expr as IdomFunction).isInvokableFn) {
     const renderer = new FalsinessRenderer();
-    expr(renderer);
+    (expr as IdomFunction)
+        .invoke(renderer as unknown as IncrementalDomRenderer);
     return renderer.didRender();
   }
 
