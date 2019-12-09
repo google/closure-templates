@@ -35,9 +35,15 @@ public class ApiCallScopeBindingAnnotations {
 
   private ApiCallScopeBindingAnnotations() {}
 
-  /** Annotation for the localeString parameter in the ApiCallScope. */
+  /**
+   * Annotation for the localeString parameter in the ApiCallScope.
+   *
+   * @deprecated Don't inject this, instead migrate to SoyJavaSourceFunction and access the Locale
+   *     from the context object.
+   */
   @Qualifier
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
+  @Deprecated
   public @interface LocaleString {}
 }
