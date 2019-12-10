@@ -25,8 +25,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -37,7 +35,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import junit.framework.ComparisonFailure;
 import org.junit.Test;
@@ -60,8 +57,7 @@ public final class ContextualAutoescaperTest {
             public Set<Integer> getValidArgsSizes() {
               return ImmutableSet.of(0);
             }
-          },
-          new FakeBidiSpanWrapDirective());
+          });
 
   @Test
   public void testTrivialTemplate() throws Exception {
@@ -2089,25 +2085,6 @@ public final class ContextualAutoescaperTest {
         comparisonFailure.initCause(ex);
         throw comparisonFailure;
       }
-    }
-  }
-
-  static final class FakeBidiSpanWrapDirective
-      implements SoyPrintDirective, SanitizedContentOperator {
-    @Override
-    public String getName() {
-      return "|bidiSpanWrap";
-    }
-
-    @Override
-    public Set<Integer> getValidArgsSizes() {
-      return ImmutableSet.of(0);
-    }
-
-    @Override
-    @Nonnull
-    public SanitizedContent.ContentKind getContentKind() {
-      return SanitizedContent.ContentKind.HTML;
     }
   }
 }
