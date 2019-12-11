@@ -33,7 +33,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.types.ast.TypeNode;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
@@ -100,17 +99,6 @@ public final class CommandTagAttribute {
     this.quoteStyle = checkNotNull(quoteStyle);
     this.valueLocation = checkNotNull(valueLocation);
     this.value = checkNotNull(value);
-    this.valueExprList = null;
-  }
-
-  public CommandTagAttribute(
-      Identifier key, QuoteStyle quoteStyle, TypeNode type, SourceLocation valueLocation) {
-    checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
-    checkNotNull(type);
-    this.key = checkNotNull(key);
-    this.quoteStyle = checkNotNull(quoteStyle);
-    this.valueLocation = checkNotNull(valueLocation);
-    this.value = checkNotNull(type.toString());
     this.valueExprList = null;
   }
 

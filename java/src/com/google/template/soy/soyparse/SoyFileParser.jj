@@ -482,10 +482,6 @@ public class SoyFileParser {
   private static final ImmutableSet<String> EXPR_ATTR_NAMES =
       ImmutableSet.of("data", "genders", "key", "logonly", "variant");
 
-  /** Names of attributes whose values should be parsed as types. */
-  private static final ImmutableSet<String> TYPE_ATTR_NAMES =
-      ImmutableSet.of("kind");
-
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
     return parseExpression(exprText, ErrorReporter.exploding());
@@ -1323,7 +1319,6 @@ private CommandTagAttribute Attribute() :
   ImmutableList<ExprNode> exprList = ImmutableList.of();
   Token qToken;
   QuoteStyle quoteStyle;
-  TypeNode type = null;
 }
 {
   { checkState(token_source.curLexState == IN_CMD_TAG || token_source.curLexState == EXPR); }
@@ -1406,54 +1401,6 @@ private CommandTagAttribute Attribute() :
           Identifier.create(name.identifier(), name.location()),
           quoteStyle,
           exprList);
-    }
-  |
-    // Type attributes
-    LOOKAHEAD( { TYPE_ATTR_NAMES.contains(name.identifier()) } )
-    (
-      <CMD_DOUBLE_QUOTE>
-      {
-        quoteStyle = QuoteStyle.DOUBLE;
-        token_source.SwitchTo(EXPR_NO_DOUBLE_QUOTE);
-      }
-
-      try {
-        // Allow this to be optional to yield a better error message below. Otherwise we will report
-        // that double quotes aren't usable as soy strings.
-        [
-          type = TypeExpr()
-        ]
-        qToken = <END_DQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(IN_CMD_TAG);
-        }
-      } catch (ParseException e) {
-        token_source.SwitchTo(IN_CMD_TAG);
-        qToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
-      }
-    |
-      <CMD_SINGLE_QUOTE>
-      {
-        quoteStyle = QuoteStyle.SINGLE;
-        token_source.SwitchTo(EXPR_NO_SINGLE_QUOTE);
-      }
-
-      try {
-        type = TypeExpr()
-        qToken = <END_SQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(IN_CMD_TAG);
-        }
-      } catch (ParseException e) {
-        token_source.SwitchTo(IN_CMD_TAG);
-        qToken = reportTemplateBodyErrorAndSkipTo(e, SINGLE_QUOTE);
-      }
-    )
-    {
-      if (type == null) {
-        errorReporter.report(createSrcLoc(qToken), PARSER_ERROR, qToken.image, "a type");
-      }
-      return new CommandTagAttribute(name, quoteStyle, type, createSrcLoc(qToken));
     }
   |
     // Non-expression attributes
