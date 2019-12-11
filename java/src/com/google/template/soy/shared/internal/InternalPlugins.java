@@ -16,9 +16,9 @@
 
 package com.google.template.soy.shared.internal;
 
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.basicdirectives.BasicDirectives;
@@ -32,33 +32,20 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
-import java.util.Map;
+import java.util.function.Function;
 
 /** Lists all functions & directives shipped with Soy. */
 public final class InternalPlugins {
   private InternalPlugins() {}
 
-  public static ImmutableMap<String, SoyFunction> internalLegacyFunctionMap() {
-    ImmutableMap.Builder<String, SoyFunction> builder = ImmutableMap.builder();
-    for (String builtinFunctionName : BuiltinFunction.names()) {
-      builder.put(builtinFunctionName, BuiltinFunction.forFunctionName(builtinFunctionName));
-    }
-    return builder.build();
-  }
-
-  public static ImmutableMap<String, SoyFunction> fromLegacyFunctions(
-      Iterable<? extends SoyFunction> functions) {
-    ImmutableMap.Builder<String, SoyFunction> builder = ImmutableMap.builder();
-    for (SoyFunction function : functions) {
-      builder.put(function.getName(), function);
-    }
-    return builder.build();
+  public static ImmutableList<SoyFunction> internalLegacyFunctions() {
+    return ImmutableList.copyOf(BuiltinFunction.values());
   }
 
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
-  public static ImmutableMap<String, SoySourceFunction> internalFunctionMap() {
+  public static ImmutableList<SoySourceFunction> internalFunctions() {
     // TODO(b/19252021): Include BuiltInFunctions
-    return fromFunctions(
+    return ImmutableList.copyOf(
         Iterables.concat(
             BasicFunctions.functions(), BidiFunctions.functions(), I18nFunctions.functions()));
   }
@@ -68,43 +55,25 @@ public final class InternalPlugins {
    * print directives with Soy.
    */
   public static ImmutableMap<String, SoySourceFunction> internalAliasedDirectivesMap() {
-    return internalFunctionMap().entrySet().stream()
+    return internalFunctions().stream()
         .filter(
             e ->
-                e.getValue()
-                    .getClass()
+                e.getClass()
                     .getAnnotation(SoyFunctionSignature.class)
                     .callableAsDeprecatedPrintDirective())
-        .collect(ImmutableMap.toImmutableMap(e -> "|" + e.getKey(), Map.Entry::getValue));
+        .collect(
+            ImmutableMap.toImmutableMap(
+                e -> "|" + e.getClass().getAnnotation(SoyFunctionSignature.class).name(),
+                Function.identity()));
   }
 
-  public static ImmutableMap<String, SoySourceFunction> fromFunctions(
-      Iterable<? extends SoySourceFunction> functions) {
-    ImmutableMap.Builder<String, SoySourceFunction> builder = ImmutableMap.builder();
-    for (SoySourceFunction fn : functions) {
-      SoyFunctionSignature sig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
-      checkState(sig != null, "Missing @SoyFunctionSignature on %s", fn.getClass());
-      builder.put(sig.name(), fn);
-    }
-    return builder.build();
-  }
-
-  public static ImmutableMap<String, SoyPrintDirective> internalDirectiveMap(
+  public static ImmutableList<SoyPrintDirective> internalDirectives(
       final SoyScopedData soyScopedData) {
     Supplier<BidiGlobalDir> bidiProvider = soyScopedData::getBidiGlobalDir;
-    return fromDirectives(
+    return ImmutableList.copyOf(
         Iterables.concat(
             CoreDirectives.directives(),
             BasicDirectives.directives(),
             BidiDirectives.directives(bidiProvider)));
-  }
-
-  public static ImmutableMap<String, SoyPrintDirective> fromDirectives(
-      Iterable<? extends SoyPrintDirective> directives) {
-    ImmutableMap.Builder<String, SoyPrintDirective> builder = ImmutableMap.builder();
-    for (SoyPrintDirective directive : directives) {
-      builder.put(directive.getName(), directive);
-    }
-    return builder.build();
   }
 }

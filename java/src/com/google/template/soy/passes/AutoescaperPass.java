@@ -16,7 +16,6 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
@@ -31,8 +30,7 @@ final class AutoescaperPass extends CompilerFileSetPass {
   private final ErrorReporter errorReporter;
 
   AutoescaperPass(
-      ErrorReporter errorReporter,
-      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      ErrorReporter errorReporter, ImmutableList<? extends SoyPrintDirective> printDirectives) {
     this.errorReporter = errorReporter;
     this.autoescaper = new ContextualAutoescaper(errorReporter, printDirectives);
   }
