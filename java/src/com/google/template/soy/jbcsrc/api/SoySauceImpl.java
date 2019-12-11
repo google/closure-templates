@@ -65,18 +65,19 @@ public final class SoySauceImpl implements SoySauce {
   public SoySauceImpl(
       CompiledTemplates templates,
       SoyScopedData.Enterable apiCallScope,
-      ImmutableList<? extends SoyFunction> functions,
-      ImmutableList<? extends SoyPrintDirective> printDirectives,
+      ImmutableMap<String, ? extends SoyFunction> functions,
+      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives,
       ImmutableMap<String, Supplier<Object>> pluginInstances) {
     this.templates = checkNotNull(templates);
     this.apiCallScope = checkNotNull(apiCallScope);
     ImmutableMap.Builder<String, Supplier<Object>> pluginInstanceBuilder = ImmutableMap.builder();
     pluginInstanceBuilder.putAll(pluginInstances);
 
-    for (SoyFunction fn : functions) {
-      if (fn instanceof SoyJavaFunction) {
-        pluginInstanceBuilder.put(
-            fn.getName(), Suppliers.ofInstance(new LegacyFunctionAdapter((SoyJavaFunction) fn)));
+    for (Map.Entry<String, ? extends SoyFunction> entry : functions.entrySet()) {
+      String fnName = entry.getKey();
+      if (entry.getValue() instanceof SoyJavaFunction) {
+        SoyJavaFunction fn = (SoyJavaFunction) entry.getValue();
+        pluginInstanceBuilder.put(fnName, Suppliers.ofInstance(new LegacyFunctionAdapter(fn)));
       }
     }
 
@@ -84,10 +85,10 @@ public final class SoySauceImpl implements SoySauce {
     // Filter them out.
     ImmutableMap.Builder<String, SoyJavaPrintDirective> soyJavaPrintDirectives =
         ImmutableMap.builder();
-    for (SoyPrintDirective printDirective : printDirectives) {
+    for (Map.Entry<String, ? extends SoyPrintDirective> entry : printDirectives.entrySet()) {
+      SoyPrintDirective printDirective = entry.getValue();
       if (printDirective instanceof SoyJavaPrintDirective) {
-        soyJavaPrintDirectives.put(
-            printDirective.getName(), (SoyJavaPrintDirective) printDirective);
+        soyJavaPrintDirectives.put(entry.getKey(), (SoyJavaPrintDirective) printDirective);
       }
     }
     this.printDirectives = soyJavaPrintDirectives.build();

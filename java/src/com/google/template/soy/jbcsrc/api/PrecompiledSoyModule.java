@@ -27,7 +27,6 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.Optional;
-import java.util.Set;
 import javax.inject.Singleton;
 
 /**
@@ -51,8 +50,8 @@ public final class PrecompiledSoyModule extends AbstractModule {
   @Precompiled
   SoySauce provideSoySauce(
       SoyScopedData scopedData,
-      Set<SoyFunction> pluginFunctions,
-      Set<SoyPrintDirective> pluginDirectives,
+      ImmutableMap<String, ? extends SoyFunction> pluginFunctions,
+      ImmutableMap<String, ? extends SoyPrintDirective> pluginDirectives,
       @PluginInstances Optional<ImmutableMap<String, Supplier<Object>>> pluginInstances) {
     return new SoySauceBuilder()
         .withScope(scopedData)

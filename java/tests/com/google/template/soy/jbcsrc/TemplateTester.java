@@ -58,7 +58,6 @@ import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
@@ -82,10 +81,10 @@ public final class TemplateTester {
   private static RenderContext.Builder createDefaultBuilder() {
     return new RenderContext.Builder()
         .withSoyPrintDirectives(
-            InternalPlugins.internalDirectives(new SoySimpleScope()).stream()
-                .filter(e -> e instanceof SoyJavaPrintDirective)
+            InternalPlugins.internalDirectiveMap(new SoySimpleScope()).entrySet().stream()
+                .filter(e -> e.getValue() instanceof SoyJavaPrintDirective)
                 .collect(
-                    toImmutableMap(SoyPrintDirective::getName, d -> (SoyJavaPrintDirective) d)));
+                    toImmutableMap(Map.Entry::getKey, e -> (SoyJavaPrintDirective) e.getValue())));
   }
 
   static RenderContext getDefaultContext(CompiledTemplates templates) {

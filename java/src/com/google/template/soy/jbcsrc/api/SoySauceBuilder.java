@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc.api;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -39,8 +38,8 @@ import java.util.Map;
 
 /** Constructs {@link SoySauce} implementations. */
 public final class SoySauceBuilder {
-  private ImmutableList<SoyFunction> userFunctions = ImmutableList.of();
-  private ImmutableList<SoyPrintDirective> userDirectives = ImmutableList.of();
+  private ImmutableMap<String, SoyFunction> userFunctions = ImmutableMap.of();
+  private ImmutableMap<String, SoyPrintDirective> userDirectives = ImmutableMap.of();
   private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
   private SoyScopedData scopedData;
   private ClassLoader loader;
@@ -72,8 +71,8 @@ public final class SoySauceBuilder {
   }
 
   /** Sets the user functions. */
-  SoySauceBuilder withFunctions(Iterable<? extends SoyFunction> userFunctions) {
-    this.userFunctions = ImmutableList.copyOf(userFunctions);
+  SoySauceBuilder withFunctions(Map<String, ? extends SoyFunction> userFunctions) {
+    this.userFunctions = ImmutableMap.copyOf(userFunctions);
     return this;
   }
 
@@ -81,8 +80,8 @@ public final class SoySauceBuilder {
    * Sets user directives. Not exposed externally because internal directives should be enough, and
    * additional functionality can be built as SoySourceFunctions.
    */
-  SoySauceBuilder withDirectives(Iterable<? extends SoyPrintDirective> userDirectives) {
-    this.userDirectives = ImmutableList.copyOf(userDirectives);
+  SoySauceBuilder withDirectives(Map<String, ? extends SoyPrintDirective> userDirectives) {
+    this.userDirectives = ImmutableMap.copyOf(userDirectives);
     return this;
   }
 
@@ -104,11 +103,11 @@ public final class SoySauceBuilder {
         new CompiledTemplates(readDelTemplatesFromMetaInf(loader), loader),
         scopedData.enterable(),
         userFunctions, // We don't need internal functions because they only matter at compile time
-        ImmutableList.<SoyPrintDirective>builder()
+        ImmutableMap.<String, SoyPrintDirective>builder()
             // but internal directives are still required at render time.
             // in order to handle escaping logging function invocations.
-            .addAll(InternalPlugins.internalDirectives(scopedData))
-            .addAll(userDirectives)
+            .putAll(InternalPlugins.internalDirectiveMap(scopedData))
+            .putAll(userDirectives)
             .build(),
         userPluginInstances);
   }

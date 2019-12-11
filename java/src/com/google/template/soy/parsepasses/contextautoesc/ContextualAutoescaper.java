@@ -18,6 +18,7 @@ package com.google.template.soy.parsepasses.contextautoesc;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -51,19 +52,23 @@ public final class ContextualAutoescaper {
       SoyErrorKind.of(AUTOESCAPE_ERROR_PREFIX + "{0}", StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
-  private final ImmutableList<? extends SoyPrintDirective> printDirectives;
+  private final ImmutableMap<String, ? extends SoyPrintDirective> printDirectives;
 
   /**
    * This injected ctor provides a blank constructor that is filled, in normal compiler operation,
    * with the core and basic directives defined in com.google.template.soy.{basic,core}directives,
    * and any custom directives supplied on the command line.
    *
-   * @param soyDirectives All SoyPrintDirectives
+   * @param soyDirectivesMap Map of all SoyPrintDirectives (name to directive) such that {@code
+   *     soyDirectivesMap.get(key).getName().equals(key)} for all key in {@code
+   *     soyDirectivesMap.keySet()}.
    */
   public ContextualAutoescaper(
-      ErrorReporter errorReporter, ImmutableList<? extends SoyPrintDirective> soyDirectives) {
+      final ErrorReporter errorReporter,
+      final ImmutableMap<String, ? extends SoyPrintDirective> soyDirectivesMap) {
     this.errorReporter = errorReporter;
-    this.printDirectives = soyDirectives;
+    // Compute the set of directives that are escaping directives.
+    this.printDirectives = soyDirectivesMap;
   }
 
   /**

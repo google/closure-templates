@@ -30,6 +30,7 @@ import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,7 +48,7 @@ public final class InternalPluginsTest {
 
   @Test
   public void testBuiltinPluginsSupportAllBackends() throws Exception {
-    for (SoyPrintDirective directive : InternalPlugins.internalDirectives(data)) {
+    for (SoyPrintDirective directive : InternalPlugins.internalDirectiveMap(data).values()) {
       assertThat(directive).isInstanceOf(SoyJsSrcPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJavaPrintDirective.class);
       assertThat(directive).isInstanceOf(SoyJbcSrcPrintDirective.class);
@@ -57,7 +58,9 @@ public final class InternalPluginsTest {
 
   @Test
   public void testFunctionsSupportAllBackends() {
-    for (SoySourceFunction function : InternalPlugins.internalFunctions()) {
+    for (Map.Entry<String, SoySourceFunction> entry :
+        InternalPlugins.internalFunctionMap().entrySet()) {
+      Object function = entry.getValue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
@@ -75,7 +78,7 @@ public final class InternalPluginsTest {
   public void testStreamingPrintDirectives() throws Exception {
     ImmutableSet.Builder<String> streamingPrintDirectives = ImmutableSet.builder();
     ImmutableSet.Builder<String> nonStreamingPrintDirectives = ImmutableSet.builder();
-    for (SoyPrintDirective directive : InternalPlugins.internalDirectives(data)) {
+    for (SoyPrintDirective directive : InternalPlugins.internalDirectiveMap(data).values()) {
       if (directive instanceof SoyJbcSrcPrintDirective.Streamable) {
         streamingPrintDirectives.add(directive.getName());
       } else {
