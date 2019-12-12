@@ -21,13 +21,13 @@ import SanitizedContent from 'goog:goog.soy.data.SanitizedContent'; // from //ja
 import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
 import SanitizedHtml from 'goog:goog.soy.data.SanitizedHtml'; // from //javascript/closure/soy:data
 import SanitizedHtmlAttribute from 'goog:goog.soy.data.SanitizedHtmlAttribute'; // from //javascript/closure/soy:data
-import * as googString from 'goog:goog.string';  // from //javascript/closure/string
 import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {isAttribute} from 'goog:soy.checks';  // from //javascript/template/soy:checks
 import {ordainSanitizedHtml} from 'goog:soydata.VERY_UNSAFE';  // from //javascript/template/soy:soy_usegoog_js
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
 import {FalsinessRenderer, IncrementalDomRenderer, isMatchingKey, patch, patchOuter} from './api_idom';
+import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
 
@@ -133,7 +133,7 @@ function makeHtml(idomFn: any): IdomFunction {
 }
 
 // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-function makeAttributes(idomFn: any): IdomFunction {
+function makeAttributes(idomFn: any): IdomFunction&SanitizedHtmlAttribute {
   const fn = (() => {
                throw new Error('Should not be called directly');
              }) as unknown as (SanitizedHtmlAttribute & IdomFunction);
@@ -146,7 +146,7 @@ function makeAttributes(idomFn: any): IdomFunction {
   fn.toBoolean = () => isTruthy(idomFn);
   fn.contentKind = SanitizedContentKind.ATTRIBUTES;
   fn.isInvokableFn = true;
-  return fn as IdomFunction;
+  return fn as IdomFunction & SanitizedHtmlAttribute;
 }
 
 /**
@@ -199,28 +199,6 @@ function renderDynamicContent(
   } else {
     incrementaldom.text(String(expr));
   }
-}
-
-/**
- * Matches an HTML attribute name value pair.
- * Name is in group 1.  Value, if present, is in one of group (2,3,4)
- * depending on how it's quoted.
- *
- * This RegExp was derived from visual inspection of
- *   html.spec.whatwg.org/multipage/parsing.html#before-attribute-name-state
- * and following states.
- */
-const htmlAttributeRegExp: RegExp =
-    /([^\t\n\f\r />=]+)[\t\n\f\r ]*(?:=[\t\n\f\r ]*(?:"([^"]*)"?|'([^']*)'?|([^\t\n\f\r >]*)))?/g;
-
-function splitAttributes(attributes: string) {
-  const nameValuePairs: string[][] = [];
-  String(attributes).replace(htmlAttributeRegExp, (s, name, dq, sq, uq) => {
-    nameValuePairs.push(
-        [name, googString.unescapeEntities(dq || sq || uq || '')]);
-    return ' ';
-  });
-  return nameValuePairs;
 }
 
 /**
