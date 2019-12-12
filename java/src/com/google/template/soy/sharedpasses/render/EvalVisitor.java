@@ -674,6 +674,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the v1Expression function can't be used in templates compiled to Java");
+        case ERROR_PLACEHOLDER:
+          throw new AssertionError(
+              "Found errorPlaceholder function at "
+                  + node
+                  + ". An error must have been swallowed during compilation");
         case TO_FLOAT:
           return visitToFloatFunction(node);
         case DEBUG_SOY_TEMPLATE_INFO:

@@ -18,13 +18,14 @@ package com.google.template.soy.exprtree;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import java.util.List;
 
 /** A node representing a method call. (e.g. {@code $myString.length()}) */
 public final class MethodNode extends DataAccessNode {
 
-  private final String methodName;
+  private final Identifier methodName;
 
   /**
    * @param base The base expression that the method is called on.
@@ -36,7 +37,7 @@ public final class MethodNode extends DataAccessNode {
   public MethodNode(
       ExprNode base,
       List<ExprNode> params,
-      String methodName,
+      Identifier methodName,
       SourceLocation location,
       boolean isNullSafe) {
     super(base, location, isNullSafe);
@@ -52,7 +53,7 @@ public final class MethodNode extends DataAccessNode {
   }
 
   /** Returns the name of the method */
-  public String getMethodName() {
+  public Identifier getMethodName() {
     return methodName;
   }
 
@@ -63,7 +64,7 @@ public final class MethodNode extends DataAccessNode {
   @Override
   public String getSourceStringSuffix() {
     StringBuilder sb = new StringBuilder();
-    sb.append(isNullSafe ? "?." : ".").append(getMethodName()).append('(');
+    sb.append(isNullSafe ? "?." : ".").append(getMethodName().identifier()).append('(');
 
     for (int i = 1; i < numChildren(); i++) {
       if (i > 1) {

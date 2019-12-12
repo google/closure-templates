@@ -3598,7 +3598,7 @@ private ExprNode PrecExpr9() :
         MethodNode methodNode = new MethodNode(
             expr,
             params,
-            ident.image,
+            Identifier.create(ident.image, createSrcLoc(ident)),
             createSrcLoc(op, close),
             op.kind == QDOT);
         return methodNode;

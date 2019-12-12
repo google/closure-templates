@@ -50,6 +50,7 @@ public enum BuiltinFunction implements SoyFunction {
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_FLOAT("$$toFloat"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
+  ERROR_PLACEHOLDER("$$error"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -94,6 +95,7 @@ public enum BuiltinFunction implements SoyFunction {
     switch (this) {
       case CSS:
       case VE_DATA:
+      case ERROR_PLACEHOLDER:
         return ImmutableSet.of(1, 2);
       case IS_PRIMARY_MSG_IN_USE:
         return ImmutableSet.of(3);
@@ -137,6 +139,7 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER: // implicitly depends on a plural value
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag
+      case ERROR_PLACEHOLDER: // there is no implementation
         return false;
     }
     throw new AssertionError(this);

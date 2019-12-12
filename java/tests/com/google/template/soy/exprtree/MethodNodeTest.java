@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +35,14 @@ public class MethodNodeTest {
   public void testGetMethodName() {
     VarRefNode baseExpr = new VarRefNode("myVar", LOCATION, null);
     MethodNode method =
-        new MethodNode(baseExpr, ImmutableList.of(), "myMethod", LOCATION, /* isNullSafe= */ false);
+        new MethodNode(
+            baseExpr,
+            ImmutableList.of(),
+            Identifier.create("myMethod", LOCATION),
+            LOCATION,
+            /* isNullSafe= */ false);
 
-    assertThat(method.getMethodName()).isEqualTo("myMethod");
+    assertThat(method.getMethodName().identifier()).isEqualTo("myMethod");
   }
 
   @Test
@@ -47,7 +53,7 @@ public class MethodNodeTest {
             baseExpr,
             ImmutableList.of(
                 new IntegerNode(2, LOCATION), new StringNode("str", QuoteStyle.SINGLE, LOCATION)),
-            "myMethod",
+            Identifier.create("myMethod", LOCATION),
             LOCATION,
             /* isNullSafe= */ true);
 

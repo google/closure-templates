@@ -286,6 +286,11 @@ public final class PassManager {
       building = true;
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
       addPass(new StripSoyCommentsPass(), singleFilePassesBuilder);
+      // TODO(b/123417146): ban methods from being used while under development.  Otherwise they
+      // cause crashes in other parts of the compiler.  See b/145839698
+      if (!options.getExperimentalFeatures().contains("enableMethodNodeParsing")) {
+        addPass(new BanMethodNodesPass(errorReporter), singleFilePassesBuilder);
+      }
       // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
       // autoescaping.
       addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);

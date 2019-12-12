@@ -535,6 +535,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case UNKNOWN_JS_GLOBAL:
         throw new UnsupportedOperationException(
             "the unknownJsGlobal function can't be used in templates compiled to Python");
+      case ERROR_PLACEHOLDER:
+        throw new AssertionError(
+            "Found errorPlaceholder function at "
+                + node
+                + ". An error must have been swallowed during compilation");
       case VE_DATA:
         return NONE;
       case MSG_WITH_ID:
