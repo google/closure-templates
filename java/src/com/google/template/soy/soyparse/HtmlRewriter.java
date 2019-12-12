@@ -20,16 +20,12 @@ import static com.google.common.base.Ascii.toLowerCase;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Multimaps.asMap;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.FormatMethod;
 import com.google.template.soy.base.SourceLocation;
@@ -41,6 +37,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.AstEdits;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -75,7 +72,6 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -85,10 +81,7 @@ import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -1820,90 +1813,6 @@ final class HtmlRewriter {
         String blockName, State state, SourceLocation.Point startPoint) {
       return new ParsingContext(
           blockName, state, startPoint, filePath, edits, errorReporter, nodeIdGen);
-    }
-  }
-
-  /**
-   * A class to record all the edits to the AST we need to make.
-   *
-   * <p>Instead of editing the AST as we go, we record the edits and wait until the end, this makes
-   * a few things easier.
-   *
-   * <ul>
-   *   <li>we don't have to worry about editing nodes while visiting them
-   *   <li>we can easily avoid making any edits if errors were recorded.
-   *       <p>This is encapsulated in its own class so we can easily pass it around and to provide
-   *       some encapsulation.
-   * </ul>
-   */
-  private static final class AstEdits {
-    final Set<StandaloneNode> toRemove = new LinkedHashSet<>();
-    final ListMultimap<StandaloneNode, StandaloneNode> replacements =
-        MultimapBuilder.linkedHashKeys().arrayListValues().build();
-    final ListMultimap<ParentSoyNode<StandaloneNode>, StandaloneNode> newChildren =
-        MultimapBuilder.linkedHashKeys().arrayListValues().build();
-
-    /** Apply all edits. */
-    void apply() {
-      for (StandaloneNode nodeToRemove : toRemove) {
-        ParentSoyNode<StandaloneNode> parent = nodeToRemove.getParent();
-        int index = parent.getChildIndex(nodeToRemove);
-        // NOTE:  we need to remove the child before adding the new children  to handle the case
-        // where we are doing a no-op replacement or the replacement nodes contains nodeToRemove.
-        // no-op replacements can occur when there are pcdata sections that contain no tags
-        parent.removeChild(index);
-        List<StandaloneNode> children = replacements.get(nodeToRemove);
-        if (!children.isEmpty()) {
-          parent.addChildren(index, children);
-        }
-      }
-      for (Map.Entry<ParentSoyNode<StandaloneNode>, List<StandaloneNode>> entry :
-          asMap(newChildren).entrySet()) {
-        entry.getKey().addChildren(entry.getValue());
-      }
-      clear();
-    }
-
-    /** Mark a node for removal. */
-    void remove(StandaloneNode node) {
-      checkNotNull(node);
-      // only record this if the node is actually in the tree already.  Sometimes we call remove
-      // on new nodes that don't have parents yet.
-      if (node.getParent() != null) {
-        toRemove.add(node);
-      }
-    }
-
-    /** Add children to the given parent. */
-    void addChildren(ParentSoyNode<StandaloneNode> parent, Iterable<StandaloneNode> children) {
-      checkNotNull(parent);
-      newChildren.putAll(parent, children);
-    }
-
-    /** Adds the child to the given parent. */
-    void addChild(ParentSoyNode<StandaloneNode> parent, StandaloneNode child) {
-      checkNotNull(parent);
-      checkNotNull(child);
-      newChildren.put(parent, child);
-    }
-
-    /** Replace a given node with the new nodes. */
-    void replace(StandaloneNode oldNode, Iterable<StandaloneNode> newNodes) {
-      checkState(oldNode.getParent() != null, "oldNode must be in the tree in order to replace it");
-      remove(oldNode);
-      replacements.putAll(oldNode, newNodes);
-    }
-
-    /** Replace a given node with the new node. */
-    void replace(StandaloneNode oldNode, StandaloneNode newNode) {
-      replace(oldNode, ImmutableList.of(newNode));
-    }
-
-    /** Clear all the edits. */
-    void clear() {
-      toRemove.clear();
-      replacements.clear();
-      newChildren.clear();
     }
   }
 
