@@ -16,7 +16,7 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
@@ -220,13 +220,12 @@ public final class SimplifyExprVisitorTest {
       PluginResolver resolver =
           new PluginResolver(
               Mode.REQUIRE_DEFINITIONS,
-              /** directives= */
-              ImmutableMap.of(),
-              InternalPlugins.internalLegacyFunctionMap(),
-              ImmutableMap.<String, SoySourceFunction>builder()
-                  .putAll(InternalPlugins.internalFunctionMap())
-                  .put("returnsList", new ReturnsListFunction())
-                  .put("returnsArgument", new ReturnsArgumentFunction())
+              /* soyPrintDirectives= */ ImmutableList.of(),
+              InternalPlugins.internalLegacyFunctions(),
+              ImmutableList.<SoySourceFunction>builder()
+                  .addAll(InternalPlugins.internalFunctions())
+                  .add(new ReturnsListFunction())
+                  .add(new ReturnsArgumentFunction())
                   .build(),
               ErrorReporter.exploding());
       for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(exprRoot, FunctionNode.class)) {

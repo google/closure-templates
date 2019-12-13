@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
@@ -130,7 +129,7 @@ public final class PassManager {
     private SoyTypeRegistry registry;
     // TODO(lukes): combine with the print directive map
     private PluginResolver pluginResolver;
-    private ImmutableMap<String, ? extends SoyPrintDirective> soyPrintDirectives;
+    private ImmutableList<? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
     private boolean allowUnknownGlobals;
@@ -152,8 +151,8 @@ public final class PassManager {
       return this;
     }
 
-    public Builder setSoyPrintDirectiveMap(
-        ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+    public Builder setSoyPrintDirectives(
+        ImmutableList<? extends SoyPrintDirective> printDirectives) {
       this.soyPrintDirectives = checkNotNull(printDirectives);
       return this;
     }

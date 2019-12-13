@@ -16,6 +16,8 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -52,6 +54,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
@@ -71,10 +74,13 @@ final class Rewriter {
   Rewriter(
       Inferences inferences,
       IdGenerator idGen,
-      ImmutableMap<String, ? extends SoyPrintDirective> printDirectives) {
+      ImmutableList<? extends SoyPrintDirective> printDirectives) {
     this.inferences = inferences;
     this.idGen = idGen;
-    this.printDirectives = printDirectives;
+    this.printDirectives =
+        printDirectives.stream()
+            .filter(d -> EscapingMode.fromDirective(d.getName()) != null)
+            .collect(toImmutableMap(SoyPrintDirective::getName, Function.identity()));
   }
 
   /** @return Derived templates that should be added to the parse tree. */

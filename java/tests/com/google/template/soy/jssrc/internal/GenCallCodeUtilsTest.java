@@ -21,8 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -33,7 +32,6 @@ import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
-import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import java.util.regex.Pattern;
@@ -201,16 +199,16 @@ public final class GenCallCodeUtilsTest {
 
   @Test
   public void testGenCallExprForStrictCall() {
-    assertThat(getCallExprTextHelper("{call some.func /}\n", ImmutableList.of("|escapeHtml")))
+    assertThat(getCallExprTextHelper("{call some.func /}\n", ImmutableSet.of("|escapeHtml")))
         .isEqualTo("soy.$$escapeHtml(some.func(null, opt_ijData));");
   }
 
   private static String getCallExprTextHelper(String... callSourceLines) {
-    return getCallExprTextHelper(Joiner.on('\n').join(callSourceLines), ImmutableList.of());
+    return getCallExprTextHelper(Joiner.on('\n').join(callSourceLines), ImmutableSet.of());
   }
 
   private static String getCallExprTextHelper(
-      String callSource, ImmutableList<String> escapingDirectives) {
+      String callSource, ImmutableSet<String> escapingDirectives) {
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(callSource)
@@ -219,10 +217,10 @@ public final class GenCallCodeUtilsTest {
 
     CallNode callNode = (CallNode) SharedTestUtils.getNode(soyTree, 0);
     // Manually setting the escaping directives.
-    ImmutableMap<String, ? extends SoyPrintDirective> directives =
-        InternalPlugins.internalDirectiveMap(new NoOpScopedData());
     callNode.setEscapingDirectives(
-        escapingDirectives.stream().map(directives::get).collect(toImmutableList()));
+        InternalPlugins.internalDirectives(new NoOpScopedData()).stream()
+            .filter(d -> escapingDirectives.contains(d.getName()))
+            .collect(toImmutableList()));
 
     GenCallCodeUtils genCallCodeUtils = JsSrcTestUtils.createGenCallCodeUtils();
     UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();

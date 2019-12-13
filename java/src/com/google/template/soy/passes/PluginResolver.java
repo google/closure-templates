@@ -20,9 +20,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
@@ -37,6 +40,7 @@ import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -49,7 +53,7 @@ public final class PluginResolver {
    */
   public static PluginResolver nullResolver(Mode mode, ErrorReporter reporter) {
     return new PluginResolver(
-        mode, ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of(), reporter);
+        mode, ImmutableList.of(), ImmutableList.of(), ImmutableList.of(), reporter);
   }
 
   private static final SoyErrorKind UNKNOWN_PLUGIN =
@@ -64,8 +68,8 @@ public final class PluginResolver {
 
   private static final SoyErrorKind PLUGIN_NAME_NOT_ALLOWED =
       SoyErrorKind.of(
-          "Plugins named ''{0}'' are not allowed, "
-              + "since they conflict with Soy''s {0}() literal syntax."
+          "Plugin ''{0}'' is named ''{1}'' which is not allowed "
+              + "because it conflicts with Soy''s {1}() literal syntax."
           );
 
   private static final SoyErrorKind DIFFERENT_IMPLS_REGISTERED =
@@ -124,53 +128,30 @@ public final class PluginResolver {
 
   public PluginResolver(
       Mode mode,
-      ImmutableMap<String, SoyPrintDirective> soyPrintDirectives,
-      ImmutableMap<String, SoyFunction> soyFunctions,
-      ImmutableMap<String, SoySourceFunction> sourceFunctions,
+      List<SoyPrintDirective> soyPrintDirectives,
+      List<SoyFunction> soyFunctions,
+      List<SoySourceFunction> sourceFunctions,
       ErrorReporter reporter) {
     this.mode = checkNotNull(mode);
-    this.printDirectives = checkNotNull(soyPrintDirectives);
     this.reporter = checkNotNull(reporter);
-    for (String illegalName : BaseUtils.ILLEGAL_PLUGIN_NAMES) {
-      if (soyFunctions.containsKey(illegalName) || sourceFunctions.containsKey(illegalName)) {
-        reporter.report(SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, illegalName);
-      }
-    }
     // Merge the SoyFunctions & SoySourceFunctions.  While merging, confirm that we only have
     // one implementation for each plugin. They can overlap, but impl must be the same. This
     // indicates a partially migrated plugin.
     // Also confirm that each SoySourceFunction has a @SoyFunctionSignature, which is required.
-    ImmutableMap.Builder<String, Object> mergedFunctions = ImmutableMap.builder();
-    for (Map.Entry<String, SoyFunction> entry : soyFunctions.entrySet()) {
-      SoySourceFunction source = sourceFunctions.get(entry.getKey());
-      if (source != null) {
-        if (source != entry.getValue()) {
-          reporter.report(
-              SourceLocation.UNKNOWN,
-              DIFFERENT_IMPLS_REGISTERED,
-              entry.getKey(),
-              entry.getValue(),
-              source);
-        }
-      } else {
-        // We only insert non-duplicates into the merged map to avoid IllegalArugmentExceptions
-        // building the map.
-        mergedFunctions.put(entry.getKey(), entry.getValue());
-      }
-    }
-    mergedFunctions.putAll(sourceFunctions);
-    this.functions = mergedFunctions.build();
-
-    // Go back over our merged functions and validate all the SoySourceFunction implementations.
-    // We explicitly look *after* merging because SoySourceFunctions might be registered
-    // as SoyFunctions if they also implemented other backends like SoyJsFunction.
-    for (Object function : this.functions.values()) {
+    Map<String, Object> mergedFunctions =
+        Maps.newLinkedHashMapWithExpectedSize(soyFunctions.size() + sourceFunctions.size());
+    for (Object function : Iterables.concat(soyFunctions, sourceFunctions)) {
+      String name;
       if (function instanceof SoySourceFunction) {
-        if (!function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+        SoyFunctionSignature sig = function.getClass().getAnnotation(SoyFunctionSignature.class);
+        if (sig == null) {
           // Make sure a function sig exists.
           reporter.report(
               SourceLocation.UNKNOWN, MISSING_FUNCTION_SIGNATURE, function.getClass().getName());
-        } else if (function instanceof SoyJavaSourceFunction) {
+          continue;
+        }
+        name = sig.name();
+        if (function instanceof SoyJavaSourceFunction) {
           // Also make sure that the applyForJavaSource impl uses a single plugin instance.
           // We don't support multiple instances.
           Set<String> instances =
@@ -183,11 +164,41 @@ public final class PluginResolver {
                 instances);
           }
         }
+      } else {
+        SoyFunction legacyFunction = (SoyFunction) function;
+        name = legacyFunction.getName();
+      }
+      Object old = mergedFunctions.put(name, function);
+      if (old != null) {
+        reporter.report(SourceLocation.UNKNOWN, DIFFERENT_IMPLS_REGISTERED, name, old, function);
+      }
+      if (BaseUtils.ILLEGAL_PLUGIN_NAMES.contains(name)) {
+        reporter.report(
+            SourceLocation.UNKNOWN, PLUGIN_NAME_NOT_ALLOWED, function.getClass().getName(), name);
       }
     }
+    this.functions = ImmutableMap.copyOf(mergedFunctions);
 
-    for (String pdName : soyPrintDirectives.keySet()) {
-      String functionName = getFunctionNameEquivalentToPrintDirectiveName(pdName);
+    Map<String, SoyPrintDirective> indexedDirectives =
+        Maps.newLinkedHashMapWithExpectedSize(soyPrintDirectives.size());
+    for (SoyPrintDirective directive : soyPrintDirectives) {
+      SoyPrintDirective old = indexedDirectives.put(directive.getName(), directive);
+      if (old != null) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            DIFFERENT_IMPLS_REGISTERED,
+            directive.getName(),
+            directive,
+            old);
+      }
+      String functionName = getFunctionNameEquivalentToPrintDirectiveName(directive.getName());
+      if (BaseUtils.ILLEGAL_PLUGIN_NAMES.contains(functionName)) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            PLUGIN_NAME_NOT_ALLOWED,
+            directive.getClass().getName(),
+            functionName);
+      }
       if (COLLISION_WHITELIST.contains(functionName)) {
         continue;
       }
@@ -197,9 +208,10 @@ public final class PluginResolver {
             FUNCTION_PRINT_DIRECTIVE_COLLISION,
             functions.get(functionName).getClass().getName(),
             functionName,
-            soyPrintDirectives.get(pdName).getClass().getName());
+            directive.getClass().getName());
       }
     }
+    this.printDirectives = ImmutableMap.copyOf(indexedDirectives);
   }
 
   /**
