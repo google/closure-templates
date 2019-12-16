@@ -181,7 +181,11 @@ function attributesToString(fn: PatchFunction): string {
   patchOuter(el, elFn);
   const s: string[] = [];
   for (let i = 0; i < el.attributes.length; i++) {
-    s.push(`${el.attributes[i].name}=${el.attributes[i].value}`);
+    if (el.attributes[i].value === '') {
+      s.push(el.attributes[i].name);
+    } else {
+      s.push(`${el.attributes[i].name}=${el.attributes[i].value}`);
+    }
   }
   // The sort is important because attribute order varies per browser.
   return s.sort().join(' ');
