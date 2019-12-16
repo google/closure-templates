@@ -218,6 +218,40 @@ public final class JspbTest {
                 + " opt_data.l);");
   }
 
+  @Test
+  public void testProtoInit_fullyQualifiedExtensionField() {
+    assertThatSoyExpr("example.ExampleExtendable(example.someIntExtension: 1000)")
+        .withTypeRegistry(REGISTRY)
+        .generatesCode(
+            "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
+                + " 1000);");
+
+    assertThatSoyExpr(
+            expr("example.ExampleExtendable(example.someIntExtension: $i)")
+                .withParam("{@param i: int}"))
+        .withTypeRegistry(REGISTRY)
+        .generatesCode(
+            "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
+                + " opt_data.i);");
+  }
+
+  @Test
+  public void testProtoInit_fullyQualifiedExtensionRepeatedField() {
+    assertThatSoyExpr("example.ExampleExtendable(example.listExtensionList: [1000, 2000, 3000])")
+        .withTypeRegistry(REGISTRY)
+        .generatesCode(
+            "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
+                + " [1000, 2000, 3000]);");
+
+    assertThatSoyExpr(
+            expr("example.ExampleExtendable(example.listExtensionList: $l)")
+                .withParam("{@param l: list<int>}"))
+        .withTypeRegistry(REGISTRY)
+        .generatesCode(
+            "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
+                + " opt_data.l);");
+  }
+
   // Proto import tests
 
   /**

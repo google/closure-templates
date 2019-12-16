@@ -79,7 +79,11 @@ public abstract class Field {
 
     for (FieldDescriptor extension : extensions) {
       T field = factory.create(extension);
+      // TODO(b/123417146): remove simple names of extensions.
       fieldsBySoyName.put(field.getName(), field);
+
+      // Store fully qualified name of extension fields.
+      fieldsBySoyName.put(field.getFullyQualifiedName(), field);
     }
 
     ImmutableMap.Builder<String, T> fields = ImmutableMap.builder();
@@ -108,10 +112,12 @@ public abstract class Field {
   private final FieldDescriptor fieldDesc;
   private final boolean shouldCheckFieldPresenceToEmulateJspbNullability;
   private final String name;
+  private final String fullyQualifiedName;
 
   protected Field(FieldDescriptor fieldDesc) {
     this.fieldDesc = checkNotNull(fieldDesc);
     this.name = computeSoyName(fieldDesc);
+    this.fullyQualifiedName = computeSoyFullyQualifiedName(fieldDesc);
     this.shouldCheckFieldPresenceToEmulateJspbNullability =
         ProtoUtils.shouldCheckFieldPresenceToEmulateJspbNullability(fieldDesc);
   }
@@ -119,6 +125,11 @@ public abstract class Field {
   /** Return the name of this member field. */
   public final String getName() {
     return name;
+  }
+
+  /** Return the fully qualified name of this member field. */
+  public final String getFullyQualifiedName() {
+    return fullyQualifiedName;
   }
 
   /**
@@ -136,6 +147,21 @@ public abstract class Field {
   private static String computeSoyName(FieldDescriptor field) {
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, field.getName())
         + fieldSuffix(field);
+  }
+
+  private static String computeSoyFullyQualifiedName(FieldDescriptor field) {
+    String fieldPath;
+    if (!field.isExtension()) {
+      fieldPath = field.getContainingType().getFullName();
+    } else if (field.getExtensionScope() != null) {
+      // Regular extension field
+      fieldPath = field.getExtensionScope().getFullName();
+    } else {
+      // Floating extension
+      fieldPath = field.getFile().getPackage();
+    }
+
+    return fieldPath + "." + computeSoyName(field);
   }
 
   private static String fieldSuffix(FieldDescriptor field) {

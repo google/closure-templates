@@ -3683,8 +3683,8 @@ private VarRefNode VarRef() :
  */
 private ExprNode GlobalOrFunctionCallLike() :
 {
-  Identifier ident;
-  Token openParen = null, closeParen = null, paramName;
+  Identifier ident, paramName;
+  Token openParen = null, closeParen = null, recordKey;
   ExprNode key, val;
   List<ExprNode> params = new ArrayList<ExprNode>();
   Set<String> paramNames;
@@ -3731,7 +3731,9 @@ private ExprNode GlobalOrFunctionCallLike() :
           val = Expr()
           {
             if (!(key instanceof GlobalNode)
-                || !BaseUtils.isIdentifier(((GlobalNode) key).getName())) {
+                || (!BaseUtils.isIdentifier(((GlobalNode) key).getName())
+                   && isRecord)
+                || (!BaseUtils.isDottedIdentifier(((GlobalNode) key).getName()))) {
               errorReporter.report(
                   key.getSourceLocation(),
                   INVALID_KEY_NAME,
@@ -3757,16 +3759,24 @@ private ExprNode GlobalOrFunctionCallLike() :
             LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RPAREN } )
             <COMMA>
 
-            paramName = <IDENT>
+            (
+              LOOKAHEAD( { isRecord } )
+              recordKey = <IDENT>
+              {
+                paramName = Identifier.create(recordKey.image, createSrcLoc(recordKey));
+              }
+            |
+              paramName = Identifier()
+            )
             {
-              if (!paramNames.add(paramName.image)) {
+              if (!paramNames.add(paramName.identifier())) {
                 errorReporter.report(
-                    createSrcLoc(paramName),
+                    paramName.location(),
                     DUPLICATE_KEY_NAME,
                     isRecord ? "record key" : "param name",
-                    paramName.image);
+                    paramName.identifier());
               } else {
-                paramIds.add(Identifier.create(paramName.image, createSrcLoc(paramName)));
+                paramIds.add(paramName);
               }
             }
             <COLON>

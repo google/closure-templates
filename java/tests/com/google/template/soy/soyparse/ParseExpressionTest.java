@@ -467,7 +467,8 @@ public final class ParseExpressionTest {
   @Test
   public void testParseProtoInitCall() throws Exception {
     ExprNode expr =
-        assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'))").isValidExpression();
+        assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'), ext.name: 'str')")
+            .isValidExpression();
     ProtoInitNode protoFn = (ProtoInitNode) expr;
     assertThat(protoFn.getProtoName()).isEqualTo("my.Proto");
     assertThat(protoFn.getParamNames())
@@ -475,15 +476,17 @@ public final class ParseExpressionTest {
             Correspondence.from(
                 (Identifier actual, String expected) -> actual.identifier().equals(expected),
                 "is equal to"))
-        .containsExactly("a", "b", "c")
+        .containsExactly("a", "b", "c", "ext.name")
         .inOrder();
-    assertThat(protoFn.numChildren()).isEqualTo(3);
+    assertThat(protoFn.numChildren()).isEqualTo(4);
     assertThat(((IntegerNode) protoFn.getChild(0)).getValue()).isEqualTo(1);
     assertThat(((GlobalNode) protoFn.getChild(1)).getName()).isEqualTo("glo.bal");
     assertThat(((StringNode) ((FunctionNode) protoFn.getChild(2)).getChild(0)).getValue())
         .isEqualTo("str");
+    assertThat(((StringNode) protoFn.getChild(3)).getValue()).isEqualTo("str");
 
-    assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'),)").isValidExpression();
+    assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'), ext.name: 'str',)")
+        .isValidExpression();
   }
 
   @Test
