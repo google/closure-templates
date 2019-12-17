@@ -399,18 +399,6 @@ $jscomp.polyfill("Map", function(NativeMap) {
 }, "es6", "es3");
 var goog = goog || {};
 goog.global = this || self;
-goog.isDef = function(val) {
-  return void 0 !== val;
-};
-goog.isString = function(val) {
-  return "string" == typeof val;
-};
-goog.isBoolean = function(val) {
-  return "boolean" == typeof val;
-};
-goog.isNumber = function(val) {
-  return "number" == typeof val;
-};
 goog.exportPath_ = function(name, opt_object, opt_objectToExportTo) {
   var parts = name.split("."), cur = opt_objectToExportTo || goog.global;
   parts[0] in cur || "undefined" == typeof cur.execScript || cur.execScript("var " + parts[0]);
@@ -673,12 +661,6 @@ goog.typeOf = function(value) {
     }
   }
   return s;
-};
-goog.isNull = function(val) {
-  return null === val;
-};
-goog.isDefAndNotNull = function(val) {
-  return null != val;
 };
 goog.isArray = function(val) {
   return "array" == goog.typeOf(val);

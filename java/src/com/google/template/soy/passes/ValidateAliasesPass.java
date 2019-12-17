@@ -75,8 +75,7 @@ final class ValidateAliasesPass extends CompilerFilePass {
       }
       SoyType type = registry.getType(alias.alias().identifier());
       // When running with a dummy type provider that parses all types as unknown, ignore that.
-      if (alias.alias().identifier().equals("text")
-          || (type != null && type.getKind() != SoyType.Kind.UNKNOWN)) {
+      if (type != null && type.getKind() != SoyType.Kind.UNKNOWN) {
         errorReporter.report(
             alias.alias().location(), ALIAS_CONFLICTS_WITH_TYPE_NAME, alias.alias());
       }
