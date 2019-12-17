@@ -232,6 +232,7 @@ public final class SoyFileSet {
               .addAll(InternalPlugins.internalFunctions())
               .addAll(extraSourceFunctions.build())
               .build(),
+          ImmutableList.copyOf(InternalPlugins.internalMethods()),
           filesBuilder.build(),
           compilationUnitsBuilder.build(),
           getGeneralOptions(),
@@ -586,6 +587,7 @@ public final class SoyFileSet {
   private final ImmutableList<SoyFunction> soyFunctions;
   private final ImmutableList<SoyPrintDirective> printDirectives;
   private final ImmutableList<SoySourceFunction> soySourceFunctions;
+  private final ImmutableList<SoySourceFunction> soyMethods;
 
   private final boolean skipPluginValidation;
 
@@ -600,6 +602,7 @@ public final class SoyFileSet {
       ImmutableList<SoyFunction> soyFunctions,
       ImmutableList<SoyPrintDirective> printDirectives,
       ImmutableList<SoySourceFunction> soySourceFunctions,
+      ImmutableList<SoySourceFunction> soyMethods,
       ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
       ImmutableList<CompilationUnitAndKind> compilationUnits,
       SoyGeneralOptions generalOptions,
@@ -618,6 +621,7 @@ public final class SoyFileSet {
     this.soyFunctions = InternalPlugins.filterDuplicateFunctions(soyFunctions);
     this.printDirectives = InternalPlugins.filterDuplicateDirectives(printDirectives);
     this.soySourceFunctions = soySourceFunctions;
+    this.soyMethods = soyMethods;
     this.conformanceConfig = checkNotNull(conformanceConfig);
     this.loggingConfig = checkNotNull(loggingConfig);
     this.warningSink = warningSink;
@@ -723,6 +727,7 @@ public final class SoyFileSet {
               printDirectives,
               soyFunctions,
               soySourceFunctions,
+              soyMethods,
               errorReporter);
           // if constructing the resolver found an error, bail out now.
           throwIfErrorsPresent();
@@ -816,6 +821,7 @@ public final class SoyFileSet {
                             printDirectives,
                             soyFunctions,
                             soySourceFunctions,
+                            soyMethods,
                             errorReporter))
                     .disableAllTypeChecking(),
                 // override the type registry so that the parser doesn't report errors when it
@@ -1163,6 +1169,7 @@ public final class SoyFileSet {
                 printDirectives,
                 soyFunctions,
                 soySourceFunctions,
+                soyMethods,
                 errorReporter));
   }
 

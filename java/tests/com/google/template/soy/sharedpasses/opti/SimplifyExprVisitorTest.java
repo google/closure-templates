@@ -227,6 +227,7 @@ public final class SimplifyExprVisitorTest {
                   .add(new ReturnsListFunction())
                   .add(new ReturnsArgumentFunction())
                   .build(),
+              InternalPlugins.internalMethods(),
               ErrorReporter.exploding());
       for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(exprRoot, FunctionNode.class)) {
         function.setSoyFunction(

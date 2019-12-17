@@ -39,7 +39,9 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyDeprecated;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +55,12 @@ public final class PluginResolver {
    */
   public static PluginResolver nullResolver(Mode mode, ErrorReporter reporter) {
     return new PluginResolver(
-        mode, ImmutableList.of(), ImmutableList.of(), ImmutableList.of(), reporter);
+        mode,
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        ImmutableList.of(),
+        reporter);
   }
 
   private static final SoyErrorKind UNKNOWN_PLUGIN =
@@ -82,6 +89,17 @@ public final class PluginResolver {
           "Plugin class ''{0}'' has no @SoyFunctionSignature annotation. "
               + "Classes implementing SoySourceFunction must be annotated with "
               + "@SoyFunctionSignature.");
+
+  private static final SoyErrorKind MISSING_METHOD_SIGNATURE =
+      SoyErrorKind.of(
+          "Plugin class ''{0}'' has no @SoyMethodSignature annotation. "
+              + "Method classes implementing SoySourceFunction must be annotated with "
+              + "@SoyMethodSignature.");
+
+  private static final SoyErrorKind DIFFERENT_METHOD_IMPLS_REGISTERED =
+      SoyErrorKind.of(
+          "Plugin method named ''{0}'' with base type ''{1}'' has two different implementations"
+              + " registered: ''{2}'' and ''{3}''.");
 
   private static final SoyErrorKind MULTIPLE_PLUGIN_INSTANCES =
       SoyErrorKind.of(
@@ -124,6 +142,7 @@ public final class PluginResolver {
   private final Mode mode;
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, Object> functions;
+  private final ImmutableMap<String, Map<String, SoySourceFunction>> methods;
   private final ErrorReporter reporter;
 
   public PluginResolver(
@@ -131,6 +150,7 @@ public final class PluginResolver {
       List<SoyPrintDirective> soyPrintDirectives,
       List<SoyFunction> soyFunctions,
       List<SoySourceFunction> sourceFunctions,
+      List<SoySourceFunction> soyMethods,
       ErrorReporter reporter) {
     this.mode = checkNotNull(mode);
     this.reporter = checkNotNull(reporter);
@@ -212,6 +232,35 @@ public final class PluginResolver {
       }
     }
     this.printDirectives = ImmutableMap.copyOf(indexedDirectives);
+
+    Map<String, Map<String, SoySourceFunction>> methods =
+        Maps.newLinkedHashMapWithExpectedSize(soyMethods.size());
+    for (SoySourceFunction method : soyMethods) {
+      SoyMethodSignature sig = method.getClass().getAnnotation(SoyMethodSignature.class);
+      if (sig == null) {
+        reporter.report(
+            SourceLocation.UNKNOWN, MISSING_METHOD_SIGNATURE, method.getClass().getName());
+        continue;
+      }
+      String methodName = sig.name();
+      String baseType = sig.baseType();
+
+      Map<String, SoySourceFunction> baseTypeToSourceFnMap =
+          methods.containsKey(methodName) ? methods.get(methodName) : new LinkedHashMap<>();
+
+      SoySourceFunction old = baseTypeToSourceFnMap.put(sig.baseType(), method);
+      if (old != null) {
+        reporter.report(
+            SourceLocation.UNKNOWN,
+            DIFFERENT_METHOD_IMPLS_REGISTERED,
+            methodName,
+            baseType,
+            old.getClass().getCanonicalName(),
+            method.getClass().getCanonicalName());
+      }
+      methods.put(methodName, baseTypeToSourceFnMap);
+    }
+    this.methods = ImmutableMap.copyOf(methods);
   }
 
   /**
@@ -275,6 +324,21 @@ public final class PluginResolver {
     checkNumArgs("function", validArgsSize, numArgs, location);
     warnIfDeprecated(name, soyFunction, location);
     return soyFunction;
+  }
+
+  /**
+   * Returns a list of SoySourceFunctions of methods with the given name.
+   *
+   * <p>An error will be reported according to the current {@link Mode} and a placeholder function
+   * will be returned if it cannot be found.
+   */
+  public List<SoySourceFunction> lookupSoyMethod(String name, SourceLocation location) {
+    Map<String, SoySourceFunction> methodBaseTypeToFunctionMap = methods.get(name);
+    if (methodBaseTypeToFunctionMap == null) {
+      reportMissing(location, "method", name, methods.keySet());
+      return ImmutableList.of();
+    }
+    return ImmutableList.copyOf(methodBaseTypeToFunctionMap.values());
   }
 
   private void reportMissing(

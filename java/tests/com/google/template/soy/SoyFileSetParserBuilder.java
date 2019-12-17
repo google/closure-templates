@@ -61,6 +61,7 @@ public final class SoyFileSetParserBuilder {
   private ImmutableList<SoyFunction> soyFunctions;
   private ImmutableList<SoyPrintDirective> soyPrintDirectives;
   private ImmutableList<SoySourceFunction> sourceFunctions;
+  private ImmutableList<SoySourceFunction> soyMethods;
   // disable optimization by default
   private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
@@ -127,6 +128,7 @@ public final class SoyFileSetParserBuilder {
     this.soyFunctions = InternalPlugins.internalLegacyFunctions();
     this.soyPrintDirectives = InternalPlugins.internalDirectives(scopedData);
     this.sourceFunctions = InternalPlugins.internalFunctions();
+    this.soyMethods = InternalPlugins.internalMethods();
   }
 
   /** Enable experiments. Returns this object, for chaining. */
@@ -179,6 +181,19 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder addPrintDirective(SoyPrintDirective printDirective) {
     return addPrintDirectives(ImmutableList.of(printDirective));
+  }
+
+  public SoyFileSetParserBuilder addMethods(Iterable<? extends SoySourceFunction> newMethods) {
+    soyMethods =
+        ImmutableList.<SoySourceFunction>builder()
+            .addAll(this.soyMethods)
+            .addAll(newMethods)
+            .build();
+    return this;
+  }
+
+  public SoyFileSetParserBuilder addMethod(SoySourceFunction method) {
+    return addMethods(ImmutableList.of(method));
   }
 
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
@@ -284,6 +299,7 @@ public final class SoyFileSetParserBuilder {
                 soyPrintDirectives,
                 soyFunctions,
                 sourceFunctions,
+                soyMethods,
                 errorReporter))
         .setAutoescaperEnabled(runAutoescaper)
         .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)

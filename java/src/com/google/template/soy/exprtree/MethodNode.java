@@ -16,16 +16,30 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.util.List;
 
 /** A node representing a method call. (e.g. {@code $myString.length()}) */
 public final class MethodNode extends DataAccessNode {
 
   private final Identifier methodName;
+
+  /**
+   * The SoySourceFunctions that correspond to this node. There could be multiple methods
+   * corresponding to the node when there are multiple method SoySourceFunctions defined with the
+   * same name but different base type. The method resolution occurs before we know the type of the
+   * base expression, so the different implementations are stored until the base type is determined.
+   * If the type of the base expression can be determined at compile time, the list will be left
+   * with one SoySourceFunction. Otherwise, the list will remain to have multiple methods.
+   */
+  private List<SoySourceFunction> methods;
 
   /**
    * @param base The base expression that the method is called on.
@@ -55,6 +69,16 @@ public final class MethodNode extends DataAccessNode {
   /** Returns the name of the method */
   public Identifier getMethodName() {
     return methodName;
+  }
+
+  public void setSoyMethods(List<SoySourceFunction> methods) {
+    checkNotNull(methods);
+    this.methods = methods;
+  }
+
+  public List<SoySourceFunction> getSoyMethods() {
+    checkState(this.methods != null, "setSoyMethods() hasn't been called yet");
+    return this.methods;
   }
 
   /**

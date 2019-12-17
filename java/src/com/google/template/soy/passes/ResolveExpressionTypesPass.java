@@ -53,6 +53,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -792,6 +793,13 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
               node.getKeyExprChild().getSourceLocation());
       node.setType(itemType);
       tryApplySubstitution(node);
+    }
+
+    @Override
+    protected void visitMethodNode(MethodNode node) {
+      visitChildren(node);
+      // TODO(b/123417146): Not implemented. Return unknown type for now.
+      node.setType(UnknownType.getInstance());
     }
 
     @Override
