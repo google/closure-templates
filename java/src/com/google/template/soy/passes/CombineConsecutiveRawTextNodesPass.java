@@ -101,10 +101,14 @@ public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPas
     }
     // general case, there are N rawtextnodes to merge where n > 1
     // merge all the nodes together, then drop all the raw text nodes from the end
-    RawTextNode newNode =
-        RawTextNode.concat(
-            (List<RawTextNode>) parent.getChildren().subList(start, lastNonEmptyRawTextNode + 1));
-    ((ParentSoyNode) parent).replaceChild(start, newNode);
+    if (start < lastNonEmptyRawTextNode) {
+      RawTextNode newNode =
+          RawTextNode.concat(
+              (List<RawTextNode>) parent.getChildren().subList(start, lastNonEmptyRawTextNode + 1));
+
+      ((ParentSoyNode) parent).replaceChild(start, newNode);
+    }
+
     for (int i = end - 1; i > start; i--) {
       parent.removeChild(i);
     }

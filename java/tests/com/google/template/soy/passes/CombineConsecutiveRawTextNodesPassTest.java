@@ -25,6 +25,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.Arrays;
 import org.junit.Test;
@@ -143,5 +144,40 @@ public final class CombineConsecutiveRawTextNodesPassTest {
     assertThat(template.numChildren()).isEqualTo(1);
     assertThat(((RawTextNode) template.getChild(0)).getRawText())
         .isEqualTo(Strings.repeat("<div class='foo'>", numCopies));
+  }
+
+  @Test
+  public void testForConcurrentModificationBug() {
+    String testFileContent =
+        "{namespace boo}\n"
+            + "{template .finishedInWrongBlock}\n"
+            + "{@param p : ?}\n"
+            + "// the whitespace finishes the attribute value, but it was started in another"
+            + " block\n"
+            + "<div x=x{if $p}a {/if}>\n"
+            + "<div x=\"x{if $p}a\"{/if}>  // ditto but for quoted values\n"
+            + "\n"
+            + "// special case for finishing in the wrong block\n"
+            + "{/template}";
+
+    ErrorReporter boomForTest = ErrorReporter.createForTest();
+    SoyFileSetNode soyFileSetNode =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boomForTest)
+            .parse() // NOTE(b/145693330): this would fail.
+            .fileSet();
+    TemplateNode template = soyFileSetNode.getChild(0).getChild(0);
+    for (int i = 0; i < template.numChildren(); i++) {
+      if (template.getChild(i) instanceof RawTextNode) {
+        RawTextNode rtn = (RawTextNode) template.getChild(i);
+        assertThat(rtn.getRawText()).isNotEmpty();
+        if (i > 0) {
+          assertThat(template.getChild(i - 1).getKind()).isNotEqualTo(Kind.RAW_TEXT_NODE);
+        }
+        if (i < template.numChildren() - 1) {
+          assertThat(template.getChild(i + 1).getKind()).isNotEqualTo(Kind.RAW_TEXT_NODE);
+        }
+      }
+    }
   }
 }
