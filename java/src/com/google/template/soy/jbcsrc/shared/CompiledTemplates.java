@@ -187,7 +187,8 @@ public final class CompiledTemplates {
           Class.forName(templateName, /* initialize= */ true, loader)
               .asSubclass(CompiledTemplate.class);
     } catch (ClassNotFoundException e) {
-      throw new IllegalArgumentException("No class was compiled for template: " + name, e);
+      String format = "No class was compiled for template: %s.";
+      throw new IllegalArgumentException(String.format(format, name), e);
     }
     return new TemplateData(templateClass);
   }
