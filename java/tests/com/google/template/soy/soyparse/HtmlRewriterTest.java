@@ -617,6 +617,31 @@ public final class HtmlRewriterTest {
     assertThat(rtn.getReasonAt(rtn.getRawText().length())).isEqualTo(Reason.LITERAL);
   }
 
+  @Test
+  public void testConcatPreservesLiteral() {
+    TemplateNode node =
+        runPass("{literal}<style>div { color: red; }</style>\n{/literal}\n  <div></div>");
+    assertThatASTStringNoCombine(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n" // <-- "last" RawTextNode
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+    StandaloneNode last = node.getChildren().get(node.numChildren() - 3); // last RawTextNode
+    assertThat(last).isInstanceOf(RawTextNode.class);
+    RawTextNode rtn = (RawTextNode) last;
+    assertThat(rtn.getRawText()).isEqualTo("\n"); // must not be collapsed.
+    assertThat(rtn.getReasonAt(rtn.getRawText().length())).isEqualTo(Reason.LITERAL);
+  }
+
   private static TemplateNode runPass(String input) {
     return runPass(input, ErrorReporter.exploding());
   }
@@ -650,5 +675,9 @@ public final class HtmlRewriterTest {
     new CombineConsecutiveRawTextNodesPass().run(parent);
     return assertThat(
         SoyTreeUtils.buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
+  }
+
+  private static StringSubject assertThatASTStringNoCombine(TemplateNode node) {
+    return assertThat(SoyTreeUtils.buildAstString(node, 0, new StringBuilder()).toString());
   }
 }

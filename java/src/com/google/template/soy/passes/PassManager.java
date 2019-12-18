@@ -393,6 +393,7 @@ public final class PassManager {
       }
 
       if (autoescaperEnabled) {
+        addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
         addPass(
             new AutoescaperPass(errorReporter, soyPrintDirectives),
             crossTemplateCheckingPassesBuilder);

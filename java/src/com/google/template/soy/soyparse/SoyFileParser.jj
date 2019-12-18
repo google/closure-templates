@@ -1691,7 +1691,10 @@ private RawTextNode RawText() :
     |
       <CMD_OPEN_LITERAL>
       token = <LITERAL_RAW_TEXT_CONTENT>
-      { builder.addLiteral(token); }
+      {
+        builder.addLiteral(token);
+        return builder.build();
+      }
     |
       ( token = <CMD_FULL_SP>
       | token = <CMD_FULL_NIL>
@@ -1704,6 +1707,11 @@ private RawTextNode RawText() :
       )
       { builder.addTextualCommand(token); }
     )
+    {
+      if (getToken(1).kind == CMD_OPEN_LITERAL) {
+        return builder.build();
+      }
+    }
   )+
 
   { return builder.build(); }
