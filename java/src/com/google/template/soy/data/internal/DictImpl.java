@@ -214,7 +214,8 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
       return key.stringValue();
     } catch (SoyDataException e) {
       throw new SoyDataException(
-          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").");
+          "SoyDict accessed with non-string key (got key type " + key.getClass().getName() + ").",
+          e);
     }
   }
 

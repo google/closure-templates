@@ -827,47 +827,8 @@ goog.inherits = function(childCtor, parentCtor) {
   function tempCtor() {
   }
   tempCtor.prototype = parentCtor.prototype;
-  childCtor.superClass_ = parentCtor.prototype;
   childCtor.prototype = new tempCtor;
   childCtor.prototype.constructor = childCtor;
-  childCtor.base = function(me, methodName, var_args) {
-    for (var args = Array(arguments.length - 2), i = 2; i < arguments.length; i++) {
-      args[i - 2] = arguments[i];
-    }
-    return parentCtor.prototype[methodName].apply(me, args);
-  };
-};
-goog.base = function(me, opt_methodName, var_args) {
-  var caller = arguments.callee.caller;
-  if (goog.STRICT_MODE_COMPATIBLE || goog.DEBUG && !caller) {
-    throw Error("arguments.caller not defined.  goog.base() cannot be used with strict mode code. See http://www.ecma-international.org/ecma-262/5.1/#sec-C");
-  }
-  if ("undefined" !== typeof caller.superClass_) {
-    for (var ctorArgs = Array(arguments.length - 1), i = 1; i < arguments.length; i++) {
-      ctorArgs[i - 1] = arguments[i];
-    }
-    return caller.superClass_.constructor.apply(me, ctorArgs);
-  }
-  if ("string" != typeof opt_methodName && "symbol" != typeof opt_methodName) {
-    throw Error("method names provided to goog.base must be a string or a symbol");
-  }
-  var args = Array(arguments.length - 2);
-  for (i = 2; i < arguments.length; i++) {
-    args[i - 2] = arguments[i];
-  }
-  for (var foundCaller = !1, proto = me.constructor.prototype; proto; proto = Object.getPrototypeOf(proto)) {
-    if (proto[opt_methodName] === caller) {
-      foundCaller = !0;
-    } else {
-      if (foundCaller) {
-        return proto[opt_methodName].apply(me, args);
-      }
-    }
-  }
-  if (me[opt_methodName] === caller) {
-    return me.constructor.prototype[opt_methodName].apply(me, args);
-  }
-  throw Error("goog.base called from a method of one name to a method of a different name");
 };
 goog.scope = function(fn) {
   if (goog.isInModuleLoader_()) {

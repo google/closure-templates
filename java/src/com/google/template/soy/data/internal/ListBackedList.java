@@ -135,7 +135,7 @@ abstract class ListBackedList extends SoyAbstractValue implements SoyList {
         // in Javascript, it is particularly difficult to fix callers.  (internal) b/11416037
         return Integer.parseInt(key.stringValue());
       } catch (IllegalArgumentException e) {
-        throw new SoyDataException("\"" + key + "\" is not a valid list index (must be an int)");
+        throw new SoyDataException("\"" + key + "\" is not a valid list index (must be an int)", e);
       }
     } else {
       return key.integerValue();
