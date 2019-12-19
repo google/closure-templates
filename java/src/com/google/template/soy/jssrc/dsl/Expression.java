@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.Immutable;
@@ -49,9 +50,9 @@ public abstract class Expression extends CodeChunk {
   public static final Expression LITERAL_FALSE = id("false");
   public static final Expression LITERAL_NULL = id("null");
   public static final Expression LITERAL_UNDEFINED = id("undefined");
-  public static final Expression LITERAL_EMPTY_STRING = Leaf.create("''", /* isCheap= */ true);
-  public static final Expression LITERAL_EMPTY_LIST = Leaf.create("[]", /* isCheap= */ true);
-  public static final Expression EMPTY_OBJECT_LITERAL = Leaf.create("{}", /* isCheap= */ false);
+  public static final Expression LITERAL_EMPTY_STRING = stringLiteral("");
+  public static final Expression LITERAL_EMPTY_LIST = arrayLiteral(ImmutableList.of());
+  public static final Expression EMPTY_OBJECT_LITERAL = objectLiteral(ImmutableMap.of());
   public static final Expression THIS = id("this");
 
   // Do not put public static constants or methods on this class.  If you do then this can trigger
@@ -173,6 +174,10 @@ public abstract class Expression extends CodeChunk {
   public static Expression arrowFunction(JsDoc parameters, Statement body) {
     return FunctionDeclaration.createArrowFunction(parameters, body);
   }
+  /** Creates a code chunk representing an arrow function. */
+  public static Expression arrowFunction(JsDoc parameters, Expression body) {
+    return FunctionDeclaration.createArrowFunction(parameters, body);
+  }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
   public static Expression not(Expression arg) {
@@ -213,15 +218,6 @@ public abstract class Expression extends CodeChunk {
   /** Creates a code chunk representing a javascript array literal. */
   public static Expression arrayLiteral(Iterable<? extends Expression> elements) {
     return ArrayLiteral.create(ImmutableList.copyOf(elements));
-  }
-
-  /** Creates a code chunk representing a javascript array comprehension. */
-  public static Expression arrayComprehension(
-      Expression listExpr,
-      Expression itemExpr,
-      Expression iterVarDeclTranslation,
-      Expression filterExpr) {
-    return ArrayComprehension.create(listExpr, itemExpr, iterVarDeclTranslation, filterExpr);
   }
 
   /**
@@ -416,6 +412,11 @@ public abstract class Expression extends CodeChunk {
    */
   final boolean isRepresentableAsSingleExpression() {
     return initialStatements().isEmpty();
+  }
+
+  /** Whether when formatted, this expression will begin with an object literal. */
+  boolean initialExpressionIsObjectLiteral() {
+    return false;
   }
 
   /**

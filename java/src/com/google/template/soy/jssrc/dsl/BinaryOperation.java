@@ -106,4 +106,9 @@ abstract class BinaryOperation extends Operation {
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(arg1()).appendInitialStatements(arg2());
   }
+  
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return arg1().initialExpressionIsObjectLiteral();
+  }
 }

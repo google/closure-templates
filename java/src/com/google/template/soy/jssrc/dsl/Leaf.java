@@ -29,17 +29,33 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @AutoValue
 @Immutable
 abstract class Leaf extends Expression {
-  static Expression create(String text, boolean isCheap, Iterable<GoogRequire> require) {
-    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.copyOf(require));
+  static Leaf create(String text, boolean isCheap, Iterable<GoogRequire> require) {
+    return create(
+        new JsExpr(text, Integer.MAX_VALUE),
+        isCheap,
+        ImmutableSet.copyOf(require),
+        /* initialExpressionIsObjectLiteral=*/ false);
   }
 
   static Leaf create(String text, boolean isCheap) {
-    return create(new JsExpr(text, Integer.MAX_VALUE), isCheap, ImmutableSet.of());
+    return create(text, isCheap, ImmutableSet.<GoogRequire>of());
   }
 
   static Leaf create(JsExpr value, boolean isCheap, Iterable<GoogRequire> requires) {
+    return create(value, isCheap, requires, /* initialExpressionIsObjectLiteral=*/ true);
+  }
+
+  private static Leaf create(
+      JsExpr value,
+      boolean isCheap,
+      Iterable<GoogRequire> requires,
+      boolean initialExpressionIsObjectLiteral) {
     return new AutoValue_Leaf(
-        /* initialStatements= */ ImmutableList.of(), value, ImmutableSet.copyOf(requires), isCheap);
+        /* initialStatements= */ ImmutableList.of(),
+        value,
+        ImmutableSet.copyOf(requires),
+        isCheap,
+        initialExpressionIsObjectLiteral);
   }
 
   abstract JsExpr value();
@@ -63,11 +79,14 @@ abstract class Leaf extends Expression {
   public JsExpr singleExprOrName() {
     return value();
   }
-  
+
   @Override
   public void collectRequires(RequiresCollector collector) {
     for (GoogRequire require : requires()) {
       collector.add(require);
     }
   }
+
+  @Override
+  abstract boolean initialExpressionIsObjectLiteral();
 }

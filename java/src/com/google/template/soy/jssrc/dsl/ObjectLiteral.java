@@ -86,4 +86,9 @@ abstract class ObjectLiteral extends Expression {
       value.collectRequires(collector);
     }
   }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return true;
+  }
 }

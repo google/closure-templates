@@ -69,4 +69,9 @@ abstract class Dot extends Operation {
     receiver().collectRequires(collector);
     key().collectRequires(collector);
   }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return receiver().initialExpressionIsObjectLiteral();
+  }
 }

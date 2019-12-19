@@ -70,4 +70,9 @@ abstract class Bracket extends Operation {
     // No need to protect the expression in the bracket with parens. it's unambiguous.
     ctx.append('[').appendOutputExpression(key()).append(']');
   }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return receiver().initialExpressionIsObjectLiteral();
+  }
 }

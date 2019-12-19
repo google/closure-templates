@@ -84,4 +84,9 @@ abstract class Call extends Operation {
       ctx.appendInitialStatements(arg);
     }
   }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return receiver().initialExpressionIsObjectLiteral();
+  }
 }

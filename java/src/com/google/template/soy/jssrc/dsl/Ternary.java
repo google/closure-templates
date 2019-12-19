@@ -84,4 +84,9 @@ abstract class Ternary extends Operation {
     consequent().collectRequires(collector);
     alternate().collectRequires(collector);
   }
+
+  @Override
+  boolean initialExpressionIsObjectLiteral() {
+    return predicate().initialExpressionIsObjectLiteral();
+  }
 }
