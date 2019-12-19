@@ -21,8 +21,8 @@ import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
+import static com.google.template.soy.jssrc.dsl.Expression.arrayComprehension;
 import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
-import static com.google.template.soy.jssrc.dsl.Expression.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.not;
@@ -103,13 +103,11 @@ import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
-import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -276,28 +274,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitListComprehensionNode(ListComprehensionNode node) {
-    Expression base = visit(node.getListExpr());
-    String listIterVarTranslation =
-        "list_comp_" + node.getNodeId() + "_" + node.getListIterVar().name();
-    variableMappings.put(node.getListIterVar().name(), id(listIterVarTranslation));
-    SoyType listType = SoyTypes.tryRemoveNull(node.getListExpr().getType());
-    SoyType elementType =
-        listType.getKind() == SoyType.Kind.LIST ? ((ListType) listType).getElementType() : null;
-    // elementType can be null if it is the special EMPTY_LIST or if it isn't a known list type.
-    elementType = elementType == null ? UnknownType.getInstance() : elementType;
-    JsDoc doc =
-        JsDoc.builder().addParam(listIterVarTranslation, jsTypeFor(elementType).typeExpr()).build();
-    if (node.getFilterExpr() != null) {
-      base = base.dotAccess("filter").call(arrowFunction(doc, visit(node.getFilterExpr())));
-    }
-    // handle a special case for trivial transformations
-    if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
-      VarRefNode transformNode = (VarRefNode) node.getListItemTransformExpr();
-      if (transformNode.getName().equals(node.getListIterVar().name())) {
-        return base;
-      }
-    }
-    return base.dotAccess("map").call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
+    Expression listIterVarTranslation = addMappingForComprehensionVarDecl(node);
+
+    return arrayComprehension(
+        visit(node.getListExpr()),
+        visit(node.getListItemTransformExpr()),
+        listIterVarTranslation,
+        node.getFilterExpr() == null ? null : visit(node.getFilterExpr()));
   }
 
   @Override
