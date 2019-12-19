@@ -3596,31 +3596,31 @@ private ExprNode PrecExpr9() :
       op = <QDOT>
     )
     ident = <IDENT>
-    [
+    (
       <LPAREN>
       [
         params = ExprList()
       ]
       close = <RPAREN>
       {
-        MethodNode methodNode = new MethodNode(
+        expr = new MethodNode(
             expr,
             params,
             Identifier.create(ident.image, createSrcLoc(ident)),
             createSrcLoc(op, close),
             op.kind == QDOT);
-        return methodNode;
       }
-    ]
-    { // TODO(lukes):  add the source location of the ident as a separate field.  This would be
-      // more useful for error messages about the access
-      expr =
-          new FieldAccessNode(
-              expr,
-              ident.image,
-              createSrcLoc(op, ident),
-              op.kind == QDOT);
-    }
+    |
+      { // TODO(lukes):  add the source location of the ident as a separate field.  This would be
+        // more useful for error messages about the access
+        expr =
+            new FieldAccessNode(
+                expr,
+                ident.image,
+                createSrcLoc(op, ident),
+                op.kind == QDOT);
+      }
+    )
   |
     (
       open = <LBRACKET>

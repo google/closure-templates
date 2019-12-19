@@ -92,7 +92,9 @@ public final class ParseExpressionTest {
       "$aaa.method()",
       "$aaa?.method()",
       "$aaa.method(1, 2, 3)",
-      "$aaa.method(A.b.c)"
+      "$aaa.method(A.b.c)",
+      "$aaa.method().field",
+      "$aaa.method()[0]"
     };
     for (String dataRef : dataRefs) {
       assertThatExpression(dataRef).isValidExpression();
