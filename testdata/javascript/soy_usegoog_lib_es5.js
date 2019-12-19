@@ -1,3 +1,8 @@
+/*
+
+ Copyright The Closure Library Authors.
+ SPDX-License-Identifier: Apache-2.0
+*/
 var $jscomp = $jscomp || {};
 $jscomp.scope = {};
 $jscomp.arrayIteratorImpl = function(array) {
@@ -2577,11 +2582,6 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(prefix, currentString, 
   return currentString;
 };
 goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
-/*
-
- Copyright The Closure Library Authors.
- SPDX-License-Identifier: Apache-2.0
-*/
 goog.fs = {};
 goog.fs.url = {};
 goog.fs.url.createObjectUrl = function(blob) {

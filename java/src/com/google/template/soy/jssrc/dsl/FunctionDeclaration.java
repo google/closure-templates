@@ -33,7 +33,7 @@ abstract class FunctionDeclaration extends Expression {
 
   abstract JsDoc jsDoc();
 
-  abstract Statement body();
+  abstract CodeChunk body();
 
   abstract boolean isArrowFunction();
 
@@ -43,6 +43,11 @@ abstract class FunctionDeclaration extends Expression {
   }
 
   static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Statement body) {
+    return new AutoValue_FunctionDeclaration(
+        /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
+  }
+
+  static FunctionDeclaration createArrowFunction(JsDoc jsDoc, Expression body) {
     return new AutoValue_FunctionDeclaration(
         /* initialStatements= */ ImmutableList.of(), jsDoc, body, true);
   }
@@ -70,14 +75,31 @@ abstract class FunctionDeclaration extends Expression {
     if (!isArrowFunction()) {
       ctx.append("function");
     }
-    ctx.append("(");
-    ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
-    ctx.append(") ");
-    if (isArrowFunction()) {
-      ctx.append("=> ");
+    boolean paramsNeedParens = !isArrowFunction() || jsDoc().params().size() != 1;
+    if (paramsNeedParens) {
+      ctx.append("(");
     }
-    try (FormattingContext ignored = ctx.enterBlock()) {
-      ctx.appendAll(body());
+    ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
+    if (paramsNeedParens) {
+      ctx.append(") ");
+    }
+    if (isArrowFunction()) {
+      ctx.append(" => ");
+    }
+    if (isArrowFunction() && body() instanceof Expression) {
+      Expression exprBody = (Expression) body();
+      if (exprBody.isRepresentableAsSingleExpression()) {
+        // simplified arrow function body
+        ctx.appendOutputExpression((Expression) body());
+      } else {
+        try (FormattingContext ignored = ctx.enterBlock()) {
+          ctx.appendAll(Return.create(exprBody));
+        }
+      }
+    } else {
+      try (FormattingContext ignored = ctx.enterBlock()) {
+        ctx.appendAll(body());
+      }
     }
   }
 }

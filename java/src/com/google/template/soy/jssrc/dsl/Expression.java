@@ -173,6 +173,10 @@ public abstract class Expression extends CodeChunk {
   public static Expression arrowFunction(JsDoc parameters, Statement body) {
     return FunctionDeclaration.createArrowFunction(parameters, body);
   }
+  /** Creates a code chunk representing an arrow function. */
+  public static Expression arrowFunction(JsDoc parameters, Expression body) {
+    return FunctionDeclaration.createArrowFunction(parameters, body);
+  }
 
   /** Creates a code chunk representing the logical negation {@code !} of the given chunk. */
   public static Expression not(Expression arg) {
@@ -213,15 +217,6 @@ public abstract class Expression extends CodeChunk {
   /** Creates a code chunk representing a javascript array literal. */
   public static Expression arrayLiteral(Iterable<? extends Expression> elements) {
     return ArrayLiteral.create(ImmutableList.copyOf(elements));
-  }
-
-  /** Creates a code chunk representing a javascript array comprehension. */
-  public static Expression arrayComprehension(
-      Expression listExpr,
-      Expression itemExpr,
-      Expression iterVarDeclTranslation,
-      Expression filterExpr) {
-    return ArrayComprehension.create(listExpr, itemExpr, iterVarDeclTranslation, filterExpr);
   }
 
   /**
