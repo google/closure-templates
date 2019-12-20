@@ -68,7 +68,7 @@ abstract class CompiledTemplateMetadata {
 
   static CompiledTemplateMetadata create(String templateName) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    TypeInfo type = TypeInfo.create(className);
+    TypeInfo type = TypeInfo.createClass(className);
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),

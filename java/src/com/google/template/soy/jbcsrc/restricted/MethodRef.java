@@ -601,7 +601,7 @@ public abstract class MethodRef {
         // This is for whether the methods owner is an interface.  This is mostly to handle java8
         // default methods on interfaces.  We don't care about those currently, but ASM requires
         // this.
-        opcode() == Opcodes.INVOKEINTERFACE);
+        owner().isInterface());
   }
 
   private void doInvoke(CodeBuilder mv, Iterable<? extends Expression> args) {

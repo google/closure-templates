@@ -700,8 +700,7 @@ final class ProtoUtils {
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       // TODO(lukes): handle map literals specially
       Expression resolved =
-          detacher
-              .resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
+          detacher.resolveSoyValueProviderMap(mapArg.invoke(MethodRef.SOY_MAP_IMPL_AS_JAVA_MAP));
 
       // Enter new scope
       LocalVariableManager.Scope scope = varManager.enterScope();
@@ -1044,7 +1043,7 @@ final class ProtoUtils {
           }
           return Message.class;
       }
-          throw new AssertionError("unsupported field type: " + field);
+      throw new AssertionError("unsupported field type: " + field);
     }
 
     /**
@@ -1146,17 +1145,17 @@ final class ProtoUtils {
   // TODO(lukes): Consider caching? in SoyRuntimeType?
   private static TypeInfo messageRuntimeType(Descriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    return TypeInfo.create(className);
+    return TypeInfo.createClass(className);
   }
 
   private static TypeInfo enumRuntimeType(EnumDescriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    return TypeInfo.create(className);
+    return TypeInfo.createClass(className);
   }
 
   private static TypeInfo builderRuntimeType(Descriptor descriptor) {
     String className = JavaQualifiedNames.getClassName(descriptor);
-    return TypeInfo.create(className + "$Builder");
+    return TypeInfo.createClass(className + "$Builder");
   }
 
   private static Type getRuntimeType(FieldDescriptor field) {
@@ -1170,7 +1169,7 @@ final class ProtoUtils {
       case ENUM:
         return isProto3EnumField(field)
             ? Type.INT_TYPE
-            : TypeInfo.create(JavaQualifiedNames.getClassName(field.getEnumType())).type();
+            : TypeInfo.createClass(JavaQualifiedNames.getClassName(field.getEnumType())).type();
       case FLOAT:
         return Type.FLOAT_TYPE;
       case INT:
@@ -1178,11 +1177,11 @@ final class ProtoUtils {
       case LONG:
         return Type.LONG_TYPE;
       case MESSAGE:
-        return TypeInfo.create(JavaQualifiedNames.getClassName(field.getMessageType())).type();
+        return TypeInfo.createClass(JavaQualifiedNames.getClassName(field.getMessageType())).type();
       case STRING:
         return STRING_TYPE;
     }
-        throw new AssertionError("unexpected type");
+    throw new AssertionError("unexpected type");
   }
 
   /** Returns the {@link MethodRef} for the generated getter method. */
@@ -1235,7 +1234,7 @@ final class ProtoUtils {
             message,
             new Method(
                 "get" + underscoresToCamelCase(descriptor.getName(), true) + "Case",
-                TypeInfo.create(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type(),
+                TypeInfo.createClass(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type(),
                 NO_METHOD_ARGS))
         .asCheap();
   }
@@ -1319,6 +1318,6 @@ final class ProtoUtils {
             + "."
             + JavaQualifiedNames.getOuterClassname(descriptor.getFile());
     return FieldRef.createPublicStaticField(
-        TypeInfo.create(containingClass), extensionFieldName, EXTENSION_TYPE);
+        TypeInfo.createClass(containingClass), extensionFieldName, EXTENSION_TYPE);
   }
 }

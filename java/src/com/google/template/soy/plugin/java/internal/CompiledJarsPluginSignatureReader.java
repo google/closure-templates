@@ -69,7 +69,9 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
   public ReadMethodData findMethod(MethodSignature methodSignature) {
     String className = methodSignature.fullyQualifiedClassName();
     // Get the cached methods per class if we have them, compute them if we don't.
-    ClassSignatures readMethods = readMethodsPerClass.computeIfAbsent(className, k -> index(k));
+    ClassSignatures readMethods =
+        readMethodsPerClass.computeIfAbsent(
+            className, k -> index(k, methodSignature.inInterface()));
     // Get all the possible methods for the partial signature.
     MethodSignatures methodsForSig =
         readMethods.forPartial(PartialSignature.create(methodSignature));
@@ -90,8 +92,8 @@ class CompiledJarsPluginSignatureReader implements PluginSignatureReader {
    * Tries to index the available public methods in the class from reading jars. If reading jars
    * fails, falls back to using reflection.
    */
-  private ClassSignatures index(String runtimeClassName) {
-    TypeInfo owner = TypeInfo.create(runtimeClassName);
+  private ClassSignatures index(String runtimeClassName, boolean inInterface) {
+    TypeInfo owner = TypeInfo.create(runtimeClassName, inInterface);
     for (File f : pluginRuntimeJars) {
       try (ZipFile jar = new ZipFile(f)) {
         ZipEntry entry = jar.getEntry(owner.internalName() + ".class");
