@@ -42,7 +42,6 @@ public final class SoySauceBuilder {
   private ImmutableList<SoyFunction> userFunctions = ImmutableList.of();
   private ImmutableList<SoyPrintDirective> userDirectives = ImmutableList.of();
   private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
-  private SoyScopedData scopedData;
   private ClassLoader loader;
 
   public SoySauceBuilder() {}
@@ -86,17 +85,9 @@ public final class SoySauceBuilder {
     return this;
   }
 
-  /** Sets the scope. Only useful with PrecompiledSoyModule, which has a pre-built scope. */
-  SoySauceBuilder withScope(SoyScopedData scope) {
-    this.scopedData = scope;
-    return this;
-  }
-
   /** Creates a SoySauce. */
   public SoySauce build() {
-    if (scopedData == null) {
-      scopedData = new SoySimpleScope();
-    }
+    SoyScopedData scopedData = new SoySimpleScope();
     if (loader == null) {
       loader = SoySauceBuilder.class.getClassLoader();
     }

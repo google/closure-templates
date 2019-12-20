@@ -362,9 +362,7 @@ public final class SoySauceImpl implements SoySauce {
               .withActiveDelPackageSelector(activeDelegatePackages)
               .withLogger(logger)
               .build();
-      Scoper scoper =
-          new Scoper(
-              apiCallScope, BidiGlobalDir.forStaticIsRtl(msgs.isRtl()), msgs.getLocaleString());
+      Scoper scoper = new Scoper(apiCallScope, BidiGlobalDir.forStaticIsRtl(msgs.isRtl()));
       CompiledTemplate template = templateFactory.create(data, ij);
       return doRender(template, scoper, out, context);
     }
@@ -460,16 +458,14 @@ public final class SoySauceImpl implements SoySauce {
   private static final class Scoper {
     final SoyScopedData.Enterable scope;
     final BidiGlobalDir dir;
-    final String localeString;
 
-    Scoper(SoyScopedData.Enterable scope, BidiGlobalDir dir, String localeString) {
+    Scoper(SoyScopedData.Enterable scope, BidiGlobalDir dir) {
       this.scope = scope;
       this.dir = dir;
-      this.localeString = localeString;
     }
 
     SoyScopedData.InScope enter() {
-      return scope.enter(dir, localeString);
+      return scope.enter(dir);
     }
   }
 }

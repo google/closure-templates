@@ -16,8 +16,6 @@
 
 package com.google.template.soy.shared.internal;
 
-import com.google.auto.value.AutoValue;
-import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.ArrayDeque;
@@ -38,23 +36,17 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
   private static final class InScope implements SoyScopedData.InScope {
     private boolean isClosed;
     private final Thread openThread = Thread.currentThread();
-    private final ArrayDeque<Data> deque;
-    private final Data data;
+    private final ArrayDeque<BidiGlobalDir> deque;
+    private final BidiGlobalDir dir;
 
-    InScope(Data data, ArrayDeque<Data> deque) {
+    InScope(BidiGlobalDir dir, ArrayDeque<BidiGlobalDir> deque) {
       this.deque = deque;
-      this.data = data;
-    }
-
-    @Override
-    @Nullable
-    public String getLocale() {
-      return data.locale();
+      this.dir = dir;
     }
 
     @Override
     public BidiGlobalDir getBidiGlobalDir() {
-      return data.bidiGlobalDir();
+      return dir;
     }
 
     /** Exits the scope */
@@ -76,7 +68,7 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
   }
 
   /** The ThreadLocal holding all the values in scope. */
-  private static final ThreadLocal<ArrayDeque<Data>> scopedValuesTl = new ThreadLocal<>();
+  private static final ThreadLocal<ArrayDeque<BidiGlobalDir>> scopedValuesTl = new ThreadLocal<>();
 
   @Override
   @CheckReturnValue
@@ -90,21 +82,19 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
     return enter(
         bidiGlobalDir == null
             ? BidiGlobalDir.forStaticIsRtl(msgBundle == null ? false : msgBundle.isRtl())
-            : bidiGlobalDir,
-        msgBundle != null ? msgBundle.getLocaleString() : null);
+            : bidiGlobalDir);
   }
 
   @Override
   @CheckReturnValue
-  public InScope enter(BidiGlobalDir bidiGlobalDir, @Nullable String locale) {
-    ArrayDeque<Data> stack = scopedValuesTl.get();
+  public InScope enter(BidiGlobalDir bidiGlobalDir) {
+    ArrayDeque<BidiGlobalDir> stack = scopedValuesTl.get();
     if (stack == null) {
       stack = new ArrayDeque<>();
       scopedValuesTl.set(stack);
     }
-    Data data = Data.create(locale, bidiGlobalDir);
-    stack.push(data);
-    return new InScope(data, stack);
+    stack.push(bidiGlobalDir);
+    return new InScope(bidiGlobalDir, stack);
   }
 
   @Override
@@ -112,35 +102,12 @@ public final class SoySimpleScope implements SoyScopedData, SoyScopedData.Entera
     return this;
   }
 
-  private Data getScopedData() {
-    ArrayDeque<Data> arrayDeque = scopedValuesTl.get();
+  @Override
+  public BidiGlobalDir getBidiGlobalDir() {
+    ArrayDeque<BidiGlobalDir> arrayDeque = scopedValuesTl.get();
     if (arrayDeque == null || arrayDeque.isEmpty()) {
       throw new IllegalStateException("Cannot access scoped data outside of a scoping block");
     }
     return arrayDeque.peek();
-  }
-
-  @Override
-  @Nullable
-  public String getLocale() {
-    return getScopedData().locale();
-  }
-
-  @Override
-  public BidiGlobalDir getBidiGlobalDir() {
-    return getScopedData().bidiGlobalDir();
-  }
-
-  @AutoValue
-  @Immutable
-  abstract static class Data {
-    @Nullable
-    abstract String locale();
-
-    abstract BidiGlobalDir bidiGlobalDir();
-
-    static Data create(@Nullable String locale, BidiGlobalDir bidiGlobalDir) {
-      return new AutoValue_SoySimpleScope_Data(locale, bidiGlobalDir);
-    }
   }
 }

@@ -112,23 +112,19 @@ public final class SoyFileSet {
    * call {@link Builder#addSourceFunction(SoySourceFunction)}.
    */
   public static Builder builder() {
-    return new Builder(
-        new CoreDependencies(new SoySimpleScope(), ImmutableSet.of(), ImmutableSet.of()));
+    return new Builder(new CoreDependencies(ImmutableSet.of(), ImmutableSet.of()));
   }
 
   // Implementation detail of SoyFileSet.Builder.
   // having it as its own 'parameter' class removes a small amount of boilerplate.
   static final class CoreDependencies {
-    private final SoyScopedData scopedData;
     private final ImmutableList<SoyFunction> pluginFunctions;
     private final ImmutableList<SoyPrintDirective> pluginDirectives;
 
     @Inject
     CoreDependencies(
-        SoyScopedData scopedData,
         Set<SoyFunction> pluginFunctions,
         Set<SoyPrintDirective> pluginDirectives) {
-      this.scopedData = scopedData;
       this.pluginFunctions = ImmutableList.copyOf(pluginFunctions);
       this.pluginDirectives = ImmutableList.copyOf(pluginDirectives);
     }
@@ -215,8 +211,9 @@ public final class SoyFileSet {
      * @return The new {@code SoyFileSet}.
      */
     public SoyFileSet build() {
+      SoyScopedData data = new SoySimpleScope();
       return new SoyFileSet(
-          coreDependencies.scopedData,
+          data,
           typeRegistryBuilder.build(),
           ImmutableList.<SoyFunction>builder()
               .addAll(InternalPlugins.internalLegacyFunctions())
@@ -224,7 +221,7 @@ public final class SoyFileSet {
               .addAll(extraSoyFunctions.build())
               .build(),
           ImmutableList.<SoyPrintDirective>builder()
-              .addAll(InternalPlugins.internalDirectives(coreDependencies.scopedData))
+              .addAll(InternalPlugins.internalDirectives(data))
               .addAll(coreDependencies.pluginDirectives)
               .addAll(extraSoyPrintDirectives.build())
               .build(),

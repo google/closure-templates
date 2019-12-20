@@ -17,9 +17,7 @@
 package com.google.template.soy.shared.internal;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
-import com.google.template.soy.shared.restricted.ApiCallScopeBindingAnnotations.LocaleString;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 
@@ -38,17 +36,6 @@ public final class SharedModule extends AbstractModule {
     // Create empty multibinders so we can inject user-supplied ones.
     Multibinder.newSetBinder(binder(), SoyFunction.class);
     Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
-
-    // TODO(user): Once LocaleString is dead, eliminate this and construct it directly in
-    // SoyFileSet
-    bind(SoyScopedData.class).toInstance(new SoySimpleScope());
-  }
-
-  // Unused by Soy, but provided because user plugins currently inject this.
-  @Provides
-  @LocaleString
-  String provideLocaleString(SoyScopedData data) {
-    return data.getLocale();
   }
 
   @Override

@@ -25,11 +25,12 @@ import javax.annotation.Nullable;
  * Access to scoped data for Soy.
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
+ *
+ * <p>TODO(lukes): evaluate whether or not this is still necessary. We should be able to pass the
+ * global dir around via other mechanisms but this might require migrating print directives to
+ * functions. In particular the bididirectives package.
  */
 public interface SoyScopedData {
-
-  @Nullable
-  String getLocale();
 
   BidiGlobalDir getBidiGlobalDir();
 
@@ -47,14 +48,11 @@ public interface SoyScopedData {
 
     /** Enters an occurrence of this scope. */
     @CheckReturnValue
-    InScope enter(BidiGlobalDir bidiGlobalDir, @Nullable String locale);
+    InScope enter(BidiGlobalDir bidiGlobalDir);
   }
 
   /** A subtype of {@link AutoCloseable} that can be closed without an IOException. */
   public interface InScope extends AutoCloseable {
-
-    @Nullable
-    String getLocale();
 
     BidiGlobalDir getBidiGlobalDir();
 

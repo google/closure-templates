@@ -23,7 +23,6 @@ import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.template.soy.shared.internal.SharedModule;
-import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.Optional;
@@ -50,12 +49,10 @@ public final class PrecompiledSoyModule extends AbstractModule {
   @Singleton
   @Precompiled
   SoySauce provideSoySauce(
-      SoyScopedData scopedData,
       Set<SoyFunction> pluginFunctions,
       Set<SoyPrintDirective> pluginDirectives,
       @PluginInstances Optional<ImmutableMap<String, Supplier<Object>>> pluginInstances) {
     return new SoySauceBuilder()
-        .withScope(scopedData)
         .withFunctions(pluginFunctions)
         .withDirectives(pluginDirectives)
         .withPluginInstances(pluginInstances.orElse(ImmutableMap.of()))
