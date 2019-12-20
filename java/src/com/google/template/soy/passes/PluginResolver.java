@@ -368,7 +368,7 @@ public final class PluginResolver {
     }
   }
 
-  private static Set<Integer> getValidArgsSizes(Signature[] signatures) {
+  static Set<Integer> getValidArgsSizes(Signature[] signatures) {
     ImmutableSortedSet.Builder<Integer> builder = ImmutableSortedSet.naturalOrder();
     for (Signature signature : signatures) {
       builder.add(signature.parameterTypes().length);

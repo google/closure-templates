@@ -199,6 +199,7 @@ public final class SoyProtoType extends SoyType {
 
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, FieldWithType> fields;
+  private final ImmutableSet<String> extensionFieldNames;
 
   public SoyProtoType(
       final SoyTypeRegistry typeRegistry, Descriptor descriptor, Set<FieldDescriptor> extensions) {
@@ -220,6 +221,18 @@ public final class SoyProtoType extends SoyType {
                 return new AmbiguousFieldWithType(fields);
               }
             });
+    this.extensionFieldNames =
+        fields.keySet().stream()
+            .filter(
+                fieldName -> {
+                  FieldWithType field = fields.get(fieldName);
+                  // The fields map currently maps both the simple name and the fully qualified name
+                  // of an extension field to the FieldWithType. The extensionFieldNames set
+                  // should only have the fully qualified names of the fields.
+                  return field.getDescriptor().isExtension()
+                      && fieldName.equals(field.getFullyQualifiedName());
+                })
+            .collect(ImmutableSet.toImmutableSet());
   }
 
   @Override
@@ -261,6 +274,11 @@ public final class SoyProtoType extends SoyType {
   /** Returns all the field names of this proto. */
   public ImmutableSet<String> getFieldNames() {
     return fields.keySet();
+  }
+
+  /** Returns all the fully qualified extension field names of this proto. */
+  public ImmutableSet<String> getExtensionFieldNames() {
+    return extensionFieldNames;
   }
 
   /** Returns this proto's type name for the given backend. */
