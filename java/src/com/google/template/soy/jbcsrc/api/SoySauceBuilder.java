@@ -70,8 +70,8 @@ public final class SoySauceBuilder {
     return this;
   }
 
-  /** Sets the user functions. */
-  SoySauceBuilder withFunctions(Iterable<? extends SoyFunction> userFunctions) {
+  /** Sets the user functions. */ SoySauceBuilder withFunctions(
+      Iterable<? extends SoyFunction> userFunctions) {
     this.userFunctions = InternalPlugins.filterDuplicateFunctions(userFunctions);
     return this;
   }
@@ -79,8 +79,8 @@ public final class SoySauceBuilder {
   /**
    * Sets user directives. Not exposed externally because internal directives should be enough, and
    * additional functionality can be built as SoySourceFunctions.
-   */
-  SoySauceBuilder withDirectives(Iterable<? extends SoyPrintDirective> userDirectives) {
+   */ SoySauceBuilder withDirectives(
+      Iterable<? extends SoyPrintDirective> userDirectives) {
     this.userDirectives = InternalPlugins.filterDuplicateDirectives(userDirectives);
     return this;
   }
