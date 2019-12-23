@@ -1,8 +1,8 @@
 # Print Directives
 
 
-Print directives are post-processing on the output of a [`print`
-command](print.md).
+Print directives are post-processing on the output of a
+[`print` command](print.md).
 
 Here are all print directives that are available by default. For information on
 writing custom print directives, see [Plugins](../dev/plugins.md).
@@ -73,7 +73,7 @@ example, in common fonts, the character "x" is about half the width of a Chinese
 character, and "l" is half that. It's better to use CSS size constraints and
 `text-overflow: ellipsis` when possible.
 
-Furthermore, this print directive is no unicode sensitive so special characters
+Furthermore, this print directive is not unicode sensitive so special characters
 like emojis which are encoded using multiple UTF-16 code points, can be
 corrupted when truncated.
 
