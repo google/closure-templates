@@ -36,7 +36,10 @@ import javax.inject.Singleton;
  * full set of deltemplates that should be rendered.
  *
  * <p>Can be installed multiple times.
+ *
+ * @deprecated Use SoySauceBuilder instead
  */
+@Deprecated
 public final class PrecompiledSoyModule extends AbstractModule {
   @Override
   protected void configure() {

@@ -25,7 +25,10 @@ import javax.inject.Qualifier;
  * object.
  *
  * <p>See {@link PrecompiledSoyModule}
+ *
+ * @deprecated Use SoySauceBuilder instead
  */
+@Deprecated
 @Retention(RetentionPolicy.RUNTIME)
 @Qualifier
 public @interface PluginInstances {}

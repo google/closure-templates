@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
  * @deprecated Use SoySauce instead. Apps/framework users should follow this migration guide
  *     go/af-soy-migration. All other users should be able to switch from SoyFileSet.compileToTofu()
  *     to SoyFileSet.compileTemplates(). To use the support for precompilation (outside of
- *     apps/framework) see PrecompiledSoyModule.
+ *     apps/framework) see SoySauceBuilder.
  */
 @Deprecated
 public interface SoyTofu {

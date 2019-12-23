@@ -20,7 +20,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import javax.inject.Qualifier;
 
-/** Binding annotation for a {@link SoySauce} object that is constructed from precompiled soures. */
+/**
+ * Binding annotation for a {@link SoySauce} object that is constructed from precompiled soures. *
+ *
+ * @deprecated Use SoySauceBuilder instead
+ */
+@Deprecated
 @Retention(RetentionPolicy.RUNTIME)
 @Qualifier
 public @interface Precompiled {}
