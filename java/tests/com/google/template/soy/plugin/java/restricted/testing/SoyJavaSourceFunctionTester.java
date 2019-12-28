@@ -265,11 +265,6 @@ public class SoyJavaSourceFunctionTester {
     }
 
     @Override
-    public Expression getRenderedCssNamespaces() {
-      throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public Expression getBidiGlobalDir() {
       if (bidiGlobalDir == BidiGlobalDir.RTL) {
         return staticFieldReference(BidiGlobalDir.class, "RTL").accessor();

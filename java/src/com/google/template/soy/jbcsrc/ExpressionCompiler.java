@@ -1123,11 +1123,6 @@ final class ExpressionCompiler {
                       }
 
                       @Override
-                      public Expression getRenderedCssNamespaces() {
-                        return error();
-                      }
-
-                      @Override
                       public Expression getULocale() {
                         return error();
                       }
