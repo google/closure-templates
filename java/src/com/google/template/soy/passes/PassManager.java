@@ -357,6 +357,7 @@ public final class PassManager {
       // Needs to run after HtmlRewritePass.
       addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
       addPass(new ValidateSkipNodesPass(errorReporter), singleFilePassesBuilder);
+      addPass(new CallAnnotationPass(), singleFilePassesBuilder);
 
       // Fileset passes run on all sources files and have access to a partial template registry so
       // they can examine information about dependencies.
