@@ -211,14 +211,14 @@ final class InferenceEngine {
     @Override
     protected void visitRawTextNode(RawTextNode rawTextNode) {
       context = RawTextContextUpdater.processRawText(rawTextNode, context);
-      if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
+      if (context.uriPart() == UriPart.TRUSTED_RESOURCE_URI_END) {
         uriStart = rawTextNode;
       }
     }
 
     @Override
     protected void visitMsgNode(MsgNode node) {
-      node.setEscapingMode(context.state.getEscapingMode());
+      node.setEscapingMode(context.state().getEscapingMode());
       super.visitMsgNode(node);
     }
 
@@ -236,7 +236,7 @@ final class InferenceEngine {
                 + "message into a {let} block: "
                 + context,
             node);
-      } else if (context.delimType == AttributeEndDelimiter.SPACE_OR_TAG_END) {
+      } else if (context.delimType() == AttributeEndDelimiter.SPACE_OR_TAG_END) {
         throw SoyAutoescapeException.createWithNode(
             "Messages are not supported in this context because a space in the translation would "
                 + "end the attribute value. Wrap the attribute value into quotes.",
@@ -269,7 +269,7 @@ final class InferenceEngine {
       checkUriEnd();
       checkHtmlHtmlAttributePosition(callNode);
 
-      callNode.setHtmlContext(context.state);
+      callNode.setHtmlContext(context.state());
 
       context = inferCallSite(callNode, context, inferences);
 
@@ -357,7 +357,7 @@ final class InferenceEngine {
      */
     @Override
     protected void visitPrintNode(PrintNode printNode) {
-      printNode.setHtmlContext(context.state);
+      printNode.setHtmlContext(context.state());
       checkUriEnd();
       checkHtmlHtmlAttributePosition(printNode);
 
@@ -382,7 +382,7 @@ final class InferenceEngine {
     }
 
     private void checkUriEnd() {
-      if (context.uriPart == UriPart.TRUSTED_RESOURCE_URI_END) {
+      if (context.uriPart() == UriPart.TRUSTED_RESOURCE_URI_END) {
         throw SoyAutoescapeException.createWithNode(
             "TrustedResourceUris containing dynamic content must have a fixed scheme (https) and "
                 + "host using one of the following formats:\n"
@@ -398,7 +398,7 @@ final class InferenceEngine {
     }
 
     private void checkHtmlHtmlAttributePosition(SoyNode node) {
-      if (context.htmlHtmlAttributePosition == HtmlHtmlAttributePosition.NOT_START) {
+      if (context.htmlHtmlAttributePosition() == HtmlHtmlAttributePosition.NOT_START) {
         throw SoyAutoescapeException.createWithNode(
             "HTML attribute values containing HTML can use dynamic expressions only at the start "
                 + "of the value.",
@@ -437,7 +437,7 @@ final class InferenceEngine {
         visit(tag.getChild(0));
       }
       // Make sure the element type was pre-determined when setting the tag name.
-      Preconditions.checkArgument(context.elType != Context.ElementType.NONE);
+      Preconditions.checkArgument(context.elType() != Context.ElementType.NONE);
       context = context.transitionToTagBody();
       // 0 is the tag name
       for (int i = 1; i < tag.numChildren(); i++) {

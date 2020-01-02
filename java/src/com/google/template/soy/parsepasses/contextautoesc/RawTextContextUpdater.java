@@ -88,7 +88,7 @@ final class RawTextContextUpdater {
   public static Context processRawText(RawTextNode rawTextNode, Context context) {
     String rawText = rawTextNode.getRawText();
     // If we are in an attribute value, then decode the text.
-    if (context.delimType != AttributeEndDelimiter.NONE) {
+    if (context.delimType() != AttributeEndDelimiter.NONE) {
       // this text is part of an attribute value,  so we should unescape it.
       // NOTE: our caller guarantees (by way of the html parser) that this text cannot exceed the
       // bounds of the attribute, so we can just unescape the whole thing.
@@ -125,11 +125,11 @@ final class RawTextContextUpdater {
     int earliestEnd = -1;
     Transition earliestTransition = null;
     Matcher earliestMatcher = null;
-    List<Transition> ts = TRANSITIONS.get(context.state);
+    List<Transition> ts = TRANSITIONS.get(context.state());
     if (ts == null) {
       throw new NullPointerException(
           "no transitions for state: "
-              + context.state
+              + context.state()
               + " @"
               + node.substringLocation(offset, offset + 1));
     }
@@ -199,7 +199,7 @@ final class RawTextContextUpdater {
           // bet matched.
           node.substring(Integer.MAX_VALUE /* bogus id */, offset));
     }
-    if (numCharsConsumed == 0 && next.state == context.state) {
+    if (numCharsConsumed == 0 && next.state() == context.state()) {
       throw new IllegalStateException("Infinite loop at `" + text + "` / " + context);
     }
     this.context = next;
@@ -455,12 +455,12 @@ final class RawTextContextUpdater {
       new Transition(Pattern.compile("([:./&?=#])|\\z")) {
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
-          return prior.uriType != UriType.TRUSTED_RESOURCE;
+          return prior.uriType() != UriType.TRUSTED_RESOURCE;
         }
 
         @Override
         Context computeNextContext(RawTextNode node, int offset, Context prior, Matcher matcher) {
-          UriPart uriPart = prior.uriPart;
+          UriPart uriPart = prior.uriPart();
           if (uriPart == UriPart.START) {
             uriPart = UriPart.MAYBE_SCHEME;
           }
@@ -478,7 +478,7 @@ final class RawTextContextUpdater {
       new Transition(Pattern.compile("(?i)^(javascript|data|blob|filesystem):")) {
         @Override
         boolean isApplicableTo(Context prior, Matcher matcher) {
-          return prior.uriPart == UriPart.START && prior.uriType != UriType.TRUSTED_RESOURCE;
+          return prior.uriPart() == UriPart.START && prior.uriType() != UriType.TRUSTED_RESOURCE;
         }
 
         @Override
@@ -523,14 +523,14 @@ final class RawTextContextUpdater {
 
     @Override
     boolean isApplicableTo(Context prior, @Nullable Matcher matcher) {
-      return prior.uriType == UriType.TRUSTED_RESOURCE;
+      return prior.uriType() == UriType.TRUSTED_RESOURCE;
     }
 
     @Override
     Context computeNextContext(
         RawTextNode node, int offset, Context context, @Nullable Matcher matcher) {
       String match = matcher == null ? node.getRawText().substring(offset) : matcher.group();
-      switch (context.uriPart) {
+      switch (context.uriPart()) {
         case START:
           // Most of the work is here.  We expect the match to be one of the following forms:
           // - https://foo/  NOTYPO
@@ -651,8 +651,7 @@ final class RawTextContextUpdater {
                       Pattern.compile("[,;] *(URL *=? *)?['\"]?", Pattern.CASE_INSENSITIVE)) {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
-                      return prior
-                          .toBuilder()
+                      return prior.toBuilder()
                           .withState(HtmlContext.URI)
                           .withUriType(UriType.REFRESH)
                           .withUriPart(UriPart.START)
@@ -760,10 +759,9 @@ final class RawTextContextUpdater {
                   new Transition("`") {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
-                      return prior
-                          .toBuilder()
+                      return prior.toBuilder()
                           .withState(HtmlContext.JS_TEMPLATE_LITERAL)
-                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth + 1)
+                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth() + 1)
                           .build();
                     }
                   },
@@ -772,7 +770,7 @@ final class RawTextContextUpdater {
                     Context computeNextContext(Context prior, Matcher matcher) {
                       // if we are in a template, then this puts us back into the template string
                       // e.g.  `foo${bar}`
-                      if (prior.jsTemplateLiteralNestDepth > 0) {
+                      if (prior.jsTemplateLiteralNestDepth() > 0) {
                         return prior.toBuilder().withState(HtmlContext.JS_TEMPLATE_LITERAL).build();
                       }
                       // stay in js, this must be part of some control flow character
@@ -783,16 +781,14 @@ final class RawTextContextUpdater {
                     @Override
                     Context computeNextContext(
                         RawTextNode node, int offset, Context prior, Matcher matcher) {
-                      switch (prior.slashType) {
+                      switch (prior.slashType()) {
                         case DIV_OP:
-                          return prior
-                              .toBuilder()
+                          return prior.toBuilder()
                               .withState(HtmlContext.JS)
                               .withSlashType(Context.JsFollowingSlash.REGEX)
                               .build();
                         case REGEX:
-                          return prior
-                              .toBuilder()
+                          return prior.toBuilder()
                               .withState(HtmlContext.JS_REGEX)
                               .withSlashType(Context.JsFollowingSlash.NONE)
                               .build();
@@ -808,7 +804,7 @@ final class RawTextContextUpdater {
                                   + "`",
                               suffixNode);
                       }
-                      throw new AssertionError(prior.slashType);
+                      throw new AssertionError(prior.slashType());
                     }
                   },
                   /**
@@ -886,10 +882,9 @@ final class RawTextContextUpdater {
                   new Transition("`") {
                     @Override
                     Context computeNextContext(Context prior, Matcher matcher) {
-                      return prior
-                          .toBuilder()
+                      return prior.toBuilder()
                           .withState(HtmlContext.JS)
-                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth - 1)
+                          .withJsTemplateLiteralNestDepth(prior.jsTemplateLiteralNestDepth() - 1)
                           .withSlashType(Context.JsFollowingSlash.REGEX)
                           .build();
                     }
