@@ -152,8 +152,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     T elementValue;
     T callValue;
 
-    public Holder(T value) {
+    public Holder(T value, T callValue) {
       this.elementValue = value;
+      this.callValue = callValue;
     }
   }
 
@@ -271,7 +272,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     keyCounterStack = new ArrayDeque<>();
-    keyCounterStack.push(new Holder<>(0));
+    keyCounterStack.push(new Holder<>(0, 0));
     staticsCounter = 0;
     SanitizedContentKind kind = node.getContentKind();
     getJsCodeBuilder().setContentKind(kind);
@@ -824,6 +825,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           break;
       }
 
+      TemplateNode template = node.getNearestAncestor(TemplateNode.class);
       String keyVariable = "_keyVariable" + staticsCounter++;
       if (shouldPushKey) {
         if (node.getKeyExpr() != null) {
@@ -833,10 +835,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
           getJsCodeBuilder()
               .append(
                   VariableDeclaration.builder(keyVariable)
-                      .setRhs(
-                          INCREMENTAL_DOM_PUSH_KEY.call(
-                              JsRuntime.XID.call(
-                                  Expression.stringLiteral(node.getTemplateCallKey()))))
+                      .setRhs(INCREMENTAL_DOM_PUSH_KEY.call(incrementKeyForCall(template)))
                       .build());
         }
       }
@@ -998,6 +997,17 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   /**
+   * Returns a unique key for the template. This has the side-effect of incrementing the current
+   * keyCounter at the top of the stack. This is for calls to disambugate between HTML nodes and
+   * calls.
+   */
+  private Expression incrementKeyForCall(TemplateNode template) {
+    Holder<Integer> keyCounter = keyCounterStack.peek();
+    return JsRuntime.XID.call(
+        Expression.stringLiteral(template.getTemplateName() + "-call-" + keyCounter.callValue++));
+  }
+
+  /**
    * Removes static children from {@code node} and returns them in a map of key to value. For
    * attribute nodes that are known to be static, we can improve performance by adding them to the
    * statics array(http://google.github.io/incremental-dom/#statics-array).
@@ -1091,7 +1101,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (keyNode == null) {
       key = incrementKeyForTemplate(template);
     } else {
-      keyCounterStack.push(new Holder<>(0));
+      keyCounterStack.push(new Holder<>(0, 0));
     }
     args.add(key);
 

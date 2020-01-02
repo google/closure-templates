@@ -73,12 +73,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Nullable private HtmlContext htmlContext;
 
   /**
-   * The call key, which is the encompassing template name along with position in template. This is
-   * used to help with dom alignment in Incremental DOM backend.
-   */
-  @Nullable private String callKey;
-
-  /**
    * Escaping directives to apply to the return value. With strict autoescaping, the result of each
    * call site is escaped, which is potentially a no-op if the template's return value is the
    * correct SanitizedContent object.
@@ -152,7 +146,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
     this.escapingDirectives = orig.escapingDirectives;
-    this.callKey = orig.callKey;
     this.isPcData = orig.getIsPcData();
   }
 
@@ -172,14 +165,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   public boolean isPassingData() {
     return isPassingAllData || dataExpr != null;
-  }
-
-  public void setTemplateCallKey(String key) {
-    this.callKey = key;
-  }
-
-  public String getTemplateCallKey() {
-    return callKey;
   }
 
   public boolean isPassingAllData() {
