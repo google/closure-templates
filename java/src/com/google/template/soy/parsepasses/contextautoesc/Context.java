@@ -39,6 +39,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Pattern;
@@ -56,13 +57,11 @@ import javax.annotation.Nullable;
  * <p>The contextual autoescape rewriter propagates contexts so that it can infer an appropriate
  * {@link EscapingMode escaping function} for each <code>{print ...}</code> command.
  *
- * <p>To make sure it can correctly identify a unique escape convention for all paths to a
- * particular print command, it may clone a template for each context in which it is called, using
- * the {@link Context#packedBits bitpacked} form of the context to generate a unique template name.
- *
  */
 @Immutable
 public final class Context {
+
+  // TODO(lukes): consider implementing as an @AutoValue
 
   /**
    * List of link types (values of the <link rel=...> attribute) for which the link is a regular
@@ -633,75 +632,16 @@ public final class Context {
 
   @Override
   public int hashCode() {
-    return packedBits();
-  }
-
-  /**
-   * An integer form that uniquely identifies this context. This form is not guaranteed to be stable
-   * across versions, so do not use as a long-lived serialized form.
-   */
-  public int packedBits() {
-    int bits = templateNestDepth;
-    bits = (bits << N_URI_TYPE_BITS) | uriType.ordinal();
-    bits = (bits << N_URI_PART_BITS) | uriPart.ordinal();
-    bits = (bits << N_JS_SLASH_BITS) | slashType.ordinal();
-    bits = (bits << N_DELIM_BITS) | delimType.ordinal();
-    bits = (bits << N_ATTR_BITS) | attrType.ordinal();
-    bits = (bits << N_ELEMENT_BITS) | elType.ordinal();
-    bits = (bits << N_STATE_BITS) | state.ordinal();
-    return bits;
-  }
-
-  /** The number of bits needed to store a {@link HtmlContext} value. */
-  private static final int N_STATE_BITS = 5;
-
-  /** The number of bits needed to store a {@link ElementType} value. */
-  private static final int N_ELEMENT_BITS = 4;
-
-  /** The number of bits needed to store a {@link AttributeType} value. */
-  private static final int N_ATTR_BITS = 3;
-
-  /** The number of bits needed to store a {@link AttributeEndDelimiter} value. */
-  private static final int N_DELIM_BITS = 2;
-
-  /** The number of bits needed to store a {@link JsFollowingSlash} value. */
-  private static final int N_JS_SLASH_BITS = 2;
-
-  /** The number of bits needed to store a {@link UriPart} value. */
-  private static final int N_URI_PART_BITS = 4;
-
-  /** The number of bits needed to store a {@link UriType} value. */
-  private static final int N_URI_TYPE_BITS = 3;
-
-  static {
-    // extracted to another method to scope the unused suppression, which warns about the dead
-    // condition (the point is that it is dead)
-    checkEnoughBits();
-  }
-
-  @SuppressWarnings("unused")
-  private static void checkEnoughBits() {
-    // We'd better have enough bits in an int.
-    if ((N_STATE_BITS
-            + N_ELEMENT_BITS
-            + N_ATTR_BITS
-            + N_DELIM_BITS
-            + N_JS_SLASH_BITS
-            + N_URI_PART_BITS
-            + N_URI_TYPE_BITS)
-        > 32) {
-      throw new AssertionError();
-    }
-    // And each enum's ordinals must fit in the bits allocated.
-    if ((1 << N_STATE_BITS) < HtmlContext.values().length
-        || (1 << N_ELEMENT_BITS) < ElementType.values().length
-        || (1 << N_ATTR_BITS) < AttributeType.values().length
-        || (1 << N_DELIM_BITS) < AttributeEndDelimiter.values().length
-        || (1 << N_JS_SLASH_BITS) < JsFollowingSlash.values().length
-        || (1 << N_URI_PART_BITS) < UriPart.values().length
-        || (1 << N_URI_TYPE_BITS) < UriType.values().length) {
-      throw new AssertionError();
-    }
+    return Objects.hash(
+        state,
+        elType,
+        attrType,
+        delimType,
+        slashType,
+        uriPart,
+        uriType,
+        templateNestDepth,
+        jsTemplateLiteralNestDepth);
   }
 
   /** Determines the correct URI part if two branches are joined. */
