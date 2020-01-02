@@ -2,7 +2,8 @@
 
 [TOC]
 
-## How do I render a Soy template using Java?
+
+<!--#include file="includes/configuring-java-builders.md"-->
 
 
 <!-- Open source docs. TODO(b/141946412): Remove this section once we support invocation builders in OS.  -->
