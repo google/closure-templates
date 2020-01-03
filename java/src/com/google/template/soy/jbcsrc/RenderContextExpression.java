@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
@@ -51,11 +50,6 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
 
   private static final MethodRef GET_PRINT_DIRECTIVE =
       MethodRef.create(RenderContext.class, "getPrintDirective", String.class);
-
-  public static final MethodRef ENTER_LOGONLY =
-      MethodRef.create(RenderContext.class, "enterLogOnly", LogStatement.class);
-
-  public static final MethodRef EXIT_LOGONLY = MethodRef.create(RenderContext.class, "exitLogOnly");
 
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);

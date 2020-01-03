@@ -23,7 +23,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyList;
@@ -39,7 +38,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
-import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -80,17 +78,6 @@ public final class RenderContext {
 
   private final boolean debugSoyTemplateInfo;
   private final SoyLogger logger;
-  /**
-   * Whenever we visit a template call, we know that it will be rendered. The main exception is in
-   * the case of logOnly. Whenever logOnly is true, we do execute the templates with the knowledge
-   * that it *won't* be rendered. To emulate that, we keep a stack of shouldRender booleans (the
-   * opposite of logOnly). It starts off at [true] and if we encounter a logOnly, it changes to
-   * [true, false]. Subsequent evaluations may make it [true, false, true]. In order to decide if a
-   * template should collect CSS, we take the union of the stack, so [true, false, true] would
-   * evaluate to true & false & true, which is false. When we exit a log statement, we pop off the
-   * top and eventually we will end up back at [true].
-   */
-  private final ArrayDeque<Boolean> renderCounter = new ArrayDeque<>();
 
   private RenderContext(Builder builder) {
     this.activeDelPackageSelector = checkNotNull(builder.activeDelPackageSelector);
@@ -145,15 +132,6 @@ public final class RenderContext {
   public String renameXid(String id) {
     String string = xidRenamingMap.get(id);
     return string == null ? id + "_" : string;
-  }
-
-  public LogStatement enterLogOnly(LogStatement logStatement) {
-    renderCounter.push(!logStatement.logOnly());
-    return logStatement;
-  }
-
-  public void exitLogOnly() {
-    renderCounter.pop();
   }
 
   public Object getPluginInstance(String name) {

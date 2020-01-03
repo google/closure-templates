@@ -755,7 +755,7 @@ public final class JbcSrcRuntime {
     }
   }
 
-  public static LogStatement createLogStatement(SoyVisualElementData veData, boolean logOnly) {
+  public static LogStatement createLogStatement(boolean logOnly, SoyVisualElementData veData) {
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
 

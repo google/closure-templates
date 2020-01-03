@@ -427,7 +427,7 @@ public abstract class MethodRef {
 
   public static final MethodRef CREATE_LOG_STATEMENT =
       MethodRef.create(
-          JbcSrcRuntime.class, "createLogStatement", SoyVisualElementData.class, boolean.class);
+          JbcSrcRuntime.class, "createLogStatement", boolean.class, SoyVisualElementData.class);
 
   public static final MethodRef CLOSEABLE_CLOSE = MethodRef.create(Closeable.class, "close");
 

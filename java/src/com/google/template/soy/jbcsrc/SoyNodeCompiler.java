@@ -129,7 +129,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * Creates a SoyNodeCompiler
    *
    * @param innerClasses The current set of inner classes
-   * @param stateField The field on the current class that holds the state variable
    * @param thisVar An expression that returns 'this'
    * @param appendableVar An expression that returns the current AdvisingAppendable that we are
    *     rendering into
@@ -908,11 +907,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           hasLogger.gen(cb); // HL, LO
           cb.ifZCmp(EQ, noLogger); // LO
           veData.gen(cb); // veData, LO
-          cb.swap(); // LO, veData
           MethodRef.CREATE_LOG_STATEMENT.invokeUnchecked(cb); // LS
-          parameterLookup.getRenderContext().gen(cb); // RC, LS
-          cb.swap(); // LS, RC
-          RenderContextExpression.ENTER_LOGONLY.invokeUnchecked(cb); // LS
           appendableExpression.gen(cb); // A, LS
           cb.swap(); // LS, A
           AppendableExpression.ENTER_LOGGABLE_STATEMENT.invokeUnchecked(cb); // A
@@ -927,8 +922,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           cb.mark(bodyLabel);
 
           body.gen(cb);
-          parameterLookup.getRenderContext().gen(cb); // RC
-          RenderContextExpression.EXIT_LOGONLY.invokeUnchecked(cb); // LS
           exitStatement.gen(cb);
         }
       };
@@ -939,7 +932,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                   appendableExpression
                       .enterLoggableElement(
                           MethodRef.CREATE_LOG_STATEMENT.invoke(
-                              veData, BytecodeUtils.constant(false)))
+                              BytecodeUtils.constant(false), veData))
                       .toStatement()
                       .labelStart(restartPoint))
               .asStatement();

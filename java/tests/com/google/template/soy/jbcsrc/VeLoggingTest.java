@@ -17,6 +17,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -171,6 +172,36 @@ public final class VeLoggingTest {
     // logonly ve's disable content generation
     assertThat(sb.toString()).isEqualTo("<div data-id=2></div>");
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1, logonly}\nvelog{id=2}");
+  }
+
+  @Test
+  public void testBasicLogging_logonly_false_noLogger() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    renderTemplate(
+        ImmutableMap.of("b", false),
+        OutputAppendable.create(sb, SoyLogger.NO_OP),
+        SoyLogger.NO_OP,
+        "{@param b : bool}",
+        "{velog Foo logonly=\"$b\"}<div></div>{/velog}");
+    // logonly ve's disable content generation
+    assertThat(sb.toString()).isEqualTo("<div></div>");
+  }
+
+  @Test
+  public void testBasicLogging_logonly_true_noLogger() throws Exception {
+    try {
+      renderTemplate(
+          ImmutableMap.of("b", true),
+          OutputAppendable.create(new StringBuilder(), SoyLogger.NO_OP),
+          SoyLogger.NO_OP,
+          "{@param b : bool}",
+          "{velog Foo logonly=\"$b\"}<div></div>{/velog}");
+      fail();
+    } catch (IllegalStateException expected) {
+      assertThat(expected)
+          .hasMessageThat()
+          .isEqualTo("Cannot set logonly=\"true\" unless there is a logger configured");
+    }
   }
 
   @Test

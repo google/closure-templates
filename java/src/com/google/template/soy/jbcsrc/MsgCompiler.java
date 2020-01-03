@@ -489,7 +489,7 @@ final class MsgCompiler {
                   return appendable
                       .enterLoggableElement(
                           MethodRef.CREATE_LOG_STATEMENT.invoke(
-                              veData, /*logonly*/ BytecodeUtils.constant(false)))
+                              /*logonly*/ BytecodeUtils.constant(false), veData))
                       .toStatement()
                       .labelStart(restartPoint);
                 }
