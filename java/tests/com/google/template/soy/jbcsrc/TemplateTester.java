@@ -24,6 +24,7 @@ import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.truth.FailureMetadata;
@@ -158,6 +159,7 @@ public final class TemplateTester {
     private CompiledTemplate.Factory factory;
     private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
     private SoyGeneralOptions generalOptions = new SoyGeneralOptions();
+    private ImmutableList<String> experimentalFeatures = ImmutableList.of();
     private RenderContext defaultContext;
 
     private CompiledTemplateSubject(FailureMetadata failureMetadata, String subject) {
@@ -169,6 +171,11 @@ public final class TemplateTester {
       classData = null;
       factory = null;
       this.typeRegistry = typeRegistry;
+      return this;
+    }
+
+    CompiledTemplateSubject withExperimentalFeatures(ImmutableList<String> experimentalFeatures) {
+      this.experimentalFeatures = experimentalFeatures;
       return this;
     }
 
@@ -275,6 +282,7 @@ public final class TemplateTester {
           builder
               .typeRegistry(typeRegistry)
               .options(generalOptions)
+              .enableExperimentalFeatures(experimentalFeatures)
               .errorReporter(ErrorReporter.exploding())
               .build();
       ParseResult parseResult = parser.parse();
@@ -350,6 +358,7 @@ public final class TemplateTester {
                 .typeRegistry(typeRegistry)
                 .options(generalOptions)
                 .errorReporter(ErrorReporter.exploding())
+                .enableExperimentalFeatures(experimentalFeatures)
                 .parse();
         SoyFileSetNode fileSet = parseResult.fileSet();
 
