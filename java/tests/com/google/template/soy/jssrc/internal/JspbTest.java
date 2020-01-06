@@ -123,6 +123,22 @@ public final class JspbTest {
         .withPrecedence(TIMES);
   }
 
+  @Test
+  public void testGetExtension() {
+    assertThatSoyExpr(
+            expr("$proto.getExtension(example.someIntExtension)")
+                .withParam("{@param proto: example.ExampleExtendable}"))
+        .withTypeRegistry(REGISTRY)
+        .withExperimentalFeatures(ImmutableList.of("enableMethodNodeParsing"))
+        .generatesCode("opt_data.proto.getExtension(proto.example.someIntExtension);");
+    assertThatSoyExpr(
+            expr("$proto.getExtension(example.listExtensionList)")
+                .withParam("{@param proto: example.ExampleExtendable}"))
+        .withTypeRegistry(REGISTRY)
+        .withExperimentalFeatures(ImmutableList.of("enableMethodNodeParsing"))
+        .generatesCode("opt_data.proto.getExtension(proto.example.listExtensionList);");
+  }
+
   // Proto initialization tests
 
   @Test

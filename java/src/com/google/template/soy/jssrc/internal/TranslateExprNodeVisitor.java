@@ -55,6 +55,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
+import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -72,6 +73,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -94,10 +96,12 @@ import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
+import com.google.template.soy.jssrc.internal.NullSafeAccumulator.ProtoCall;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -393,8 +397,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   visit(keyNode).castAs("?"), itemAccess.isNullSafe()); // vanilla bracket access
         }
       case METHOD_NODE:
-        throw new UnsupportedOperationException("Methods are not implemented yet.");
-
+        {
+          MethodNode method = (MethodNode) node;
+          NullSafeAccumulator base = visitNullSafeNode(method.getBaseExprChild());
+          return genCodeForMethodCall(base, method);
+        }
       default:
         return new NullSafeAccumulator(visit(node));
     }
@@ -443,6 +450,37 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     }
 
     return FieldAccess.id(fieldName);
+  }
+
+  /**
+   * Generates the code for a method, e.g. {@code .getExtension(foo)}}.
+   *
+   * @param base The base expression of the method.
+   * @param methodNode The method node.
+   */
+  private static NullSafeAccumulator genCodeForMethodCall(
+      NullSafeAccumulator base, MethodNode methodNode) {
+    // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
+    // from the base type during compile time and the node has multiple SoySourceFunctions.
+    Preconditions.checkArgument(methodNode.getSoyMethods().size() == 1);
+    SoySourceFunction method = methodNode.getSoyMethods().get(0);
+
+    if (method instanceof GetExtensionMethod) {
+      SoyType baseType = methodNode.getBaseExprChild().getType();
+      SoyProtoType protoType = (SoyProtoType) baseType;
+
+      String fieldName = ((StringNode) methodNode.getChild(1)).getValue();
+
+      FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
+      Preconditions.checkNotNull(
+          desc,
+          "Error in proto %s, field not found: %s",
+          protoType.getDescriptor().getFullName(),
+          fieldName);
+      return base.dotAccess(ProtoCall.create(fieldName, desc), methodNode.isNullSafe());
+    }
+    // TODO(b/123417146): Implement method calls for normal SoyMethodSignature methods.
+    return base;
   }
 
   @Override
