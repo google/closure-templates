@@ -368,6 +368,7 @@ public final class PassManager {
       // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
       // validation).
       addPass(new SoyElementPass(errorReporter), templateReturnTypeInferencePasses);
+      addPass(new CallAnnotationPass(), templateReturnTypeInferencePasses);
       if (!disableAllTypeChecking) {
         addPass(
             new VeLogValidationPass(errorReporter, registry), templateReturnTypeInferencePasses);
