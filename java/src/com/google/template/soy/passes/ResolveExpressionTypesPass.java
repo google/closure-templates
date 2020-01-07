@@ -485,8 +485,6 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
 
     @Override
     protected void visitForNonemptyNode(ForNonemptyNode node) {
-      // Visit the foreach iterator expression
-      visitExpressions(node.getParent());
       // Set the inferred type of the loop variable.
       node.getVar().setType(getElementType(node.getExpr().getType(), node));
       // Visit the node body
