@@ -520,6 +520,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return visitCssFunction(node);
       case XID:
         return visitXidFunction(node);
+      case SOY_SERVER_KEY:
+        return visitSoyServerKeyFunction(node);
       case IS_PRIMARY_MSG_IN_USE:
         return visitIsPrimaryMsgInUseFunction(node);
       case TO_FLOAT:
@@ -570,6 +572,10 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return new PyFunctionExprBuilder("runtime.get_xid_name")
         .addArg(visit(node.getChild(0)))
         .asPyExpr();
+  }
+
+  private PyExpr visitSoyServerKeyFunction(FunctionNode node) {
+    return visit(node.getChild(0));
   }
 
   private PyExpr visitIsPrimaryMsgInUseFunction(FunctionNode node) {

@@ -92,6 +92,8 @@ public final class JsRuntime {
 
   public static final Expression SOY_CHECK_NOT_NULL = SOY.dotAccess("$$checkNotNull");
 
+  public static final Expression SERIALIZE_KEY = SOY.dotAccess("$$serializeKey");
+
   public static final Expression SOY_COERCE_TO_BOOLEAN = SOY.dotAccess("$$coerceToBoolean");
 
   public static final Expression SOY_ESCAPE_HTML = SOY.dotAccess("$$escapeHtml");

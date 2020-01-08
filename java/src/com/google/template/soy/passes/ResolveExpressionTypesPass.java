@@ -1769,6 +1769,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           checkArgIsStringLiteral(node, node.numChildren() - 1, builtinFunction);
           node.setType(StringType.getInstance());
           break;
+        case SOY_SERVER_KEY:
         case XID:
           // arg validation is already handled by the XidPass
           node.setType(StringType.getInstance());

@@ -666,6 +666,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitCssFunction(node);
         case XID:
           return visitXidFunction(node);
+        case SOY_SERVER_KEY:
+          return visitSoyServerKeyFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
         case UNKNOWN_JS_GLOBAL:
@@ -837,6 +839,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     String xid = visit(node.getChild(0)).stringValue();
     String renamed = xidRenamingMap.get(xid);
     return (renamed != null) ? StringData.forValue(renamed) : StringData.forValue(xid + "_");
+  }
+
+  private SoyValue visitSoyServerKeyFunction(FunctionNode node) {
+    return visit(node.getChild(0));
   }
 
   private SoyValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {

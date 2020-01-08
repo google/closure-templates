@@ -8,6 +8,7 @@ import 'goog:soy.velog'; // from //javascript/template/soy:soyutils_velog
 
 import * as googSoy from 'goog:goog.soy';  // from //javascript/closure/soy
 import Message from 'goog:jspb.Message'; // from //javascript/apps/jspb:message_lib
+import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
@@ -106,7 +107,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * For more information, see go/typed-html-templates.
    */
   openSSR(nameOrCtor: string, key = '', data: unknown = null) {
-    const el = incrementaldom.open(nameOrCtor, key);
+    const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
     this.visit(el);
 
     // `data` is only passed by {skip} elements that are roots of templates.
@@ -121,11 +122,6 @@ export class IncrementalDomRenderer implements IdomRendererApi {
       // And exit its node so that we will continue with the next node.
       this.close();
       return false;
-    }
-    // If we have not yet populated this element, tell the template to do so.
-    // Only set the marker attribute when actually populating the element.
-    if (goog.DEBUG) {
-      this.attr('soy-server-key', key);
     }
     return true;
   }
@@ -151,7 +147,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * keyed elements.
    */
   pushManualKey(key: incrementaldom.Key) {
-    this.keyStackHolder.push(serializeKey(key));
+    this.keyStackHolder.push(soy.$$serializeKey(key));
   }
 
   /**
@@ -174,7 +170,7 @@ export class IncrementalDomRenderer implements IdomRendererApi {
 
   getNewKey(key: string) {
     const oldKey = this.getCurrentKeyStack();
-    const serializedKey = serializeKey(key);
+    const serializedKey = soy.$$serializeKey(key);
     return serializedKey + oldKey;
   }
 
@@ -340,22 +336,6 @@ export class NullRenderer extends IncrementalDomRenderer {
     this.renderer!.setLogger(this.getLogger());
     return this.renderer;
   }
-}
-
-/**
- * Provides a compact serialization format for the key structure.
- */
-export function serializeKey(item: string|number|null|undefined) {
-  const stringified = String(item);
-  let delimiter;
-  if (item == null) {
-    delimiter = '_';
-  } else if (typeof item === 'number') {
-    delimiter = '#';
-  } else {
-    delimiter = ':';
-  }
-  return `${stringified.length}${delimiter}${stringified}`;
 }
 
 /**

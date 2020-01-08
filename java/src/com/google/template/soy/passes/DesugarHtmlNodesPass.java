@@ -149,16 +149,30 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
       // see go/typed-html-templates. For Incremental DOM, these are handled in
       // GenIncrementalDomCodeVisitor.
       // Note: when users do not use their own key, the soy-server-key looks like
-      // "soy-server-key="{xid('template'-0)}. When users use their own key, we just use their
-      // key verbatim.
-      FunctionNode funcNode =
+      // "soy-server-key="{soyServerKey(xid('template'-0))}. When users use their own key, we just
+      // use their key verbatim.
+      FunctionNode wrappedFn =
           new FunctionNode(
-              Identifier.create(BuiltinFunction.XID.getName(), openTag.getSourceLocation()),
-              BuiltinFunction.XID,
+              Identifier.create(
+                  BuiltinFunction.SOY_SERVER_KEY.getName(), openTag.getSourceLocation()),
+              BuiltinFunction.SOY_SERVER_KEY,
               openTag.getSourceLocation());
-      funcNode.addChild(
-          new StringNode(skipNode.getSkipId(), QuoteStyle.SINGLE, openTag.getSourceLocation()));
-      funcNode.setType(StringType.getInstance());
+      wrappedFn.setType(StringType.getInstance());
+
+      if (openTag.getKeyNode() == null) {
+        FunctionNode funcNode =
+            new FunctionNode(
+                Identifier.create(BuiltinFunction.XID.getName(), openTag.getSourceLocation()),
+                BuiltinFunction.XID,
+                openTag.getSourceLocation());
+        funcNode.addChild(
+            new StringNode(skipNode.getSkipId(), QuoteStyle.SINGLE, openTag.getSourceLocation()));
+        funcNode.setType(StringType.getInstance());
+        wrappedFn.addChild(funcNode);
+      } else {
+        wrappedFn.addChild(openTag.getKeyNode().getExpr().getRoot().copy(new CopyState()));
+      }
+
       builder
           .add(
               new RawTextNode(idGenerator.genId(), " soy-server-key=", openTag.getSourceLocation()))
@@ -168,9 +182,7 @@ public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
                   idGenerator.genId(),
                   openTag.getSourceLocation(),
                   /* isImplicit= */ true,
-                  /* expr= */ openTag.getKeyNode() == null
-                      ? funcNode
-                      : openTag.getKeyNode().getExpr().getRoot().copy(new CopyState()),
+                  /* expr= */ wrappedFn,
                   /* attributes= */ ImmutableList.of(),
                   ErrorReporter.exploding()))
           .add(createSuffix("'", skipNode));

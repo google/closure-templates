@@ -35,6 +35,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
@@ -680,6 +681,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitCssFunction(node);
         case XID:
           return visitXidFunction(node);
+        case SOY_SERVER_KEY:
+          return visitSoyServerKeyFunction(node);
         case UNKNOWN_JS_GLOBAL:
           return visitUnknownJsGlobal(node);
         case V1_EXPRESSION:
@@ -767,6 +770,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   private Expression visitXidFunction(FunctionNode node) {
     return XID.call(visitChildren(node));
+  }
+
+  private Expression visitSoyServerKeyFunction(FunctionNode node) {
+    return SERIALIZE_KEY.call(visit(node.getChildren().get(0)));
   }
 
   private Expression visitIsPrimaryMsgInUseFunction(FunctionNode node) {

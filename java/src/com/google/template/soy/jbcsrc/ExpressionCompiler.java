@@ -1066,6 +1066,12 @@ final class ExpressionCompiler {
     }
 
     @Override
+    SoyExpression visitSoyServerKeyFunction(FunctionNode node) {
+      ExprNode child = Iterables.getOnlyElement(node.getChildren());
+      return SoyExpression.forString(MethodRef.GET_KEY_OBJECT.invoke(visit(child).box()));
+    }
+
+    @Override
     SoyExpression visitIsPrimaryMsgInUse(FunctionNode node) {
       return SoyExpression.forBool(
           parameters

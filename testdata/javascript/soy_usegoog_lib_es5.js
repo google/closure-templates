@@ -9006,6 +9006,10 @@ soydata.VERY_UNSAFE.ordainSanitizedUri = soydata.$$makeSanitizedContentFactoryWi
 soydata.VERY_UNSAFE.ordainSanitizedTrustedResourceUri = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(goog.soy.data.SanitizedTrustedResourceUri);
 soydata.VERY_UNSAFE.ordainSanitizedHtmlAttribute = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(goog.soy.data.SanitizedHtmlAttribute);
 soydata.VERY_UNSAFE.ordainSanitizedCss = soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(goog.soy.data.SanitizedCss);
+soy.$$serializeKey = function(item) {
+  var stringified = String(item);
+  return "" + stringified.length + (null == item ? "_" : "number" === typeof item ? "#" : ":") + stringified;
+};
 soy.$$IS_LOCALE_RTL = goog.i18n.bidi.IS_RTL;
 soy.$$augmentMap = function(baseMap, additionalMap) {
   return soy.$$assignDefaults(soy.$$assignDefaults({}, additionalMap), baseMap);

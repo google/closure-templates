@@ -114,7 +114,6 @@ soydata.getContentDir = function(value) {
   return null;
 };
 
-
 /**
  * This class is only a holder for `soydata.SanitizedHtml.from`. Do not
  * instantiate or extend it. Use `goog.soy.data.SanitizedHtml` instead.
@@ -358,6 +357,26 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
 // -----------------------------------------------------------------------------
 // Soy-generated utilities in the soy namespace.  Contains implementations for
 // common soyfunctions (e.g. keys()) and escaping/print directives.
+
+
+/**
+ * Provides a compact serialization format for the key structure.
+ * @param {?} item
+ * @return {string}
+ */
+soy.$$serializeKey = function(item) {
+  const stringified = String(item);
+  let delimiter;
+  if (item == null) {
+    delimiter = '_';
+  } else if (typeof item === 'number') {
+    delimiter = '#';
+  } else {
+    delimiter = ':';
+  }
+  return `${stringified.length}${delimiter}${stringified}`;
+};
+
 
 
 /**
