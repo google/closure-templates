@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
@@ -31,6 +32,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
@@ -55,6 +57,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -95,6 +98,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
@@ -1235,6 +1239,7 @@ final class ExpressionCompiler {
         switch (node.getKind()) {
           case FIELD_ACCESS_NODE:
           case ITEM_ACCESS_NODE:
+          case METHOD_NODE:
             SoyExpression baseExpr =
                 visitNullSafeNodeRecurse(((DataAccessNode) node).getBaseExprChild());
             if (((DataAccessNode) node).isNullSafe()) {
@@ -1250,12 +1255,13 @@ final class ExpressionCompiler {
             if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
               return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node)
                   .withSourceLocation(node.getSourceLocation());
-            } else {
+            } else if (node.getKind() == ExprNode.Kind.ITEM_ACCESS_NODE) {
               return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
                   .withSourceLocation(node.getSourceLocation());
+            } else {
+              return visitNullSafeMethod(baseExpr, (MethodNode) node)
+                  .withSourceLocation(node.getSourceLocation());
             }
-          case METHOD_NODE:
-            throw new UnsupportedOperationException("Methods are not supported yet.");
           default:
             return CompilerVisitor.this.visit(node);
         }
@@ -1317,6 +1323,20 @@ final class ExpressionCompiler {
                 // Just like javac, we insert cast operations when removing from a collection.
                 .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
         return SoyExpression.forSoyValue(node.getType(), soyValue);
+      }
+
+      private SoyExpression visitNullSafeMethod(SoyExpression baseExpr, MethodNode node) {
+        // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
+        // from the base type during compile time and the node has multiple SoySourceFunctions.
+        checkArgument(node.isMethodResolved());
+        SoySourceFunction method = node.getSoyMethods().get(0);
+
+        if (method instanceof GetExtensionMethod) {
+          SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+          return ProtoUtils.accessExtensionField(protoType, baseExpr, node);
+        }
+        // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
+        return baseExpr;
       }
     }
   }

@@ -64,6 +64,12 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         }
 
         @Override
+        protected Integer visitMethodNode(MethodNode node) {
+          return Objects.hash(
+              pairwise().wrap(node.getChildren()), node.isNullSafe(), node.getMethodName());
+        }
+
+        @Override
         protected Integer visitFunctionNode(FunctionNode node) {
           return Objects.hash(pairwise().wrap(node.getChildren()), node.getFunctionName());
         }
@@ -192,6 +198,14 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
       return equivalent(node.getBaseExprChild(), typedOther.getBaseExprChild())
           && equivalent(node.getKeyExprChild(), typedOther.getKeyExprChild())
           && node.isNullSafe() == typedOther.isNullSafe();
+    }
+
+    @Override
+    protected Boolean visitMethodNode(MethodNode node) {
+      MethodNode typedOther = (MethodNode) other;
+      return node.getMethodName().equals(typedOther.getMethodName())
+          && node.isNullSafe() == typedOther.isNullSafe()
+          && compareChildren(node);
     }
 
     @Override

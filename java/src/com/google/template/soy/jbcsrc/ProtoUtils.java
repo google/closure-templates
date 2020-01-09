@@ -63,6 +63,8 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
@@ -197,7 +199,22 @@ final class ProtoUtils {
    */
   static SoyExpression accessField(
       SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
-    return new AccessorGenerator(protoType, baseExpr, node).generate();
+    return new AccessorGenerator(protoType, baseExpr, node.getFieldName(), node.getType())
+        .generate();
+  }
+
+  /**
+   * Returns a {@link SoyExpression} for accessing an extension field of a proto using the {@code
+   * getExtension} method.
+   *
+   * @param protoType The type of the proto being accessed.
+   * @param baseExpr The proto being accessed.
+   * @param node The method operation.
+   */
+  static SoyExpression accessExtensionField(
+      SoyProtoType protoType, SoyExpression baseExpr, MethodNode node) {
+    String fieldName = ((ProtoExtensionIdNode) node.getChild(1)).getValue();
+    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType()).generate();
   }
 
   /**
@@ -207,17 +224,20 @@ final class ProtoUtils {
   private static final class AccessorGenerator {
     final SoyRuntimeType unboxedRuntimeType;
     final SoyExpression baseExpr;
-    final FieldAccessNode node;
+    final SoyType fieldType;
+    final String fieldName;
     final FieldDescriptor descriptor;
     final boolean shouldCheckForFieldPresence;
 
-    AccessorGenerator(SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
+    AccessorGenerator(
+        SoyProtoType protoType, SoyExpression baseExpr, String fieldName, SoyType fieldType) {
       this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
       this.baseExpr = baseExpr;
-      this.node = node;
-      this.descriptor = protoType.getFieldDescriptor(node.getFieldName());
+      this.fieldName = fieldName;
+      this.fieldType = fieldType;
+      this.descriptor = protoType.getFieldDescriptor(fieldName);
       this.shouldCheckForFieldPresence =
-          protoType.shouldCheckFieldPresenceToEmulateJspbNullability(node.getFieldName());
+          protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName);
     }
 
     SoyExpression generate() {
@@ -507,15 +527,15 @@ final class ProtoUtils {
     }
 
     private SoyExpression messageToSoyExpression(Expression field) {
-      if (node.getType().getKind() == SoyType.Kind.PROTO) {
-        SoyProtoType fieldProtoType = (SoyProtoType) node.getType();
+      if (fieldType.getKind() == SoyType.Kind.PROTO) {
+        SoyProtoType fieldProtoType = (SoyProtoType) fieldType;
         SoyRuntimeType protoRuntimeType = SoyRuntimeType.getUnboxedType(fieldProtoType).get();
         return SoyExpression.forProto(protoRuntimeType, field);
       } else {
         // All other are special sanitized types
         Descriptor messageType = descriptor.getMessageType();
         MethodRef fromProtoMethod = SAFE_PROTO_TO_SANITIZED_CONTENT.get(messageType.getFullName());
-        return SoyExpression.forSoyValue(node.getType(), fromProtoMethod.invoke(field));
+        return SoyExpression.forSoyValue(fieldType, fromProtoMethod.invoke(field));
       }
     }
 
@@ -530,13 +550,13 @@ final class ProtoUtils {
       //    (I think SoyEasyList is supposed to support this)
       // For now we will do #3.  #2 would be ideal (least overhead) but would be very complex. #1 or
       // #4 would both be reasonable compromises.
-      SoyRuntimeType boxedType = SoyRuntimeType.getBoxedType(node.getType());
+      SoyRuntimeType boxedType = SoyRuntimeType.getBoxedType(fieldType);
       return SoyExpression.forSoyValue(
-          node.getType(),
+          fieldType,
           // NOTE: in theory this method can return NullData for missing fields, but since this
           // field is repeated, we know that that will not happen.
           MethodRef.SOY_PROTO_VALUE_GET_PROTO_FIELD
-              .invoke(baseExpr.box(), constant(node.getFieldName()))
+              .invoke(baseExpr.box(), constant(fieldName))
               .checkedCast(boxedType.runtimeType()));
     }
   }
