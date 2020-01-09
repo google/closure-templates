@@ -81,6 +81,11 @@ public final class MethodNode extends DataAccessNode {
     return this.methods;
   }
 
+  /** Returns true if the methods have been resolved to exactly one SoySourceFunction. */
+  public boolean isMethodResolved() {
+    return getSoyMethods().size() == 1;
+  }
+
   /**
    * @return source string for the part of the expression that calls the method - in other words,
    *     not including the base expression. This is intended for use in reporting errors.

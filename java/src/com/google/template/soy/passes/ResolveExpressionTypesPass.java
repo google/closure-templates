@@ -28,7 +28,6 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basicfunctions.AugmentMapFunction;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.KeysFunction;
@@ -817,12 +816,15 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
       SoySourceFunction method = resolveMethodFromBaseType(node, baseType, node.getSoyMethods());
       if (method != null) {
         node.setSoyMethods(ImmutableList.of(method));
+      } else {
+        // Remove all existing soy methods if the method could not be resolved.
+        node.setSoyMethods(ImmutableList.of());
       }
 
       if (method instanceof GetExtensionMethod) {
         visitGetExtensionMethod(node);
       }
-      // TODO(b/123417146): Check parameter types and set the return type for methods that aren't
+      // TODO(b/147372851): Check parameter types and set the return type for methods that aren't
       // the getExtension method.
     }
 
@@ -834,6 +836,7 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
             INVALID_METHOD_BASE,
             node.getMethodName(),
             baseType);
+        node.setSoyMethods(ImmutableList.of());
         node.setType(ErrorType.getInstance());
         return;
       }
@@ -847,16 +850,11 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
         return;
       }
 
-      StringNode parameter =
-          new StringNode(
-              ((GlobalNode) child).getName(), QuoteStyle.SINGLE, child.getSourceLocation());
-      // Convert the parameter into a StringNode to prevent an unbound global error.
-      node.replaceChild(1, parameter);
-
+      GlobalNode parameter = (GlobalNode) child;
       SoyProtoType protoType = (SoyProtoType) baseType;
       ImmutableSet<String> fields = protoType.getExtensionFieldNames();
 
-      String fieldName = parameter.getValue();
+      String fieldName = parameter.getName();
       if (!fields.contains(fieldName)) {
         String extraErrorMessage =
             SoyErrors.getDidYouMeanMessageForProtoFields(
@@ -899,9 +897,9 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           }
         }
 
-        // TODO(b/123417146): Handle case where the base type is unknown at compile time, and the
+        // TODO(b/147372851): Handle case where the base type is unknown at compile time, and the
         // SoySourceFunction cannot be determined until runtime.
-        // TODO(b/123417146): Handle case where the base type is known at compile time, and multiple
+        // TODO(b/147372851): Handle case where the base type is known at compile time, and multiple
         // methods match the given base type.
         if (expectedBaseType != null && expectedBaseType.isAssignableFrom(baseType)) {
           resolvedMethod = method;

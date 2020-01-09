@@ -84,6 +84,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -463,14 +464,14 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       NullSafeAccumulator base, MethodNode methodNode) {
     // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
-    Preconditions.checkArgument(methodNode.getSoyMethods().size() == 1);
+    Preconditions.checkArgument(methodNode.isMethodResolved());
     SoySourceFunction method = methodNode.getSoyMethods().get(0);
 
     if (method instanceof GetExtensionMethod) {
       SoyType baseType = methodNode.getBaseExprChild().getType();
       SoyProtoType protoType = (SoyProtoType) baseType;
 
-      String fieldName = ((StringNode) methodNode.getChild(1)).getValue();
+      String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
 
       FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
       Preconditions.checkNotNull(

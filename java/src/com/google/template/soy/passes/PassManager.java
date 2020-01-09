@@ -343,6 +343,9 @@ public final class PassManager {
             new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
             singleFilePassesBuilder);
         addPass(new VeLogRewritePass(), singleFilePassesBuilder);
+        // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
+        // parameters.
+        addPass(new GetExtensionRewriteParamPass(), singleFilePassesBuilder);
       }
       addPass(new ResolvePackageRelativeCssNamesPass(errorReporter), singleFilePassesBuilder);
       if (!allowUnknownGlobals) {
