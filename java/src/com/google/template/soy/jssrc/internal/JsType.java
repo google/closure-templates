@@ -266,7 +266,7 @@ public final class JsType {
         String enumTypeName = enumType.getNameForBackend(SoyBackendKind.JS_SRC);
         JsType.Builder enumBuilder =
             builder()
-                .addType(enumTypeName)
+                .addType("!" + enumTypeName)
                 .addRequire(GoogRequire.createTypeRequire(enumTypeName))
                 .setPredicate(typeofTypePredicate("number"));
         if (!isStrict) {

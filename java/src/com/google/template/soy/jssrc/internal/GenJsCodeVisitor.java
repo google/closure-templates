@@ -748,11 +748,17 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
-    if (!node.getParams().isEmpty()) {
-      jsDocBuilder.addParam("opt_data", alias + ".Params");
+
+    if (node.getParams().isEmpty()) {
+      jsDocBuilder.addParam("opt_data", "?Object<string, *>=");
+    } else if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
+      // All parameters are optional or only owned by an indirect callee; caller doesn't need to
+      // pass an object.
+      jsDocBuilder.addParam("opt_data", "?" + alias + ".Params=");
     } else {
-      jsDocBuilder.addParam("opt_data", "Object<string, *>=");
+      jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
     }
+
     jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
     // TODO(lukes): remove |Object<string, *> and only add the '=/?' if ij data is truly optional
     jsDocBuilder.addParam("opt_ijData", "(?goog.soy.IjData|?Object<string, *>)=");

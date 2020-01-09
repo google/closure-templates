@@ -320,7 +320,7 @@ public final class JspbTest {
             + "\n"
             + "\n"
             + "/**\n"
-            + " * @param {boo.foo.goo.Params} opt_data\n"
+            + " * @param {!boo.foo.goo.Params} opt_data\n"
             + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData\n"
             + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData_deprecated\n"
             + " * @return {!goog.soy.data.SanitizedHtml}\n"
