@@ -2000,15 +2000,9 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
   }
 
-  // TODO: Tests for dynamic attributes: <a on{$name}="...">,
-  // <div data-{$name}={$value}>
 
   private static String join(String... lines) {
     return Joiner.on("").join(lines);
-  }
-
-  private static String normalizeContextualNames(String s) {
-    return s.replaceAll("__C\\d+", "__C");
   }
 
   private void assertContextualRewriting(String expectedOutput, String... inputs) {
@@ -2016,7 +2010,7 @@ public final class ContextualAutoescaperTest {
     // remove the nonce, it is just distracting
     source = source.replace(NONCE_DECLARATION, "");
     source = source.replace(NONCE, "");
-    assertThat(normalizeContextualNames(source.trim())).isEqualTo(expectedOutput);
+    assertThat(source.trim()).isEqualTo(expectedOutput);
   }
 
   public SoyFileNode rewrite(String... inputs) {
@@ -2079,9 +2073,8 @@ public final class ContextualAutoescaperTest {
       rewrite(inputs);
       fail();
     } catch (RewriteError ex) {
-      String origMessage = normalizeContextualNames(ex.origMessage);
-      if (msg != null && !msg.equals(origMessage)) {
-        ComparisonFailure comparisonFailure = new ComparisonFailure("", msg, origMessage);
+      if (msg != null && !msg.equals(ex.origMessage)) {
+        ComparisonFailure comparisonFailure = new ComparisonFailure("", msg, ex.origMessage);
         comparisonFailure.initCause(ex);
         throw comparisonFailure;
       }
