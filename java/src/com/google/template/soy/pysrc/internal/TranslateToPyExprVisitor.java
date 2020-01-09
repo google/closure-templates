@@ -36,6 +36,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
@@ -53,6 +54,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
 import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
@@ -128,6 +130,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       SoyErrorKind.of("Proto init is not supported in pysrc.");
   private static final SoyErrorKind SOY_PY_SRC_FUNCTION_NOT_FOUND =
       SoyErrorKind.of("Failed to find SoyPySrcFunction ''{0}''.");
+  private static final SoyErrorKind SOY_PY_SRC_METHOD_NOT_FOUND =
+      SoyErrorKind.of("Failed to find SoyPythonSourceFunction for method ''{0}''.");
   private static final SoyErrorKind UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of(
           "Bracket access on values of unknown type is not supported in pysrc. "
@@ -325,6 +329,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
       case FIELD_ACCESS_NODE:
       case ITEM_ACCESS_NODE:
+      case METHOD_NODE:
         {
           DataAccessNode dataAccess = (DataAccessNode) node;
           // First recursively visit base expression.
@@ -344,6 +349,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
                 fieldAccess.getBaseExprChild().getType(),
                 refText,
                 fieldAccess.getFieldName());
+          } else if (node.getKind() == ExprNode.Kind.METHOD_NODE) {
+            MethodNode method = (MethodNode) node;
+            return genCodeForMethod(method, refText);
           } else {
             ItemAccessNode itemAccess = (ItemAccessNode) node;
             Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
@@ -367,9 +375,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             }
           }
         }
-
-      case METHOD_NODE:
-        throw new UnsupportedOperationException("Methods are not implemented yet.");
 
       default:
         {
@@ -650,6 +655,22 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return ".ERROR";
     }
     return genCodeForLiteralKeyAccess(containerExpr, fieldName);
+  }
+
+  private String genCodeForMethod(MethodNode node, String containerExpr) {
+    // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
+    // from the base type during compile time and the node has multiple SoySourceFunctions.
+    Preconditions.checkArgument(node.isMethodResolved());
+    SoySourceFunction method = node.getSoyMethods().get(0);
+
+    if (method instanceof SoyPythonSourceFunction) {
+      // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
+      return containerExpr;
+    } else {
+      errorReporter.report(
+          node.getSourceLocation(), SOY_PY_SRC_METHOD_NOT_FOUND, node.getMethodName());
+      return ".ERROR";
+    }
   }
 
   /**
