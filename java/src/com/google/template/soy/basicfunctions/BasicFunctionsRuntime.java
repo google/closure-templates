@@ -161,8 +161,8 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Returns a random integer between {@code 0} and the provided argument. */
-  public static long randomInt(long longValue) {
-    return (long) Math.floor(Math.random() * longValue);
+  public static long randomInt(double number) {
+    return (long) Math.floor(Math.random() * number);
   }
 
   /**
