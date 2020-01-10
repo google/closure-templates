@@ -16,6 +16,7 @@
 
 package com.google.template.soy.sharedpasses.render;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.shared.internal.SharedRuntime.dividedBy;
 import static com.google.template.soy.shared.internal.SharedRuntime.equal;
@@ -32,6 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
@@ -67,6 +69,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -85,6 +88,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -95,6 +99,7 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -351,7 +356,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         return visitNullSafeItemAccessNode((ItemAccessNode) node);
 
       case METHOD_NODE:
-        throw new UnsupportedOperationException("Methods not supported yet.");
+        return visitNullSafeMethodNode((MethodNode) node);
 
       default:
         return visit(node);
@@ -510,6 +515,23 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     if (value instanceof SoyProtoValue) {
       ((SoyProtoValue) value).setAccessLocationKey(expr.getSourceLocation());
     }
+  }
+
+  private SoyValue visitNullSafeMethodNode(MethodNode methodNode) {
+    SoyValue base = visitNullSafeNodeRecurse(methodNode.getBaseExprChild());
+
+    // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
+    // from the base type during compile time and the node has multiple SoySourceFunctions.
+    checkArgument(methodNode.isMethodResolved());
+    SoySourceFunction method = methodNode.getSoyMethods().get(0);
+
+    if (method instanceof GetExtensionMethod) {
+      String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
+      return ((SoyProtoValue) base).getProtoField(fieldName);
+    }
+
+    // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
+    return base;
   }
 
   // Returns true if the base SoyValue of a data access chain is null or undefined.
