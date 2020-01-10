@@ -29,6 +29,7 @@ import java.util.List;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodTooLargeException;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
@@ -95,7 +96,11 @@ public final class SoyClassWriter extends ClassVisitor {
   private int numDetachStates;
 
   private SoyClassWriter(Writer writer, Builder builder) {
-    super(writer.api(), Flags.DEBUG ? new CheckClassAdapter(writer, false) : writer);
+    super(
+        writer.api(),
+        // we can't set checkDataFlow since we rely on the writer to calcualte maxStackSize which
+        // is required for data flow analysis
+        Flags.DEBUG ? new CheckClassAdapter(writer, /* checkDataFlow=*/ false) : writer);
     this.writer = writer;
     this.typeInfo = builder.type;
     super.visit(
@@ -143,7 +148,20 @@ public final class SoyClassWriter extends ClassVisitor {
 
   /** Returns the bytecode of the class that was build with this class writer. */
   public ClassData toClassData() {
-    return ClassData.create(typeInfo, writer.toByteArray(), numFields, numDetachStates);
+    try {
+      return ClassData.create(typeInfo, writer.toByteArray(), numFields, numDetachStates);
+    } catch (MethodTooLargeException methodTooLargeException) {
+      // This error is unrecoverable and either implies that we need to improve compiler
+      // optimizations or that the user needs to refactor their template.
+      throw new RuntimeException(
+          "Attempted to generate a method of size: "
+              + methodTooLargeException.getCodeSize()
+              + " bytes (max is 65536), numFields: "
+              + numFields
+              + ", numDetachStates: "
+              + numDetachStates,
+          methodTooLargeException);
+    }
   }
 
   private static final class Writer extends ClassWriter {
