@@ -107,7 +107,8 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    * For more information, see go/typed-html-templates.
    */
   openSSR(nameOrCtor: string, key = '', data: unknown = null) {
-    const el = incrementaldom.open(nameOrCtor, this.getNewKey(key));
+    key = this.getNewKey(key);
+    const el = incrementaldom.open(nameOrCtor, key);
     this.visit(el);
 
     // `data` is only passed by {skip} elements that are roots of templates.
@@ -123,6 +124,13 @@ export class IncrementalDomRenderer implements IdomRendererApi {
       this.close();
       return false;
     }
+
+    // Only set the marker attribute when actually populating the element.
+    if (goog.DEBUG) {
+      this.attr('soy-skip-key-debug', key);
+    }
+
+    // If we have not yet populated this element, tell the template to do so.
     return true;
   }
 
