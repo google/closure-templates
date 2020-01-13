@@ -1787,9 +1787,6 @@ public final class ResolveExpressionTypesPass extends CompilerFilePass {
           // Arg validation is already handled by the VeLogValidationPass
           node.setType(VeDataType.getInstance());
           break;
-        case ERROR_PLACEHOLDER:
-          node.setType(ErrorType.getInstance());
-          break;
         case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
         case MSG_WITH_ID: // should have already been removed from the tree

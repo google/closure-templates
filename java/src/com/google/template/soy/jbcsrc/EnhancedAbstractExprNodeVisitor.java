@@ -109,11 +109,6 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         case V1_EXPRESSION:
           // V1 expressions and unknownJsGlobals should not exist in jbcsrc
           throw new AssertionError();
-        case ERROR_PLACEHOLDER:
-          throw new AssertionError(
-              "Found errorPlaceholder function at "
-                  + node
-                  + ". An error must have been swallowed during compilation");
       }
     }
 

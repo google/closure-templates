@@ -701,11 +701,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case MSG_WITH_ID:
           // should have been removed earlier in the compiler
           throw new AssertionError();
-        case ERROR_PLACEHOLDER:
-          throw new AssertionError(
-              "Found errorPlaceholder function at "
-                  + node
-                  + ". An error must have been swallowed during compilation");
       }
       throw new AssertionError();
 

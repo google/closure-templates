@@ -280,7 +280,6 @@ public final class ResolveExpressionTypesPassTest {
                         + " $proto.getExtension(example.SomeExtension.someExtensionField).someExtensionNum)}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
-            .enableExperimentalFeatures(ImmutableList.of("enableMethodNodeParsing"))
             .parse()
             .fileSet();
     assertTypes(soyTree);
