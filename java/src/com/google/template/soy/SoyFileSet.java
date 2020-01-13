@@ -808,6 +808,9 @@ public final class SoyFileSet {
                     .allowUnknownGlobals()
                     .allowV1Expression()
                     .allowUnknownJsGlobals()
+                    // necessary because we are using an invalid type registry, also we don't really
+                    // need to run the optimizer anyway.
+                    .optimize(false)
                     .desugarHtmlAndStateNodes(false)
                     .setTypeRegistry(SoyTypeRegistry.DEFAULT_UNKNOWN)
                     // TODO(lukes): consider changing this to pass a null resolver instead of the
