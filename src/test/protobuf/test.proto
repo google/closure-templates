@@ -1,11 +1,11 @@
 // LINT: LEGACY_NAMES
 syntax = "proto2";
 
+package soy.test;
+
 
 option java_package = "com.google.template.soy.testing";
 option java_multiple_files = true;
-
-package soy.test;
 
 message Foo {
   message InnerMessage {
@@ -123,8 +123,7 @@ message Repeated {
   repeated string string_field = 18;
   repeated int32 int_field = 19;
   repeated int64 long_field = 20;
-  message Item {
-  }
+  message Item {}
   repeated Item msg_field = 21;
 }
 
@@ -156,6 +155,9 @@ message MessageField {
 
 
 message Extendable {
+  optional int32 unscoped_collision = 1;
+  optional int32 scoped_collision = 2;
+
   extensions 1000 to max;
 }
 
@@ -175,15 +177,25 @@ extend Extendable {
       ;
   repeated int64 repeated_long_with_string_js_type = 1202
       ;
+
+  optional int32 unscoped_collision = 1301;
 }
 
 message Extension {
   extend Extendable {
     optional Extension extension = 2001;
+    optional int32 scoped_collision = 2002;
+    optional int32 both_scoped_collision = 2003;
   }
 
   optional string string_field = 1;
   optional int32 int_field = 2;
   optional int64 long_field = 3;
   optional Foo.InnerEnum enum_field = 4;
+}
+
+message AnotherExtension {
+  extend Extendable {
+    optional int32 both_scoped_collision = 4001;
+  }
 }

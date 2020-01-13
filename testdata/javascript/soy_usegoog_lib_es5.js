@@ -35,8 +35,14 @@ $jscomp.SIMPLE_FROUND_POLYFILL = !1;
 $jscomp.defineProperty = $jscomp.ASSUME_ES5 || "function" == typeof Object.defineProperties ? Object.defineProperty : function(target, property, descriptor) {
   target != Array.prototype && target != Object.prototype && (target[property] = descriptor.value);
 };
-$jscomp.getGlobal = function(maybeGlobal) {
-  return "undefined" != typeof window && window === maybeGlobal ? maybeGlobal : "undefined" != typeof global && null != global ? global : maybeGlobal;
+$jscomp.getGlobal = function(passedInThis) {
+  for (var possibleGlobals = ["object" == typeof window && window, "object" == typeof self && self, "object" == typeof global && global, passedInThis], i = 0; i < possibleGlobals.length; ++i) {
+    var maybeGlobal = possibleGlobals[i];
+    if (maybeGlobal && maybeGlobal.Math == Math) {
+      return maybeGlobal;
+    }
+  }
+  return globalThis;
 };
 $jscomp.global = $jscomp.getGlobal(this);
 $jscomp.polyfill = function(target, polyfill) {
