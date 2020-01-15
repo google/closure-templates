@@ -11100,6 +11100,184 @@ goog.i18n.bidi.DirectionalString.prototype
  */
 goog.i18n.bidi.DirectionalString.prototype.getDirection;
 
+//third_party/javascript/closure/fs/blob.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Wrappers for the HTML5 File API. These wrappers closely mirror
+ * the underlying APIs, but use Closure-style events and Deferred return values.
+ * Their existence also makes it possible to mock the FileSystem API for testing
+ * in browsers that don't support it natively.
+ *
+ * When adding public functions to anything under this namespace, be sure to add
+ * its mock counterpart to goog.testing.fs.
+ */
+
+goog.provide('goog.fs.blob');
+
+goog.require('goog.array');
+
+/**
+ * Concatenates one or more values together and converts them to a Blob.
+ *
+ * @param {...(string|!Blob|!ArrayBuffer)} var_args The values that will make up
+ *     the resulting blob.
+ * @return {!Blob} The blob.
+ */
+goog.fs.blob.getBlob = function(var_args) {
+  var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
+
+  if (BlobBuilder !== undefined) {
+    var bb = new BlobBuilder();
+    for (var i = 0; i < arguments.length; i++) {
+      bb.append(arguments[i]);
+    }
+    return bb.getBlob();
+  } else {
+    return goog.fs.blob.getBlobWithProperties(goog.array.toArray(arguments));
+  }
+};
+
+
+/**
+ * Creates a blob with the given properties.
+ * See https://developer.mozilla.org/en-US/docs/Web/API/Blob for more details.
+ *
+ * @param {!Array<string|!Blob|!ArrayBuffer>} parts The values that will make up
+ *     the resulting blob (subset supported by both BlobBuilder.append() and
+ *     Blob constructor).
+ * @param {string=} opt_type The MIME type of the Blob.
+ * @param {string=} opt_endings Specifies how strings containing newlines are to
+ *     be written out.
+ * @return {!Blob} The blob.
+ */
+goog.fs.blob.getBlobWithProperties = function(parts, opt_type, opt_endings) {
+  var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
+
+  if (BlobBuilder !== undefined) {
+    var bb = new BlobBuilder();
+    for (var i = 0; i < parts.length; i++) {
+      bb.append(parts[i], opt_endings);
+    }
+    return bb.getBlob(opt_type);
+  } else if (goog.global.Blob !== undefined) {
+    var properties = {};
+    if (opt_type) {
+      properties['type'] = opt_type;
+    }
+    if (opt_endings) {
+      properties['endings'] = opt_endings;
+    }
+    return new Blob(parts, properties);
+  } else {
+    throw new Error('This browser doesn\'t seem to support creating Blobs');
+  }
+};
+
+//third_party/javascript/closure/fs/url.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Wrapper for URL and its createObjectUrl and revokeObjectUrl
+ * methods that are part of the HTML5 File API.
+ */
+
+goog.provide('goog.fs.url');
+
+
+/**
+ * Creates a blob URL for a blob object.
+ * Throws an error if the browser does not support Object Urls.
+ *
+ * @param {!Blob} blob The object for which to create the URL.
+ * @return {string} The URL for the object.
+ */
+goog.fs.url.createObjectUrl = function(blob) {
+  return goog.fs.url.getUrlObject_().createObjectURL(blob);
+};
+
+
+/**
+ * Revokes a URL created by {@link goog.fs.url.createObjectUrl}.
+ * Throws an error if the browser does not support Object Urls.
+ *
+ * @param {string} url The URL to revoke.
+ */
+goog.fs.url.revokeObjectUrl = function(url) {
+  goog.fs.url.getUrlObject_().revokeObjectURL(url);
+};
+
+
+/**
+ * @typedef {{createObjectURL: (function(!Blob): string),
+ *            revokeObjectURL: function(string): void}}
+ */
+goog.fs.url.UrlObject_;
+
+
+/**
+ * Get the object that has the createObjectURL and revokeObjectURL functions for
+ * this browser.
+ *
+ * @return {goog.fs.url.UrlObject_} The object for this browser.
+ * @private
+ */
+goog.fs.url.getUrlObject_ = function() {
+  const urlObject = goog.fs.url.findUrlObject_();
+  if (urlObject != null) {
+    return urlObject;
+  } else {
+    throw new Error('This browser doesn\'t seem to support blob URLs');
+  }
+};
+
+
+/**
+ * Finds the object that has the createObjectURL and revokeObjectURL functions
+ * for this browser.
+ *
+ * @return {?goog.fs.url.UrlObject_} The object for this browser or null if the
+ *     browser does not support Object Urls.
+ * @private
+ */
+goog.fs.url.findUrlObject_ = function() {
+  // This is what the spec says to do
+  // http://dev.w3.org/2006/webapi/FileAPI/#dfn-createObjectURL
+  if (goog.global.URL !== undefined &&
+      goog.global.URL.createObjectURL !== undefined) {
+    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.URL);
+    // This is what Chrome does (as of 10.0.648.6 dev)
+  } else if (
+      goog.global.webkitURL !== undefined &&
+      goog.global.webkitURL.createObjectURL !== undefined) {
+    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.webkitURL);
+    // This is what the spec used to say to do
+  } else if (goog.global.createObjectURL !== undefined) {
+    return /** @type {goog.fs.url.UrlObject_} */ (goog.global);
+  } else {
+    return null;
+  }
+};
+
+
+/**
+ * Checks whether this browser supports Object Urls. If not, calls to
+ * createObjectUrl and revokeObjectUrl will result in an error.
+ *
+ * @return {boolean} True if this browser supports Object Urls.
+ */
+goog.fs.url.browserSupportsObjectUrls = function() {
+  return goog.fs.url.findUrlObject_() != null;
+};
+
 //javascript/closure/html/trustedresourceurl.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
 //
@@ -11124,6 +11302,9 @@ goog.i18n.bidi.DirectionalString.prototype.getDirection;
 goog.provide('goog.html.TrustedResourceUrl');
 
 goog.require('goog.asserts');
+goog.require('goog.fs.blob');
+goog.require('goog.fs.url');
+goog.require('goog.html.SafeScript');
 goog.require('goog.html.trustedtypes');
 goog.require('goog.i18n.bidi.Dir');
 goog.require('goog.i18n.bidi.DirectionalString');
@@ -11522,6 +11703,30 @@ goog.html.TrustedResourceUrl.fromConstants = function(parts) {
       .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(unwrapped);
 };
 
+/**
+ * Creates a TrustedResourceUrl object by generating a Blob from a SafeScript
+ * object and then calling createObjectURL with that blob.
+ *
+ * SafeScript objects are trusted to contain executable JavaScript code.
+ *
+ * Caller must call goog.fs.url.revokeObjectUrl() on the unwrapped url to
+ * release the underlying blob.
+ *
+ * Throws if browser doesn't support blob construction.
+ *
+ * @param {!goog.html.SafeScript} safeScript A script from which to create a
+ *     TrustedResourceUrl.
+ * @return {!goog.html.TrustedResourceUrl} A TrustedResourceUrl object
+ *     initialized to a new blob URL.
+ */
+goog.html.TrustedResourceUrl.fromSafeScript = function(safeScript) {
+  var blob = goog.fs.blob.getBlobWithProperties(
+      [goog.html.SafeScript.unwrap(safeScript)], 'text/javascript');
+  var url = goog.fs.url.createObjectUrl(blob);
+  return goog.html.TrustedResourceUrl
+      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
+};
+
 
 /**
  * Type marker for the TrustedResourceUrl type, used to implement additional
@@ -11612,106 +11817,6 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(
  * @const
  */
 goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
-
-//third_party/javascript/closure/fs/url.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Wrapper for URL and its createObjectUrl and revokeObjectUrl
- * methods that are part of the HTML5 File API.
- */
-
-goog.provide('goog.fs.url');
-
-
-/**
- * Creates a blob URL for a blob object.
- * Throws an error if the browser does not support Object Urls.
- *
- * @param {!Blob} blob The object for which to create the URL.
- * @return {string} The URL for the object.
- */
-goog.fs.url.createObjectUrl = function(blob) {
-  return goog.fs.url.getUrlObject_().createObjectURL(blob);
-};
-
-
-/**
- * Revokes a URL created by {@link goog.fs.url.createObjectUrl}.
- * Throws an error if the browser does not support Object Urls.
- *
- * @param {string} url The URL to revoke.
- */
-goog.fs.url.revokeObjectUrl = function(url) {
-  goog.fs.url.getUrlObject_().revokeObjectURL(url);
-};
-
-
-/**
- * @typedef {{createObjectURL: (function(!Blob): string),
- *            revokeObjectURL: function(string): void}}
- */
-goog.fs.url.UrlObject_;
-
-
-/**
- * Get the object that has the createObjectURL and revokeObjectURL functions for
- * this browser.
- *
- * @return {goog.fs.url.UrlObject_} The object for this browser.
- * @private
- */
-goog.fs.url.getUrlObject_ = function() {
-  const urlObject = goog.fs.url.findUrlObject_();
-  if (urlObject != null) {
-    return urlObject;
-  } else {
-    throw new Error('This browser doesn\'t seem to support blob URLs');
-  }
-};
-
-
-/**
- * Finds the object that has the createObjectURL and revokeObjectURL functions
- * for this browser.
- *
- * @return {?goog.fs.url.UrlObject_} The object for this browser or null if the
- *     browser does not support Object Urls.
- * @private
- */
-goog.fs.url.findUrlObject_ = function() {
-  // This is what the spec says to do
-  // http://dev.w3.org/2006/webapi/FileAPI/#dfn-createObjectURL
-  if (goog.global.URL !== undefined &&
-      goog.global.URL.createObjectURL !== undefined) {
-    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.URL);
-    // This is what Chrome does (as of 10.0.648.6 dev)
-  } else if (
-      goog.global.webkitURL !== undefined &&
-      goog.global.webkitURL.createObjectURL !== undefined) {
-    return /** @type {goog.fs.url.UrlObject_} */ (goog.global.webkitURL);
-    // This is what the spec used to say to do
-  } else if (goog.global.createObjectURL !== undefined) {
-    return /** @type {goog.fs.url.UrlObject_} */ (goog.global);
-  } else {
-    return null;
-  }
-};
-
-
-/**
- * Checks whether this browser supports Object Urls. If not, calls to
- * createObjectUrl and revokeObjectUrl will result in an error.
- *
- * @return {boolean} True if this browser supports Object Urls.
- */
-goog.fs.url.browserSupportsObjectUrls = function() {
-  return goog.fs.url.findUrlObject_() != null;
-};
 
 //javascript/closure/html/safeurl.js
 // Copyright 2013 The Closure Library Authors. All Rights Reserved.
