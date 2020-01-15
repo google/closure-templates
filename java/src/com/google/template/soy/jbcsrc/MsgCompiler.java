@@ -460,7 +460,13 @@ final class MsgCompiler {
       MsgPlaceholderNode repPlaceholderNode =
           originalMsg.getRepPlaceholderNode(placeholder.getPlaceholderName());
       if (repPlaceholderNode.numChildren() == 0) {
-        throw new IllegalStateException("empty rep node for: " + placeholderName);
+        // special case for when a placeholder magically compiles to the empty string
+        // the CombineConsecutiveRawTextNodesPass will just delete it, so we end up with an empty
+        // placeholder.
+        placeholderNameToPutStatement.put(
+            placeholderName,
+            putToMapFunction(placeholderName, FieldRef.EMPTY_STRING_DATA.accessor()));
+        return;
       }
       final StandaloneNode initialNode = repPlaceholderNode.getChild(0);
       Function<Expression, Statement> putEntyInMap;

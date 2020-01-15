@@ -964,6 +964,12 @@ public class BytecodeCompilerTest {
   }
 
   @Test
+  public void testMsg_emptyPlaceholder() throws IOException {
+    // regression for a bug where this would cause a crash
+    assertThatTemplateBody("  {msg desc='...'}{''}{/msg}").rendersAs("");
+  }
+
+  @Test
   public void testGenders() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(

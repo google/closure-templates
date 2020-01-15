@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
@@ -42,7 +43,8 @@ public abstract class FieldRef {
       staticFieldReference(SoyValueConverter.class, "EMPTY_DICT");
   public static final FieldRef EMPTY_MAP =
       staticFieldReference(SoyValueConverter.class, "EMPTY_MAP");
-
+  public static final FieldRef EMPTY_STRING_DATA =
+      staticFieldReference(StringData.class, "EMPTY_STRING");
 
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {
