@@ -159,6 +159,7 @@ public class SoyFileNodeTransformer {
     HANDLED,
     NAME_COLLISION,
     INDIRECT_INCOMPATIBLE_TYPES,
+    INDIRECT_PROTO,
     UNHANDLED_TYPE,
     JAVA_INCOMPATIBLE
   }
@@ -329,12 +330,16 @@ public class SoyFileNodeTransformer {
         // Possibly upcast the existing direct parameter.
         changeParamType(params, paramName, superType.get());
       } else {
-        if (!superType.isPresent() || hasProtoDep(superType.get())) {
-          // Temporarily skip any indirect params with proto dependencies since they can cause java
-          // build errors.
+        if (!superType.isPresent()) {
           params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
           continue;
+        } else if (hasProtoDep(superType.get())) {
+          // Temporarily skip any indirect params with proto dependencies since they can cause java
+          // build errors.
+          params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_PROTO, true));
+          continue;
         }
+
         // Create a new indirect parameter.
         params.put(
             paramName,

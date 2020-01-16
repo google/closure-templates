@@ -276,6 +276,13 @@ public final class GenInvocationBuildersVisitor
                                   + " parameter setter generated.",
                               info.name(), template.templateName()));
                       break;
+                    case INDIRECT_PROTO:
+                      logger.warning(
+                          String.format(
+                              "Indirect parameter '%s' in %s is of type proto or proto enum. No"
+                                  + " parameter setter generated.",
+                              info.name(), template.templateName()));
+                      break;
                   }
                   return false;
                 })
