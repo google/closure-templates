@@ -760,7 +760,7 @@ final class HtmlRewriter {
       boolean foundQuote = advanceWhileMatches(doubleQuoted ? NOT_DOUBLE_QUOTE : NOT_SINGLE_QUOTE);
       if (foundQuote) {
         advance();
-        context.setState(State.XML_DECLARATION, currentPoint());
+        context.setState(State.XML_DECLARATION, currentPointOrEnd());
       }
     }
 
