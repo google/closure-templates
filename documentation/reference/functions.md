@@ -13,18 +13,18 @@ custom Soy functions, see [Plugins](../dev/plugins.md#function_plugins).
 
 ## `isFirst($var)` {#isFirst}
 
-Use this with the `for` command. See the [`for` section](control-flow.md#for) of
-the Commands chapter.
+Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
+Commands chapter. This does not work for list comprehensions.
 
 ## `isLast($var)` {#isLast}
 
-Use this with the `for` command. See the [`for` section](control-flow.md#for) of
-the Commands chapter.
+Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
+Commands chapter. This does not work for list comprehensions.
 
 ## `index($var)` {#index}
 
-Use this with the `for` command. See the [`for` section](control-flow.md#for) of
-the Commands chapter.
+Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
+Commands chapter. This does not work for list comprehensions.
 
 ## `isNonnull(value)` {#isNonnull}
 
