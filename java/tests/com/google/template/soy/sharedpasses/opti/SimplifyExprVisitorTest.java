@@ -111,17 +111,33 @@ public final class SimplifyExprVisitorTest {
   @Test
   public void testDereferenceLiterals() {
     // dereferences of lists and maps can be simplified
+    assertThat("[1,2,3]?[0]").simplifiesTo("1");
     assertThat("[1,2,3][1]").simplifiesTo("2");
     assertThat("[1,2,3]?[1]").simplifiesTo("2");
 
+    assertThat("[1,2,3][-1]").simplifiesTo("null");
     assertThat("[1,2,3][3]").simplifiesTo("null");
     assertThat("[1,2,3]?[3]").simplifiesTo("null");
 
     assertThat("map('a':1, 'b':3)['a']").simplifiesTo("1");
     assertThat("map('a':1, 'b':3)?['a']").simplifiesTo("1");
 
+    assertThat("map('a':1, 'b':3)['c']").simplifiesTo("null");
+    assertThat("map('a':1, 'b':3)?['c']").simplifiesTo("null");
+    // can't simplify unless all keys and indexes are constant
+    assertThat("map('a': 1, 'b': 3)?[randomInt(10) ? 'a' : 'b']").doesntChange();
+    // can simplify with dynamic values
+    assertThat("map('a': randomInt(1), 'b': randomInt(1))?['b']").simplifiesTo("randomInt(1)");
+
     assertThat("record(a:1, b:3).a").simplifiesTo("1");
     assertThat("record(a:1, b:3)?.a").simplifiesTo("1");
+  }
+
+  @Test
+  public void testDereferenceLiterals_null() {
+    assertThat("(true ? null : record(a:1, b:3))?.a").simplifiesTo("null");
+    assertThat("(true ? null : map('a':1, 'b':3))?['a']").simplifiesTo("null");
+    assertThat("(true ? null : [0, 1, 2])?[0]").simplifiesTo("null");
   }
 
   @Test
@@ -213,7 +229,11 @@ public final class SimplifyExprVisitorTest {
       this.actual = s;
     }
 
-    private void simplifiesTo(String expected) {
+    void doesntChange() {
+      simplifiesTo(actual);
+    }
+
+    void simplifiesTo(String expected) {
       ExprRootNode exprRoot =
           new ExprRootNode(SoyFileParser.parseExpression(actual, ErrorReporter.exploding()));
 

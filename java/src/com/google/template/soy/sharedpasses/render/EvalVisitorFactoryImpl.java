@@ -23,8 +23,6 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.sharedpasses.render.EvalVisitor.EvalVisitorFactory;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 
 /**
  * Default implementation of EvalVisitorFactory.
@@ -32,11 +30,7 @@ import javax.inject.Singleton;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-@Singleton
 public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
-
-  @Inject
-  public EvalVisitorFactoryImpl() {}
 
   @Override
   public EvalVisitor create(
@@ -52,6 +46,12 @@ public final class EvalVisitorFactoryImpl implements EvalVisitorFactory {
         xidRenamingMap,
         msgBundle,
         debugSoyTemplateInfo,
-        pluginInstances);
+        pluginInstances,
+        /*
+         * Use BUGGED mode for backwards compatibility.  The default tofu renderer always had a
+         * buggy implementation of data access nodes and this makes that behavior a little more
+         * explicit.
+         */
+        EvalVisitor.UndefinedDataHandlingMode.BUGGED);
   }
 }

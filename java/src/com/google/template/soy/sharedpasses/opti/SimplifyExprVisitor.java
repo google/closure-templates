@@ -181,7 +181,11 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   @Override
   protected void visitFieldAccessNode(FieldAccessNode node) {
     // simplify children first
-    visitChildren(node);
+    visitExprNode(node);
+    if (node.getParent() == null) {
+      // must have already been optimized by visitExprNode and replaced in the AST
+      return;
+    }
     ExprNode baseExpr = node.getChild(0);
     if (baseExpr instanceof RecordLiteralNode) {
       RecordLiteralNode recordLiteral = (RecordLiteralNode) baseExpr;
@@ -206,13 +210,17 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
   @Override
   protected void visitItemAccessNode(ItemAccessNode node) {
     // simplify children first
-    visitChildren(node);
+    visitExprNode(node);
+    if (node.getParent() == null) {
+      // must have already been optimized by visitExprNode and replaced in the AST
+      return;
+    }
     ExprNode baseExpr = node.getChild(0);
     ExprNode keyExpr = node.getChild(1);
     if (baseExpr instanceof ListLiteralNode && keyExpr instanceof IntegerNode) {
       ListLiteralNode listLiteral = (ListLiteralNode) baseExpr;
       long index = ((IntegerNode) keyExpr).getValue();
-      if (index > 0 && index < listLiteral.numChildren()) {
+      if (index >= 0 && index < listLiteral.numChildren()) {
         node.getParent().replaceChild(node, listLiteral.getChild((int) index));
       } else {
         // out of range
@@ -220,14 +228,21 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       }
     } else if (baseExpr instanceof MapLiteralNode) {
       MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
+      boolean areAllKeysConstants = true;
       for (int i = 0; i < mapLiteral.numChildren(); i += 2) {
-        if (ExprEquivalence.get().equivalent(keyExpr, mapLiteral.getChild(i))) {
-          node.getParent().replaceChild(node, mapLiteral.getChild(i + 1));
+        ExprNode key = mapLiteral.getChild(i);
+        ExprNode value = mapLiteral.getChild(i + 1);
+        if (ExprEquivalence.get().equivalent(keyExpr, key)) {
+          node.getParent().replaceChild(node, value);
           return;
         }
+        areAllKeysConstants = areAllKeysConstants && isConstant(key);
       }
-      // no matching key
-      node.getParent().replaceChild(node, new NullNode(node.getSourceLocation()));
+      if (isConstant(keyExpr) && areAllKeysConstants) {
+        // no matching key, and since everything was a bunch of constants, it should have matched.
+        // in this case we can evaluate at compile time.
+        node.getParent().replaceChild(node, new NullNode(node.getSourceLocation()));
+      }
     }
   }
 

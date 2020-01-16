@@ -28,6 +28,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -73,7 +74,11 @@ public class InternalValueUtils {
     } else if (primitiveData instanceof NullData) {
       return new NullNode(location);
     } else {
-      throw new IllegalArgumentException();
+      // Annoyingly UndefinedData.toString() throws, so workaround.
+      throw new IllegalArgumentException(
+          "can't convert: "
+              + (primitiveData instanceof UndefinedData ? "undefined" : primitiveData)
+              + " to an ExprNode");
     }
   }
 
