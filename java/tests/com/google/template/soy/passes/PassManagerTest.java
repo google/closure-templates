@@ -68,6 +68,7 @@ public final class PassManagerTest {
 
     assertThat(names(manager.singleFilePasses))
         .containsExactly(
+            "CombineConsecutiveRawTextNodes",
             "StripSoyComments",
             "ContentSecurityPolicyNonceInjection",
             "ResolveTemplateParamTypes");
@@ -83,7 +84,10 @@ public final class PassManagerTest {
             .build();
 
     assertThat(names(manager.singleFilePasses))
-        .containsExactly("StripSoyComments", "ContentSecurityPolicyNonceInjection");
+        .containsExactly(
+            "CombineConsecutiveRawTextNodes",
+            "StripSoyComments",
+            "ContentSecurityPolicyNonceInjection");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
