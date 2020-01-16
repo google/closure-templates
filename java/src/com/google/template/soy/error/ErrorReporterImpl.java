@@ -115,22 +115,31 @@ final class ErrorReporterImpl extends ErrorReporter {
           location, kind, kind.format(args), getSnippet(filePathsToSuppliers), isWarning);
     }
 
+    // TODO(lukes): render multiline snippets for multiline source locations.
+
     /** Returns a source line snippet with a caret pointing at the error column offset. */
     private Optional<String> getSnippet(
         ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
       // Try to find a snippet of source code associated with the exception and print it.
       Optional<String> snippet = getSourceLine(filePathsToSuppliers);
-      // TODO(b/19269289): this is a result of calling SoySyntaxException#createWithoutMetaInfo,
-      // which occurs almost 100 times. Clean them up.
       if (snippet.isPresent()) {
         StringBuilder builder = new StringBuilder();
         builder.append(snippet.get()).append("\n");
         // Print a caret below the error.
         // TODO(brndn): SourceLocation.beginColumn is occasionally -1. Review all SoySyntaxException
         // instantiations and ensure the SourceLocation is well-formed.
-        int beginColumn = Math.max(location.getBeginColumn(), 1);
-        String caretLine = Strings.repeat(" ", beginColumn - 1) + "^";
+        int beginColumn = location.getBeginColumn();
+        if (beginColumn > 0) {
+          String caretLine = Strings.repeat(" ", beginColumn - 1);
+          if (location.getEndLine() == location.getBeginLine()
+              && location.getEndColumn() > location.getBeginColumn()) {
+            caretLine +=
+                Strings.repeat("~", location.getEndColumn() - location.getBeginColumn() + 1);
+          } else {
+            caretLine += "^";
+          }
         builder.append(caretLine).append("\n");
+        }
         return Optional.of(builder.toString());
       }
       return Optional.empty();
@@ -145,6 +154,7 @@ final class ErrorReporterImpl extends ErrorReporter {
       // Try to find a snippet of source code associated with the exception and print it.
       SoyFileSupplier supplier = filePathsToSuppliers.get(location.getFilePath());
       if (supplier == null) {
+        // TODO(lukes): error?
         return Optional.empty();
       }
       String result;
@@ -154,9 +164,10 @@ final class ErrorReporterImpl extends ErrorReporter {
           // Skip preceding lines
           reader.readLine();
         }
+        // TODO(lukes): log warning on EOF?
         result = reader.readLine(); // returns null on EOF
       } catch (IOException ioe) {
-        return Optional.empty();
+        return Optional.empty(); // TODO(lukes): log warning?
       }
       return Optional.ofNullable(result);
     }
