@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
  * levels of 'select'.
  *
  */
-final class RewriteGenderMsgsPass extends CompilerFilePass {
+final class RewriteGenderMsgsPass implements CompilerFilePass {
 
   private static final SoyErrorKind MORE_THAN_THREE_TOTAL_GENDERS =
       SoyErrorKind.of(

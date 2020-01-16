@@ -40,7 +40,7 @@ import java.util.Optional;
  * Populates the {@link FunctionNode} and {@link PrintDirectiveNode} with their plugin instances and
  * rewrites some ambiguous function nodes to {@link ProtoInitNode}.
  */
-final class ResolvePluginsPass extends CompilerFilePass {
+final class ResolvePluginsPass implements CompilerFilePass {
 
   private static final SoyErrorKind NOT_FIRST_PRINT_DIRECTIVE =
       SoyErrorKind.of(

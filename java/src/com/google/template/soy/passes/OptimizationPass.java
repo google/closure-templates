@@ -22,7 +22,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 /** Runs the optimizer on the whole file set. */
-final class OptimizationPass extends CompilerFileSetPass {
+final class OptimizationPass implements CompilerFileSetPass {
   @Override
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {

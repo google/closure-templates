@@ -48,7 +48,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * </ul>
  *
  */
-final class RewriteRemaindersPass extends CompilerFilePass {
+final class RewriteRemaindersPass implements CompilerFilePass {
 
   private static final SoyErrorKind REMAINDER_OUTSIDE_PLURAL =
       SoyErrorKind.of("Special function ''remainder'' is for use in plural messages only.");

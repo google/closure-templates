@@ -24,7 +24,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 
 /** A shim around ContextualAutoescaper to make it conform to the pass interface. */
-final class AutoescaperPass extends CompilerFileSetPass {
+final class AutoescaperPass implements CompilerFileSetPass {
 
   private final ContextualAutoescaper autoescaper;
   private final ErrorReporter errorReporter;

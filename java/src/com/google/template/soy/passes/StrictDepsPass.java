@@ -33,7 +33,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * Visitor to check that there are no external calls. Used by backends that disallow external calls,
  * such as the Tofu (JavaObj) backend.
  */
-public final class StrictDepsPass extends CompilerFileSetPass {
+public final class StrictDepsPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_UNDEFINED_TEMPLATE =
       SoyErrorKind.of("Undefined template ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);

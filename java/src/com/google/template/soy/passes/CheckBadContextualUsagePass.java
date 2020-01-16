@@ -41,7 +41,7 @@ import com.google.template.soy.types.SoyType;
 import java.util.Optional;
 
 /** Checks if HTML is printed only from HTML context. */
-final class CheckBadContextualUsagePass extends CompilerFileSetPass {
+final class CheckBadContextualUsagePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALLS_HTML_FROM_NON_HTML =
       SoyErrorKind.of(

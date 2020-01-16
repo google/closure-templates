@@ -40,7 +40,7 @@ import com.google.template.soy.types.VeDataType;
  * <p>This must run after {@link ResolveExpressionTypesPass} because it needs the type information
  * on {@code $ve} to know to rewrite it.
  */
-final class VeLogRewritePass extends CompilerFilePass {
+final class VeLogRewritePass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {

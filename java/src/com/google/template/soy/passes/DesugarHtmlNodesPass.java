@@ -65,7 +65,7 @@ import java.util.Optional;
  *
  * <p>This pass ensures that the rest of the compiler can remain agnostic about these nodes.
  */
-public final class DesugarHtmlNodesPass extends CompilerFileSetPass {
+public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
   @Override
   public Result run(

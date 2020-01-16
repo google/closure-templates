@@ -29,7 +29,7 @@ import com.google.template.soy.soytree.SoyFileNode;
  * not. Making the ASTs immutable probably isn't worth it, but we could consider adding a
  * 'freeze/unfreeze' API.
  */
-public abstract class CompilerFilePass extends CompilerPass {
+public interface CompilerFilePass extends CompilerPass {
 
-  public abstract void run(SoyFileNode file, IdGenerator nodeIdGen);
+  void run(SoyFileNode file, IdGenerator nodeIdGen);
 }

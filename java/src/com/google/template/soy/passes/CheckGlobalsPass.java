@@ -30,7 +30,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * projects rely on it. All other backends require globals to be substituted.
  *
  */
-final class CheckGlobalsPass extends CompilerFilePass {
+final class CheckGlobalsPass implements CompilerFilePass {
   private static final SoyErrorKind UNBOUND_GLOBAL = SoyErrorKind.of("Unbound global ''{0}''.");
 
   private final ErrorReporter errorReporter;

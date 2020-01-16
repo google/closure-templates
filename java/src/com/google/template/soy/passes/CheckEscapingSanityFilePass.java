@@ -33,7 +33,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * <p>{@link #exec} should be called on a full parse tree.
  *
  */
-final class CheckEscapingSanityFilePass extends CompilerFilePass {
+final class CheckEscapingSanityFilePass implements CompilerFilePass {
 
   private static final SoyErrorKind ILLEGAL_PRINT_DIRECTIVE =
       SoyErrorKind.of("{0} can only be used internally by the Soy compiler.");

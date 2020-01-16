@@ -51,7 +51,7 @@ import java.util.List;
  * <p>Also validates correct use of the {@code phname} and {@code phex} attributes; these attributes
  * can only be set within a <code>{msg ...}...{/msg}</code> context.
  */
-final class InsertMsgPlaceholderNodesPass extends CompilerFilePass {
+final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
   private static final SoyErrorKind INVALID_PLACEHOLDER =
       SoyErrorKind.of(
           "''{0}'' attributes are only valid on placeholders inside of '''{'msg...'' tags.{1}",

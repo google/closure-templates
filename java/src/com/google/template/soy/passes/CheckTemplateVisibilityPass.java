@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.Visibility;
  *
  * @author brndn@google.com (Brendan Linn)
  */
-final class CheckTemplateVisibilityPass extends CompilerFileSetPass {
+final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALLEE_NOT_VISIBLE =
       SoyErrorKind.of("{0} has {1} access in {2}.");

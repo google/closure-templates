@@ -29,7 +29,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 /**
  * Checks that aliases don't conflict with things that can be aliased (or their namespace prefixes).
  */
-final class ValidateAliasesPass extends CompilerFilePass {
+final class ValidateAliasesPass implements CompilerFilePass {
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL =
       SoyErrorKind.of("Alias ''{0}'' conflicts with a global of the same name.");
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_GLOBAL_PREFIX =

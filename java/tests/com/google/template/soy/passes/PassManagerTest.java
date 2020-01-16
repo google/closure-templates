@@ -39,7 +39,7 @@ public final class PassManagerTest {
         .setErrorReporter(ErrorReporter.exploding());
   }
 
-  private static class NoSuchPass extends CompilerPass {}
+  private static class NoSuchPass implements CompilerPass {}
 
   @Test
   public void testInvalidRule() {

@@ -73,7 +73,7 @@ import javax.annotation.Nullable;
  *   <li>Run after HtmlRewritePass, since it depends on the html nodes.
  * </ul>
  */
-public final class ContentSecurityPolicyNonceInjectionPass extends CompilerFilePass {
+public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFilePass {
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
 
   private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =

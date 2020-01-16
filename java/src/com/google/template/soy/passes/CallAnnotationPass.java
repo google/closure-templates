@@ -32,7 +32,7 @@ import java.util.ArrayDeque;
 /**
  * Annotates all calls with a string identifier, to be used in Incremental DOM and JBCSRC backends.
  */
-final class CallAnnotationPass extends CompilerFileSetPass {
+final class CallAnnotationPass implements CompilerFileSetPass {
 
   @Override
   public Result run(

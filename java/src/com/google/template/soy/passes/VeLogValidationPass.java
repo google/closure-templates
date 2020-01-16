@@ -64,7 +64,7 @@ import java.util.Objects;
  *   <li>VeLogRewritePass since that rewrites more VE syntactic sugar
  * </ul>
  */
-final class VeLogValidationPass extends CompilerFileSetPass {
+final class VeLogValidationPass implements CompilerFileSetPass {
   private static final SoyErrorKind UNEXPECTED_DATA =
       SoyErrorKind.of(
           "Unexpected data argument. The VE is type ''{0}'' which means there cannot be any data. "

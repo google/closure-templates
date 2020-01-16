@@ -30,7 +30,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * A compiler pass that rewrites the parameter of the {@link GetExtensionMethod} method into a
  * ProtoExtensionIdNode from a GlobalNode to prevent unbound global errors.
  */
-final class GetExtensionRewriteParamPass extends CompilerFilePass {
+final class GetExtensionRewriteParamPass implements CompilerFilePass {
 
   GetExtensionRewriteParamPass() {}
 

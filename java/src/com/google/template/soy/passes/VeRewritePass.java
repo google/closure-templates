@@ -36,7 +36,7 @@ import com.google.template.soy.soytree.VeLogNode;
  *   <li>Rewrites {@code ve_data(ve(MyVe))} to {@code ve_data(ve(MyVe), null)}
  * </ul>
  */
-final class VeRewritePass extends CompilerFilePass {
+final class VeRewritePass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {

@@ -31,7 +31,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 
 /** Downgrades @state in Soy elements to lets. This is run in all non-incrementaldom backends */
-final class DesugarStateNodesPass extends CompilerFileSetPass {
+final class DesugarStateNodesPass implements CompilerFileSetPass {
 
   @Override
   public Result run(

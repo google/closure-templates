@@ -58,7 +58,7 @@ import java.util.Optional;
  * declaration object.
  *
  */
-public final class ResolveNamesPass extends CompilerFilePass {
+public final class ResolveNamesPass implements CompilerFilePass {
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(
           "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?");

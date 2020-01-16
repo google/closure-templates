@@ -35,7 +35,7 @@ import java.util.Set;
  * Use line joining logic extracted from RawTextBuilder.
  *
  */
-final class StripSoyCommentsPass extends CompilerFilePass {
+final class StripSoyCommentsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {

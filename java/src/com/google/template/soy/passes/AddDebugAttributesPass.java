@@ -64,7 +64,7 @@ import com.google.template.soy.soytree.TemplateNode;
  * attempting to calculate it itself. However, this is likely to be significantly more complex than
  * the current approach.
  */
-final class AddDebugAttributesPass extends CompilerFilePass {
+final class AddDebugAttributesPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     new Visitor(nodeIdGen).exec(file);

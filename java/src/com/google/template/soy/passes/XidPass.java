@@ -28,7 +28,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /** Handles xid calls involving global nodes by rewriting them to be string literals. */
-final class XidPass extends CompilerFilePass {
+final class XidPass implements CompilerFilePass {
   private static final SoyErrorKind STRING_OR_GLOBAL_REQUIRED =
       SoyErrorKind.of(
           "Argument to function ''xid'' must be a string literal or a (possibly) "

@@ -16,26 +16,14 @@
 
 package com.google.template.soy.passes;
 
-import com.google.errorprone.annotations.concurrent.LazyInit;
-
 /** A compiler pass */
-public abstract class CompilerPass {
-  @LazyInit private String name;
+public interface CompilerPass {
 
-  public String name() {
-    String localName = this.name;
-    if (localName == null) {
-      localName = getClass().getSimpleName();
-      if (localName.endsWith("Pass")) {
-        localName = localName.substring(0, localName.length() - "Pass".length());
-      }
-      this.name = localName;
+  default String name() {
+    String localName = getClass().getSimpleName();
+    if (localName.endsWith("Pass")) {
+      localName = localName.substring(0, localName.length() - "Pass".length());
     }
     return localName;
-  }
-
-  @Override
-  public String toString() {
-    return name();
   }
 }

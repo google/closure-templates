@@ -63,7 +63,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
  * finding local variable definitions and empty message nodes don't have valid ids. Should run
  * before ResolveExpressionTypesPass so that we don't need to worry about assigning types here.
  */
-final class MsgWithIdFunctionPass extends CompilerFilePass {
+final class MsgWithIdFunctionPass implements CompilerFilePass {
   private static final SoyErrorKind MSG_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of(
           "Function ''{0}'' must take a let variable containing a single msg "

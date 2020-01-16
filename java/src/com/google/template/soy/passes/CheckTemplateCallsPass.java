@@ -77,7 +77,7 @@ import javax.annotation.Nullable;
  *
  * <p>Note: This pass requires that the ResolveExpressionTypesPass has already been run.
  */
-final class CheckTemplateCallsPass extends CompilerFileSetPass {
+final class CheckTemplateCallsPass implements CompilerFileSetPass {
 
   static final SoyErrorKind ARGUMENT_TYPE_MISMATCH =
       SoyErrorKind.of(

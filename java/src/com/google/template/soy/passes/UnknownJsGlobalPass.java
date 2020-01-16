@@ -28,7 +28,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /** Reports errors on improper uses of the unknownJsGlobal function. */
-final class UnknownJsGlobalPass extends CompilerFilePass {
+final class UnknownJsGlobalPass implements CompilerFilePass {
 
   private static final SoyErrorKind INCORRECT_UNKNOWN_JS_GLOBAL_USE =
       SoyErrorKind.of(

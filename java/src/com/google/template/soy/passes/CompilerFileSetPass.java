@@ -27,7 +27,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * <p>Prefer implementing {@link CompilerFilePass} whenever possible. This should only be used for
  * passes that need to access transitive callee information.
  */
-abstract class CompilerFileSetPass extends CompilerPass {
+interface CompilerFileSetPass extends CompilerPass {
   enum Result {
     CONTINUE,
     STOP;
@@ -41,6 +41,6 @@ abstract class CompilerFileSetPass extends CompilerPass {
    *     The latter is for modifying template node information (such as whether the template is a
    *     Soy element) based off of its callees.
    */
-  abstract Result run(
+  Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry);
 }

@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
  * templates, and delegate calls).
  *
  */
-final class CheckDelegatesPass extends CompilerFileSetPass {
+final class CheckDelegatesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_DELTEMPLATE =
       SoyErrorKind.of("''call'' to delegate template ''{0}'' (expected ''delcall'').");

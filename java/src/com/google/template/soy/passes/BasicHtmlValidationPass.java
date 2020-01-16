@@ -49,7 +49,7 @@ import java.util.Set;
  * A compiler pass that performs HTML validation that is always enabled, as opposed to
  * StrictHtmlValidationPass which is opt-out.
  */
-final class BasicHtmlValidationPass extends CompilerFilePass {
+final class BasicHtmlValidationPass implements CompilerFilePass {
   private static final SoyErrorKind MULTIPLE_ATTRIBUTES =
       SoyErrorKind.of("Found multiple ''{0}'' attributes with the same name.");
 

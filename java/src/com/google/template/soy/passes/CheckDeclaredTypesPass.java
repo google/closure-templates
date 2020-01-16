@@ -41,7 +41,7 @@ import com.google.template.soy.types.ast.UnionTypeNode;
  * <p>This class determines if explicit type declarations are legal, whereas {@link
  * ResolveExpressionTypesPass} calculates implicit types and determines if they're legal.
  */
-final class CheckDeclaredTypesPass extends CompilerFilePass {
+final class CheckDeclaredTypesPass implements CompilerFilePass {
 
   private static final SoyErrorKind VE_BAD_DATA_TYPE =
       SoyErrorKind.of("Illegal VE metadata type ''{0}''. The metadata must be a proto.");

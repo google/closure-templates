@@ -24,7 +24,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import java.util.List;
 
@@ -35,17 +34,27 @@ import java.util.List;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class CombineConsecutiveRawTextNodesPass extends CompilerFileSetPass {
+public final class CombineConsecutiveRawTextNodesPass
+    implements CompilerFilePass, CompilerFileSetPass {
 
+  /**
+   * Runs the pass on a file set. This pass only needs to be run on individual files, but can be run
+   * on a file set for convenience in the pass manager (e.g. if it needs to be run in between other
+   * file set passes).
+   */
   @Override
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
-      for (TemplateNode template : file.getChildren()) {
-        run(template);
-      }
+      run(file, idGenerator);
     }
     return Result.CONTINUE;
+  }
+
+  /** Runs the pass on a single file. */
+  @Override
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    visit(file);
   }
 
   /** Run the pass on a single node. */

@@ -27,7 +27,7 @@ import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
-final class ResolveTemplateParamTypesPass extends CompilerFilePass {
+final class ResolveTemplateParamTypesPass implements CompilerFilePass {
   private final TypeNodeConverter converter;
   private final boolean disableAllTypeChecking;
 

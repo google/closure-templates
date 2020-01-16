@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 
 /** Checks for validity of skip nodes wrt their host node. */
-final class ValidateSkipNodesPass extends CompilerFilePass {
+final class ValidateSkipNodesPass implements CompilerFilePass {
 
   private static final SoyErrorKind SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS =
       SoyErrorKind.of("Skip element open tags must map to exactly one close tag.");

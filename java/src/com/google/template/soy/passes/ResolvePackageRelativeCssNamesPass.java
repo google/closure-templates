@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import javax.annotation.Nullable;
 
 /** Converts package-relative CSS class names to absolute names. */
-final class ResolvePackageRelativeCssNamesPass extends CompilerFilePass {
+final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
 
   private static final String RELATIVE_SELECTOR_PREFIX = "%";
 
