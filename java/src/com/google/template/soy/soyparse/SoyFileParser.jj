@@ -1692,8 +1692,7 @@ private RawTextNode RawText() :
       <CMD_OPEN_LITERAL>
       token = <LITERAL_RAW_TEXT_CONTENT>
       {
-        builder.addLiteral(token);
-        return builder.build();
+        return builder.buildLiteral(token);
       }
     |
       ( token = <CMD_FULL_SP>

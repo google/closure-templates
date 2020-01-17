@@ -117,16 +117,10 @@ final class RawTextBuilder {
   }
 
   /** Add the content for a '{literal}...{/literal}' section. */
-  void addLiteral(Token literalContent) {
+  RawTextNode buildLiteral(Token literalContent) {
     checkArgument(literalContent.kind == SoyFileParserConstants.LITERAL_RAW_TEXT_CONTENT);
-
-    maybeFinishBasic();
-    // Note: the LITERAL_RAW_TEXT_CONTENT already has the correct image content (it matches the
-    // closing {/literal} but excludes the actual closing tag).
-    if (!literalContent.image.isEmpty()) {
-      append(literalContent, literalContent.image);
-    }
-    discontinuityReason = Reason.LITERAL;
+    return RawTextNode.newLiteral(
+        nodeIdGen.genId(), literalContent.image, Tokens.createSrcLoc(fileName, literalContent));
   }
 
   /** Add the content for a 'textual' command token, like '{sp}'. */

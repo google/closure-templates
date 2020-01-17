@@ -42,6 +42,27 @@ import javax.annotation.Nullable;
  */
 public final class RawTextNode extends AbstractSoyNode implements StandaloneNode {
 
+  /** Specifies how this text node was created. */
+  public enum Provenance {
+    /** The node was not created from a {literal} command. */
+    NORMAL,
+
+    /** The node was created from a {literal} command */
+    LITERAL,
+
+    /**
+     * The node was created via calling {@link #substring(int, int)} on a node that was created with
+     * a {literal} command.
+     */
+    LITERAL_SUBSTRING,
+
+    /**
+     * The node was created via calling {@link #concat}, probably during
+     * CombineConsecutiveRawTextNodesPass.
+     */
+    CONCATENATED
+  }
+
   /** The special chars we need to re-escape for toSourceString(). */
   private static final Pattern SPECIAL_CHARS_TO_ESCAPE = Pattern.compile("[\n\r\t{}\u00A0]");
 
@@ -59,6 +80,9 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   /** The raw text string (after processing of special chars and literal blocks). */
   private final String rawText;
 
+  /** Whether this raw text was created from the {literal} command. */
+  private final Provenance provenance;
+
   @Nullable private final SourceOffsets offsets;
 
   @Nullable private HtmlContext htmlContext;
@@ -69,20 +93,27 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    * @param sourceLocation The node's source location.
    */
   public RawTextNode(int id, String rawText, SourceLocation sourceLocation) {
-    this(id, rawText, sourceLocation, SourceOffsets.fromLocation(sourceLocation, rawText.length()));
-  }
-
-  public RawTextNode(
-      int id, String rawText, SourceLocation sourceLocation, HtmlContext htmlContext) {
-    super(id, sourceLocation);
-    this.rawText = checkNotNull(rawText);
-    this.htmlContext = htmlContext;
-    this.offsets = SourceOffsets.fromLocation(sourceLocation, rawText.length());
+    this(
+        id,
+        rawText,
+        sourceLocation,
+        SourceOffsets.fromLocation(sourceLocation, rawText.length()),
+        Provenance.NORMAL);
   }
 
   public RawTextNode(int id, String rawText, SourceLocation sourceLocation, SourceOffsets offsets) {
+    this(id, rawText, sourceLocation, offsets, Provenance.NORMAL);
+  }
+
+  private RawTextNode(
+      int id,
+      String rawText,
+      SourceLocation sourceLocation,
+      @Nullable SourceOffsets offsets,
+      Provenance provenance) {
     super(id, sourceLocation);
-    this.rawText = checkNotNull(rawText);
+    this.rawText = rawText;
+    this.provenance = provenance;
     this.offsets = offsets;
   }
 
@@ -94,8 +125,21 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   private RawTextNode(RawTextNode orig, CopyState copyState) {
     super(orig, copyState);
     this.rawText = orig.rawText;
+    this.provenance = orig.provenance;
     this.htmlContext = orig.htmlContext;
     this.offsets = orig.offsets;
+  }
+
+  public static RawTextNode newLiteral(int id, String rawText, SourceLocation loc) {
+    SourceOffsets.Builder builder = new SourceOffsets.Builder();
+    if (rawText.length() > 0) {
+      builder.add(0, loc.getBeginLine(), loc.getBeginColumn(), Reason.NONE);
+    }
+    SourceOffsets offsets =
+        builder
+            .setEndLocation(loc.getEndLine(), loc.getEndColumn())
+            .build(rawText.length(), Reason.LITERAL);
+    return new RawTextNode(id, rawText, loc, offsets, Provenance.LITERAL);
   }
 
   /**
@@ -123,6 +167,14 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
 
   public boolean isEmpty() {
     return rawText.isEmpty();
+  }
+
+  public Provenance getProvenance() {
+    return provenance;
+  }
+
+  public boolean isLiteral() {
+    return provenance == Provenance.LITERAL;
   }
 
   /**
@@ -224,7 +276,12 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
       newOffsets = offsets.substring(start, end, rawText);
       newLocation = newOffsets.getSourceLocation(getSourceLocation().getFilePath());
     }
-    return new RawTextNode(newId, newText, newLocation, newOffsets);
+    return new RawTextNode(
+        newId,
+        newText,
+        newLocation,
+        newOffsets,
+        isLiteral() ? Provenance.LITERAL_SUBSTRING : Provenance.NORMAL);
   }
 
   /** Concatenates the non-empty set of RawTextNodes, preserving source location information. */
@@ -308,21 +365,25 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
         id,
         text,
         location,
-        indexes == null ? null : new SourceOffsets(indexes, lines, columns, reasons));
+        indexes == null ? null : new SourceOffsets(indexes, lines, columns, reasons),
+        Provenance.CONCATENATED);
   }
 
   @Override
   public String toSourceString() {
 
     StringBuffer sb = new StringBuffer();
-
-    // Must escape special chars to create valid source text.
-    Matcher matcher = SPECIAL_CHARS_TO_ESCAPE.matcher(rawText);
-    while (matcher.find()) {
-      String specialCharTag = SPECIAL_CHAR_TO_TAG.get(matcher.group());
-      matcher.appendReplacement(sb, Matcher.quoteReplacement(specialCharTag));
+    if (isLiteral()) {
+      sb.append("{literal}").append(rawText).append("{/literal}");
+    } else {
+      // Must escape special chars to create valid source text.
+      Matcher matcher = SPECIAL_CHARS_TO_ESCAPE.matcher(rawText);
+      while (matcher.find()) {
+        String specialCharTag = SPECIAL_CHAR_TO_TAG.get(matcher.group());
+        matcher.appendReplacement(sb, Matcher.quoteReplacement(specialCharTag));
+      }
+      matcher.appendTail(sb);
     }
-    matcher.appendTail(sb);
 
     return sb.toString();
   }
@@ -332,7 +393,6 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   public ParentSoyNode<StandaloneNode> getParent() {
     return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
-
 
   @Override
   public RawTextNode copy(CopyState copyState) {
