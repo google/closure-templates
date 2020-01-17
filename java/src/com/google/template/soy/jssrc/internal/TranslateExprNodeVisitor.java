@@ -468,11 +468,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     SoySourceFunction method = methodNode.getSoyMethods().get(0);
 
     if (method instanceof GetExtensionMethod) {
-      SoyType baseType = methodNode.getBaseExprChild().getType();
+      SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
+
       SoyProtoType protoType = (SoyProtoType) baseType;
-
       String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
-
       FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
       Preconditions.checkNotNull(
           desc,
@@ -481,7 +480,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           fieldName);
       return base.dotAccess(ProtoCall.create(fieldName, desc), methodNode.isNullSafe());
     }
-    // TODO(b/123417146): Implement method calls for normal SoyMethodSignature methods.
+    // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
     return base;
   }
 

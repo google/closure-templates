@@ -249,6 +249,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind GET_EXTENSION_GLOBAL_REQUIRED =
       SoyErrorKind.of(
           "The parameter of method ''getExtension'' must be a dotted identifier. Found ''{0}''");
+  private static final SoyErrorKind METHOD_BASE_TYPE_NULL_SAFE_REQUIRED =
+      SoyErrorKind.of(
+          "Method calls are not allowed on objects with nullable types (''{0}''). Either ensure"
+              + " the type is non-nullable or perform a null safe access (''?.'').");
   private static final SoyErrorKind EXPLICIT_NULL =
       SoyErrorKind.of("Explicit use of the ''null'' type is not allowed.");
   private static final SoyErrorKind AMBIGUOUS_INFERRED_TYPE =
@@ -829,7 +833,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     private void visitGetExtensionMethod(MethodNode node) {
-      SoyType baseType = node.getBaseExprChild().getType();
+      SoyType baseType = SoyTypes.tryRemoveNull(node.getBaseExprChild().getType());
+
       if (baseType.getKind() != SoyType.Kind.PROTO) {
         errorReporter.report(
             node.getBaseExprChild().getSourceLocation(),
@@ -880,6 +885,19 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         node.setType(ErrorType.getInstance());
         return null;
       }
+
+      if (SoyTypes.isNullable(baseType)) {
+        if (!node.isNullSafe()) {
+          errorReporter.report(
+              node.getBaseExprChild().getSourceLocation(),
+              METHOD_BASE_TYPE_NULL_SAFE_REQUIRED,
+              baseType);
+          node.setType(ErrorType.getInstance());
+          return null;
+        }
+        baseType = SoyTypes.tryRemoveNull(baseType);
+      }
+
       SoySourceFunction resolvedMethod = null;
       for (SoySourceFunction method : methods) {
         SoyMethodSignature methodSignature =

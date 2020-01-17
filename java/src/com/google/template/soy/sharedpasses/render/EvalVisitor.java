@@ -518,7 +518,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     maybeMarkBadProtoAccess(itemAccess, base);
     SoyValue key = visit(itemAccess.getKeyExprChild());
 
-    SoyType baseType = SoyTypes.tryRemoveNull(itemAccess.getBaseExprChild().getType());
+    SoyType baseType = SoyTypes.removeNull(itemAccess.getBaseExprChild().getType());
 
     // We need to know whether to invoke the SoyMap or SoyLegacyObjectMap method.
     // An instanceof check on the runtime value of base is insufficient, since
@@ -559,6 +559,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   private SoyValue visitNullSafeMethodNode(MethodNode methodNode) {
     SoyValue base = visitNullSafeNodeRecurse(methodNode.getBaseExprChild());
+
+    if (methodNode.isNullSafe() && isNullOrUndefinedBase(base)) {
+      return NullSafetySentinel.INSTANCE;
+    }
 
     // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
