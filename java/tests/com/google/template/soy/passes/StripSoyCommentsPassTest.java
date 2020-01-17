@@ -83,11 +83,11 @@ public final class StripSoyCommentsPassTest {
             .parseSoyFile();
 
     assertThat(getAllNodesOfType(soyFile, LineCommentNode.class)).hasSize(1);
-    assertThat(getAllNodesOfType(soyFile, RawTextNode.class)).hasSize(3);
+    assertThat(getAllNodesOfType(soyFile, RawTextNode.class)).hasSize(2);
 
     new StripSoyCommentsPass().run(soyFile, new IncrementingIdGenerator());
 
     assertThat(getAllNodesOfType(soyFile, LineCommentNode.class)).isEmpty();
-    assertThat(getAllNodesOfType(soyFile, RawTextNode.class)).hasSize(3);
+    assertThat(getAllNodesOfType(soyFile, RawTextNode.class)).hasSize(2);
   }
 }

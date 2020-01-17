@@ -284,14 +284,6 @@ public final class PassManager {
       // meaning that errors reported in earlier passes do not prevent running subsequent passes.
       building = true;
       ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
-
-      // We run CombineConsecutiveRawTextNodesPass a few times. The reason for this first pass is
-      // primarily to delete empty raw text nodes, which the HtmlRewriter preserves for the
-      // formatter's sake (e.g. "{nil}"). This would cause problems for future passes, which assume
-      // there won't be empty nodes (e.g. SoyElementPass checks if an element contains only one
-      // top-level element, but every template starts with an empty raw text node).
-      addPass(new CombineConsecutiveRawTextNodesPass(), singleFilePassesBuilder);
-
       addPass(new StripSoyCommentsPass(), singleFilePassesBuilder);
       // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
       // autoescaping.
