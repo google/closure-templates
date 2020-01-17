@@ -57,7 +57,6 @@ public final class SoyFileSetParserBuilder {
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
   private boolean allowV1Expression;
-  private boolean runOptimizer = true;
   private final SoyScopedData scopedData;
   private ImmutableList<SoyFunction> soyFunctions;
   private ImmutableList<SoyPrintDirective> soyPrintDirectives;
@@ -237,11 +236,6 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder runOptimizer(boolean runOptimizer) {
-    this.runOptimizer = runOptimizer;
-    return this;
-  }
-
   /**
    * Tests can use this method to force running {@code AddDebugAttributesPass}. By default, this
    * compiler pass is disabled for tests, since it modifies the AST structure and will break a lot
@@ -308,7 +302,6 @@ public final class SoyFileSetParserBuilder {
                 soyMethods,
                 errorReporter))
         .setAutoescaperEnabled(runAutoescaper)
-        .optimize(runOptimizer)
         .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
         .setLoggingConfig(loggingConfig);
     if (allowUnboundGlobals) {
