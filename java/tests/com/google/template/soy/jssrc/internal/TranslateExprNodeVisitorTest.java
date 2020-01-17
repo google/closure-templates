@@ -65,6 +65,8 @@ public final class TranslateExprNodeVisitorTest {
 
   @Test
   public void testRecordLiteral() {
+    assertThatSoyExpr("record()").generatesCode("{};");
+
     assertThatSoyExpr("record(aaa: 123, bbb: 'blah')").generatesCode("{aaa: 123, bbb: 'blah'};");
     assertThatSoyExpr("record(aaa: $foo, bbb: 'blah')")
         .generatesCode("{aaa: opt_data.foo, bbb: 'blah'};");

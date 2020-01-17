@@ -280,7 +280,11 @@ public class EvalVisitorTest {
 
   @Test
   public void testEvalRecordLiteral() throws Exception {
-    SoyDict result = (SoyDict) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
+
+    SoyDict result = (SoyDict) eval("record()");
+    assertThat(result.getItemKeys()).isEmpty();
+
+    result = (SoyDict) eval("record(aaa: 'blah', bbb: 123, ccc: $boo)");
     assertThat(result.getItemKeys()).hasSize(3);
     assertThat(result.getField("aaa").stringValue()).isEqualTo("blah");
     assertThat(result.getField("bbb").integerValue()).isEqualTo(123);

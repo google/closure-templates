@@ -36,6 +36,7 @@ import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -197,6 +198,8 @@ public class ExpressionCompilerTest {
 
   @Test
   public void testCollectionLiterals_record() {
+    assertExpression("record()").evaluatesTo(SoyValueConverter.EMPTY_DICT);
+
     // Record values are always boxed.  SoyMaps use == for equality, so check equivalence by
     // comparing their string representations.
     SoyExpression compile =
