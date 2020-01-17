@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -49,137 +50,137 @@ public final class SourceLocationTest {
 
   @Test
   public void testLocationsInParsedContent() throws Exception {
-    assertSourceLocations(
+    assertSourceRanges(
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
-            "    TemplateBasicNode          @ /example/file.soy:2:1",
-            "      RawTextNode              @ /example/file.soy:4:3",
-            "      PrintNode                @ /example/file.soy:6:3",
-            "      RawTextNode              @ /example/file.soy:7:3",
-            "      CallBasicNode            @ /example/file.soy:9:3",
-            "    TemplateBasicNode          @ /example/file.soy:11:1",
-            "      RawTextNode              @ /example/file.soy:12:3",
+            "    TemplateBasicNode          {template .foo}{@param wo[...]{call .bar /}{/template}",
+            "      RawTextNode              Hello{lb}",
+            "      PrintNode                {print $world}",
+            "      RawTextNode              {rb}!",
+            "      CallBasicNode            {call .bar /}",
+            "    TemplateBasicNode          {template .bar}Gooodbye{/template}",
+            "      RawTextNode              Gooodbye",
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}", // 1
+            "{template .foo}",
             "{@param world : ?}",
-            "  Hello", // 3
-            "  {lb}", // 4
-            "  {print $world}", // 5
-            "  {rb}!", // 6
-            "", // 7
-            "  {call .bar /}", // 8
-            "{/template}", // 9
-            "{template .bar}", // 10
-            "  Gooodbye", // 11
-            "{/template}" // 12
-            ));
+            "  Hello",
+            "  {lb}",
+            "  {print $world}",
+            "  {rb}!",
+            "",
+            "  {call .bar /}",
+            "{/template}",
+            "{template .bar}",
+            "  Gooodbye",
+            "{/template}",
+            ""));
   }
 
   @Test
   public void testSwitches() throws Exception {
-    assertSourceLocations(
+    assertSourceRanges(
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
-            "    TemplateBasicNode          @ /example/file.soy:2:1",
-            "      RawTextNode              @ /example/file.soy:4:3",
-            "      SwitchNode               @ /example/file.soy:5:3",
-            "        SwitchCaseNode         @ /example/file.soy:6:5",
-            "          RawTextNode          @ /example/file.soy:7:7",
-            "        SwitchCaseNode         @ /example/file.soy:8:5",
-            "          RawTextNode          @ /example/file.soy:9:7",
-            "        SwitchCaseNode         @ /example/file.soy:10:5",
-            "          RawTextNode          @ /example/file.soy:11:7",
-            "        SwitchDefaultNode      @ /example/file.soy:12:5",
-            "          RawTextNode          @ /example/file.soy:13:7",
-            "      RawTextNode              @ /example/file.soy:15:3",
+            "    TemplateBasicNode          {template .foo}{@param i [...]ssy{/switch}!{/template}",
+            "      RawTextNode              Hello,",
+            "      SwitchNode               {switch $i}",
+            "        SwitchCaseNode         {case 0}",
+            "          RawTextNode          Mercury",
+            "        SwitchCaseNode         {case 1}",
+            "          RawTextNode          Venus",
+            "        SwitchCaseNode         {case 2}",
+            "          RawTextNode          Mars",
+            "        SwitchDefaultNode      {default}",
+            "          RawTextNode          Gassy",
+            "      RawTextNode              !",
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}", // 1
-            "{@param i : int}", // 2
-            "  Hello,", // 3
-            "  {switch $i}", // 4
-            "    {case 0}", // 5
-            "      Mercury", // 6
-            "    {case 1}", // 7
-            "      Venus", // 8
-            "    {case 2}", // 9
-            "      Mars", // 10
-            "    {default}", // 11
-            "      Gassy", // 12
-            "  {/switch}", // 13
-            "  !", // 14
-            "{/template}", // 15
+            "{template .foo}",
+            "{@param i : int}",
+            "  Hello,",
+            "  {switch $i}",
+            "    {case 0}",
+            "      Mercury",
+            "    {case 1}",
+            "      Venus",
+            "    {case 2}",
+            "      Mars",
+            "    {default}",
+            "      Gassy",
+            "  {/switch}",
+            "  !",
+            "{/template}",
             ""));
   }
 
   @Test
   public void testForLoop() throws Exception {
-    assertSourceLocations(
+    assertSourceRanges(
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
-            "    TemplateBasicNode          @ /example/file.soy:2:1",
-            "      RawTextNode              @ /example/file.soy:3:3",
-            "      ForNode                  @ /example/file.soy:4:3",
-            "        ForNonemptyNode        @ /example/file.soy:4:8",
-            "          RawTextNode          @ /example/file.soy:5:5",
-            "          PrintNode            @ /example/file.soy:6:5",
-            "        ForIfemptyNode         @ /example/file.soy:7:3",
-            "          RawTextNode          @ /example/file.soy:8:5",
-            "      RawTextNode              @ /example/file.soy:10:3",
+            "    TemplateBasicNode          {template .foo}Hello{for [...]r void{/for}!{/template}",
+            "      RawTextNode              Hello",
+            "      ForNode                  {for $planet in ['mercury', 'mars', 'venus']}",
+            "        ForNonemptyNode        $planet",
+            "          RawTextNode          ,",
+            "          PrintNode            {print $planet}",
+            "        ForIfemptyNode         {ifempty}",
+            "          RawTextNode          lifeless interstellar void",
+            "      RawTextNode              !",
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}", // 1
-            "  Hello", // 2
-            "  {for $planet in ['mercury', 'mars', 'venus']}", // 3
-            "    ,", // 4
-            "    {print $planet}", // 5
-            "  {ifempty}", // 6
-            "    lifeless interstellar void", // 7
-            "  {/for}", // 8
-            "  !", // 9
-            "{/template}", // 10
+            "{template .foo}",
+            "  Hello",
+            "  {for $planet in ['mercury', 'mars', 'venus']}",
+            "    ,",
+            "    {print $planet}",
+            "  {ifempty}",
+            "    lifeless interstellar void",
+            "  {/for}",
+            "  !",
+            "{/template}",
             ""));
   }
 
   @Test
   public void testConditional() throws Exception {
-    assertSourceLocations(
+    assertSourceRanges(
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
-            "    TemplateBasicNode          @ /example/file.soy:2:1",
-            "      RawTextNode              @ /example/file.soy:5:3",
-            "      IfNode                   @ /example/file.soy:6:3",
-            "        IfCondNode             @ /example/file.soy:6:3",
-            "          RawTextNode          @ /example/file.soy:7:5",
-            "        IfCondNode             @ /example/file.soy:8:3",
-            "          RawTextNode          @ /example/file.soy:9:5",
-            "        IfElseNode             @ /example/file.soy:10:3",
-            "          RawTextNode          @ /example/file.soy:11:5",
-            "      RawTextNode              @ /example/file.soy:13:3",
+            "    TemplateBasicNode          {template .foo}{@param sk[...]cinatti{/if}!{/template}",
+            "      RawTextNode              Hello,",
+            "      IfNode                   {if $skyIsBlue}",
+            "        IfCondNode             {if $skyIsBlue}",
+            "          RawTextNode          Earth",
+            "        IfCondNode             {elseif $isReallyReallyHot}",
+            "          RawTextNode          Venus",
+            "        IfElseNode             {else}",
+            "          RawTextNode          Cincinatti",
+            "      RawTextNode              !",
             ""),
         JOINER.join(
             "{namespace ns}",
-            "{template .foo}", // 1
+            "{template .foo}",
             "{@param skyIsBlue : bool}",
             "{@param isReallyReallyHot : bool}",
-            "  Hello,", // 4
-            "  {if $skyIsBlue}", // 5
-            "    Earth", // 6
-            "  {elseif $isReallyReallyHot}", // 7
-            "    Venus", // 8
-            "  {else}", // 9
-            "    Cincinatti", // 10
-            "  {/if}", // 11
-            "  !", // 12
-            "{/template}", // 13
+            "  Hello,",
+            "  {if $skyIsBlue}",
+            "    Earth",
+            "  {elseif $isReallyReallyHot}",
+            "    Venus",
+            "  {else}",
+            "    Cincinatti",
+            "  {/if}",
+            "  !",
+            "{/template}",
             ""));
   }
 
@@ -195,21 +196,6 @@ public final class SourceLocationTest {
         .errorReporter(reporter)
         .parse();
     assertThat(reporter.getErrors()).isNotEmpty();
-  }
-
-  @Test
-  public void testAdditionalSourceLocationInfo() throws Exception {
-    String template =
-        JOINER.join("{namespace ns}", "{template .t}", "  hello, world", "{/template}");
-    TemplateNode templateNode =
-        SoyFileSetParserBuilder.forFileContents(template).parse().fileSet().getChild(0).getChild(0);
-    SourceLocation location = templateNode.getSourceLocation();
-    // Begin at {template
-    assertEquals(2, location.getBeginLine());
-    assertEquals(1, location.getBeginColumn());
-    // End after .t}
-    assertEquals(4, location.getEndLine());
-    assertEquals(11, location.getEndColumn());
   }
 
   @Test
@@ -337,13 +323,26 @@ public final class SourceLocationTest {
     }
   }
 
-  private void assertSourceLocations(String asciiArtExpectedOutput, String soySourceCode) {
+  private static void assertSourceRanges(String asciiArtExpectedOutput, String soySourceCode) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(soySourceCode, "/example/file.soy"))
             .parse()
             .fileSet();
-    String actual = new AsciiArtVisitor().exec(soyTree);
+
+    assertThat(soyTree.numChildren()).isEqualTo(1);
+    SoyFileNode soyFile = soyTree.getChild(0);
+    assertThat(soyFile.numChildren()).isGreaterThan(0);
+    // Verify that the filename is correctly stored in the SourceLocation of each node.
+    for (TemplateNode templateNode : soyFile.getChildren()) {
+      for (SoyNode node : SoyTreeUtils.getAllNodesOfType(templateNode, SoyNode.class)) {
+        assertWithMessage("Wrong file path for node %s", node)
+            .that(node.getSourceLocation().getFilePath())
+            .isEqualTo("/example/file.soy");
+      }
+    }
+
+    String actual = new AsciiArtVisitor(soySourceCode).exec(soyTree);
     assertEquals(
         // Make the message be something copy-pasteable to make it easier to update this test when
         // fixing source locations bugs.
@@ -354,8 +353,13 @@ public final class SourceLocationTest {
 
   /** Generates a concise readable summary of a soy tree and its source locations. */
   private static class AsciiArtVisitor extends AbstractSoyNodeVisitor<String> {
+    private final String[] soySourceCode;
     final StringBuilder sb = new StringBuilder();
     int depth;
+
+    public AsciiArtVisitor(String soySourceCode) {
+      this.soySourceCode = soySourceCode.split("\n");
+    }
 
     @Override
     public String exec(SoyNode node) {
@@ -366,8 +370,10 @@ public final class SourceLocationTest {
     @Override
     protected void visitSoyNode(SoyNode node) {
       // Output a header like:
+      //   <indent> <node class>                    {code fragment}
+      // or
       //   <indent> <node class>                    @ <location>
-      // where indent is 2 spaces per level, and the @ sign is indented to the 31st column.
+      // where indent is 2 spaces per level, and the @ sign is indented to the 31st column
       for (int indent = depth; --indent >= 0; ) {
         sb.append("  ");
       }
@@ -380,7 +386,13 @@ public final class SourceLocationTest {
           sb.append(' ');
           ++pos;
         }
-        sb.append(" @ ").append(node.getSourceLocation());
+        sb.append(' ');
+        StringBuilder codeFragment = getCodeFragment(node.getSourceLocation());
+        if (codeFragment.length() == 0) {
+          sb.append("@ ").append(node.getSourceLocation());
+        } else {
+          sb.append(codeFragment);
+        }
       }
       sb.append('\n');
 
@@ -389,6 +401,31 @@ public final class SourceLocationTest {
         visitChildren((ParentSoyNode<?>) node);
         --depth;
       }
+    }
+
+    private StringBuilder getCodeFragment(SourceLocation location) {
+      if (location.getBeginLine() == location.getEndLine()) {
+        String line = this.soySourceCode[location.getBeginLine() - 1];
+        return new StringBuilder(
+            line.substring(location.getBeginColumn() - 1, location.getEndColumn()).trim());
+      }
+      StringBuilder sb = new StringBuilder();
+      sb.append(
+          this.soySourceCode[location.getBeginLine() - 1]
+              .substring(location.getBeginColumn() - 1)
+              .trim());
+      for (int i = location.getBeginLine() + 1; i < location.getEndLine(); i++) {
+        sb.append(this.soySourceCode[i - 1].trim());
+      }
+      sb.append(
+          this.soySourceCode[location.getEndLine() - 1]
+              .substring(0, location.getEndColumn())
+              .trim());
+      if (sb.length() > 54) {
+        // Add an ellipsis to bring the fragment to a length of 54.
+        return sb.replace(25, sb.length() - 24, "[...]");
+      }
+      return sb;
     }
   }
 }
