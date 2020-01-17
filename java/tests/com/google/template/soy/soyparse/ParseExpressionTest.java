@@ -207,7 +207,7 @@ public final class ParseExpressionTest {
 
   @Test
   public void testRecognizeRecordLiterals() {
-    assertThatExpression("record()").isValidExpression();
+    assertThatExpression("record()").isNotValidExpression();
     assertThatExpression("record(,)").isNotValidExpression();
     assertThatExpression("record(aa: 55)").isValidExpression();
     assertThatExpression("record(aa: 55,)").isValidExpression();
@@ -428,9 +428,7 @@ public final class ParseExpressionTest {
 
   @Test
   public void testParseRecords() {
-    ExprNode expr = assertThatExpression("record()").isValidExpression();
-    assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(0);
-    expr = assertThatExpression("record(aa: 55)").isValidExpression();
+    ExprNode expr = assertThatExpression("record(aa: 55)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);
     expr = assertThatExpression("record(aa: 55,)").isValidExpression();
     assertThat(((RecordLiteralNode) expr).numChildren()).isEqualTo(1);

@@ -708,15 +708,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
       int numChildren = node.numChildren();
       checkState(numChildren == node.getKeys().size());
-      if (numChildren == 0) {
-        // TODO(b/79869432): Remove support for the empty record.
-        node.setType(RecordType.EMPTY_RECORD);
-        if (isDefaultInitializerForInferredParam) {
-          errorReporter.report(
-              node.getSourceLocation(), AMBIGUOUS_INFERRED_TYPE, "an empty record");
-        }
-        return;
-      }
+      checkState(numChildren > 0);
 
       List<RecordType.Member> members = new ArrayList<>();
       for (int i = 0; i < numChildren; i++) {

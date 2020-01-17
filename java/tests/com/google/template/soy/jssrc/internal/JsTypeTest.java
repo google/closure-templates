@@ -122,7 +122,6 @@ public final class JsTypeTest {
         .isEqualTo(
             "{foo: number, bar: (!Array<!goog.html.SafeHtml|!goog.soy.data.SanitizedHtml"
                 + "|!soydata.$$EMPTY_STRING_|string>|null|undefined),}");
-    assertThatTypeExpr(RecordType.of(ImmutableMap.of())).isEqualTo("!Object");
 
     assertThatTypeExpr(MapType.of(StringType.getInstance(), HtmlType.getInstance()))
         .isEqualTo(

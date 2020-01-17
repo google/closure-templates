@@ -377,9 +377,7 @@ public final class JsType {
       case RECORD:
         {
           RecordType recordType = (RecordType) soyType;
-          if (recordType.isEmpty()) {
-            return RAW_OBJECT_TYPE;
-          }
+          Preconditions.checkArgument(!recordType.getMembers().isEmpty());
           Builder builder = builder();
           Map<String, String> members = new LinkedHashMap<>();
           for (RecordType.Member member : recordType.getMembers()) {

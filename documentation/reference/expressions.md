@@ -124,8 +124,9 @@ Record literals are delimited by `record()` and contain a comma-delimited
 sequence of key-value pairs separated by `:` characters. Each key must be an
 identifier. For example,
 
-*   `record()`: the empty record
 *   `record(aaa: 'blah', bbb: 123, ccc: $foo)`
+
+Empty records are not allowed.
 
 
 ## Variables
