@@ -39,14 +39,6 @@ abstract class Concatenation extends Operation {
       initialStatements.addAll(part.initialStatements());
       if (part instanceof Concatenation) {
         partsBuilder.addAll(((Concatenation) part).parts());
-      } else if (part instanceof BinaryOperation) {
-        BinaryOperation binaryOp = (BinaryOperation) part;
-        if (binaryOp.operator().equals(Operator.PLUS.getTokenString())) {
-          partsBuilder.add(binaryOp.arg1());
-          partsBuilder.add(binaryOp.arg2());
-        } else {
-          partsBuilder.add(part);
-        }
       } else {
         partsBuilder.add(part);
       }

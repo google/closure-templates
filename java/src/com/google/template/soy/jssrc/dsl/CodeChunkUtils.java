@@ -79,7 +79,7 @@ public final class CodeChunkUtils {
       return concatChunks(chunks);
     } else {
       return concatChunks(
-          ImmutableList.of(LITERAL_EMPTY_STRING, Group.create(concatChunks(chunks))));
+          ImmutableList.<Expression>builder().add(LITERAL_EMPTY_STRING).addAll(chunks).build());
     }
   }
 

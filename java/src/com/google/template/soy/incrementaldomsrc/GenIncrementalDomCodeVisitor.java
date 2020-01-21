@@ -963,7 +963,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     boolean needsToBeCoerced = false;
     // There may be HTML nodes in the children that can get coerced to a string. In this case,
     // the appending path needs to be executed.
-    for (Object n : value.getChildren()) {
+    for (SoyNode n : value.getChildren()) {
       if (n instanceof CallNode) {
         Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind((CallNode) n);
         needsToBeCoerced =
