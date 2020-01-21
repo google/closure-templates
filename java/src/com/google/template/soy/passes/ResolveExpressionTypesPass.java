@@ -225,6 +225,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
       SoyErrorKind.of("Cannot assign static type ''null'' to proto field ''{0}''.");
+  private static final SoyErrorKind PROTO_FIELD_NAME_ALIAS_CONFLICT =
+      SoyErrorKind.of("Alias ''{0}'' conflicts with a field with the same name in proto ''{1}''.");
   private static final SoyErrorKind TYPE_MISMATCH =
       SoyErrorKind.of("Soy types ''{0}'' and ''{1}'' are not comparable.");
   private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
@@ -351,7 +353,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         }
         if (headerVar.defaultValue() != null) {
           new ResolveTypesExprVisitor(
-                  /* isDefaultInitializerForInferredParam=*/ headerVar.getTypeNode() == null)
+                  /* isDefaultInitializerForInferredParam=*/ headerVar.getTypeNode() == null, node)
               .exec(headerVar.defaultValue());
           SoyType actualType = headerVar.defaultValue().getRoot().getType();
           if (headerVar.getTypeNode() != null) {
@@ -529,7 +531,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
   private void visitExpressions(ExprHolderNode node) {
     ResolveTypesExprVisitor exprVisitor =
-        new ResolveTypesExprVisitor(/* isDefaultInitializerForInferredParam=*/ false);
+        new ResolveTypesExprVisitor(/* isDefaultInitializerForInferredParam=*/ false, node);
     for (ExprRootNode expr : node.getExprList()) {
       exprVisitor.exec(expr);
     }
@@ -600,8 +602,15 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
      */
     final boolean isDefaultInitializerForInferredParam;
 
-    ResolveTypesExprVisitor(boolean isDefaultInitializerForInferredParam) {
+    /**
+     * The ExprHolderNode of the expression. Used to get the SoyFileNode when visiting
+     * ProtoInitNodes to resolve the aliased fields.
+     */
+    final SoyNode exprHolderNode;
+
+    ResolveTypesExprVisitor(boolean isDefaultInitializerForInferredParam, SoyNode exprHolderNode) {
       this.isDefaultInitializerForInferredParam = isDefaultInitializerForInferredParam;
+      this.exprHolderNode = exprHolderNode;
     }
 
     private final AbstractExprNodeVisitor<Void> checkAllTypesAssignedVisitor =
@@ -1344,14 +1353,55 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       } else {
         node.setType(type);
 
-        // Check that all proto required fields are present.
         SoyProtoType protoType = (SoyProtoType) type;
         // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
         Set<String> givenParams = new HashSet<>();
+        ImmutableSet<String> fields = protoType.getFieldNames();
+
+        SoyFileNode file = exprHolderNode.getNearestAncestor(SoyFileNode.class);
+        boolean hasAliasedParams = false;
+        List<Identifier> resolvedIdentifiers = new ArrayList<>();
+
+        // Resolve aliases for the given field names of the proto.
         for (Identifier id : node.getParamNames()) {
+          String originalName = id.identifier();
+          String resolvedName = file.resolveAlias(originalName);
+          if (!resolvedName.equals(originalName)) {
+            // Check that the aliased name does not conflict with a field in the proto as we cannot
+            // determine whether the intended field to instantiate is the regular field or the
+            // aliased value.
+            if (fields.contains(originalName)
+                && !protoType.getFieldDescriptor(originalName).isExtension()) {
+              errorReporter.report(
+                  id.location(),
+                  PROTO_FIELD_NAME_ALIAS_CONFLICT,
+                  originalName,
+                  protoType.getDescriptor().getName());
+              node.setType(ErrorType.getInstance());
+              continue;
+            }
+            hasAliasedParams = true;
+            id = Identifier.create(resolvedName, id.location());
+          }
+          resolvedIdentifiers.add(id);
           givenParams.add(id.identifier());
         }
-        ImmutableSet<String> fields = protoType.getFieldNames();
+
+        if (node.getType().getKind() == Kind.ERROR) {
+          return;
+        }
+
+        // Replace the ProtoInitNode to have a list of the resolved param names.
+        if (hasAliasedParams) {
+          ProtoInitNode resolvedNode =
+              new ProtoInitNode(node.getProtoName(), resolvedIdentifiers, node.getSourceLocation());
+          resolvedNode.setType(node.getType());
+          resolvedNode.addChildren(node.getChildren());
+          node.getParent().replaceChild(node, resolvedNode);
+          node = resolvedNode;
+        }
+
+        // Check that all proto required fields are present.
         for (String field : fields) {
           if (protoType.getFieldDescriptor(field).isRequired() && !givenParams.contains(field)) {
             errorReporter.report(node.getSourceLocation(), PROTO_MISSING_REQUIRED_FIELD, field);
