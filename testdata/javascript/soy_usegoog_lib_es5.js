@@ -691,7 +691,7 @@ goog.isObject = function(val) {
   return "object" == type && null != val || "function" == type;
 };
 goog.getUid = function(obj) {
-  return obj[goog.UID_PROPERTY_] || (obj[goog.UID_PROPERTY_] = ++goog.uidCounter_);
+  return Object.prototype.hasOwnProperty.call(obj, goog.UID_PROPERTY_) && obj[goog.UID_PROPERTY_] || (obj[goog.UID_PROPERTY_] = ++goog.uidCounter_);
 };
 goog.hasUid = function(obj) {
   return !!obj[goog.UID_PROPERTY_];
