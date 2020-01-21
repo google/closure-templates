@@ -17,6 +17,7 @@
 package com.google.template.soy.msgs.internal;
 
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -146,7 +147,7 @@ public final class InsertMsgsVisitor {
         // Append a new RawTextNode to the currReplacementNodes list.
         String rawText = ((SoyMsgRawTextPart) msgPart).getRawText();
         currReplacementNodes.add(
-            new RawTextNode(nodeIdGen.genId(), rawText, msg.getSourceLocation()));
+            new RawTextNode(nodeIdGen.genId(), rawText, SourceLocation.UNKNOWN));
 
       } else if (msgPart instanceof SoyMsgPlaceholderPart) {
         // Get the representative placeholder node and iterate through its contents.

@@ -73,6 +73,13 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   public SourceLocation(String filePath, Point begin, Point end) {
+    checkArgument(
+        begin.isKnown() == end.isKnown(),
+        "Either both the begin and end locations should be known, or neither should be. Got [%s,"
+            + " %s]",
+        begin,
+        end);
+    checkArgument(begin.compareTo(end) <= 0, "begin %s should be before end %s", begin, end);
     this.filePath = checkNotNull(filePath);
     this.begin = checkNotNull(begin);
     this.end = checkNotNull(end);
@@ -132,11 +139,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         && this.getEndColumn() + 1 == that.getBeginColumn();
   }
 
-  /**
-   * True iff this location is known, i.e. not the special value {@link #UNKNOWN}.
-   */
+  /** True iff this location has valid begin and end locations. */
   public boolean isKnown() {
-    return !this.equals(UNKNOWN);
+    // our ctor enforces that if begin is known then end is known, so we only need to check one.
+    return begin.isKnown();
   }
 
   @Override
@@ -185,6 +191,9 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * other} ends.
    */
   public SourceLocation extend(SourceLocation other) {
+    if (!isKnown() || !other.isKnown()) {
+      return UNKNOWN;
+    }
     checkState(
         filePath.equals(other.filePath),
         "Mismatched files paths: %s and %s",
@@ -238,19 +247,23 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
     public abstract int column();
 
-    public Point offset(int byLines, int byColumns) {
-      if (line() == -1) {
+    public final boolean isKnown() {
+      return !this.equals(UNKNOWN_POINT);
+    }
+
+    public final Point offset(int byLines, int byColumns) {
+      if (!isKnown()) {
         return this;
       }
       return Point.create(line() + byLines, column() + byColumns);
     }
 
-    public SourceLocation asLocation(String filePath) {
+    public final SourceLocation asLocation(String filePath) {
       return new SourceLocation(filePath, this, this);
     }
 
     @Override
-    public int compareTo(Point o) {
+    public final int compareTo(Point o) {
       return ComparisonChain.start()
           .compare(line(), o.line())
           .compare(column(), o.column())

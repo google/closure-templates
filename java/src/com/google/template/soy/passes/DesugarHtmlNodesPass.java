@@ -246,7 +246,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
       // location points to the last character, so if the content is longer than one character
       // extend the source location to cover it.  e.g. content might be "/>"
       if (suffix.length() > 1) {
-        location = location.offsetStartCol(suffix.length() - 1);
+        location = location.offsetEndCol(suffix.length() - 1);
       }
       return new RawTextNode(idGenerator.genId(), suffix, location);
     }
