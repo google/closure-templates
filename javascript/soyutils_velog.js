@@ -196,16 +196,15 @@ function $$getLoggingFunctionAttribute(name, args, attr) {
  */
 function emitLoggingCommands(element, logger) {
   if (element instanceof Element) {
-    const children = Array.from(element.childNodes);
-    visit(element, logger);
-    if (element.tagName !== 'VELOG') {
-      return element;
+    const newElements = visit(element, logger);
+    if (element.parentNode !== null) {
+      replaceChild(element.parentNode, element, newElements);
     }
-    if (children.length === 1) {
-      return children[0];
+    if (newElements.length === 1) {
+      return newElements[0];
     }
     const fragment = document.createDocumentFragment();
-    for (const child of children) {
+    for (const child of newElements) {
       fragment.appendChild(child);
     }
     return fragment;
@@ -214,7 +213,8 @@ function emitLoggingCommands(element, logger) {
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
       if (child instanceof Element) {
-        visit(child, logger);
+        const newChildren = visit(child, logger);
+        replaceChild(element, child, newChildren);
       }
     }
     return element;
@@ -223,13 +223,17 @@ function emitLoggingCommands(element, logger) {
 
 /**
  *
- * @param {!Node} element The rendered HTML element.
+ * @param {!Element|!DocumentFragment} element The rendered HTML element.
  * @param {!Logger} logger The logger that actually does stuffs.
+ * @return {!Array<!Element|!DocumentFragment>} The element(s) to replace the
+ *     incoming element with. This can be of length zero (which means remove the
+ *     element) or contain only the incoming element (which means leave the
+ *     element as is).
  */
 function visit(element, logger) {
   let logIndex = -1;
   if (!(element instanceof Element)) {
-    return;
+    return [element];
   }
   if (element.hasAttribute(ELEMENT_ATTR)) {
     logIndex = getDataAttribute(element, ELEMENT_ATTR);
@@ -242,25 +246,47 @@ function visit(element, logger) {
   if (element.childNodes) {
     const children = Array.from(element.childNodes);
     for (let i = 0; i < children.length; i++) {
-      visit(children[i], logger);
+      const newChildren = visit(children[i], logger);
+      replaceChild(element, children[i], newChildren);
     }
   }
   if (logIndex === -1) {
-    return;
+    return [element];
   }
   logger.exit();
   if (metadata.elements[logIndex].logOnly) {
-    element.parentNode.removeChild(element);
-    return;
+    return [];
   }
   if (element.tagName !== 'VELOG') {
     element.removeAttribute(ELEMENT_ATTR);
+    return [element];
   } else if (element.childNodes) {
-    const children = Array.from(element.childNodes);
-    for (let i = 0; i < children.length; i++) {
-      element.parentNode.insertBefore(children[i], element);
+    return Array.from(element.childNodes);
+  }
+  return [element];
+}
+
+/**
+ * Replaces oldChild (a child of parent) with newChildren. If newChildren is
+ * length zero, this removes oldChild. If newChildren contains only oldChild,
+ * this does nothing.
+ *
+ * @param {!Node} parent
+ * @param {!Node} oldChild
+ * @param {!Array<!Element|!DocumentFragment>} newChildren
+ */
+function replaceChild(parent, oldChild, newChildren) {
+  if (newChildren.length === 0) {
+    parent.removeChild(oldChild);
+  } else if (newChildren.length === 1) {
+    if (oldChild !== newChildren[0]) {
+      parent.replaceChild(newChildren[0], oldChild);
     }
-    element.parentNode.removeChild(element);
+  } else {
+    for (const newChild of newChildren) {
+      parent.insertBefore(newChild, oldChild);
+    }
+    parent.removeChild(oldChild);
   }
 }
 
