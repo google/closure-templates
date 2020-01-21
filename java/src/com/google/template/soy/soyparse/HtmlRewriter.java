@@ -223,6 +223,25 @@ final class HtmlRewriter {
       SoyErrorKind.of(
           "'{'velog ...'}' commands can only be used in pcdata context.", StyleAllowance.NO_CAPS);
 
+  private static final SoyErrorKind SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA =
+      SoyErrorKind.of("Found suspicious partial end tag inside of a {0} tag.");
+
+  private static final String DISALLOWED_SCRIPT_SEQUENCE_TEXT =
+      "Within script tags, the character sequences ''<script'' and ''<!--'' are disallowed by the"
+          + " HTML spec. Consider adding whitespace or backslashes to break up the sequence. See"
+          + " https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements"
+          + " for more details.";
+
+  private static final SoyErrorKind DISALLOWED_SCRIPT_SEQUENCE =
+      SoyErrorKind.of(DISALLOWED_SCRIPT_SEQUENCE_TEXT);
+
+  private static final SoyErrorKind DISALLOWED_SCRIPT_SEQUENCE_PREFIX =
+      SoyErrorKind.of(
+          DISALLOWED_SCRIPT_SEQUENCE_TEXT
+              + " Prefixes of"
+              + " these sequences are also disallowed if they appear at the end of a block of"
+              + " text.");
+
   /** Represents features of the parser states. */
   private enum StateFeature {
     /** Means the state is part of an html 'tag' of a node (but not, inside an attribute value). */
@@ -679,11 +698,39 @@ final class HtmlRewriter {
     void handleRcData(TagName.RcDataTagName tagName) {
       boolean foundLt = advanceWhileMatches(NOT_LT);
       if (foundLt) {
-        if (matchPrefixIgnoreCase("</" + tagName, /* advance= */ false)) {
+        String expectedEndTag = "</" + tagName;
+        if (matchPrefixIgnoreCase(expectedEndTag, /* advance= */ false)) {
           // pseudo re-enter pcdata so that we trigger the normal logic for starting a tag
           handlePcData();
         } else {
-          advance();
+          // <script>var x = "</scrip{$foo}"</script>  should be disallowed.
+          if (matchPrefixIgnoreCasePastEnd(expectedEndTag)) {
+            errorReporter.report(
+                currentLocation().extend(currentRawTextNode.getSourceLocation().getEndLocation()),
+                SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA,
+                tagName.toString());
+          }
+          if (tagName == TagName.RcDataTagName.SCRIPT) {
+            // in scripts we also need to watch out for <script and <!-- since the spec requires
+            // them to be balanced if present but that is typically non-sensical so we just disallow
+            // them.
+            // we also need to be concerned about raw text ending in a prefix of one of these tokens
+            // so that we don't need to worry about partial sequences being completed in dynamic
+            // content.
+            // see
+            // https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+            // TODO(b/144050436): upgrade to error
+            if (matchPrefixIgnoreCase("<script", /* advance= */ false)
+                || matchPrefixIgnoreCase("<!--", /* advance= */ false)) {
+              errorReporter.warn(currentLocation(), DISALLOWED_SCRIPT_SEQUENCE);
+            } else if (matchPrefixIgnoreCasePastEnd("<script")
+                || matchPrefixIgnoreCasePastEnd("<!--")) {
+              errorReporter.warn(
+                  currentLocation().extend(currentRawTextNode.getSourceLocation().getEndLocation()),
+                  DISALLOWED_SCRIPT_SEQUENCE_PREFIX);
+            }
+          }
+          advance(); // skip past the '<' character and keep parsing
         }
       }
     }
@@ -696,7 +743,7 @@ final class HtmlRewriter {
     void handleCData() {
       boolean foundBrace = advanceWhileMatches(NOT_RSQUARE_BRACE);
       if (foundBrace) {
-        if (matchPrefix("]]>", true)) {
+        if (matchPrefix("]]>", /* advance=*/ true)) {
           context.setState(State.PCDATA, currentPointOrEnd());
         } else {
           advance();
@@ -1199,6 +1246,18 @@ final class HtmlRewriter {
         return true;
       }
       return false;
+    }
+
+    /**
+     * Returns true if the beginning of the input matches the given string ignoring ASCII case. If
+     * the input ends prematurely, we assume that it would continue to match until the end.
+     */
+    boolean matchPrefixIgnoreCasePastEnd(String s) {
+      int charsLeft = currentRawText.length() - currentRawTextIndex;
+      if (s.length() > charsLeft) {
+        s = s.substring(0, charsLeft);
+      }
+      return matchPrefixIgnoreCase(s, /* advance= */ false);
     }
 
     // scoped blocks, each one of these can enter/exit a new state

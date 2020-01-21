@@ -121,7 +121,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "<textarea><script>notAScript()</script></textarea>",
             "<script is-script=yes"
                 + NONCE
-                + ">document.write('<script>not()<\\/script>');</script>",
+                + ">document.write('<\\script>not()<\\/script>');</script>",
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"),
         join(
@@ -132,7 +132,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             // Injecting a nonce into something that is not a script might be bad.
             "<!-- <script>notAScript()</script> -->",
             "<textarea><script>notAScript()</script></textarea>",
-            "<script is-script=yes>document.write('<script>not()<\\/script>');</script>",
+            "<script is-script=yes>document.write('<\\script>not()<\\/script>');</script>",
             "<a href=\"//google.com/search?q=<script>hi()</script>\">Link</a>\n",
             "{/template}"));
   }

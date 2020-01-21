@@ -244,7 +244,7 @@ public final class InferenceEngineTest {
         "<xmp>"
             + "{assert('HTML_RCDATA XMP')} foo {assert('HTML_RCDATA XMP')} "
             + "<div class='{assert('HTML_RCDATA XMP')}'>"
-            + "<{assert('HTML_RCDATA XMP')}>"
+            + "<x{assert('HTML_RCDATA XMP')}>"
             + "</textarea>"
             + "{assert('HTML_RCDATA XMP')}"
             + "</xmp>");
