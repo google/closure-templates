@@ -48,14 +48,6 @@ public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
   }
 
   @Override
-  public boolean hasChangedSince(Version version) {
-    if (!(version instanceof VolatileFileVersion)) {
-      return true;
-    }
-    return file.lastModified() != ((VolatileFileVersion) version).lastModified;
-  }
-
-  @Override
   public Reader open() throws IOException {
     return new BufferedReader(new InputStreamReader(new FileInputStream(file), UTF_8));
   }

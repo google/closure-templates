@@ -60,7 +60,14 @@ public interface SoyFileSupplier {
   }
 
   /** View this supplier as a {@link CharSource}. */
-  CharSource asCharSource();
+  default CharSource asCharSource() {
+    return new CharSource() {
+      @Override
+      public Reader openStream() throws IOException {
+        return open();
+      }
+    };
+  }
 
   /**
    * Returns a {@link Reader} for the Soy file content.
@@ -68,9 +75,6 @@ public interface SoyFileSupplier {
    * @throws IOException If there is an error opening the input.
    */
   Reader open() throws IOException;
-
-  /** True if the underlying resource has changed since the given version. */
-  boolean hasChangedSince(Version version);
 
   /** Returns the path to the Soy file, used for as a unique map/set key and for messages. */
   String getFilePath();

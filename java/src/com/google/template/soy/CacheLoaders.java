@@ -242,11 +242,6 @@ final class CacheLoaders {
     // boring delegate methods
 
     @Override
-    public boolean hasChangedSince(Version version) {
-      return delegate.hasChangedSince(version);
-    }
-
-    @Override
     public String getFilePath() {
       return delegate.getFilePath();
     }

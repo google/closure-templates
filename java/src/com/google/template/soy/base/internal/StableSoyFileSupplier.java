@@ -45,11 +45,6 @@ public final class StableSoyFileSupplier extends AbstractSoyFileSupplier {
   }
 
   @Override
-  public boolean hasChangedSince(Version version) {
-    return !Version.STABLE_VERSION.equals(version);
-  }
-
-  @Override
   public Reader open() throws IOException {
     return contentSource.openStream();
   }
