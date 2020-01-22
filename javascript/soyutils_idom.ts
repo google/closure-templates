@@ -184,7 +184,8 @@ function attributesToString(fn: PatchFunction): string {
     if (el.attributes[i].value === '') {
       s.push(el.attributes[i].name);
     } else {
-      s.push(`${el.attributes[i].name}=${el.attributes[i].value}`);
+      s.push(`${el.attributes[i].name}=\'${
+          soy.$$escapeHtmlAttribute(el.attributes[i].value)}\'`);
     }
   }
   // The sort is important because attribute order varies per browser.
