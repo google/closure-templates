@@ -18,6 +18,7 @@ package com.google.template.soy.invocationbuilders.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -158,10 +159,7 @@ final class InvocationBuilderTypeUtils {
   }
 
   private static ImmutableList<JavaType> trySimpleRecordType(RecordType recordType, boolean list) {
-    // Empty records make no sense.
-    if (recordType.isEmpty()) {
-      return ImmutableList.of();
-    }
+    Preconditions.checkArgument(!recordType.getMembers().isEmpty());
 
     // No records of records.
     if (Streams.stream(SoyTypes.getTypeTraverser(recordType, null))

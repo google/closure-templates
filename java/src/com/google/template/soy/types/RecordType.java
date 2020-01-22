@@ -47,8 +47,6 @@ public final class RecordType extends SoyType {
     return new AutoValue_RecordType_Member(name, type);
   }
 
-  public static final RecordType EMPTY_RECORD = RecordType.of(ImmutableList.of());
-
   private final ImmutableList<Member> members;
   private final ImmutableMap<String, SoyType> memberIndex;
 
@@ -95,10 +93,6 @@ public final class RecordType extends SoyType {
       return true;
     }
     return false;
-  }
-
-  public boolean isEmpty() {
-    return members.isEmpty();
   }
 
   public ImmutableList<Member> getMembers() {

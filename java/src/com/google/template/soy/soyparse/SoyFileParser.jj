@@ -466,6 +466,10 @@ public class SoyFileParser {
           "Parse error at '':''. If this is a record literal, use the new syntax: "
               + "''record(key1: \"value1\", key2: 2)''. If this is a legacy_object_map literal, "
               + "there is no syntax for that, consider using ''map()'' instead.");
+  private static final SoyErrorKind EMPTY_RECORD_LITERAL =
+      SoyErrorKind.of("Empty record literal.");
+  private static final SoyErrorKind EMPTY_RECORD_TYPE =
+      SoyErrorKind.of("Empty record type.");
 
   private static final SoyErrorKind FOREACH_IS_DISABLED = SoyErrorKind.of(
       "foreach loops are no longer supported, please switch to the for loop."
@@ -3798,6 +3802,9 @@ private ExprNode GlobalOrFunctionCallLike() :
             SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
             if (isRecord) {
               node = new RecordLiteralNode(ident, paramIds, loc);
+              if (params.isEmpty()) {
+                errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
+              }
             } else {
               // TODO(user): Also add type, then remove code from RETV
               node = new ProtoInitNode(
@@ -3840,6 +3847,7 @@ private ExprNode GlobalOrFunctionCallLike() :
     // Otherwise, it is a function.
     SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
     if (isRecord) {
+      errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
       return new RecordLiteralNode(ident, ImmutableList.of(), loc);
     }
     return new FunctionNode(ident, loc);
@@ -4252,7 +4260,14 @@ private TypeNode RecordType() :
 
   close = <RBRACKET>
 
-  { return RecordTypeNode.create(createSrcLoc(open, close), properties); }
+  {
+    SourceLocation srcLoc = createSrcLoc(open, close);
+    if (properties.isEmpty()) {
+      errorReporter.report(srcLoc, EMPTY_RECORD_TYPE);
+    }
+
+    return RecordTypeNode.create(srcLoc, properties);
+  }
 }
 
 
