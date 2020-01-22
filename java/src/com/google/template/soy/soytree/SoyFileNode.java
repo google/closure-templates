@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import javax.annotation.Nullable;
 
 /**
@@ -41,6 +42,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   private final TemplateNode.SoyFileHeaderInfo headerInfo;
 
+  private final ImmutableList<Comment> comments;
+
   /**
    * @param id The id for this node.
    * @param filePath The path to the Soy source file.
@@ -52,12 +55,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       int id,
       String filePath,
       NamespaceDeclaration namespaceDeclaration,
-      TemplateNode.SoyFileHeaderInfo headerInfo) {
+      SoyFileHeaderInfo headerInfo,
+      ImmutableList<Comment> comments) {
     super(id, new SourceLocation(filePath));
     this.headerInfo = headerInfo;
     this.delPackageName = headerInfo.getDelPackageName();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
+    this.comments = comments;
   }
 
   /**
@@ -71,8 +76,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     this.namespaceDeclaration = orig.namespaceDeclaration.copy(copyState);
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
+    this.comments = orig.comments;
   }
-
 
   @Override
   public Kind getKind() {
@@ -125,6 +130,11 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   @Nullable
   public String getFileName() {
     return getSourceLocation().getFileName();
+  }
+
+  /** Returns all comments in the entire Soy file (not just doc-level comments). */
+  public ImmutableList<Comment> getComments() {
+    return comments;
   }
 
   /** Resolves a qualified name against the aliases for this file. */

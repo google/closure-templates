@@ -438,7 +438,7 @@ public final class GenPyCodeVisitorTest {
     String soyCode = "{@param boo : ?}\n" + "{log}\n" + "  {$boo}\n" + "{/log}\n";
 
     String expectedPyCode =
-        "logger_5 = []\n" + "logger_5.append(str(data.get('boo')))\n" + "print logger_5\n" + "";
+        "logger_4 = []\n" + "logger_4.append(str(data.get('boo')))\n" + "print logger_4\n" + "";
 
     assertThatSoyCode(soyCode).compilesTo(expectedPyCode);
   }

@@ -197,7 +197,8 @@ public final class GenerateParseInfoVisitorTest {
             Identifier.create(namespace, SourceLocation.UNKNOWN),
             ImmutableList.of(),
             ErrorReporter.exploding()),
-        new TemplateNode.SoyFileHeaderInfo(namespace));
+        new TemplateNode.SoyFileHeaderInfo(namespace),
+        ImmutableList.of());
   }
 
   private static String createParseInfo(

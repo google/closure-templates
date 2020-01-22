@@ -265,9 +265,6 @@ final class ParseErrors {
       case SoyFileParserConstants.IN:
         return "\'in\'";
 
-      case SoyFileParserConstants.TEMPLATE_LINE_COMMENT:
-        return null; // Comments are ubiquitous and unnecessary in error messages.
-
       case SoyFileParserConstants.UNEXPECTED_TOKEN:
         throw new AssertionError("we should never expect the unexpected token");
 

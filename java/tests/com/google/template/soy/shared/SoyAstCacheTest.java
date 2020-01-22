@@ -55,7 +55,8 @@ public final class SoyAstCacheTest {
               Identifier.create("fake.namespace", SourceLocation.UNKNOWN),
               ImmutableList.of(),
               ErrorReporter.exploding()),
-          new TemplateNode.SoyFileHeaderInfo("fake.namespace"));
+          new TemplateNode.SoyFileHeaderInfo("fake.namespace"),
+          ImmutableList.of());
 
   @Test
   public void testGetSet() {

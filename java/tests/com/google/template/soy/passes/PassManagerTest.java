@@ -67,10 +67,7 @@ public final class PassManagerTest {
             .build();
 
     assertThat(names(manager.singleFilePasses))
-        .containsExactly(
-            "StripSoyComments",
-            "ContentSecurityPolicyNonceInjection",
-            "ResolveTemplateParamTypes");
+        .containsExactly("ContentSecurityPolicyNonceInjection", "ResolveTemplateParamTypes");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -83,7 +80,7 @@ public final class PassManagerTest {
             .build();
 
     assertThat(names(manager.singleFilePasses))
-        .containsExactly("StripSoyComments", "ContentSecurityPolicyNonceInjection");
+        .containsExactly("ContentSecurityPolicyNonceInjection");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
