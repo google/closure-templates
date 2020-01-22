@@ -23280,1411 +23280,6 @@ goog.dom.DomHelper.prototype.getAncestor = goog.dom.getAncestor;
  */
 goog.dom.DomHelper.prototype.getCanvasContext2D = goog.dom.getCanvasContext2D;
 
-//javascript/closure/i18n/uchar.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Collection of utility functions for Unicode character.
- */
-
-goog.provide('goog.i18n.uChar');
-
-
-// Constants for handling Unicode supplementary characters (surrogate pairs).
-
-
-/**
- * The minimum value for Supplementary code points.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
-
-
-/**
- * The highest Unicode code point value (scalar value) according to the Unicode
- * Standard.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
-
-
-/**
- * Lead surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
-
-
-/**
- * Lead surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
-
-
-/**
- * Trail surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
-
-
-/**
- * Trail surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
-
-
-/**
- * The number of least significant bits of a supplementary code point that in
- * UTF-16 become the least significant bits of the trail surrogate. The rest of
- * the in-use bits of the supplementary code point become the least significant
- * bits of the lead surrogate.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
-
-
-/**
- * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
- * @param {string} ch The given character.
- * @return {string} The U+ notation of the given character.
- */
-goog.i18n.uChar.toHexString = function(ch) {
-  const chCode = goog.i18n.uChar.toCharCode(ch);
-  const chCodeStr = 'U+' +
-      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
-
-  return chCodeStr;
-};
-
-
-/**
- * Gets a string padded with given character to get given size.
- * @param {string} str The given string to be padded.
- * @param {number} length The target size of the string.
- * @param {string} ch The character to be padded with.
- * @return {string} The padded string.
- * @private
- */
-goog.i18n.uChar.padString_ = function(str, length, ch) {
-  while (str.length < length) {
-    str = ch + str;
-  }
-  return str;
-};
-
-
-/**
- * Gets Unicode value of the given character.
- * @param {string} ch The given character, which in the case of a supplementary
- * character is actually a surrogate pair. The remainder of the string is
- * ignored.
- * @return {number} The Unicode value of the character.
- */
-goog.i18n.uChar.toCharCode = function(ch) {
-  return goog.i18n.uChar.getCodePointAround(ch, 0);
-};
-
-
-/**
- * Gets a character from the given Unicode value. If the given code point is not
- * a valid Unicode code point, null is returned.
- * @param {number} code The Unicode value of the character.
- * @return {?string} The character corresponding to the given Unicode value.
- */
-goog.i18n.uChar.fromCharCode = function(code) {
-  if (code == null ||
-      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
-    return null;
-  }
-  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
-    // First, we split the code point into the trail surrogate part (the
-    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
-    // part (the rest of the bits, shifted down; note that for now this includes
-    // the supplementary offset, also shifted down, to be subtracted off below).
-    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
-    const trailBits = code &
-        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
-        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
-        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
-
-    // Now we calculate the code point of each surrogate by adding each offset
-    // to the corresponding base code point.
-    const leadCodePoint = leadBits +
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
-         // Subtract off the supplementary offset, which had been shifted down
-         // with the rest of leadBits. We do this here instead of before the
-         // shift in order to save a separate subtraction step.
-         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
-          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
-    const trailCodePoint =
-        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
-
-    // Convert the code points into a 2-character long string.
-    return String.fromCharCode(leadCodePoint) +
-        String.fromCharCode(trailCodePoint);
-  }
-  return String.fromCharCode(code);
-};
-
-
-/**
- * Returns the Unicode code point at the specified index.
- *
- * If the char value specified at the given index is in the leading-surrogate
- * range, and the following index is less than the length of `string`, and
- * the char value at the following index is in the trailing-surrogate range,
- * then the supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * If the char value specified at the given index is in the trailing-surrogate
- * range, and the preceding index is not before the start of `string`, and
- * the char value at the preceding index is in the leading-surrogate range, then
- * the negated supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * The negation allows the caller to differentiate between the case where the
- * given index is at the leading surrogate and the one where it is at the
- * trailing surrogate, and thus deduce where the next character starts and
- * preceding character ends.
- *
- * Otherwise, the char value at the given index is returned. Thus, a leading
- * surrogate is returned when it is not followed by a trailing surrogate, and a
- * trailing surrogate is returned when it is not preceded by a leading
- * surrogate.
- *
- * @param {string} string The string.
- * @param {number} index The index from which the code point is to be retrieved.
- * @return {number} The code point at the given index. If the given index is
- * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
- * point encoded by the pair. If the given index is that of the end (i.e. trail
- * surrogate) of a surrogate pair, returns the negated code pointed encoded by
- * the pair.
- */
-goog.i18n.uChar.getCodePointAround = function(string, index) {
-  const charCode = string.charCodeAt(index);
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
-      index + 1 < string.length) {
-    const trail = string.charCodeAt(index + 1);
-    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-      // Part of a surrogate pair.
-      return /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
-    }
-  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
-    const lead = string.charCodeAt(index - 1);
-    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
-      // Part of a surrogate pair.
-      const codepoint = /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
-      return -codepoint;
-    }
-  }
-  return charCode;
-};
-
-
-/**
- * Determines the length of the string needed to represent the specified
- * Unicode code point.
- * @param {number} codePoint
- * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
- */
-goog.i18n.uChar.charCount = function(codePoint) {
-  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
-};
-
-
-/**
- * Determines whether the specified Unicode code point is in the supplementary
- * Unicode characters range.
- * @param {number} codePoint
- * @return {boolean} Whether then given code point is a supplementary character.
- */
-goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a leading surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a leading surrogate
- * character.
- */
-goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a trailing surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a trailing surrogate
- * character.
- */
-goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Composes a supplementary Unicode code point from the given UTF-16 surrogate
- * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
- * isn't a trailing surrogate code point, null is returned.
- * @param {number} lead The leading surrogate code point.
- * @param {number} trail The trailing surrogate code point.
- * @return {?number} The supplementary Unicode code point obtained by decoding
- * the given UTF-16 surrogate pair.
- */
-goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
-      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-    const shiftedLeadOffset =
-        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
-         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
-    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
-        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
-    return shiftedLeadOffset + trailOffset;
-  }
-  return null;
-};
-
-//javascript/closure/structs/inversionmap.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides inversion and inversion map functionality for storing
- * integer ranges and corresponding values.
- */
-
-goog.provide('goog.structs.InversionMap');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-
-
-
-/**
- * Maps ranges to values.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @constructor
- * @template T
- */
-goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
-  /**
-   * @protected {?Array<number>}
-   */
-  this.rangeArray = null;
-
-  goog.asserts.assert(
-      rangeArray.length == valueArray.length,
-      'rangeArray and valueArray must have the same length.');
-  this.storeInversion_(rangeArray, opt_delta);
-
-  /** @protected {Array<T>} */
-  this.values = valueArray;
-};
-
-
-/**
- * Stores the integers as ranges (half-open).
- * If delta is true, the integers are delta from the previous value and
- * will be restored to the absolute value.
- * When used as a set, even indices are IN, and odd are OUT.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @private
- */
-goog.structs.InversionMap.prototype.storeInversion_ = function(
-    rangeArray, opt_delta) {
-  this.rangeArray = rangeArray;
-
-  for (var i = 1; i < rangeArray.length; i++) {
-    if (rangeArray[i] == null) {
-      rangeArray[i] = rangeArray[i - 1] + 1;
-    } else if (opt_delta) {
-      rangeArray[i] += rangeArray[i - 1];
-    }
-  }
-};
-
-
-/**
- * Splices a range -> value map into this inversion map.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- */
-goog.structs.InversionMap.prototype.spliceInversion = function(
-    rangeArray, valueArray, opt_delta) {
-  // By building another inversion map, we build the arrays that we need
-  // to splice in.
-  var otherMap =
-      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
-
-  // Figure out where to splice those arrays.
-  var startRange = otherMap.rangeArray[0];
-  var endRange =
-      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
-  var startSplice = this.getLeast(startRange);
-  var endSplice = this.getLeast(endRange);
-
-  // The inversion map works by storing the start points of ranges...
-  if (startRange != this.rangeArray[startSplice]) {
-    // ...if we're splicing in a start point that isn't already here,
-    // then we need to insert it after the insertion point.
-    startSplice++;
-  }  // otherwise we overwrite the insertion point.
-
-  this.rangeArray = this.rangeArray.slice(0, startSplice)
-                        .concat(otherMap.rangeArray)
-                        .concat(this.rangeArray.slice(endSplice + 1));
-  this.values = this.values.slice(0, startSplice)
-                    .concat(otherMap.values)
-                    .concat(this.values.slice(endSplice + 1));
-};
-
-
-/**
- * Gets the value corresponding to a number from the inversion map.
- * @param {number} intKey The number for which value needs to be retrieved
- *     from inversion map.
- * @return {T|null} Value retrieved from inversion map; null if not found.
- */
-goog.structs.InversionMap.prototype.at = function(intKey) {
-  var index = this.getLeast(intKey);
-  if (index < 0) {
-    return null;
-  }
-  return this.values[index];
-};
-
-
-/**
- * Gets the largest index such that rangeArray[index] <= intKey from the
- * inversion map.
- * @param {number} intKey The probe for which rangeArray is searched.
- * @return {number} Largest index such that rangeArray[index] <= intKey.
- * @protected
- */
-goog.structs.InversionMap.prototype.getLeast = function(intKey) {
-  var arr = this.rangeArray;
-  var low = 0;
-  var high = arr.length;
-  while (high - low > 8) {
-    var mid = (high + low) >> 1;
-    if (arr[mid] <= intKey) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  for (; low < high; ++low) {
-    if (intKey < arr[low]) {
-      break;
-    }
-  }
-  return low - 1;
-};
-
-//javascript/closure/i18n/graphemebreak.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
- * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
- *
- * Reference: http://unicode.org/reports/tr29
- */
-
-goog.provide('goog.i18n.GraphemeBreak');
-
-goog.require('goog.asserts');
-goog.require('goog.i18n.uChar');
-goog.require('goog.structs.InversionMap');
-
-/**
- * Enum for all Grapheme Cluster Break properties.
- * These enums directly corresponds to Grapheme_Cluster_Break property values
- * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
- * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
- *
- * @protected @enum {number}
- */
-goog.i18n.GraphemeBreak.property = {
-  OTHER: 0,
-  CONTROL: 1,
-  EXTEND: 2,
-  PREPEND: 3,
-  SPACING_MARK: 4,
-  INDIC_LETTER: 5,
-  VIRAMA: 6,
-  L: 7,
-  V: 8,
-  T: 9,
-  LV: 10,
-  LVT: 11,
-  CR: 12,
-  LF: 13,
-  REGIONAL_INDICATOR: 14,
-  ZWJ: 15,
-  E_BASE: 16,
-  GLUE_AFTER_ZWJ: 17,
-  E_MODIFIER: 18,
-  E_BASE_GAZ: 19
-};
-
-
-/**
- * Grapheme Cluster Break property values for all codepoints as inversion map.
- * Constructed lazily.
- *
- * @private {?goog.structs.InversionMap}
- */
-goog.i18n.GraphemeBreak.inversions_ = null;
-
-
-/**
- * Indicates if a and b form a grapheme cluster.
- *
- * This implements the rules in:
- * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
- *
- * @param {number|string} a Code point or string with the first side of
- *     grapheme cluster.
- * @param {number|string} b Code point or string with the second side of
- *     grapheme cluster.
- * @param {boolean} extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
- * @private
- */
-goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
-  var prop = goog.i18n.GraphemeBreak.property;
-
-  var aCode = (typeof a === 'string') ?
-      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
-      a;
-  var bCode =
-      (typeof b === 'string') ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
-
-  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
-  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
-
-  var isString = (typeof a === 'string');
-
-  // GB3.
-  if (aProp === prop.CR && bProp === prop.LF) {
-    return false;
-  }
-
-  // GB4.
-  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
-    return true;
-  }
-
-  // GB5.
-  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
-    return true;
-  }
-
-  // GB6.
-  if (aProp === prop.L &&
-      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
-       bProp === prop.LVT)) {
-    return false;
-  }
-
-  // GB7.
-  if ((aProp === prop.LV || aProp === prop.V) &&
-      (bProp === prop.V || bProp === prop.T)) {
-    return false;
-  }
-
-  // GB8.
-  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
-    return false;
-  }
-
-  // GB9.
-  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
-    return false;
-  }
-
-  // GB9a, GB9b.
-  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
-    return false;
-  }
-
-  // Tailorings for basic aksara support.
-  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
-    return false;
-  }
-
-  var aStr, index, codePoint, codePointProp;
-
-  // GB10.
-  if (isString) {
-    if (bProp === prop.E_MODIFIER) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.EXTEND) {
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing:
-    // (E_Base | EBG) × E_Modifier.
-    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
-        bProp === prop.E_MODIFIER) {
-      return false;
-    }
-  }
-
-  // GB11.
-  if (aProp === prop.ZWJ &&
-      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
-    return false;
-  }
-
-  // GB12, GB13.
-  if (isString) {
-    if (bProp === prop.REGIONAL_INDICATOR) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of these rules:
-      // - sot (RI RI)* RI × RI
-      // - [^RI] (RI RI)* RI × RI.
-      var numberOfRi = 0;
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-      }
-      if (numberOfRi % 2 === 1) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing: RI × RI.
-    if (aProp === prop.REGIONAL_INDICATOR &&
-        bProp === prop.REGIONAL_INDICATOR) {
-      return false;
-    }
-  }
-
-  // GB999.
-  return true;
-};
-
-
-/**
- * Method to return property enum value of the code point. If it is Hangul LV or
- * LVT, then it is computed; for the rest it is picked from the inversion map.
- *
- * @param {number} codePoint The code point value of the character.
- * @return {number} Property enum value of code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
-  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
-    var prop = goog.i18n.GraphemeBreak.property;
-    if (codePoint % 0x1C === 0x10) {
-      return prop.LV;
-    }
-    return prop.LVT;
-  } else {
-    if (!goog.i18n.GraphemeBreak.inversions_) {
-      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
-          [
-            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
-            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
-            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
-            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
-            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
-            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
-            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
-            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
-            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
-            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
-            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
-            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
-            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
-            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
-            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
-            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
-            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
-            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
-            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
-            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
-            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
-            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
-            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
-            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
-            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
-            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
-            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
-            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
-            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
-            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
-            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
-            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
-            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
-            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
-            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
-            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
-            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
-            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
-            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
-            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
-            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
-            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
-            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
-            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
-            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
-            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
-            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
-            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
-            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
-            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
-            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
-            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
-            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
-            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
-            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
-            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
-            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
-            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
-            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
-            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
-            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
-            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
-            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
-            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
-            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
-            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
-            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
-            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
-            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
-            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
-            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
-            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
-            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
-            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
-            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
-            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
-            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
-            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
-            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
-            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
-            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
-            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
-            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
-            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
-            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
-            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
-            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
-            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
-            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
-            788162, 31
-          ],
-          [
-            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
-            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
-            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
-            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
-            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
-            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
-            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
-            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
-            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
-            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
-            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
-            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
-            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
-            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
-            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
-            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
-            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
-            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
-            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
-            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
-            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
-            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
-            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
-            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
-            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
-            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
-            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
-            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
-            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
-            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
-            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
-            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
-            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
-            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
-            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
-            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
-          ],
-          true);
-    }
-    return /** @type {number} */ (
-        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
-  }
-};
-
-/**
- * Extracts a code point from a string at the specified index.
- *
- * @param {string} str
- * @param {number} index
- * @return {number} Extracted code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
-  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
-  return (codePoint < 0) ? -codePoint : codePoint;
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * Legacy function. Does not cover cases where a sequence of code points is
- * required in order to decide if there is a grapheme cluster boundary, such as
- * emoji modifier sequences and emoji flag sequences. To cover all cases please
- * use `hasGraphemeBreakStrings`.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {number} a The code point value of the first character.
- * @param {number} b The code point value of the second character.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {string} a String with the first sequence of characters.
- * @param {string} b String with the second sequence of characters.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
-  goog.asserts.assert(a !== undefined, 'First string should be defined.');
-  goog.asserts.assert(b !== undefined, 'Second string should be defined.');
-
-  // Break if any of the strings is empty.
-  if (a.length === 0 || b.length === 0) {
-    return true;
-  }
-
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-//javascript/closure/format/format.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides utility functions for formatting strings, numbers etc.
- */
-
-goog.provide('goog.format');
-
-goog.require('goog.i18n.GraphemeBreak');
-goog.require('goog.string');
-goog.require('goog.userAgent');
-
-
-/**
- * Formats a number of bytes in human readable form.
- * 54, 450K, 1.3M, 5G etc.
- * @param {number} bytes The number of bytes to show.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} The human readable form of the byte size.
- */
-goog.format.fileSize = function(bytes, opt_decimals) {
-  return goog.format.numBytesToString(bytes, opt_decimals, false);
-};
-
-
-/**
- * Checks whether string value containing scaling units (K, M, G, T, P, m,
- * u, n) can be converted to a number.
- *
- * Where there is a decimal, there must be a digit to the left of the
- * decimal point.
- *
- * Negative numbers are valid.
- *
- * Examples:
- *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
- *
- * @param {string} val String value to check.
- * @return {boolean} True if string could be converted to a numeric value.
- */
-goog.format.isConvertableScaledNumber = function(val) {
-  return goog.format.SCALED_NUMERIC_RE_.test(val);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * If string ends in 'B', use binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumericValue = function(stringValue) {
-  if (goog.string.endsWith(stringValue, 'B')) {
-    return goog.format.stringToNumericValue_(
-        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-  }
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_SI_);
-};
-
-
-/**
- * Converts a string to number of bytes, taking into account the units.
- * Binary conversion.
- * @param {string} stringValue String to be converted to numeric value.
- * @return {number} Numeric value for string.
- */
-goog.format.stringToNumBytes = function(stringValue) {
-  return goog.format.stringToNumericValue_(
-      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
-};
-
-
-/**
- * Converts a numeric value to string representation. SI conversion.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @return {string} String representation of number.
- */
-goog.format.numericValueToString = function(val, opt_decimals) {
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
-};
-
-
-/**
- * Converts number of bytes to string representation. Binary conversion.
- * Default is to return the additional 'B' suffix only for scales greater than
- * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
- * of 1000. Otherwise, suffix is empty string.
- * @param {number} val Value to be converted.
- * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
- * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
- *     string.  Default is true.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a no break space. Default is false.
- * @return {string} String representation of number of bytes.
- */
-goog.format.numBytesToString = function(
-    val, opt_decimals, opt_suffix, opt_useSeparator) {
-  var suffix = '';
-  if (opt_suffix === undefined || opt_suffix) {
-    suffix = 'B';
-  }
-  return goog.format.numericValueToString_(
-      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
-      opt_useSeparator);
-};
-
-
-/**
- * Converts a string to numeric value, taking into account the units.
- * @param {string} stringValue String to be converted to numeric value.
- * @param {Object} conversion Dictionary of conversion scales.
- * @return {number} Numeric value for string.  If it cannot be converted,
- *    returns NaN.
- * @private
- */
-goog.format.stringToNumericValue_ = function(stringValue, conversion) {
-  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
-  if (!match) {
-    return NaN;
-  }
-  var val = Number(match[1]) * conversion[match[2]];
-  return val;
-};
-
-
-/**
- * Converts a numeric value to string, using specified conversion
- * scales.
- * @param {number} val Value to be converted.
- * @param {Object} conversion Dictionary of scaling factors.
- * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
- * @param {string=} opt_suffix Optional suffix to append.
- * @param {boolean=} opt_useSeparator If true, number and scale will be
- *     separated by a space. Default is false.
- * @return {string} The human readable form of the byte size.
- * @private
- */
-goog.format.numericValueToString_ = function(
-    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
-  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
-  var orig_val = val;
-  var symbol = '';
-  var separator = '';
-  var scale = 1;
-  if (val < 0) {
-    val = -val;
-  }
-  for (var i = 0; i < prefixes.length; i++) {
-    var unit = prefixes[i];
-    scale = conversion[unit];
-    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
-      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
-      // than "500m"
-      symbol = unit;
-      break;
-    }
-  }
-  if (!symbol) {
-    scale = 1;
-  } else {
-    if (opt_suffix) {
-      symbol += opt_suffix;
-    }
-    if (opt_useSeparator) {
-      separator = ' ';
-    }
-  }
-  var ex = Math.pow(10, opt_decimals !== undefined ? opt_decimals : 2);
-  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
-};
-
-
-/**
- * Regular expression for detecting scaling units, such as K, M, G, etc. for
- * converting a string representation to a numeric value.
- *
- * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
- * of 1000) or Binary (powers of 1024) conversions.
- *
- * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
- * binary conversion (e.g., '10.2MB').
- *
- * @type {RegExp}
- * @private
- */
-goog.format.SCALED_NUMERIC_RE_ =
-    /^([-]?\d+\.?\d*)([K,M,G,T,P,E,Z,Y,k,m,u,n]?)[B]?$/;
-
-
-/**
- * Ordered list of scaling prefixes in decreasing order.
- * @private {Array<string>}
- */
-goog.format.NUMERIC_SCALE_PREFIXES_ =
-    ['Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  SI conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_SI_ = {
-  '': 1,
-  'n': 1e-9,
-  'u': 1e-6,
-  'm': 1e-3,
-  'k': 1e3,
-  'K': 1e3,
-  'M': 1e6,
-  'G': 1e9,
-  'T': 1e12,
-  'P': 1e15,
-  'E': 1e18,
-  'Z': 1e21,
-  'Y': 1e24
-};
-
-
-/**
- * Scaling factors for conversion of numeric value to string.  Binary
- * conversion.
- * @type {Object}
- * @private
- */
-goog.format.NUMERIC_SCALES_BINARY_ = {
-  '': 1,
-  'n': Math.pow(1024, -3),
-  'u': Math.pow(1024, -2),
-  'm': 1.0 / 1024,
-  'k': 1024,
-  'K': 1024,
-  'M': Math.pow(1024, 2),
-  'G': Math.pow(1024, 3),
-  'T': Math.pow(1024, 4),
-  'P': Math.pow(1024, 5),
-  'E': Math.pow(1024, 6),
-  'Z': Math.pow(1024, 7),
-  'Y': Math.pow(1024, 8)
-};
-
-
-/**
- * First Unicode code point that has the Mark property.
- * @type {number}
- * @private
- */
-goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
-
-
-/**
- * Returns true if and only if given character should be treated as a breaking
- * space. All ASCII control characters, the main Unicode range of spacing
- * characters (U+2000 to U+200B inclusive except for U+2007), and several other
- * Unicode space characters are treated as breaking spaces.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is a breaking space.
- * @private
- */
-goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
-  return (charCode <= goog.format.WbrToken_.SPACE) ||
-      (charCode >= 0x1000 &&
-       ((charCode >= 0x2000 && charCode <= 0x2006) ||
-        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
-        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
-        charCode == 0x205f || charCode == 0x3000));
-};
-
-
-/**
- * Returns true if and only if given character is an invisible formatting
- * character.
- * @param {number} charCode The character code under consideration.
- * @return {boolean} True if the character is an invisible formatting character.
- * @private
- */
-goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
-  // See: http://unicode.org/charts/PDF/U2000.pdf
-  return (charCode >= 0x200C && charCode <= 0x200F) ||
-      (charCode >= 0x202A && charCode <= 0x202E);
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.  The counter is
- * reset if a space or a character which behaves like a space is encountered,
- * but it isn't incremented if an invisible formatting character is encountered.
- * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
- * character count, HTML tags do not.
- *
- * With common strings aliased, objects allocations are constant based on the
- * length of the string: N + 3. This guarantee does not hold if the string
- * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
- *     function determining if there is a grapheme break between two characters,
- *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
- * @param {number=} opt_maxlen Maximum length after which to ensure
- *     there is a break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @private
- */
-goog.format.insertWordBreaksGeneric_ = function(
-    str, hasGraphemeBreak, opt_maxlen) {
-  var maxlen = opt_maxlen || 10;
-  if (maxlen > str.length) return str;
-
-  var rv = [];
-  var n = 0;  // The length of the current token
-
-  // This will contain the ampersand or less-than character if one of the
-  // two has been seen; otherwise, the value is zero.
-  var nestingCharCode = 0;
-
-  // First character position from input string that has not been outputted.
-  var lastDumpPosition = 0;
-
-  var charCode = 0;
-  for (var i = 0; i < str.length; i++) {
-    // Using charCodeAt versus charAt avoids allocating new string objects.
-    var lastCharCode = charCode;
-    charCode = str.charCodeAt(i);
-
-    // Don't add a WBR before characters that might be grapheme extending.
-    var isPotentiallyGraphemeExtending =
-        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
-        !hasGraphemeBreak(lastCharCode, charCode, true);
-
-    // Don't add a WBR at the end of a word. For the purposes of determining
-    // work breaks, all ASCII control characters and some commonly encountered
-    // Unicode spacing characters are treated as breaking spaces.
-    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
-        !isPotentiallyGraphemeExtending) {
-      // Flush everything seen so far, and append a word break.
-      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
-      lastDumpPosition = i;
-      n = 0;
-    }
-
-    if (!nestingCharCode) {
-      // Not currently within an HTML tag or entity
-
-      if (charCode == goog.format.WbrToken_.LT ||
-          charCode == goog.format.WbrToken_.AMP) {
-        // Entering an HTML Entity '&' or open tag '<'
-        nestingCharCode = charCode;
-      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
-        // A space or control character -- reset the token length
-        n = 0;
-      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
-        // A normal flow character - increment.  For grapheme extending
-        // characters, this is not *technically* a new character.  However,
-        // since the grapheme break detector might be overly conservative,
-        // we have to continue incrementing, or else we won't even be able
-        // to add breaks when we get to things like punctuation.  For the
-        // case where we have a full grapheme break detector, it is okay if
-        // we occasionally break slightly early.
-        n++;
-      }
-    } else if (
-        charCode == goog.format.WbrToken_.GT &&
-        nestingCharCode == goog.format.WbrToken_.LT) {
-      // Leaving an HTML tag, treat the tag as zero-length
-      nestingCharCode = 0;
-    } else if (
-        charCode == goog.format.WbrToken_.SEMI_COLON &&
-        nestingCharCode == goog.format.WbrToken_.AMP) {
-      // Leaving an HTML entity, treat it as length one
-      nestingCharCode = 0;
-      n++;
-    }
-  }
-
-  // Take care of anything we haven't flushed so far.
-  rv.push(str.substr(lastDumpPosition));
-
-  return rv.join('');
-};
-
-
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is as aggressive as possible, using a full table of Unicode
- * characters where it is legal to insert word breaks; however, this table
- * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
- * insertWordBreaksBasic to minimize the size impact.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaks = function(str, opt_maxlen) {
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
-};
-
-
-/**
- * Determines conservatively if a character has a Grapheme break.
- *
- * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
- * conservative, returning true only for characters in common scripts that
- * are simple to account for.
- *
- * @param {number} lastCharCode The previous character code.  Ignored.
- * @param {number} charCode The character code under consideration.  It must be
- *     at least \u0300 as a precondition -- this case is covered by
- *     insertWordBreaksGeneric_.
- * @param {boolean=} opt_extended Ignored, to conform with the interface.
- * @return {boolean} Whether it is one of the recognized subsets of characters
- *     with a grapheme break.
- * @private
- */
-goog.format.conservativelyHasGraphemeBreak_ = function(
-    lastCharCode, charCode, opt_extended) {
-  // Return false for everything except the most common Cyrillic characters.
-  // Don't worry about Latin characters, because insertWordBreaksGeneric_
-  // itself already handles those.
-  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
-  // simple to do so.
-  return charCode >= 0x400 && charCode < 0x523;
-};
-
-
-// TODO(gboyer): Consider using a compile-time flag to switch implementations
-// rather than relying on the developers to toggle implementations.
-/**
- * Inserts word breaks into an HTML string at a given interval.
- *
- * This method is less aggressive than insertWordBreaks, only inserting
- * breaks next to punctuation and between Latin or Cyrillic characters.
- * However, this is good enough for the common case of URLs.  It also
- * works for all Latin and Cyrillic languages, plus CJK has no need for word
- * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
- * code eliminated.
- *
- * @param {string} str HTML to insert word breaks into.
- * @param {number=} opt_maxlen Maximum length after which to ensure there is a
- *     break.  Default is 10 characters.
- * @return {string} The string including word breaks.
- * @deprecated Prefer wrapping with CSS word-wrap: break-word.
- */
-goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
-  return goog.format.insertWordBreaksGeneric_(
-      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
-};
-
-
-/**
- * True iff the current userAgent is IE8 or above.
- * @type {boolean}
- * @private
- */
-goog.format.IS_IE8_OR_ABOVE_ =
-    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
-
-
-/**
- * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
- * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
- * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
- * use &lt;wbr&gt;.
- * @type {string}
- */
-goog.format.WORD_BREAK_HTML =
-    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
-                            '&shy;' :
-                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
-
-
-/**
- * Tokens used within insertWordBreaks.
- * @private
- * @enum {number}
- */
-goog.format.WbrToken_ = {
-  LT: 60,          // '<'.charCodeAt(0)
-  GT: 62,          // '>'.charCodeAt(0)
-  AMP: 38,         // '&'.charCodeAt(0)
-  SEMI_COLON: 59,  // ';'.charCodeAt(0)
-  SPACE: 32        // ' '.charCodeAt(0)
-};
-
 //javascript/closure/i18n/bidiformatter.js
 // Copyright 2009 The Closure Library Authors. All Rights Reserved.
 //
@@ -33996,6 +32591,908 @@ goog.i18n.currency.CurrencyInfoTier2 = {
   'ZWD': [0, '$', 'Z$']
 };
 
+//javascript/closure/i18n/uchar.js
+// Copyright 2009 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Collection of utility functions for Unicode character.
+ */
+
+goog.provide('goog.i18n.uChar');
+
+
+// Constants for handling Unicode supplementary characters (surrogate pairs).
+
+
+/**
+ * The minimum value for Supplementary code points.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
+
+
+/**
+ * The highest Unicode code point value (scalar value) according to the Unicode
+ * Standard.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
+
+
+/**
+ * Lead surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
+
+
+/**
+ * Lead surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
+
+
+/**
+ * Trail surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
+
+
+/**
+ * Trail surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
+
+
+/**
+ * The number of least significant bits of a supplementary code point that in
+ * UTF-16 become the least significant bits of the trail surrogate. The rest of
+ * the in-use bits of the supplementary code point become the least significant
+ * bits of the lead surrogate.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
+
+
+/**
+ * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
+ * @param {string} ch The given character.
+ * @return {string} The U+ notation of the given character.
+ */
+goog.i18n.uChar.toHexString = function(ch) {
+  const chCode = goog.i18n.uChar.toCharCode(ch);
+  const chCodeStr = 'U+' +
+      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
+
+  return chCodeStr;
+};
+
+
+/**
+ * Gets a string padded with given character to get given size.
+ * @param {string} str The given string to be padded.
+ * @param {number} length The target size of the string.
+ * @param {string} ch The character to be padded with.
+ * @return {string} The padded string.
+ * @private
+ */
+goog.i18n.uChar.padString_ = function(str, length, ch) {
+  while (str.length < length) {
+    str = ch + str;
+  }
+  return str;
+};
+
+
+/**
+ * Gets Unicode value of the given character.
+ * @param {string} ch The given character, which in the case of a supplementary
+ * character is actually a surrogate pair. The remainder of the string is
+ * ignored.
+ * @return {number} The Unicode value of the character.
+ */
+goog.i18n.uChar.toCharCode = function(ch) {
+  return goog.i18n.uChar.getCodePointAround(ch, 0);
+};
+
+
+/**
+ * Gets a character from the given Unicode value. If the given code point is not
+ * a valid Unicode code point, null is returned.
+ * @param {number} code The Unicode value of the character.
+ * @return {?string} The character corresponding to the given Unicode value.
+ */
+goog.i18n.uChar.fromCharCode = function(code) {
+  if (code == null ||
+      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
+    return null;
+  }
+  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
+    // First, we split the code point into the trail surrogate part (the
+    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
+    // part (the rest of the bits, shifted down; note that for now this includes
+    // the supplementary offset, also shifted down, to be subtracted off below).
+    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
+    const trailBits = code &
+        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
+        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
+        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
+
+    // Now we calculate the code point of each surrogate by adding each offset
+    // to the corresponding base code point.
+    const leadCodePoint = leadBits +
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
+         // Subtract off the supplementary offset, which had been shifted down
+         // with the rest of leadBits. We do this here instead of before the
+         // shift in order to save a separate subtraction step.
+         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
+          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
+    const trailCodePoint =
+        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
+
+    // Convert the code points into a 2-character long string.
+    return String.fromCharCode(leadCodePoint) +
+        String.fromCharCode(trailCodePoint);
+  }
+  return String.fromCharCode(code);
+};
+
+
+/**
+ * Returns the Unicode code point at the specified index.
+ *
+ * If the char value specified at the given index is in the leading-surrogate
+ * range, and the following index is less than the length of `string`, and
+ * the char value at the following index is in the trailing-surrogate range,
+ * then the supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * If the char value specified at the given index is in the trailing-surrogate
+ * range, and the preceding index is not before the start of `string`, and
+ * the char value at the preceding index is in the leading-surrogate range, then
+ * the negated supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * The negation allows the caller to differentiate between the case where the
+ * given index is at the leading surrogate and the one where it is at the
+ * trailing surrogate, and thus deduce where the next character starts and
+ * preceding character ends.
+ *
+ * Otherwise, the char value at the given index is returned. Thus, a leading
+ * surrogate is returned when it is not followed by a trailing surrogate, and a
+ * trailing surrogate is returned when it is not preceded by a leading
+ * surrogate.
+ *
+ * @param {string} string The string.
+ * @param {number} index The index from which the code point is to be retrieved.
+ * @return {number} The code point at the given index. If the given index is
+ * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
+ * point encoded by the pair. If the given index is that of the end (i.e. trail
+ * surrogate) of a surrogate pair, returns the negated code pointed encoded by
+ * the pair.
+ */
+goog.i18n.uChar.getCodePointAround = function(string, index) {
+  const charCode = string.charCodeAt(index);
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
+      index + 1 < string.length) {
+    const trail = string.charCodeAt(index + 1);
+    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+      // Part of a surrogate pair.
+      return /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
+    }
+  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
+    const lead = string.charCodeAt(index - 1);
+    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
+      // Part of a surrogate pair.
+      const codepoint = /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
+      return -codepoint;
+    }
+  }
+  return charCode;
+};
+
+
+/**
+ * Determines the length of the string needed to represent the specified
+ * Unicode code point.
+ * @param {number} codePoint
+ * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
+ */
+goog.i18n.uChar.charCount = function(codePoint) {
+  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
+};
+
+
+/**
+ * Determines whether the specified Unicode code point is in the supplementary
+ * Unicode characters range.
+ * @param {number} codePoint
+ * @return {boolean} Whether then given code point is a supplementary character.
+ */
+goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a leading surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a leading surrogate
+ * character.
+ */
+goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a trailing surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a trailing surrogate
+ * character.
+ */
+goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Composes a supplementary Unicode code point from the given UTF-16 surrogate
+ * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
+ * isn't a trailing surrogate code point, null is returned.
+ * @param {number} lead The leading surrogate code point.
+ * @param {number} trail The trailing surrogate code point.
+ * @return {?number} The supplementary Unicode code point obtained by decoding
+ * the given UTF-16 surrogate pair.
+ */
+goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
+      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+    const shiftedLeadOffset =
+        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
+         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
+    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
+        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
+    return shiftedLeadOffset + trailOffset;
+  }
+  return null;
+};
+
+//javascript/closure/structs/inversionmap.js
+// Copyright 2008 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Provides inversion and inversion map functionality for storing
+ * integer ranges and corresponding values.
+ */
+
+goog.provide('goog.structs.InversionMap');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+
+
+
+/**
+ * Maps ranges to values.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @constructor
+ * @template T
+ */
+goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
+  /**
+   * @protected {?Array<number>}
+   */
+  this.rangeArray = null;
+
+  goog.asserts.assert(
+      rangeArray.length == valueArray.length,
+      'rangeArray and valueArray must have the same length.');
+  this.storeInversion_(rangeArray, opt_delta);
+
+  /** @protected {Array<T>} */
+  this.values = valueArray;
+};
+
+
+/**
+ * Stores the integers as ranges (half-open).
+ * If delta is true, the integers are delta from the previous value and
+ * will be restored to the absolute value.
+ * When used as a set, even indices are IN, and odd are OUT.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @private
+ */
+goog.structs.InversionMap.prototype.storeInversion_ = function(
+    rangeArray, opt_delta) {
+  this.rangeArray = rangeArray;
+
+  for (var i = 1; i < rangeArray.length; i++) {
+    if (rangeArray[i] == null) {
+      rangeArray[i] = rangeArray[i - 1] + 1;
+    } else if (opt_delta) {
+      rangeArray[i] += rangeArray[i - 1];
+    }
+  }
+};
+
+
+/**
+ * Splices a range -> value map into this inversion map.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ */
+goog.structs.InversionMap.prototype.spliceInversion = function(
+    rangeArray, valueArray, opt_delta) {
+  // By building another inversion map, we build the arrays that we need
+  // to splice in.
+  var otherMap =
+      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
+
+  // Figure out where to splice those arrays.
+  var startRange = otherMap.rangeArray[0];
+  var endRange =
+      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
+  var startSplice = this.getLeast(startRange);
+  var endSplice = this.getLeast(endRange);
+
+  // The inversion map works by storing the start points of ranges...
+  if (startRange != this.rangeArray[startSplice]) {
+    // ...if we're splicing in a start point that isn't already here,
+    // then we need to insert it after the insertion point.
+    startSplice++;
+  }  // otherwise we overwrite the insertion point.
+
+  this.rangeArray = this.rangeArray.slice(0, startSplice)
+                        .concat(otherMap.rangeArray)
+                        .concat(this.rangeArray.slice(endSplice + 1));
+  this.values = this.values.slice(0, startSplice)
+                    .concat(otherMap.values)
+                    .concat(this.values.slice(endSplice + 1));
+};
+
+
+/**
+ * Gets the value corresponding to a number from the inversion map.
+ * @param {number} intKey The number for which value needs to be retrieved
+ *     from inversion map.
+ * @return {T|null} Value retrieved from inversion map; null if not found.
+ */
+goog.structs.InversionMap.prototype.at = function(intKey) {
+  var index = this.getLeast(intKey);
+  if (index < 0) {
+    return null;
+  }
+  return this.values[index];
+};
+
+
+/**
+ * Gets the largest index such that rangeArray[index] <= intKey from the
+ * inversion map.
+ * @param {number} intKey The probe for which rangeArray is searched.
+ * @return {number} Largest index such that rangeArray[index] <= intKey.
+ * @protected
+ */
+goog.structs.InversionMap.prototype.getLeast = function(intKey) {
+  var arr = this.rangeArray;
+  var low = 0;
+  var high = arr.length;
+  while (high - low > 8) {
+    var mid = (high + low) >> 1;
+    if (arr[mid] <= intKey) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  for (; low < high; ++low) {
+    if (intKey < arr[low]) {
+      break;
+    }
+  }
+  return low - 1;
+};
+
+//javascript/closure/i18n/graphemebreak.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
+ * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
+ *
+ * Reference: http://unicode.org/reports/tr29
+ */
+
+goog.provide('goog.i18n.GraphemeBreak');
+
+goog.require('goog.asserts');
+goog.require('goog.i18n.uChar');
+goog.require('goog.structs.InversionMap');
+
+/**
+ * Enum for all Grapheme Cluster Break properties.
+ * These enums directly corresponds to Grapheme_Cluster_Break property values
+ * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
+ * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
+ *
+ * @protected @enum {number}
+ */
+goog.i18n.GraphemeBreak.property = {
+  OTHER: 0,
+  CONTROL: 1,
+  EXTEND: 2,
+  PREPEND: 3,
+  SPACING_MARK: 4,
+  INDIC_LETTER: 5,
+  VIRAMA: 6,
+  L: 7,
+  V: 8,
+  T: 9,
+  LV: 10,
+  LVT: 11,
+  CR: 12,
+  LF: 13,
+  REGIONAL_INDICATOR: 14,
+  ZWJ: 15,
+  E_BASE: 16,
+  GLUE_AFTER_ZWJ: 17,
+  E_MODIFIER: 18,
+  E_BASE_GAZ: 19
+};
+
+
+/**
+ * Grapheme Cluster Break property values for all codepoints as inversion map.
+ * Constructed lazily.
+ *
+ * @private {?goog.structs.InversionMap}
+ */
+goog.i18n.GraphemeBreak.inversions_ = null;
+
+
+/**
+ * Indicates if a and b form a grapheme cluster.
+ *
+ * This implements the rules in:
+ * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
+ *
+ * @param {number|string} a Code point or string with the first side of
+ *     grapheme cluster.
+ * @param {number|string} b Code point or string with the second side of
+ *     grapheme cluster.
+ * @param {boolean} extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster.
+ * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ * @private
+ */
+goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
+  var prop = goog.i18n.GraphemeBreak.property;
+
+  var aCode = (typeof a === 'string') ?
+      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
+      a;
+  var bCode =
+      (typeof b === 'string') ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
+
+  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
+  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
+
+  var isString = (typeof a === 'string');
+
+  // GB3.
+  if (aProp === prop.CR && bProp === prop.LF) {
+    return false;
+  }
+
+  // GB4.
+  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
+    return true;
+  }
+
+  // GB5.
+  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
+    return true;
+  }
+
+  // GB6.
+  if (aProp === prop.L &&
+      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
+       bProp === prop.LVT)) {
+    return false;
+  }
+
+  // GB7.
+  if ((aProp === prop.LV || aProp === prop.V) &&
+      (bProp === prop.V || bProp === prop.T)) {
+    return false;
+  }
+
+  // GB8.
+  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
+    return false;
+  }
+
+  // GB9.
+  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
+    return false;
+  }
+
+  // GB9a, GB9b.
+  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
+    return false;
+  }
+
+  // Tailorings for basic aksara support.
+  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
+    return false;
+  }
+
+  var aStr, index, codePoint, codePointProp;
+
+  // GB10.
+  if (isString) {
+    if (bProp === prop.E_MODIFIER) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.EXTEND) {
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing:
+    // (E_Base | EBG) × E_Modifier.
+    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
+        bProp === prop.E_MODIFIER) {
+      return false;
+    }
+  }
+
+  // GB11.
+  if (aProp === prop.ZWJ &&
+      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
+    return false;
+  }
+
+  // GB12, GB13.
+  if (isString) {
+    if (bProp === prop.REGIONAL_INDICATOR) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of these rules:
+      // - sot (RI RI)* RI × RI
+      // - [^RI] (RI RI)* RI × RI.
+      var numberOfRi = 0;
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+      }
+      if (numberOfRi % 2 === 1) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing: RI × RI.
+    if (aProp === prop.REGIONAL_INDICATOR &&
+        bProp === prop.REGIONAL_INDICATOR) {
+      return false;
+    }
+  }
+
+  // GB999.
+  return true;
+};
+
+
+/**
+ * Method to return property enum value of the code point. If it is Hangul LV or
+ * LVT, then it is computed; for the rest it is picked from the inversion map.
+ *
+ * @param {number} codePoint The code point value of the character.
+ * @return {number} Property enum value of code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
+  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
+    var prop = goog.i18n.GraphemeBreak.property;
+    if (codePoint % 0x1C === 0x10) {
+      return prop.LV;
+    }
+    return prop.LVT;
+  } else {
+    if (!goog.i18n.GraphemeBreak.inversions_) {
+      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
+          [
+            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
+            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
+            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
+            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
+            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
+            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
+            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
+            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
+            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
+            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
+            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
+            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
+            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
+            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
+            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
+            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
+            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
+            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
+            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
+            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
+            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
+            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
+            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
+            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
+            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
+            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
+            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
+            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
+            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
+            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
+            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
+            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
+            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
+            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
+            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
+            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
+            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
+            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
+            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
+            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
+            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
+            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
+            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
+            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
+            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
+            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
+            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
+            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
+            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
+            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
+            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
+            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
+            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
+            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
+            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
+            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
+            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
+            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
+            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
+            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
+            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
+            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
+            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
+            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
+            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
+            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
+            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
+            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
+            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
+            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
+            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
+            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
+            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
+            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
+            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
+            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
+            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
+            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
+            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
+            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
+            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
+            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
+            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
+            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
+            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
+            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
+            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
+            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
+            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
+            788162, 31
+          ],
+          [
+            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
+            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
+            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
+            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
+            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
+            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
+            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
+            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
+            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
+            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
+            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
+            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
+            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
+            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
+            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
+            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
+            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
+            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
+            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
+            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
+            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
+            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
+            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
+            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
+            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
+            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
+            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
+            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
+            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
+            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
+            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
+            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
+            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
+            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
+            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
+            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
+          ],
+          true);
+    }
+    return /** @type {number} */ (
+        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
+  }
+};
+
+/**
+ * Extracts a code point from a string at the specified index.
+ *
+ * @param {string} str
+ * @param {number} index
+ * @return {number} Extracted code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
+  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
+  return (codePoint < 0) ? -codePoint : codePoint;
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * Legacy function. Does not cover cases where a sequence of code points is
+ * required in order to decide if there is a grapheme cluster boundary, such as
+ * emoji modifier sequences and emoji flag sequences. To cover all cases please
+ * use `hasGraphemeBreakStrings`.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {number} a The code point value of the first character.
+ * @param {number} b The code point value of the second character.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {string} a String with the first sequence of characters.
+ * @param {string} b String with the second sequence of characters.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
+  goog.asserts.assert(a !== undefined, 'First string should be defined.');
+  goog.asserts.assert(b !== undefined, 'Second string should be defined.');
+
+  // Break if any of the strings is empty.
+  if (a.length === 0 || b.length === 0) {
+    return true;
+  }
+
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
 //javascript/closure/i18n/numberformatsymbols.js
 // Copyright 2011 The Closure Library Authors. All Rights Reserved.
 //
@@ -38886,20 +38383,12 @@ goog.i18n.NumberFormat.prototype.isCurrencyCodeBeforeValue = function() {
   return posCurrSymbol < posCurrValue;
 };
 
-//javascript/closure/iter/iter.js
-// Copyright 2007 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/iter/iter.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Python style iteration utilities.
@@ -44789,6 +44278,501 @@ exports = {
 };
 
 ;return exports;});
+
+//third_party/javascript/closure/format/format.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides utility functions for formatting strings, numbers etc.
+ */
+
+goog.provide('goog.format');
+
+goog.require('goog.i18n.GraphemeBreak');
+goog.require('goog.string');
+goog.require('goog.userAgent');
+
+
+/**
+ * Formats a number of bytes in human readable form.
+ * 54, 450K, 1.3M, 5G etc.
+ * @param {number} bytes The number of bytes to show.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} The human readable form of the byte size.
+ */
+goog.format.fileSize = function(bytes, opt_decimals) {
+  return goog.format.numBytesToString(bytes, opt_decimals, false);
+};
+
+
+/**
+ * Checks whether string value containing scaling units (K, M, G, T, P, m,
+ * u, n) can be converted to a number.
+ *
+ * Where there is a decimal, there must be a digit to the left of the
+ * decimal point.
+ *
+ * Negative numbers are valid.
+ *
+ * Examples:
+ *   0, 1, 1.0, 10.4K, 2.3M, -0.3P, 1.2m
+ *
+ * @param {string} val String value to check.
+ * @return {boolean} True if string could be converted to a numeric value.
+ */
+goog.format.isConvertableScaledNumber = function(val) {
+  return goog.format.SCALED_NUMERIC_RE_.test(val);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * If string ends in 'B', use binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumericValue = function(stringValue) {
+  if (goog.string.endsWith(stringValue, 'B')) {
+    return goog.format.stringToNumericValue_(
+        stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+  }
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_SI_);
+};
+
+
+/**
+ * Converts a string to number of bytes, taking into account the units.
+ * Binary conversion.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @return {number} Numeric value for string.
+ */
+goog.format.stringToNumBytes = function(stringValue) {
+  return goog.format.stringToNumericValue_(
+      stringValue, goog.format.NUMERIC_SCALES_BINARY_);
+};
+
+
+/**
+ * Converts a numeric value to string representation. SI conversion.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @return {string} String representation of number.
+ */
+goog.format.numericValueToString = function(val, opt_decimals) {
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
+};
+
+
+/**
+ * Converts number of bytes to string representation. Binary conversion.
+ * Default is to return the additional 'B' suffix only for scales greater than
+ * 1K, e.g. '10.5KB' to minimize confusion with counts that are scaled by powers
+ * of 1000. Otherwise, suffix is empty string.
+ * @param {number} val Value to be converted.
+ * @param {number=} opt_decimals The number of decimals to use.  Defaults to 2.
+ * @param {boolean=} opt_suffix If true, include trailing 'B' in returned
+ *     string.  Default is true.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a no break space. Default is false.
+ * @return {string} String representation of number of bytes.
+ */
+goog.format.numBytesToString = function(
+    val, opt_decimals, opt_suffix, opt_useSeparator) {
+  var suffix = '';
+  if (opt_suffix === undefined || opt_suffix) {
+    suffix = 'B';
+  }
+  return goog.format.numericValueToString_(
+      val, goog.format.NUMERIC_SCALES_BINARY_, opt_decimals, suffix,
+      opt_useSeparator);
+};
+
+
+/**
+ * Converts a string to numeric value, taking into account the units.
+ * @param {string} stringValue String to be converted to numeric value.
+ * @param {Object} conversion Dictionary of conversion scales.
+ * @return {number} Numeric value for string.  If it cannot be converted,
+ *    returns NaN.
+ * @private
+ */
+goog.format.stringToNumericValue_ = function(stringValue, conversion) {
+  var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
+  if (!match) {
+    return NaN;
+  }
+  var val = Number(match[1]) * conversion[match[2]];
+  return val;
+};
+
+
+/**
+ * Converts a numeric value to string, using specified conversion
+ * scales.
+ * @param {number} val Value to be converted.
+ * @param {Object} conversion Dictionary of scaling factors.
+ * @param {number=} opt_decimals The number of decimals to use.  Default is 2.
+ * @param {string=} opt_suffix Optional suffix to append.
+ * @param {boolean=} opt_useSeparator If true, number and scale will be
+ *     separated by a space. Default is false.
+ * @return {string} The human readable form of the byte size.
+ * @private
+ */
+goog.format.numericValueToString_ = function(
+    val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
+  var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
+  var orig_val = val;
+  var symbol = '';
+  var separator = '';
+  var scale = 1;
+  if (val < 0) {
+    val = -val;
+  }
+  for (var i = 0; i < prefixes.length; i++) {
+    var unit = prefixes[i];
+    scale = conversion[unit];
+    if (val >= scale || (scale <= 1 && val > 0.1 * scale)) {
+      // Treat values less than 1 differently, allowing 0.5 to be "0.5" rather
+      // than "500m"
+      symbol = unit;
+      break;
+    }
+  }
+  if (!symbol) {
+    scale = 1;
+  } else {
+    if (opt_suffix) {
+      symbol += opt_suffix;
+    }
+    if (opt_useSeparator) {
+      separator = ' ';
+    }
+  }
+  var ex = Math.pow(10, opt_decimals !== undefined ? opt_decimals : 2);
+  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
+};
+
+
+/**
+ * Regular expression for detecting scaling units, such as K, M, G, etc. for
+ * converting a string representation to a numeric value.
+ *
+ * Also allow 'k' to be aliased to 'K'.  These could be used for SI (powers
+ * of 1000) or Binary (powers of 1024) conversions.
+ *
+ * Also allow final 'B' to be interpreted as byte-count, implicitly triggering
+ * binary conversion (e.g., '10.2MB').
+ *
+ * @type {RegExp}
+ * @private
+ */
+goog.format.SCALED_NUMERIC_RE_ =
+    /^([-]?\d+\.?\d*)([K,M,G,T,P,E,Z,Y,k,m,u,n]?)[B]?$/;
+
+
+/**
+ * Ordered list of scaling prefixes in decreasing order.
+ * @private {Array<string>}
+ */
+goog.format.NUMERIC_SCALE_PREFIXES_ =
+    ['Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'K', '', 'm', 'u', 'n'];
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  SI conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_SI_ = {
+  '': 1,
+  'n': 1e-9,
+  'u': 1e-6,
+  'm': 1e-3,
+  'k': 1e3,
+  'K': 1e3,
+  'M': 1e6,
+  'G': 1e9,
+  'T': 1e12,
+  'P': 1e15,
+  'E': 1e18,
+  'Z': 1e21,
+  'Y': 1e24
+};
+
+
+/**
+ * Scaling factors for conversion of numeric value to string.  Binary
+ * conversion.
+ * @type {Object}
+ * @private
+ */
+goog.format.NUMERIC_SCALES_BINARY_ = {
+  '': 1,
+  'n': Math.pow(1024, -3),
+  'u': Math.pow(1024, -2),
+  'm': 1.0 / 1024,
+  'k': 1024,
+  'K': 1024,
+  'M': Math.pow(1024, 2),
+  'G': Math.pow(1024, 3),
+  'T': Math.pow(1024, 4),
+  'P': Math.pow(1024, 5),
+  'E': Math.pow(1024, 6),
+  'Z': Math.pow(1024, 7),
+  'Y': Math.pow(1024, 8)
+};
+
+
+/**
+ * First Unicode code point that has the Mark property.
+ * @type {number}
+ * @private
+ */
+goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
+
+
+/**
+ * Returns true if and only if given character should be treated as a breaking
+ * space. All ASCII control characters, the main Unicode range of spacing
+ * characters (U+2000 to U+200B inclusive except for U+2007), and several other
+ * Unicode space characters are treated as breaking spaces.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is a breaking space.
+ * @private
+ */
+goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
+  return (charCode <= goog.format.WbrToken_.SPACE) ||
+      (charCode >= 0x1000 &&
+       ((charCode >= 0x2000 && charCode <= 0x2006) ||
+        (charCode >= 0x2008 && charCode <= 0x200B) || charCode == 0x1680 ||
+        charCode == 0x180E || charCode == 0x2028 || charCode == 0x2029 ||
+        charCode == 0x205f || charCode == 0x3000));
+};
+
+
+/**
+ * Returns true if and only if given character is an invisible formatting
+ * character.
+ * @param {number} charCode The character code under consideration.
+ * @return {boolean} True if the character is an invisible formatting character.
+ * @private
+ */
+goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
+  // See: http://unicode.org/charts/PDF/U2000.pdf
+  return (charCode >= 0x200C && charCode <= 0x200F) ||
+      (charCode >= 0x202A && charCode <= 0x202E);
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.  The counter is
+ * reset if a space or a character which behaves like a space is encountered,
+ * but it isn't incremented if an invisible formatting character is encountered.
+ * WBRs aren't inserted into HTML tags or entities.  Entities count towards the
+ * character count, HTML tags do not.
+ *
+ * With common strings aliased, objects allocations are constant based on the
+ * length of the string: N + 3. This guarantee does not hold if the string
+ * contains an element >= U+0300 and hasGraphemeBreak is non-trivial.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {function(number, number, boolean): boolean} hasGraphemeBreak A
+ *     function determining if there is a grapheme break between two characters,
+ *     in the same signature as goog.i18n.GraphemeBreak.hasGraphemeBreak.
+ * @param {number=} opt_maxlen Maximum length after which to ensure
+ *     there is a break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @private
+ */
+goog.format.insertWordBreaksGeneric_ = function(
+    str, hasGraphemeBreak, opt_maxlen) {
+  var maxlen = opt_maxlen || 10;
+  if (maxlen > str.length) return str;
+
+  var rv = [];
+  var n = 0;  // The length of the current token
+
+  // This will contain the ampersand or less-than character if one of the
+  // two has been seen; otherwise, the value is zero.
+  var nestingCharCode = 0;
+
+  // First character position from input string that has not been outputted.
+  var lastDumpPosition = 0;
+
+  var charCode = 0;
+  for (var i = 0; i < str.length; i++) {
+    // Using charCodeAt versus charAt avoids allocating new string objects.
+    var lastCharCode = charCode;
+    charCode = str.charCodeAt(i);
+
+    // Don't add a WBR before characters that might be grapheme extending.
+    var isPotentiallyGraphemeExtending =
+        charCode >= goog.format.FIRST_GRAPHEME_EXTEND_ &&
+        !hasGraphemeBreak(lastCharCode, charCode, true);
+
+    // Don't add a WBR at the end of a word. For the purposes of determining
+    // work breaks, all ASCII control characters and some commonly encountered
+    // Unicode spacing characters are treated as breaking spaces.
+    if (n >= maxlen && !goog.format.isTreatedAsBreakingSpace_(charCode) &&
+        !isPotentiallyGraphemeExtending) {
+      // Flush everything seen so far, and append a word break.
+      rv.push(str.substring(lastDumpPosition, i), goog.format.WORD_BREAK_HTML);
+      lastDumpPosition = i;
+      n = 0;
+    }
+
+    if (!nestingCharCode) {
+      // Not currently within an HTML tag or entity
+
+      if (charCode == goog.format.WbrToken_.LT ||
+          charCode == goog.format.WbrToken_.AMP) {
+        // Entering an HTML Entity '&' or open tag '<'
+        nestingCharCode = charCode;
+      } else if (goog.format.isTreatedAsBreakingSpace_(charCode)) {
+        // A space or control character -- reset the token length
+        n = 0;
+      } else if (!goog.format.isInvisibleFormattingCharacter_(charCode)) {
+        // A normal flow character - increment.  For grapheme extending
+        // characters, this is not *technically* a new character.  However,
+        // since the grapheme break detector might be overly conservative,
+        // we have to continue incrementing, or else we won't even be able
+        // to add breaks when we get to things like punctuation.  For the
+        // case where we have a full grapheme break detector, it is okay if
+        // we occasionally break slightly early.
+        n++;
+      }
+    } else if (
+        charCode == goog.format.WbrToken_.GT &&
+        nestingCharCode == goog.format.WbrToken_.LT) {
+      // Leaving an HTML tag, treat the tag as zero-length
+      nestingCharCode = 0;
+    } else if (
+        charCode == goog.format.WbrToken_.SEMI_COLON &&
+        nestingCharCode == goog.format.WbrToken_.AMP) {
+      // Leaving an HTML entity, treat it as length one
+      nestingCharCode = 0;
+      n++;
+    }
+  }
+
+  // Take care of anything we haven't flushed so far.
+  rv.push(str.substr(lastDumpPosition));
+
+  return rv.join('');
+};
+
+
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is as aggressive as possible, using a full table of Unicode
+ * characters where it is legal to insert word breaks; however, this table
+ * comes at a 2.5k pre-gzip (~1k post-gzip) size cost.  Consider using
+ * insertWordBreaksBasic to minimize the size impact.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaks = function(str, opt_maxlen) {
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
+};
+
+
+/**
+ * Determines conservatively if a character has a Grapheme break.
+ *
+ * Conforms to a similar signature as goog.i18n.GraphemeBreak, but is overly
+ * conservative, returning true only for characters in common scripts that
+ * are simple to account for.
+ *
+ * @param {number} lastCharCode The previous character code.  Ignored.
+ * @param {number} charCode The character code under consideration.  It must be
+ *     at least \u0300 as a precondition -- this case is covered by
+ *     insertWordBreaksGeneric_.
+ * @param {boolean=} opt_extended Ignored, to conform with the interface.
+ * @return {boolean} Whether it is one of the recognized subsets of characters
+ *     with a grapheme break.
+ * @private
+ */
+goog.format.conservativelyHasGraphemeBreak_ = function(
+    lastCharCode, charCode, opt_extended) {
+  // Return false for everything except the most common Cyrillic characters.
+  // Don't worry about Latin characters, because insertWordBreaksGeneric_
+  // itself already handles those.
+  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
+  // simple to do so.
+  return charCode >= 0x400 && charCode < 0x523;
+};
+
+
+// TODO(gboyer): Consider using a compile-time flag to switch implementations
+// rather than relying on the developers to toggle implementations.
+/**
+ * Inserts word breaks into an HTML string at a given interval.
+ *
+ * This method is less aggressive than insertWordBreaks, only inserting
+ * breaks next to punctuation and between Latin or Cyrillic characters.
+ * However, this is good enough for the common case of URLs.  It also
+ * works for all Latin and Cyrillic languages, plus CJK has no need for word
+ * breaks.  When this method is used, goog.i18n.GraphemeBreak may be dead
+ * code eliminated.
+ *
+ * @param {string} str HTML to insert word breaks into.
+ * @param {number=} opt_maxlen Maximum length after which to ensure there is a
+ *     break.  Default is 10 characters.
+ * @return {string} The string including word breaks.
+ * @deprecated Prefer wrapping with CSS word-wrap: break-word.
+ */
+goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
+  return goog.format.insertWordBreaksGeneric_(
+      str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
+};
+
+
+/**
+ * True iff the current userAgent is IE8 or above.
+ * @type {boolean}
+ * @private
+ */
+goog.format.IS_IE8_OR_ABOVE_ =
+    goog.userAgent.IE && goog.userAgent.isVersionOrHigher(8);
+
+
+/**
+ * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
+ * &lt;wbr&gt;&lt;/wbr&gt;, Opera needs the &shy; entity, though this will give
+ * a visible hyphen at breaks.  IE8 uses a zero width space. Other browsers just
+ * use &lt;wbr&gt;.
+ * @type {string}
+ */
+goog.format.WORD_BREAK_HTML =
+    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
+                            '&shy;' :
+                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
+
+
+/**
+ * Tokens used within insertWordBreaks.
+ * @private
+ * @enum {number}
+ */
+goog.format.WbrToken_ = {
+  LT: 60,          // '<'.charCodeAt(0)
+  GT: 62,          // '>'.charCodeAt(0)
+  AMP: 38,         // '&'.charCodeAt(0)
+  SEMI_COLON: 59,  // ';'.charCodeAt(0)
+  SPACE: 32        // ' '.charCodeAt(0)
+};
 
 //javascript/template/soy/soyutils_usegoog.js
 /*
