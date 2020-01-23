@@ -104,7 +104,7 @@ public abstract class MethodRef {
       create(SoyMapImpl.class, "forProviderMap", Map.class).asNonNullable();
 
   public static final MethodRef DOUBLE_TO_STRING =
-      create(Double.class, "toString", double.class).asNonNullable();
+      create(FloatData.class, "toString", double.class).asNonNullable();
 
   public static final MethodRef EQUALS = create(Object.class, "equals", Object.class);
 
