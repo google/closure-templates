@@ -105,6 +105,7 @@ import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -1250,17 +1251,62 @@ final class ExpressionCompiler {
               // adding null safety checks to the unboxing code.  So we just mark non nullable. In
               // otherwords, if we are going to hit an NPE while dereferencing this expression, it
               // makes no difference if it is due to the unboxing or the actual dereference.
-              baseExpr = baseExpr.asNonNullable();
+              if (baseExpr.soyType() != NullType.getInstance()) {
+                baseExpr = baseExpr.asNonNullable();
+              } else {
+                // Unless, the type actually is 'null'.  In this case the code is bugged, but this
+                // can happen due to inlining+@state desugaring.  The code we generate will always
+                // fail, so performance isn't a concern.
+                // Consider:
+                // {@state foo: Bar|null = null}
+                // ...
+                // {$foo.field}
+                // State desugaring will rewrite this to
+                // {let $foo: null /}
+                // and the inliner will inline it to
+                // {null.field}
+                // This code will always fail with an NPE, so do that here.
+                return SoyExpression.forSoyValue(
+                    node.getType(),
+                    new Expression(
+                        SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), Feature.CHEAP) {
+                      @Override
+                      protected void doGen(CodeBuilder cb) {
+                        String accessType;
+                        switch (node.getKind()) {
+                          case FIELD_ACCESS_NODE:
+                            accessType = "field " + ((FieldAccessNode) node).getFieldName();
+                            break;
+                          case ITEM_ACCESS_NODE:
+                            accessType =
+                                "element " + ((ItemAccessNode) node).getSourceStringSuffix();
+                            break;
+                          case METHOD_NODE:
+                            accessType =
+                                "method " + ((MethodNode) node).getMethodName().identifier();
+                            break;
+                          default:
+                            throw new AssertionError();
+                        }
+                        cb.throwException(
+                            NULL_POINTER_EXCEPTION_TYPE,
+                            String.format("Attempted to access %s of null", accessType));
+                      }
+                    });
+              }
             }
-            if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
-              return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node)
-                  .withSourceLocation(node.getSourceLocation());
-            } else if (node.getKind() == ExprNode.Kind.ITEM_ACCESS_NODE) {
-              return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
-                  .withSourceLocation(node.getSourceLocation());
-            } else {
-              return visitNullSafeMethod(baseExpr, (MethodNode) node)
-                  .withSourceLocation(node.getSourceLocation());
+            switch (node.getKind()) {
+              case FIELD_ACCESS_NODE:
+                return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node)
+                    .withSourceLocation(node.getSourceLocation());
+              case ITEM_ACCESS_NODE:
+                return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
+                    .withSourceLocation(node.getSourceLocation());
+              case METHOD_NODE:
+                return visitNullSafeMethod(baseExpr, (MethodNode) node)
+                    .withSourceLocation(node.getSourceLocation());
+              default:
+                throw new AssertionError();
             }
           default:
             return CompilerVisitor.this.visit(node);
@@ -1401,11 +1447,11 @@ final class ExpressionCompiler {
       return areAllChildrenConstant(node);
     }
 
-    // shouldn't really happen, but is fine if the children are
     @Override
     protected Boolean visitDataAccessNode(DataAccessNode node) {
-      // data access is fine if the child expressions are.
-      return areAllChildrenConstant(node);
+      // If this could be compiled to a constant expression, then the optimizer should have already
+      // evaluated it.  So don't bother.
+      return false;
     }
 
     @Override

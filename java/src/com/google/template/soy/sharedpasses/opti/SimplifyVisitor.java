@@ -16,25 +16,46 @@
 
 package com.google.template.soy.sharedpasses.opti;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Comparator.comparing;
+
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -42,7 +63,13 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.LocalVar;
+import com.google.template.soy.types.StringType;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.annotation.Nullable;
 
 /**
@@ -79,9 +106,26 @@ public final class SimplifyVisitor {
     impl.exec(file);
   }
 
+  private static final class RefAndHolder {
+    static final RefAndHolder NULL = new RefAndHolder();
+    final VarRefNode ref;
+    final ExprHolderNode holder;
+
+    RefAndHolder() {
+      this.ref = null;
+      this.holder = null;
+    }
+
+    RefAndHolder(VarRefNode ref, ExprHolderNode holder) {
+      this.ref = checkNotNull(ref);
+      this.holder = checkNotNull(holder);
+    }
+  }
+
   private final class Impl extends AbstractSoyNodeVisitor<Void> {
     final ImmutableMap<String, TemplateNode> basicTemplates;
     final IdGenerator nodeIdGen;
+    final Map<LocalVar, LocalVar> varDefnReplacements = new IdentityHashMap<>();
 
     Impl(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
       this.nodeIdGen = idGenerator;
@@ -97,24 +141,171 @@ public final class SimplifyVisitor {
       this.basicTemplates = basicTemplates.build();
     }
 
-    @Override
-    public Void exec(SoyNode node) {
-
-      SoyFileNode file = (SoyFileNode) node;
-      // First simplify all expressions in the subtree.
-      SoyTreeUtils.execOnAllV2Exprs(file, simplifyExprVisitor);
-      // Simpify the subtree.
-      visit(file);
-
-      return null;
-    }
-
     // --------------------------------------------------------------------------------------------
     // Implementations for specific nodes.
 
     @Override
+    protected void visitTemplateNode(TemplateNode node) {
+      boolean inlinedAny;
+      do {
+        // reset datastructures
+        inlinedAny = false;
+        varDefnReplacements.clear();
+
+        // First simplify all expressions in the subtree.
+        SoyTreeUtils.execOnAllV2Exprs(node, simplifyExprVisitor);
+        // Simplify the node
+        super.visitTemplateNode(node);
+        // Find all variables
+        List<RefAndHolder> allRefs = getAllRefs(node);
+
+        // Update definitions if we modified let nodes
+        if (!varDefnReplacements.isEmpty()) {
+          for (RefAndHolder refAndHolder : allRefs) {
+            LocalVar newDefn = varDefnReplacements.get(refAndHolder.ref.getDefnDecl());
+            if (newDefn != null) {
+              refAndHolder.ref.setDefn(newDefn);
+            }
+          }
+        }
+        Map<LetValueNode, RefAndHolder> possiblyInlinableRefs =
+            new TreeMap<>(comparing(LetValueNode::getSourceLocation));
+        for (RefAndHolder refAndHolder : allRefs) {
+          VarDefn defn = refAndHolder.ref.getDefnDecl();
+          if (defn.kind() != VarDefn.Kind.LOCAL_VAR) {
+            continue;
+          }
+          LocalVar local = (LocalVar) defn;
+          if (local.declaringNode().getKind() != SoyNode.Kind.LET_VALUE_NODE) {
+            continue;
+          }
+          LetValueNode letNode = (LetValueNode) local.declaringNode();
+          // If we already had a reference, replace with the special NULL value, a LetValueNode is
+          // only inlinable if there is exactly 1 reference to it.
+          possiblyInlinableRefs.compute(
+              letNode, (key, oldValue) -> oldValue == null ? refAndHolder : RefAndHolder.NULL);
+        }
+        // after visiting we can analyze references for inlining local variables.
+        // We can only do this at the end after finding al VarRefNodes.  In theory we could do it at
+        // the end of each scope, but that would require us to track scopes.  This would probably
+        // only be useful if the data we are tracking was really expensive.
+        //
+        // A local variable is 'inlinable' if:
+        // * It is referenced exactly once, and either that reference is not within a loop or list
+        //   comprehension, or the definition is a literal primitive (a string or numeric literal).
+        // * It is defined by a LetValueNode.  LetContentNodes are not possiblle due to the
+        //   autoescaping semantics.  IF we had a concept of html literals, we could revisit this.
+        //
+        // We could consider inlining variables referenced more than once if they were sufficiently
+        // trivial (e.g. numeric literals), but this isn't a clear tradeoff.
+        //
+        // Also, we want to iterate in order of source location of the declaration of the node.
+        // This will ensure that if variabes inline into each other they can cascade appropriately.
+        for (Map.Entry<LetValueNode, RefAndHolder> entry : possiblyInlinableRefs.entrySet()) {
+          if (entry.getValue() == RefAndHolder.NULL) {
+            continue;
+          }
+          RefAndHolder refAndHolder = entry.getValue();
+          inlinedAny =
+              maybeInline(entry.getKey(), refAndHolder.ref, refAndHolder.holder) || inlinedAny;
+        }
+        // If we inlined any variables, then we have created new expressions that are possible to
+        // simplify and that simplification may invalidate our variable use analysis. So we will
+        // reanalyze the whole template.
+        // Consider:
+        // {$let bar: .../}{$let foo: true/} {if $foo}{$bar}{else}{$bar}{/if}
+        // on the first iteration we will inline $foo, then on the second iteration we will delete
+        // the else branch and then we will inline $bar.
+
+        // This isn't very efficient, but doing this fully incrementally will be far more complex.
+      } while (inlinedAny);
+    }
+
+    /**
+     * Returns a collection of all VarRefs and the ExprHolderNodes that own them in the given
+     * Template
+     */
+    private List<RefAndHolder> getAllRefs(TemplateNode template) {
+      List<RefAndHolder> refs = new ArrayList<>();
+      for (ExprHolderNode holder : SoyTreeUtils.getAllNodesOfType(template, ExprHolderNode.class)) {
+        for (ExprRootNode root : holder.getExprList()) {
+          for (VarRefNode ref : SoyTreeUtils.getAllNodesOfType(root, VarRefNode.class)) {
+            refs.add(new RefAndHolder(ref, holder));
+          }
+        }
+      }
+      return refs;
+    }
+
+    /**
+     * Conditionally inlines the definition into the reference and removes the definition from the
+     * AST
+     */
+    private boolean maybeInline(LetValueNode definition, VarRefNode ref, ExprHolderNode holder) {
+      if (!isTrivialDefinition(definition.getExpr().getRoot())
+          && isInLoop(definition, ref, holder)) {
+        return false;
+      }
+      // perform the inlining
+      ref.getParent().replaceChild(ref, definition.getExpr().getRoot());
+      definition.getParent().removeChild(definition);
+      return true;
+    }
+
+    /**
+     * Returns true if the expression is so trivial that we can move it inside a loop with no
+     * expected performance consequences. This generally means the value should be trivial to
+     * construct.
+     */
+    private boolean isTrivialDefinition(ExprNode expr) {
+      if (expr instanceof PrimitiveNode) {
+        // number, string, boolean, null
+        return true;
+      }
+      // css and xid are common special cases.  They are compiled to trivial hash
+      if (expr instanceof FunctionNode) {
+        FunctionNode functionNode = (FunctionNode) expr;
+        if (functionNode.getSoyFunction() instanceof BuiltinFunction) {
+          switch ((BuiltinFunction) functionNode.getSoyFunction()) {
+              // These 3 just reference synthetic loop variables
+            case IS_FIRST:
+            case INDEX:
+            case IS_LAST:
+              // These 2 are glorified strings
+            case XID:
+            case CSS:
+              return true;
+            default:
+              // fall-through
+          }
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Returns true if the var ref node is inside a loop construct that the definition isn't also
+     * in.
+     */
+    private boolean isInLoop(LetValueNode definition, VarRefNode var, ExprHolderNode holder) {
+      checkNotNull(definition);
+      // if the reference is in a list comprehension.
+      if (var.getNearestAncestor(ListComprehensionNode.class) != null) {
+        return true;
+      }
+
+      // if the expression is inside a loop and the definition isn't also inside the loop.
+      // so as long as their nearest ancestor loops are different, we know ref must be in an inner
+      // loop
+      return !Objects.equal(
+          holder.getNearestAncestor(ForNonemptyNode.class),
+          definition.getNearestAncestor(ForNonemptyNode.class));
+    }
+
+    @Override
     protected void visitPrintNode(PrintNode node) {
 
+      super.visitPrintNode(node);
       // We attempt to prerender this node if and only if it:
       // (a) is in V2 syntax,
       // (b) is not a child of a MsgBlockNode,
@@ -162,7 +353,7 @@ public final class SimplifyVisitor {
     protected void visitIfNode(IfNode node) {
 
       // Recurse.
-      visitSoyNode(node);
+      super.visitIfNode(node);
 
       // For each IfCondNode child:
       // (a) If the condition is constant true: Replace the child with an IfElseNode and remove all
@@ -216,7 +407,7 @@ public final class SimplifyVisitor {
     protected void visitSwitchNode(SwitchNode node) {
 
       // Recurse.
-      visitSoyNode(node);
+      super.visitSwitchNode(node);
 
       // If the SwitchNode's expr is not constant, we can't simplify.
       SoyValue switchExprValue = getConstantOrNull(node.getExpr());
@@ -275,6 +466,93 @@ public final class SimplifyVisitor {
       if (node.numChildren() == 1 && node.getChild(0) instanceof SwitchDefaultNode) {
         replaceNodeWithList(node, ((SwitchDefaultNode) node.getChild(0)).getChildren());
       }
+    }
+
+    @Override
+    protected void visitCallParamContentNode(CallParamContentNode node) {
+      // Recurse.
+      super.visitCallParamContentNode(node);
+
+      ExprNode asExpression = rewriteContentNodeAsExpression(node);
+      if (asExpression != null) {
+        CallParamValueNode valueNode =
+            new CallParamValueNode(
+                node.getId(), node.getSourceLocation(), node.getKey(), asExpression);
+        node.getParent().replaceChild(node, valueNode);
+      }
+    }
+
+    @Override
+    protected void visitLetContentNode(LetContentNode node) {
+      // Recurse.
+      super.visitLetContentNode(node);
+
+      ExprNode asExpression = rewriteContentNodeAsExpression(node);
+      if (asExpression != null) {
+        LetValueNode valueNode =
+            new LetValueNode(
+                node.getId(),
+                node.getSourceLocation(),
+                '$' + node.getVarName(),
+                node.getVar().nameLocation(),
+                asExpression);
+        valueNode.getVar().setType(node.getVar().type());
+        node.getParent().replaceChild(node, valueNode);
+        varDefnReplacements.put(node.getVar(), valueNode.getVar());
+      }
+    }
+
+    @Nullable
+    private ExprNode rewriteContentNodeAsExpression(RenderUnitNode renderUnitNode) {
+      if (renderUnitNode.getContentKind() != SanitizedContentKind.TEXT) {
+        return null;
+      }
+      // collect as list and then concat at the end.  Adding a node as a child of the PlusOpNode
+      // will remove it from its old parent, we don't want to do that if we aren't going to replace
+      // everything.
+      List<ExprNode> newExprs = new ArrayList<>(renderUnitNode.numChildren());
+      for (SoyNode child : renderUnitNode.getChildren()) {
+        if (child.getKind() == SoyNode.Kind.PRINT_NODE) {
+          PrintNode print = (PrintNode) child;
+          // we can't handle print directives, except |text
+          // all |text does is ensure that we coerce to a string, which is equivallent to "" + expr
+          // which is exactly the kind of expression we are building here.
+          if (print.numChildren() == 0
+              || (print.numChildren() == 1
+                  && print.getChild(0).getPrintDirective().getName().equals("|text"))) {
+            newExprs.add(print.getExpr().getRoot());
+          } else {
+            return null;
+          }
+        } else if (child.getKind() == SoyNode.Kind.RAW_TEXT_NODE) {
+          newExprs.add(
+              new StringNode(
+                  ((RawTextNode) child).getRawText(),
+                  QuoteStyle.SINGLE,
+                  child.getSourceLocation()));
+
+        } else {
+          return null;
+        }
+      }
+      // Start with an empty string, to ensure this always evaluates to a string.
+      ExprNode result;
+      // tiny optimization, if the first node is a string literal, we don't need to concat with the
+      // empty string.
+      if (newExprs.size() >= 1 && newExprs.get(0) instanceof StringNode) {
+        result = newExprs.get(0);
+        newExprs = newExprs.subList(1, newExprs.size());
+      } else {
+        result = new StringNode("", QuoteStyle.SINGLE, renderUnitNode.getSourceLocation());
+      }
+      for (ExprNode expr : newExprs) {
+        PlusOpNode op = new PlusOpNode(result.getSourceLocation().extend(expr.getSourceLocation()));
+        op.addChild(result);
+        op.addChild(expr);
+        op.setType(StringType.getInstance());
+        result = op;
+      }
+      return result;
     }
 
     // Note (Sep-2012): We removed prerendering of calls (visitCallBasicNode) due to development

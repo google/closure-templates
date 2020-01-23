@@ -2131,6 +2131,7 @@ goog.inherits = function(childCtor, parentCtor) {
  * @param {function()} fn Function to call.  This function can contain aliases
  *     to namespaces (e.g. "var dom = goog.dom") or classes
  *     (e.g. "var Timer = goog.Timer").
+ * @deprecated Use goog.module instead.
  */
 goog.scope = function(fn) {
   if (goog.isInModuleLoader_()) {

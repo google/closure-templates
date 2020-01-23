@@ -79,7 +79,12 @@ public final class SourceLocation implements Comparable<SourceLocation> {
             + " %s]",
         begin,
         end);
-    checkArgument(begin.compareTo(end) <= 0, "begin %s should be before end %s", begin, end);
+    checkArgument(
+        begin.compareTo(end) <= 0,
+        "begin %s should be before end %s in file %s",
+        begin,
+        end,
+        filePath);
     this.filePath = checkNotNull(filePath);
     this.begin = checkNotNull(begin);
     this.end = checkNotNull(end);
