@@ -57,8 +57,9 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
@@ -117,6 +118,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -664,6 +666,24 @@ public class SoyFileParser {
   /** Create a SourceLocation spanning all given tokens. */
   SourceLocation createSrcLoc(Token tok1, Token... rest) {
     return Tokens.createSrcLoc(filePath, tok1, rest);
+  }
+
+  /** Create a SourceLocation spanning between the given token and node. */
+  private SourceLocation createSrcLoc(Token tok1, Node lastNode) {
+    return new SourceLocation(
+        filePath,
+        tok1.beginLine,
+        tok1.beginColumn,
+        lastNode.getSourceLocation().getEndLine(),
+        lastNode.getSourceLocation().getEndColumn());
+  }
+
+  /** Create a SourceLocation spanning between a token and the last of a list of nodes. */
+  private SourceLocation createSrcLoc(Token tok1, List<? extends Node> nodes) {
+    if (nodes.isEmpty()) {
+      return createSrcLoc(tok1);
+    }
+    return createSrcLoc(tok1, nodes.get(nodes.size() - 1));
   }
 
   /** Create an error ExprNode at the location of the given tokens. */
@@ -2854,8 +2874,7 @@ private VeLogNode VeLogStmt() :
  */
 private SwitchNode SwitchStmt() :
 {
-  Token tagBegin, tagEnd;
-  Token defaultTag;
+  Token tagBegin, caseTag, defaultTag, tagClose;
   ExprNode switchExpr;
   ImmutableList<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
@@ -2864,15 +2883,14 @@ private SwitchNode SwitchStmt() :
   tagBegin = <CMD_BEGIN_SWITCH>
   try {
     switchExpr = Expr()
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException e) {
     switchExpr = errorExpr(tagBegin);
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
-    SwitchNode switchNode =
-        new SwitchNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), switchExpr);
+    List<BlockNode> cases = new ArrayList<BlockNode>();
   }
 
   // consume all whitespace between {switch} and the first {case}
@@ -2882,37 +2900,42 @@ private SwitchNode SwitchStmt() :
 
   try {
     (
-      tagBegin = <CMD_BEGIN_CASE>
+      caseTag = <CMD_BEGIN_CASE>
       caseExprs = ExprList()
-      tagEnd = <CMD_END>
-      {
-        SwitchCaseNode caseNode =
-            new SwitchCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), caseExprs);
-        switchNode.addChild(caseNode);
-      }
-
+      <CMD_END>
       templateBlock = TemplateBlock()
-      { caseNode.addChildren(templateBlock); }
+      {
+        SwitchCaseNode caseNode = new SwitchCaseNode(
+            nodeIdGen.genId(),
+            createSrcLoc(caseTag, templateBlock),
+            caseExprs);
+        caseNode.addChildren(templateBlock);
+        cases.add(caseNode);
+      }
     )+
 
     [
       defaultTag = <CMD_FULL_DEFAULT>
+      templateBlock = TemplateBlock()
       {
         SwitchDefaultNode defaultNode =
-            new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-        switchNode.addChild(defaultNode);
+            new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag, templateBlock));
+        defaultNode.addChildren(templateBlock);
+        cases.add(defaultNode);
       }
-
-      templateBlock = TemplateBlock()
-      { defaultNode.addChildren(templateBlock); }
     ]
 
-    <CMD_CLOSE_SWITCH>
+    tagClose = <CMD_CLOSE_SWITCH>
   } catch (ParseException e) {
-    reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SWITCH);
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SWITCH);
   }
 
-  { return switchNode; }
+  {
+    SwitchNode switchNode =
+        new SwitchNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose), switchExpr);
+    switchNode.addChildren(cases);
+    return switchNode;
+  }
 }
 
 
