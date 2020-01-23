@@ -186,7 +186,7 @@ Parenthesis have no affect other than to manipulate the order of evaluation.
 ### Data access operators `.` `?.` {#data-access}
 
 The dot operator and question-dot operator are for accessing fields of a
-`record` or a `proto`.
+`record` or a `proto`, or to make method calls.
 
 The question-dot operator is for null safe access. If the value of the preceding
 operand is `null` then the access will return `null` rather than failing. This
@@ -414,6 +414,22 @@ For example:
 
 *   `isNonnull($foo)`
 *   `max($foo, $bar)`
+
+## Method calls
+
+Method calls consist of an expression followed by the dot or question-dot
+operator, and an identifier with a number of positional parameters:
+
+`<EXPR>.<IDENT>(<EXPR>,...)`
+
+For example:
+
+*   `$foo.bar($baz)` calls the `bar` method on `$foo` with a parameter of `$bar`
+*   `$foo?.bar(1, 2)` calls the `bar` method on `$foo` with the parameters `1`
+    and `2` only if `$foo` is non-`null`
+
+See the [methods reference](methods.md) for a list of all methods that are
+available.
 
 ## Proto initialization
 
