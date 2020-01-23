@@ -33,7 +33,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
@@ -287,81 +286,8 @@ public final class SimplifyVisitor {
 
     @Override
     protected void visitSoyNode(SoyNode node) {
-
       if (node instanceof ParentSoyNode<?>) {
         visitChildrenAllowingConcurrentModification((ParentSoyNode<?>) node);
-      }
-
-      if (!(node instanceof BlockNode)) {
-        return;
-      }
-      BlockNode nodeAsBlock = (BlockNode) node;
-
-      // Check whether there are any consecutive RawTextNode children.
-      boolean hasConsecRawTextNodes = false;
-      for (int i = 0; i <= nodeAsBlock.numChildren() - 2; i++) {
-        if (nodeAsBlock.getChild(i) instanceof RawTextNode
-            && nodeAsBlock.getChild(i + 1) instanceof RawTextNode) {
-          hasConsecRawTextNodes = true;
-          break;
-        }
-      }
-      // If there aren't any consecutive RawTextNode children, we're done.
-      if (!hasConsecRawTextNodes) {
-        return;
-      }
-
-      // Rebuild the list of children, combining consecutive RawTextNodes into one.
-      List<StandaloneNode> copyOfOrigChildren = Lists.newArrayList(nodeAsBlock.getChildren());
-      nodeAsBlock.clearChildren();
-
-      List<RawTextNode> consecutiveRawTextNodes = Lists.newArrayList();
-      for (StandaloneNode origChild : copyOfOrigChildren) {
-
-        if (origChild instanceof RawTextNode) {
-          consecutiveRawTextNodes.add((RawTextNode) origChild);
-
-        } else {
-          // First add the preceding consecutive RawTextNodes, if any.
-          addConsecutiveRawTextNodesAsOneNodeHelper(nodeAsBlock, consecutiveRawTextNodes);
-          consecutiveRawTextNodes.clear();
-          // Then add the current new child.
-          nodeAsBlock.addChild(origChild);
-        }
-      }
-
-      // Add the final group of consecutive RawTextNodes, if any.
-      addConsecutiveRawTextNodesAsOneNodeHelper(nodeAsBlock, consecutiveRawTextNodes);
-      consecutiveRawTextNodes.clear();
-    }
-
-    /**
-     * Helper to add consecutive RawTextNodes as one child node (the raw text will be joined). If
-     * the consecutive RawTextNodes list actually only has one item, then adds that node instead of
-     * creating a new RawTextNode.
-     *
-     * <p>Note: This function works closely with the above code. In particular, it assumes we're
-     * rebuilding the whole list (thus adding to the end of the parent) instead of fixing the old
-     * list in-place.
-     *
-     * @param parent The parent to add the new child to.
-     * @param consecutiveRawTextNodes The list of consecutive RawTextNodes.
-     */
-    private void addConsecutiveRawTextNodesAsOneNodeHelper(
-        BlockNode parent, List<RawTextNode> consecutiveRawTextNodes) {
-      if (consecutiveRawTextNodes.isEmpty()) {
-        return;
-      } else if (consecutiveRawTextNodes.size() == 1) {
-        // Simply add the one RawTextNode.
-        parent.addChild(consecutiveRawTextNodes.get(0));
-      } else {
-        // Create a new combined RawTextNode.
-        StringBuilder rawText = new StringBuilder();
-        for (RawTextNode rtn : consecutiveRawTextNodes) {
-          rawText.append(rtn.getRawText());
-        }
-        parent.addChild(
-            new RawTextNode(nodeIdGen.genId(), rawText.toString(), parent.getSourceLocation()));
       }
     }
   }

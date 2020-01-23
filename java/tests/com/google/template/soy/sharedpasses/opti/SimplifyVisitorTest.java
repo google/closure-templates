@@ -19,11 +19,7 @@ package com.google.template.soy.sharedpasses.opti;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.SoyFileSetParserBuilder;
-import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -31,7 +27,6 @@ import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.soytree.TemplateNode;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,39 +34,6 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class SimplifyVisitorTest {
-
-  @Test
-  public void testCombineConsecutiveRawTextNodes() throws Exception {
-
-    String soyCode =
-        "{@param boo : ?}\n"
-            + "blah{$boo}blah"
-            + "{for $i in range(5)}"
-            + "  blah{$boo}blah"
-            + "{/for}";
-    ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(soyCode).parse();
-    SoyFileSetNode soyTree = parseResult.fileSet();
-
-    TemplateNode template = soyTree.getChild(0).getChild(0);
-    ForNonemptyNode forNode = (ForNonemptyNode) ((ForNode) template.getChild(3)).getChild(0);
-    forNode.addChild(new RawTextNode(0, "bleh", SourceLocation.UNKNOWN));
-    forNode.addChild(new RawTextNode(0, "bluh", SourceLocation.UNKNOWN));
-    template.addChild(0, new RawTextNode(0, "bleh", SourceLocation.UNKNOWN));
-    template.addChild(0, new RawTextNode(0, "bluh", SourceLocation.UNKNOWN));
-
-    assertThat(template.numChildren()).isEqualTo(6);
-    assertThat(forNode.numChildren()).isEqualTo(5);
-
-    SimplifyVisitor simplifyVisitor =
-        SimplifyVisitor.create(
-            soyTree.getNodeIdGenerator(), ImmutableList.copyOf(soyTree.getChildren()));
-    simplifyVisitor.simplify(soyTree.getChild(0));
-
-    assertThat(template.numChildren()).isEqualTo(4);
-    assertThat(forNode.numChildren()).isEqualTo(3);
-    assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("bluhblehblah");
-    assertThat(((RawTextNode) forNode.getChild(2)).getRawText()).isEqualTo("blahblehbluh");
-  }
 
   @Test
   public void testMsgBlockNodeChildrenAreNotReplaced() throws Exception {
