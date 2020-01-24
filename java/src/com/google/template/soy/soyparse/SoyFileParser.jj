@@ -3070,7 +3070,7 @@ private List<CallParamNode> CallParams() :
  */
 private CallParamNode CallParam() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin, tagClose;
   Identifier key;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -3083,8 +3083,8 @@ private CallParamNode CallParam() :
     key = Identifier()
   } catch (ParseException e) {
     key = Identifier.create("error", createSrcLoc(tagBegin));
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagEnd), key, errorExpr(tagBegin));
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagClose), key, errorExpr(tagBegin));
   }
 
   {
@@ -3097,40 +3097,41 @@ private CallParamNode CallParam() :
     try {
       <COLON>
       valueExpr = Expr()
-      tagEnd = <CMD_SELF_CLOSE>
+      tagClose = <CMD_SELF_CLOSE>
     } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+      tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
       if (valueExpr == null) {
-        valueExpr = errorExpr(tagEnd);
+        valueExpr = errorExpr(tagClose);
       }
     }
 
     {
       return new CallParamValueNode(
           nodeIdGen.genId(),
-          createSrcLoc(tagBegin, tagEnd),
+          createSrcLoc(tagBegin, tagClose),
           key,
           valueExpr);
     }
   |
     try {
       attr = Attribute()
-      tagEnd = <CMD_END>
+      <CMD_END>
     } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
+      reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
     templateBlock = TemplateBlock()
-    <CMD_CLOSE_PARAM>
+    tagClose = <CMD_CLOSE_PARAM>
 
     {
       if (attr == null) {
-        return new CallParamValueNode(-1, createSrcLoc(tagBegin, tagEnd), key, errorExpr(tagBegin));
+        return
+            new CallParamValueNode(-1, createSrcLoc(tagBegin, tagClose), key, errorExpr(tagBegin));
       }
       CallParamContentNode node =
           new CallParamContentNode(
               nodeIdGen.genId(),
-              createSrcLoc(tagBegin, tagEnd),
+              createSrcLoc(tagBegin, tagClose),
               key,
               attr,
               errorReporter);

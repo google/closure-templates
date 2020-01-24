@@ -80,6 +80,52 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testTemplateCall() throws Exception {
+    assertSourceRanges(
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .foo}{call .pla[...]am}{/delcall}{/template}",
+            "      CallBasicNode            {call .planet}",
+            "        CallParamValueNode     {param index: 5 /}",
+            "        CallParamContentNode   {param name kind='text'}Jupiter{/param}",
+            "          RawTextNode          Jupiter",
+            "      CallDelegateNode         {delcall ns.maybePlanet}",
+            "        CallParamValueNode     {param index: 9 /}",
+            "        CallParamContentNode   {param name kind='text'}Pluto{/param}",
+            "          RawTextNode          Pluto",
+            "    TemplateBasicNode          {template .planet}{@param[...]ex}: {$name}.{/template}",
+            "      RawTextNode              Planet #",
+            "      PrintNode                {$index}",
+            "      RawTextNode              :",
+            "      PrintNode                {$name}",
+            "      RawTextNode              .",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .foo}",
+            "  {call .planet}",
+            "    {param index: 5 /}",
+            "    {param name kind='text'}",
+            "      Jupiter",
+            "    {/param}",
+            "  {/call}",
+            "  {delcall ns.maybePlanet}",
+            "    {param index: 9 /}",
+            "    {param name kind='text'}",
+            "      Pluto",
+            "    {/param}",
+            "  {/delcall}",
+            "{/template}",
+            "{template .planet}",
+            "  {@param index: number}",
+            "  {@param name: string}",
+            "  Planet #{$index}: {$name}.",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testSwitches() throws Exception {
     assertSourceRanges(
         JOINER.join(
