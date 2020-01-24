@@ -387,21 +387,6 @@ soy.$$serializeKey = function(item) {
 soy.$$IS_LOCALE_RTL = goog.i18n.bidi.IS_RTL;
 
 
-/**
- * Builds an augmented map. The returned map will contain mappings from both
- * the base map and the additional map. If the same key appears in both, then
- * the value from the additional map will be visible, while the value from the
- * base map will be hidden. The base map will be used, but not modified.
- *
- * @param {!Object} baseMap The original map to augment.
- * @param {!Object} additionalMap A map containing the additional mappings.
- * @return {!Object} An augmented map containing both the original and
- *     additional mappings.
- */
-soy.$$augmentMap = function(baseMap, additionalMap) {
-  return soy.$$assignDefaults(soy.$$assignDefaults({}, additionalMap), baseMap);
-};
-
 
 /**
  * Copies extra properties into an object if they do not already exist. The

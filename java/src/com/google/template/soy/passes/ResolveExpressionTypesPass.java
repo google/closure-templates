@@ -28,7 +28,6 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.basicfunctions.AugmentMapFunction;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
@@ -1317,18 +1316,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
     }
 
-    private void visitAugmentMapFunction(FunctionNode node) {
-      // We don't bother unioning the value types of the child nodes, because if the values
-      // were maps/records themselves, then access becomes funky.  For example, if:
-      //     RHS was legacy_object_map(a: record(b: 1, c:2))
-      // and LHS was legacy_object_map(a: record(c: 3, d:4))
-      // ... no one can access result[a].b or result[a].d, because (since it was unioned), the
-      // compile would want b & d to exist on both sides of the union.
-      node.setType(
-          typeRegistry.getOrCreateLegacyObjectMapType(
-              StringType.getInstance(), UnknownType.getInstance()));
-    }
-
     @Override
     protected void visitProtoInitNode(ProtoInitNode node) {
       visitChildren(node);
@@ -1873,9 +1860,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
      */
     private void visitInternalSoyFunction(Object fn, FunctionNode node) {
       // Here we have special handling for a variety of 'generic' function.
-      if (fn instanceof AugmentMapFunction) {
-        visitAugmentMapFunction(node);
-      } else if (fn instanceof LegacyObjectMapToMapFunction) {
+      if (fn instanceof LegacyObjectMapToMapFunction) {
         // If argument type is incorrect, do not try to create a return type. Instead, set the
         // return type to unknown.
         if (checkArgType(node.getChild(0), LegacyObjectMapType.ANY_MAP, node)) {

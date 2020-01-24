@@ -19,7 +19,6 @@ package com.google.template.soy.basicfunctions;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.data.SoyDict;
@@ -41,19 +40,7 @@ import java.util.Map;
 
 /** static functions for implementing the basic functions for java. */
 public final class BasicFunctionsRuntime {
-  /**
-   * Combine the two maps -- for the JavaSource variant while the function signature is still ?
-   * instead of map.
-   */
-  public static SoyDict augmentMap(SoyValue sv1, SoyValue sv2) {
-    SoyDict first = (SoyDict) sv1;
-    SoyDict second = (SoyDict) sv2;
-    Map<String, SoyValueProvider> map =
-        Maps.newHashMapWithExpectedSize(first.getItemCnt() + second.getItemCnt());
-    map.putAll(first.asJavaStringMap());
-    map.putAll(second.asJavaStringMap());
-    return DictImpl.forProviderMap(map, RuntimeMapTypeTracker.Type.LEGACY_OBJECT_MAP_OR_RECORD);
-  }
+  private BasicFunctionsRuntime() {}
 
   /**
    * Returns the smallest (closest to negative infinity) integer value that is greater than or equal

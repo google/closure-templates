@@ -111,16 +111,6 @@ coerced to strings in the returned legacy object map.
 Converts a [legacy object map](types.md#legacy_object_map) to an equivalent
 [map](types.md#map).
 
-## `augmentMap(baseMap, additionalMap)` {#augmentMap}
-
-WARNING: deprecated, this is only usable with the
-[legacy object map](types.md#legacy_object_map) type which is deprecated.
-
-Builds an augmented map. The returned map contains mappings from both the base
-map and the additional map. If the same key appears in both, then the value from
-the additional map is visible, while the value from the base map is hidden. The
-base map is used, but not modified.
-
 ## `round(number)`, `round(number, numDigitsAfterDecimalPoint)` {#round}
 
 Rounds the given number to an integer.

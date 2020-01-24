@@ -9048,9 +9048,6 @@ soy.$$serializeKey = function(item) {
   return "" + stringified.length + (null == item ? "_" : "number" === typeof item ? "#" : ":") + stringified;
 };
 soy.$$IS_LOCALE_RTL = goog.i18n.bidi.IS_RTL;
-soy.$$augmentMap = function(baseMap, additionalMap) {
-  return soy.$$assignDefaults(soy.$$assignDefaults({}, additionalMap), baseMap);
-};
 soy.$$assignDefaults = function(obj, defaults) {
   for (var key in defaults) {
     key in obj || (obj[key] = defaults[key]);
