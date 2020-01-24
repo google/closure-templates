@@ -119,6 +119,27 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testVeid() throws Exception {
+    assertSourceRanges(
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .foo}{@param ve[...]</h1>{/velog}{/template}",
+            "      VeLogNode                {velog $veData}<h1>Hello</h1>{/velog}",
+            "        RawTextNode            <h1>Hello</h1>",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .foo}",
+            "  {@param veData: ve_data}",
+            "  {velog $veData}",
+            "    <h1>Hello</h1>",
+            "  {/velog}",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testForLoop() throws Exception {
     assertSourceRanges(
         JOINER.join(

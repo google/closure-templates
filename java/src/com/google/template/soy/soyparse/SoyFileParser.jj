@@ -2770,7 +2770,7 @@ private IfNode IfStmt() :
 private VeLogNode VeLogStmt() :
 {
   ExprNode veDataExpr = null;
-  Token tagBegin, tagEnd;
+  Token tagBegin, tagClose;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<StandaloneNode> templateBlock;
 }
@@ -2779,23 +2779,22 @@ private VeLogNode VeLogStmt() :
   try {
     veDataExpr = Expr()
     attributes = Attributes()
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException e) {
     if (veDataExpr == null) {
       veDataExpr = errorExpr(tagBegin);
     }
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
-
 
   templateBlock = TemplateBlock()
 
-  <CMD_CLOSE_VELOG>
+  tagClose = <CMD_CLOSE_VELOG>
 
   {
     VeLogNode node = new VeLogNode(
         nodeIdGen.genId(),
-        createSrcLoc(tagBegin, tagEnd),
+        createSrcLoc(tagBegin, tagClose),
         veDataExpr,
         attributes,
         errorReporter);
