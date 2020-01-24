@@ -33,8 +33,6 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
- * <p>TODO(b/70577468): eliminate LoopNode
- *
  */
 public final class ForNode extends AbstractParentCommandNode<BlockNode>
     implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {

@@ -433,9 +433,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
       SoyErrorKind.of("Unexpected content before ''{0}'', expected only comments or whitespace.");
-  private static final SoyErrorKind CSS_XID_MIGRATION =
-      SoyErrorKind.of("The ''{0}'' command is {1}, please switch to using the {0} function."
-  );
   // There's nothing technical preventing us from allowing default values on injected parameters,
   // but we're not sure if that's something we want in the language, so we're preventing it for now.
   private static final SoyErrorKind INJECT_DEFAULT_PARAM =
@@ -463,19 +460,10 @@ public class SoyFileParser {
       SoyErrorKind.of("Invalid param name ''{0}''.");
   private static final SoyErrorKind UNEXPECTED_PIPE =
       SoyErrorKind.of("Unexpected ''|''. Print directives should not have whitespace after ''|''.");
-  private static final SoyErrorKind OLD_RECORD_LITERAL_SYNTAX =
-      SoyErrorKind.of(
-          "Parse error at '':''. If this is a record literal, use the new syntax: "
-              + "''record(key1: \"value1\", key2: 2)''. If this is a legacy_object_map literal, "
-              + "there is no syntax for that, consider using ''map()'' instead.");
   private static final SoyErrorKind EMPTY_RECORD_LITERAL =
       SoyErrorKind.of("Empty record literal.");
   private static final SoyErrorKind EMPTY_RECORD_TYPE =
       SoyErrorKind.of("Empty record type.");
-
-  private static final SoyErrorKind FOREACH_IS_DISABLED = SoyErrorKind.of(
-      "foreach loops are no longer supported, please switch to the for loop."
-      , StyleAllowance.NO_CAPS);
 
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
@@ -1020,9 +1008,6 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_FALLBACK_MSG       : "{fallbackmsg" <WS> > : IN_CMD_TAG
 | < CMD_CLOSE_MSG                : "{/msg}"         >
 
-| < CMD_BEGIN_XID                : "{xid" <WS>      > : IN_CMD_TAG
-| < CMD_BEGIN_CSS                : "{css" <WS>      > : IN_CMD_TAG
-
 | < CMD_BEGIN_IF                 : "{if" <WS>       > : EXPR
 | < CMD_BEGIN_ELSEIF             : "{elseif" <WS>   > : EXPR
 | < CMD_FULL_ELSE                : "{else}"         >
@@ -1046,9 +1031,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_BEGIN_CASE               : "{case" <WS>     > : EXPR
 | < CMD_FULL_DEFAULT             : "{default}"      >
 
-| < CMD_BEGIN_FOREACH            : "{foreach" <WS>  > : EXPR
 | < CMD_FULL_IFEMPTY             : "{ifempty}"      >
-| < CMD_CLOSE_FOREACH            : "{/foreach}"     >
 
 | < CMD_OPEN_LOG                 : "{log}"          >
 | < CMD_CLOSE_LOG                : "{/log}"         >
@@ -2094,7 +2077,7 @@ private StatementNode NonPrintableStmt() :
 }
 
 /**
- * PrintableStmt -> MsgStmt | XidStmt | CssStmt | CallStmt | PrintStmt
+ * PrintableStmt -> MsgStmt | CallStmt | PrintStmt
  */
 private StatementNode PrintableStmt() :
 {
@@ -2103,8 +2086,6 @@ private StatementNode PrintableStmt() :
 {
   (
     stmt = MsgStmt()
-  | stmt = XidStmt()
-  | stmt = CssStmt()
   | stmt = CallStmt()
   | stmt = PrintStmt()
   )
@@ -2124,7 +2105,6 @@ private StatementNode ControlFlowStmt() :
     stmt = IfStmt()
   | stmt = SwitchStmt()
   | stmt = ForStmt()
-  | stmt = ForeachStmt()
   )
 
   { return stmt; }
@@ -2632,62 +2612,6 @@ private SkipNode SkipStmt() :
 
 
 /**
- * XidStmt -> Error
- *
- * <p>This production exists purely to issue a good error message when there is an attempt to use
- * the legacy xid syntax
- *
- * <p>TODO(lukes): sometime in 2019, just delete this
- *
- * <p>Returns an empty LogNode as a placeholder
- */
-private LogNode XidStmt() :
-{
-  Token tagBegin, tagEnd;
-}
-{
-  tagBegin = <CMD_BEGIN_XID>
-  {
-    tagEnd = skipToTemplateToken(CMD_END);
-  }
-
-  {
-    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
-    errorReporter.report(location, CSS_XID_MIGRATION, "xid", "no longer supported");
-    return new LogNode(nodeIdGen.genId(), location);
-  }
-}
-
-
-/**
- * CssStmt -> Error
- *
- * <p>This production exists purely to issue a good error message when there is an attempt to use
- * the legacy css syntax.
- *
- * <p>TODO(lukes): sometime in 2019, just delete this
- *
- * <p>Returns an empty LogNode as a placeholder
- */
-private LogNode CssStmt() :
-{
-  Token tagBegin, tagEnd;
-}
-{
-  tagBegin = <CMD_BEGIN_CSS>
-  {
-    tagEnd = skipToTemplateToken(CMD_END);
-  }
-
-  {
-    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
-    errorReporter.report(location, CSS_XID_MIGRATION, "css", "no longer supported");
-    return new LogNode(nodeIdGen.genId(), location);
-  }
-}
-
-
-/**
  * LetStmt -> CmdBeginLet VarRef
  *            ( ":" Expr CmdSelfClose | [ Attribute ] CmdEnd TemplateBlock CmdCloseLet )
  */
@@ -3023,28 +2947,6 @@ private ForNode ForStmt() :
       forNode.addChild(ifempty);
     }
     return forNode;
-  }
-}
-
-/**
- * Foreach -> error
- *
- * <p>We used to support a 'foreach' loop syntax, but it has been superceded by the for loop.  This
- * production exists simply to provide a better error message. TODO(b/70577468): sometime in 2019,
- * just delete this and the token definitions.
- *
- * <p>returns an empty log node as a placeholder
- */
-private LogNode ForeachStmt() : {
-  Token tok;
-}
-{
-  tok = <CMD_BEGIN_FOREACH>
-  {
-    SourceLocation location = createSrcLoc(tok);
-    errorReporter.report(location, FOREACH_IS_DISABLED);
-    skipToTemplateToken(CMD_CLOSE_FOREACH);
-    return new LogNode(nodeIdGen.genId(), location);
   }
 }
 
@@ -4052,25 +3954,14 @@ private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
       items.add(firstItem);
     }
 
-    (
-      // If there's a colon here, this could be an attempt at the old legacy_object_map or record
-      // literal syntax, so report a custom error.
-      // TODO(b/80429224): Remove this custom error message after 8 June 2019.
-      end = <COLON>
-      {
-        errorReporter.report(createSrcLoc(end), OLD_RECORD_LITERAL_SYNTAX);
-        skipToTemplateToken();
-      }
-    |
-      // The next item will be a comma for a list
-      ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
-        LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
-        <COMMA>
-        itemExpr = Expr()
-        { items.add(itemExpr); }
-      )*
-      [ <COMMA> ]  // trailing comma
-    )
+    // The next item will be a comma for a list
+    ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
+      LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
+      <COMMA>
+      itemExpr = Expr()
+      { items.add(itemExpr); }
+    )*
+    [ <COMMA> ]  // trailing comma
     end = <RBRACKET>
     { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
   )
