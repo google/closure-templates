@@ -279,6 +279,77 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testI18nNodes() throws Exception {
+    // TODO(b/147886598): Improve SourceLocation for MsgFallbackGroupNode and MsgNode.
+    assertSourceRanges(
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .moonCount}{@pa[...] 1 moon{/msg}{/template}",
+            "      MsgFallbackGroupNode     {msg desc='Generic message about the amount of moons'}",
+            "        MsgNode                {msg desc='Generic message about the amount of moons'}",
+            "          MsgPluralNode        {plural $count}{case 0}Pl[...] {$count} moons{/plural}",
+            "            MsgPluralCaseNode  {case 0}Planet {$planet} has no moons",
+            "              RawTextNode      Planet",
+            "              MsgPlaceholderNode {$planet}",
+            "                PrintNode      {$planet}",
+            "              RawTextNode      has no moons",
+            "            MsgPluralCaseNode  {case 1}Planet {$planet} has 1 moon",
+            "              RawTextNode      Planet",
+            "              MsgPlaceholderNode {$planet}",
+            "                PrintNode      {$planet}",
+            "              RawTextNode      has 1 moon",
+            "            MsgPluralDefaultNode {default}Planet {$planet} has {$count} moons",
+            "              RawTextNode      Planet",
+            "              MsgPlaceholderNode {$planet}",
+            "                PrintNode      {$planet}",
+            "              RawTextNode      has",
+            "              MsgPlaceholderNode {$count}",
+            "                PrintNode      {$count}",
+            "              RawTextNode      moons",
+            "        MsgNode                {fallbackmsg desc='Specific message about Earth'}",
+            "          RawTextNode          Planet Earth has 1 moon",
+            "    TemplateBasicNode          {template .moonName}{@par[...]select}{/msg}{/template}",
+            "      MsgFallbackGroupNode     {msg desc='The name of a moon of the solar system'}",
+            "        MsgNode                {msg desc='The name of a moon of the solar system'}",
+            "          MsgSelectNode        {select $moon}{case 'Luna[...]default}{$moon}{/select}",
+            "            MsgSelectCaseNode  {case 'Luna'}Earth's moon",
+            "              RawTextNode      Earth's moon",
+            "            MsgSelectDefaultNode {default}{$moon}",
+            "              MsgPlaceholderNode {$moon}",
+            "                PrintNode      {$moon}",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .moonCount}",
+            "  {@param planet: string}",
+            "  {@param count: int}",
+            "  {msg desc='Generic message about the amount of moons'}",
+            "    {plural $count}",
+            "      {case 0}Planet {$planet} has no moons",
+            "      {case 1}Planet {$planet} has 1 moon",
+            "      {default}Planet {$planet} has {$count} moons",
+            "    {/plural}",
+            "  {fallbackmsg desc='Specific message about Earth'}",
+            "    Planet Earth has 1 moon",
+            "  {/msg}",
+            "{/template}",
+            "",
+            "{template .moonName}",
+            "  {@param moon: string}",
+            "  {msg desc='The name of a moon of the solar system'}",
+            "    {select $moon}",
+            "      {case 'Luna'}",
+            "        Earth's moon",
+            "      {default}",
+            "        {$moon}",
+            "    {/select}",
+            "  {/msg}",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testDoesntAccessPastEnd() {
     // Make sure that if we have a token stream that ends abruptly, we don't
     // look for a line number and break in a way that suppresses the real error

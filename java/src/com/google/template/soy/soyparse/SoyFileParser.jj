@@ -90,6 +90,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
 import com.google.template.soy.soytree.DebuggerNode;
@@ -2271,8 +2272,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
  */
 private MsgPluralNode MsgPlural() :
 {
-  Token tagBegin, tagEnd;
-  Token defaultTag;
+  Token tagBegin, caseBeginTag, tagClose;
   ExprNode pluralExpr;
   ExprNode caseExpr;
   CommandTagAttribute offsetAttr = null;
@@ -2283,10 +2283,10 @@ private MsgPluralNode MsgPlural() :
   try {
     pluralExpr = Expr()
     [ offsetAttr = Attribute() ]
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException e) {
     pluralExpr = errorExpr(tagBegin);
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
@@ -2319,9 +2319,7 @@ private MsgPluralNode MsgPlural() :
         offset = 0;
       }
     }
-
-    MsgPluralNode pluralNode =
-        new MsgPluralNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), pluralExpr, offset);
+    List<CaseOrDefaultNode> caseNodes = new ArrayList<CaseOrDefaultNode>();
   }
 
   // consume all whitespace between {plural} and the first {case}
@@ -2329,9 +2327,9 @@ private MsgPluralNode MsgPlural() :
   SkipWhitespace()
   try {
     (
-      tagBegin = <CMD_BEGIN_CASE>
+      caseBeginTag = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      tagEnd = <CMD_END>
+      <CMD_END>
       {
         int value;
         if (!(caseExpr instanceof IntegerNode)) {
@@ -2344,10 +2342,6 @@ private MsgPluralNode MsgPlural() :
             value = 0;
           }
         }
-
-        MsgPluralCaseNode caseNode =
-            new MsgPluralCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), value);
-        pluralNode.addChild(caseNode);
       }
 
       templateBlock = TemplateBlockForMsg()
@@ -2358,16 +2352,17 @@ private MsgPluralNode MsgPlural() :
               templateBlock.get(0).getSourceLocation(),
               PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
         }
+        MsgPluralCaseNode caseNode =
+            new MsgPluralCaseNode(
+                nodeIdGen.genId(),
+                createSrcLoc(caseBeginTag, templateBlock),
+                value);
         caseNode.addChildren(templateBlock);
+        caseNodes.add(caseNode);
       }
     )*
 
-    defaultTag = <CMD_FULL_DEFAULT>
-    {
-      MsgPluralDefaultNode defaultNode =
-          new MsgPluralDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-      pluralNode.addChild(defaultNode);
-    }
+    caseBeginTag = <CMD_FULL_DEFAULT>
 
     templateBlock = TemplateBlockForMsg()
     { if (templateBlock.size() == 1 &&
@@ -2377,17 +2372,25 @@ private MsgPluralNode MsgPlural() :
             templateBlock.get(0).getSourceLocation(),
             PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
       }
+      MsgPluralDefaultNode defaultNode =
+          new MsgPluralDefaultNode(nodeIdGen.genId(), createSrcLoc(caseBeginTag, templateBlock));
       defaultNode.addChildren(templateBlock);
+      caseNodes.add(defaultNode);
     }
 
-    <CMD_CLOSE_PLURAL>
+    tagClose = <CMD_CLOSE_PLURAL>
   } catch (ParseException e) {
     // report and keep going to maintain previous behavior around reporting errors for unexpected
     // textual content before the first {case} tag
-    reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_PLURAL);
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_PLURAL);
   }
 
-  { return pluralNode; }
+  {
+    MsgPluralNode pluralNode =
+        new MsgPluralNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose), pluralExpr, offset);
+    pluralNode.addChildren(caseNodes);
+    return pluralNode;
+  }
 }
 
 
@@ -2398,8 +2401,7 @@ private MsgPluralNode MsgPlural() :
  */
 private MsgSelectNode MsgSelect() :
 {
-  Token tagBegin, tagEnd;
-  Token defaultTag;
+  Token tagBegin, caseTagBegin, tagClose;
   ExprNode selectExpr;
   ExprNode caseExpr;
   List<StandaloneNode> templateBlock;
@@ -2408,15 +2410,14 @@ private MsgSelectNode MsgSelect() :
   tagBegin = <CMD_BEGIN_SELECT>
   try {
     selectExpr = Expr()
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException e) {
     selectExpr = errorExpr(tagBegin);
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
-    MsgSelectNode selectNode =
-        new MsgSelectNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), selectExpr);
+    List<CaseOrDefaultNode> caseNodes = new ArrayList<CaseOrDefaultNode>();
   }
 
   // consume all whitespace between {select} and the first {case}
@@ -2425,36 +2426,41 @@ private MsgSelectNode MsgSelect() :
 
   try {
     (
-      tagBegin = <CMD_BEGIN_CASE>
+      caseTagBegin = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      tagEnd = <CMD_END>
+      <CMD_END>
+      templateBlock = TemplateBlockForMsg()
+
       {
         String value = ParseErrors.validateSelectCaseLabel(caseExpr, errorReporter);
         MsgSelectCaseNode caseNode =
-            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagEnd), value);
-        selectNode.addChild(caseNode);
+            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(caseTagBegin, templateBlock), value);
+        caseNodes.add(caseNode);
+        caseNode.addChildren(templateBlock);
       }
-
-      templateBlock = TemplateBlockForMsg()
-      { caseNode.addChildren(templateBlock); }
     )*
 
-    defaultTag = <CMD_FULL_DEFAULT>
+    caseTagBegin = <CMD_FULL_DEFAULT>
+    templateBlock = TemplateBlockForMsg()
+
     {
       MsgSelectDefaultNode defaultNode =
-          new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag));
-      selectNode.addChild(defaultNode);
+          new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(caseTagBegin, templateBlock));
+      caseNodes.add(defaultNode);
+      defaultNode.addChildren(templateBlock);
     }
 
-    templateBlock = TemplateBlockForMsg()
-    { defaultNode.addChildren(templateBlock); }
-
-    <CMD_CLOSE_SELECT>
+    tagClose = <CMD_CLOSE_SELECT>
   } catch (ParseException e) {
-    reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SELECT);
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_CLOSE_SELECT);
   }
 
-  { return selectNode; }
+  {
+    MsgSelectNode selectNode =
+        new MsgSelectNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose), selectExpr);
+    selectNode.addChildren(caseNodes);
+    return selectNode;
+  }
 }
 
 
