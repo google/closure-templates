@@ -206,6 +206,33 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testLet() throws Exception {
+    assertSourceRanges(
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .approximateDis[...] {$formatted}{/template}",
+            "      LetValueNode             {let $approx: round($distance, 2) /}",
+            "      LetContentNode           {let $formatted kind='tex[...]pprox} light years{/let}",
+            "        PrintNode              {$approx}",
+            "        RawTextNode            light years",
+            "      RawTextNode              Approximately",
+            "      PrintNode                {$formatted}",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .approximateDistance}",
+            "  {@param distance: number}",
+            "  {let $approx: round($distance, 2) /}",
+            "  {let $formatted kind='text'}",
+            "    {$approx} light years",
+            "  {/let}",
+            "  Approximately {$formatted}",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testDoesntAccessPastEnd() {
     // Make sure that if we have a token stream that ends abruptly, we don't
     // look for a line number and break in a way that suppresses the real error

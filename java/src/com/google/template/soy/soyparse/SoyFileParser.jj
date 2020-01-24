@@ -2617,7 +2617,7 @@ private SkipNode SkipStmt() :
  */
 private LetNode LetStmt() :
 {
-  Token tagBegin, tagEnd, nameTok = null;
+  Token tagBegin, tagClose, nameTok = null;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
@@ -2628,8 +2628,8 @@ private LetNode LetStmt() :
   try {
     nameTok = <DOLLAR_IDENT>
   } catch (ParseException e) {
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
-    SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
     return new LetValueNode(-1, loc, "$error", loc, errorExpr(tagBegin));
   }
 
@@ -2638,18 +2638,18 @@ private LetNode LetStmt() :
     try {
       <COLON>
       valueExpr = Expr()
-      tagEnd = <CMD_SELF_CLOSE>
+      tagClose = <CMD_SELF_CLOSE>
     } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+      tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
       if (valueExpr == null) {
-        valueExpr = errorExpr(tagEnd);
+        valueExpr = errorExpr(tagClose);
       }
     }
 
     {
       return new LetValueNode(
           nodeIdGen.genId(),
-          createSrcLoc(tagBegin, tagEnd),
+          createSrcLoc(tagBegin, tagClose),
           nameTok.image,
           createSrcLoc(nameTok),
           valueExpr);
@@ -2658,23 +2658,23 @@ private LetNode LetStmt() :
     // Content block
     try {
       attr = Attribute()
-      tagEnd = <CMD_END>
+      <CMD_END>
     } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
+      reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
     templateBlock = TemplateBlock()
-    <CMD_CLOSE_LET>
+    tagClose = <CMD_CLOSE_LET>
 
     {
       if (attr == null) {
-        SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
+        SourceLocation loc = createSrcLoc(tagBegin, tagClose);
         return new LetValueNode(-1, loc, "$error", loc, errorExpr(tagBegin));
       }
       LetContentNode node =
           new LetContentNode(
               nodeIdGen.genId(),
-              createSrcLoc(tagBegin, tagEnd),
+              createSrcLoc(tagBegin, tagClose),
               nameTok.image,
               createSrcLoc(nameTok),
               attr,
