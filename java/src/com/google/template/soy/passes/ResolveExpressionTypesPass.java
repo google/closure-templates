@@ -553,7 +553,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
       case LIST:
         if (collectionType == ListType.EMPTY_LIST) {
-          errorReporter.report(node.getParent().getSourceLocation(), EMPTY_LIST_FOREACH);
+          errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_LIST_FOREACH);
           return ErrorType.getInstance();
         }
         return ((ListType) collectionType).getElementType();

@@ -670,12 +670,12 @@ public class SoyFileParser {
 
   /** Create a SourceLocation spanning between the given token and node. */
   private SourceLocation createSrcLoc(Token tok1, Node lastNode) {
-    return new SourceLocation(
-        filePath,
-        tok1.beginLine,
-        tok1.beginColumn,
-        lastNode.getSourceLocation().getEndLine(),
-        lastNode.getSourceLocation().getEndColumn());
+    return createSrcLoc(tok1).extend(lastNode.getSourceLocation());
+  }
+
+  /** Create a SourceLocation spanning between the given nodes. */
+  private SourceLocation createSrcLoc(Node firstNode, Node lastNode) {
+    return firstNode.getSourceLocation().extend(lastNode.getSourceLocation());
   }
 
   /** Create a SourceLocation spanning between a token and the last of a list of nodes. */
@@ -684,6 +684,14 @@ public class SoyFileParser {
       return createSrcLoc(tok1);
     }
     return createSrcLoc(tok1, nodes.get(nodes.size() - 1));
+  }
+
+  /** Create a SourceLocation spanning a list of nodes. */
+  private SourceLocation createSrcLoc(List<? extends Node> nodes) {
+    if (nodes.isEmpty()) {
+      return new SourceLocation(filePath);
+    }
+    return createSrcLoc(nodes.get(0), nodes.get(nodes.size() - 1));
   }
 
   /** Create an error ExprNode at the location of the given tokens. */
@@ -2952,70 +2960,70 @@ private SwitchNode SwitchStmt() :
  */
 private ForNode ForStmt() :
 {
-  Token tagBegin, tagEnd, ifemptyTag, nameTok;
+  Token tagBegin, tagClose, ifemptyTag, nameTok;
+  Identifier nameId = null;
   ExprNode expr = null;
   String name = null;
-  SourceLocation nameLocation = null;
   List<StandaloneNode> templateBlock;
+  ForIfemptyNode ifempty = null;
 }
 {
   tagBegin = <CMD_BEGIN_FOR>
   try {
     nameTok = <DOLLAR_IDENT>
     {
-        name = nameTok.image;
-        nameLocation = createSrcLoc(nameTok);
+        nameId = Identifier.create(nameTok.image, createSrcLoc(nameTok));
     }
     <IN>
     expr = Expr()
 
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException e) {
-    tagEnd =
-        reportTemplateBodyErrorAndSkipTo(
-            e,
-            "\nFor-loops should be formatted as: \"{for $foo in <listExpression>}\".",
-            CMD_END);
+    reportTemplateBodyErrorAndSkipTo(
+        e,
+        "\nFor-loops should be formatted as: \"{for $foo in <listExpression>}\".",
+        CMD_END);
 
-    if (name == null) {
-      name = "$error";
-      nameLocation = createSrcLoc(tagBegin);
+    if (nameId == null) {
+      nameId = Identifier.create("$error", createSrcLoc(tagBegin));
     }
     if (expr == null) {
       expr = errorExpr(tagBegin);
     }
   }
 
+  templateBlock = TemplateBlock()
   {
-    ForNode forNode =
-        new ForNode(
-            nodeIdGen.genId(),
-            createSrcLoc(tagBegin, tagEnd),
-            expr);
     ForNonemptyNode nonEmpty =
         new ForNonemptyNode(
             nodeIdGen.genId(),
-            name,
-            nameLocation);
-    forNode.addChild(nonEmpty);
+            nameId,
+            createSrcLoc(templateBlock));
+    nonEmpty.addChildren(templateBlock);
   }
-
-  templateBlock = TemplateBlock()
-  { nonEmpty.addChildren(templateBlock); }
 
   [
     ifemptyTag = <CMD_FULL_IFEMPTY>
     templateBlock = TemplateBlock()
     {
-      ForIfemptyNode ifempty =
-          new ForIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag));
+      ifempty = new ForIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag, templateBlock));
       ifempty.addChildren(templateBlock);
-      forNode.addChild(ifempty);
     }
   ]
 
-  <CMD_CLOSE_FOR>
-  { return forNode; }
+  tagClose = <CMD_CLOSE_FOR>
+  {
+    ForNode forNode =
+        new ForNode(
+            nodeIdGen.genId(),
+            createSrcLoc(tagBegin, tagClose),
+            expr);
+    forNode.addChild(nonEmpty);
+    if (ifempty != null) {
+      forNode.addChild(ifempty);
+    }
+    return forNode;
+  }
 }
 
 /**

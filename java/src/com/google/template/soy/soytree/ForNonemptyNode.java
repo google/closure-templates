@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
@@ -36,13 +37,13 @@ public final class ForNonemptyNode extends AbstractBlockNode
 
   /**
    * @param id The id for this node.
-   * @param location The node's source location.
-   * @param varName The variable name of the loop index variable.
+   * @param varIdentifier An identifier for the loop index variable.
+   * @param contentLocation The source location of the main content of the {for} tag.
    */
-  public ForNonemptyNode(int id, String varName, SourceLocation varNameLocation) {
-    // TODO(lukes): this is a weird location for this node.  Not sure what would be better
-    super(id, varNameLocation);
-    this.var = new LocalVar(varName, varNameLocation, this, /* type= */ null);
+  public ForNonemptyNode(int id, Identifier varIdentifier, SourceLocation contentLocation) {
+    super(id, contentLocation);
+    this.var =
+        new LocalVar(varIdentifier.identifier(), varIdentifier.location(), this, /* type= */ null);
   }
 
   /**
