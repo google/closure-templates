@@ -585,19 +585,20 @@ public final class GenJsCodeVisitorTest {
             + "{/if}\n";
 
     String expectedJsCode =
-        "if (opt_data.boo) {\n"
-            + "  var alpha__soy7 = opt_data.boo.foo;\n"
-            + "  var beta__soy10 = 'Boo!';\n"
-            + "  var gamma__soy20 = '';\n"
-            + "  var i13ListLen = Math.max(0, Math.ceil((alpha__soy7 - 0) / 1));\n"
-            + "  for (var i13Index = 0; i13Index < i13ListLen; i13Index++) {\n"
-            + "    var i13Data = 0 + i13Index * 1;\n"
-            + "    gamma__soy20 += i13Data + beta__soy10;\n"
+        ""
+            + "if (opt_data.boo) {\n"
+            + "  var alpha__soy5 = opt_data.boo.foo;\n"
+            + "  var beta__soy8 = 'Boo!';\n"
+            + "  var gamma__soy18 = '';\n"
+            + "  var i11ListLen = Math.max(0, Math.ceil((alpha__soy5 - 0) / 1));\n"
+            + "  for (var i11Index = 0; i11Index < i11ListLen; i11Index++) {\n"
+            + "    var i11Data = 0 + i11Index * 1;\n"
+            + "    gamma__soy18 += i11Data + beta__soy8;\n"
             + "  }\n"
-            + "  var delta__soy23 = 'Boop!';\n"
-            + "  var delta__wrapped23 ="
-            + " soydata.VERY_UNSAFE.$$ordainSanitizedHtmlForInternalBlocks(delta__soy23);\n"
-            + "  output += alpha__soy7 + beta__soy10 + gamma__soy20 + delta__wrapped23;\n"
+            + "  var delta__soy21 = 'Boop!';\n"
+            + "  var delta__wrapped21 = soydata.VERY_UNSAFE"
+            + ".$$ordainSanitizedHtmlForInternalBlocks(delta__soy21);\n"
+            + "  output += alpha__soy5 + beta__soy8 + gamma__soy18 + delta__wrapped21;\n"
             + "}\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
   }
@@ -667,10 +668,10 @@ public final class GenJsCodeVisitorTest {
     expectedJsCode =
         ""
             + "if (opt_data.boo.foo > 0) {\n"
-            + "  var i8ListLen = Math.max(0, Math.ceil((4 - 0) / 1));\n"
-            + "  for (var i8Index = 0; i8Index < i8ListLen; i8Index++) {\n"
-            + "    var i8Data = 0 + i8Index * 1;\n"
-            + "    output += i8Data + 1 + '<br>';\n"
+            + "  var i6ListLen = Math.max(0, Math.ceil((4 - 0) / 1));\n"
+            + "  for (var i6Index = 0; i6Index < i6ListLen; i6Index++) {\n"
+            + "    var i6Data = 0 + i6Index * 1;\n"
+            + "    output += i6Data + 1 + '<br>';\n"
             + "  }\n"
             + "} else if (!soy.$$strContains('' + gooData8, 'goo')) {\n"
             + "  output += 'Bleh';\n"

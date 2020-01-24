@@ -2762,8 +2762,7 @@ private LetNode LetStmt() :
  */
 private IfNode IfStmt() :
 {
-  Token tagBegin, tagEnd;
-  Token elseTag;
+  Token tagBegin, tagClose, condTagBegin, elseTag;
   ExprNode ifExpr;
   List<StandaloneNode> templateBlock;
 }
@@ -2771,56 +2770,64 @@ private IfNode IfStmt() :
   tagBegin = <CMD_BEGIN_IF>
   try {
     ifExpr = Expr()
-    tagEnd = <CMD_END>
+    <CMD_END>
   } catch (ParseException e) {
     ifExpr = errorExpr(tagBegin);
-    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
+  templateBlock = TemplateBlock()
 
   {
-    SourceLocation location = createSrcLoc(tagBegin, tagEnd);
-    IfNode ifNode = new IfNode(nodeIdGen.genId(), location);
-    IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), location, "if", ifExpr);
-    ifNode.addChild(ifCondNode);
+    List<BlockNode> condNodes = new ArrayList<BlockNode>();
+    IfCondNode ifCondNode = new IfCondNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, templateBlock),
+        "if",
+        ifExpr);
+    condNodes.add(ifCondNode);
+    ifCondNode.addChildren(templateBlock);
   }
 
-  templateBlock = TemplateBlock()
-  { ifCondNode.addChildren(templateBlock); }
-
   (
-    tagBegin = <CMD_BEGIN_ELSEIF>
+    condTagBegin = <CMD_BEGIN_ELSEIF>
     try {
       ifExpr = Expr()
-      tagEnd = <CMD_END>
+      <CMD_END>
     } catch (ParseException e) {
-      ifExpr = errorExpr(tagBegin);
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+      ifExpr = errorExpr(condTagBegin);
+      reportTemplateBodyErrorAndSkipTo(e, CMD_END);
     }
+    templateBlock = TemplateBlock()
 
     {
-      location = createSrcLoc(tagBegin, tagEnd);
-      ifCondNode = new IfCondNode(nodeIdGen.genId(), location, "elseif", ifExpr);
-      ifNode.addChild(ifCondNode);
+      ifCondNode = new IfCondNode(
+          nodeIdGen.genId(),
+          createSrcLoc(condTagBegin, templateBlock),
+          "elseif",
+          ifExpr);
+      condNodes.add(ifCondNode);
+      ifCondNode.addChildren(templateBlock);
     }
-
-    templateBlock = TemplateBlock()
-    { ifCondNode.addChildren(templateBlock); }
   )*
 
   [
     elseTag = <CMD_FULL_ELSE>
-    {
-      IfElseNode ifElseNode = new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag));
-      ifNode.addChild(ifElseNode);
-    }
-
     templateBlock = TemplateBlock()
-    { ifElseNode.addChildren(templateBlock); }
+    {
+      IfElseNode ifElseNode =
+          new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag, templateBlock));
+      condNodes.add(ifElseNode);
+      ifElseNode.addChildren(templateBlock);
+    }
   ]
 
-  <CMD_CLOSE_IF>
+  tagClose = <CMD_CLOSE_IF>
 
-  { return ifNode; }
+  {
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose));
+    ifNode.addChildren(condNodes);
+    return ifNode;
+  }
 }
 
 
