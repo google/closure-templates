@@ -1220,10 +1220,10 @@ public class BytecodeCompilerTest {
   }
 
   private static final class FakeRenamingMap implements SoyCssRenamingMap {
-    private final Map<String, String> renamingMap;
+    private final ImmutableMap<String, String> renamingMap;
 
     FakeRenamingMap(Map<String, String> renamingMap) {
-      this.renamingMap = renamingMap;
+      this.renamingMap = ImmutableMap.copyOf(renamingMap);
     }
 
     @Nullable
