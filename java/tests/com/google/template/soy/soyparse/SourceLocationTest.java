@@ -280,13 +280,13 @@ public final class SourceLocationTest {
 
   @Test
   public void testI18nNodes() throws Exception {
-    // TODO(b/147886598): Improve SourceLocation for MsgFallbackGroupNode and MsgNode.
+    // TODO(b/147886598): Improve SourceLocation for MsgNode.
     assertSourceRanges(
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
             "    TemplateBasicNode          {template .moonCount}{@pa[...] 1 moon{/msg}{/template}",
-            "      MsgFallbackGroupNode     {msg desc='Generic message about the amount of moons'}",
+            "      MsgFallbackGroupNode     {msg desc='Generic messag[...]t Earth has 1 moon{/msg}",
             "        MsgNode                {msg desc='Generic message about the amount of moons'}",
             "          MsgPluralNode        {plural $count}{case 0}Pl[...] {$count} moons{/plural}",
             "            MsgPluralCaseNode  {case 0}Planet {$planet} has no moons",
@@ -310,7 +310,7 @@ public final class SourceLocationTest {
             "        MsgNode                {fallbackmsg desc='Specific message about Earth'}",
             "          RawTextNode          Planet Earth has 1 moon",
             "    TemplateBasicNode          {template .moonName}{@par[...]select}{/msg}{/template}",
-            "      MsgFallbackGroupNode     {msg desc='The name of a moon of the solar system'}",
+            "      MsgFallbackGroupNode     {msg desc='The name of a [...]t}{$moon}{/select}{/msg}",
             "        MsgNode                {msg desc='The name of a moon of the solar system'}",
             "          MsgSelectNode        {select $moon}{case 'Luna[...]default}{$moon}{/select}",
             "            MsgSelectCaseNode  {case 'Luna'}Earth's moon",

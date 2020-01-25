@@ -2118,9 +2118,10 @@ private StatementNode ControlFlowStmt() :
  */
 private MsgFallbackGroupNode MsgStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin, tagEnd, tagClose, fallbackTagBegin;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<StandaloneNode> templateBlock;
+  MsgNode fallback = null;
 }
 {
   tagBegin = <CMD_BEGIN_MSG>
@@ -2134,17 +2135,14 @@ private MsgFallbackGroupNode MsgStmt() :
 
   {
     SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
-    MsgFallbackGroupNode msgGroup = new MsgFallbackGroupNode(nodeIdGen.genId(), loc);
-
     MsgNode msg = new MsgNode(nodeIdGen.genId(), loc, "msg", attributes, errorReporter);
-    msgGroup.addChild(msg);
   }
 
   templateBlock = TemplateBlockForMsg()
   { msg.addChildren(templateBlock); }
 
   [
-    tagBegin = <CMD_BEGIN_FALLBACK_MSG>
+    fallbackTagBegin = <CMD_BEGIN_FALLBACK_MSG>
 
     try {
       attributes = Attributes()
@@ -2154,19 +2152,27 @@ private MsgFallbackGroupNode MsgStmt() :
     }
 
     {
-      loc = createSrcLoc(tagBegin, tagEnd);
-      MsgNode fallback =
-          new MsgNode(nodeIdGen.genId(), loc, "fallbackmsg", attributes, errorReporter);
-      msgGroup.addChild(fallback);
+      fallback =
+          new MsgNode(
+              nodeIdGen.genId(),
+              createSrcLoc(fallbackTagBegin, tagEnd),
+              "fallbackmsg",
+              attributes,
+              errorReporter);
     }
-
     templateBlock = TemplateBlockForMsg()
     { fallback.addChildren(templateBlock); }
   ]
 
-  <CMD_CLOSE_MSG>
+  tagClose = <CMD_CLOSE_MSG>
 
   {
+    MsgFallbackGroupNode msgGroup =
+        new MsgFallbackGroupNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose));
+    msgGroup.addChild(msg);
+    if (fallback != null) {
+      msgGroup.addChild(fallback);
+    }
     return msgGroup;
   }
 }
