@@ -164,6 +164,10 @@ appropriate fix would be to rewrite it as `isNonnull($foo.bar?.baz)`.
 
 ### Required parameter semantics
 
+NOTE: If you use the SoyTemplate API for preparing parameters, this distinction
+is irrelevant since it will consistently enforce required parameter syntax
+across both backends.
+
 SoySauce interprets 'required' template parameters slightly differently than
 Tofu. Imagine this template:
 
