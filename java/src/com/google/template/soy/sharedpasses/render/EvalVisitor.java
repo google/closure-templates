@@ -128,6 +128,7 @@ import javax.annotation.Nullable;
  *
  */
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
+
   /** Defines how we deal with and produce UndefinedData instanes. */
   public enum UndefinedDataHandlingMode {
     /**

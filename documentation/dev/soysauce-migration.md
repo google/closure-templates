@@ -151,7 +151,7 @@ SoySauce has somewhat stricter runtime type checking. For example,
     it with an expression of unknown type, Tofu has a bug such that it will not
     check that the parameter is a `uri` at runtime, but `SoySauce` will.
 
-### Stricter `null` handling
+### Stricter `null` handling {#null-handling}
 
 SoySauce is stricter about dereferencing null objects. For example, given the
 expression `isNonnull($foo.bar.baz)` if `bar` is `null` then accessing `.baz` on
@@ -160,6 +160,7 @@ in Tofu this doesn’t happen (though there is a TODO), instead it only causes a
 error if you perform certain operations with the result of the expression
 (calling `isNonnull` and simple comparisons are the only thing you can do). An
 appropriate fix would be to rewrite it as `isNonnull($foo.bar?.baz)`.
+
 
 ### Required parameter semantics
 
