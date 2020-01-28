@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
@@ -64,6 +65,9 @@ public final class MethodNode extends DataAccessNode {
   private MethodNode(MethodNode orig, CopyState copyState) {
     super(orig, copyState);
     this.methodName = orig.methodName;
+    if (orig.methods != null) {
+      this.methods = Lists.newArrayList(orig.methods);
+    }
   }
 
   /** Returns the name of the method */
