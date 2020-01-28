@@ -1076,13 +1076,10 @@ TOKEN_MGR_DECLS: {
   < ~[] >
 }
 
-// When we reach the '{/literal}' tag, return the collected text content (minus the end tag).
+// When we reach the '{/literal}' tag, return the collected text content. The token includes the end
+// tag, which is stripped when creating a RawTextNode.
 <IN_LITERAL_BLOCK> TOKEN: {
-  < LITERAL_RAW_TEXT_CONTENT: "{/literal}" >
-  {
-    // Note: 'image' is cumulative over MOREs while 'lengthOfMatch' is just the end tag length.
-    matchedToken.image = image.substring(0, image.length() - lengthOfMatch);
-  } : TEMPLATE_DEFAULT
+  < LITERAL_RAW_TEXT_CONTENT: "{/literal}" > : TEMPLATE_DEFAULT
 }
 
 
@@ -1750,7 +1747,7 @@ private void SkipWhitespace() : { }
  */
 private RawTextNode RawText() :
 {
-  Token token;
+  Token tagBegin, token;
   RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
 }
 {
@@ -1767,10 +1764,15 @@ private RawTextNode RawText() :
       )
       { builder.addBasic(token); }
     |
-      <CMD_OPEN_LITERAL>
+      tagBegin = <CMD_OPEN_LITERAL>
       token = <LITERAL_RAW_TEXT_CONTENT>
       {
-        return builder.buildLiteral(token);
+        // Preserve the original SourceLocation.
+        SourceLocation loc = createSrcLoc(tagBegin, token);
+        // Remove the closing tag from the token.
+        token.image = token.image.substring(0, token.image.length() - "{/literal}".length());
+        token.endColumn -= "{/literal}".length();
+        return builder.buildLiteral(token, loc);
       }
     |
       ( token = <CMD_FULL_SP>

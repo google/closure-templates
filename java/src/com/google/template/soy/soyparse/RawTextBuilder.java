@@ -19,6 +19,7 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets;
@@ -117,10 +118,9 @@ final class RawTextBuilder {
   }
 
   /** Add the content for a '{literal}...{/literal}' section. */
-  RawTextNode buildLiteral(Token literalContent) {
+  RawTextNode buildLiteral(Token literalContent, SourceLocation location) {
     checkArgument(literalContent.kind == SoyFileParserConstants.LITERAL_RAW_TEXT_CONTENT);
-    return RawTextNode.newLiteral(
-        nodeIdGen.genId(), literalContent.image, Tokens.createSrcLoc(fileName, literalContent));
+    return RawTextNode.newLiteral(nodeIdGen.genId(), literalContent.image, location);
   }
 
   /** Add the content for a 'textual' command token, like '{sp}'. */

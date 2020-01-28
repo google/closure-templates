@@ -279,6 +279,25 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testLiteral() throws Exception {
+    assertSourceRanges(
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .void kind='css[...]; }{/literal}{/template}",
+            "      RawTextNode              {literal}body { display: none; }{/literal}",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .void kind='css'}",
+            "  {literal}",
+            "    body { display: none; }",
+            "  {/literal}",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testI18nNodes() throws Exception {
     // TODO(b/147886598): Improve SourceLocation for MsgNode.
     assertSourceRanges(
