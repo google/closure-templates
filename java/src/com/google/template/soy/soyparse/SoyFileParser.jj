@@ -2122,7 +2122,7 @@ private MsgFallbackGroupNode MsgStmt() :
 {
   Token tagBegin, tagEnd, tagClose, fallbackTagBegin;
   List<CommandTagAttribute> attributes = ImmutableList.of();
-  List<StandaloneNode> templateBlock;
+  List<StandaloneNode> templateBlock, fallbackTemplateBlock;
   MsgNode fallback = null;
 }
 {
@@ -2135,13 +2135,18 @@ private MsgFallbackGroupNode MsgStmt() :
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
-  {
-    SourceLocation loc = createSrcLoc(tagBegin, tagEnd);
-    MsgNode msg = new MsgNode(nodeIdGen.genId(), loc, "msg", attributes, errorReporter);
-  }
-
   templateBlock = TemplateBlockForMsg()
-  { msg.addChildren(templateBlock); }
+
+  {
+    SourceLocation msgLocation = createSrcLoc(tagBegin, tagEnd);
+    SourceLocation blockLocation = createSrcLoc(templateBlock);
+    // Makes sure that the error message for empty message does have a known location.
+    if (blockLocation.isKnown()) {
+      msgLocation = msgLocation.extend(blockLocation);
+    }
+    MsgNode msg = new MsgNode(nodeIdGen.genId(), msgLocation, "msg", attributes, errorReporter);
+    msg.addChildren(templateBlock);
+  }
 
   [
     fallbackTagBegin = <CMD_BEGIN_FALLBACK_MSG>
@@ -2153,17 +2158,18 @@ private MsgFallbackGroupNode MsgStmt() :
       tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
     }
 
+    fallbackTemplateBlock = TemplateBlockForMsg()
     {
+      msgLocation = createSrcLoc(fallbackTagBegin, tagEnd);
+      blockLocation = createSrcLoc(fallbackTemplateBlock);
+      // Makes sure that the error message for empty message does have a known location.
+      if (blockLocation.isKnown()) {
+        msgLocation = msgLocation.extend(blockLocation);
+      }
       fallback =
-          new MsgNode(
-              nodeIdGen.genId(),
-              createSrcLoc(fallbackTagBegin, tagEnd),
-              "fallbackmsg",
-              attributes,
-              errorReporter);
+          new MsgNode(nodeIdGen.genId(), msgLocation, "fallbackmsg", attributes, errorReporter);
+      fallback.addChildren(fallbackTemplateBlock);
     }
-    templateBlock = TemplateBlockForMsg()
-    { fallback.addChildren(templateBlock); }
   ]
 
   tagClose = <CMD_CLOSE_MSG>
