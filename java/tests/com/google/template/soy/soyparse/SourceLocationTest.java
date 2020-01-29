@@ -194,7 +194,7 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          {template .foo}Hello{for [...]r void{/for}!{/template}",
             "      RawTextNode              Hello",
             "      ForNode                  {for $planet in ['mercury[...] interstellar void{/for}",
-            "        ForNonemptyNode        ,{print $planet}",
+            "        ForNonemptyNode        {for $planet in ['mercury[...]venus']},{print $planet}",
             "          RawTextNode          ,",
             "          PrintNode            {print $planet}",
             "        ForIfemptyNode         {ifempty}lifeless interstellar void",
