@@ -17403,13 +17403,6 @@ goog.labs.userAgent.platform.isKaiOS = function() {
 };
 
 /**
- * @return {boolean} Whether the platform is Go2Phone.
- */
-goog.labs.userAgent.platform.isGo2Phone = function() {
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('GAFP');
-};
-
-/**
  * The version of the platform. We only determine the version for Windows,
  * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
  * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
@@ -17893,12 +17886,6 @@ goog.userAgent.ASSUME_IPOD = goog.define('goog.userAgent.ASSUME_IPOD', false);
  */
 goog.userAgent.ASSUME_KAIOS = goog.define('goog.userAgent.ASSUME_KAIOS', false);
 
-/**
- * @define {boolean} Whether the user agent is running on Go2Phone.
- */
-goog.userAgent.ASSUME_GO2PHONE =
-    goog.define('goog.userAgent.ASSUME_GO2PHONE', false);
-
 
 /**
  * @type {boolean}
@@ -18028,14 +18015,6 @@ goog.userAgent.IOS = goog.userAgent.PLATFORM_KNOWN_ ?
 goog.userAgent.KAIOS = goog.userAgent.PLATFORM_KNOWN_ ?
     goog.userAgent.ASSUME_KAIOS :
     goog.labs.userAgent.platform.isKaiOS();
-
-/**
- * Whether the user agent is running on Go2Phone.
- * @type {boolean}
- */
-goog.userAgent.GO2PHONE = goog.userAgent.PLATFORM_KNOWN_ ?
-    goog.userAgent.ASSUME_GO2PHONE :
-    goog.labs.userAgent.platform.isGo2Phone();
 
 
 /**
