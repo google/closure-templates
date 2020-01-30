@@ -280,14 +280,6 @@ public final class SoyFileSet {
     /**
      * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
      * desired file path for messages.
-     */
-    public Builder add(SoyFileSupplier soyFileSupplier) {
-      return addFile(soyFileSupplier);
-    }
-
-    /**
-     * Adds an input Soy file, given a {@code CharSource} for the file content, as well as the
-     * desired file path for messages.
      *
      * @param contentSource Source for the Soy file content.
      * @param filePath The path to the Soy file (used for messages only).
