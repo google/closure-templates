@@ -2978,7 +2978,7 @@ private ForNode ForStmt() :
  */
 private CallNode CallStmt() :
 {
-  Token tagBegin, tagEnd;
+  Token tagBegin, tagClose;
   Identifier calleeName = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
@@ -2992,14 +2992,14 @@ private CallNode CallStmt() :
       calleeName = TemplateName()
       attributes = Attributes()
       (
-        tagEnd = <CMD_SELF_CLOSE>
+        tagClose = <CMD_SELF_CLOSE>
       |
-        tagEnd = <CMD_END>
+        <CMD_END>
         params = CallParams()
-        <CMD_CLOSE_CALL>
+        tagClose = <CMD_CLOSE_CALL>
       )
     } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
+      tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
       if (calleeName == null) {
         calleeName = Identifier.create(".error", createSrcLoc(tagBegin));
       }
@@ -3010,7 +3010,7 @@ private CallNode CallStmt() :
           SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter);
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
-          createSrcLoc(tagBegin, tagEnd),
+          createSrcLoc(tagBegin, tagClose),
           calleeName,
           fullName,
           attributes,
@@ -3026,14 +3026,14 @@ private CallNode CallStmt() :
       calleeName = TemplateName()
       attributes = Attributes()
       (
-        tagEnd = <CMD_SELF_CLOSE>
+        tagClose = <CMD_SELF_CLOSE>
       |
-        tagEnd = <CMD_END>
+        <CMD_END>
         params = CallParams()
-        <CMD_CLOSE_DELCALL>
+        tagClose = <CMD_CLOSE_DELCALL>
       )
     } catch (ParseException e) {
-      tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_DELCALL);
+      tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_DELCALL);
       if (calleeName == null) {
         calleeName = Identifier.create("error", createSrcLoc(tagBegin));
       }
@@ -3046,7 +3046,7 @@ private CallNode CallStmt() :
 
       CallDelegateNode node = new CallDelegateNode(
           nodeIdGen.genId(),
-          createSrcLoc(tagBegin, tagEnd),
+          createSrcLoc(tagBegin, tagClose),
           calleeName,
           attributes,
           errorReporter);
