@@ -82,6 +82,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** We don't use different content types. It may be a historical artifact in the TC. */
   private static final String DEFAULT_CONTENT_TYPE = "text/html";
 
+  /** Data about a message placeholder. */
   @AutoValue
   public abstract static class PlaceholderInfo {
     static PlaceholderInfo create(String name, @Nullable String example) {
@@ -171,12 +172,12 @@ public final class MsgNode extends AbstractBlockCommandNode
         case "meaning":
           meaning = attr.getValue();
           // join multi-line meaning strings
+          // While weird, it would be difficult to stop doing this.  This is for compatibility with
+          // the old parser which would always strip newlines from command attributes.
           meaning = LINE_BOUNDARY_PATTERN.matcher(meaning).replaceAll(" ");
           break;
         case "desc":
           desc = attr.getValue();
-          // join multi-line descriptions
-          desc = LINE_BOUNDARY_PATTERN.matcher(desc).replaceAll(" ");
           break;
         case "hidden":
           hidden = attr.valueAsEnabled(errorReporter);
