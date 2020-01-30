@@ -77,7 +77,6 @@ import javax.annotation.Nullable;
  */
 public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
 
-  private static final Pattern LINE_BOUNDARY_PATTERN = Pattern.compile("\\s*?(\\n|\\r)\\s*");
   /** Regex pattern for an underscore-number suffix. */
   private static final Pattern UNDERSCORE_NUMBER_SUFFIX = Pattern.compile("_[0-9]+$");
 
@@ -305,11 +304,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     if (msgNode.getMeaning() != null) {
       jsDocBuilder.addAnnotation("meaning", msgNode.getMeaning());
     }
-    // jscomp implicitly removes newlines from multiline descriptions so we can do that here without
-    // changing behavior.  It also ensures we don't actually start a line with an '@' character
-    // since afaict there is no escaping syntax in jsdoc.
-    jsDocBuilder.addAnnotation(
-        "desc", LINE_BOUNDARY_PATTERN.matcher(msgNode.getDesc()).replaceAll(" "));
+    jsDocBuilder.addAnnotation("desc", msgNode.getDesc());
     if (msgNode.isHidden()) {
       jsDocBuilder.addAnnotation("hidden");
     }
