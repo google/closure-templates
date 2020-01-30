@@ -31,13 +31,13 @@ import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
  * <p>To create a visitor:
  *
  * <ol>
- *   <li> Subclass this class.
- *   <li> Implement {@code visit*Node()} methods for some specific node types.
- *   <li> Implement fallback methods for node types not specifically handled. The most general
+ *   <li>Subclass this class.
+ *   <li>Implement {@code visit*Node()} methods for some specific node types.
+ *   <li>Implement fallback methods for node types not specifically handled. The most general
  *       fallback method is {@link #visitSoyNode visitSoyNode()}, which is usually needed. Other
  *       fallback methods include {@code visitLoopNode()} and {@code visitCallParamNode()}.
- *   <li> Maybe implement a constructor, taking appropriate parameters for your visitor call.
- *   <li> Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
+ *   <li>Maybe implement a constructor, taking appropriate parameters for your visitor call.
+ *   <li>Maybe implement {@link #exec exec()} if this visitor needs to return a non-null final
  *       result and/or if this visitor has state that needs to be setup/reset before each unrelated
  *       use of {@code visit()}.
  * </ol>
@@ -148,9 +148,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitLogNode((LogNode) node);
       case DEBUGGER_NODE:
         return visitDebuggerNode((DebuggerNode) node);
-
-      case LINE_COMMENT_NODE:
-        return visitLineCommentNode((LineCommentNode) node);
 
       default:
         return visitSoyNode(node);
@@ -345,10 +342,6 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitDebuggerNode(DebuggerNode node) {
-    return visitSoyNode(node);
-  }
-
-  protected R visitLineCommentNode(LineCommentNode node) {
     return visitSoyNode(node);
   }
 

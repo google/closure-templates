@@ -43,7 +43,6 @@ public interface SoyNode extends Node {
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
   enum Kind {
-
     SOY_FILE_SET_NODE,
     SOY_FILE_NODE,
 
@@ -99,9 +98,7 @@ public interface SoyNode extends Node {
     VE_LOG_NODE,
 
     LOG_NODE,
-    DEBUGGER_NODE,
-
-    LINE_COMMENT_NODE,
+    DEBUGGER_NODE
   }
 
   /** Returns this node's kind (corresponding to this node's specific type). */
@@ -155,7 +152,6 @@ public interface SoyNode extends Node {
 
   // -----------------------------------------------------------------------------------------------
 
-
   /**
    * A node that can legally appear as the direct child of some block node (doesn't necessarily have
    * to be legal as the direct child of a template). To put it another way, a node that can legally
@@ -169,7 +165,6 @@ public interface SoyNode extends Node {
     @Override
     StandaloneNode copy(CopyState copyState);
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -188,7 +183,6 @@ public interface SoyNode extends Node {
     String getCommandText();
   }
 
-
   // -----------------------------------------------------------------------------------------------
 
   /** A node that represents a Soy command that encloses a template block. */
@@ -204,7 +198,6 @@ public interface SoyNode extends Node {
      */
     SanitizedContentKind getContentKind();
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -239,21 +232,17 @@ public interface SoyNode extends Node {
     VarDefn getVar();
   }
 
-
   // -----------------------------------------------------------------------------------------------
 
   /** A node that adds a new local variable whose scope comprises the children of this code. */
   interface LocalVarBlockNode extends LocalVarNode, BlockNode {}
 
-
   // -----------------------------------------------------------------------------------------------
-
 
   /**
    * A node that adds a new local variable whose scope comprises the younger siblings of this node.
    */
   interface LocalVarInlineNode extends LocalVarNode, StandaloneNode {}
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -263,7 +252,6 @@ public interface SoyNode extends Node {
     /** Returns the list of expressions in this node. */
     ImmutableList<ExprRootNode> getExprList();
   }
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -291,21 +279,19 @@ public interface SoyNode extends Node {
      * Returns whether this substitution unit should use the same var name as another substitution
      * unit. (For placeholders, this means the other placeholder is exactly the same as this one,
      * i.e. it appears twice in the same message.)
+     *
      * @param other The other substitution unit to check against.
      */
     boolean shouldUseSameVarNameAs(MsgSubstUnitNode other);
   }
 
-
   // -----------------------------------------------------------------------------------------------
-
 
   /**
    * A block node that can hold message content. Every direct child of a MsgBlockNode must be either
    * a RawTextNode or a MsgSubstUnitNode.
    */
   interface MsgBlockNode extends BlockNode {}
-
 
   // -----------------------------------------------------------------------------------------------
 
@@ -345,5 +331,4 @@ public interface SoyNode extends Node {
      */
     Object genSamenessKey();
   }
-
 }
