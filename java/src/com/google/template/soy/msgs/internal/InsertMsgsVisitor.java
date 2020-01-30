@@ -16,6 +16,8 @@
 
 package com.google.template.soy.msgs.internal;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -158,9 +160,13 @@ public final class InsertMsgsVisitor {
           // consecutive siblings. This is done by visiting the MsgHtmlTagNode. Otherwise, we
           // simply add the content node to the currReplacementNodes list being built.
           if (contentNode instanceof MsgHtmlTagNode) {
-            currReplacementNodes.addAll(((MsgHtmlTagNode) contentNode).getChildren());
+            currReplacementNodes.addAll(
+                ((MsgHtmlTagNode) contentNode)
+                    .getChildren().stream()
+                        .map(InsertMsgsVisitor::maybeRewriteSourceLocation)
+                        .collect(toList()));
           } else {
-            currReplacementNodes.add(contentNode);
+            currReplacementNodes.add(maybeRewriteSourceLocation(contentNode));
           }
         }
 
@@ -168,6 +174,17 @@ public final class InsertMsgsVisitor {
         throw new AssertionError();
       }
     }
+  }
+
+  // because translations reoder placeholders and message parts, stip the source locations since
+  // they are no longer useful or accurate.  This also prevents the CombineConsecutiveRawTextNodes
+  // pass from blowing up.
+  private static StandaloneNode maybeRewriteSourceLocation(StandaloneNode node) {
+    if (node instanceof RawTextNode) {
+      RawTextNode textNode = (RawTextNode) node;
+      return new RawTextNode(textNode.getId(), textNode.getRawText(), SourceLocation.UNKNOWN);
+    }
+    return node;
   }
 
   /**
