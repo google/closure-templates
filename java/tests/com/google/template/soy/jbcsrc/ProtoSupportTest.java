@@ -279,8 +279,6 @@ public final class ProtoSupportTest {
         BytecodeCompiler.compile(
                 parseResult.registry(),
                 parseResult.fileSet(),
-
-                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 types)

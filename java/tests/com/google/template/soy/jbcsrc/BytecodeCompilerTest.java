@@ -156,8 +156,6 @@ public class BytecodeCompilerTest {
         BytecodeCompiler.compile(
                 parseResult.registry(),
                 parseResult.fileSet(),
-
-                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
@@ -227,8 +225,6 @@ public class BytecodeCompilerTest {
         BytecodeCompiler.compile(
                 parseResult.registry(),
                 parseResult.fileSet(),
-
-                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
@@ -1037,8 +1033,6 @@ public class BytecodeCompilerTest {
         BytecodeCompiler.compile(
                 templateRegistry,
                 soyTree,
-
-                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())
@@ -1240,7 +1234,6 @@ public class BytecodeCompilerTest {
         BytecodeCompiler.compile(
                 parseResult.registry(),
                 parseResult.fileSet(),
-                /*developmentMode=*/ false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 parser.typeRegistry())

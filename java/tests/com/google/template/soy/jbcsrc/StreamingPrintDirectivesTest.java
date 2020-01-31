@@ -336,7 +336,6 @@ public final class StreamingPrintDirectivesTest {
     return BytecodeCompiler.compile(
             parseResult.registry(),
             parseResult.fileSet(),
-            /*developmentMode=*/ false,
             ErrorReporter.exploding(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())

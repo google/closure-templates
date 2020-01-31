@@ -309,7 +309,6 @@ public final class VeLoggingTest {
         BytecodeCompiler.compile(
                 parseResult.registry(),
                 parseResult.fileSet(),
-                false,
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
                 typeRegistry)

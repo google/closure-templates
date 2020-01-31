@@ -277,7 +277,6 @@ public final class TransitiveIjParamsTest {
           BytecodeCompiler.compile(
                   result.registry(),
                   result.fileSet(),
-                  /*developmentMode=*/ false,
                   ErrorReporter.exploding(),
                   parser.soyFileSuppliers(),
                   parser.typeRegistry())

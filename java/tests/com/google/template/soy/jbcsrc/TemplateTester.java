@@ -291,7 +291,6 @@ public final class TemplateTester {
           BytecodeCompiler.compile(
               parseResult.registry(),
               parseResult.fileSet(),
-              /* developmentMode= */ false,
               errors,
               parser.soyFileSuppliers(),
               typeRegistry);
@@ -486,7 +485,6 @@ public final class TemplateTester {
     return BytecodeCompiler.compile(
             parseResult.registry(),
             parseResult.fileSet(),
-            /*developmentMode=*/ false,
             ErrorReporter.exploding(),
             parser.soyFileSuppliers(),
             parser.typeRegistry())

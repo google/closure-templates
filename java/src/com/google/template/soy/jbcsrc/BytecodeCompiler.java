@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteSink;
@@ -30,7 +29,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.jbcsrc.internal.ClassData;
-import com.google.template.soy.jbcsrc.internal.MemoryClassLoader;
 import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
@@ -41,18 +39,12 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
-
-  private static final Logger logger = Logger.getLogger(BytecodeCompiler.class.getName());
 
   private static final SoyErrorKind UNEXPECTED_COMPILER_FAILURE =
       SoyErrorKind.of(
@@ -69,8 +61,6 @@ public final class BytecodeCompiler {
    * Compiles all the templates in the given registry.
    *
    * @param registry All the templates to compile
-   * @param developmentMode Whether or not we are in development mode. In development mode we
-   *     compile classes lazily
    * @param reporter The error reporter
    * @return CompiledTemplates or {@code absent()} if compilation fails, in which case errors will
    *     have been reported to the error reporter.
@@ -78,82 +68,22 @@ public final class BytecodeCompiler {
   public static Optional<CompiledTemplates> compile(
       final TemplateRegistry registry,
       final SoyFileSetNode fileSet,
-      boolean developmentMode,
       ErrorReporter reporter,
       ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
-    final Stopwatch stopwatch = Stopwatch.createStarted();
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
     CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
-    if (developmentMode) {
-      CompiledTemplates templates =
-          new CompiledTemplates(
-              compilerRegistry.getDelegateTemplateNames(),
-              new CompilingClassLoader(
-                  compilerRegistry, fileSet, filePathsToSuppliers, typeRegistry));
-      if (reporter.errorsSince(checkpoint)) {
-        return Optional.empty();
-      }
-      // TODO(lukes): consider spawning a thread to load all the generated classes in the background
-      return Optional.of(templates);
-    }
-    // TODO(lukes): once most internal users have moved to precompilation eliminate this and just
-    // use the 'developmentMode' path above.  This hybrid only makes sense for production services
-    // that are doing runtime compilation.  Hopefully, this will become an anomaly.
-    List<ClassData> classes =
-        compileTemplates(
-            compilerRegistry,
-            fileSet,
-            reporter,
-            typeRegistry,
-            new CompilerListener<List<ClassData>>() {
-              final List<ClassData> compiledClasses = new ArrayList<>();
-              int numBytes = 0;
-              int numFields = 0;
-              int numDetachStates = 0;
-
-              @Override
-              public void onCompile(ClassData clazz) {
-                numBytes += clazz.data().length;
-                numFields += clazz.numberOfFields();
-                numDetachStates += clazz.numberOfDetachStates();
-                compiledClasses.add(clazz);
-              }
-
-              @Override
-              public List<ClassData> getResult() {
-                logger.log(
-                    Level.FINE,
-                    "\n"
-                        + "Compilation took: {0}\n"
-                        + "       templates: {1}\n"
-                        + "         classes: {2}\n"
-                        + "           bytes: {3}\n"
-                        + "          fields: {4}\n"
-                        + "    detachStates: {5}",
-                    new Object[] {
-                      stopwatch.toString(),
-                      registry.getAllTemplates().size(),
-                      compiledClasses.size(),
-                      numBytes,
-                      numFields,
-                      numDetachStates
-                    });
-                return compiledClasses;
-              }
-            });
+    CompiledTemplates templates =
+        new CompiledTemplates(
+            compilerRegistry.getDelegateTemplateNames(),
+            new CompilingClassLoader(
+                compilerRegistry, fileSet, filePathsToSuppliers, typeRegistry));
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
-    CompiledTemplates templates =
-        new CompiledTemplates(
-            compilerRegistry.getDelegateTemplateNames(), new MemoryClassLoader(classes));
-    stopwatch.reset().start();
-    templates.loadAll(compilerRegistry.getTemplateNames());
-    logger.log(Level.FINE, "Loaded all classes in {0}", stopwatch);
     return Optional.of(templates);
   }
 

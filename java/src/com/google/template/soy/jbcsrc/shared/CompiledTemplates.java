@@ -94,13 +94,6 @@ public final class CompiledTemplates {
     return factory;
   }
 
-  /** Eagerly load all the given templates. */
-  public void loadAll(Iterable<String> templateNames) {
-    for (String templateName : templateNames) {
-      getTemplateData(templateName);
-    }
-  }
-
   /**
    * Returns the transitive closure of all the injected params that might be used by this template.
    */

@@ -935,8 +935,6 @@ public final class SoyFileSet {
         BytecodeCompiler.compile(
             primitives.registry,
             primitives.soyTree,
-            // if there is an AST cache, assume we are in 'dev mode' and trigger lazy compilation.
-            cache != null,
             errorReporter,
             soyFileSuppliers,
             typeRegistry);
