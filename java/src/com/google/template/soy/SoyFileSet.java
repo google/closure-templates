@@ -906,6 +906,7 @@ public final class SoyFileSet {
   public SoySauce compileTemplates(Map<String, Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
+          disallowExternalCalls();
           ServerCompilationPrimitives primitives = compileForServerRendering();
           throwIfErrorsPresent();
           return doCompileSoySauce(primitives, pluginInstances);
