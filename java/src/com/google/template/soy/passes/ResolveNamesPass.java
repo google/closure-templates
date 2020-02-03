@@ -44,8 +44,6 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -219,7 +217,8 @@ public final class ResolveNamesPass implements CompilerFilePass {
   private static Optional<SourceLocation> forVarDefn(VarDefn varDefn) {
     switch (varDefn.kind()) {
       case PARAM:
-        return Optional.of(((TemplateParam) varDefn).nameLocation());
+      case STATE:
+        return Optional.of(varDefn.nameLocation());
       case LOCAL_VAR:
         return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
       case COMPREHENSION_VAR:
@@ -227,8 +226,6 @@ public final class ResolveNamesPass implements CompilerFilePass {
             ((ListComprehensionNode.ComprehensionVarDefn) varDefn)
                 .declaringNode()
                 .getSourceLocation());
-      case STATE:
-        return Optional.of(((TemplateStateVar) varDefn).nameLocation());
       case UNDECLARED:
         return Optional.empty();
     }
