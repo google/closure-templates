@@ -358,13 +358,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return visitNullSafeNode(node).result(codeGenerator);
   }
 
-  protected Expression addMappingForComprehensionVarDecl(ListComprehensionNode node) {
-    Expression uniqueVarId =
-        id("list_comp_" + node.getNodeId() + "_" + node.getListIterVar().name());
-    variableMappings.put(node.getListIterVar().name(), uniqueVarId);
-    return uniqueVarId;
-  }
-
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
   protected Expression sanitizedContentToProtoConverterFunction(Descriptor messageType) {
     return JS_TO_PROTO_PACK_FN.get(messageType.getFullName());

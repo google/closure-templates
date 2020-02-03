@@ -4030,8 +4030,8 @@ goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ?
     goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + '#base') :
     null;
 
-//javascript/closure/debug/error.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
+//javascript/closure/dom/nodetype.js
+// Copyright 2006 The Closure Library Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -4044,6 +4044,48 @@ goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ?
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+/**
+ * @fileoverview Definition of goog.dom.NodeType.
+ */
+
+goog.provide('goog.dom.NodeType');
+
+
+/**
+ * Constants for the nodeType attribute in the Node interface.
+ *
+ * These constants match those specified in the Node interface. These are
+ * usually present on the Node object in recent browsers, but not in older
+ * browsers (specifically, early IEs) and thus are given here.
+ *
+ * In some browsers (early IEs), these are not defined on the Node object,
+ * so they are provided here.
+ *
+ * See http://www.w3.org/TR/DOM-Level-2-Core/core.html#ID-1950641247
+ * @enum {number}
+ */
+goog.dom.NodeType = {
+  ELEMENT: 1,
+  ATTRIBUTE: 2,
+  TEXT: 3,
+  CDATA_SECTION: 4,
+  ENTITY_REFERENCE: 5,
+  ENTITY: 6,
+  PROCESSING_INSTRUCTION: 7,
+  COMMENT: 8,
+  DOCUMENT: 9,
+  DOCUMENT_TYPE: 10,
+  DOCUMENT_FRAGMENT: 11,
+  NOTATION: 12
+};
+
+//third_party/javascript/closure/debug/error.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Provides a base class for custom Error objects such that the
@@ -4095,56 +4137,6 @@ goog.inherits(goog.debug.Error, Error);
 
 /** @override */
 goog.debug.Error.prototype.name = 'CustomError';
-
-//javascript/closure/dom/nodetype.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Definition of goog.dom.NodeType.
- */
-
-goog.provide('goog.dom.NodeType');
-
-
-/**
- * Constants for the nodeType attribute in the Node interface.
- *
- * These constants match those specified in the Node interface. These are
- * usually present on the Node object in recent browsers, but not in older
- * browsers (specifically, early IEs) and thus are given here.
- *
- * In some browsers (early IEs), these are not defined on the Node object,
- * so they are provided here.
- *
- * See http://www.w3.org/TR/DOM-Level-2-Core/core.html#ID-1950641247
- * @enum {number}
- */
-goog.dom.NodeType = {
-  ELEMENT: 1,
-  ATTRIBUTE: 2,
-  TEXT: 3,
-  CDATA_SECTION: 4,
-  ENTITY_REFERENCE: 5,
-  ENTITY: 6,
-  PROCESSING_INSTRUCTION: 7,
-  COMMENT: 8,
-  DOCUMENT: 9,
-  DOCUMENT_TYPE: 10,
-  DOCUMENT_FRAGMENT: 11,
-  NOTATION: 12
-};
 
 //javascript/closure/asserts/asserts.js
 // Copyright 2008 The Closure Library Authors. All Rights Reserved.
@@ -6286,7 +6278,7 @@ goog.array.concatMap = function(arr, f, opt_obj) {
   return goog.array.concat.apply([], goog.array.map(arr, f, opt_obj));
 };
 
-//javascript/closure/debug/errorcontext.js
+//javascript/closure/dom/asserts.js
 // Copyright 2017 The Closure Library Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -6301,56 +6293,386 @@ goog.array.concatMap = function(arr, f, opt_obj) {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
- * @fileoverview Provides methods dealing with context on error objects.
- */
+goog.provide('goog.dom.asserts');
 
-goog.provide('goog.debug.errorcontext');
-
+goog.require('goog.asserts');
 
 /**
- * Adds key-value context to the error.
- * @param {!Error} err The error to add context to.
- * @param {string} contextKey Key for the context to be added.
- * @param {string} contextValue Value for the context to be added.
+ * @fileoverview Custom assertions to ensure that an element has the appropriate
+ * type.
+ *
+ * Using a goog.dom.safe wrapper on an object on the incorrect type (via an
+ * incorrect static type cast) can result in security bugs: For instance,
+ * g.d.s.setAnchorHref ensures that the URL assigned to the .href attribute
+ * satisfies the SafeUrl contract, i.e., is safe to dereference as a hyperlink.
+ * However, the value assigned to a HTMLLinkElement's .href property requires
+ * the stronger TrustedResourceUrl contract, since it can refer to a stylesheet.
+ * Thus, using g.d.s.setAnchorHref on an (incorrectly statically typed) object
+ * of type HTMLLinkElement can result in a security vulnerability.
+ * Assertions of the correct run-time type help prevent such incorrect use.
+ *
+ * In some cases, code using the DOM API is tested using mock objects (e.g., a
+ * plain object such as {'href': url} instead of an actual Location object).
+ * To allow such mocking, the assertions permit objects of types that are not
+ * relevant DOM API objects at all (for instance, not Element or Location).
+ *
+ * Note that instanceof checks don't work straightforwardly in older versions of
+ * IE, or across frames (see,
+ * http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object,
+ * http://stackoverflow.com/questions/26248599/instanceof-htmlelement-in-iframe-is-not-element-or-object).
+ *
+ * Hence, these assertions may pass vacuously in such scenarios. The resulting
+ * risk of security bugs is limited by the following factors:
+ *  - A bug can only arise in scenarios involving incorrect static typing (the
+ *    wrapper methods are statically typed to demand objects of the appropriate,
+ *    precise type).
+ *  - Typically, code is tested and exercised in multiple browsers.
  */
-goog.debug.errorcontext.addErrorContext = function(
-    err, contextKey, contextValue) {
-  if (!err[goog.debug.errorcontext.CONTEXT_KEY_]) {
-    err[goog.debug.errorcontext.CONTEXT_KEY_] = {};
+
+/**
+ * Asserts that a given object is a Location.
+ *
+ * To permit this assertion to pass in the context of tests where DOM APIs might
+ * be mocked, also accepts any other type except for subtypes of {!Element}.
+ * This is to ensure that, for instance, HTMLLinkElement is not being used in
+ * place of a Location, since this could result in security bugs due to stronger
+ * contracts required for assignments to the href property of the latter.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!Location}
+ */
+goog.dom.asserts.assertIsLocation = function(o) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var win = goog.dom.asserts.getWindow_(o);
+    if (win) {
+      if (!o || (!(o instanceof win.Location) && o instanceof win.Element)) {
+        goog.asserts.fail(
+            'Argument is not a Location (or a non-Element mock); got: %s',
+            goog.dom.asserts.debugStringForType_(o));
+      }
+    }
   }
-  err[goog.debug.errorcontext.CONTEXT_KEY_][contextKey] = contextValue;
+  return /** @type {!Location} */ (o);
 };
 
 
 /**
- * @param {!Error} err The error to get context from.
- * @return {!Object<string, string>} The context of the provided error.
+ * Asserts that a given object is either the given subtype of Element
+ * or a non-Element, non-Location Mock.
+ *
+ * To permit this assertion to pass in the context of tests where DOM
+ * APIs might be mocked, also accepts any other type except for
+ * subtypes of {!Element}.  This is to ensure that, for instance,
+ * HTMLScriptElement is not being used in place of a HTMLImageElement,
+ * since this could result in security bugs due to stronger contracts
+ * required for assignments to the src property of the latter.
+ *
+ * The DOM type is looked up in the window the object belongs to.  In
+ * some contexts, this might not be possible (e.g. when running tests
+ * outside a browser, cross-domain lookup). In this case, the
+ * assertions are skipped.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @param {string} typename The name of the DOM type.
+ * @return {!Element} The object.
+ * @private
  */
-goog.debug.errorcontext.getErrorContext = function(err) {
-  return err[goog.debug.errorcontext.CONTEXT_KEY_] || {};
+// TODO(bangert): Make an analog of goog.dom.TagName to correctly handle casts?
+goog.dom.asserts.assertIsElementType_ = function(o, typename) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var win = goog.dom.asserts.getWindow_(o);
+    if (win && typeof win[typename] != 'undefined') {
+      if (!o ||
+          (!(o instanceof win[typename]) &&
+           (o instanceof win.Location || o instanceof win.Element))) {
+        goog.asserts.fail(
+            'Argument is not a %s (or a non-Element, non-Location mock); ' +
+                'got: %s',
+            typename, goog.dom.asserts.debugStringForType_(o));
+      }
+    }
+  }
+  return /** @type {!Element} */ (o);
 };
 
+/**
+ * Asserts that a given object is a HTMLAnchorElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not of type Location nor a subtype
+ * of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLAnchorElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlAnchorElement instead.
+ */
+goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
+  return /** @type {!HTMLAnchorElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLAnchorElement'));
+};
 
-// TODO(user): convert this to a Symbol once goog.debug.ErrorReporter is
-// able to use ES6.
-/** @private @const {string} */
-goog.debug.errorcontext.CONTEXT_KEY_ = '__closure__error__context__984382';
+/**
+ * Asserts that a given object is a HTMLButtonElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLButtonElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlButtonElement instead.
+ */
+goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
+  return /** @type {!HTMLButtonElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLButtonElement'));
+};
 
-//javascript/closure/string/internal.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/**
+ * Asserts that a given object is a HTMLLinkElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLLinkElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlLinkElement instead.
+ */
+goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
+  return /** @type {!HTMLLinkElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLLinkElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLImageElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLImageElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlImageElement instead.
+ */
+goog.dom.asserts.assertIsHTMLImageElement = function(o) {
+  return /** @type {!HTMLImageElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLImageElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLAudioElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLAudioElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlAudioElement instead.
+ */
+goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
+  return /** @type {!HTMLAudioElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLAudioElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLVideoElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLVideoElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlVideoElement instead.
+ */
+goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
+  return /** @type {!HTMLVideoElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLVideoElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLInputElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLInputElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlInputElement instead.
+ */
+goog.dom.asserts.assertIsHTMLInputElement = function(o) {
+  return /** @type {!HTMLInputElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLInputElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLTextAreaElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLTextAreaElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlTextAreaElement instead.
+ */
+goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
+  return /** @type {!HTMLTextAreaElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLTextAreaElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLCanvasElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLCanvasElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlCanvasElement instead.
+ */
+goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
+  return /** @type {!HTMLCanvasElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLCanvasElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLEmbedElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLEmbedElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlEmbedElement instead.
+ */
+goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
+  return /** @type {!HTMLEmbedElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLEmbedElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLFormElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLFormElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlFormElement instead.
+ */
+goog.dom.asserts.assertIsHTMLFormElement = function(o) {
+  return /** @type {!HTMLFormElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLFormElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLFrameElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLFrameElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlFrameElement instead.
+ */
+goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
+  return /** @type {!HTMLFrameElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLFrameElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLIFrameElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLIFrameElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlIFrameElement instead.
+ */
+goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
+  return /** @type {!HTMLIFrameElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLIFrameElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLObjectElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLObjectElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlObjectElement instead.
+ */
+goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
+  return /** @type {!HTMLObjectElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLObjectElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLScriptElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLScriptElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlScriptElement instead.
+ */
+goog.dom.asserts.assertIsHTMLScriptElement = function(o) {
+  return /** @type {!HTMLScriptElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLScriptElement'));
+};
+
+/**
+ * Returns a string representation of a value's type.
+ *
+ * @param {*} value An object, or primitive.
+ * @return {string} The best display name for the value.
+ * @private
+ */
+goog.dom.asserts.debugStringForType_ = function(value) {
+  if (goog.isObject(value)) {
+    try {
+      return /** @type {string|undefined} */ (value.constructor.displayName) ||
+          value.constructor.name || Object.prototype.toString.call(value);
+    } catch (e) {
+      return '<object could not be stringified>';
+    }
+  } else {
+    return value === undefined ? 'undefined' :
+                                 value === null ? 'null' : typeof value;
+  }
+};
+
+/**
+ * Gets window of element.
+ * @param {?Object} o
+ * @return {?Window}
+ * @private
+ * @suppress {strictMissingProperties} ownerDocument not defined on Object
+ */
+goog.dom.asserts.getWindow_ = function(o) {
+  try {
+    var doc = o && o.ownerDocument;
+    // This can throw “Blocked a frame with origin "chrome-extension://..." from
+    // accessing a cross-origin frame” in Chrome extension.
+    var win =
+        doc && /** @type {?Window} */ (doc.defaultView || doc.parentWindow);
+    win = win || /** @type {!Window} */ (goog.global);
+    // This can throw “Permission denied to access property "Element" on
+    // cross-origin object”.
+    if (win.Element && win.Location) {
+      return win;
+    }
+  } catch (ex) {
+  }
+  return null;
+};
+
+//third_party/javascript/closure/string/internal.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview String functions called from Closure packages that couldn't
@@ -6884,20 +7206,12 @@ goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
   return data;
 };
 
-//javascript/closure/object/object.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/object/object.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Utilities for manipulating objects/maps/hashes.
@@ -8041,409 +8355,12 @@ goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
   return version;
 };
 
-//javascript/closure/dom/asserts.js
-// Copyright 2017 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-goog.provide('goog.dom.asserts');
-
-goog.require('goog.asserts');
-
+//third_party/javascript/closure/functions/functions.js
 /**
- * @fileoverview Custom assertions to ensure that an element has the appropriate
- * type.
- *
- * Using a goog.dom.safe wrapper on an object on the incorrect type (via an
- * incorrect static type cast) can result in security bugs: For instance,
- * g.d.s.setAnchorHref ensures that the URL assigned to the .href attribute
- * satisfies the SafeUrl contract, i.e., is safe to dereference as a hyperlink.
- * However, the value assigned to a HTMLLinkElement's .href property requires
- * the stronger TrustedResourceUrl contract, since it can refer to a stylesheet.
- * Thus, using g.d.s.setAnchorHref on an (incorrectly statically typed) object
- * of type HTMLLinkElement can result in a security vulnerability.
- * Assertions of the correct run-time type help prevent such incorrect use.
- *
- * In some cases, code using the DOM API is tested using mock objects (e.g., a
- * plain object such as {'href': url} instead of an actual Location object).
- * To allow such mocking, the assertions permit objects of types that are not
- * relevant DOM API objects at all (for instance, not Element or Location).
- *
- * Note that instanceof checks don't work straightforwardly in older versions of
- * IE, or across frames (see,
- * http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object,
- * http://stackoverflow.com/questions/26248599/instanceof-htmlelement-in-iframe-is-not-element-or-object).
- *
- * Hence, these assertions may pass vacuously in such scenarios. The resulting
- * risk of security bugs is limited by the following factors:
- *  - A bug can only arise in scenarios involving incorrect static typing (the
- *    wrapper methods are statically typed to demand objects of the appropriate,
- *    precise type).
- *  - Typically, code is tested and exercised in multiple browsers.
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
  */
-
-/**
- * Asserts that a given object is a Location.
- *
- * To permit this assertion to pass in the context of tests where DOM APIs might
- * be mocked, also accepts any other type except for subtypes of {!Element}.
- * This is to ensure that, for instance, HTMLLinkElement is not being used in
- * place of a Location, since this could result in security bugs due to stronger
- * contracts required for assignments to the href property of the latter.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!Location}
- */
-goog.dom.asserts.assertIsLocation = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var win = goog.dom.asserts.getWindow_(o);
-    if (win) {
-      if (!o || (!(o instanceof win.Location) && o instanceof win.Element)) {
-        goog.asserts.fail(
-            'Argument is not a Location (or a non-Element mock); got: %s',
-            goog.dom.asserts.debugStringForType_(o));
-      }
-    }
-  }
-  return /** @type {!Location} */ (o);
-};
-
-
-/**
- * Asserts that a given object is either the given subtype of Element
- * or a non-Element, non-Location Mock.
- *
- * To permit this assertion to pass in the context of tests where DOM
- * APIs might be mocked, also accepts any other type except for
- * subtypes of {!Element}.  This is to ensure that, for instance,
- * HTMLScriptElement is not being used in place of a HTMLImageElement,
- * since this could result in security bugs due to stronger contracts
- * required for assignments to the src property of the latter.
- *
- * The DOM type is looked up in the window the object belongs to.  In
- * some contexts, this might not be possible (e.g. when running tests
- * outside a browser, cross-domain lookup). In this case, the
- * assertions are skipped.
- *
- * @param {?Object} o The object whose type to assert.
- * @param {string} typename The name of the DOM type.
- * @return {!Element} The object.
- * @private
- */
-// TODO(bangert): Make an analog of goog.dom.TagName to correctly handle casts?
-goog.dom.asserts.assertIsElementType_ = function(o, typename) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var win = goog.dom.asserts.getWindow_(o);
-    if (win && typeof win[typename] != 'undefined') {
-      if (!o ||
-          (!(o instanceof win[typename]) &&
-           (o instanceof win.Location || o instanceof win.Element))) {
-        goog.asserts.fail(
-            'Argument is not a %s (or a non-Element, non-Location mock); ' +
-                'got: %s',
-            typename, goog.dom.asserts.debugStringForType_(o));
-      }
-    }
-  }
-  return /** @type {!Element} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLAnchorElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not of type Location nor a subtype
- * of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLAnchorElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlAnchorElement instead.
- */
-goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
-  return /** @type {!HTMLAnchorElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLAnchorElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLButtonElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLButtonElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlButtonElement instead.
- */
-goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
-  return /** @type {!HTMLButtonElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLButtonElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLLinkElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLLinkElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlLinkElement instead.
- */
-goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
-  return /** @type {!HTMLLinkElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLLinkElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLImageElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLImageElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlImageElement instead.
- */
-goog.dom.asserts.assertIsHTMLImageElement = function(o) {
-  return /** @type {!HTMLImageElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLImageElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLAudioElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLAudioElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlAudioElement instead.
- */
-goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
-  return /** @type {!HTMLAudioElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLAudioElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLVideoElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLVideoElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlVideoElement instead.
- */
-goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
-  return /** @type {!HTMLVideoElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLVideoElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLInputElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLInputElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlInputElement instead.
- */
-goog.dom.asserts.assertIsHTMLInputElement = function(o) {
-  return /** @type {!HTMLInputElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLInputElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLTextAreaElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLTextAreaElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlTextAreaElement instead.
- */
-goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
-  return /** @type {!HTMLTextAreaElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLTextAreaElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLCanvasElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLCanvasElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlCanvasElement instead.
- */
-goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
-  return /** @type {!HTMLCanvasElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLCanvasElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLEmbedElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLEmbedElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlEmbedElement instead.
- */
-goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
-  return /** @type {!HTMLEmbedElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLEmbedElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLFormElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLFormElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlFormElement instead.
- */
-goog.dom.asserts.assertIsHTMLFormElement = function(o) {
-  return /** @type {!HTMLFormElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLFormElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLFrameElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLFrameElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlFrameElement instead.
- */
-goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
-  return /** @type {!HTMLFrameElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLFrameElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLIFrameElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLIFrameElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlIFrameElement instead.
- */
-goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
-  return /** @type {!HTMLIFrameElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLIFrameElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLObjectElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLObjectElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlObjectElement instead.
- */
-goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
-  return /** @type {!HTMLObjectElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLObjectElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLScriptElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLScriptElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlScriptElement instead.
- */
-goog.dom.asserts.assertIsHTMLScriptElement = function(o) {
-  return /** @type {!HTMLScriptElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLScriptElement'));
-};
-
-/**
- * Returns a string representation of a value's type.
- *
- * @param {*} value An object, or primitive.
- * @return {string} The best display name for the value.
- * @private
- */
-goog.dom.asserts.debugStringForType_ = function(value) {
-  if (goog.isObject(value)) {
-    try {
-      return /** @type {string|undefined} */ (value.constructor.displayName) ||
-          value.constructor.name || Object.prototype.toString.call(value);
-    } catch (e) {
-      return '<object could not be stringified>';
-    }
-  } else {
-    return value === undefined ? 'undefined' :
-                                 value === null ? 'null' : typeof value;
-  }
-};
-
-/**
- * Gets window of element.
- * @param {?Object} o
- * @return {?Window}
- * @private
- * @suppress {strictMissingProperties} ownerDocument not defined on Object
- */
-goog.dom.asserts.getWindow_ = function(o) {
-  try {
-    var doc = o && o.ownerDocument;
-    // This can throw “Blocked a frame with origin "chrome-extension://..." from
-    // accessing a cross-origin frame” in Chrome extension.
-    var win =
-        doc && /** @type {?Window} */ (doc.defaultView || doc.parentWindow);
-    win = win || /** @type {!Window} */ (goog.global);
-    // This can throw “Permission denied to access property "Element" on
-    // cross-origin object”.
-    if (win.Element && win.Location) {
-      return win;
-    }
-  } catch (ex) {
-  }
-  return null;
-};
-
-//javascript/closure/functions/functions.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 /**
  * @fileoverview Utilities for creating functions. Loosely inspired by these
@@ -9595,586 +9512,6 @@ goog.dom.tags.isVoidTag = function(tagName) {
   return goog.dom.tags.VOID_TAGS_[tagName] === true;
 };
 
-//javascript/closure/html/trustedtypes.js
-// Copyright 2018 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Policy to convert strings to Trusted Types. See
- * https://github.com/WICG/trusted-types for details.
- *
- * @visibility {//javascript/closure:__pkg__}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
- * @visibility {//javascript/closure/dom:__pkg__}
- */
-
-goog.provide('goog.html.trustedtypes');
-
-/** @package @const {?TrustedTypePolicy} */
-goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY =
-    goog.TRUSTED_TYPES_POLICY_NAME ?
-    goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + '#html') :
-    null;
-
-//javascript/closure/string/typedstring.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-goog.provide('goog.string.TypedString');
-
-
-
-/**
- * Wrapper for strings that conform to a data type or language.
- *
- * Implementations of this interface are wrappers for strings, and typically
- * associate a type contract with the wrapped string.  Concrete implementations
- * of this interface may choose to implement additional run-time type checking,
- * see for example `goog.html.SafeHtml`. If available, client code that
- * needs to ensure type membership of an object should use the type's function
- * to assert type membership, such as `goog.html.SafeHtml.unwrap`.
- * @interface
- */
-goog.string.TypedString = function() {};
-
-
-/**
- * Interface marker of the TypedString interface.
- *
- * This property can be used to determine at runtime whether or not an object
- * implements this interface.  All implementations of this interface set this
- * property to `true`.
- * @type {boolean}
- */
-goog.string.TypedString.prototype.implementsGoogStringTypedString;
-
-
-/**
- * Retrieves this wrapped string's value.
- * @return {string} The wrapped string's value.
- */
-goog.string.TypedString.prototype.getTypedStringValue;
-
-//javascript/closure/string/const.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-goog.provide('goog.string.Const');
-
-goog.require('goog.asserts');
-goog.require('goog.string.TypedString');
-
-
-
-/**
- * Wrapper for compile-time-constant strings.
- *
- * Const is a wrapper for strings that can only be created from program
- * constants (i.e., string literals).  This property relies on a custom Closure
- * compiler check that `goog.string.Const.from` is only invoked on
- * compile-time-constant expressions.
- *
- * Const is useful in APIs whose correct and secure use requires that certain
- * arguments are not attacker controlled: Compile-time constants are inherently
- * under the control of the application and not under control of external
- * attackers, and hence are safe to use in such contexts.
- *
- * Instances of this type must be created via its factory method
- * `goog.string.Const.from` and not by invoking its constructor.  The
- * constructor intentionally takes no parameters and the type is immutable;
- * hence only a default instance corresponding to the empty string can be
- * obtained via constructor invocation.  Use goog.string.Const.EMPTY
- * instead of using this constructor to get an empty Const string.
- *
- * @see goog.string.Const#from
- * @constructor
- * @final
- * @struct
- * @implements {goog.string.TypedString}
- * @param {Object=} opt_token package-internal implementation detail.
- * @param {string=} opt_content package-internal implementation detail.
- */
-goog.string.Const = function(opt_token, opt_content) {
-  /**
-   * The wrapped value of this Const object.  The field has a purposely ugly
-   * name to make (non-compiled) code that attempts to directly access this
-   * field stand out.
-   * @private {string}
-   */
-  this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ =
-      ((opt_token ===
-        goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_) &&
-       opt_content) ||
-      '';
-
-  /**
-   * A type marker used to implement additional run-time type checking.
-   * @see goog.string.Const#unwrap
-   * @const {!Object}
-   * @private
-   */
-  this.STRING_CONST_TYPE_MARKER__GOOG_STRING_SECURITY_PRIVATE_ =
-      goog.string.Const.TYPE_MARKER_;
-};
-
-
-/**
- * @override
- * @const
- */
-goog.string.Const.prototype.implementsGoogStringTypedString = true;
-
-
-/**
- * Returns this Const's value a string.
- *
- * IMPORTANT: In code where it is security-relevant that an object's type is
- * indeed `goog.string.Const`, use `goog.string.Const.unwrap`
- * instead of this method.
- *
- * @see goog.string.Const#unwrap
- * @override
- */
-goog.string.Const.prototype.getTypedStringValue = function() {
-  return this.stringConstValueWithSecurityContract__googStringSecurityPrivate_;
-};
-
-
-if (goog.DEBUG) {
-  /**
-   * Returns a debug-string representation of this value.
-   *
-   * To obtain the actual string value wrapped inside an object of this type,
-   * use `goog.string.Const.unwrap`.
-   *
-   * @see goog.string.Const#unwrap
-   * @override
-   */
-  goog.string.Const.prototype.toString = function() {
-    return 'Const{' +
-        this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ +
-        '}';
-  };
-}
-
-
-/**
- * Performs a runtime check that the provided object is indeed an instance
- * of `goog.string.Const`, and returns its value.
- * @param {!goog.string.Const} stringConst The object to extract from.
- * @return {string} The Const object's contained string, unless the run-time
- *     type check fails. In that case, `unwrap` returns an innocuous
- *     string, or, if assertions are enabled, throws
- *     `goog.asserts.AssertionError`.
- */
-goog.string.Const.unwrap = function(stringConst) {
-  // Perform additional run-time type-checking to ensure that stringConst is
-  // indeed an instance of the expected type.  This provides some additional
-  // protection against security bugs due to application code that disables type
-  // checks.
-  if (stringConst instanceof goog.string.Const &&
-      stringConst.constructor === goog.string.Const &&
-      stringConst.STRING_CONST_TYPE_MARKER__GOOG_STRING_SECURITY_PRIVATE_ ===
-          goog.string.Const.TYPE_MARKER_) {
-    return stringConst
-        .stringConstValueWithSecurityContract__googStringSecurityPrivate_;
-  } else {
-    goog.asserts.fail(
-        'expected object of type Const, got \'' + stringConst + '\'');
-    return 'type_error:Const';
-  }
-};
-
-
-/**
- * Creates a Const object from a compile-time constant string.
- *
- * It is illegal to invoke this function on an expression whose
- * compile-time-constant value cannot be determined by the Closure compiler.
- *
- * Correct invocations include,
- * <pre>
- *   var s = goog.string.Const.from('hello');
- *   var t = goog.string.Const.from('hello' + 'world');
- * </pre>
- *
- * In contrast, the following are illegal:
- * <pre>
- *   var s = goog.string.Const.from(getHello());
- *   var t = goog.string.Const.from('hello' + world);
- * </pre>
- *
- * @param {string} s A constant string from which to create a Const.
- * @return {!goog.string.Const} A Const object initialized to stringConst.
- */
-goog.string.Const.from = function(s) {
-  return new goog.string.Const(
-      goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_, s);
-};
-
-/**
- * Type marker for the Const type, used to implement additional run-time
- * type checking.
- * @const {!Object}
- * @private
- */
-goog.string.Const.TYPE_MARKER_ = {};
-
-/**
- * @type {!Object}
- * @private
- * @const
- */
-goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_ = {};
-
-/**
- * A Const instance wrapping the empty string.
- * @const {!goog.string.Const}
- */
-goog.string.Const.EMPTY = goog.string.Const.from('');
-
-//javascript/closure/html/safescript.js
-// Copyright 2014 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview The SafeScript type and its builders.
- *
- * TODO(xtof): Link to document stating type contract.
- */
-
-goog.provide('goog.html.SafeScript');
-
-goog.require('goog.asserts');
-goog.require('goog.html.trustedtypes');
-goog.require('goog.string.Const');
-goog.require('goog.string.TypedString');
-
-
-
-/**
- * A string-like object which represents JavaScript code and that carries the
- * security type contract that its value, as a string, will not cause execution
- * of unconstrained attacker controlled code (XSS) when evaluated as JavaScript
- * in a browser.
- *
- * Instances of this type must be created via the factory method
- * `goog.html.SafeScript.fromConstant` and not by invoking its
- * constructor. The constructor intentionally takes no parameters and the type
- * is immutable; hence only a default instance corresponding to the empty string
- * can be obtained via constructor invocation.
- *
- * A SafeScript's string representation can safely be interpolated as the
- * content of a script element within HTML. The SafeScript string should not be
- * escaped before interpolation.
- *
- * Note that the SafeScript might contain text that is attacker-controlled but
- * that text should have been interpolated with appropriate escaping,
- * sanitization and/or validation into the right location in the script, such
- * that it is highly constrained in its effect (for example, it had to match a
- * set of whitelisted words).
- *
- * A SafeScript can be constructed via security-reviewed unchecked
- * conversions. In this case producers of SafeScript must ensure themselves that
- * the SafeScript does not contain unsafe script. Note in particular that
- * {@code &lt;} is dangerous, even when inside JavaScript strings, and so should
- * always be forbidden or JavaScript escaped in user controlled input. For
- * example, if {@code &lt;/script&gt;&lt;script&gt;evil&lt;/script&gt;"} were
- * interpolated inside a JavaScript string, it would break out of the context
- * of the original script element and `evil` would execute. Also note
- * that within an HTML script (raw text) element, HTML character references,
- * such as "&lt;" are not allowed. See
- * http://www.w3.org/TR/html5/scripting-1.html#restrictions-for-contents-of-script-elements.
- *
- * @see goog.html.SafeScript#fromConstant
- * @constructor
- * @final
- * @struct
- * @implements {goog.string.TypedString}
- */
-goog.html.SafeScript = function() {
-  /**
-   * The contained value of this SafeScript.  The field has a purposely
-   * ugly name to make (non-compiled) code that attempts to directly access this
-   * field stand out.
-   * @private {!TrustedScript|string}
-   */
-  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = '';
-
-  /**
-   * A type marker used to implement additional run-time type checking.
-   * @see goog.html.SafeScript#unwrap
-   * @const {!Object}
-   * @private
-   */
-  this.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-      goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
-};
-
-
-/**
- * @override
- * @const
- */
-goog.html.SafeScript.prototype.implementsGoogStringTypedString = true;
-
-
-/**
- * Type marker for the SafeScript type, used to implement additional
- * run-time type checking.
- * @const {!Object}
- * @private
- */
-goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
-
-
-/**
- * Creates a SafeScript object from a compile-time constant string.
- *
- * @param {!goog.string.Const} script A compile-time-constant string from which
- *     to create a SafeScript.
- * @return {!goog.html.SafeScript} A SafeScript object initialized to
- *     `script`.
- */
-goog.html.SafeScript.fromConstant = function(script) {
-  var scriptString = goog.string.Const.unwrap(script);
-  if (scriptString.length === 0) {
-    return goog.html.SafeScript.EMPTY;
-  }
-  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
-      scriptString);
-};
-
-
-/**
- * Creates a SafeScript from a compile-time constant string but with arguments
- * that can vary at run-time. The code argument should be formatted as an
- * inline function (see example below). The arguments will be JSON-encoded and
- * provided as input to the function specified in code.
- *
- * Example Usage:
- *
- *     let safeScript = SafeScript.fromConstantAndArgs(
- *         Const.from('function(arg1, arg2) { doSomething(arg1, arg2); }'),
- *         arg1,
- *         arg2);
- *
- * This produces a SafeScript equivalent to the following:
- *
- *     (function(arg1, arg2) { doSomething(arg1, arg2); })("value1", "value2");
- *
- * @param {!goog.string.Const} code
- * @param {...*} var_args
- * @return {!goog.html.SafeScript}
- */
-goog.html.SafeScript.fromConstantAndArgs = function(code, var_args) {
-  var args = [];
-  for (var i = 1; i < arguments.length; i++) {
-    args.push(goog.html.SafeScript.stringify_(arguments[i]));
-  }
-  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
-      '(' + goog.string.Const.unwrap(code) + ')(' + args.join(', ') + ');');
-};
-
-
-/**
- * Creates a SafeScript JSON representation from anything that could be passed
- * to JSON.stringify.
- * @param {*} val
- * @return {!goog.html.SafeScript}
- */
-goog.html.SafeScript.fromJson = function(val) {
-  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
-      goog.html.SafeScript.stringify_(val));
-};
-
-
-/**
- * Returns this SafeScript's value as a string.
- *
- * IMPORTANT: In code where it is security relevant that an object's type is
- * indeed `SafeScript`, use `goog.html.SafeScript.unwrap` instead of
- * this method. If in doubt, assume that it's security relevant. In particular,
- * note that goog.html functions which return a goog.html type do not guarantee
- * the returned instance is of the right type. For example:
- *
- * <pre>
- * var fakeSafeHtml = new String('fake');
- * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
- * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
- * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
- * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml
- * // instanceof goog.html.SafeHtml.
- * </pre>
- *
- * @see goog.html.SafeScript#unwrap
- * @override
- */
-goog.html.SafeScript.prototype.getTypedStringValue = function() {
-  return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString();
-};
-
-
-if (goog.DEBUG) {
-  /**
-   * Returns a debug string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a SafeScript, use
-   * `goog.html.SafeScript.unwrap`.
-   *
-   * @see goog.html.SafeScript#unwrap
-   * @override
-   */
-  goog.html.SafeScript.prototype.toString = function() {
-    return 'SafeScript{' +
-        this.privateDoNotAccessOrElseSafeScriptWrappedValue_ + '}';
-  };
-}
-
-
-/**
- * Performs a runtime check that the provided object is indeed a
- * SafeScript object, and returns its value.
- *
- * @param {!goog.html.SafeScript} safeScript The object to extract from.
- * @return {string} The safeScript object's contained string, unless
- *     the run-time type check fails. In that case, `unwrap` returns an
- *     innocuous string, or, if assertions are enabled, throws
- *     `goog.asserts.AssertionError`.
- */
-goog.html.SafeScript.unwrap = function(safeScript) {
-  return goog.html.SafeScript.unwrapTrustedScript(safeScript).toString();
-};
-
-
-/**
- * Unwraps value as TrustedScript if supported or as a string if not.
- * @param {!goog.html.SafeScript} safeScript
- * @return {!TrustedScript|string}
- * @see goog.html.SafeScript.unwrap
- */
-goog.html.SafeScript.unwrapTrustedScript = function(safeScript) {
-  // Perform additional Run-time type-checking to ensure that
-  // safeScript is indeed an instance of the expected type.  This
-  // provides some additional protection against security bugs due to
-  // application code that disables type checks.
-  // Specifically, the following checks are performed:
-  // 1. The object is an instance of the expected type.
-  // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
-  if (safeScript instanceof goog.html.SafeScript &&
-      safeScript.constructor === goog.html.SafeScript &&
-      safeScript.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-          goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
-    return safeScript.privateDoNotAccessOrElseSafeScriptWrappedValue_;
-  } else {
-    goog.asserts.fail('expected object of type SafeScript, got \'' +
-        safeScript + '\' of type ' + goog.typeOf(safeScript));
-    return 'type_error:SafeScript';
-  }
-};
-
-
-/**
- * Converts the given value to a embeddabel JSON string and returns it. The
- * resulting string can be embedded in HTML because the '<' character is
- * encoded.
- *
- * @param {*} val
- * @return {string}
- * @private
- */
-goog.html.SafeScript.stringify_ = function(val) {
-  var json = JSON.stringify(val);
-  return json.replace(/</g, '\\x3c');
-};
-
-/**
- * Package-internal utility method to create SafeScript instances.
- *
- * @param {string} script The string to initialize the SafeScript object with.
- * @return {!goog.html.SafeScript} The initialized SafeScript object.
- * @package
- */
-goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse =
-    function(script) {
-  return new goog.html.SafeScript().initSecurityPrivateDoNotAccessOrElse_(
-      script);
-};
-
-
-/**
- * Called from createSafeScriptSecurityPrivateDoNotAccessOrElse(). This
- * method exists only so that the compiler can dead code eliminate static
- * fields (like EMPTY) when they're not accessed.
- * @param {string} script
- * @return {!goog.html.SafeScript}
- * @private
- */
-goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
-    script) {
-  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ =
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createScript(
-          script) :
-      script;
-  return this;
-};
-
-
-/**
- * A SafeScript instance corresponding to the empty string.
- * @const {!goog.html.SafeScript}
- */
-goog.html.SafeScript.EMPTY =
-    goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse('');
-
 //javascript/closure/i18n/bidi.js
 // Copyright 2007 The Closure Library Authors. All Rights Reserved.
 //
@@ -11098,7 +10435,7 @@ goog.i18n.bidi.DirectionalString.prototype
  */
 goog.i18n.bidi.DirectionalString.prototype.getDirection;
 
-//third_party/javascript/closure/fs/blob.js
+//third_party/javascript/closure/html/trustedtypes.js
 /**
  * @license
  * Copyright The Closure Library Authors.
@@ -11106,75 +10443,545 @@ goog.i18n.bidi.DirectionalString.prototype.getDirection;
  */
 
 /**
- * @fileoverview Wrappers for the HTML5 File API. These wrappers closely mirror
- * the underlying APIs, but use Closure-style events and Deferred return values.
- * Their existence also makes it possible to mock the FileSystem API for testing
- * in browsers that don't support it natively.
+ * @fileoverview Policy to convert strings to Trusted Types. See
+ * https://github.com/WICG/trusted-types for details.
  *
- * When adding public functions to anything under this namespace, be sure to add
- * its mock counterpart to goog.testing.fs.
+ * @visibility {//javascript/closure:__pkg__}
+ * @visibility {//javascript/closure/bin/sizetests:__pkg__}
+ * @visibility {//javascript/closure/dom:__pkg__}
  */
 
-goog.provide('goog.fs.blob');
+goog.provide('goog.html.trustedtypes');
 
-goog.require('goog.array');
+/** @package @const {?TrustedTypePolicy} */
+goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY =
+    goog.TRUSTED_TYPES_POLICY_NAME ?
+    goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + '#html') :
+    null;
+
+//third_party/javascript/closure/string/typedstring.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+goog.provide('goog.string.TypedString');
+
+
 
 /**
- * Concatenates one or more values together and converts them to a Blob.
+ * Wrapper for strings that conform to a data type or language.
  *
- * @param {...(string|!Blob|!ArrayBuffer)} var_args The values that will make up
- *     the resulting blob.
- * @return {!Blob} The blob.
+ * Implementations of this interface are wrappers for strings, and typically
+ * associate a type contract with the wrapped string.  Concrete implementations
+ * of this interface may choose to implement additional run-time type checking,
+ * see for example `goog.html.SafeHtml`. If available, client code that
+ * needs to ensure type membership of an object should use the type's function
+ * to assert type membership, such as `goog.html.SafeHtml.unwrap`.
+ * @interface
  */
-goog.fs.blob.getBlob = function(var_args) {
-  var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
+goog.string.TypedString = function() {};
 
-  if (BlobBuilder !== undefined) {
-    var bb = new BlobBuilder();
-    for (var i = 0; i < arguments.length; i++) {
-      bb.append(arguments[i]);
-    }
-    return bb.getBlob();
+
+/**
+ * Interface marker of the TypedString interface.
+ *
+ * This property can be used to determine at runtime whether or not an object
+ * implements this interface.  All implementations of this interface set this
+ * property to `true`.
+ * @type {boolean}
+ */
+goog.string.TypedString.prototype.implementsGoogStringTypedString;
+
+
+/**
+ * Retrieves this wrapped string's value.
+ * @return {string} The wrapped string's value.
+ */
+goog.string.TypedString.prototype.getTypedStringValue;
+
+//third_party/javascript/closure/string/const.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+goog.provide('goog.string.Const');
+
+goog.require('goog.asserts');
+goog.require('goog.string.TypedString');
+
+
+
+/**
+ * Wrapper for compile-time-constant strings.
+ *
+ * Const is a wrapper for strings that can only be created from program
+ * constants (i.e., string literals).  This property relies on a custom Closure
+ * compiler check that `goog.string.Const.from` is only invoked on
+ * compile-time-constant expressions.
+ *
+ * Const is useful in APIs whose correct and secure use requires that certain
+ * arguments are not attacker controlled: Compile-time constants are inherently
+ * under the control of the application and not under control of external
+ * attackers, and hence are safe to use in such contexts.
+ *
+ * Instances of this type must be created via its factory method
+ * `goog.string.Const.from` and not by invoking its constructor.  The
+ * constructor intentionally takes no parameters and the type is immutable;
+ * hence only a default instance corresponding to the empty string can be
+ * obtained via constructor invocation.  Use goog.string.Const.EMPTY
+ * instead of using this constructor to get an empty Const string.
+ *
+ * @see goog.string.Const#from
+ * @constructor
+ * @final
+ * @struct
+ * @implements {goog.string.TypedString}
+ * @param {Object=} opt_token package-internal implementation detail.
+ * @param {string=} opt_content package-internal implementation detail.
+ */
+goog.string.Const = function(opt_token, opt_content) {
+  /**
+   * The wrapped value of this Const object.  The field has a purposely ugly
+   * name to make (non-compiled) code that attempts to directly access this
+   * field stand out.
+   * @private {string}
+   */
+  this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ =
+      ((opt_token ===
+        goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_) &&
+       opt_content) ||
+      '';
+
+  /**
+   * A type marker used to implement additional run-time type checking.
+   * @see goog.string.Const#unwrap
+   * @const {!Object}
+   * @private
+   */
+  this.STRING_CONST_TYPE_MARKER__GOOG_STRING_SECURITY_PRIVATE_ =
+      goog.string.Const.TYPE_MARKER_;
+};
+
+
+/**
+ * @override
+ * @const
+ */
+goog.string.Const.prototype.implementsGoogStringTypedString = true;
+
+
+/**
+ * Returns this Const's value a string.
+ *
+ * IMPORTANT: In code where it is security-relevant that an object's type is
+ * indeed `goog.string.Const`, use `goog.string.Const.unwrap`
+ * instead of this method.
+ *
+ * @see goog.string.Const#unwrap
+ * @override
+ */
+goog.string.Const.prototype.getTypedStringValue = function() {
+  return this.stringConstValueWithSecurityContract__googStringSecurityPrivate_;
+};
+
+
+if (goog.DEBUG) {
+  /**
+   * Returns a debug-string representation of this value.
+   *
+   * To obtain the actual string value wrapped inside an object of this type,
+   * use `goog.string.Const.unwrap`.
+   *
+   * @see goog.string.Const#unwrap
+   * @override
+   */
+  goog.string.Const.prototype.toString = function() {
+    return 'Const{' +
+        this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ +
+        '}';
+  };
+}
+
+
+/**
+ * Performs a runtime check that the provided object is indeed an instance
+ * of `goog.string.Const`, and returns its value.
+ * @param {!goog.string.Const} stringConst The object to extract from.
+ * @return {string} The Const object's contained string, unless the run-time
+ *     type check fails. In that case, `unwrap` returns an innocuous
+ *     string, or, if assertions are enabled, throws
+ *     `goog.asserts.AssertionError`.
+ */
+goog.string.Const.unwrap = function(stringConst) {
+  // Perform additional run-time type-checking to ensure that stringConst is
+  // indeed an instance of the expected type.  This provides some additional
+  // protection against security bugs due to application code that disables type
+  // checks.
+  if (stringConst instanceof goog.string.Const &&
+      stringConst.constructor === goog.string.Const &&
+      stringConst.STRING_CONST_TYPE_MARKER__GOOG_STRING_SECURITY_PRIVATE_ ===
+          goog.string.Const.TYPE_MARKER_) {
+    return stringConst
+        .stringConstValueWithSecurityContract__googStringSecurityPrivate_;
   } else {
-    return goog.fs.blob.getBlobWithProperties(goog.array.toArray(arguments));
+    goog.asserts.fail(
+        'expected object of type Const, got \'' + stringConst + '\'');
+    return 'type_error:Const';
   }
 };
 
 
 /**
- * Creates a blob with the given properties.
- * See https://developer.mozilla.org/en-US/docs/Web/API/Blob for more details.
+ * Creates a Const object from a compile-time constant string.
  *
- * @param {!Array<string|!Blob|!ArrayBuffer>} parts The values that will make up
- *     the resulting blob (subset supported by both BlobBuilder.append() and
- *     Blob constructor).
- * @param {string=} opt_type The MIME type of the Blob.
- * @param {string=} opt_endings Specifies how strings containing newlines are to
- *     be written out.
- * @return {!Blob} The blob.
+ * It is illegal to invoke this function on an expression whose
+ * compile-time-constant value cannot be determined by the Closure compiler.
+ *
+ * Correct invocations include,
+ * <pre>
+ *   var s = goog.string.Const.from('hello');
+ *   var t = goog.string.Const.from('hello' + 'world');
+ * </pre>
+ *
+ * In contrast, the following are illegal:
+ * <pre>
+ *   var s = goog.string.Const.from(getHello());
+ *   var t = goog.string.Const.from('hello' + world);
+ * </pre>
+ *
+ * @param {string} s A constant string from which to create a Const.
+ * @return {!goog.string.Const} A Const object initialized to stringConst.
  */
-goog.fs.blob.getBlobWithProperties = function(parts, opt_type, opt_endings) {
-  var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
+goog.string.Const.from = function(s) {
+  return new goog.string.Const(
+      goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_, s);
+};
 
-  if (BlobBuilder !== undefined) {
-    var bb = new BlobBuilder();
-    for (var i = 0; i < parts.length; i++) {
-      bb.append(parts[i], opt_endings);
-    }
-    return bb.getBlob(opt_type);
-  } else if (goog.global.Blob !== undefined) {
-    var properties = {};
-    if (opt_type) {
-      properties['type'] = opt_type;
-    }
-    if (opt_endings) {
-      properties['endings'] = opt_endings;
-    }
-    return new Blob(parts, properties);
+/**
+ * Type marker for the Const type, used to implement additional run-time
+ * type checking.
+ * @const {!Object}
+ * @private
+ */
+goog.string.Const.TYPE_MARKER_ = {};
+
+/**
+ * @type {!Object}
+ * @private
+ * @const
+ */
+goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_ = {};
+
+/**
+ * A Const instance wrapping the empty string.
+ * @const {!goog.string.Const}
+ */
+goog.string.Const.EMPTY = goog.string.Const.from('');
+
+//third_party/javascript/closure/html/safescript.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview The SafeScript type and its builders.
+ *
+ * TODO(xtof): Link to document stating type contract.
+ */
+
+goog.provide('goog.html.SafeScript');
+
+goog.require('goog.asserts');
+goog.require('goog.html.trustedtypes');
+goog.require('goog.string.Const');
+goog.require('goog.string.TypedString');
+
+
+
+/**
+ * A string-like object which represents JavaScript code and that carries the
+ * security type contract that its value, as a string, will not cause execution
+ * of unconstrained attacker controlled code (XSS) when evaluated as JavaScript
+ * in a browser.
+ *
+ * Instances of this type must be created via the factory method
+ * `goog.html.SafeScript.fromConstant` and not by invoking its
+ * constructor. The constructor intentionally takes no parameters and the type
+ * is immutable; hence only a default instance corresponding to the empty string
+ * can be obtained via constructor invocation.
+ *
+ * A SafeScript's string representation can safely be interpolated as the
+ * content of a script element within HTML. The SafeScript string should not be
+ * escaped before interpolation.
+ *
+ * Note that the SafeScript might contain text that is attacker-controlled but
+ * that text should have been interpolated with appropriate escaping,
+ * sanitization and/or validation into the right location in the script, such
+ * that it is highly constrained in its effect (for example, it had to match a
+ * set of whitelisted words).
+ *
+ * A SafeScript can be constructed via security-reviewed unchecked
+ * conversions. In this case producers of SafeScript must ensure themselves that
+ * the SafeScript does not contain unsafe script. Note in particular that
+ * {@code &lt;} is dangerous, even when inside JavaScript strings, and so should
+ * always be forbidden or JavaScript escaped in user controlled input. For
+ * example, if {@code &lt;/script&gt;&lt;script&gt;evil&lt;/script&gt;"} were
+ * interpolated inside a JavaScript string, it would break out of the context
+ * of the original script element and `evil` would execute. Also note
+ * that within an HTML script (raw text) element, HTML character references,
+ * such as "&lt;" are not allowed. See
+ * http://www.w3.org/TR/html5/scripting-1.html#restrictions-for-contents-of-script-elements.
+ *
+ * @see goog.html.SafeScript#fromConstant
+ * @constructor
+ * @final
+ * @struct
+ * @implements {goog.string.TypedString}
+ */
+goog.html.SafeScript = function() {
+  /**
+   * The contained value of this SafeScript.  The field has a purposely
+   * ugly name to make (non-compiled) code that attempts to directly access this
+   * field stand out.
+   * @private {!TrustedScript|string}
+   */
+  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = '';
+
+  /**
+   * A type marker used to implement additional run-time type checking.
+   * @see goog.html.SafeScript#unwrap
+   * @const {!Object}
+   * @private
+   */
+  this.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
+      goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+};
+
+
+/**
+ * @override
+ * @const
+ */
+goog.html.SafeScript.prototype.implementsGoogStringTypedString = true;
+
+
+/**
+ * Type marker for the SafeScript type, used to implement additional
+ * run-time type checking.
+ * @const {!Object}
+ * @private
+ */
+goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+
+
+/**
+ * Creates a SafeScript object from a compile-time constant string.
+ *
+ * @param {!goog.string.Const} script A compile-time-constant string from which
+ *     to create a SafeScript.
+ * @return {!goog.html.SafeScript} A SafeScript object initialized to
+ *     `script`.
+ */
+goog.html.SafeScript.fromConstant = function(script) {
+  var scriptString = goog.string.Const.unwrap(script);
+  if (scriptString.length === 0) {
+    return goog.html.SafeScript.EMPTY;
+  }
+  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
+      scriptString);
+};
+
+
+/**
+ * Creates a SafeScript from a compile-time constant string but with arguments
+ * that can vary at run-time. The code argument should be formatted as an
+ * inline function (see example below). The arguments will be JSON-encoded and
+ * provided as input to the function specified in code.
+ *
+ * Example Usage:
+ *
+ *     let safeScript = SafeScript.fromConstantAndArgs(
+ *         Const.from('function(arg1, arg2) { doSomething(arg1, arg2); }'),
+ *         arg1,
+ *         arg2);
+ *
+ * This produces a SafeScript equivalent to the following:
+ *
+ *     (function(arg1, arg2) { doSomething(arg1, arg2); })("value1", "value2");
+ *
+ * @param {!goog.string.Const} code
+ * @param {...*} var_args
+ * @return {!goog.html.SafeScript}
+ */
+goog.html.SafeScript.fromConstantAndArgs = function(code, var_args) {
+  var args = [];
+  for (var i = 1; i < arguments.length; i++) {
+    args.push(goog.html.SafeScript.stringify_(arguments[i]));
+  }
+  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
+      '(' + goog.string.Const.unwrap(code) + ')(' + args.join(', ') + ');');
+};
+
+
+/**
+ * Creates a SafeScript JSON representation from anything that could be passed
+ * to JSON.stringify.
+ * @param {*} val
+ * @return {!goog.html.SafeScript}
+ */
+goog.html.SafeScript.fromJson = function(val) {
+  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
+      goog.html.SafeScript.stringify_(val));
+};
+
+
+/**
+ * Returns this SafeScript's value as a string.
+ *
+ * IMPORTANT: In code where it is security relevant that an object's type is
+ * indeed `SafeScript`, use `goog.html.SafeScript.unwrap` instead of
+ * this method. If in doubt, assume that it's security relevant. In particular,
+ * note that goog.html functions which return a goog.html type do not guarantee
+ * the returned instance is of the right type. For example:
+ *
+ * <pre>
+ * var fakeSafeHtml = new String('fake');
+ * fakeSafeHtml.__proto__ = goog.html.SafeHtml.prototype;
+ * var newSafeHtml = goog.html.SafeHtml.htmlEscape(fakeSafeHtml);
+ * // newSafeHtml is just an alias for fakeSafeHtml, it's passed through by
+ * // goog.html.SafeHtml.htmlEscape() as fakeSafeHtml
+ * // instanceof goog.html.SafeHtml.
+ * </pre>
+ *
+ * @see goog.html.SafeScript#unwrap
+ * @override
+ */
+goog.html.SafeScript.prototype.getTypedStringValue = function() {
+  return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString();
+};
+
+
+if (goog.DEBUG) {
+  /**
+   * Returns a debug string-representation of this value.
+   *
+   * To obtain the actual string value wrapped in a SafeScript, use
+   * `goog.html.SafeScript.unwrap`.
+   *
+   * @see goog.html.SafeScript#unwrap
+   * @override
+   */
+  goog.html.SafeScript.prototype.toString = function() {
+    return 'SafeScript{' +
+        this.privateDoNotAccessOrElseSafeScriptWrappedValue_ + '}';
+  };
+}
+
+
+/**
+ * Performs a runtime check that the provided object is indeed a
+ * SafeScript object, and returns its value.
+ *
+ * @param {!goog.html.SafeScript} safeScript The object to extract from.
+ * @return {string} The safeScript object's contained string, unless
+ *     the run-time type check fails. In that case, `unwrap` returns an
+ *     innocuous string, or, if assertions are enabled, throws
+ *     `goog.asserts.AssertionError`.
+ */
+goog.html.SafeScript.unwrap = function(safeScript) {
+  return goog.html.SafeScript.unwrapTrustedScript(safeScript).toString();
+};
+
+
+/**
+ * Unwraps value as TrustedScript if supported or as a string if not.
+ * @param {!goog.html.SafeScript} safeScript
+ * @return {!TrustedScript|string}
+ * @see goog.html.SafeScript.unwrap
+ */
+goog.html.SafeScript.unwrapTrustedScript = function(safeScript) {
+  // Perform additional Run-time type-checking to ensure that
+  // safeScript is indeed an instance of the expected type.  This
+  // provides some additional protection against security bugs due to
+  // application code that disables type checks.
+  // Specifically, the following checks are performed:
+  // 1. The object is an instance of the expected type.
+  // 2. The object is not an instance of a subclass.
+  // 3. The object carries a type marker for the expected type. "Faking" an
+  // object requires a reference to the type marker, which has names intended
+  // to stand out in code reviews.
+  if (safeScript instanceof goog.html.SafeScript &&
+      safeScript.constructor === goog.html.SafeScript &&
+      safeScript.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
+          goog.html.SafeScript.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+    return safeScript.privateDoNotAccessOrElseSafeScriptWrappedValue_;
   } else {
-    throw new Error('This browser doesn\'t seem to support creating Blobs');
+    goog.asserts.fail('expected object of type SafeScript, got \'' +
+        safeScript + '\' of type ' + goog.typeOf(safeScript));
+    return 'type_error:SafeScript';
   }
 };
+
+
+/**
+ * Converts the given value to a embeddabel JSON string and returns it. The
+ * resulting string can be embedded in HTML because the '<' character is
+ * encoded.
+ *
+ * @param {*} val
+ * @return {string}
+ * @private
+ */
+goog.html.SafeScript.stringify_ = function(val) {
+  var json = JSON.stringify(val);
+  return json.replace(/</g, '\\x3c');
+};
+
+/**
+ * Package-internal utility method to create SafeScript instances.
+ *
+ * @param {string} script The string to initialize the SafeScript object with.
+ * @return {!goog.html.SafeScript} The initialized SafeScript object.
+ * @package
+ */
+goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse =
+    function(script) {
+  return new goog.html.SafeScript().initSecurityPrivateDoNotAccessOrElse_(
+      script);
+};
+
+
+/**
+ * Called from createSafeScriptSecurityPrivateDoNotAccessOrElse(). This
+ * method exists only so that the compiler can dead code eliminate static
+ * fields (like EMPTY) when they're not accessed.
+ * @param {string} script
+ * @return {!goog.html.SafeScript}
+ * @private
+ */
+goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
+    script) {
+  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ =
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
+      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createScript(
+          script) :
+      script;
+  return this;
+};
+
+
+/**
+ * A SafeScript instance corresponding to the empty string.
+ * @const {!goog.html.SafeScript}
+ */
+goog.html.SafeScript.EMPTY =
+    goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse('');
 
 //third_party/javascript/closure/fs/url.js
 /**
@@ -11276,20 +11083,90 @@ goog.fs.url.browserSupportsObjectUrls = function() {
   return goog.fs.url.findUrlObject_() != null;
 };
 
-//javascript/closure/html/trustedresourceurl.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/fs/blob.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Wrappers for the HTML5 File API. These wrappers closely mirror
+ * the underlying APIs, but use Closure-style events and Deferred return values.
+ * Their existence also makes it possible to mock the FileSystem API for testing
+ * in browsers that don't support it natively.
+ *
+ * When adding public functions to anything under this namespace, be sure to add
+ * its mock counterpart to goog.testing.fs.
+ */
+
+goog.provide('goog.fs.blob');
+
+goog.require('goog.array');
+
+/**
+ * Concatenates one or more values together and converts them to a Blob.
+ *
+ * @param {...(string|!Blob|!ArrayBuffer)} var_args The values that will make up
+ *     the resulting blob.
+ * @return {!Blob} The blob.
+ */
+goog.fs.blob.getBlob = function(var_args) {
+  var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
+
+  if (BlobBuilder !== undefined) {
+    var bb = new BlobBuilder();
+    for (var i = 0; i < arguments.length; i++) {
+      bb.append(arguments[i]);
+    }
+    return bb.getBlob();
+  } else {
+    return goog.fs.blob.getBlobWithProperties(goog.array.toArray(arguments));
+  }
+};
+
+
+/**
+ * Creates a blob with the given properties.
+ * See https://developer.mozilla.org/en-US/docs/Web/API/Blob for more details.
+ *
+ * @param {!Array<string|!Blob|!ArrayBuffer>} parts The values that will make up
+ *     the resulting blob (subset supported by both BlobBuilder.append() and
+ *     Blob constructor).
+ * @param {string=} opt_type The MIME type of the Blob.
+ * @param {string=} opt_endings Specifies how strings containing newlines are to
+ *     be written out.
+ * @return {!Blob} The blob.
+ */
+goog.fs.blob.getBlobWithProperties = function(parts, opt_type, opt_endings) {
+  var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
+
+  if (BlobBuilder !== undefined) {
+    var bb = new BlobBuilder();
+    for (var i = 0; i < parts.length; i++) {
+      bb.append(parts[i], opt_endings);
+    }
+    return bb.getBlob(opt_type);
+  } else if (goog.global.Blob !== undefined) {
+    var properties = {};
+    if (opt_type) {
+      properties['type'] = opt_type;
+    }
+    if (opt_endings) {
+      properties['endings'] = opt_endings;
+    }
+    return new Blob(parts, properties);
+  } else {
+    throw new Error('This browser doesn\'t seem to support creating Blobs');
+  }
+};
+
+//third_party/javascript/closure/html/trustedresourceurl.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview The TrustedResourceUrl type and its builders.
@@ -11816,20 +11693,12 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(
  */
 goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
-//javascript/closure/html/safeurl.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/html/safeurl.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview The SafeUrl type and its builders.
@@ -12547,20 +12416,12 @@ goog.html.SafeUrl.ABOUT_BLANK =
  */
 goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
-//javascript/closure/html/safestyle.js
-// Copyright 2014 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/html/safestyle.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview The SafeStyle type and its builders.
@@ -13088,6 +12949,7 @@ goog.html.SafeStyle.ALLOWED_FUNCTIONS_ = [
   'fit-content',
   'hsl',
   'hsla',
+  'linear-gradient',
   'matrix',
   'minmax',
   'repeat',
@@ -13170,20 +13032,12 @@ goog.html.SafeStyle.concat = function(var_args) {
       style);
 };
 
-//javascript/closure/html/safestylesheet.js
-// Copyright 2014 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/html/safestylesheet.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview The SafeStyleSheet type and its builders.
@@ -13517,20 +13371,12 @@ goog.html.SafeStyleSheet.EMPTY =
     goog.html.SafeStyleSheet
         .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse('');
 
-//javascript/closure/html/safehtml.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/html/safehtml.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 
 /**
@@ -14611,20 +14457,12 @@ goog.html.SafeHtml.BR =
     goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<br>', goog.i18n.bidi.Dir.NEUTRAL);
 
-//javascript/closure/html/uncheckedconversions.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/html/uncheckedconversions.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Unchecked conversions to create values of goog.html types from
@@ -15670,20 +15508,12 @@ goog.dom.safe.createImageFromBlob = function(blob) {
   return image;
 };
 
-//javascript/closure/string/string.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/string/string.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Utilities for string manipulation.
@@ -18203,667 +18033,6 @@ goog.userAgent.DOCUMENT_MODE = (function() {
   }
   return goog.userAgent.getDocumentMode_();
 })();
-
-//javascript/closure/debug/debug.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Logging and debugging utilities.
- *
- * @see ../demos/debug.html
- */
-
-goog.provide('goog.debug');
-
-goog.require('goog.array');
-goog.require('goog.debug.errorcontext');
-goog.require('goog.userAgent');
-
-
-/** @define {boolean} Whether logging should be enabled. */
-goog.debug.LOGGING_ENABLED =
-    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
-
-
-/** @define {boolean} Whether to force "sloppy" stack building. */
-goog.debug.FORCE_SLOPPY_STACKS =
-    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
-
-
-/**
- * Catches onerror events fired by windows and similar objects.
- * @param {function(Object)} logFunc The function to call with the error
- *    information.
- * @param {boolean=} opt_cancel Whether to stop the error from reaching the
- *    browser.
- * @param {Object=} opt_target Object that fires onerror events.
- * @suppress {strictMissingProperties} onerror is not defined as a property
- *    on Object.
- */
-goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
-  var target = opt_target || goog.global;
-  var oldErrorHandler = target.onerror;
-  var retVal = !!opt_cancel;
-
-  // Chrome interprets onerror return value backwards (http://crbug.com/92062)
-  // until it was fixed in webkit revision r94061 (Webkit 535.3). This
-  // workaround still needs to be skipped in Safari after the webkit change
-  // gets pushed out in Safari.
-  // See https://bugs.webkit.org/show_bug.cgi?id=67119
-  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher('535.3')) {
-    retVal = !retVal;
-  }
-
-  /**
-   * New onerror handler for this target. This onerror handler follows the spec
-   * according to
-   * http://www.whatwg.org/specs/web-apps/current-work/#runtime-script-errors
-   * The spec was changed in August 2013 to support receiving column information
-   * and an error object for all scripts on the same origin or cross origin
-   * scripts with the proper headers. See
-   * https://mikewest.org/2013/08/debugging-runtime-errors-with-window-onerror
-   *
-   * @param {string} message The error message. For cross-origin errors, this
-   *     will be scrubbed to just "Script error.". For new browsers that have
-   *     updated to follow the latest spec, errors that come from origins that
-   *     have proper cross origin headers will not be scrubbed.
-   * @param {string} url The URL of the script that caused the error. The URL
-   *     will be scrubbed to "" for cross origin scripts unless the script has
-   *     proper cross origin headers and the browser has updated to the latest
-   *     spec.
-   * @param {number} line The line number in the script that the error
-   *     occurred on.
-   * @param {number=} opt_col The optional column number that the error
-   *     occurred on. Only browsers that have updated to the latest spec will
-   *     include this.
-   * @param {Error=} opt_error The optional actual error object for this
-   *     error that should include the stack. Only browsers that have updated
-   *     to the latest spec will inlude this parameter.
-   * @return {boolean} Whether to prevent the error from reaching the browser.
-   */
-  target.onerror = function(message, url, line, opt_col, opt_error) {
-    if (oldErrorHandler) {
-      oldErrorHandler(message, url, line, opt_col, opt_error);
-    }
-    logFunc({
-      message: message,
-      fileName: url,
-      line: line,
-      lineNumber: line,
-      col: opt_col,
-      error: opt_error
-    });
-    return retVal;
-  };
-};
-
-
-/**
- * Creates a string representing an object and all its properties.
- * @param {Object|null|undefined} obj Object to expose.
- * @param {boolean=} opt_showFn Show the functions as well as the properties,
- *     default is false.
- * @return {string} The string representation of `obj`.
- */
-goog.debug.expose = function(obj, opt_showFn) {
-  if (typeof obj == 'undefined') {
-    return 'undefined';
-  }
-  if (obj == null) {
-    return 'NULL';
-  }
-  var str = [];
-
-  for (var x in obj) {
-    if (!opt_showFn && goog.isFunction(obj[x])) {
-      continue;
-    }
-    var s = x + ' = ';
-
-    try {
-      s += obj[x];
-    } catch (e) {
-      s += '*** ' + e + ' ***';
-    }
-    str.push(s);
-  }
-  return str.join('\n');
-};
-
-
-/**
- * Creates a string representing a given primitive or object, and for an
- * object, all its properties and nested objects. NOTE: The output will include
- * Uids on all objects that were exposed. Any added Uids will be removed before
- * returning.
- * @param {*} obj Object to expose.
- * @param {boolean=} opt_showFn Also show properties that are functions (by
- *     default, functions are omitted).
- * @return {string} A string representation of `obj`.
- */
-goog.debug.deepExpose = function(obj, opt_showFn) {
-  var str = [];
-
-  // Track any objects where deepExpose added a Uid, so they can be cleaned up
-  // before return. We do this globally, rather than only on ancestors so that
-  // if the same object appears in the output, you can see it.
-  var uidsToCleanup = [];
-  var ancestorUids = {};
-
-  var helper = function(obj, space) {
-    var nestspace = space + '  ';
-
-    var indentMultiline = function(str) {
-      return str.replace(/\n/g, '\n' + space);
-    };
-
-
-    try {
-      if (obj === undefined) {
-        str.push('undefined');
-      } else if (obj === null) {
-        str.push('NULL');
-      } else if (typeof obj === 'string') {
-        str.push('"' + indentMultiline(obj) + '"');
-      } else if (goog.isFunction(obj)) {
-        str.push(indentMultiline(String(obj)));
-      } else if (goog.isObject(obj)) {
-        // Add a Uid if needed. The struct calls implicitly adds them.
-        if (!goog.hasUid(obj)) {
-          uidsToCleanup.push(obj);
-        }
-        var uid = goog.getUid(obj);
-        if (ancestorUids[uid]) {
-          str.push('*** reference loop detected (id=' + uid + ') ***');
-        } else {
-          ancestorUids[uid] = true;
-          str.push('{');
-          for (var x in obj) {
-            if (!opt_showFn && goog.isFunction(obj[x])) {
-              continue;
-            }
-            str.push('\n');
-            str.push(nestspace);
-            str.push(x + ' = ');
-            helper(obj[x], nestspace);
-          }
-          str.push('\n' + space + '}');
-          delete ancestorUids[uid];
-        }
-      } else {
-        str.push(obj);
-      }
-    } catch (e) {
-      str.push('*** ' + e + ' ***');
-    }
-  };
-
-  helper(obj, '');
-
-  // Cleanup any Uids that were added by the deepExpose.
-  for (var i = 0; i < uidsToCleanup.length; i++) {
-    goog.removeUid(uidsToCleanup[i]);
-  }
-
-  return str.join('');
-};
-
-
-/**
- * Recursively outputs a nested array as a string.
- * @param {Array<?>} arr The array.
- * @return {string} String representing nested array.
- */
-goog.debug.exposeArray = function(arr) {
-  var str = [];
-  for (var i = 0; i < arr.length; i++) {
-    if (goog.isArray(arr[i])) {
-      str.push(goog.debug.exposeArray(arr[i]));
-    } else {
-      str.push(arr[i]);
-    }
-  }
-  return '[ ' + str.join(', ') + ' ]';
-};
-
-
-/**
- * Normalizes the error/exception object between browsers.
- * @param {*} err Raw error object.
- * @return {{
- *    message: (?|undefined),
- *    name: (?|undefined),
- *    lineNumber: (?|undefined),
- *    fileName: (?|undefined),
- *    stack: (?|undefined)
- * }} Normalized error object.
- * @suppress {strictMissingProperties} properties not defined on err
- */
-goog.debug.normalizeErrorObject = function(err) {
-  var href = goog.getObjectByName('window.location.href');
-  if (err == null) {
-    err = 'Unknown Error of type "null/undefined"';
-  }
-  if (typeof err === 'string') {
-    return {
-      'message': err,
-      'name': 'Unknown error',
-      'lineNumber': 'Not available',
-      'fileName': href,
-      'stack': 'Not available'
-    };
-  }
-
-  var lineNumber, fileName;
-  var threwError = false;
-
-  try {
-    lineNumber = err.lineNumber || err.line || 'Not available';
-  } catch (e) {
-    // Firefox 2 sometimes throws an error when accessing 'lineNumber':
-    // Message: Permission denied to get property UnnamedClass.lineNumber
-    lineNumber = 'Not available';
-    threwError = true;
-  }
-
-  try {
-    fileName = err.fileName || err.filename || err.sourceURL ||
-        // $googDebugFname may be set before a call to eval to set the filename
-        // that the eval is supposed to present.
-        goog.global['$googDebugFname'] || href;
-  } catch (e) {
-    // Firefox 2 may also throw an error when accessing 'filename'.
-    fileName = 'Not available';
-    threwError = true;
-  }
-
-  // The IE Error object contains only the name and the message.
-  // The Safari Error object uses the line and sourceURL fields.
-  if (threwError || !err.lineNumber || !err.fileName || !err.stack ||
-      !err.message || !err.name) {
-    var message = err.message;
-    if (message == null) {
-      if (err.constructor && err.constructor instanceof Function) {
-        var ctorName = err.constructor.name ?
-            err.constructor.name :
-            goog.debug.getFunctionName(err.constructor);
-        message = 'Unknown Error of type "' + ctorName + '"';
-      } else {
-        message = 'Unknown Error of unknown type';
-      }
-    }
-    return {
-      'message': message,
-      'name': err.name || 'UnknownError',
-      'lineNumber': lineNumber,
-      'fileName': fileName,
-      'stack': err.stack || 'Not available'
-    };
-  }
-
-  // Standards error object
-  // Typed !Object. Should be a subtype of the return type, but it's not.
-  return /** @type {?} */ (err);
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * an extra message.
- * @param {*} err The original thrown error, object, or string.
- * @param {string=} opt_message  optional additional message to add to the
- *     error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceError = function(err, opt_message) {
-  var error;
-  if (!(err instanceof Error)) {
-    error = Error(err);
-    if (Error.captureStackTrace) {
-      // Trim this function off the call stack, if we can.
-      Error.captureStackTrace(error, goog.debug.enhanceError);
-    }
-  } else {
-    error = err;
-  }
-
-  if (!error.stack) {
-    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
-  }
-  if (opt_message) {
-    // find the first unoccupied 'messageX' property
-    var x = 0;
-    while (error['message' + x]) {
-      ++x;
-    }
-    error['message' + x] = String(opt_message);
-  }
-  return error;
-};
-
-
-/**
- * Converts an object to an Error using the object's toString if it's not
- * already an Error, adds a stacktrace if there isn't one, and optionally adds
- * context to the Error, which is reported by the closure error reporter.
- * @param {*} err The original thrown error, object, or string.
- * @param {!Object<string, string>=} opt_context Key-value context to add to the
- *     Error.
- * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
- *     it is converted to an Error which is enhanced and returned.
- */
-goog.debug.enhanceErrorWithContext = function(err, opt_context) {
-  var error = goog.debug.enhanceError(err);
-  if (opt_context) {
-    for (var key in opt_context) {
-      goog.debug.errorcontext.addErrorContext(error, key, opt_context[key]);
-    }
-  }
-  return error;
-};
-
-
-/**
- * Gets the current stack trace. Simple and iterative - doesn't worry about
- * catching circular references or getting the args.
- * @param {number=} opt_depth Optional maximum depth to trace back to.
- * @return {string} A string with the function names of all functions in the
- *     stack, separated by \n.
- * @suppress {es5Strict}
- */
-goog.debug.getStacktraceSimple = function(opt_depth) {
-  if (!goog.debug.FORCE_SLOPPY_STACKS) {
-    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
-    if (stack) {
-      return stack;
-    }
-    // NOTE: browsers that have strict mode support also have native "stack"
-    // properties.  Fall-through for legacy browser support.
-  }
-
-  var sb = [];
-  var fn = arguments.callee.caller;
-  var depth = 0;
-
-  while (fn && (!opt_depth || depth < opt_depth)) {
-    sb.push(goog.debug.getFunctionName(fn));
-    sb.push('()\n');
-
-    try {
-      fn = fn.caller;
-    } catch (e) {
-      sb.push('[exception trying to get caller]\n');
-      break;
-    }
-    depth++;
-    if (depth >= goog.debug.MAX_STACK_DEPTH) {
-      sb.push('[...long stack...]');
-      break;
-    }
-  }
-  if (opt_depth && depth >= opt_depth) {
-    sb.push('[...reached max depth limit...]');
-  } else {
-    sb.push('[end]');
-  }
-
-  return sb.join('');
-};
-
-
-/**
- * Max length of stack to try and output
- * @type {number}
- */
-goog.debug.MAX_STACK_DEPTH = 50;
-
-
-/**
- * @param {Function} fn The function to start getting the trace from.
- * @return {?string}
- * @private
- */
-goog.debug.getNativeStackTrace_ = function(fn) {
-  var tempErr = new Error();
-  if (Error.captureStackTrace) {
-    Error.captureStackTrace(tempErr, fn);
-    return String(tempErr.stack);
-  } else {
-    // IE10, only adds stack traces when an exception is thrown.
-    try {
-      throw tempErr;
-    } catch (e) {
-      tempErr = e;
-    }
-    var stack = tempErr.stack;
-    if (stack) {
-      return String(stack);
-    }
-  }
-  return null;
-};
-
-
-/**
- * Gets the current stack trace, either starting from the caller or starting
- * from a specified function that's currently on the call stack.
- * @param {?Function=} fn If provided, when collecting the stack trace all
- *     frames above the topmost call to this function, including that call,
- *     will be left out of the stack trace.
- * @return {string} Stack trace.
- * @suppress {es5Strict}
- */
-goog.debug.getStacktrace = function(fn) {
-  var stack;
-  if (!goog.debug.FORCE_SLOPPY_STACKS) {
-    // Try to get the stack trace from the environment if it is available.
-    var contextFn = fn || goog.debug.getStacktrace;
-    stack = goog.debug.getNativeStackTrace_(contextFn);
-  }
-  if (!stack) {
-    // NOTE: browsers that have strict mode support also have native "stack"
-    // properties. This function will throw in strict mode.
-    stack = goog.debug.getStacktraceHelper_(fn || arguments.callee.caller, []);
-  }
-  return stack;
-};
-
-
-/**
- * Private helper for getStacktrace().
- * @param {?Function} fn If provided, when collecting the stack trace all
- *     frames above the topmost call to this function, including that call,
- *     will be left out of the stack trace.
- * @param {Array<!Function>} visited List of functions visited so far.
- * @return {string} Stack trace starting from function fn.
- * @suppress {es5Strict}
- * @private
- */
-goog.debug.getStacktraceHelper_ = function(fn, visited) {
-  var sb = [];
-
-  // Circular reference, certain functions like bind seem to cause a recursive
-  // loop so we need to catch circular references
-  if (goog.array.contains(visited, fn)) {
-    sb.push('[...circular reference...]');
-
-    // Traverse the call stack until function not found or max depth is reached
-  } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
-    sb.push(goog.debug.getFunctionName(fn) + '(');
-    var args = fn.arguments;
-    // Args may be null for some special functions such as host objects or eval.
-    for (var i = 0; args && i < args.length; i++) {
-      if (i > 0) {
-        sb.push(', ');
-      }
-      var argDesc;
-      var arg = args[i];
-      switch (typeof arg) {
-        case 'object':
-          argDesc = arg ? 'object' : 'null';
-          break;
-
-        case 'string':
-          argDesc = arg;
-          break;
-
-        case 'number':
-          argDesc = String(arg);
-          break;
-
-        case 'boolean':
-          argDesc = arg ? 'true' : 'false';
-          break;
-
-        case 'function':
-          argDesc = goog.debug.getFunctionName(arg);
-          argDesc = argDesc ? argDesc : '[fn]';
-          break;
-
-        case 'undefined':
-        default:
-          argDesc = typeof arg;
-          break;
-      }
-
-      if (argDesc.length > 40) {
-        argDesc = argDesc.substr(0, 40) + '...';
-      }
-      sb.push(argDesc);
-    }
-    visited.push(fn);
-    sb.push(')\n');
-
-    try {
-      sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
-    } catch (e) {
-      sb.push('[exception trying to get caller]\n');
-    }
-
-  } else if (fn) {
-    sb.push('[...long stack...]');
-  } else {
-    sb.push('[end]');
-  }
-  return sb.join('');
-};
-
-
-/**
- * Gets a function name
- * @param {Function} fn Function to get name of.
- * @return {string} Function's name.
- */
-goog.debug.getFunctionName = function(fn) {
-  if (goog.debug.fnNameCache_[fn]) {
-    return goog.debug.fnNameCache_[fn];
-  }
-
-  // Heuristically determine function name based on code.
-  var functionSource = String(fn);
-  if (!goog.debug.fnNameCache_[functionSource]) {
-    var matches = /function\s+([^\(]+)/m.exec(functionSource);
-    if (matches) {
-      var method = matches[1];
-      goog.debug.fnNameCache_[functionSource] = method;
-    } else {
-      goog.debug.fnNameCache_[functionSource] = '[Anonymous]';
-    }
-  }
-
-  return goog.debug.fnNameCache_[functionSource];
-};
-
-
-/**
- * Makes whitespace visible by replacing it with printable characters.
- * This is useful in finding diffrences between the expected and the actual
- * output strings of a testcase.
- * @param {string} string whose whitespace needs to be made visible.
- * @return {string} string whose whitespace is made visible.
- */
-goog.debug.makeWhitespaceVisible = function(string) {
-  return string.replace(/ /g, '[_]')
-      .replace(/\f/g, '[f]')
-      .replace(/\n/g, '[n]\n')
-      .replace(/\r/g, '[r]')
-      .replace(/\t/g, '[t]');
-};
-
-
-/**
- * Returns the type of a value. If a constructor is passed, and a suitable
- * string cannot be found, 'unknown type name' will be returned.
- *
- * <p>Forked rather than moved from {@link goog.asserts.getType_}
- * to avoid adding a dependency to goog.asserts.
- * @param {*} value A constructor, object, or primitive.
- * @return {string} The best display name for the value, or 'unknown type name'.
- */
-goog.debug.runtimeType = function(value) {
-  if (value instanceof Function) {
-    return value.displayName || value.name || 'unknown type name';
-  } else if (value instanceof Object) {
-    return /** @type {string} */ (value.constructor.displayName) ||
-        value.constructor.name || Object.prototype.toString.call(value);
-  } else {
-    return value === null ? 'null' : typeof value;
-  }
-};
-
-
-/**
- * Hash map for storing function names that have already been looked up.
- * @type {Object}
- * @private
- */
-goog.debug.fnNameCache_ = {};
-
-
-/**
- * Private internal function to support goog.debug.freeze.
- * @param {T} arg
- * @return {T}
- * @template T
- * @private
- */
-goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
-  return arg;
-};
-
-
-/**
- * Freezes the given object, but only in debug mode (and in browsers that
- * support it).  Note that this is a shallow freeze, so for deeply nested
- * objects it must be called at every level to ensure deep immutability.
- * @param {T} arg
- * @return {T}
- * @template T
- */
-goog.debug.freeze = function(arg) {
-  // NOTE: this compiles to nothing, but hides the possible side effect of
-  // freezeInternal_ from the compiler so that the entire call can be
-  // removed if the result is not used.
-  return {
-    valueOf: function() {
-      return goog.debug.freezeInternal_(arg);
-    }
-  }.valueOf();
-};
 
 //javascript/closure/dom/browserfeature.js
 // Copyright 2010 The Closure Library Authors. All Rights Reserved.
@@ -32867,20 +32036,12 @@ goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
   return null;
 };
 
-//javascript/closure/structs/inversionmap.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/structs/inversionmap.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Provides inversion and inversion map functionality for storing
@@ -39645,20 +38806,12 @@ goog.iter.combinationsWithReplacement = function(iterable, length) {
   return iter;
 };
 
-//javascript/closure/structs/map.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/structs/map.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Datastructure: Hash Map.
@@ -40100,20 +39253,12 @@ goog.structs.Map.hasKey_ = function(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 };
 
-//javascript/closure/structs/structs.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/structs/structs.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Generics method for collection-like classes and objects.
@@ -40456,20 +39601,12 @@ goog.structs.every = function(col, f, opt_obj) {
   return true;
 };
 
-//javascript/closure/uri/utils.js
-// Copyright 2008 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/uri/utils.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Simple utilities for dealing with URI strings.
@@ -41556,20 +40693,12 @@ goog.uri.utils.makeUnique = function(uri) {
       goog.string.getRandomString());
 };
 
-//javascript/closure/uri/uri.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/uri/uri.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Class for parsing and formatting URIs.
@@ -43085,20 +42214,12 @@ goog.Uri.QueryData.prototype.extend = function(var_args) {
   }
 };
 
-//javascript/closure/soy/data.js
-// Copyright 2012 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/soy/data.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Soy data primitives.
@@ -43607,299 +42728,6 @@ goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
           value);
 };
 
-//javascript/closure/soy/soy.js
-// Copyright 2011 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Provides utility methods to render soy template.
- */
-
-goog.provide('goog.soy');
-
-goog.require('goog.asserts');
-goog.require('goog.dom');
-goog.require('goog.dom.NodeType');
-goog.require('goog.dom.TagName');
-goog.require('goog.dom.safe');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.soy.data.SanitizedContent');
-
-/**
- * A structural interface for injected data.
- *
- * <p>Soy generated code contributes optional properties.
- *
- * @record
- */
-goog.soy.IjData = function() {};
-
-/**
- * Helper typedef for ij parameters.  This is what soy generates.
- * @private
- * @typedef {!goog.soy.IjData|!Object<string, *>}
- */
-goog.soy.CompatibleIj_;
-
-/**
- * Type definition for strict Soy templates. Very useful when passing a template
- * as an argument.
- * @typedef {function(?=,
- * ?goog.soy.CompatibleIj_=):(string|!goog.soy.data.SanitizedContent)}
- */
-goog.soy.StrictTemplate;
-
-/**
- * Type definition for strict Soy HTML templates. Very useful when passing
- * a template as an argument.
- * @typedef {function(?=,
- * ?goog.soy.CompatibleIj_=):!goog.soy.data.SanitizedHtml}
- */
-goog.soy.StrictHtmlTemplate;
-
-
-/**
- * Type definition for text templates.
- * @typedef {function(?=, ?goog.soy.CompatibleIj_=):string}
- */
-goog.soy.TextTemplate;
-
-
-/**
- * Sets the processed template as the innerHTML of an element. It is recommended
- * to use this helper function instead of directly setting innerHTML in your
- * hand-written code, so that it will be easier to audit the code for cross-site
- * scripting vulnerabilities.
- *
- * @param {?Element} element The element whose content we are rendering into.
- * @param {!goog.soy.data.SanitizedContent} templateResult The processed
- *     template of kind HTML or TEXT (which will be escaped).
- * @template ARG_TYPES
- */
-goog.soy.renderHtml = function(element, templateResult) {
-  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(
-      goog.asserts.assert(element),
-      goog.soy.ensureTemplateOutputHtml_(templateResult));
-};
-
-
-// TODO(b/36644846): remove the second half of the function type union
-/**
- * Renders a Soy template and then set the output string as
- * the innerHTML of an element. It is recommended to use this helper function
- * instead of directly setting innerHTML in your hand-written code, so that it
- * will be easier to audit the code for cross-site scripting vulnerabilities.
- *
- * @param {Element} element The element whose content we are rendering into.
- * @param {?function(ARG_TYPES, ?goog.soy.CompatibleIj_=):*|
- *     ?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @template ARG_TYPES
- */
-goog.soy.renderElement = function(
-    element, template, opt_templateData, opt_injectedData) {
-  // Soy template parameter is only nullable for historical reasons.
-  goog.asserts.assert(template, 'Soy template may not be null.');
-  var html = goog.soy.ensureTemplateOutputHtml_(template(
-      opt_templateData || goog.soy.defaultTemplateData_, undefined,
-      opt_injectedData));
-  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(
-      goog.asserts.assert(element), html);
-};
-
-// TODO(b/36644846): remove the second half of the function type union
-/**
- * Renders a Soy template into a single node or a document
- * fragment. If the rendered HTML string represents a single node, then that
- * node is returned (note that this is *not* a fragment, despite them name of
- * the method). Otherwise a document fragment is returned containing the
- * rendered nodes.
- *
- * @param {
- *     ?function(ARG_TYPES,
- * ?goog.soy.CompatibleIj_=):!goog.soy.data.SanitizedContent|
- *     ?function(ARG_TYPES, null=, Object<string, *>=):
- *     goog.soy.data.SanitizedContent} template The Soy template defining the
- *     element's content. The kind of the template must be "html" or "text".
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @param {goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
- * @return {!Node} The resulting node or document fragment.
- * @template ARG_TYPES
- */
-goog.soy.renderAsFragment = function(
-    template, opt_templateData, opt_injectedData, opt_domHelper) {
-  // Soy template parameter is only nullable for historical reasons.
-  goog.asserts.assert(template, 'Soy template may not be null.');
-  var dom = opt_domHelper || goog.dom.getDomHelper();
-  var output = template(
-      opt_templateData || goog.soy.defaultTemplateData_, undefined,
-      opt_injectedData);
-  var html = goog.soy.ensureTemplateOutputHtml_(output);
-  goog.soy.assertFirstTagValid_(html.getTypedStringValue());
-  return dom.safeHtmlToNode(html);
-};
-
-// TODO(b/36644846): remove the second half of the function type union
-/**
- * Renders a Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * @param {?function(ARG_TYPES, ?goog.soy.CompatibleIj_=):*|
- *     ?function(ARG_TYPES, null=, Object<string, *>=):*} template
- *     The Soy template defining the element's content.
- * @param {ARG_TYPES=} opt_templateData The data for the template.
- * @param {Object=} opt_injectedData The injected data for the template.
- * @param {goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- * @template ARG_TYPES
- */
-goog.soy.renderAsElement = function(
-    template, opt_templateData, opt_injectedData, opt_domHelper) {
-  // Soy template parameter is only nullable for historical reasons.
-  goog.asserts.assert(template, 'Soy template may not be null.');
-  return goog.soy.convertToElement_(
-      template(
-          opt_templateData || goog.soy.defaultTemplateData_, undefined,
-          opt_injectedData),
-      opt_domHelper);
-};
-
-
-/**
- * Converts a processed Soy template into a single node. If the rendered
- * HTML string represents a single node, then that node is returned. Otherwise,
- * a DIV element is returned containing the rendered nodes.
- *
- * @param {!goog.soy.data.SanitizedContent} templateResult The processed
- *     template of kind HTML or TEXT (which will be escaped).
- * @param {?goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- */
-goog.soy.convertToElement = function(templateResult, opt_domHelper) {
-  return goog.soy.convertToElement_(templateResult, opt_domHelper);
-};
-
-
-/**
- * Non-strict version of `goog.soy.convertToElement`.
- *
- * @param {*} templateResult The processed template.
- * @param {?goog.dom.DomHelper=} opt_domHelper The DOM helper used to
- *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
- * @return {!Element} Rendered template contents, wrapped in a parent DIV
- *     element if necessary.
- * @private
- */
-goog.soy.convertToElement_ = function(templateResult, opt_domHelper) {
-  var dom = opt_domHelper || goog.dom.getDomHelper();
-  var wrapper = dom.createElement(goog.dom.TagName.DIV);
-  var html = goog.soy.ensureTemplateOutputHtml_(templateResult);
-  goog.soy.assertFirstTagValid_(html.getTypedStringValue());
-  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(wrapper, html);
-
-  // If the template renders as a single element, return it.
-  if (wrapper.childNodes.length == 1) {
-    var firstChild = wrapper.firstChild;
-    if (firstChild.nodeType == goog.dom.NodeType.ELEMENT) {
-      return /** @type {!Element} */ (firstChild);
-    }
-  }
-
-  // Otherwise, return the wrapper DIV.
-  return wrapper;
-};
-
-
-/**
- * Ensures the result is "safe" to insert as HTML.
- *
- * In the case the argument is a SanitizedContent object, it either must
- * already be of kind HTML, or if it is kind="text", the output will be HTML
- * escaped.
- *
- * @param {*} templateResult The template result.
- * @return {!goog.html.SafeHtml} The assumed-safe HTML output string.
- * @private
- */
-goog.soy.ensureTemplateOutputHtml_ = function(templateResult) {
-  // Note we allow everything that isn't an object, because some non-escaping
-  // templates end up returning non-strings if their only print statement is a
-  // non-escaped argument, plus some unit tests spoof templates.
-  // TODO(gboyer): Track down and fix these cases.
-  if (!goog.isObject(templateResult)) {
-    return goog.html.SafeHtml.htmlEscape(String(templateResult));
-  }
-
-  // Allow SanitizedContent of kind HTML.
-  if (templateResult instanceof goog.soy.data.SanitizedContent) {
-    return templateResult.toSafeHtml();
-  }
-
-  goog.asserts.fail(
-      'Soy template output is unsafe for use as HTML: ' + templateResult);
-
-  // In production, return a safe string, rather than failing hard.
-  return goog.html.SafeHtml.htmlEscape('zSoyz');
-};
-
-
-/**
- * Checks that the rendered HTML does not start with an invalid tag that would
- * likely cause unexpected output from renderAsElement or renderAsFragment.
- * See {@link http://www.w3.org/TR/html5/semantics.html#semantics} for reference
- * as to which HTML elements can be parents of each other.
- * @param {string} html The output of a template.
- * @private
- */
-goog.soy.assertFirstTagValid_ = function(html) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var matches = html.match(goog.soy.INVALID_TAG_TO_RENDER_);
-    goog.asserts.assert(
-        !matches, 'This template starts with a %s, which ' +
-            'cannot be a child of a <div>, as required by soy internals. ' +
-            'Consider using goog.soy.renderElement instead.\nTemplate output: %s',
-        matches && matches[0], html);
-  }
-};
-
-
-/**
- * A pattern to find templates that cannot be rendered by renderAsElement or
- * renderAsFragment, as these elements cannot exist as the child of a <div>.
- * @type {!RegExp}
- * @private
- */
-goog.soy.INVALID_TAG_TO_RENDER_ =
-    /^<(body|caption|col|colgroup|head|html|tr|td|th|tbody|thead|tfoot)>/i;
-
-
-/**
- * Immutable object that is passed into templates that are rendered
- * without any data.
- * @private @const
- */
-goog.soy.defaultTemplateData_ = {};
-
 //javascript/template/soy/checks.js
 /**
  * @fileoverview Provides Soy runtime checks for safe types.
@@ -44259,6 +43087,702 @@ exports = {
 };
 
 ;return exports;});
+
+//third_party/javascript/closure/debug/errorcontext.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides methods dealing with context on error objects.
+ */
+
+goog.provide('goog.debug.errorcontext');
+
+
+/**
+ * Adds key-value context to the error.
+ * @param {!Error} err The error to add context to.
+ * @param {string} contextKey Key for the context to be added.
+ * @param {string} contextValue Value for the context to be added.
+ */
+goog.debug.errorcontext.addErrorContext = function(
+    err, contextKey, contextValue) {
+  if (!err[goog.debug.errorcontext.CONTEXT_KEY_]) {
+    err[goog.debug.errorcontext.CONTEXT_KEY_] = {};
+  }
+  err[goog.debug.errorcontext.CONTEXT_KEY_][contextKey] = contextValue;
+};
+
+
+/**
+ * @param {!Error} err The error to get context from.
+ * @return {!Object<string, string>} The context of the provided error.
+ */
+goog.debug.errorcontext.getErrorContext = function(err) {
+  return err[goog.debug.errorcontext.CONTEXT_KEY_] || {};
+};
+
+
+// TODO(user): convert this to a Symbol once goog.debug.ErrorReporter is
+// able to use ES6.
+/** @private @const {string} */
+goog.debug.errorcontext.CONTEXT_KEY_ = '__closure__error__context__984382';
+
+//third_party/javascript/closure/debug/debug.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Logging and debugging utilities.
+ *
+ * @see ../demos/debug.html
+ */
+
+goog.provide('goog.debug');
+
+goog.require('goog.array');
+goog.require('goog.debug.errorcontext');
+goog.require('goog.userAgent');
+
+
+/** @define {boolean} Whether logging should be enabled. */
+goog.debug.LOGGING_ENABLED =
+    goog.define('goog.debug.LOGGING_ENABLED', goog.DEBUG);
+
+
+/** @define {boolean} Whether to force "sloppy" stack building. */
+goog.debug.FORCE_SLOPPY_STACKS =
+    goog.define('goog.debug.FORCE_SLOPPY_STACKS', false);
+
+
+/**
+ * Catches onerror events fired by windows and similar objects.
+ * @param {function(Object)} logFunc The function to call with the error
+ *    information.
+ * @param {boolean=} opt_cancel Whether to stop the error from reaching the
+ *    browser.
+ * @param {Object=} opt_target Object that fires onerror events.
+ * @suppress {strictMissingProperties} onerror is not defined as a property
+ *    on Object.
+ */
+goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
+  var target = opt_target || goog.global;
+  var oldErrorHandler = target.onerror;
+  var retVal = !!opt_cancel;
+
+  // Chrome interprets onerror return value backwards (http://crbug.com/92062)
+  // until it was fixed in webkit revision r94061 (Webkit 535.3). This
+  // workaround still needs to be skipped in Safari after the webkit change
+  // gets pushed out in Safari.
+  // See https://bugs.webkit.org/show_bug.cgi?id=67119
+  if (goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher('535.3')) {
+    retVal = !retVal;
+  }
+
+  /**
+   * New onerror handler for this target. This onerror handler follows the spec
+   * according to
+   * http://www.whatwg.org/specs/web-apps/current-work/#runtime-script-errors
+   * The spec was changed in August 2013 to support receiving column information
+   * and an error object for all scripts on the same origin or cross origin
+   * scripts with the proper headers. See
+   * https://mikewest.org/2013/08/debugging-runtime-errors-with-window-onerror
+   *
+   * @param {string} message The error message. For cross-origin errors, this
+   *     will be scrubbed to just "Script error.". For new browsers that have
+   *     updated to follow the latest spec, errors that come from origins that
+   *     have proper cross origin headers will not be scrubbed.
+   * @param {string} url The URL of the script that caused the error. The URL
+   *     will be scrubbed to "" for cross origin scripts unless the script has
+   *     proper cross origin headers and the browser has updated to the latest
+   *     spec.
+   * @param {number} line The line number in the script that the error
+   *     occurred on.
+   * @param {number=} opt_col The optional column number that the error
+   *     occurred on. Only browsers that have updated to the latest spec will
+   *     include this.
+   * @param {Error=} opt_error The optional actual error object for this
+   *     error that should include the stack. Only browsers that have updated
+   *     to the latest spec will inlude this parameter.
+   * @return {boolean} Whether to prevent the error from reaching the browser.
+   */
+  target.onerror = function(message, url, line, opt_col, opt_error) {
+    if (oldErrorHandler) {
+      oldErrorHandler(message, url, line, opt_col, opt_error);
+    }
+    logFunc({
+      message: message,
+      fileName: url,
+      line: line,
+      lineNumber: line,
+      col: opt_col,
+      error: opt_error
+    });
+    return retVal;
+  };
+};
+
+
+/**
+ * Creates a string representing an object and all its properties.
+ * @param {Object|null|undefined} obj Object to expose.
+ * @param {boolean=} opt_showFn Show the functions as well as the properties,
+ *     default is false.
+ * @return {string} The string representation of `obj`.
+ */
+goog.debug.expose = function(obj, opt_showFn) {
+  if (typeof obj == 'undefined') {
+    return 'undefined';
+  }
+  if (obj == null) {
+    return 'NULL';
+  }
+  var str = [];
+
+  for (var x in obj) {
+    if (!opt_showFn && goog.isFunction(obj[x])) {
+      continue;
+    }
+    var s = x + ' = ';
+
+    try {
+      s += obj[x];
+    } catch (e) {
+      s += '*** ' + e + ' ***';
+    }
+    str.push(s);
+  }
+  return str.join('\n');
+};
+
+
+/**
+ * Creates a string representing a given primitive or object, and for an
+ * object, all its properties and nested objects. NOTE: The output will include
+ * Uids on all objects that were exposed. Any added Uids will be removed before
+ * returning.
+ * @param {*} obj Object to expose.
+ * @param {boolean=} opt_showFn Also show properties that are functions (by
+ *     default, functions are omitted).
+ * @return {string} A string representation of `obj`.
+ */
+goog.debug.deepExpose = function(obj, opt_showFn) {
+  var str = [];
+
+  // Track any objects where deepExpose added a Uid, so they can be cleaned up
+  // before return. We do this globally, rather than only on ancestors so that
+  // if the same object appears in the output, you can see it.
+  var uidsToCleanup = [];
+  var ancestorUids = {};
+
+  var helper = function(obj, space) {
+    var nestspace = space + '  ';
+
+    var indentMultiline = function(str) {
+      return str.replace(/\n/g, '\n' + space);
+    };
+
+
+    try {
+      if (obj === undefined) {
+        str.push('undefined');
+      } else if (obj === null) {
+        str.push('NULL');
+      } else if (typeof obj === 'string') {
+        str.push('"' + indentMultiline(obj) + '"');
+      } else if (goog.isFunction(obj)) {
+        str.push(indentMultiline(String(obj)));
+      } else if (goog.isObject(obj)) {
+        // Add a Uid if needed. The struct calls implicitly adds them.
+        if (!goog.hasUid(obj)) {
+          uidsToCleanup.push(obj);
+        }
+        var uid = goog.getUid(obj);
+        if (ancestorUids[uid]) {
+          str.push('*** reference loop detected (id=' + uid + ') ***');
+        } else {
+          ancestorUids[uid] = true;
+          str.push('{');
+          for (var x in obj) {
+            if (!opt_showFn && goog.isFunction(obj[x])) {
+              continue;
+            }
+            str.push('\n');
+            str.push(nestspace);
+            str.push(x + ' = ');
+            helper(obj[x], nestspace);
+          }
+          str.push('\n' + space + '}');
+          delete ancestorUids[uid];
+        }
+      } else {
+        str.push(obj);
+      }
+    } catch (e) {
+      str.push('*** ' + e + ' ***');
+    }
+  };
+
+  helper(obj, '');
+
+  // Cleanup any Uids that were added by the deepExpose.
+  for (var i = 0; i < uidsToCleanup.length; i++) {
+    goog.removeUid(uidsToCleanup[i]);
+  }
+
+  return str.join('');
+};
+
+
+/**
+ * Recursively outputs a nested array as a string.
+ * @param {Array<?>} arr The array.
+ * @return {string} String representing nested array.
+ */
+goog.debug.exposeArray = function(arr) {
+  var str = [];
+  for (var i = 0; i < arr.length; i++) {
+    if (goog.isArray(arr[i])) {
+      str.push(goog.debug.exposeArray(arr[i]));
+    } else {
+      str.push(arr[i]);
+    }
+  }
+  return '[ ' + str.join(', ') + ' ]';
+};
+
+
+/**
+ * Normalizes the error/exception object between browsers.
+ * @param {*} err Raw error object.
+ * @return {{
+ *    message: (?|undefined),
+ *    name: (?|undefined),
+ *    lineNumber: (?|undefined),
+ *    fileName: (?|undefined),
+ *    stack: (?|undefined)
+ * }} Normalized error object.
+ * @suppress {strictMissingProperties} properties not defined on err
+ */
+goog.debug.normalizeErrorObject = function(err) {
+  var href = goog.getObjectByName('window.location.href');
+  if (err == null) {
+    err = 'Unknown Error of type "null/undefined"';
+  }
+  if (typeof err === 'string') {
+    return {
+      'message': err,
+      'name': 'Unknown error',
+      'lineNumber': 'Not available',
+      'fileName': href,
+      'stack': 'Not available'
+    };
+  }
+
+  var lineNumber, fileName;
+  var threwError = false;
+
+  try {
+    lineNumber = err.lineNumber || err.line || 'Not available';
+  } catch (e) {
+    // Firefox 2 sometimes throws an error when accessing 'lineNumber':
+    // Message: Permission denied to get property UnnamedClass.lineNumber
+    lineNumber = 'Not available';
+    threwError = true;
+  }
+
+  try {
+    fileName = err.fileName || err.filename || err.sourceURL ||
+        // $googDebugFname may be set before a call to eval to set the filename
+        // that the eval is supposed to present.
+        goog.global['$googDebugFname'] || href;
+  } catch (e) {
+    // Firefox 2 may also throw an error when accessing 'filename'.
+    fileName = 'Not available';
+    threwError = true;
+  }
+
+  // The IE Error object contains only the name and the message.
+  // The Safari Error object uses the line and sourceURL fields.
+  if (threwError || !err.lineNumber || !err.fileName || !err.stack ||
+      !err.message || !err.name) {
+    var message = err.message;
+    if (message == null) {
+      if (err.constructor && err.constructor instanceof Function) {
+        var ctorName = err.constructor.name ?
+            err.constructor.name :
+            goog.debug.getFunctionName(err.constructor);
+        message = 'Unknown Error of type "' + ctorName + '"';
+      } else {
+        message = 'Unknown Error of unknown type';
+      }
+    }
+    return {
+      'message': message,
+      'name': err.name || 'UnknownError',
+      'lineNumber': lineNumber,
+      'fileName': fileName,
+      'stack': err.stack || 'Not available'
+    };
+  }
+
+  // Standards error object
+  // Typed !Object. Should be a subtype of the return type, but it's not.
+  return /** @type {?} */ (err);
+};
+
+
+/**
+ * Converts an object to an Error using the object's toString if it's not
+ * already an Error, adds a stacktrace if there isn't one, and optionally adds
+ * an extra message.
+ * @param {*} err The original thrown error, object, or string.
+ * @param {string=} opt_message  optional additional message to add to the
+ *     error.
+ * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
+ *     it is converted to an Error which is enhanced and returned.
+ */
+goog.debug.enhanceError = function(err, opt_message) {
+  var error;
+  if (!(err instanceof Error)) {
+    error = Error(err);
+    if (Error.captureStackTrace) {
+      // Trim this function off the call stack, if we can.
+      Error.captureStackTrace(error, goog.debug.enhanceError);
+    }
+  } else {
+    error = err;
+  }
+
+  if (!error.stack) {
+    error.stack = goog.debug.getStacktrace(goog.debug.enhanceError);
+  }
+  if (opt_message) {
+    // find the first unoccupied 'messageX' property
+    var x = 0;
+    while (error['message' + x]) {
+      ++x;
+    }
+    error['message' + x] = String(opt_message);
+  }
+  return error;
+};
+
+
+/**
+ * Converts an object to an Error using the object's toString if it's not
+ * already an Error, adds a stacktrace if there isn't one, and optionally adds
+ * context to the Error, which is reported by the closure error reporter.
+ * @param {*} err The original thrown error, object, or string.
+ * @param {!Object<string, string>=} opt_context Key-value context to add to the
+ *     Error.
+ * @return {!Error} If err is an Error, it is enhanced and returned. Otherwise,
+ *     it is converted to an Error which is enhanced and returned.
+ */
+goog.debug.enhanceErrorWithContext = function(err, opt_context) {
+  var error = goog.debug.enhanceError(err);
+  if (opt_context) {
+    for (var key in opt_context) {
+      goog.debug.errorcontext.addErrorContext(error, key, opt_context[key]);
+    }
+  }
+  return error;
+};
+
+
+/**
+ * Gets the current stack trace. Simple and iterative - doesn't worry about
+ * catching circular references or getting the args.
+ * @param {number=} opt_depth Optional maximum depth to trace back to.
+ * @return {string} A string with the function names of all functions in the
+ *     stack, separated by \n.
+ * @suppress {es5Strict}
+ */
+goog.debug.getStacktraceSimple = function(opt_depth) {
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
+    if (stack) {
+      return stack;
+    }
+    // NOTE: browsers that have strict mode support also have native "stack"
+    // properties.  Fall-through for legacy browser support.
+  }
+
+  var sb = [];
+  var fn = arguments.callee.caller;
+  var depth = 0;
+
+  while (fn && (!opt_depth || depth < opt_depth)) {
+    sb.push(goog.debug.getFunctionName(fn));
+    sb.push('()\n');
+
+    try {
+      fn = fn.caller;
+    } catch (e) {
+      sb.push('[exception trying to get caller]\n');
+      break;
+    }
+    depth++;
+    if (depth >= goog.debug.MAX_STACK_DEPTH) {
+      sb.push('[...long stack...]');
+      break;
+    }
+  }
+  if (opt_depth && depth >= opt_depth) {
+    sb.push('[...reached max depth limit...]');
+  } else {
+    sb.push('[end]');
+  }
+
+  return sb.join('');
+};
+
+
+/**
+ * Max length of stack to try and output
+ * @type {number}
+ */
+goog.debug.MAX_STACK_DEPTH = 50;
+
+
+/**
+ * @param {Function} fn The function to start getting the trace from.
+ * @return {?string}
+ * @private
+ */
+goog.debug.getNativeStackTrace_ = function(fn) {
+  var tempErr = new Error();
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(tempErr, fn);
+    return String(tempErr.stack);
+  } else {
+    // IE10, only adds stack traces when an exception is thrown.
+    try {
+      throw tempErr;
+    } catch (e) {
+      tempErr = e;
+    }
+    var stack = tempErr.stack;
+    if (stack) {
+      return String(stack);
+    }
+  }
+  return null;
+};
+
+
+/**
+ * Gets the current stack trace, either starting from the caller or starting
+ * from a specified function that's currently on the call stack.
+ * @param {?Function=} fn If provided, when collecting the stack trace all
+ *     frames above the topmost call to this function, including that call,
+ *     will be left out of the stack trace.
+ * @return {string} Stack trace.
+ * @suppress {es5Strict}
+ */
+goog.debug.getStacktrace = function(fn) {
+  var stack;
+  if (!goog.debug.FORCE_SLOPPY_STACKS) {
+    // Try to get the stack trace from the environment if it is available.
+    var contextFn = fn || goog.debug.getStacktrace;
+    stack = goog.debug.getNativeStackTrace_(contextFn);
+  }
+  if (!stack) {
+    // NOTE: browsers that have strict mode support also have native "stack"
+    // properties. This function will throw in strict mode.
+    stack = goog.debug.getStacktraceHelper_(fn || arguments.callee.caller, []);
+  }
+  return stack;
+};
+
+
+/**
+ * Private helper for getStacktrace().
+ * @param {?Function} fn If provided, when collecting the stack trace all
+ *     frames above the topmost call to this function, including that call,
+ *     will be left out of the stack trace.
+ * @param {Array<!Function>} visited List of functions visited so far.
+ * @return {string} Stack trace starting from function fn.
+ * @suppress {es5Strict}
+ * @private
+ */
+goog.debug.getStacktraceHelper_ = function(fn, visited) {
+  var sb = [];
+
+  // Circular reference, certain functions like bind seem to cause a recursive
+  // loop so we need to catch circular references
+  if (goog.array.contains(visited, fn)) {
+    sb.push('[...circular reference...]');
+
+    // Traverse the call stack until function not found or max depth is reached
+  } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
+    sb.push(goog.debug.getFunctionName(fn) + '(');
+    var args = fn.arguments;
+    // Args may be null for some special functions such as host objects or eval.
+    for (var i = 0; args && i < args.length; i++) {
+      if (i > 0) {
+        sb.push(', ');
+      }
+      var argDesc;
+      var arg = args[i];
+      switch (typeof arg) {
+        case 'object':
+          argDesc = arg ? 'object' : 'null';
+          break;
+
+        case 'string':
+          argDesc = arg;
+          break;
+
+        case 'number':
+          argDesc = String(arg);
+          break;
+
+        case 'boolean':
+          argDesc = arg ? 'true' : 'false';
+          break;
+
+        case 'function':
+          argDesc = goog.debug.getFunctionName(arg);
+          argDesc = argDesc ? argDesc : '[fn]';
+          break;
+
+        case 'undefined':
+        default:
+          argDesc = typeof arg;
+          break;
+      }
+
+      if (argDesc.length > 40) {
+        argDesc = argDesc.substr(0, 40) + '...';
+      }
+      sb.push(argDesc);
+    }
+    visited.push(fn);
+    sb.push(')\n');
+
+    try {
+      sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited));
+    } catch (e) {
+      sb.push('[exception trying to get caller]\n');
+    }
+
+  } else if (fn) {
+    sb.push('[...long stack...]');
+  } else {
+    sb.push('[end]');
+  }
+  return sb.join('');
+};
+
+
+/**
+ * Gets a function name
+ * @param {Function} fn Function to get name of.
+ * @return {string} Function's name.
+ */
+goog.debug.getFunctionName = function(fn) {
+  if (goog.debug.fnNameCache_[fn]) {
+    return goog.debug.fnNameCache_[fn];
+  }
+
+  // Heuristically determine function name based on code.
+  var functionSource = String(fn);
+  if (!goog.debug.fnNameCache_[functionSource]) {
+    var matches = /function\s+([^\(]+)/m.exec(functionSource);
+    if (matches) {
+      var method = matches[1];
+      goog.debug.fnNameCache_[functionSource] = method;
+    } else {
+      goog.debug.fnNameCache_[functionSource] = '[Anonymous]';
+    }
+  }
+
+  return goog.debug.fnNameCache_[functionSource];
+};
+
+
+/**
+ * Makes whitespace visible by replacing it with printable characters.
+ * This is useful in finding diffrences between the expected and the actual
+ * output strings of a testcase.
+ * @param {string} string whose whitespace needs to be made visible.
+ * @return {string} string whose whitespace is made visible.
+ */
+goog.debug.makeWhitespaceVisible = function(string) {
+  return string.replace(/ /g, '[_]')
+      .replace(/\f/g, '[f]')
+      .replace(/\n/g, '[n]\n')
+      .replace(/\r/g, '[r]')
+      .replace(/\t/g, '[t]');
+};
+
+
+/**
+ * Returns the type of a value. If a constructor is passed, and a suitable
+ * string cannot be found, 'unknown type name' will be returned.
+ *
+ * <p>Forked rather than moved from {@link goog.asserts.getType_}
+ * to avoid adding a dependency to goog.asserts.
+ * @param {*} value A constructor, object, or primitive.
+ * @return {string} The best display name for the value, or 'unknown type name'.
+ */
+goog.debug.runtimeType = function(value) {
+  if (value instanceof Function) {
+    return value.displayName || value.name || 'unknown type name';
+  } else if (value instanceof Object) {
+    return /** @type {string} */ (value.constructor.displayName) ||
+        value.constructor.name || Object.prototype.toString.call(value);
+  } else {
+    return value === null ? 'null' : typeof value;
+  }
+};
+
+
+/**
+ * Hash map for storing function names that have already been looked up.
+ * @type {Object}
+ * @private
+ */
+goog.debug.fnNameCache_ = {};
+
+
+/**
+ * Private internal function to support goog.debug.freeze.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ * @private
+ */
+goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
+  return arg;
+};
+
+
+/**
+ * Freezes the given object, but only in debug mode (and in browsers that
+ * support it).  Note that this is a shallow freeze, so for deeply nested
+ * objects it must be called at every level to ensure deep immutability.
+ * @param {T} arg
+ * @return {T}
+ * @template T
+ */
+goog.debug.freeze = function(arg) {
+  // NOTE: this compiles to nothing, but hides the possible side effect of
+  // freezeInternal_ from the compiler so that the entire call can be
+  // removed if the result is not used.
+  return {
+    valueOf: function() {
+      return goog.debug.freezeInternal_(arg);
+    }
+  }.valueOf();
+};
 
 //third_party/javascript/closure/format/format.js
 /**
@@ -47354,4 +46878,289 @@ soy.esc.$$SAFE_TAG_WHITELIST_ = {'b': true, 'br': true, 'em': true, 'i': true, '
 soy.esc.$$HTML_ATTRIBUTE_REGEX_ = /([a-zA-Z][a-zA-Z0-9:\-]*)[\t\n\r\u0020]*=[\t\n\r\u0020]*("[^"]*"|'[^']*')/g;
 
 // END GENERATED CODE
+
+//third_party/javascript/closure/soy/soy.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides utility methods to render soy template.
+ */
+
+goog.provide('goog.soy');
+
+goog.require('goog.asserts');
+goog.require('goog.dom');
+goog.require('goog.dom.NodeType');
+goog.require('goog.dom.TagName');
+goog.require('goog.dom.safe');
+goog.require('goog.html.SafeHtml');
+goog.require('goog.soy.data.SanitizedContent');
+
+/**
+ * A structural interface for injected data.
+ *
+ * <p>Soy generated code contributes optional properties.
+ *
+ * @record
+ */
+goog.soy.IjData = function() {};
+
+/**
+ * Helper typedef for ij parameters.  This is what soy generates.
+ * @private
+ * @typedef {!goog.soy.IjData|!Object<string, *>}
+ */
+goog.soy.CompatibleIj_;
+
+/**
+ * Type definition for strict Soy templates. Very useful when passing a template
+ * as an argument.
+ * @typedef {function(?=,
+ * ?goog.soy.CompatibleIj_=):(string|!goog.soy.data.SanitizedContent)}
+ */
+goog.soy.StrictTemplate;
+
+/**
+ * Type definition for strict Soy HTML templates. Very useful when passing
+ * a template as an argument.
+ * @typedef {function(?=,
+ * ?goog.soy.CompatibleIj_=):!goog.soy.data.SanitizedHtml}
+ */
+goog.soy.StrictHtmlTemplate;
+
+
+/**
+ * Type definition for text templates.
+ * @typedef {function(?=, ?goog.soy.CompatibleIj_=):string}
+ */
+goog.soy.TextTemplate;
+
+
+/**
+ * Sets the processed template as the innerHTML of an element. It is recommended
+ * to use this helper function instead of directly setting innerHTML in your
+ * hand-written code, so that it will be easier to audit the code for cross-site
+ * scripting vulnerabilities.
+ *
+ * @param {?Element} element The element whose content we are rendering into.
+ * @param {!goog.soy.data.SanitizedContent} templateResult The processed
+ *     template of kind HTML or TEXT (which will be escaped).
+ * @template ARG_TYPES
+ */
+goog.soy.renderHtml = function(element, templateResult) {
+  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(
+      goog.asserts.assert(element),
+      goog.soy.ensureTemplateOutputHtml_(templateResult));
+};
+
+
+// TODO(b/36644846): remove the second half of the function type union
+/**
+ * Renders a Soy template and then set the output string as
+ * the innerHTML of an element. It is recommended to use this helper function
+ * instead of directly setting innerHTML in your hand-written code, so that it
+ * will be easier to audit the code for cross-site scripting vulnerabilities.
+ *
+ * @param {Element} element The element whose content we are rendering into.
+ * @param {?function(ARG_TYPES, ?goog.soy.CompatibleIj_=):*|
+ *     ?function(ARG_TYPES, null=, Object<string, *>=):*} template
+ *     The Soy template defining the element's content.
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
+ * @param {Object=} opt_injectedData The injected data for the template.
+ * @template ARG_TYPES
+ */
+goog.soy.renderElement = function(
+    element, template, opt_templateData, opt_injectedData) {
+  // Soy template parameter is only nullable for historical reasons.
+  goog.asserts.assert(template, 'Soy template may not be null.');
+  var html = goog.soy.ensureTemplateOutputHtml_(template(
+      opt_templateData || goog.soy.defaultTemplateData_, undefined,
+      opt_injectedData));
+  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(
+      goog.asserts.assert(element), html);
+};
+
+// TODO(b/36644846): remove the second half of the function type union
+/**
+ * Renders a Soy template into a single node or a document
+ * fragment. If the rendered HTML string represents a single node, then that
+ * node is returned (note that this is *not* a fragment, despite them name of
+ * the method). Otherwise a document fragment is returned containing the
+ * rendered nodes.
+ *
+ * @param {
+ *     ?function(ARG_TYPES,
+ * ?goog.soy.CompatibleIj_=):!goog.soy.data.SanitizedContent|
+ *     ?function(ARG_TYPES, null=, Object<string, *>=):
+ *     goog.soy.data.SanitizedContent} template The Soy template defining the
+ *     element's content. The kind of the template must be "html" or "text".
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
+ * @param {Object=} opt_injectedData The injected data for the template.
+ * @param {goog.dom.DomHelper=} opt_domHelper The DOM helper used to
+ *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
+ * @return {!Node} The resulting node or document fragment.
+ * @template ARG_TYPES
+ */
+goog.soy.renderAsFragment = function(
+    template, opt_templateData, opt_injectedData, opt_domHelper) {
+  // Soy template parameter is only nullable for historical reasons.
+  goog.asserts.assert(template, 'Soy template may not be null.');
+  var dom = opt_domHelper || goog.dom.getDomHelper();
+  var output = template(
+      opt_templateData || goog.soy.defaultTemplateData_, undefined,
+      opt_injectedData);
+  var html = goog.soy.ensureTemplateOutputHtml_(output);
+  goog.soy.assertFirstTagValid_(html.getTypedStringValue());
+  return dom.safeHtmlToNode(html);
+};
+
+// TODO(b/36644846): remove the second half of the function type union
+/**
+ * Renders a Soy template into a single node. If the rendered
+ * HTML string represents a single node, then that node is returned. Otherwise,
+ * a DIV element is returned containing the rendered nodes.
+ *
+ * @param {?function(ARG_TYPES, ?goog.soy.CompatibleIj_=):*|
+ *     ?function(ARG_TYPES, null=, Object<string, *>=):*} template
+ *     The Soy template defining the element's content.
+ * @param {ARG_TYPES=} opt_templateData The data for the template.
+ * @param {Object=} opt_injectedData The injected data for the template.
+ * @param {goog.dom.DomHelper=} opt_domHelper The DOM helper used to
+ *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
+ * @return {!Element} Rendered template contents, wrapped in a parent DIV
+ *     element if necessary.
+ * @template ARG_TYPES
+ */
+goog.soy.renderAsElement = function(
+    template, opt_templateData, opt_injectedData, opt_domHelper) {
+  // Soy template parameter is only nullable for historical reasons.
+  goog.asserts.assert(template, 'Soy template may not be null.');
+  return goog.soy.convertToElement_(
+      template(
+          opt_templateData || goog.soy.defaultTemplateData_, undefined,
+          opt_injectedData),
+      opt_domHelper);
+};
+
+
+/**
+ * Converts a processed Soy template into a single node. If the rendered
+ * HTML string represents a single node, then that node is returned. Otherwise,
+ * a DIV element is returned containing the rendered nodes.
+ *
+ * @param {!goog.soy.data.SanitizedContent} templateResult The processed
+ *     template of kind HTML or TEXT (which will be escaped).
+ * @param {?goog.dom.DomHelper=} opt_domHelper The DOM helper used to
+ *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
+ * @return {!Element} Rendered template contents, wrapped in a parent DIV
+ *     element if necessary.
+ */
+goog.soy.convertToElement = function(templateResult, opt_domHelper) {
+  return goog.soy.convertToElement_(templateResult, opt_domHelper);
+};
+
+
+/**
+ * Non-strict version of `goog.soy.convertToElement`.
+ *
+ * @param {*} templateResult The processed template.
+ * @param {?goog.dom.DomHelper=} opt_domHelper The DOM helper used to
+ *     create DOM nodes; defaults to `goog.dom.getDomHelper`.
+ * @return {!Element} Rendered template contents, wrapped in a parent DIV
+ *     element if necessary.
+ * @private
+ */
+goog.soy.convertToElement_ = function(templateResult, opt_domHelper) {
+  var dom = opt_domHelper || goog.dom.getDomHelper();
+  var wrapper = dom.createElement(goog.dom.TagName.DIV);
+  var html = goog.soy.ensureTemplateOutputHtml_(templateResult);
+  goog.soy.assertFirstTagValid_(html.getTypedStringValue());
+  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(wrapper, html);
+
+  // If the template renders as a single element, return it.
+  if (wrapper.childNodes.length == 1) {
+    var firstChild = wrapper.firstChild;
+    if (firstChild.nodeType == goog.dom.NodeType.ELEMENT) {
+      return /** @type {!Element} */ (firstChild);
+    }
+  }
+
+  // Otherwise, return the wrapper DIV.
+  return wrapper;
+};
+
+
+/**
+ * Ensures the result is "safe" to insert as HTML.
+ *
+ * In the case the argument is a SanitizedContent object, it either must
+ * already be of kind HTML, or if it is kind="text", the output will be HTML
+ * escaped.
+ *
+ * @param {*} templateResult The template result.
+ * @return {!goog.html.SafeHtml} The assumed-safe HTML output string.
+ * @private
+ */
+goog.soy.ensureTemplateOutputHtml_ = function(templateResult) {
+  // Note we allow everything that isn't an object, because some non-escaping
+  // templates end up returning non-strings if their only print statement is a
+  // non-escaped argument, plus some unit tests spoof templates.
+  // TODO(gboyer): Track down and fix these cases.
+  if (!goog.isObject(templateResult)) {
+    return goog.html.SafeHtml.htmlEscape(String(templateResult));
+  }
+
+  // Allow SanitizedContent of kind HTML.
+  if (templateResult instanceof goog.soy.data.SanitizedContent) {
+    return templateResult.toSafeHtml();
+  }
+
+  goog.asserts.fail(
+      'Soy template output is unsafe for use as HTML: ' + templateResult);
+
+  // In production, return a safe string, rather than failing hard.
+  return goog.html.SafeHtml.htmlEscape('zSoyz');
+};
+
+
+/**
+ * Checks that the rendered HTML does not start with an invalid tag that would
+ * likely cause unexpected output from renderAsElement or renderAsFragment.
+ * See {@link http://www.w3.org/TR/html5/semantics.html#semantics} for reference
+ * as to which HTML elements can be parents of each other.
+ * @param {string} html The output of a template.
+ * @private
+ */
+goog.soy.assertFirstTagValid_ = function(html) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var matches = html.match(goog.soy.INVALID_TAG_TO_RENDER_);
+    goog.asserts.assert(
+        !matches, 'This template starts with a %s, which ' +
+            'cannot be a child of a <div>, as required by soy internals. ' +
+            'Consider using goog.soy.renderElement instead.\nTemplate output: %s',
+        matches && matches[0], html);
+  }
+};
+
+
+/**
+ * A pattern to find templates that cannot be rendered by renderAsElement or
+ * renderAsFragment, as these elements cannot exist as the child of a <div>.
+ * @type {!RegExp}
+ * @private
+ */
+goog.soy.INVALID_TAG_TO_RENDER_ =
+    /^<(body|caption|col|colgroup|head|html|tr|td|th|tbody|thead|tfoot)>/i;
+
+
+/**
+ * Immutable object that is passed into templates that are rendered
+ * without any data.
+ * @private @const
+ */
+goog.soy.defaultTemplateData_ = {};
 
