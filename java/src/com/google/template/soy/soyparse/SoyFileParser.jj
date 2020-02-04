@@ -775,6 +775,19 @@ TOKEN_MGR_DECLS: {
     comments.add(Comment.create(Comment.Type.RANGE, commentToken.image, parser.createSrcLoc(commentToken)));
   }
 
+  void trimTokenBegin(Token token, int by) {
+    for (int i = 0; i < by; i++) {
+        char c = token.image.charAt(i);
+        if (c == '\n') {
+          token.beginLine += 1;
+          token.beginColumn = 1;
+        } else {
+          token.beginColumn++;
+        }
+    }
+    token.image = token.image.substring(by);
+  }
+
   @Override
   public String toString() {
     return "TokenManager{" + lexStateNames[curLexState] + "}";
@@ -812,8 +825,7 @@ TOKEN_MGR_DECLS: {
   < (<WS>)+ <LINE_COMMENT> >
   {
     int i = matchedToken.image.indexOf('/');
-    matchedToken.image = matchedToken.image.substring(i);
-    matchedToken.beginColumn += i;
+    trimTokenBegin(matchedToken, i);
     addLineComment(matchedToken);
   }
 }

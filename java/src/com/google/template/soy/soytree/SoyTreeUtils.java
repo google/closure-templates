@@ -86,6 +86,18 @@ public final class SoyTreeUtils {
         HtmlAttributeValueNode.class);
   }
 
+  /** Returns the next sibling of {@code node} or {@code null} if none exists. */
+  public static SoyNode nextSibling(SoyNode node) {
+    ParentSoyNode<?> parent = node.getParent();
+    if (parent == null) {
+      return null;
+    }
+    int index = parent.getChildIndex(node);
+    Preconditions.checkState(index >= 0);
+    int nextIndex = index + 1;
+    return parent.getChildren().size() > nextIndex ? parent.getChild(nextIndex) : null;
+  }
+
   /** An enum that allows a {#visitAllNodes} visitor to control how the AST is traversed. */
   public enum VisitDirective {
     /**

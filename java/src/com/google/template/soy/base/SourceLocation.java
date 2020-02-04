@@ -274,5 +274,21 @@ public final class SourceLocation implements Comparable<SourceLocation> {
           .compare(column(), o.column())
           .result();
     }
+
+    public final boolean isBefore(Point o) {
+      return compareTo(o) < 0;
+    }
+
+    public final boolean isBefore(SourceLocation o) {
+      return isBefore(o.getBeginPoint());
+    }
+
+    public final boolean isAfter(Point o) {
+      return compareTo(o) > 0;
+    }
+
+    public final boolean isAfter(SourceLocation o) {
+      return isAfter(o.getEndPoint());
+    }
   }
 }

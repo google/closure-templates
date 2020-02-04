@@ -50,4 +50,12 @@ public abstract class Comment {
   public Comment withType(Type type) {
     return create(type, getSource(), getSourceLocation());
   }
+
+  public SourceLocation.Point getBeginPoint() {
+    return getSourceLocation().getBeginPoint();
+  }
+
+  public SourceLocation.Point getEndPoint() {
+    return getSourceLocation().getEndPoint();
+  }
 }
