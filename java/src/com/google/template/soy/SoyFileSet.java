@@ -165,6 +165,8 @@ public final class SoyFileSet {
 
     private boolean skipPluginValidation = false;
 
+    private boolean optimize = true;
+
     private final ImmutableSet.Builder<SoyFunction> extraSoyFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoyPrintDirective> extraSoyPrintDirectives =
         ImmutableSet.builder();
@@ -238,7 +240,8 @@ public final class SoyFileSet {
           loggingConfig,
           warningSink,
           pluginRuntimeJars,
-          skipPluginValidation);
+          skipPluginValidation,
+          optimize);
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
@@ -408,7 +411,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder disableOptimizer() {
-      getGeneralOptions().disableOptimizer();
+      optimize = false;
       return this;
     }
 
@@ -596,6 +599,8 @@ public final class SoyFileSet {
 
   private final boolean skipPluginValidation;
 
+  private final boolean optimize;
+
   /** For reporting errors during parsing. */
   private ErrorReporter errorReporter;
 
@@ -616,7 +621,8 @@ public final class SoyFileSet {
       ValidatedLoggingConfig loggingConfig,
       @Nullable Appendable warningSink,
       ImmutableList<File> pluginRuntimeJars,
-      boolean skipPluginValidation) {
+      boolean skipPluginValidation,
+      boolean optimize) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
@@ -632,6 +638,7 @@ public final class SoyFileSet {
     this.warningSink = warningSink;
     this.pluginRuntimeJars = pluginRuntimeJars;
     this.skipPluginValidation = skipPluginValidation;
+    this.optimize = optimize;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -1164,6 +1171,7 @@ public final class SoyFileSet {
   private PassManager.Builder passManagerBuilder() {
     return new PassManager.Builder()
         .setGeneralOptions(generalOptions)
+        .optimize(optimize)
         .setSoyPrintDirectives(printDirectives)
         .setErrorReporter(errorReporter)
         .setConformanceConfig(conformanceConfig)

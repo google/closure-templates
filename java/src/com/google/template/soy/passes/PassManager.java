@@ -416,8 +416,7 @@ public final class PassManager {
         addPass(new DesugarHtmlNodesPass(), crossTemplateCheckingPassesBuilder);
         addPass(new DesugarStateNodesPass(), crossTemplateCheckingPassesBuilder);
       }
-      // TODO(lukes): there should only be one way to disable the optimizer, not 2
-      if (optimize && options.isOptimizerEnabled()) {
+      if (optimize) {
         addPass(new OptimizationPass(), crossTemplateCheckingPassesBuilder);
       }
       // DesugarHtmlNodesPass may chop up RawTextNodes, and OptimizationPass may produce additional

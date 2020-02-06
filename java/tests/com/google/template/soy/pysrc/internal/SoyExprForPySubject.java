@@ -50,9 +50,8 @@ import java.util.Map;
  */
 public final class SoyExprForPySubject extends Subject {
 
-  // disable optimizer for backwards compatibility
   private final String actual;
-  private final SoyGeneralOptions opts = new SoyGeneralOptions().disableOptimizer();
+  private final SoyGeneralOptions opts = new SoyGeneralOptions();
 
   private final LocalVariableStack localVarExprs;
 
@@ -172,6 +171,8 @@ public final class SoyExprForPySubject extends Subject {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateContents(untypedTemplateBodyForExpression(actual))
             .options(opts)
+            // disable optimizer for backwards compatibility
+            .runOptimizer(false)
             .parse()
             .fileSet();
     PrintNode node = (PrintNode) SharedTestUtils.getNode(soyTree, 0);

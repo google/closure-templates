@@ -42,7 +42,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SharedTestUtils;
-import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -62,7 +61,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
   private static final Joiner JOINER = Joiner.on('\n');
 
   private final String actual;
-  private final SoyGeneralOptions generalOptions = new SoyGeneralOptions().disableOptimizer();
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
   private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
@@ -163,7 +161,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
             .allowUnboundGlobals(true)
             .allowV1Expression(true)
             .typeRegistry(typeRegistry)
-            .options(generalOptions)
             .setLoggingConfig(loggingConfig)
             .enableExperimentalFeatures(experimentalFeatures);
     for (SoyFunction soyFunction : soyFunctions) {

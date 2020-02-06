@@ -1278,6 +1278,7 @@ public class RenderVisitorTest {
     ParseResult result =
         SoyFileSetParserBuilder.forFileContents(soyFileContent1, soyFileContent2, soyFileContent3)
             .options(options)
+            .runOptimizer(true)
             .errorReporter(FAIL)
             .parse();
 

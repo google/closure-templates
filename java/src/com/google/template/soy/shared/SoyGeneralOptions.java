@@ -48,27 +48,12 @@ public final class SoyGeneralOptions implements Cloneable {
   /** A list of experimental features that are not generally available. */
   private ImmutableSet<String> experimentalFeatures = ImmutableSet.of();
 
-  /** Whether we should run optimizer. */
-  private boolean enabledOptimizer = true;
-
   public SoyGeneralOptions() {}
 
   private SoyGeneralOptions(SoyGeneralOptions orig) {
     this.allowExternalCalls = orig.allowExternalCalls;
     this.compileTimeGlobals = orig.compileTimeGlobals;
     this.experimentalFeatures = ImmutableSet.copyOf(orig.experimentalFeatures);
-    this.enabledOptimizer = orig.isOptimizerEnabled();
-  }
-
-  /** Disallow optimizer. */
-  public SoyGeneralOptions disableOptimizer() {
-    this.enabledOptimizer = false;
-    return this;
-  }
-
-  /** Return true if we want to run optimizer in the compiler. */
-  public boolean isOptimizerEnabled() {
-    return this.enabledOptimizer;
   }
 
   /** Sets experimental features. These features are unreleased and are not generally available. */
@@ -195,7 +180,6 @@ public final class SoyGeneralOptions implements Cloneable {
         .add("allowExternalCalls", allowExternalCalls)
         .add("compileTimeGlobals", compileTimeGlobals)
         .add("experimentalFeatures", experimentalFeatures)
-        .add("enabledOptimizer", enabledOptimizer)
         .toString();
   }
 }

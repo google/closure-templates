@@ -57,14 +57,14 @@ public final class SoyFileSetParserBuilder {
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
   private boolean allowV1Expression;
-  private boolean runOptimizer = true;
+  // disable optimization by default
+  private boolean runOptimizer = false;
   private final SoyScopedData scopedData;
   private ImmutableList<SoyFunction> soyFunctions;
   private ImmutableList<SoyPrintDirective> soyPrintDirectives;
   private ImmutableList<SoySourceFunction> sourceFunctions;
   private ImmutableList<SoySourceFunction> soyMethods;
-  // disable optimization by default
-  private SoyGeneralOptions options = new SoyGeneralOptions().disableOptimizer();
+  private SoyGeneralOptions options = new SoyGeneralOptions();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private boolean desugarHtmlAndStateNodes = true;
