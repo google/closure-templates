@@ -501,7 +501,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             JsDoc.builder()
                 .addParam(INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer")
                 .addParam("opt_data", paramsType)
-                .addAnnotation("protected")
+                .addAnnotation("public")
                 .addAnnotation("override")
                 .addParameterizedAnnotation("suppress", "checkTypes")
                 .build(),
