@@ -21,8 +21,10 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.DoNotCall;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -32,7 +34,10 @@ import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TemplateType;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +50,14 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind DUPLICATE_RECORD_FIELD =
       SoyErrorKind.of("Duplicate field ''{0}'' in record declaration.");
+
+  private static final SoyErrorKind DUPLICATE_TEMPLATE_ARGUMENT =
+      SoyErrorKind.of("Duplicate argument ''{0}'' in template type declaration.");
+
+  private static final SoyErrorKind INVALID_TEMPLATE_RETURN_TYPE =
+      SoyErrorKind.of(
+          "Template types can only return html, attributes, string, js, css, uri, or"
+              + " trusted_resource_uri.");
 
   private static final SoyErrorKind UNEXPECTED_TYPE_PARAM =
       SoyErrorKind.of(
@@ -61,6 +74,16 @@ public final class TypeNodeConverter
 
   private static final SoyErrorKind SAFE_PROTO_TYPE =
       SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
+
+  private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
+      Sets.immutableEnumSet(
+          Kind.HTML,
+          Kind.ATTRIBUTES,
+          Kind.STRING,
+          Kind.JS,
+          Kind.CSS,
+          Kind.URI,
+          Kind.TRUSTED_RESOURCE_URI);
 
   private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES =
       ImmutableMap.of(
@@ -219,6 +242,29 @@ public final class TypeNodeConverter
       }
     }
     SoyType type = typeRegistry.getOrCreateRecordType(map.values());
+    node.setResolvedType(type);
+    return type;
+  }
+
+  @Override
+  public SoyType visit(TemplateTypeNode node) {
+    Map<String, TemplateType.Argument> map = new LinkedHashMap<>();
+    for (TemplateTypeNode.Argument argument : node.arguments()) {
+      TemplateType.Argument oldArgument =
+          map.put(
+              argument.name(),
+              TemplateType.argumentOf(argument.name(), argument.type().accept(this)));
+      if (oldArgument != null) {
+        errorReporter.report(argument.nameLocation(), DUPLICATE_TEMPLATE_ARGUMENT, argument.name());
+        map.put(argument.name(), oldArgument);
+      }
+    }
+    SoyType returnType = node.returnType().accept(this);
+    // Validate return type.
+    if (!ALLOWED_TEMPLATE_RETURN_TYPES.contains(returnType.getKind())) {
+      errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
+    }
+    SoyType type = typeRegistry.getOrCreateTemplateType(map.values(), returnType);
     node.setResolvedType(type);
     return type;
   }

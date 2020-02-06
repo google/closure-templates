@@ -130,6 +130,7 @@ public class SoyTypeRegistry {
   private final Interner<LegacyObjectMapType> legacyObjectMapTypes = Interners.newStrongInterner();
   private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
   private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
+  private final Interner<TemplateType> templateTypes = Interners.newStrongInterner();
   private final Interner<VeType> veTypes = Interners.newStrongInterner();
 
   @GuardedBy("lock")
@@ -295,6 +296,15 @@ public class SoyTypeRegistry {
    */
   public RecordType getOrCreateRecordType(Iterable<RecordType.Member> members) {
     return recordTypes.intern(RecordType.of(members));
+  }
+
+  /**
+   * Factory function which creates a template type, given a list of arguments and a return type.
+   * This folds identical template types together.
+   */
+  public TemplateType getOrCreateTemplateType(
+      Iterable<TemplateType.Argument> arguments, SoyType returnType) {
+    return templateTypes.intern(TemplateType.of(arguments, returnType));
   }
 
   /**

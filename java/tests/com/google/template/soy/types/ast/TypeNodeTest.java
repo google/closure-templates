@@ -19,6 +19,8 @@ package com.google.template.soy.types.ast;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
@@ -98,6 +100,48 @@ public final class TypeNodeTest {
   }
 
   @Test
+  public void testTemplateTypeToString() throws Exception {
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(),
+                    NamedTypeNode.create(SOURCE_LOCATION, "html"))
+                .toString())
+        .isEqualTo("() => html");
+
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "x", TYPE_ABC)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "attributes"))
+                .toString())
+        .isEqualTo("(x: abc) => attributes");
+
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "x", TYPE_ABC),
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "y", TYPE_DEF)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "css"))
+                .toString())
+        .isEqualTo("(x: abc, y: def) => css");
+
+    assertThat(
+            TemplateTypeNode.create(
+                    SOURCE_LOCATION,
+                    ImmutableList.of(
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "x", TYPE_ABC),
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "y", TYPE_DEF),
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "z", TYPE_GHI),
+                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "w", TYPE_JKL)),
+                    NamedTypeNode.create(SOURCE_LOCATION, "uri"))
+                .toString())
+        .isEqualTo("(\n  x: abc,\n  y: def,\n  z: ghi,\n  w: jkl\n) => uri");
+  }
+
+  @Test
   public void testUnionTypeToString() throws Exception {
     assertThat(UnionTypeNode.create(ImmutableList.of(TYPE_ABC, TYPE_DEF)).toString())
         .isEqualTo("abc|def");
@@ -111,6 +155,9 @@ public final class TypeNodeTest {
     assertRoundTrip("list<list<list<list<int>>>>");
     assertRoundTrip("map<int, any>");
     assertRoundTrip("[foo: string, bar: int, quux: [foo: string, bar: int, quux: list<any>]]");
+    assertRoundTrip("() => html");
+    assertRoundTrip("(baz: int, tpl: (foo: string, bar: int) => attributes) => html");
+    assertRoundTrip("(count: int) => html | (count: int) => attributes");
   }
 
   private void assertRoundTrip(String typeString) {
@@ -167,6 +214,27 @@ public final class TypeNodeTest {
               assertThat(leftProp.name()).isEqualTo(rightProp.name());
               assertEquals(leftProp.type(), rightProp.type());
             }
+            return null;
+          }
+
+          @Override
+          public Void visit(TemplateTypeNode node) {
+            assertThat(node.arguments()).hasSize(((TemplateTypeNode) right).arguments().size());
+            ImmutableMap<String, TypeNode> leftArgumentMap =
+                Streams.stream(node.arguments())
+                    .collect(
+                        ImmutableMap.toImmutableMap(
+                            TemplateTypeNode.Argument::name, TemplateTypeNode.Argument::type));
+            ImmutableMap<String, TypeNode> rightArgumentMap =
+                Streams.stream(((TemplateTypeNode) right).arguments())
+                    .collect(
+                        ImmutableMap.toImmutableMap(
+                            TemplateTypeNode.Argument::name, TemplateTypeNode.Argument::type));
+            assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
+            for (String key : leftArgumentMap.keySet()) {
+              assertEquals(leftArgumentMap.get(key), rightArgumentMap.get(key));
+            }
+            assertEquals(node.returnType(), ((TemplateTypeNode) right).returnType());
             return null;
           }
         });

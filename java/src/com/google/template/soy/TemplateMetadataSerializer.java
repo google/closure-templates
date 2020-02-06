@@ -64,6 +64,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import java.util.ArrayList;
@@ -357,7 +358,7 @@ public final class TemplateMetadataSerializer {
       case RECORD:
         {
           List<RecordType.Member> members = new ArrayList<>();
-          // Proto map insertion order iteration is important here.
+          // TODO: this relies on proto map insertion order, which is not guaranteed by the spec.
           for (Map.Entry<String, SoyTypeP> entry : proto.getRecord().getFieldMap().entrySet()) {
             members.add(
                 RecordType.memberOf(
@@ -365,6 +366,25 @@ public final class TemplateMetadataSerializer {
                     fromProto(entry.getValue(), typeRegistry, filePath, errorReporter)));
           }
           return typeRegistry.getOrCreateRecordType(members);
+        }
+      case TEMPLATE:
+        {
+          List<TemplateType.Argument> arguments = new ArrayList<>();
+          // TODO: this relies on proto map insertion order, which is not guaranteed by the spec.
+          for (Map.Entry<String, SoyTypeP> entry :
+              proto.getTemplate().getArgumentMap().entrySet()) {
+            arguments.add(
+                TemplateType.argumentOf(
+                    entry.getKey(),
+                    fromProto(entry.getValue(), typeRegistry, filePath, errorReporter)));
+          }
+          return typeRegistry.getOrCreateTemplateType(
+              arguments,
+              fromProto(
+                  SoyTypeP.newBuilder().setPrimitive(proto.getTemplate().getReturnType()).build(),
+                  typeRegistry,
+                  filePath,
+                  errorReporter));
         }
       case UNION:
         {

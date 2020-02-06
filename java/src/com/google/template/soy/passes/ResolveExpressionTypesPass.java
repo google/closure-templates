@@ -1644,6 +1644,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case TRUSTED_RESOURCE_URI:
         case MAP:
         case PROTO_ENUM:
+        case TEMPLATE:
         case VE:
         case VE_DATA:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
@@ -1748,6 +1749,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case RECORD:
         case PROTO:
         case PROTO_ENUM:
+        case TEMPLATE:
         case VE:
         case VE_DATA:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);

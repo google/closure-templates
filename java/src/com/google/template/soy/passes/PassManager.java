@@ -336,6 +336,10 @@ public final class PassManager {
         addPass(
             new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
             singleFilePassesBuilder);
+        // Needs to come after types have been set.
+        addPass(
+            new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
+            singleFilePassesBuilder);
         addPass(new VeLogRewritePass(), singleFilePassesBuilder);
         // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
         // parameters.

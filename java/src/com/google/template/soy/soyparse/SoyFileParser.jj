@@ -139,6 +139,7 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
+import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.UnionTypeNode;
 import java.io.Reader;
@@ -1167,36 +1168,37 @@ TOKEN_MGR_DECLS: {
 // Operators.
 
 <EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> TOKEN: {
-  < QMARK: "?" >      // Precedence 1 operators
-| < COLON: ":" >      // Also used as part of part of map literal syntax
+  < QMARK: "?" >          // Precedence 1 operators
+| < COLON: ":" >          // Also used as part of part of map literal syntax
 | < QCOLON: "?:" >
-| < OR: "or" >        // Precedence 2 operators
-| < AND: "and" >      // Precedence 3 operators
-| < DOUBLE_EQ: "==">  // Precedence 4 operators
+| < OR: "or" >            // Precedence 2 operators
+| < AND: "and" >          // Precedence 3 operators
+| < DOUBLE_EQ: "==">      // Precedence 4 operators
 | < NOT_EQ: "!=" >
-| < LANGLE: "<" >     // Precedence 5 operators
+| < LANGLE: "<" >         // Precedence 5 operators
 | < RANGLE: ">" >
 | < LT_EQ: "<=" >
 | < GT_EQ: ">=" >
-| < PLUS: "+">        // Precedence 6 operators
-| < MINUS: "-">       // Precedence 6 as a binary operator and 8 as a unary operator
-| < TIMES: "*">       // Precedence 7 operators
+| < PLUS: "+">            // Precedence 6 operators
+| < MINUS: "-">           // Precedence 6 as a binary operator and 8 as a unary operator
+| < TIMES: "*">           // Precedence 7 operators
 | < DIV: "/">
 | < MOD: "%">
-| < NOT: "not" >      // Precedence 8 as a unary operator (along with MINUS)
-| < DOT: "." >        // Precedence 9 operators
+| < NOT: "not" >          // Precedence 8 as a unary operator (along with MINUS)
+| < DOT: "." >            // Precedence 9 operators
 | < QDOT: "?." >
-| < LBRACKET: "[" >   // Precedence 9 data access operators and part of legacy map literal syntax
+| < LBRACKET: "[" >       // Precedence 9 data access operators and part of legacy map literal syntax
 | < RBRACKET: "]" >
 | < QLBRACKET: "?[" >
-| < COMMA: "," >      // Not actually an operator, part of map/list literal syntax
-| < FOR: "for" >      // Not actually an operator, part of map/list comprehension syntax.
-| < IN: "in" >        // Not actually an operator, part of map/list comprehension syntax.
-| < IF: "if" >        // Not actually an operator, part of map/list comprehension syntax.
+| < COMMA: "," >          // Not actually an operator, part of map/list literal syntax
+| < FOR: "for" >          // Not actually an operator, part of map/list comprehension syntax.
+| < IN: "in" >            // Not actually an operator, part of map/list comprehension syntax.
+| < IF: "if" >            // Not actually an operator, part of map/list comprehension syntax.
 | < LPAREN: "(" >
 | < RPAREN: ")" >
-| < VBAR: "|" >       // an operator for type unions
-| < EQ: "=" >         // For state assignments and attribute value pairs in EXPR
+| < VBAR: "|" >           // an operator for type unions
+| < EQ: "=" >             // For state assignments and attribute value pairs in EXPR
+| < FORWARD_ARROW: "=>" > // Part of template type syntax.
 }
 
 
@@ -4202,9 +4204,68 @@ private TypeNode PrimaryType() :
   | type = NullType()
   | type = UnknownType()
   | type = RecordType()
+  | type = TemplateType()
   )
 
   { return type; }
+}
+
+/**
+ * TemplateType -> "("  ( TemplateArgument ( "," TemplateArgument )* )? ")" "=>" TypeExpr
+ */
+private TypeNode TemplateType() :
+{
+  List<TemplateTypeNode.Argument> arguments = ImmutableList.of();
+  Token open, close, arrow;
+  TypeNode returnType;
+  TemplateTypeNode.Argument argument;
+}
+{
+  open = <LPAREN>
+
+  (
+    argument = TemplateArgument()
+    {
+      arguments = new ArrayList<TemplateTypeNode.Argument>();
+      arguments.add(argument);
+    }
+    (
+      <COMMA>
+      argument = TemplateArgument()
+      {
+        arguments.add(argument);
+      }
+    )*
+  )?
+
+  close = <RPAREN>
+
+  arrow = <FORWARD_ARROW>
+
+  returnType = NamedType()
+
+  {
+    SourceLocation srcLoc = createSrcLoc(open, close, arrow);
+    return TemplateTypeNode.create(srcLoc, arguments, returnType);
+  }
+}
+
+/**
+ * TemplateArgument -> IDENT ":" TypeExpr
+ */
+private TemplateTypeNode.Argument TemplateArgument() :
+{
+  Token argumentName;
+  TypeNode argumentType;
+}
+{
+  argumentName = <IDENT>
+  <COLON>
+  argumentType = TypeExpr()
+
+  {
+    return TemplateTypeNode.Argument.create(createSrcLoc(argumentName), argumentName.image, argumentType);
+  }
 }
 
 

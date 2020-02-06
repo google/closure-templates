@@ -70,6 +70,10 @@ message SoyTypeP {
   message UnionTypeP {
     repeated SoyTypeP member = 1;
   }
+  message TemplateTypeP {
+    map<string, SoyTypeP> argument = 1;
+    PrimitiveTypeP return_type = 2;
+  }
   // discriminated union of the different type categories
   oneof TypeKind {
     PrimitiveTypeP primitive = 1;
@@ -81,6 +85,7 @@ message SoyTypeP {
     string proto_enum = 7;
     UnionTypeP union = 8;
     string ve = 9;
+    TemplateTypeP template = 10;
   }
 }
 

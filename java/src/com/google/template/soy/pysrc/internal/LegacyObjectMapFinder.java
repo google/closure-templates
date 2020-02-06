@@ -23,6 +23,7 @@ import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode.Property;
+import com.google.template.soy.types.ast.TemplateTypeNode;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeVisitor;
 import com.google.template.soy.types.ast.UnionTypeNode;
@@ -77,6 +78,15 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
     for (Property property : node.properties()) {
       property.type().accept(this);
     }
+    return null;
+  }
+
+  @Override
+  public Void visit(TemplateTypeNode node) {
+    for (TemplateTypeNode.Argument argument : node.arguments()) {
+      argument.type().accept(this);
+    }
+    node.returnType().accept(this);
     return null;
   }
 
