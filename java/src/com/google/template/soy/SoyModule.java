@@ -18,7 +18,10 @@ package com.google.template.soy;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.template.soy.shared.internal.SharedModule;
+import com.google.inject.multibindings.Multibinder;
+import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import java.util.Set;
 
 /**
  * Guice module for Soy's programmatic interface.
@@ -28,20 +31,22 @@ public final class SoyModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    install(new SharedModule());
+    // Create empty multibinders so we can inject user-supplied ones.
+    Multibinder.newSetBinder(binder(), SoyFunction.class);
+    Multibinder.newSetBinder(binder(), SoyPrintDirective.class);
   }
 
-  // N.B. we provide the builder here instead of having an @Inject constructor to get guice to
-  // provide less spammy error messages.  Now instead of complaining that we are missing every
-  // dependency of CoreDependencies, guice will simply complain that there is no binding for
-  // SoyFileSet.Builder.
+  // N.B. we provide the builder here instead of having an @Inject constructor to issue a slightly
+  // better error message when people try to inject without installing this module
   @Provides
-  SoyFileSet.Builder provideBuilder(SoyFileSet.CoreDependencies coreDeps) {
-    return new SoyFileSet.Builder(coreDeps);
+  SoyFileSet.Builder provideBuilder(
+      Set<SoyFunction> pluginFunctions, Set<SoyPrintDirective> pluginDirectives) {
+    return SoyFileSet.builder()
+        .addSoyFunctions(pluginFunctions)
+        .addSoyPrintDirectives(pluginDirectives);
   }
 
-  // make this module safe to install multiple times.  This is necessary because things like
-  // JsSrcModule conflict with themselves
+  // make this module safe to install multiple times.
 
   @Override
   public int hashCode() {

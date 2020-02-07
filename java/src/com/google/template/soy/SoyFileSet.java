@@ -48,7 +48,6 @@ import com.google.template.soy.invocationbuilders.passes.GenInvocationBuildersVi
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.api.SoySauce;
 import com.google.template.soy.jbcsrc.api.SoySauceImpl;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
@@ -90,10 +89,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * Represents a complete set of Soy files for compilation as one bundle. The files may depend on
@@ -112,22 +109,7 @@ public final class SoyFileSet {
    * call {@link Builder#addSourceFunction(SoySourceFunction)}.
    */
   public static Builder builder() {
-    return new Builder(new CoreDependencies(ImmutableSet.of(), ImmutableSet.of()));
-  }
-
-  // Implementation detail of SoyFileSet.Builder.
-  // having it as its own 'parameter' class removes a small amount of boilerplate.
-  static final class CoreDependencies {
-    private final ImmutableList<SoyFunction> pluginFunctions;
-    private final ImmutableList<SoyPrintDirective> pluginDirectives;
-
-    @Inject
-    CoreDependencies(
-        Set<SoyFunction> pluginFunctions,
-        Set<SoyPrintDirective> pluginDirectives) {
-      this.pluginFunctions = ImmutableList.copyOf(pluginFunctions);
-      this.pluginDirectives = ImmutableList.copyOf(pluginDirectives);
-    }
+    return new Builder(/* ignored= */ true);
   }
 
   /**
@@ -145,12 +127,10 @@ public final class SoyFileSet {
         ImmutableList.builder();
 
     /** Optional AST cache. */
-    private SoyAstCache cache;
+    private SoyAstCache cache = null;
 
     /** The general compiler options. */
-    private SoyGeneralOptions lazyGeneralOptions;
-
-    private final CoreDependencies coreDependencies;
+    private SoyGeneralOptions lazyGeneralOptions = null;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
     private final SoyTypeRegistry.Builder typeRegistryBuilder = new SoyTypeRegistry.Builder();
@@ -167,16 +147,14 @@ public final class SoyFileSet {
 
     private boolean optimize = true;
 
-    private final ImmutableSet.Builder<SoyFunction> extraSoyFunctions = ImmutableSet.builder();
-    private final ImmutableSet.Builder<SoyPrintDirective> extraSoyPrintDirectives =
+    private final ImmutableSet.Builder<SoyFunction> soyFunctions = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoyPrintDirective> soyPrintDirectives =
         ImmutableSet.builder();
-    private final ImmutableSet.Builder<SoySourceFunction> extraSourceFunctions =
-        ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoySourceFunction> sourceFunctions = ImmutableSet.builder();
 
-    Builder(CoreDependencies coreDependencies) {
-      this.coreDependencies = coreDependencies;
-      this.cache = null;
-      this.lazyGeneralOptions = null;
+    private Builder(boolean ignored) {
+      // we use an ignored parameter to prevent guice from creating implicit bindings for this
+      // object.
     }
 
     /**
@@ -219,17 +197,15 @@ public final class SoyFileSet {
           typeRegistryBuilder.build(),
           ImmutableList.<SoyFunction>builder()
               .addAll(InternalPlugins.internalLegacyFunctions())
-              .addAll(coreDependencies.pluginFunctions)
-              .addAll(extraSoyFunctions.build())
+              .addAll(soyFunctions.build())
               .build(),
           ImmutableList.<SoyPrintDirective>builder()
               .addAll(InternalPlugins.internalDirectives(data))
-              .addAll(coreDependencies.pluginDirectives)
-              .addAll(extraSoyPrintDirectives.build())
+              .addAll(soyPrintDirectives.build())
               .build(),
           ImmutableList.<SoySourceFunction>builder()
               .addAll(InternalPlugins.internalFunctions())
-              .addAll(extraSourceFunctions.build())
+              .addAll(sourceFunctions.build())
               .build(),
           ImmutableList.copyOf(InternalPlugins.internalMethods()),
           filesBuilder.build(),
@@ -246,37 +222,37 @@ public final class SoyFileSet {
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
     public Builder addSourceFunction(SoySourceFunction function) {
-      extraSourceFunctions.add(function);
+      sourceFunctions.add(function);
       return this;
     }
 
     /** Adds many {@link SoySourceFunction}s to the functions used by this SoyFileSet. */
     public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
-      extraSourceFunctions.addAll(function);
+      sourceFunctions.addAll(function);
       return this;
     }
 
     /** Adds one {@link SoyFunction} to the functions used by this SoyFileSet. */
     public Builder addSoyFunction(SoyFunction function) {
-      extraSoyFunctions.add(function);
+      soyFunctions.add(function);
       return this;
     }
 
     /** Adds many {@link SoyFunction}s to the functions used by this SoyFileSet. */
     public Builder addSoyFunctions(Iterable<? extends SoyFunction> function) {
-      extraSoyFunctions.addAll(function);
+      soyFunctions.addAll(function);
       return this;
     }
 
     /** Adds one {@link SoyPrintDirective} to the print directives used by this SoyFileSet. */
     public Builder addSoyPrintDirective(SoyPrintDirective function) {
-      extraSoyPrintDirectives.add(function);
+      soyPrintDirectives.add(function);
       return this;
     }
 
     /** Adds many {@link SoyPrintDirective}s to the print directives used by this SoyFileSet. */
     public Builder addSoyPrintDirectives(Iterable<? extends SoyPrintDirective> function) {
-      extraSoyPrintDirectives.addAll(function);
+      soyPrintDirectives.addAll(function);
       return this;
     }
 
@@ -921,8 +897,9 @@ public final class SoyFileSet {
   }
 
   /**
-   * Compiles this Soy file set into a set of java classes implementing the {@link CompiledTemplate}
-   * interface and writes them out to the given ByteSink as a JAR file.
+   * Compiles this Soy file set into a set of java classes implementing the {@link
+   * com.google.template.soy.jbcsrc.shared.CompiledTemplate} interface and writes them out to the
+   * given ByteSink as a JAR file.
    *
    * @throws SoyCompilationException If compilation fails.
    */

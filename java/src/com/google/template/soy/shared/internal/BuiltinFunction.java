@@ -19,7 +19,6 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.shared.restricted.SoyFunction;
-import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -119,8 +118,10 @@ public enum BuiltinFunction implements SoyFunction {
   /**
    * Whether or not this function is pure.
    *
-   * <p>This is equivalent to annotating a function with {@link SoyPureFunction}. See {@link
-   * SoyPureFunction} for the definition of a pure function.
+   * <p>This is equivalent to annotating a function with {@link
+   * com.google.template.soy.shared.restricted.SoyPureFunction}. See {@link
+   * com.google.template.soy.shared.restricted.SoyPureFunction} for the definition of a pure
+   * function.
    */
   public boolean isPure() {
     switch (this) {
