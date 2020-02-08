@@ -65,6 +65,7 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
+import com.google.template.soy.soytree.RawTextNode.Provenance;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -104,8 +105,7 @@ import javax.annotation.Nullable;
  *   <li>Soy has a <code> {literal}...{/literal}</code> command. such commands often contain html
  *       tags so within the grammar we would need to start writing grammar production which match
  *       the contents of literal blocks. This is possible but would require duplicating all the
- *       lexical states for literals. (Also we would need to deal with tags split across literal
- *       blocks e.g. <code><div{literal} a="foo">{/literal}</code>).
+ *       lexical states for literals.
  *   <li>Transitioning between lexical states after seeing a {@code <script>} tag or after parsing a
  *       {@code kind="html"} attributes is complex (And 'semantic lexical transitions' are not
  *       recommended).
@@ -225,6 +225,15 @@ final class HtmlRewriter {
   private static final SoyErrorKind SUSPICIOUS_PARTIAL_END_TAG_IN_RCDATA =
       SoyErrorKind.of("Found suspicious partial end tag inside of a {0} tag.");
 
+  private static final SoyErrorKind UNEXPECTED_LITERAL_BEGIN =
+      SoyErrorKind.of("Invalid location for literal start command.");
+
+  private static final SoyErrorKind UNEXPECTED_LITERAL_END =
+      SoyErrorKind.of("Invalid location for literal end command.");
+
+  private static final SoyErrorKind UNEXPECTED_LITERAL_SPAN =
+      SoyErrorKind.of("Literal blocks may not span multiple attribute values.");
+
   private static final String DISALLOWED_SCRIPT_SEQUENCE_TEXT =
       "Within script tags, the character sequences ''<script'' and ''<!--'' are disallowed by the"
           + " HTML spec. Consider adding whitespace or backslashes to break up the sequence. See"
@@ -246,7 +255,11 @@ final class HtmlRewriter {
     /** Means the state is part of an html 'tag' of a node (but not, inside an attribute value). */
     TAG,
     RCDATA,
-    INVALID_END_STATE_FOR_BLOCK;
+    INVALID_END_STATE_FOR_BLOCK,
+    /** Means a literal block may start or stop here. */
+    LITERAL_ALLOWED,
+    /** Means a literal block may start here, in which case it must end before the state changes. */
+    LITERAL_STRICT;
   }
 
   /**
@@ -256,22 +269,22 @@ final class HtmlRewriter {
    * also inspecting {@link #reconcile(State)}.
    */
   private enum State {
-    NONE,
-    PCDATA,
-    RCDATA_SCRIPT(StateFeature.RCDATA),
-    RCDATA_TEXTAREA(StateFeature.RCDATA),
-    RCDATA_TITLE(StateFeature.RCDATA),
-    RCDATA_STYLE(StateFeature.RCDATA),
-    RCDATA_XMP(StateFeature.RCDATA),
-    HTML_COMMENT,
-    CDATA,
+    NONE(StateFeature.LITERAL_ALLOWED),
+    PCDATA(StateFeature.LITERAL_ALLOWED),
+    RCDATA_SCRIPT(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_TEXTAREA(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_TITLE(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_STYLE(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    RCDATA_XMP(StateFeature.RCDATA, StateFeature.LITERAL_ALLOWED),
+    HTML_COMMENT(StateFeature.LITERAL_ALLOWED),
+    CDATA(StateFeature.LITERAL_ALLOWED),
     /**
      * <!doctype, <!element, or <?xml> these work like normal tags but don't require attribute
      * values to be matched with attribute names
      */
     XML_DECLARATION,
-    SINGLE_QUOTED_XML_ATTRIBUTE_VALUE,
-    DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE,
+    SINGLE_QUOTED_XML_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
+    DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
     HTML_TAG_NAME,
     /**
      * This state is weird - it is for <code>
@@ -286,8 +299,8 @@ final class HtmlRewriter {
      */
     AFTER_ATTRIBUTE_NAME(StateFeature.TAG),
     BEFORE_ATTRIBUTE_VALUE(StateFeature.INVALID_END_STATE_FOR_BLOCK),
-    SINGLE_QUOTED_ATTRIBUTE_VALUE,
-    DOUBLE_QUOTED_ATTRIBUTE_VALUE,
+    SINGLE_QUOTED_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
+    DOUBLE_QUOTED_ATTRIBUTE_VALUE(StateFeature.LITERAL_STRICT),
     UNQUOTED_ATTRIBUTE_VALUE,
     AFTER_TAG_NAME_OR_ATTRIBUTE(StateFeature.TAG),
     BEFORE_ATTRIBUTE_NAME(StateFeature.TAG),
@@ -392,6 +405,19 @@ final class HtmlRewriter {
 
     boolean isRcDataState() {
       return stateTypes.contains(StateFeature.RCDATA);
+    }
+
+    boolean isLegalLiteralBegin() {
+      return stateTypes.contains(StateFeature.LITERAL_ALLOWED)
+          || stateTypes.contains(StateFeature.LITERAL_STRICT);
+    }
+
+    boolean isLegalLiteralEnd() {
+      return isLegalLiteralBegin();
+    }
+
+    boolean requiresFullyNestedLiterals() {
+      return stateTypes.contains(StateFeature.LITERAL_STRICT);
     }
 
     @Override
@@ -526,6 +552,20 @@ final class HtmlRewriter {
       currentRawTextOffset = 0;
       currentRawTextIndex = 0;
       int prevStartIndex = -1;
+
+      boolean isLiteral = node.getProvenance() == Provenance.LITERAL;
+      boolean watchForLiteralStateChange = false;
+      State originalState = context.getState();
+
+      if (isLiteral) {
+        if (!originalState.isLegalLiteralBegin()) {
+          errorReporter.report(node.getSourceLocation(), UNEXPECTED_LITERAL_BEGIN);
+        } else if (originalState.requiresFullyNestedLiterals()) {
+          // We can start a literal here but we must complete the literal without changing state.
+          watchForLiteralStateChange = true;
+        }
+      }
+
       while (currentRawTextIndex < currentRawText.length()) {
         int startIndex = currentRawTextIndex;
         // if whitespace was trimmed prior to the current character (e.g. leading whitespace)
@@ -537,6 +577,12 @@ final class HtmlRewriter {
         }
         prevStartIndex = startIndex;
         State startState = context.getState();
+
+        if (watchForLiteralStateChange && originalState != startState) {
+          errorReporter.report(node.getSourceLocation(), UNEXPECTED_LITERAL_SPAN);
+          watchForLiteralStateChange = false; // Set to false so that only one error is printed.
+        }
+
         switch (startState) {
           case NONE:
             // no replacements, no parsing, just jump to the end
@@ -620,6 +666,9 @@ final class HtmlRewriter {
       }
       if (currentRawTextIndex != currentRawText.length()) {
         throw new AssertionError("failed to visit all of the raw text");
+      }
+      if (isLiteral && !context.getState().isLegalLiteralEnd()) {
+        errorReporter.report(node.getSourceLocation(), UNEXPECTED_LITERAL_END);
       }
       if (currentRawTextOffset < currentRawTextIndex && currentRawTextOffset != 0) {
         // This handles all the states that just advance to the end without consuming

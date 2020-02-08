@@ -173,10 +173,6 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
     return provenance;
   }
 
-  public boolean isLiteral() {
-    return provenance == Provenance.LITERAL;
-  }
-
   /**
    * Returns true if there was whitespace deleted immediately prior to {@code index}
    *
@@ -281,7 +277,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
         newText,
         newLocation,
         newOffsets,
-        isLiteral() ? Provenance.LITERAL_SUBSTRING : Provenance.NORMAL);
+        provenance == Provenance.LITERAL ? Provenance.LITERAL_SUBSTRING : Provenance.NORMAL);
   }
 
   /** Concatenates the non-empty set of RawTextNodes, preserving source location information. */
@@ -373,7 +369,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
   public String toSourceString() {
 
     StringBuffer sb = new StringBuffer();
-    if (isLiteral()) {
+    if (provenance == Provenance.LITERAL) {
       sb.append("{literal}").append(rawText).append("{/literal}");
     } else {
       // Must escape special chars to create valid source text.
