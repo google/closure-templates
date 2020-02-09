@@ -146,3 +146,8 @@ means that when you change a template parameter from `legacy_object_map` to
 `map`, you must also change the JavaScript value used to render it from a plain
 `Object` to a `Map`.
 
+TIP: If you are using Closure Compiler, there is an `@typedef` generated for the
+parameters of a template that may be useful. If the template is called `foo.bar`
+the parameters will be `foo.bar.Params`. This may be useful for annotating
+locals or specifying method parameter types.
+
