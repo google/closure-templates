@@ -157,12 +157,19 @@ public final class DelTemplateSelector<T> {
      */
     T select(Predicate<String> activeDelPackageSelector) {
       Map.Entry<String, T> selected = null;
+      // Select whatever delpackage is active and ensure that only one is activated.  If none are
+      // active use the default.
+      // This is analagous to what happens in JavaScript, see soy.$$registerDelegateFn.  The main
+      // difference is that in JavaScript delegate conflicts are resolved/detected at code loading
+      // time.  In Java it is only at rendering time because that is when the set of active packages
+      // is determined.
+      // In theory we could validate the Predicate against the whole DelTemplateSelector at the
+      // start of rendering which would flag erroneous Predicates even if no deltempate group
+      // containing the conflict is ever rendered. However, this sounds like a potentially expensive
+      // operation, so for now we delay detecting conflicts until selection time.
       for (Map.Entry<String, T> entry : delpackageToValue.entrySet()) {
         if (activeDelPackageSelector.test(entry.getKey())) {
           if (selected != null) {
-            // how important is this?  maybe instead of checking at deltemplate selection time we
-            // should validate active packages at the beginning of rendering (this is what the js
-            // impl does, see soy.$$registerDelegateFn)
             throw new IllegalArgumentException(
                 String.format(
                     "For delegate template '%s', found two active implementations with equal"
