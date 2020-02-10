@@ -28,8 +28,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
-import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
-import com.google.template.soy.shared.SharedRestrictedTestUtils;
+import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -117,7 +116,7 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
 
     BidiUnicodeWrapDirective codeSnippet =
         new BidiUnicodeWrapDirective(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
+            BidiTestUtils.BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER);
     assertThat(codeSnippet.applyForJsSrc(dataRef, ImmutableList.of()).getText())
         .isEqualTo("soy.$$bidiUnicodeWrap(IS_RTL?-1:1, opt_data.myKey)");
   }
@@ -126,7 +125,7 @@ public class BidiUnicodeWrapDirectiveTest extends AbstractSoyPrintDirectiveTestC
   public void testApplyForPySrc() {
     BidiUnicodeWrapDirective codeSnippet =
         new BidiUnicodeWrapDirective(
-            SharedRestrictedTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
+            BidiTestUtils.BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET_SUPPLIER);
 
     PyExpr data = new PyStringExpr("'data'");
     assertThat(codeSnippet.applyForPySrc(data, ImmutableList.of()).getText())

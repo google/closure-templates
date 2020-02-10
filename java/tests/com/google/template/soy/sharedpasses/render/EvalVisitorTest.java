@@ -17,7 +17,7 @@
 package com.google.template.soy.sharedpasses.render;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
+import static com.google.template.soy.testing.SharedTestUtils.untypedTemplateBodyForExpression;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;

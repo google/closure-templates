@@ -19,7 +19,7 @@ package com.google.template.soy.pysrc.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.shared.SharedTestUtils.untypedTemplateBodyForExpression;
+import static com.google.template.soy.testing.SharedTestUtils.untypedTemplateBodyForExpression;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -34,11 +34,11 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.internal.GenPyExprsVisitor.GenPyExprsVisitorFactory;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.testing.SharedTestUtils;
 import java.util.List;
 import java.util.Map;
 

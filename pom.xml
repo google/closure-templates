@@ -555,6 +555,10 @@
           <debuglevel>lines,vars,source</debuglevel>
           <compilerArgument>-Werror</compilerArgument>
           <compilerArgument>-Xlint:deprecation</compilerArgument>
+          <excludes>
+            <!-- Exclude testonly Java sources from the main (non-test) compilation. -->
+            <exclude>com/google/template/soy/testing/**</exclude>
+          </excludes>
         </configuration>
       </plugin>
 
@@ -710,6 +714,19 @@
                   <classifier>soyutils_usegoog</classifier>
                 </artifact>
               </artifacts>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <!-- For compiling the tests, include testonly sources that are in the main source tree, but not compiled with it. -->
+                <source>java/src/com/google/template/soy/testing</source>
+              </sources>
             </configuration>
           </execution>
         </executions>

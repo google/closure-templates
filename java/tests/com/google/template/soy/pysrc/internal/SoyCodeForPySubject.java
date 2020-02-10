@@ -29,9 +29,9 @@ import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
-import com.google.template.soy.shared.SharedTestUtils;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.testing.SharedTestUtils;
 import java.util.List;
 
 /**

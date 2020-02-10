@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
-import com.google.template.soy.shared.AbstractSoyPrintDirectiveTestCase;
+import com.google.template.soy.testing.AbstractSoyPrintDirectiveTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

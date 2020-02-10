@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared;
+package com.google.template.soy.testing;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 import static java.util.stream.Collectors.toCollection;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.template.soy.shared;
+package com.google.template.soy.bididirectives;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
@@ -27,7 +27,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
  * <p>Important: This class may only be used when testing plugins (e.g. functions, directives).
  *
  */
-public class SharedRestrictedTestUtils {
+public class BidiTestUtils {
 
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET =
       BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", null, SoyBackendKind.JS_SRC);
@@ -35,7 +35,7 @@ public class SharedRestrictedTestUtils {
   private static final BidiGlobalDir BIDI_GLOBAL_DIR_FOR_PY_ISRTL_CODE_SNIPPET =
       BidiGlobalDir.forIsRtlCodeSnippet("IS_RTL", null, SoyBackendKind.PYTHON_SRC);
 
-  private SharedRestrictedTestUtils() {}
+  private BidiTestUtils() {}
 
   public static final Supplier<BidiGlobalDir> BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET_SUPPLIER =
       Suppliers.ofInstance(BIDI_GLOBAL_DIR_FOR_JS_ISRTL_CODE_SNIPPET);
