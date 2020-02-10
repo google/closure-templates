@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
@@ -33,6 +32,7 @@ import com.google.template.soy.passes.htmlmatcher.TestUtils;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;

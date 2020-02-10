@@ -29,7 +29,7 @@ import com.google.template.soy.base.SourceLocation;
  *
  * <p>To write a test that does not have this exploding behavior (for example, a test that needs to
  * check the full list of errors encountered during compilation), pass a non-exploding ErrorReporter
- * instance to {@link com.google.template.soy.SoyFileSetParserBuilder#errorReporter}.
+ * instance to {@link com.google.template.soy.testing.SoyFileSetParserBuilder#errorReporter}.
  *
  * @author brndn@google.com (Brendan Linn)
  */

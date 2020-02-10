@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.shared.internal.NoOpScopedData;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;
 import org.junit.Before;
 import org.junit.Test;

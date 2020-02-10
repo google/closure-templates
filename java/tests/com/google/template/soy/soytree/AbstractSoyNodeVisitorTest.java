@@ -19,9 +19,9 @@ package com.google.template.soy.soytree;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Joiner;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;

@@ -19,10 +19,10 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Multimap;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;

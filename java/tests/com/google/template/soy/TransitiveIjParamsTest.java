@@ -27,6 +27,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.BytecodeCompiler;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.shared.internal.NoOpScopedData;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import org.junit.Test;

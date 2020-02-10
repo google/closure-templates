@@ -23,7 +23,6 @@ import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
-import com.google.template.soy.SoyFileSetParserBuilder;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -34,6 +33,7 @@ import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SomeNestedExtension;
+import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
 import org.junit.Test;
