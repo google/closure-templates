@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -27,6 +28,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -49,13 +51,17 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
         SplitLevelTopNode<CallParamNode>,
         StatementNode,
         ExprHolderNode,
-        MsgPlaceholderInitialNode {
+        MsgPlaceholderInitialNode,
+        CommandTagAttributesHolder {
 
   /** Fallback base placeholder name. */
   private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
 
   /** True if this call is passing data="all". */
   private boolean isPassingAllData;
+
+  /** Used for formatting */
+  private final List<CommandTagAttribute> attributes;
 
   /** The data= expression, or null if the call does not pass data or passes data="all". */
   @Nullable private ExprRootNode dataExpr;
@@ -135,6 +141,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       }
     }
 
+    this.attributes = attributes;
     this.userSuppliedPlaceholderName = phname;
     this.userSuppliedPlaceholderExample = phex;
   }
@@ -154,6 +161,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.escapingDirectives = orig.escapingDirectives;
     this.callKey = orig.callKey;
     this.isPcData = orig.getIsPcData();
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }
 
   /**
@@ -184,6 +193,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   public boolean isPassingAllData() {
     return isPassingAllData;
+  }
+
+  @Override
+  public List<CommandTagAttribute> getAttributes() {
+    return attributes;
   }
 
   @Nullable

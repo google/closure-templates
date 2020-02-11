@@ -35,6 +35,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -66,6 +67,14 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("''{0}=\"{1}\"'' is the default, no need to set it.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
+
+  /**
+   * A node that contains command tag attributes. Some examples of this include calls, templates,
+   * msg, etc.
+   */
+  static interface CommandTagAttributesHolder {
+    List<CommandTagAttribute> getAttributes();
+  }
 
   /**
    * Identifies duplicate attributes, reports an error for each one, and removes them from the
