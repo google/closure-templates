@@ -16,10 +16,11 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.common.base.Equivalence;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -28,8 +29,10 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -48,7 +51,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         SplitLevelTopNode<PrintDirectiveNode>,
         StatementNode,
         ExprHolderNode,
-        MsgPlaceholderInitialNode {
+        MsgPlaceholderInitialNode,
+        CommandTagAttributesHolder {
 
   /** Fallback base placeholder name. */
   private static final String FALLBACK_BASE_PLACEHOLDER_NAME = "XXX";
@@ -58,6 +62,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   /** The parsed expression. */
   private final ExprRootNode expr;
+
+  /** Used for formatting */
+  private final List<CommandTagAttribute> attributes;
 
   /** The user-supplied placeholder name, or null if not supplied or not applicable. */
   @Nullable private final String userSuppliedPlaceholderName;
@@ -81,6 +88,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     String placeholderName = null;
     String placeholderExample = null;
+    this.attributes = ImmutableList.copyOf(attributes);
     for (CommandTagAttribute attribute : attributes) {
       switch (attribute.getName().identifier()) {
         case MessagePlaceholders.PHNAME_ATTR:
@@ -118,6 +126,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
     this.htmlContext = orig.htmlContext;
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }
 
   /**
@@ -126,7 +136,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
    * traditional backends) or how it's passed to incremental DOM APIs.
    */
   public HtmlContext getHtmlContext() {
-    return Preconditions.checkNotNull(
+    return checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
   }
 
@@ -151,6 +161,11 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;
+  }
+
+  @Override
+  public List<CommandTagAttribute> getAttributes() {
+    return attributes;
   }
 
   @Nullable

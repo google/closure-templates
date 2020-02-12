@@ -72,7 +72,7 @@ public final class CommandTagAttribute {
    * A node that contains command tag attributes. Some examples of this include calls, templates,
    * msg, etc.
    */
-  static interface CommandTagAttributesHolder {
+  public static interface CommandTagAttributesHolder {
     List<CommandTagAttribute> getAttributes();
   }
 
