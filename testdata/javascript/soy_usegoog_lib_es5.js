@@ -18,15 +18,6 @@ $jscomp.makeIterator = function(iterable) {
   var iteratorFunction = "undefined" != typeof Symbol && Symbol.iterator && iterable[Symbol.iterator];
   return iteratorFunction ? iteratorFunction.call(iterable) : $jscomp.arrayIterator(iterable);
 };
-$jscomp.arrayFromIterator = function(iterator) {
-  for (var i, arr = []; !(i = iterator.next()).done;) {
-    arr.push(i.value);
-  }
-  return arr;
-};
-$jscomp.arrayFromIterable = function(iterable) {
-  return iterable instanceof Array ? iterable : $jscomp.arrayFromIterator($jscomp.makeIterator(iterable));
-};
 $jscomp.findInternal = function(array, callback, thisArg) {
   array instanceof String && (array = String(array));
   for (var len = array.length, i = 0; i < len; i++) {
@@ -417,84 +408,6 @@ $jscomp.polyfill("Map", function(NativeMap) {
   }, mapIndex = 0;
   return PolyfillMap;
 }, "es6", "es3");
-$jscomp.polyfill("Object.getOwnPropertySymbols", function(orig) {
-  return orig ? orig : function() {
-    return [];
-  };
-}, "es6", "es5");
-$jscomp.polyfill("Set", function(NativeSet) {
-  function isConformant() {
-    if ($jscomp.ASSUME_NO_NATIVE_SET || !NativeSet || "function" != typeof NativeSet || !NativeSet.prototype.entries || "function" != typeof Object.seal) {
-      return !1;
-    }
-    try {
-      var value = Object.seal({x:4}), set = new NativeSet($jscomp.makeIterator([value]));
-      if (!set.has(value) || 1 != set.size || set.add(value) != set || 1 != set.size || set.add({x:4}) != set || 2 != set.size) {
-        return !1;
-      }
-      var iter = set.entries(), item = iter.next();
-      if (item.done || item.value[0] != value || item.value[1] != value) {
-        return !1;
-      }
-      item = iter.next();
-      return item.done || item.value[0] == value || 4 != item.value[0].x || item.value[1] != item.value[0] ? !1 : iter.next().done;
-    } catch (err) {
-      return !1;
-    }
-  }
-  if ($jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS) {
-    if (NativeSet && $jscomp.ES6_CONFORMANCE) {
-      return NativeSet;
-    }
-  } else {
-    if (isConformant()) {
-      return NativeSet;
-    }
-  }
-  $jscomp.initSymbolIterator();
-  var PolyfillSet = function(opt_iterable) {
-    this.map_ = new Map;
-    if (opt_iterable) {
-      for (var iter = $jscomp.makeIterator(opt_iterable), entry; !(entry = iter.next()).done;) {
-        this.add(entry.value);
-      }
-    }
-    this.size = this.map_.size;
-  };
-  PolyfillSet.prototype.add = function(value) {
-    value = 0 === value ? 0 : value;
-    this.map_.set(value, value);
-    this.size = this.map_.size;
-    return this;
-  };
-  PolyfillSet.prototype.delete = function(value) {
-    var result = this.map_.delete(value);
-    this.size = this.map_.size;
-    return result;
-  };
-  PolyfillSet.prototype.clear = function() {
-    this.map_.clear();
-    this.size = 0;
-  };
-  PolyfillSet.prototype.has = function(value) {
-    return this.map_.has(value);
-  };
-  PolyfillSet.prototype.entries = function() {
-    return this.map_.entries();
-  };
-  PolyfillSet.prototype.values = function() {
-    return this.map_.values();
-  };
-  PolyfillSet.prototype.keys = PolyfillSet.prototype.values;
-  PolyfillSet.prototype[Symbol.iterator] = PolyfillSet.prototype.values;
-  PolyfillSet.prototype.forEach = function(callback, opt_thisArg) {
-    var set = this;
-    this.map_.forEach(function(value) {
-      return callback.call(opt_thisArg, value, value, set);
-    });
-  };
-  return PolyfillSet;
-}, "es6", "es3");
 var goog = goog || {};
 goog.global = this || self;
 goog.exportPath_ = function(name, opt_object, opt_objectToExportTo) {
@@ -860,7 +773,7 @@ goog.globalEval = function(script) {
         if ("undefined" != typeof goog.global._evalTest_) {
           try {
             delete goog.global._evalTest_;
-          } catch (ignore$5) {
+          } catch (ignore$3) {
           }
           goog.evalWorksForGlobals_ = !0;
         } else {
@@ -1916,8 +1829,8 @@ goog.object.equals = function(a, b) {
       return !1;
     }
   }
-  for (var k$6 in b) {
-    if (!(k$6 in a)) {
+  for (var k$4 in b) {
+    if (!(k$4 in a)) {
       return !1;
     }
   }
@@ -6137,9 +6050,9 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
       for (;;) {
         f.call(opt_obj, iterable.next(), void 0, iterable);
       }
-    } catch (ex$7) {
-      if (ex$7 !== goog.iter.StopIteration) {
-        throw ex$7;
+    } catch (ex$5) {
+      if (ex$5 !== goog.iter.StopIteration) {
+        throw ex$5;
       }
     }
   }
@@ -7750,9 +7663,9 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
   return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-var JSCompiler_inline_result$jscomp$9;
-JSCompiler_inline_result$jscomp$9 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
-goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$9;
+var JSCompiler_inline_result$jscomp$7;
+JSCompiler_inline_result$jscomp$7 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
+goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$7;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
@@ -7854,7 +7767,7 @@ goog.debug.normalizeErrorObject = function(err) {
   }
   try {
     var fileName = err.fileName || err.filename || err.sourceURL || goog.global.$googDebugFname || href;
-  } catch (e$8) {
+  } catch (e$6) {
     fileName = "Not available", threwError = !0;
   }
   if (!(!threwError && err.lineNumber && err.fileName && err.stack && err.message && err.name)) {
@@ -8001,83 +7914,6 @@ goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
 };
 goog.debug.freeze = function(arg) {
   return goog.debug.freezeInternal_(arg);
-};
-goog.debug.throwingGetterError_ = Error("Retrieving object values after deepFreeze is disallowed. Please use the frozen object instead.");
-goog.debug.throwingPropertyDescriptor_ = {configurable:!1, get:function() {
-  throw goog.debug.throwingGetterError_;
-}, set:function() {
-  throw Error("Setting object values after deepFreeze is disallowed. Please use the frozen object instead.");
-}};
-goog.debug.deepFreezeBreakObjectInternal_ = function(arg) {
-  if (arg) {
-    switch(typeof arg) {
-      case "object":
-        break;
-      default:
-        return;
-    }
-    for (var keys = [].concat($jscomp.arrayFromIterable(Object.getOwnPropertyNames(arg)), $jscomp.arrayFromIterable(Object.getOwnPropertySymbols(arg))), descriptorBundle = {}, $jscomp$iter$3 = $jscomp.makeIterator(keys), $jscomp$key$key = $jscomp$iter$3.next(); !$jscomp$key$key.done; $jscomp$key$key = $jscomp$iter$3.next()) {
-      var key = $jscomp$key$key.value;
-      if (Object.getOwnPropertyDescriptor(arg, key).enumerable) {
-        var child = void 0;
-        try {
-          child = arg[key];
-        } catch (e) {
-          if (e !== goog.debug.throwingGetterError_) {
-            throw e;
-          }
-          continue;
-        }
-        goog.debug.deepFreezeBreakObjectInternal_(child);
-        descriptorBundle[key] = goog.debug.throwingPropertyDescriptor_;
-      }
-    }
-    Object.defineProperties(arg, descriptorBundle);
-  }
-};
-goog.debug.deepFreezeInternal_ = function(arg, seenSet) {
-  switch(typeof arg) {
-    case "function":
-      throw Error("deepFreeze does not support functions");
-    case "object":
-      if (null === arg) {
-        return null;
-      }
-      break;
-    default:
-      return arg;
-  }
-  if (seenSet.has(arg)) {
-    throw Error("deepFreeze does not support cyclic structures");
-  }
-  var prototype = Object.getPrototypeOf(arg);
-  if (prototype !== Object.prototype && prototype !== Array.prototype) {
-    throw Error("deepFreeze only supports literals (array or object).");
-  }
-  seenSet.add(arg);
-  for (var dupe = prototype === Array.prototype ? Array(arg.length) : {}, keys = [].concat($jscomp.arrayFromIterable(Object.getOwnPropertyNames(arg)), $jscomp.arrayFromIterable(Object.getOwnPropertySymbols(arg))), $jscomp$iter$4 = $jscomp.makeIterator(keys), $jscomp$key$key = $jscomp$iter$4.next(); !$jscomp$key$key.done; $jscomp$key$key = $jscomp$iter$4.next()) {
-    var key = $jscomp$key$key.value, descriptor = Object.getOwnPropertyDescriptor(arg, key);
-    if (descriptor.enumerable) {
-      if (null != descriptor.get || null != descriptor.set) {
-        throw Error("deepFreeze does not support getters/setters");
-      }
-      var frozen = goog.debug.deepFreezeInternal_(arg[key], seenSet);
-      dupe[key] = frozen;
-    }
-  }
-  seenSet.delete(arg);
-  goog.debug.freezeInternal_(dupe);
-  return dupe;
-};
-goog.debug.deepFreeze = function(arg) {
-  if (goog.DEBUG) {
-    var dupe = goog.debug.deepFreezeInternal_(arg, new Set);
-    goog.debug.deepFreezeBreakObjectInternal_(arg);
-    var JSCompiler_inline_result = dupe;
-  } else {
-    JSCompiler_inline_result = arg;
-  }
-  return JSCompiler_inline_result;
 };
 goog.format = {};
 goog.format.fileSize = function(bytes, opt_decimals) {

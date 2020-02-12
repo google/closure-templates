@@ -110,6 +110,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   protected boolean strictHtmlDisabled;
 
+  /** Used for formatting */
+  private List<CommandTagAttribute> attributes;
+
   SourceLocation sourceLocation;
   SourceLocation openTagLocation;
 
@@ -128,6 +131,10 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     Preconditions.checkState(this.id == null);
     this.id = id;
     return self();
+  }
+
+  public List<CommandTagAttribute> getAttributes() {
+    return attributes;
   }
 
   /** Sets the source location. */
@@ -156,6 +163,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
       ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
+    this.attributes = attrs;
     SanitizedContentKind kind = SanitizedContentKind.HTML;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();

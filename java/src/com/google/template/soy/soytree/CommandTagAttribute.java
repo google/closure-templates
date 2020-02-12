@@ -307,4 +307,12 @@ public final class CommandTagAttribute {
                 + quoteStyle.getQuoteChar();
     return key.identifier() + "=" + valueStr;
   }
+
+  public String toSourceString() {
+    String valueStr =
+        quoteStyle.getQuoteChar()
+            + ((value != null) ? value : SoyTreeUtils.toSourceString(valueExprList))
+            + quoteStyle.getQuoteChar();
+    return key.identifier() + "=" + valueStr;
+  }
 }
