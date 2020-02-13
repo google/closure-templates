@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
@@ -36,7 +35,6 @@ import com.google.template.soy.basetree.CopyState.Listener;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import java.util.ArrayDeque;
@@ -67,7 +65,7 @@ import javax.annotation.Nullable;
  *
  */
 public final class MsgNode extends AbstractBlockCommandNode
-    implements ExprHolderNode, MsgBlockNode, CommandTagAttributesHolder {
+    implements ExprHolderNode, MsgBlockNode {
 
   private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
       SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
@@ -145,9 +143,6 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** Whether the message should be added as 'hidden' in the TC. */
   private final boolean isHidden;
 
-  /** Used for formatting */
-  private final List<CommandTagAttribute> attributes;
-
   /** The string representation of genderExprs, for debugging. */
   @Nullable private final String genderExprsString;
 
@@ -170,7 +165,6 @@ public final class MsgNode extends AbstractBlockCommandNode
     boolean hidden = false;
     ImmutableList<ExprRootNode> genders = null;
 
-    this.attributes = attributes;
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
 
@@ -226,8 +220,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    */
   private MsgNode(MsgNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.attributes =
-        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+
     if (orig.genderExprs != null) {
       ImmutableList.Builder<ExprRootNode> builder = ImmutableList.builder();
       for (ExprRootNode node : orig.genderExprs) {
@@ -265,10 +258,6 @@ public final class MsgNode extends AbstractBlockCommandNode
   @Override
   public Kind getKind() {
     return Kind.MSG_NODE;
-  }
-
-  public List<CommandTagAttribute> getAttributes() {
-    return attributes;
   }
 
   /**

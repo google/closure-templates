@@ -17,7 +17,6 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +30,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -39,7 +37,6 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -51,7 +48,7 @@ import javax.annotation.Nullable;
  *
  */
 public abstract class TemplateNode extends AbstractBlockCommandNode
-    implements RenderUnitNode, ExprHolderNode, CommandTagAttributesHolder {
+    implements RenderUnitNode, ExprHolderNode {
 
   /** Priority for delegate templates. */
   public enum Priority {
@@ -272,9 +269,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private ImmutableList<TemplateHeaderVarDefn> headerParams;
 
-  /** Used for formatting */
-  private final List<CommandTagAttribute> attributes;
-
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -307,7 +301,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = computeStrictHtmlMode(nodeBuilder.getStrictHtmlDisabled());
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
-    this.attributes = nodeBuilder.getAttributes();
   }
 
   /**
@@ -331,8 +324,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.openTagLocation = orig.openTagLocation;
-    this.attributes =
-        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }
 
   private static ImmutableList<TemplateHeaderVarDefn> copyParams(
@@ -356,11 +347,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return soyFileHeaderInfo.delPackageName;
   }
 
-  @Override
-  public List<CommandTagAttribute> getAttributes() {
-    return attributes;
-  }
-
   /** Returns a template name suitable for display in user msgs. */
   public abstract String getTemplateNameForUserMsgs();
 
@@ -377,7 +363,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.headerParams =
         this.headerParams.stream()
             .filter(p -> !(p instanceof TemplateStateVar))
-            .collect(toImmutableList());
+            .collect(ImmutableList.toImmutableList());
   }
 
   /** Returns this template's partial name. */
