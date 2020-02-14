@@ -192,6 +192,7 @@ public final class TemplateRegistryTest {
         new CallBasicNode(
             0,
             SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
             Identifier.create("ns.foo", SourceLocation.UNKNOWN),
             "ns.foo",
             NO_ATTRS,
@@ -214,6 +215,7 @@ public final class TemplateRegistryTest {
     CallBasicNode node =
         new CallBasicNode(
             0,
+            SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
             Identifier.create("ns.moo", SourceLocation.UNKNOWN),
             "ns.moo",
@@ -238,6 +240,7 @@ public final class TemplateRegistryTest {
         new CallDelegateNode(
             0,
             SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
             Identifier.create("ns.foo", SourceLocation.UNKNOWN),
             NO_ATTRS,
             FAIL);
@@ -259,6 +262,7 @@ public final class TemplateRegistryTest {
     CallDelegateNode node =
         new CallDelegateNode(
             0,
+            SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
             Identifier.create("ns.moo", SourceLocation.UNKNOWN),
             NO_ATTRS,

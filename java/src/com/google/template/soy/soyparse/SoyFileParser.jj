@@ -2993,6 +2993,7 @@ private ForNode ForStmt() :
 private CallNode CallStmt() :
 {
   Token tagBegin, tagClose;
+  Token tagBeginEnd = null;
   Identifier calleeName = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
@@ -3008,7 +3009,7 @@ private CallNode CallStmt() :
       (
         tagClose = <CMD_SELF_CLOSE>
       |
-        <CMD_END>
+        tagBeginEnd = <CMD_END>
         params = CallParams()
         tagClose = <CMD_CLOSE_CALL>
       )
@@ -3022,9 +3023,12 @@ private CallNode CallStmt() :
     {
       String fullName =
           SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter);
+
+
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagClose),
+          (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : null,
           calleeName,
           fullName,
           attributes,
@@ -3042,7 +3046,7 @@ private CallNode CallStmt() :
       (
         tagClose = <CMD_SELF_CLOSE>
       |
-        <CMD_END>
+        tagBeginEnd = <CMD_END>
         params = CallParams()
         tagClose = <CMD_CLOSE_DELCALL>
       )
@@ -3061,6 +3065,7 @@ private CallNode CallStmt() :
       CallDelegateNode node = new CallDelegateNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagClose),
+          (tagBeginEnd != null) ? createSrcLoc(tagBeginEnd) : null,
           calleeName,
           attributes,
           errorReporter);

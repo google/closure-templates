@@ -59,11 +59,12 @@ public final class CallBasicNode extends CallNode {
   public CallBasicNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       Identifier sourceCalleeName,
       String fullCalleeName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    super(id, location, "call", attributes, errorReporter);
+    super(id, location, openTagLocation, "call", attributes, errorReporter);
     checkArgument(BaseUtils.isDottedIdentifier(fullCalleeName));
 
     this.sourceCalleeName = sourceCalleeName;

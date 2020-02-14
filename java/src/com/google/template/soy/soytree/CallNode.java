@@ -63,6 +63,8 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
+  private final SourceLocation openTagLocation;
+
   /** The data= expression, or null if the call does not pass data or passes data="all". */
   @Nullable private ExprRootNode dataExpr;
 
@@ -100,6 +102,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   protected CallNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       String commandName,
       List<CommandTagAttribute> attributes,
       ErrorReporter reporter) {
@@ -144,6 +147,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.attributes = attributes;
     this.userSuppliedPlaceholderName = phname;
     this.userSuppliedPlaceholderExample = phex;
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -161,6 +165,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.escapingDirectives = orig.escapingDirectives;
     this.callKey = orig.callKey;
     this.isPcData = orig.getIsPcData();
+    this.openTagLocation = orig.openTagLocation;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }
@@ -270,6 +275,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   @Override
   public ParentSoyNode<StandaloneNode> getParent() {
     return (ParentSoyNode<StandaloneNode>) super.getParent();
+  }
+
+  public SourceLocation getOpenTagLocation() {
+    return openTagLocation;
   }
 
   /** Returns the location of the callee name in the source code. */
