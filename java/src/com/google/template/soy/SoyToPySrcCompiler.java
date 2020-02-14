@@ -90,13 +90,12 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   private String bidiIsRtlFn = "";
 
   @Option(
-    name = "--namespaceManifestPath",
-    usage =
-        "A list of paths to a manifest file which provides a map of soy namespaces to"
-            + " their Python paths. If this is provided, direct imports will be used,"
-            + " drastically improving runtime performance.",
-    handler = SoyCmdLineParser.StringListOptionHandler.class
-  )
+      name = "--namespaceManifestPaths",
+      usage =
+          "A list of paths to a manifest file which provides a map of soy namespaces to"
+              + " their Python paths. If this is provided, direct imports will be used,"
+              + " drastically improving runtime performance.",
+      handler = SoyCmdLineParser.StringListOptionHandler.class)
   private List<String> namespaceManifestPaths = new ArrayList<>();
 
   @Option(
