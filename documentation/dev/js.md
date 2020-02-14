@@ -60,17 +60,15 @@ soy.examples.helloWorld = function(opt_data, opt_ijData, opt_ijData_deprecated) 
 
 The generated JavaScript function takes optional params representing the
 different kinds of data that a Soy template can use. It returns a
-[SanitizedContent
-object]
-representing the rendered result.
+[`SanitizedContent`][sanitized-content] object representing the rendered result.
 
 The exact return type of the generated JavaScript function depends on the
 template's [content kind](security#content_kinds). Most templates have a content
 kind of `html`, so most generated JavaScript functions return a
-[SanitizedHtml]
-object, a subclass of SanitizedContent. The other SanitizedContent objects
-correspond to the other content kinds: SanitizedCss for `kind="css"`, etc.
-Templates of `kind="text"` return a raw JavaScript `string`.
+[`SanitizedHtml`][sanitized-html] object, a subclass of `SanitizedContent`. The
+other `SanitizedContent` objects correspond to the other content kinds:
+`SanitizedCss` for `kind="css"`, etc. Templates of `kind="text"` return a raw
+JavaScript `string`.
 
 ### Calling JavaScript functions from user code
 
@@ -83,7 +81,7 @@ goog.require('soy.examples.helloWorld');
 const output = soy.examples.helloWorld();
 ```
 
-Here, `output` is a SanitizedContent object containing the string `'Hello
+Here, `output` is a `SanitizedContent` object containing the string `'Hello
 world!'`. Note that because the `.helloWorld` template did not declare any
 params, it is legal to call the generated JavaScript function without any
 arguments. The next section discusses how to pass template data.
@@ -150,4 +148,10 @@ TIP: If you are using Closure Compiler, there is an `@typedef` generated for the
 parameters of a template that may be useful. If the template is called `foo.bar`
 the parameters will be `foo.bar.Params`. This may be useful for annotating
 locals or specifying method parameter types.
+
+
+<!-- References -->
+
+[sanitized-content]: https://github.com/google/closure-library/blob/master/closure/goog/soy/data.js
+[sanitized-html]: https://github.com/google/closure-library/blob/master/closure/goog/soy/data.js
 
