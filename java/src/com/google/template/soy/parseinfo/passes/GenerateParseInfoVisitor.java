@@ -43,9 +43,12 @@ import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -294,6 +297,16 @@ public final class GenerateParseInfoVisitor
           if (desc.isExtension()) {
             protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
           }
+        }
+      }
+      // Add extension references from getExtension method.
+      for (MethodNode methodNode : SoyTreeUtils.getAllNodesOfType(template, MethodNode.class)) {
+        if (methodNode.isMethodResolved()
+            && methodNode.getSoyMethods().get(0) instanceof GetExtensionMethod) {
+          SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
+          String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
+          FieldDescriptor desc = ((SoyProtoType) baseType).getFieldDescriptor(fieldName);
+          protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
         }
       }
       // Note: we need to add descriptors from other parts of the expression api that contain direct

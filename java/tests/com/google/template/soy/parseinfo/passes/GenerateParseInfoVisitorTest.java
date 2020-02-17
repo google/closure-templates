@@ -144,6 +144,17 @@ public final class GenerateParseInfoVisitorTest {
   }
 
   @Test
+  public void testFindsProtoFromGetExtension() {
+    String parseInfoContent =
+        createParseInfo(
+            ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
+            "{@param extendable: soy.test.Extendable}",
+            "{$extendable.getExtension(soy.test.Extension.extension).enumField}");
+
+    assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
+  }
+
+  @Test
   public void testFindsProtoEnumUse() {
     String parseInfoContent =
         createParseInfo(
