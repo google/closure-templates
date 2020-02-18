@@ -80,6 +80,9 @@ public final class JsRuntime {
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
       GoogRequire.create("goog.soy.data.SanitizedContent").reference();
 
+  public static final Expression GOOG_HTML_SAFE_HTML =
+      GoogRequire.create("goog.html.SafeHtml").reference();
+
   public static final Expression GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
 
