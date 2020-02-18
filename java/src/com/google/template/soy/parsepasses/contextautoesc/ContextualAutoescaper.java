@@ -70,10 +70,11 @@ public final class ContextualAutoescaper {
    * Rewrites the given Soy files so that dynamic output is properly escaped according to the
    * context in which it appears.
    *
-   * @param fileSet Modified in place.
-   * @return Extra templates which were derived from templates under fileSet and which must be
-   *     compiled with fileSet to produce a correct output. See {@link DerivedTemplateUtils} for an
-   *     explanation of these.
+   * <p>The rewriting consists entirely of inserting print directives on print, call and msg nodes.
+   *
+   * @param sourceFiles The files to rewrite
+   * @param idGenerator the Id generate to use to add new directives, if necessary
+   * @param registry The registry to look up information about callees
    */
   public void rewrite(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
