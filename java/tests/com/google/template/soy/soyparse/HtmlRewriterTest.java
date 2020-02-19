@@ -28,6 +28,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CombineConsecutiveRawTextNodesPass;
 import com.google.template.soy.passes.DesugarHtmlNodesPass;
+import com.google.template.soy.soytree.CommandChar;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
@@ -126,7 +127,7 @@ public final class HtmlRewriterTest {
   @Test
   public void testTextNodes() {
     TemplateNode node = runPass("x x<div>content</div> <div>{sp}</div>");
-    assertThatSourceString(node).isEqualTo("x x<div>content</div> <div> </div>");
+    assertThatSourceString(node).isEqualTo("x x<div>content</div> <div>{sp}</div>");
     assertThatASTString(node)
         .isEqualTo(
             ""
@@ -597,6 +598,97 @@ public final class HtmlRewriterTest {
   }
 
   @Test
+  public void testCommandCharInRegularText() {
+    TemplateNode node = runPass("<div>hi,{sp}friend</div>");
+
+    assertThatASTStringNoCombine(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n" // "hi,"
+                + "RAW_TEXT_NODE\n" // "{sp}"
+                + "RAW_TEXT_NODE\n" // "friend"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+
+    // "hi,"
+    assertThat(((RawTextNode) node.getChild(1)).getRawText()).isEqualTo("hi,");
+
+    // {sp}
+    RawTextNode spNode = (RawTextNode) node.getChild(2);
+    assertThat(spNode.getRawText()).isEqualTo(" ");
+    assertThat(spNode.getCommandChar()).isEqualTo(CommandChar.SPACE);
+
+    // "friend"
+    assertThat(((RawTextNode) node.getChild(3)).getRawText()).isEqualTo("friend");
+  }
+
+  @Test
+  public void testSpCommandCharWithinAttributeValue() {
+    TemplateNode node = runPass("<div class=\"GreenText{sp}BoldText\">hi, friend</div>");
+
+    assertThatASTStringNoCombine(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    RAW_TEXT_NODE\n"
+                + "    HTML_ATTRIBUTE_VALUE_NODE\n"
+                + "      RAW_TEXT_NODE\n"
+                + "      RAW_TEXT_NODE\n"
+                + "      RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+
+    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
+    assertThat(openTag.isSelfClosing()).isFalse();
+    assertThat(((RawTextNode) openTag.getChild(0)).getRawText()).isEqualTo("div");
+    HtmlAttributeValueNode attributeValue =
+        (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(1)).getChild(1);
+    assertThat(((RawTextNode) attributeValue.getChild(0)).getRawText()).isEqualTo("GreenText");
+    assertThat(((RawTextNode) attributeValue.getChild(1)).getCommandChar())
+        .isEqualTo(CommandChar.SPACE);
+    assertThat(((RawTextNode) attributeValue.getChild(2)).getRawText()).isEqualTo("BoldText");
+  }
+
+  @Test
+  public void testNilCommandCharInHrefAttribute() {
+    TemplateNode node = runPass("<a href=\"www.google.com\n{nil}/search\">hi, friend</div>");
+
+    // TODO(b/149435495): Reparent nil nodes so they're in the right place. This only affects the
+    // formatter, since these nodes are empty.
+    assertThatASTStringNoCombine(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  HTML_ATTRIBUTE_NODE\n"
+                + "    RAW_TEXT_NODE\n"
+                + "    HTML_ATTRIBUTE_VALUE_NODE\n"
+                + "      RAW_TEXT_NODE\n"
+                + "      RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n" // Weird floating {nil} node. See todo above.
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+
+    HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getChild(0);
+    assertThat(openTag.isSelfClosing()).isFalse();
+    assertThat(((RawTextNode) openTag.getChild(0)).getRawText()).isEqualTo("a");
+    HtmlAttributeValueNode attributeValue =
+        (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(1)).getChild(1);
+    assertThat(attributeValue.toSourceString()).isEqualTo("\"www.google.com/search\"");
+    assertThat(((RawTextNode) node.getChild(1)).isNilCommandChar()).isTrue();
+    assertThat(((RawTextNode) node.getChild(2)).getRawText()).isEqualTo("hi, friend");
+  }
+
+  @Test
   public void testOneCharLiteralPreserved() {
     TemplateNode node = runPass("{literal}\n<style>div { color: red; }</style>\n{/literal}");
     assertThatASTString(node)
@@ -650,8 +742,7 @@ public final class HtmlRewriterTest {
   private static TemplateNode runPass(String input, ErrorReporter errorReporter) {
     String soyFile =
         Joiner.on('\n')
-            .join(
-                "{namespace ns}", "", "{template .t stricthtml=\"false\"}" + input + "{/template}");
+            .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         new SoyFileParser(
                 new IncrementingIdGenerator(), new StringReader(soyFile), "test.soy", errorReporter)

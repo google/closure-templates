@@ -46,7 +46,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
             + "\n"
             + "{template .foo}\n"
             + "  {@param goo: ?}\n"
-            + "  Blah{$goo}blah\n"
+            + "  Blah{$goo}blah{sp}blooh\n"
             + "{/template}\n";
 
     ErrorReporter boom = ErrorReporter.exploding();
@@ -65,12 +65,12 @@ public final class CombineConsecutiveRawTextNodesPassTest {
 
     assertThat(template.numChildren()).isEqualTo(3);
     assertThat(((RawTextNode) template.getChild(0)).getRawText()).isEqualTo("Blah");
-    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("blahblehbluh");
+    assertThat(((RawTextNode) template.getChild(2)).getRawText()).isEqualTo("blah bloohblehbluh");
   }
 
   @Test
   public void testCombineConsecutiveRawTextNodes_preserveSourceLocations() {
-    String testFileContent = "{namespace boo}{template .foo}\nbl{nil}ah\n{/template}";
+    String testFileContent = "{namespace boo}{template .foo}\nbl\n{nil}ah\n{/template}";
 
     ErrorReporter boom = ErrorReporter.exploding();
     SoyFileSetNode soyTree =
@@ -84,10 +84,10 @@ public final class CombineConsecutiveRawTextNodesPassTest {
     RawTextNode node = (RawTextNode) template.getChild(0);
     assertThat(node.getRawText()).isEqualTo("blah");
     assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(2, 1));
-    assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(2, 9));
+    assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(3, 7));
 
     // we also know the locations of individual characters
-    assertThat(node.locationOf(2)).isEqualTo(Point.create(2, 8));
+    assertThat(node.locationOf(2)).isEqualTo(Point.create(3, 6)); // letter "a".
 
     // split it up into 1 node per character
     int newId = 1; // arbitrary
@@ -107,8 +107,8 @@ public final class CombineConsecutiveRawTextNodesPassTest {
     // all the data is preserved across the join operation
     assertThat(node.getRawText()).isEqualTo("blah");
     assertThat(node.getSourceLocation().getBeginPoint()).isEqualTo(Point.create(2, 1));
-    assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(2, 9));
-    assertThat(node.locationOf(2)).isEqualTo(Point.create(2, 8));
+    assertThat(node.getSourceLocation().getEndPoint()).isEqualTo(Point.create(3, 7));
+    assertThat(node.locationOf(2)).isEqualTo(Point.create(3, 6));
   }
 
   // There used to be a pathological performance issue when merging many raw text nodes, this stress

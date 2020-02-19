@@ -532,6 +532,18 @@ public final class SourceLocationTest {
     assertThat(loc.getEndLine()).isEqualTo(3);
     assertThat(loc.getEndColumn()).isEqualTo(7);
 
+    // Check location of {sp} command character.
+    assertThat(rawText.getRawText().substring(6, 7)).isEqualTo(" ");
+    loc = rawText.substringLocation(6, 7);
+    assertThat(loc.getBeginLine()).isEqualTo(3);
+    assertThat(loc.getBeginColumn()).isEqualTo(9);
+
+    // Check location of {\n} command character.
+    assertThat(rawText.getRawText().substring(7, 8)).isEqualTo("\n");
+    loc = rawText.substringLocation(7, 8);
+    assertThat(loc.getBeginLine()).isEqualTo(4);
+    assertThat(loc.getBeginColumn()).isEqualTo(3);
+
     assertThat(rawText.getRawText().substring(8, 14)).isEqualTo("<span>");
     loc = rawText.substringLocation(8, 14);
     assertThat(loc.getBeginLine()).isEqualTo(4);

@@ -131,6 +131,11 @@ final class HtmlRewriter {
       SoyErrorKind.of(
           "{0} changes context from ''{1}'' to ''{2}''.{3}", StyleAllowance.NO_PUNCTUATION);
 
+  private static final SoyErrorKind SPECIAL_TOKEN_NOT_ALLOWED_WITHIN_HTML_TAG =
+      SoyErrorKind.of(
+          "Special tokens are not allowed inside html tags, except for within quoted attribute"
+              + " values.");
+
   private static final SoyErrorKind BLOCK_ENDS_IN_INVALID_STATE =
       SoyErrorKind.of("''{0}'' block ends in an invalid state ''{1}''.");
 
@@ -547,6 +552,7 @@ final class HtmlRewriter {
      */
     @Override
     protected void visitRawTextNode(RawTextNode node) {
+      maybeThrowNoSpecialTokensAllowedError(node);
       currentRawTextNode = node;
       currentRawText = node.getRawText();
       currentRawTextOffset = 0;
@@ -683,9 +689,46 @@ final class HtmlRewriter {
       // empty raw text nodes won't get visited in the loop above, just delete them here.
       // the parser produces empty raw text nodes to track where whitespace is trimmed.  We take
       // advantage of this in the handleJoinedWhitespace method to tell where unquoted attributes
-      // end.
-      if (currentRawTextNode.isEmpty()) {
+      // end. Keep nodes that represent the "{nil}" command char because the formatter needs to know
+      // about them.
+      if (currentRawTextNode.isEmpty() && !currentRawTextNode.isNilCommandChar()) {
         edits.remove(currentRawTextNode);
+      }
+    }
+
+    /**
+     * Throws a "no special tokens allowed within html tags" error, if we're inside an html tag and
+     * NOT within an attribute value.
+     */
+    private void maybeThrowNoSpecialTokensAllowedError(RawTextNode node) {
+      if (!node.isCommandCharacter()) {
+        return;
+      }
+
+      switch (context.getState()) {
+        case AFTER_TAG_NAME_OR_ATTRIBUTE:
+        case AFTER_ATTRIBUTE_NAME:
+        case BEFORE_ATTRIBUTE_NAME:
+        case HTML_TAG_NAME:
+        case BEFORE_ATTRIBUTE_VALUE:
+        case XML_DECLARATION:
+        case UNQUOTED_ATTRIBUTE_VALUE:
+          errorReporter.report(node.getSourceLocation(), SPECIAL_TOKEN_NOT_ALLOWED_WITHIN_HTML_TAG);
+          break;
+        case NONE:
+        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+        case HTML_COMMENT:
+        case PCDATA:
+        case CDATA:
+        case RCDATA_SCRIPT:
+        case RCDATA_STYLE:
+        case RCDATA_TEXTAREA:
+        case RCDATA_TITLE:
+        case RCDATA_XMP:
+          return;
       }
     }
 

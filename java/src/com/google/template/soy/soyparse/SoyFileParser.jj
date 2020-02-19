@@ -1765,6 +1765,22 @@ private RawTextNode RawText() :
   RawTextBuilder builder = new RawTextBuilder(filePath, nodeIdGen, whitespaceMode);
 }
 {
+  // Parse special command characters as their own nodes (e.g. "{sp}" or {\t}"), so the formatter
+  // can distinguish between "{sp}" and " ", for example.
+  ( token = <CMD_FULL_SP>
+      | token = <CMD_FULL_NIL>
+      | token = <CMD_FULL_CR>
+      | token = <CMD_FULL_LF>
+      | token = <CMD_FULL_TAB>
+      | token = <CMD_FULL_LB>
+      | token = <CMD_FULL_RB>
+      | token = <CMD_FULL_NBSP>
+      )
+      {
+        return RawTextBuilder.buildCommandCharNode(token, filePath, nodeIdGen);
+      }
+  |
+
   // There is a choice conflict here because given a sequence of two characters we could parse it
   // as one RawTextNode containing two characters or 2 RawTextNodes each containing one char.
   // However, we always want the former, so we insert this LOOKAHEAD to suppress the
@@ -1788,17 +1804,6 @@ private RawTextNode RawText() :
         token.endColumn -= "{/literal}".length();
         return builder.buildLiteral(token, loc);
       }
-    |
-      ( token = <CMD_FULL_SP>
-      | token = <CMD_FULL_NIL>
-      | token = <CMD_FULL_CR>
-      | token = <CMD_FULL_LF>
-      | token = <CMD_FULL_TAB>
-      | token = <CMD_FULL_LB>
-      | token = <CMD_FULL_RB>
-      | token = <CMD_FULL_NBSP>
-      )
-      { builder.addTextualCommand(token); }
     )
     {
       if (getToken(1).kind == CMD_OPEN_LITERAL) {
