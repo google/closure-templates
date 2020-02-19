@@ -1226,7 +1226,7 @@ goog.asserts.assertObject = function(value, opt_message, var_args) {
   return value;
 };
 goog.asserts.assertArray = function(value, opt_message, var_args) {
-  goog.asserts.ENABLE_ASSERTS && !goog.isArray(value) && goog.asserts.doAssertFailure_("Expected array but got %s: %s.", [goog.typeOf(value), value], opt_message, Array.prototype.slice.call(arguments, 2));
+  goog.asserts.ENABLE_ASSERTS && !Array.isArray(value) && goog.asserts.doAssertFailure_("Expected array but got %s: %s.", [goog.typeOf(value), value], opt_message, Array.prototype.slice.call(arguments, 2));
   return value;
 };
 goog.asserts.assertBoolean = function(value, opt_message, var_args) {
@@ -1408,7 +1408,7 @@ goog.array.isEmpty = function(arr) {
   return 0 == arr.length;
 };
 goog.array.clear = function(arr) {
-  if (!goog.isArray(arr)) {
+  if (!Array.isArray(arr)) {
     for (var i = arr.length - 1; 0 <= i; i--) {
       delete arr[i];
     }
@@ -1626,7 +1626,7 @@ goog.array.repeat = function(value, n) {
 goog.array.flatten = function(var_args) {
   for (var result = [], i = 0; i < arguments.length; i++) {
     var element = arguments[i];
-    if (goog.isArray(element)) {
+    if (Array.isArray(element)) {
       for (var c = 0; c < element.length; c += 8192) {
         for (var chunk = goog.array.slice(element, c, c + 8192), recurseResult = goog.array.flatten.apply(null, chunk), r = 0; r < recurseResult.length; r++) {
           result.push(recurseResult[r]);
@@ -1878,7 +1878,7 @@ goog.object.extend = function(target, var_args) {
 };
 goog.object.create = function(var_args) {
   var argLength = arguments.length;
-  if (1 == argLength && goog.isArray(arguments[0])) {
+  if (1 == argLength && Array.isArray(arguments[0])) {
     return goog.object.create.apply(null, arguments[0]);
   }
   if (argLength % 2) {
@@ -1891,7 +1891,7 @@ goog.object.create = function(var_args) {
 };
 goog.object.createSet = function(var_args) {
   var argLength = arguments.length;
-  if (1 == argLength && goog.isArray(arguments[0])) {
+  if (1 == argLength && Array.isArray(arguments[0])) {
     return goog.object.createSet.apply(null, arguments[0]);
   }
   for (var rv = {}, i = 0; i < argLength; i++) {
@@ -2379,7 +2379,7 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(prefix, currentString, 
     return params ? prefix + encodeURIComponent(params) : "";
   }
   for (var key in params) {
-    for (var value = params[key], outputValues = goog.isArray(value) ? value : [value], i = 0; i < outputValues.length; i++) {
+    for (var value = params[key], outputValues = Array.isArray(value) ? value : [value], i = 0; i < outputValues.length; i++) {
       var outputValue = outputValues[i];
       null != outputValue && (currentString || (currentString = prefix), currentString += (currentString.length > prefix.length ? "&" : "") + encodeURIComponent(key) + "=" + encodeURIComponent(String(outputValue)));
     }
@@ -2570,7 +2570,7 @@ goog.html.SafeStyle.create = function(map) {
       throw Error("Name allows only [-_a-zA-Z0-9], got: " + name);
     }
     var value = map[name];
-    null != value && (value = goog.isArray(value) ? goog.array.map(value, goog.html.SafeStyle.sanitizePropertyValue_).join(" ") : goog.html.SafeStyle.sanitizePropertyValue_(value), style += name + ":" + value + ";");
+    null != value && (value = Array.isArray(value) ? goog.array.map(value, goog.html.SafeStyle.sanitizePropertyValue_).join(" ") : goog.html.SafeStyle.sanitizePropertyValue_(value), style += name + ":" + value + ";");
   }
   return style ? goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(style) : goog.html.SafeStyle.EMPTY;
 };
@@ -2650,7 +2650,7 @@ goog.html.SafeStyle.sanitizeUrl_ = function(value) {
 };
 goog.html.SafeStyle.concat = function(var_args) {
   var style = "", addArgument = function(argument) {
-    goog.isArray(argument) ? goog.array.forEach(argument, addArgument) : style += goog.html.SafeStyle.unwrap(argument);
+    Array.isArray(argument) ? goog.array.forEach(argument, addArgument) : style += goog.html.SafeStyle.unwrap(argument);
   };
   goog.array.forEach(arguments, addArgument);
   return style ? goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(style) : goog.html.SafeStyle.EMPTY;
@@ -2691,7 +2691,7 @@ goog.html.SafeStyleSheet.hasBalancedBrackets_ = function(s) {
 };
 goog.html.SafeStyleSheet.concat = function(var_args) {
   var result = "", addArgument = function(argument) {
-    goog.isArray(argument) ? goog.array.forEach(argument, addArgument) : result += goog.html.SafeStyleSheet.unwrap(argument);
+    Array.isArray(argument) ? goog.array.forEach(argument, addArgument) : result += goog.html.SafeStyleSheet.unwrap(argument);
   };
   goog.array.forEach(arguments, addArgument);
   return goog.html.SafeStyleSheet.createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(result);
@@ -2896,7 +2896,7 @@ goog.html.SafeHtml.createWithDir = function(dir, tagName, opt_attributes, opt_co
 };
 goog.html.SafeHtml.join = function(separator, parts) {
   var separatorHtml = goog.html.SafeHtml.htmlEscape(separator), dir = separatorHtml.getDirection(), content = [], addArgument = function(argument) {
-    if (goog.isArray(argument)) {
+    if (Array.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
       var html = goog.html.SafeHtml.htmlEscape(argument);
@@ -2929,7 +2929,7 @@ goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse = function(
   var dir = null;
   var result = "<" + tagName + goog.html.SafeHtml.stringifyAttributes(tagName, opt_attributes);
   var content = opt_content;
-  null == content ? content = [] : goog.isArray(content) || (content = [content]);
+  null == content ? content = [] : Array.isArray(content) || (content = [content]);
   if (goog.dom.tags.isVoidTag(tagName.toLowerCase())) {
     goog.asserts.assert(!content.length, "Void tag <" + tagName + "> does not allow content."), result += ">";
   } else {
@@ -6845,7 +6845,7 @@ goog.uri.utils.appendQueryDataToUri_ = function(uri, queryData) {
 };
 goog.uri.utils.appendKeyValuePairs_ = function(key, value, pairs) {
   goog.asserts.assertString(key);
-  if (goog.isArray(value)) {
+  if (Array.isArray(value)) {
     goog.asserts.assertArray(value);
     for (var j = 0; j < value.length; j++) {
       goog.uri.utils.appendKeyValuePairs_(key, String(value[j]), pairs);
@@ -7212,7 +7212,7 @@ goog.Uri.QueryData.createFromMap = function(map, opt_uri, opt_ignoreCase) {
   }
   for (var queryData = new goog.Uri.QueryData(null, null, opt_ignoreCase), values = goog.structs.getValues(map), i = 0; i < keys.length; i++) {
     var key = keys[i], value = values[i];
-    goog.isArray(value) ? queryData.setValues(key, value) : queryData.add(key, value);
+    Array.isArray(value) ? queryData.setValues(key, value) : queryData.add(key, value);
   }
   return queryData;
 };
@@ -7749,7 +7749,7 @@ goog.debug.deepExpose = function(obj$jscomp$0, opt_showFn) {
 };
 goog.debug.exposeArray = function(arr) {
   for (var str = [], i = 0; i < arr.length; i++) {
-    goog.isArray(arr[i]) ? str.push(goog.debug.exposeArray(arr[i])) : str.push(arr[i]);
+    Array.isArray(arr[i]) ? str.push(goog.debug.exposeArray(arr[i])) : str.push(arr[i]);
   }
   return "[ " + str.join(", ") + " ]";
 };
@@ -8823,7 +8823,7 @@ goog.dom.createDom_ = function(doc, args) {
     tagName = tagNameArr.join("");
   }
   var element = goog.dom.createElement_(doc, tagName);
-  attributes && ("string" === typeof attributes ? element.className = attributes : goog.isArray(attributes) ? element.className = attributes.join(" ") : goog.dom.setProperties(element, attributes));
+  attributes && ("string" === typeof attributes ? element.className = attributes : Array.isArray(attributes) ? element.className = attributes.join(" ") : goog.dom.setProperties(element, attributes));
   2 < args.length && goog.dom.append_(doc, element, args, 2);
   return element;
 };

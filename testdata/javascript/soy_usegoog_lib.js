@@ -5921,7 +5921,7 @@ goog.asserts.assertObject = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertArray = function(value, opt_message, var_args) {
-  if (goog.asserts.ENABLE_ASSERTS && !goog.isArray(value)) {
+  if (goog.asserts.ENABLE_ASSERTS && !Array.isArray(value)) {
     goog.asserts.doAssertFailure_(
         'Expected array but got %s: %s.', [goog.typeOf(value), value],
         opt_message, Array.prototype.slice.call(arguments, 2));
@@ -6650,7 +6650,7 @@ goog.array.isEmpty = function(arr) {
 goog.array.clear = function(arr) {
   // For non real arrays we don't have the magic length so we delete the
   // indices.
-  if (!goog.isArray(arr)) {
+  if (!Array.isArray(arr)) {
     for (var i = arr.length - 1; i >= 0; i--) {
       delete arr[i];
     }
@@ -7550,7 +7550,7 @@ goog.array.flatten = function(var_args) {
   var result = [];
   for (var i = 0; i < arguments.length; i++) {
     var element = arguments[i];
-    if (goog.isArray(element)) {
+    if (Array.isArray(element)) {
       for (var c = 0; c < element.length; c += CHUNK_SIZE) {
         var chunk = goog.array.slice(element, c, c + CHUNK_SIZE);
         var recurseResult = goog.array.flatten.apply(null, chunk);
@@ -8351,7 +8351,7 @@ goog.object.extend = function(target, var_args) {
  */
 goog.object.create = function(var_args) {
   const argLength = arguments.length;
-  if (argLength == 1 && goog.isArray(arguments[0])) {
+  if (argLength == 1 && Array.isArray(arguments[0])) {
     return goog.object.create.apply(null, arguments[0]);
   }
 
@@ -8377,7 +8377,7 @@ goog.object.create = function(var_args) {
  */
 goog.object.createSet = function(var_args) {
   const argLength = arguments.length;
-  if (argLength == 1 && goog.isArray(arguments[0])) {
+  if (argLength == 1 && Array.isArray(arguments[0])) {
     return goog.object.createSet.apply(null, arguments[0]);
   }
 
@@ -10729,7 +10729,7 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(
   // Add on parameters to field from key-value object.
   for (var key in params) {
     var value = params[key];
-    var outputValues = goog.isArray(value) ? value : [value];
+    var outputValues = Array.isArray(value) ? value : [value];
     for (var i = 0; i < outputValues.length; i++) {
       var outputValue = outputValues[i];
       if (outputValue != null) {
@@ -11825,7 +11825,7 @@ goog.html.SafeStyle.create = function(map) {
     if (value == null) {
       continue;
     }
-    if (goog.isArray(value)) {
+    if (Array.isArray(value)) {
       value = goog.array.map(value, goog.html.SafeStyle.sanitizePropertyValue_)
                   .join(' ');
     } else {
@@ -12077,7 +12077,7 @@ goog.html.SafeStyle.concat = function(var_args) {
    * @param {!goog.html.SafeStyle|!Array<!goog.html.SafeStyle>} argument
    */
   var addArgument = function(argument) {
-    if (goog.isArray(argument)) {
+    if (Array.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
       style += goog.html.SafeStyle.unwrap(argument);
@@ -12276,7 +12276,7 @@ goog.html.SafeStyleSheet.concat = function(var_args) {
    *     argument
    */
   var addArgument = function(argument) {
-    if (goog.isArray(argument)) {
+    if (Array.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
       result += goog.html.SafeStyleSheet.unwrap(argument);
@@ -13270,7 +13270,7 @@ goog.html.SafeHtml.join = function(separator, parts) {
    *     !Array<!goog.html.SafeHtml.TextOrHtml_>} argument
    */
   var addArgument = function(argument) {
-    if (goog.isArray(argument)) {
+    if (Array.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
       var html = goog.html.SafeHtml.htmlEscape(argument);
@@ -13385,7 +13385,7 @@ goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse = function(
   var content = opt_content;
   if (content == null) {
     content = [];
-  } else if (!goog.isArray(content)) {
+  } else if (!Array.isArray(content)) {
     content = [content];
   }
 
@@ -35501,7 +35501,7 @@ goog.uri.utils.appendQueryDataToUri_ = function(uri, queryData) {
  */
 goog.uri.utils.appendKeyValuePairs_ = function(key, value, pairs) {
   goog.asserts.assertString(key);
-  if (goog.isArray(value)) {
+  if (Array.isArray(value)) {
     // Convince the compiler it's an array.
     goog.asserts.assertArray(value);
     for (var j = 0; j < value.length; j++) {
@@ -36535,7 +36535,7 @@ goog.Uri.prototype.setParameterValue = function(key, value) {
 goog.Uri.prototype.setParameterValues = function(key, values) {
   this.enforceReadOnly();
 
-  if (!goog.isArray(values)) {
+  if (!Array.isArray(values)) {
     values = [String(values)];
   }
 
@@ -37047,7 +37047,7 @@ goog.Uri.QueryData.createFromMap = function(map, opt_uri, opt_ignoreCase) {
   for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
     var value = values[i];
-    if (!goog.isArray(value)) {
+    if (!Array.isArray(value)) {
       queryData.add(key, value);
     } else {
       queryData.setValues(key, value);
@@ -39320,7 +39320,7 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
 goog.debug.exposeArray = function(arr) {
   var str = [];
   for (var i = 0; i < arr.length; i++) {
-    if (goog.isArray(arr[i])) {
+    if (Array.isArray(arr[i])) {
       str.push(goog.debug.exposeArray(arr[i]));
     } else {
       str.push(arr[i]);
@@ -44301,7 +44301,7 @@ goog.dom.createDom_ = function(doc, args) {
   if (attributes) {
     if (typeof attributes === 'string') {
       element.className = attributes;
-    } else if (goog.isArray(attributes)) {
+    } else if (Array.isArray(attributes)) {
       element.className = attributes.join(' ');
     } else {
       goog.dom.setProperties(element, attributes);
