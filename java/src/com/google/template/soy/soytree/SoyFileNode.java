@@ -146,7 +146,9 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return headerInfo.aliasUsed(alias);
   }
 
-  /** @deprecated SoyFileNodes don't have source locations. */
+  /**
+   * @deprecated SoyFileNodes don't have useful source locations, use the namespace declaration?.
+   */
   @Deprecated
   @Override
   public SourceLocation getSourceLocation() {
