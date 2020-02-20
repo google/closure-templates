@@ -134,7 +134,9 @@ final class InvocationBuilderTypeUtils {
         break;
       case ANY:
       case UNKNOWN:
-        types = ImmutableList.of(SimpleJavaType.OBJECT);
+        // The Soy type system assumes any and ? include null and does not expand param? of these
+        // types to any|null. Therefore we need to make these types always nullable.
+        types = ImmutableList.of(SimpleJavaType.OBJECT.asNullable());
         break;
       case ATTRIBUTES:
         types = ImmutableList.of(SimpleJavaType.ATTRIBUTES);
