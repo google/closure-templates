@@ -38,8 +38,6 @@ import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils;
 import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
-import com.google.template.soy.invocationbuilders.javatypes.ProtoEnumJavaType;
-import com.google.template.soy.invocationbuilders.javatypes.ProtoJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.RecordJavaType;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.FileInfo;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamInfo;
@@ -511,13 +509,7 @@ public final class GenInvocationBuildersVisitor
       writeRecordSetter(ilb, param, (RecordJavaType) javaType);
     } else {
       String javaTypeString = javaType.toJavaTypeString();
-      // Add @Nullable if the type is nullable AND this isn't a proto/proto enum.
-      // TODO(b/140632665): Add fix for inserting @Nullable after proto package and before proto
-      // name.
-      boolean nullable =
-          javaType.isNullable()
-              && !(javaType instanceof ProtoEnumJavaType)
-              && !(javaType instanceof ProtoJavaType);
+      boolean nullable = javaType.isNullable();
 
       ilb.appendLine(
           "public Builder "
