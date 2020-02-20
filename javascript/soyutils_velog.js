@@ -243,8 +243,8 @@ function visit(element, logger) {
     }
   }
   replaceFunctionAttributes(element, logger);
-  if (element.childNodes) {
-    const children = Array.from(element.childNodes);
+  if (element.children) {
+    const children = Array.from(element.children);
     for (let i = 0; i < children.length; i++) {
       const newChildren = visit(children[i], logger);
       replaceChild(element, children[i], newChildren);
