@@ -4988,7 +4988,6 @@ goog.dom.safe.assignLocation = function(loc, url) {
   loc.assign(goog.html.SafeUrl.unwrap(safeUrl));
 };
 goog.dom.safe.replaceLocation = function(loc, url) {
-  goog.dom.asserts.assertIsLocation(loc);
   var safeUrl = url instanceof goog.html.SafeUrl ? url : goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   loc.replace(goog.html.SafeUrl.unwrap(safeUrl));
 };
