@@ -2000,6 +2000,43 @@ public final class ContextualAutoescaperTest {
             "{/template}"));
   }
 
+  @Test
+  public void testScriptPhrasingData() {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: ?}\n",
+            "<script>{$untrusted |escapeJsValue}</script>",
+            "<script type='text/svg'>{$untrusted |filterHtmlScriptPhrasingData}</script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: ?}\n",
+            "<script>{$untrusted}</script>",
+            "<script type='text/svg'>{$untrusted}</script>\n",
+            "{/template}"));
+  }
+
+  @Test
+  public void testJsonScript() {
+    assertContextualRewriting(
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: ?}\n",
+            "<script type='text/json'>{$untrusted |escapeJsValue}</script>",
+            "<script type='text/json'>{lb} 'foo': '{$untrusted |escapeJsString}'{rb}</script>\n",
+            "{/template}"),
+        join(
+            "{namespace ns}\n\n",
+            "{template .main}\n",
+            "  {@param untrusted: ?}\n",
+            "<script type='text/json'>{$untrusted}</script>",
+            "<script type='text/json'>{lb} 'foo': '{$untrusted}'{rb}</script>\n",
+            "{/template}"));
+  }
 
   private static String join(String... lines) {
     return Joiner.on("").join(lines);

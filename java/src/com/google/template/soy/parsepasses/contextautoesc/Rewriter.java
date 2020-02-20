@@ -96,12 +96,17 @@ final class Rewriter {
     protected void visitPrintNode(PrintNode printNode) {
       ImmutableList<EscapingMode> escapingModes = inferences.getEscapingModesForNode(printNode);
       for (EscapingMode escapingMode : escapingModes) {
+        SoyPrintDirective directive = printDirectives.get(escapingMode.directiveName);
+        if (directive == null) {
+          throw new IllegalStateException(
+              "Couldn't find directive for EscapingMode " + escapingMode);
+        }
         PrintDirectiveNode newPrintDirective =
             PrintDirectiveNode.createSyntheticNode(
                 idGen.genId(),
                 Identifier.create(escapingMode.directiveName, printNode.getSourceLocation()),
                 printNode.getSourceLocation(),
-                printDirectives.get(escapingMode.directiveName));
+                directive);
         // Figure out where to put the new directive.
         // Normally they go at the end to ensure that the value printed is of the appropriate type,
         // but if there are SanitizedContentOperators at the end, then make sure that their input

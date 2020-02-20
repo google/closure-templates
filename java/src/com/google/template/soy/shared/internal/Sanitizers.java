@@ -617,6 +617,56 @@ public final class Sanitizers {
     return value;
   }
 
+  /** Filters out strings that cannot be a substring of a valid <script> tag. */
+  public static String filterHtmlScriptPhrasingData(SoyValue value) {
+    value = normalizeNull(value);
+    // no content types are safe for this context
+    return filterHtmlScriptPhrasingData(value.coerceToString());
+  }
+
+  /**
+   * Filters out strings that cannot be a substring of a valid <script> tag.
+   *
+   * <p>In particular, {@code <script}, {@code <!--} and {@code </script} or prefixes of those
+   * strings that occur at the end of the value.
+   */
+  public static String filterHtmlScriptPhrasingData(String value) {
+    // we need to ban sequences that look like
+    // <!--
+    // <script
+    // </script
+    int start = 0;
+    int indexOfLt;
+    while ((indexOfLt = value.indexOf('<', start)) != -1) {
+      start = indexOfLt;
+      if (matchPrefixIgnoreCasePastEnd("<script", value, start)
+          || matchPrefixIgnoreCasePastEnd("</script", value, start)
+          || matchPrefixIgnoreCasePastEnd("<!--", value, start)) {
+        logger.log(
+            Level.WARNING,
+            "|filterHtmlScriptPhrasingData received bad value ''{0}''. Cannot contain an script"
+                + " tag, and html comment, or end with a prefix of either",
+            value);
+        return EscapingConventions.INNOCUOUS_OUTPUT;
+      }
+      start++;
+    }
+    return value;
+  }
+
+  private static boolean matchPrefixIgnoreCasePastEnd(String needle, String haystack, int offset) {
+    int charsLeft = haystack.length() - offset;
+    int charsToScan = Math.min(needle.length(), charsLeft);
+    for (int i = 0; i < charsToScan; i++) {
+      char c1 = needle.charAt(i);
+      char c2 = haystack.charAt(i + offset);
+      if (c1 != c2 && Ascii.toLowerCase(c1) != Ascii.toLowerCase(c2)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Makes sure that the given input is a data URI corresponding to an image.
    *

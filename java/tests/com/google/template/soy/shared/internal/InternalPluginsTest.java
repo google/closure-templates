@@ -127,6 +127,9 @@ public final class InternalPluginsTest {
             // These two could be made streaming, it would require some refactoring of the
             // Sanitizers.stripHtmlTags method but it is probably a good idea.
             "|escapeHtmlAttribute",
-            "|escapeHtmlAttributeNospace");
+            "|escapeHtmlAttributeNospace",
+            // Could be made streaming, but it would be a bit tricky and is unlikely to be
+            // important.  See comment on definition.
+            "|filterHtmlScriptPhrasingData");
   }
 }

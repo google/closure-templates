@@ -934,6 +934,7 @@ final class RawTextContextUpdater {
                   new TrustedResourceUriPartTransition()))
           // All edges out of rcdata are triggered by tags which are handled in the InferenceEngine
           .put(HtmlContext.HTML_RCDATA, ImmutableList.of(TRANSITION_TO_SELF))
+          .put(HtmlContext.HTML_SCRIPT_PHRASING_DATA, ImmutableList.of(TRANSITION_TO_SELF))
           // Text context has no edges except to itself.
           .put(HtmlContext.TEXT, ImmutableList.of(TRANSITION_TO_SELF))
           .build();

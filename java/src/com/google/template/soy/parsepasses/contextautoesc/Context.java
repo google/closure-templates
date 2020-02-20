@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.net.MediaType;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -1061,7 +1062,24 @@ abstract class Context {
           elType = ElementType.IFRAME;
           break;
         case "script":
-          elType = ElementType.SCRIPT;
+          // If the script has a type attribute and it is not known to be a javascript type then
+          // browsers will treat the contents as uninterpreted data.
+          // If the type attribute is dynamic in any way, treat the content as JS
+          HtmlAttributeNode typeNode = node.getDirectAttributeNamed("type");
+          switch (getScriptType(typeNode)) {
+            case JAVASCRIPT:
+              elType = ElementType.SCRIPT;
+              break;
+            case JSON:
+              // TODO(b/73539542): We should create a different element type for json and teach
+              // the autoescaper the difference, for now treat as Javascript which is pretty close
+              // 😬.
+              elType = ElementType.SCRIPT;
+              break;
+            case UNKNOWN:
+              elType = ElementType.SCRIPT_DATA;
+              break;
+          }
           break;
         case "style":
           elType = ElementType.STYLE;
@@ -1084,7 +1102,9 @@ abstract class Context {
         case "meta":
           String httpEquiv = getStaticAttributeValue(node, "http-equiv");
           elType =
-              "refresh".equalsIgnoreCase(httpEquiv) ? ElementType.META_REFRESH : ElementType.NORMAL;
+              httpEquiv != null && Ascii.equalsIgnoreCase("refresh", httpEquiv)
+                  ? ElementType.META_REFRESH
+                  : ElementType.NORMAL;
           break;
         case "textarea":
           elType = ElementType.TEXTAREA;
@@ -1106,7 +1126,67 @@ abstract class Context {
         .build();
   }
 
-  private String getStaticAttributeValue(HtmlTagNode node, String name) {
+  private static final ImmutableSet<String> JAVASCRIPT_MIME_TYPES =
+      ImmutableSet.of("text", "application");
+
+  private static final ImmutableSet<String> JAVASCRIPT_MIME_SUBTYPES =
+      ImmutableSet.of(
+          "javascript",
+          "ecmascript",
+          "x-javascript",
+          "x-ecmascript",
+          "jscript",
+          "livescript",
+          "javascript1.0",
+          "javascript1.1",
+          "javascript1.2",
+          "javascript1.3",
+          "javascript1.4",
+          "javascript1.5");
+
+  private enum ScriptType {
+    JAVASCRIPT,
+    JSON,
+    UNKNOWN;
+  }
+  // See
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#JavaScript_types
+  private static ScriptType getScriptType(@Nullable HtmlAttributeNode attributeNode) {
+    if (attributeNode == null || attributeNode.getStaticContent() == null) {
+      // this means there was no type parameter, or it is a dynamic value
+      // default to JS
+      return ScriptType.JAVASCRIPT;
+    }
+    String type = attributeNode.getStaticContent();
+    // module is a special value
+    if (Ascii.equalsIgnoreCase(type, "module")) {
+      return ScriptType.JAVASCRIPT;
+    }
+    MediaType parsed;
+    try {
+      parsed = MediaType.parse(type);
+    } catch (IllegalArgumentException iae) {
+      throw SoyAutoescapeException.createCausedWithNode(
+          "Unable to parse type attribute on <script> tag", iae, attributeNode.getChild(1));
+    }
+    // technically these type attributes are not supposed to have parameters (such as charset).  But
+    // browsers are not consistent about this.  So pretend like there are no parameters.
+    if (JAVASCRIPT_MIME_TYPES.contains(parsed.type())
+        && JAVASCRIPT_MIME_SUBTYPES.contains(parsed.subtype())) {
+      return ScriptType.JAVASCRIPT;
+    }
+
+    // https://mimesniff.spec.whatwg.org/#json-mime-type
+    if ((parsed.subtype().equals("json")
+            && (parsed.type().equals("text") || parsed.type().equals("application")))
+        || parsed.subtype().endsWith("+json")) {
+      return ScriptType.JSON;
+    }
+    return ScriptType.UNKNOWN;
+  }
+
+  @Nullable
+  private static String getStaticAttributeValue(HtmlTagNode node, String name) {
     HtmlAttributeNode attribute = node.getDirectAttributeNamed(name);
     return attribute == null ? null : attribute.getStaticContent();
   }
@@ -1126,6 +1206,11 @@ abstract class Context {
         builder
             .withState(HtmlContext.JS)
             .withSlashType(Context.JsFollowingSlash.REGEX)
+            .withElType(Context.ElementType.NONE);
+        break;
+      case SCRIPT_DATA:
+        builder
+            .withState(HtmlContext.HTML_SCRIPT_PHRASING_DATA)
             .withElType(Context.ElementType.NONE);
         break;
       case STYLE:
@@ -1277,6 +1362,13 @@ abstract class Context {
 
     /** A script element whose content is raw JavaScript. */
     SCRIPT,
+
+    /**
+     * A script element whose content is a data block.
+     *
+     * <p>This is any script tag with a non JavaScript MIME type.
+     */
+    SCRIPT_DATA,
 
     /** A style element whose content is raw CSS. */
     STYLE,

@@ -827,5 +827,34 @@ public class SanitizersTest {
     assertThat(Sanitizers.embedCssIntoHtml("</")).isEqualTo("<\\/");
     assertThat(Sanitizers.embedCssIntoHtml("</</</")).isEqualTo("<\\/<\\/<\\/");
   }
-  
+
+  @Test
+  public void testFilterHtmlScriptPhrasingData() {
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("foobar")).isEqualTo("foobar");
+
+    // simple bans
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<script>")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("</script>")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<!-- hello -->")).isEqualTo("zSoyz");
+
+    // case insensitive simple bans
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<sCrIpT>")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("</sCrIpT>")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("<!-- hello -->")).isEqualTo("zSoyz");
+
+    // matches at the end
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <!--")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <script")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < </script")).isEqualTo("zSoyz");
+
+    // prefixes at the end
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <!-")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <scr")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < </")).isEqualTo("zSoyz");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <")).isEqualTo("zSoyz");
+
+    // near miss
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <!- -")).isEqualTo("< < <!- -");
+    assertThat(Sanitizers.filterHtmlScriptPhrasingData("< < <scrip- -")).isEqualTo("< < <scrip- -");
+  }
 }

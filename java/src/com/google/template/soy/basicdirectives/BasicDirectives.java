@@ -45,6 +45,7 @@ public final class BasicDirectives {
         new BasicEscapeDirective.FilterTrustedResourceUri(),
         new BasicEscapeDirective.NormalizeUri(),
         new BasicEscapeDirective.EscapeUri(),
+        new BasicEscapeDirective.FilterHtmlScriptPhrasingData(),
 
         // Other directives.
         new ChangeNewlineToBrDirective(),

@@ -444,4 +444,36 @@ public abstract class BasicEscapeDirective
       return kind == ContentKind.TRUSTED_RESOURCE_URI;
     }
   }
+
+  /**
+   * Implements the |filterHtmlScriptPhrasingData directive.
+   *
+   * <p>Escapes data for embedding in a <script> tag with a non JS content type. (JS content is
+   * handled elsewhere). See
+   * https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+   * for the requirements.
+   *
+   * <p>A streaming implementation is likely feasible but not currently implemented for a few
+   * reasons
+   *
+   * <ul>
+   *   <li>It is unlikely that large amounts of data would be printed in this context.
+   *   <li>It is impossible for logging statements to exist in this context.
+   * </ul>
+   *
+   * So with low motivation and no hard requirement streaming will not be implemented without a
+   * specific well justified request.
+   */
+  @SoyPurePrintDirective
+  static final class FilterHtmlScriptPhrasingData extends BasicEscapeDirective {
+
+    FilterHtmlScriptPhrasingData() {
+      super("|filterHtmlScriptPhrasingData");
+    }
+
+    @Override
+    protected String escape(SoyValue value) {
+      return Sanitizers.filterHtmlScriptPhrasingData(value);
+    }
+  }
 }

@@ -41481,6 +41481,59 @@ soy.$$escapeHtmlAttributeNospace = function(value) {
   return soy.esc.$$escapeHtmlNospaceHelper(value);
 };
 
+/**
+ * Filters out strings that cannot be valid content in a <script> tag with
+ * non-JS content.
+ *
+ * This disallows `<script`, `</script`, and `<!--` as substrings as well as
+ * prefixes of those strings that occur at the end of the value.  This combined
+ * with a similar rule enforced in the parser ensures that these substrings
+ * cannot occur.
+ *
+ * @param {?} value The value to escape. May not be a string, but the value
+ *     will be coerced to a string.
+ * @return {string} The value coerced to a string or `"zSoyz"` if the input is
+ *    invalid.
+ */
+soy.$$filterHtmlScriptPhrasingData = function(value) {
+  const valueAsString = String(value);
+  /**
+   * Returns whether there is a case insensitive match for needle within
+   * haystack starting at offset, or if haystack ends with a non empty prefix of
+   * needle.
+   * @return {boolean}
+   */
+  const matchPrefixIgnoreCasePastEnd =
+      (/** string */ needle, /** string */ haystack, /** number */ offset) => {
+        goog.asserts.assert(
+            offset >= 0 && offset < haystack.length,
+            'offset must point at a valid character of haystack');
+        goog.asserts.assert(
+            needle === soy.$$strToAsciiLowerCase(needle),
+            'needle must be lowercase');
+        const charsLeft = haystack.length - offset;
+        const charsToScan = Math.min(charsLeft, needle.length);
+        for (let i = 0; i < charsToScan; i++) {
+          if (needle[i] !== soy.$$charToAsciiLowerCase_(haystack[offset + i])) {
+            return false;
+          }
+        }
+        return true;
+      };
+  let start = 0;
+  let indexOfLt;
+  while ((indexOfLt = valueAsString.indexOf('<', start)) != -1) {
+    if (matchPrefixIgnoreCasePastEnd('<script', valueAsString, indexOfLt) ||
+        matchPrefixIgnoreCasePastEnd('</script', valueAsString, indexOfLt) ||
+        matchPrefixIgnoreCasePastEnd('<!--', valueAsString, indexOfLt)) {
+      goog.asserts.fail(
+          'Bad value `%s` for |filterHtmlScriptPhrasingData', [valueAsString]);
+      return 'zSoyz';
+    }
+    start = indexOfLt + 1;
+  }
+  return valueAsString;
+};
 
 /**
  * Filters out strings that cannot be a substring of a valid HTML attribute.
@@ -41984,9 +42037,17 @@ soy.$$listIndexOf = function(list, val) {
  * @return {string}
  */
 soy.$$strToAsciiLowerCase = function(s) {
-  return goog.array.map(s, function(c) {
-    return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
-  }).join('');
+  return goog.array.map(s, soy.$$charToAsciiLowerCase_).join('');
+};
+
+/**
+ * Lowercases a single character string.
+ * @private
+ * @return {string}
+ */
+soy.$$charToAsciiLowerCase_ = (/** string */ c) => {
+  goog.asserts.assert(c.length === 1);
+  return 'A' <= c && c <= 'Z' ? c.toLowerCase() : c;
 };
 
 

@@ -8264,6 +8264,24 @@ soy.$$escapeHtmlHtmlAttribute = function(value) {
 soy.$$escapeHtmlAttributeNospace = function(value) {
   return soy.checks.isHtml(value) ? soy.esc.$$normalizeHtmlNospaceHelper(soy.$$stripHtmlTags(value.content)) : soy.esc.$$escapeHtmlNospaceHelper(value);
 };
+soy.$$filterHtmlScriptPhrasingData = function(value) {
+  for (var valueAsString = String(value), matchPrefixIgnoreCasePastEnd = function(needle, haystack, offset) {
+    goog.asserts.assert(0 <= offset && offset < haystack.length, "offset must point at a valid character of haystack");
+    goog.asserts.assert(needle === soy.$$strToAsciiLowerCase(needle), "needle must be lowercase");
+    for (var charsToScan = Math.min(haystack.length - offset, needle.length), i = 0; i < charsToScan; i++) {
+      if (needle[i] !== soy.$$charToAsciiLowerCase_(haystack[offset + i])) {
+        return !1;
+      }
+    }
+    return !0;
+  }, start = 0, indexOfLt; -1 != (indexOfLt = valueAsString.indexOf("<", start));) {
+    if (matchPrefixIgnoreCasePastEnd("<script", valueAsString, indexOfLt) || matchPrefixIgnoreCasePastEnd("\x3c/script", valueAsString, indexOfLt) || matchPrefixIgnoreCasePastEnd("\x3c!--", valueAsString, indexOfLt)) {
+      return goog.asserts.fail("Bad value `%s` for |filterHtmlScriptPhrasingData", [valueAsString]), "zSoyz";
+    }
+    start = indexOfLt + 1;
+  }
+  return valueAsString;
+};
 soy.$$filterHtmlAttributes = function(value) {
   return soy.checks.isAttribute(value) ? value.content.replace(/([^"'\s])$/, "$1 ") : soy.esc.$$filterHtmlAttributesHelper(value);
 };
@@ -8380,9 +8398,11 @@ soy.$$listIndexOf = function(list, val) {
   });
 };
 soy.$$strToAsciiLowerCase = function(s) {
-  return goog.array.map(s, function(c) {
-    return "A" <= c && "Z" >= c ? c.toLowerCase() : c;
-  }).join("");
+  return goog.array.map(s, soy.$$charToAsciiLowerCase_).join("");
+};
+soy.$$charToAsciiLowerCase_ = function(c) {
+  goog.asserts.assert(1 === c.length);
+  return "A" <= c && "Z" >= c ? c.toLowerCase() : c;
 };
 soy.$$strToAsciiUpperCase = function(s) {
   return goog.array.map(s, function(c) {

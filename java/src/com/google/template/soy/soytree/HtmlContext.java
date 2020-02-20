@@ -34,6 +34,9 @@ public enum HtmlContext {
    */
   HTML_RCDATA(EscapingMode.ESCAPE_HTML_RCDATA),
 
+  /** Inside an <script> element with a non-JS type attribute. */
+  HTML_SCRIPT_PHRASING_DATA(EscapingMode.FILTER_HTML_SCRIPT_PHRASING_DATA),
+
   /** Just before a tag name on an open tag. */
   HTML_BEFORE_OPEN_TAG_NAME(EscapingMode.FILTER_HTML_ELEMENT_NAME),
 

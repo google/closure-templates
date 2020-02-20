@@ -38,6 +38,15 @@ public enum EscapingMode {
   ESCAPE_HTML_RCDATA(true, null, /* internalOnly= */ true),
 
   /**
+   * Escapes the content so that it is suitable to embed in a <script> tag.
+   *
+   * <p>See
+   * https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+   * which describes the character sequences which must be escaped inside of a s
+   */
+  FILTER_HTML_SCRIPT_PHRASING_DATA(false, null, /* internalOnly=*/ true),
+
+  /**
    * Encodes HTML special characters, including quotes, so that the value can appear as part of a
    * quoted attribute value. This differs from {@link #ESCAPE_HTML} in that it strips tags from
    * known safe HTML.

@@ -383,6 +383,37 @@ def normalize_uri(value):
   return generated_sanitize.normalize_uri_helper(value)
 
 
+def filter_html_script_phrasing_data(value):
+  """See docs on soy.$$filterHtmlScriptPhrasingData in soyutils_usegoog.js."""
+
+  def ascii_to_lower(c):
+    if 'A' <= c <= 'Z':
+      return c.lower()
+    return c
+
+  def match_prefix_ignore_case_past_end(needle, haystack, offset):
+    chars_left = len(haystack) - offset
+    chars_to_scan = min(len(needle), chars_left)
+    for i in range(chars_to_scan):
+      if needle[i] != ascii_to_lower(haystack[i + offset]):
+        return False
+    return True
+
+  value_str = str(value)
+  start = 0
+  while True:
+    lt = value_str.find('<', start)
+    if lt == -1:
+      break
+    if match_prefix_ignore_case_past_end(
+        '<!--', value_str, lt) or match_prefix_ignore_case_past_end(
+            '<script', value_str, lt) or match_prefix_ignore_case_past_end(
+                '</script', value_str, lt):
+      return 'zSoyz'
+    start = lt + 1
+  return value_str
+
+
 ############################
 # Public Utility Functions #
 ############################
