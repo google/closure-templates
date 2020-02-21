@@ -713,7 +713,7 @@ public final class ContextualAutoescaperTest {
     assertRewriteFails(
         "Slash (/) cannot follow the preceding branches since it is unclear whether the slash"
             + " is a RegExp literal or division operator."
-            + "  Please add parentheses in the branches leading to `/ 2  `",
+            + "  Consider adding parentheses to disambiguate",
         join(
             "{namespace ns}\n\n",
             "{template .foo}\n",

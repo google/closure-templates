@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Google Inc.
+ * Copyright 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,18 @@
 
 package com.google.template.soy.parsepasses.contextautoesc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.soytree.HtmlContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class JsUtilTest {
+public final class JsLexerTest {
+
   @Test
   public void testIsRegexPreceder() {
     // Statement terminators precede regexs.
@@ -63,11 +67,26 @@ public class JsUtilTest {
     assertIsDivOpPreceder("0");
   }
 
+  private static Context nextContext(Context starting, String jsTokens) {
+    return JsLexerTokenManager.calculateTransitions(starting, jsTokens, /* offset= */ 0);
+  }
+
+  private static Context.JsFollowingSlash getSlashType(String jsTokens) {
+    Context next =
+        nextContext(Context.getStartContextForContentKind(SanitizedContentKind.JS), jsTokens);
+    assertThat(next.state()).isEqualTo(HtmlContext.JS);
+    return next.slashType();
+  }
+
   private static void assertIsRegexPreceder(String jsTokens) {
-    assertWithMessage(jsTokens).that(JsUtil.isRegexPreceder(jsTokens)).isTrue();
+    assertWithMessage(jsTokens)
+        .that(getSlashType(jsTokens))
+        .isEqualTo(Context.JsFollowingSlash.REGEX);
   }
 
   private static void assertIsDivOpPreceder(String jsTokens) {
-    assertWithMessage(jsTokens).that(JsUtil.isRegexPreceder(jsTokens)).isFalse();
+    assertWithMessage(jsTokens)
+        .that(getSlashType(jsTokens))
+        .isEqualTo(Context.JsFollowingSlash.DIV_OP);
   }
 }
