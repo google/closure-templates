@@ -386,11 +386,15 @@ public final class BaseTofu implements SoyTofu {
           !dataSetInConstructor,
           "May not call setData on a Renderer created from a TemplateParams");
 
-      return setData(data != null ? SoyValueConverter.INSTANCE.newDictFromMap(data) : null);
+      this.data = data != null ? SoyValueConverter.INSTANCE.newDictFromMap(data) : null;
+      return this;
     }
 
     @Override
     public RendererImpl setData(SoyRecord data) {
+      Preconditions.checkState(
+          !dataSetInConstructor,
+          "May not call setData on a Renderer created from a TemplateParams");
       this.data = data;
       return this;
     }

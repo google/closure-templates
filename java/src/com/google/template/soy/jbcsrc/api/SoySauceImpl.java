@@ -18,10 +18,10 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Ascii;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -180,9 +180,9 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setData(Map<String, ?> record) {
-      Preconditions.checkState(
+      checkState(
           !dataSetInConstructor,
-          "May not call setData on a Renderer created from a TemplateParams");
+          "May not call setData on a Renderer createdd from a TemplateParams");
 
       this.data = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
       return this;
