@@ -88,7 +88,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -99,7 +98,6 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -568,10 +566,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     checkArgument(methodNode.isMethodResolved());
-    SoySourceFunction method = methodNode.getSoyMethods().get(0);
 
-    if (method instanceof GetExtensionMethod) {
-      String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
+    if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
+      String fieldName = GetExtensionMethod.getExtensionId(methodNode);
       return ((SoyProtoValue) base).getProtoField(fieldName);
     }
 

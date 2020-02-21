@@ -17,18 +17,19 @@
 package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodNode;
-import com.google.template.soy.exprtree.ProtoExtensionIdNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
  * A compiler pass that rewrites the parameter of the {@link GetExtensionMethod} method into a
- * ProtoExtensionIdNode from a GlobalNode to prevent unbound global errors.
+ * StringNode from a GlobalNode to prevent unbound global errors.
  */
 final class GetExtensionRewriteParamPass implements CompilerFilePass {
 
@@ -43,7 +44,8 @@ final class GetExtensionRewriteParamPass implements CompilerFilePass {
         if (child.getKind() == Kind.GLOBAL_NODE) {
           node.replaceChild(
               1,
-              new ProtoExtensionIdNode(((GlobalNode) child).getName(), child.getSourceLocation()));
+              new StringNode(
+                  ((GlobalNode) child).getName(), QuoteStyle.DOUBLE, child.getSourceLocation()));
         }
       }
     }

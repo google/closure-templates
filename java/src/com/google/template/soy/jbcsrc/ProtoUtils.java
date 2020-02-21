@@ -57,6 +57,7 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
@@ -64,7 +65,6 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
-import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
@@ -213,7 +213,7 @@ final class ProtoUtils {
    */
   static SoyExpression accessExtensionField(
       SoyProtoType protoType, SoyExpression baseExpr, MethodNode node) {
-    String fieldName = ((ProtoExtensionIdNode) node.getChild(1)).getValue();
+    String fieldName = GetExtensionMethod.getExtensionId(node);
     return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType()).generate();
   }
 

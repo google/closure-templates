@@ -84,7 +84,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
-import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -103,7 +102,6 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
-import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -458,13 +456,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(methodNode.isMethodResolved());
-    SoySourceFunction method = methodNode.getSoyMethods().get(0);
 
-    if (method instanceof GetExtensionMethod) {
+    if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
       SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
 
       SoyProtoType protoType = (SoyProtoType) baseType;
-      String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
+      String fieldName = GetExtensionMethod.getExtensionId(methodNode);
       FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
       Preconditions.checkNotNull(
           desc,

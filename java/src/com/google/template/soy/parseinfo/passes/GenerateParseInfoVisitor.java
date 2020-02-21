@@ -48,7 +48,6 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodNode;
-import com.google.template.soy.exprtree.ProtoExtensionIdNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
@@ -301,10 +300,9 @@ public final class GenerateParseInfoVisitor
       }
       // Add extension references from getExtension method.
       for (MethodNode methodNode : SoyTreeUtils.getAllNodesOfType(template, MethodNode.class)) {
-        if (methodNode.isMethodResolved()
-            && methodNode.getSoyMethods().get(0) instanceof GetExtensionMethod) {
+        if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
           SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
-          String fieldName = ((ProtoExtensionIdNode) methodNode.getChild(1)).getValue();
+          String fieldName = GetExtensionMethod.getExtensionId(methodNode);
           FieldDescriptor desc = ((SoyProtoType) baseType).getFieldDescriptor(fieldName);
           protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
         }

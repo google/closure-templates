@@ -98,7 +98,6 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
@@ -1375,9 +1374,8 @@ final class ExpressionCompiler {
         // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
         // from the base type during compile time and the node has multiple SoySourceFunctions.
         checkArgument(node.isMethodResolved());
-        SoySourceFunction method = node.getSoyMethods().get(0);
 
-        if (method instanceof GetExtensionMethod) {
+        if (GetExtensionMethod.isGetExtensionMethod(node)) {
           SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
           return ProtoUtils.accessExtensionField(protoType, baseExpr, node);
         }

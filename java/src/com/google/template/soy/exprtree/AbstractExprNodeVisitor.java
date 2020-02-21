@@ -116,9 +116,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case METHOD_NODE:
         visitMethodNode((MethodNode) node);
         break;
-      case PROTO_EXTENSION_ID_NODE:
-        visitProtoExtensionIdNode((ProtoExtensionIdNode) node);
-        break;
 
       case GLOBAL_NODE:
         visitGlobalNode((GlobalNode) node);
@@ -289,10 +286,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
 
   protected void visitMethodNode(MethodNode node) {
     visitDataAccessNode(node);
-  }
-
-  protected void visitProtoExtensionIdNode(ProtoExtensionIdNode node) {
-    visitExprNode(node);
   }
 
   protected void visitGlobalNode(GlobalNode node) {
