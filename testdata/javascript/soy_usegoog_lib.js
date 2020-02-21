@@ -25331,6 +25331,21 @@ goog.i18n.BidiFormatter.prototype.endEdge = function() {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @fileoverview Compact number formatting symbols.
+ *
+ * File generated from CLDR ver. 36
+ *
+ * To reduce the file size (which may cause issues in some JS
+ * developing environments), this file will only contain locales
+ * that are frequently used by web applications. This is defined as
+ * proto/closure_locales_data.txt and will change (most likely addition)
+ * over time.  Rest of the data can be found in another file named
+ * "compactnumberformatsymbolsext.js", which will be generated at
+ * the same time together with this file.
+ *
+ * @suppress {const}
+ */
 
 // clang-format off
 
@@ -34070,6 +34085,21 @@ goog.i18n.currency.CurrencyInfoTier2 = {
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @fileoverview Number formatting symbols.
+ *
+ * File generated from CLDR ver. 36
+ *
+ * To reduce the file size (which may cause issues in some JS
+ * developing environments), this file will only contain locales
+ * that are frequently used by web applications. This is defined as
+ * proto/closure_locales_data.txt and will change (most likely addition)
+ * over time.  Rest of the data can be found in another file named
+ * "numberformatsymbolsext.js", which will be generated at
+ * the same time together with this file.
+ *
+ * @suppress {const}
+ */
 
 // clang-format off
 
