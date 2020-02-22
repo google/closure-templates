@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
@@ -62,6 +63,13 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   @Override
   public Map<String, ?> getParamsAsMap() {
     return data;
+  }
+
+  /** Returns the name of the Soy template that this params object renders. */
+  public Map<String, Object> getRawParamsAsMap() {
+    // This is the only place where SoyValueUnconverter escapes this package.
+    return data.entrySet().stream()
+        .collect(toMap(Map.Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
   @Override
