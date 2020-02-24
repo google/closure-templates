@@ -65,7 +65,10 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     return data;
   }
 
-  /** Returns the name of the Soy template that this params object renders. */
+  /**
+   * Returns the parameters as a map. Values are not wrapped with SoyValueProvider. This method is
+   * intended to be called only by test code.
+   */
   public Map<String, Object> getRawParamsAsMap() {
     // This is the only place where SoyValueUnconverter escapes this package.
     return data.entrySet().stream()
