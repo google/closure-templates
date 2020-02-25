@@ -16,12 +16,17 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import javax.annotation.Nullable;
 
 /**
  * Node representing an 'if' statement.
@@ -31,6 +36,8 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  */
 public final class IfNode extends AbstractParentSoyNode<BlockNode>
     implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode {
+
+  @Nullable private HtmlContext htmlContext;
 
   /** @param id The id for this node. */
   public IfNode(int id, SourceLocation sourceLocation) {
@@ -44,6 +51,16 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
    */
   private IfNode(IfNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.htmlContext = orig.htmlContext;
+  }
+
+  public HtmlContext getHtmlContext() {
+    return checkNotNull(
+        htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
+  }
+
+  public void setHtmlContext(HtmlContext value) {
+    this.htmlContext = value;
   }
 
   @Override

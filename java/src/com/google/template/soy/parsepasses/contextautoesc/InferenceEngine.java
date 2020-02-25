@@ -292,6 +292,7 @@ final class InferenceEngine {
 
     @Override
     protected void visitIfNode(IfNode ifNode) {
+      ifNode.setHtmlContext(context.state());
       propagateAcrossDisjunction(ifNode);
     }
 

@@ -47,7 +47,7 @@ import java.util.Map;
  * that the {@link Rewriter} applies to the input Soy parse tree.
  *
  */
-final class Inferences {
+public final class Inferences {
 
   /** Map of template names to instances used to type <code>{call}</code> commands. */
   private final TemplateRegistry templates;

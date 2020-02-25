@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
+import com.google.template.soy.parsepasses.contextautoesc.Inferences;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -46,9 +47,11 @@ final class AutoescaperPass implements CompilerFileSetPass {
     if (errorReporter.hasErrors()) {
       return Result.STOP;
     }
-    // TODO(lukes): consider inlining ContextualAutoescaper here.  It really doesn't do that much
-    // anymore.
-    autoescaper.rewrite(sourceFiles, idGenerator, registry);
+    Inferences inferences = autoescaper.annotate(sourceFiles, registry);
+    if (inferences == null) {
+      return Result.STOP;
+    }
+    autoescaper.rewrite(sourceFiles, idGenerator, inferences);
     // for historical reasons compiler passes that run after the autoescaper depend on the metadata
     // addded by the escaping being present. So for now we abort compilation on autoescaper errors.
     if (errorReporter.hasErrors()) {
