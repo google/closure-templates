@@ -59,6 +59,12 @@ public interface SoyTemplate {
      *     a parameter equal to {@code param}.
      */
     <V> Builder<T> setParamFuture(SoyTemplateParam<? super V> param, ListenableFuture<V> value);
+
+    /**
+     * Returns whether this builder has a param equal to {@code param}. If this method returns true
+     * then {@link #setParam} should not throw an {@link IllegalArgumentException}.
+     */
+    boolean hasParam(SoyTemplateParam<?> param);
   }
 
   /**
