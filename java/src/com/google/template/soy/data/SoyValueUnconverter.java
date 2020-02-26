@@ -16,8 +16,8 @@
 
 package com.google.template.soy.data;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -44,11 +44,14 @@ final class SoyValueUnconverter {
       return ((StringData) soyValue).getValue();
     } else if (soyValue instanceof SoyList) {
       return ((SoyList) soyValue)
-          .asResolvedJavaList().stream().map(SoyValueUnconverter::unconvert).collect(toList());
+          .asResolvedJavaList().stream()
+              .map(SoyValueUnconverter::unconvert)
+              .collect(toImmutableList());
     } else if (soyValue instanceof SoyMap) {
+      // Use ImmutableMap to preserve ordering.
       return ((SoyMap) soyValue)
           .asJavaMap().entrySet().stream()
-              .collect(toMap(e -> unconvert(e.getKey()), e -> unconvert(e.getValue())));
+              .collect(toImmutableMap(e -> unconvert(e.getKey()), e -> unconvert(e.getValue())));
     } else if (soyValue instanceof SoyProtoValue) {
       return ((SoyProtoValue) soyValue).getProto();
     } else if (soyValue instanceof SanitizedContent) {

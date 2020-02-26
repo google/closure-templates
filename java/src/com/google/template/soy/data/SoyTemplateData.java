@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import static java.util.stream.Collectors.toMap;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.HashMap;
@@ -71,6 +73,15 @@ public final class SoyTemplateData {
    */
   public Map<String, ?> getParamsAsMap() {
     return data;
+  }
+
+  /**
+   * Returns the parameters as a map. Values are not wrapped with SoyValueProvider. This method is
+   * intended to be called only by test code.
+   */
+  public Map<String, Object> getRawParamsAsMap() {
+    return data.entrySet().stream()
+        .collect(toMap(Map.Entry::getKey, e -> SoyValueUnconverter.unconvert(e.getValue())));
   }
 
   @Override
