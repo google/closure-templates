@@ -108,6 +108,9 @@ public abstract class AbstractReturningExprNodeVisitor<R>
       case GLOBAL_NODE:
         return visitGlobalNode((GlobalNode) node);
 
+      case GROUP_NODE:
+        return visitGroupNode((GroupNode) node);
+
       case NEGATIVE_OP_NODE:
         return visitNegativeOpNode((NegativeOpNode) node);
       case NOT_OP_NODE:
@@ -244,6 +247,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitGlobalNode(GlobalNode node) {
+    return visitExprNode(node);
+  }
+
+  protected R visitGroupNode(GroupNode node) {
     return visitExprNode(node);
   }
 

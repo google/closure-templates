@@ -120,7 +120,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case GLOBAL_NODE:
         visitGlobalNode((GlobalNode) node);
         break;
-
+      case GROUP_NODE:
+        visitGroupNode((GroupNode) node);
+        break;
       case NEGATIVE_OP_NODE:
         visitNegativeOpNode((NegativeOpNode) node);
         break;
@@ -289,6 +291,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitGlobalNode(GlobalNode node) {
+    visitExprNode(node);
+  }
+
+  protected void visitGroupNode(GroupNode node) {
     visitExprNode(node);
   }
 

@@ -63,7 +63,7 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
     assertShortestBaseNameForExpr("FALLBACK", exprText);
     assertCandidateBaseNamesForExpr(ImmutableList.of(), exprText);
 
-    exprText = "$aaBb + 1";
+    exprText = "($aaBb + 1)";
     assertNaiveBaseNameForExpr("FALLBACK", exprText);
     assertShortestBaseNameForExpr("FALLBACK", exprText);
     assertCandidateBaseNamesForExpr(ImmutableList.of(), exprText);

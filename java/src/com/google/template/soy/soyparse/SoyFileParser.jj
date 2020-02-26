@@ -77,6 +77,7 @@ import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.GroupNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -3652,12 +3653,11 @@ private ExprNode PrecExpr9() :
 private ExprNode Primary() :
 {
   ExprNode primary;
+  Token lParen,rParen;
 }
 {
   (
-    <LPAREN>
-    primary = Expr()
-    <RPAREN>
+    primary = GroupNode()
   |
     primary = VarRef()
   |
@@ -3669,6 +3669,21 @@ private ExprNode Primary() :
   )
 
   { return primary; }
+}
+
+/**
+ * GroupNode -> (Expr)
+ */
+private GroupNode GroupNode() :
+{
+  ExprNode primary;
+  Token lParen,rParen;
+}
+{
+  lParen = <LPAREN>
+  primary = Expr()
+  rParen = <RPAREN>
+  {return new GroupNode(primary, createSrcLoc(lParen, rParen));}
 }
 
 

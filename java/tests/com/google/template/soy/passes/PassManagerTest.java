@@ -67,7 +67,10 @@ public final class PassManagerTest {
             .build();
 
     assertThat(names(manager.singleFilePasses))
-        .containsExactly("ContentSecurityPolicyNonceInjection", "ResolveTemplateParamTypes");
+        .containsExactly(
+            "DesugarGroupNodes",
+            "ContentSecurityPolicyNonceInjection",
+            "ResolveTemplateParamTypes");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -80,7 +83,7 @@ public final class PassManagerTest {
             .build();
 
     assertThat(names(manager.singleFilePasses))
-        .containsExactly("ContentSecurityPolicyNonceInjection");
+        .containsExactly("DesugarGroupNodes", "ContentSecurityPolicyNonceInjection");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 

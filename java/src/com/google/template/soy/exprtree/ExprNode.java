@@ -59,6 +59,7 @@ public interface ExprNode extends Node {
     PROTO_EXTENSION_ID_NODE,
 
     GLOBAL_NODE,
+    GROUP_NODE,
 
     NEGATIVE_OP_NODE,
     NOT_OP_NODE,

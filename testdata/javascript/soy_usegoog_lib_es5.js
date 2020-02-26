@@ -42,7 +42,7 @@ $jscomp.getGlobal = function(passedInThis) {
       return maybeGlobal;
     }
   }
-  return globalThis;
+  throw Error("Cannot find global object");
 };
 $jscomp.global = $jscomp.getGlobal(this);
 $jscomp.polyfill = function(target, polyfill) {
@@ -7662,9 +7662,9 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
   return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-var JSCompiler_inline_result$jscomp$7;
-JSCompiler_inline_result$jscomp$7 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
-goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$7;
+var JSCompiler_inline_result$jscomp$8;
+JSCompiler_inline_result$jscomp$8 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
+goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$8;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {

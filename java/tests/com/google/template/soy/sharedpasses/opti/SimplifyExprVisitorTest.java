@@ -36,6 +36,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.testing.DesugarGroupNodesTestingHelper;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -236,6 +237,8 @@ public final class SimplifyExprVisitorTest {
     void simplifiesTo(String expected) {
       ExprRootNode exprRoot =
           new ExprRootNode(SoyFileParser.parseExpression(actual, ErrorReporter.exploding()));
+
+      DesugarGroupNodesTestingHelper.stripGroupNodesForTest(exprRoot);
 
       PluginResolver resolver =
           new PluginResolver(
