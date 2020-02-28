@@ -58,10 +58,17 @@ public abstract class Identifier {
    */
   public static Identifier create(String identifier, SourceLocation location) {
     checkArgument(!identifier.isEmpty());
-    return new AutoValue_Identifier(identifier, location);
+    return new AutoValue_Identifier(identifier, identifier, location);
+  }
+
+  public static Identifier create(String identifier, String alias, SourceLocation location) {
+    checkArgument(!identifier.isEmpty());
+    return new AutoValue_Identifier(identifier, alias, location);
   }
 
   public abstract String identifier();
+
+  public abstract String originalName();
 
   public abstract SourceLocation location();
 

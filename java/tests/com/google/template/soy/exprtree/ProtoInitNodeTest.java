@@ -34,7 +34,7 @@ public class ProtoInitNodeTest {
   public void testToSourceString() {
     ProtoInitNode fn =
         new ProtoInitNode(
-            "my.awesome.Proto",
+            Identifier.create("my.awesome.Proto", SourceLocation.UNKNOWN),
             ImmutableList.of(
                 Identifier.create("f", SourceLocation.UNKNOWN),
                 Identifier.create("i", SourceLocation.UNKNOWN),

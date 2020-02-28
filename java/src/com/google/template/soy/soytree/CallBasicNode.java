@@ -42,8 +42,8 @@ public final class CallBasicNode extends CallNode {
   /** The full name of the template being called, after namespace / alias resolution. */
   private final String fullCalleeName;
 
-  /** The callee name string as it appears in the source code. */
-  private final Identifier sourceCalleeName;
+  /** The identifier, containing full template name and alias. */
+  private final Identifier identifier;
 
   /**
    * The list of params that need to be type checked when this node is run. All the params that
@@ -60,20 +60,19 @@ public final class CallBasicNode extends CallNode {
       int id,
       SourceLocation location,
       SourceLocation openTagLocation,
-      Identifier sourceCalleeName,
-      String fullCalleeName,
+      Identifier name,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
     super(id, location, openTagLocation, "call", attributes, errorReporter);
-    checkArgument(BaseUtils.isDottedIdentifier(fullCalleeName));
+    checkArgument(BaseUtils.isDottedIdentifier(name.identifier()));
 
-    this.sourceCalleeName = sourceCalleeName;
-    this.fullCalleeName = fullCalleeName;
+    this.identifier = name;
+    this.fullCalleeName = name.identifier();
 
     for (CommandTagAttribute attr : attributes) {
-      String name = attr.getName().identifier();
+      String ident = attr.getName().identifier();
 
-      switch (name) {
+      switch (ident) {
         case "data":
         case "key":
         case MessagePlaceholders.PHNAME_ATTR:
@@ -99,7 +98,7 @@ public final class CallBasicNode extends CallNode {
    */
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.sourceCalleeName = orig.sourceCalleeName;
+    this.identifier = orig.identifier;
     this.fullCalleeName = orig.fullCalleeName;
     this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
@@ -111,12 +110,12 @@ public final class CallBasicNode extends CallNode {
 
   /** Returns the callee name string as it appears in the source code. */
   public String getSourceCalleeName() {
-    return sourceCalleeName.identifier();
+    return identifier.originalName();
   }
 
   @Override
   public SourceLocation getSourceCalleeLocation() {
-    return sourceCalleeName.location();
+    return identifier.location();
   }
 
   /** Returns the full name of the template being called, or null if not yet set. */

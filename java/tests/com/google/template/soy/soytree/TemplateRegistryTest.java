@@ -194,7 +194,6 @@ public final class TemplateRegistryTest {
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
             Identifier.create("ns.foo", SourceLocation.UNKNOWN),
-            "ns.foo",
             NO_ATTRS,
             FAIL);
     assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
@@ -218,7 +217,6 @@ public final class TemplateRegistryTest {
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
             Identifier.create("ns.moo", SourceLocation.UNKNOWN),
-            "ns.moo",
             NO_ATTRS,
             FAIL);
     assertThat(registry.getCallContentKind(node)).isEmpty();

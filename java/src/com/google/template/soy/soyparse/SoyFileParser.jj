@@ -3027,7 +3027,7 @@ private CallNode CallStmt() :
     }
 
     {
-      String fullName =
+      Identifier name =
           SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter);
 
 
@@ -3035,8 +3035,7 @@ private CallNode CallStmt() :
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagClose),
           (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : null,
-          calleeName,
-          fullName,
+          name,
           attributes,
           errorReporter);
       node.addChildren(params);
@@ -3776,8 +3775,7 @@ private ExprNode GlobalOrFunctionCallLike() :
             paramIds = new ArrayList<Identifier>();
 
             paramNames.add(((GlobalNode) key).getName());
-            paramIds.add(
-                Identifier.create(((GlobalNode) key).getName(), key.getSourceLocation()));
+            paramIds.add(((GlobalNode) key).getIdentifier());
             params.add(val);
           }
 
@@ -3824,7 +3822,7 @@ private ExprNode GlobalOrFunctionCallLike() :
             } else {
               // TODO(user): Also add type, then remove code from RETV
               node = new ProtoInitNode(
-                  headerInfo.resolveAlias(ident.identifier()), paramIds, loc);
+                  headerInfo.resolveAlias(ident), paramIds, loc);
             }
             node.addChildren(params);
             return node;
@@ -3856,7 +3854,7 @@ private ExprNode GlobalOrFunctionCallLike() :
   { // If we did not find parens, this is a global node
     if (openParen == null) {
       return new GlobalNode(
-          headerInfo.resolveAlias(ident.identifier()), ident.identifier(), ident.location());
+          headerInfo.resolveAlias(ident));
     }
 
     // Check if this is a record. If not, look up ident in the type registry to see if it's a proto.
@@ -4386,9 +4384,7 @@ private TypeNode NamedType() :
   identifier = Identifier()
   {
     // TODO(lukes): we support aliasing list and map.... but why...?
-    identifier = Identifier.create(
-        headerInfo.resolveAlias(identifier.identifier()),
-        identifier.location());
+    identifier = headerInfo.resolveAlias(identifier);
     fullLocation = identifier.location();
   }
 

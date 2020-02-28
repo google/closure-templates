@@ -39,17 +39,17 @@ final class SoyParseUtils {
 
   /** Given a template call and file header info, return the expanded callee name if possible. */
   @SuppressWarnings("unused") // called in SoyFileParser.jj
-  public static final String calculateFullCalleeName(
+  public static final Identifier calculateFullCalleeName(
       Identifier ident, SoyFileHeaderInfo header, ErrorReporter errorReporter) {
 
     String name = ident.identifier();
     switch (ident.type()) {
       case DOT_IDENT:
         // Case 1: Source callee name is partial.
-        return header.getNamespace() + name;
+        return Identifier.create(header.getNamespace() + name, name, ident.location());
       case DOTTED_IDENT:
         // Case 2: Source callee name is a proper dotted ident, which might start with an alias.
-        return header.resolveAlias(name);
+        return header.resolveAlias(ident);
       case SINGLE_IDENT:
         // Case 3: Source callee name is a single ident (not dotted).
         if (header.hasAlias(name)) {
@@ -60,7 +60,7 @@ final class SoyParseUtils {
           // Case 3b: The callee name needs a namespace.
           errorReporter.report(ident.location(), MISSING_CALLEE_NAMESPACE, name);
         }
-        return name;
+        return Identifier.create(name, ident.location());
     }
     throw new AssertionError(ident.type());
   }

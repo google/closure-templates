@@ -152,7 +152,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     /** Resolves an potentially-aliased name against the aliases in this file. */
-    public String resolveAlias(String fullName) {
+    public Identifier resolveAlias(Identifier identifier) {
+      String fullName = identifier.identifier();
+      SourceLocation sourceLocation = identifier.location();
       String firstIdent;
       String remainder;
       int i = fullName.indexOf('.');
@@ -168,7 +170,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       if (alias != null) {
         usedAliases.add(firstIdent);
       }
-      return alias == null ? fullName : alias + remainder;
+      return alias == null
+          ? Identifier.create(fullName, sourceLocation)
+          : Identifier.create(alias + remainder, fullName, sourceLocation);
     }
 
     public boolean hasAlias(String alias) {

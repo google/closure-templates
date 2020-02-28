@@ -1344,8 +1344,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         // Resolve aliases for the given field names of the proto.
         for (Identifier id : node.getParamNames()) {
           String originalName = id.identifier();
-          String resolvedName = file.resolveAlias(originalName);
-          if (!resolvedName.equals(originalName)) {
+          Identifier resolvedName = file.resolveAlias(id);
+          if (!resolvedName.identifier().equals(originalName)) {
             // Check that the aliased name does not conflict with a field in the proto as we cannot
             // determine whether the intended field to instantiate is the regular field or the
             // aliased value.
@@ -1360,7 +1360,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               continue;
             }
             hasAliasedParams = true;
-            id = Identifier.create(resolvedName, id.location());
+            id = resolvedName;
           }
           resolvedIdentifiers.add(id);
           givenParams.add(id.identifier());
@@ -1373,7 +1373,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         // Replace the ProtoInitNode to have a list of the resolved param names.
         if (hasAliasedParams) {
           ProtoInitNode resolvedNode =
-              new ProtoInitNode(node.getProtoName(), resolvedIdentifiers, node.getSourceLocation());
+              new ProtoInitNode(
+                  node.getIdentifier(), resolvedIdentifiers, node.getSourceLocation());
           resolvedNode.setType(node.getType());
           resolvedNode.addChildren(node.getChildren());
           node.getParent().replaceChild(node, resolvedNode);

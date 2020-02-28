@@ -88,6 +88,10 @@ public final class FunctionNode extends AbstractParentExprNode {
     return name.identifier();
   }
 
+  public Identifier getIdentifier() {
+    return name;
+  }
+
   /** Returns the location of the function name. */
   public SourceLocation getFunctionNameLocation() {
     return name.location();

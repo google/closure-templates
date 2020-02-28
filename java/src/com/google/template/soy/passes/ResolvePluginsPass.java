@@ -65,8 +65,9 @@ final class ResolvePluginsPass implements CompilerFilePass {
       // type registry first to see if this is such a case
       if (function.numChildren() == 0) {
         String name = function.getFunctionName();
-        String resolvedName = file.resolveAlias(name);
-        SoyType type = typeRegistry.getType(resolvedName);
+        Identifier resolvedName =
+            file.resolveAlias(Identifier.create(name, function.getSourceLocation()));
+        SoyType type = typeRegistry.getType(resolvedName.identifier());
         if (type != null && type.getKind() == SoyType.Kind.PROTO) {
           ProtoInitNode protoInit =
               new ProtoInitNode(resolvedName, ImmutableList.of(), function.getSourceLocation());

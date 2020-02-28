@@ -29,7 +29,7 @@ import com.google.template.soy.basetree.CopyState;
 public final class ProtoInitNode extends AbstractParentExprNode {
 
   /** The function name. */
-  private final String protoName;
+  private final Identifier protoName;
   /** List of proto initialization param names. */
   private final ImmutableList<Identifier> paramNames;
 
@@ -39,7 +39,7 @@ public final class ProtoInitNode extends AbstractParentExprNode {
    * @param sourceLocation The node's source location.
    */
   public ProtoInitNode(
-      String protoName, Iterable<Identifier> paramNames, SourceLocation sourceLocation) {
+      Identifier protoName, Iterable<Identifier> paramNames, SourceLocation sourceLocation) {
     super(sourceLocation);
     this.protoName = protoName;
     this.paramNames = ImmutableList.copyOf(paramNames);
@@ -63,6 +63,10 @@ public final class ProtoInitNode extends AbstractParentExprNode {
 
   /** Returns the name of the fully qualified proto. */
   public String getProtoName() {
+    return protoName.identifier();
+  }
+
+  public Identifier getIdentifier() {
     return protoName;
   }
 

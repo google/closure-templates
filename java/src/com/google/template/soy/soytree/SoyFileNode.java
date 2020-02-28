@@ -18,7 +18,9 @@ package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import javax.annotation.Nullable;
@@ -138,8 +140,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   }
 
   /** Resolves a qualified name against the aliases for this file. */
-  public String resolveAlias(String fullName) {
-    return headerInfo.resolveAlias(fullName);
+  public Identifier resolveAlias(Identifier identifier) {
+    return headerInfo.resolveAlias(identifier);
   }
 
   public boolean aliasUsed(String alias) {
