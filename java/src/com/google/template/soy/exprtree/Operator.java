@@ -303,6 +303,11 @@ public enum Operator {
     return numOperands;
   }
 
+  /** Whether this is a binary operand. */
+  public boolean isBinary() {
+    return getNumOperands() == 2;
+  }
+
   /** Returns this operator's precedence level. */
   public int getPrecedence() {
     return precedence;
