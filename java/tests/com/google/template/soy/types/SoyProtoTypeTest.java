@@ -50,13 +50,9 @@ public class SoyProtoTypeTest {
 
     assertThat(protoType.getFieldNames())
         .containsAtLeast(
-            "someNestedExtensionField",
             "example.SomeNestedExtension.NestedExtension.someNestedExtensionField",
-            "someBoolExtension",
             "example.someBoolExtension",
-            "someIntExtension",
             "example.someIntExtension",
-            "listExtensionList",
             "example.listExtensionList");
     assertThat(protoType.getExtensionFieldNames())
         .containsExactly(

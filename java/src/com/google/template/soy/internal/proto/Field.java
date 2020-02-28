@@ -79,8 +79,6 @@ public abstract class Field {
 
     for (FieldDescriptor extension : extensions) {
       T field = factory.create(extension);
-      // TODO(b/123417146): remove simple names of extensions.
-      fieldsBySoyName.put(field.getName(), field);
 
       // Store fully qualified name of extension fields.
       fieldsBySoyName.put(field.getFullyQualifiedName(), field);

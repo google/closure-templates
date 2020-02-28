@@ -138,7 +138,7 @@ public final class GenerateParseInfoVisitorTest {
         createParseInfo(
             ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
             "{@param extendable: soy.test.Extendable}",
-            "{$extendable.extension.enumField}");
+            "{$extendable.getExtension(soy.test.Extension.extension).enumField}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }

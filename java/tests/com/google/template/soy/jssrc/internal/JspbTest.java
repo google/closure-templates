@@ -201,39 +201,6 @@ public final class JspbTest {
 
   @Test
   public void testProtoInit_extensionField() {
-    assertThatSoyExpr("example.ExampleExtendable(someIntExtension: 1000)")
-        .withTypeRegistry(REGISTRY)
-        .generatesCode(
-            "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
-                + " 1000);");
-
-    assertThatSoyExpr(
-            expr("example.ExampleExtendable(someIntExtension: $i)").withParam("{@param i: int}"))
-        .withTypeRegistry(REGISTRY)
-        .generatesCode(
-            "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
-                + " opt_data.i);");
-  }
-
-  @Test
-  public void testProtoInit_extensionRepeatedField() {
-    assertThatSoyExpr("example.ExampleExtendable(listExtensionList: [1000, 2000, 3000])")
-        .withTypeRegistry(REGISTRY)
-        .generatesCode(
-            "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
-                + " [1000, 2000, 3000]);");
-
-    assertThatSoyExpr(
-            expr("example.ExampleExtendable(listExtensionList: $l)")
-                .withParam("{@param l: list<int>}"))
-        .withTypeRegistry(REGISTRY)
-        .generatesCode(
-            "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
-                + " opt_data.l);");
-  }
-
-  @Test
-  public void testProtoInit_fullyQualifiedExtensionField() {
     assertThatSoyExpr("example.ExampleExtendable(example.someIntExtension: 1000)")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
@@ -250,7 +217,7 @@ public final class JspbTest {
   }
 
   @Test
-  public void testProtoInit_fullyQualifiedExtensionRepeatedField() {
+  public void testProtoInit_extensionRepeatedField() {
     assertThatSoyExpr("example.ExampleExtendable(example.listExtensionList: [1000, 2000, 3000])")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
@@ -287,8 +254,8 @@ public final class JspbTest {
             + "\n"
             + "{template .goo}\n"
             + "  {@param moo : example.ExampleExtendable}\n"
-            + "  {$moo.someExtensionField}\n"
-            + "  {$moo.someNestedExtensionField}\n"
+            + "  {$moo.getExtension(example.SomeExtension.someExtensionField)}\n"
+            + "  {$moo.getExtension(example.SomeNestedExtension.NestedExtension.someNestedExtensionField)}\n"
             + "{/template}\n";
 
     ParseResult parseResult =

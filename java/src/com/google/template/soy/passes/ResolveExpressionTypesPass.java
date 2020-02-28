@@ -1394,9 +1394,21 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
           // Check that each arg exists in the proto.
           if (!fields.contains(fieldName.identifier())) {
-            String extraErrorMessage =
-                SoyErrors.getDidYouMeanMessageForProtoFields(
-                    fields, protoType.getDescriptor(), fieldName.identifier());
+            String extraErrorMessage;
+            List<String> extensionFieldNames =
+                protoType.getFullyQualifiedExtensionName(fieldName.identifier());
+            if (!extensionFieldNames.isEmpty()) {
+              extraErrorMessage =
+                  String.format(
+                      " Did you mean to initialize an extension field %s with the same name?"
+                          + " Initializing extension fields with their simple name is no longer"
+                          + " supported. Use the fully qualified name instead.",
+                      extensionFieldNames);
+            } else {
+              extraErrorMessage =
+                  SoyErrors.getDidYouMeanMessageForProtoFields(
+                      fields, protoType.getDescriptor(), fieldName.identifier());
+            }
             errorReporter.report(
                 fieldName.location(),
                 PROTO_FIELD_DOES_NOT_EXIST,
@@ -1570,9 +1582,23 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             if (fieldType != null) {
               return fieldType;
             } else {
-              String extraErrorMessage =
-                  SoyErrors.getDidYouMeanMessageForProtoFields(
-                      protoType.getFieldNames(), protoType.getDescriptor(), fieldName);
+              String extraErrorMessage;
+
+              List<String> extensionFieldNames =
+                  protoType.getFullyQualifiedExtensionName(fieldName);
+              if (!extensionFieldNames.isEmpty()) {
+                extraErrorMessage =
+                    String.format(
+                        " Did you mean to access an extension field %s with the same name?"
+                            + " Accessing extension fields with their simple name is no longer"
+                            + " supported. Use the 'getExtension' method with the fully qualified"
+                            + " name instead.",
+                        extensionFieldNames);
+              } else {
+                extraErrorMessage =
+                    SoyErrors.getDidYouMeanMessageForProtoFields(
+                        protoType.getFieldNames(), protoType.getDescriptor(), fieldName);
+              }
               errorReporter.report(
                   sourceLocation,
                   UNDEFINED_FIELD_FOR_PROTO_TYPE,

@@ -18,8 +18,10 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -31,6 +33,8 @@ import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.soytree.SoyTypeP;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -200,6 +204,7 @@ public final class SoyProtoType extends SoyType {
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, FieldWithType> fields;
   private final ImmutableSet<String> extensionFieldNames;
+  private final ListMultimap<String, String> simpleToFullExtensionFieldNames;
 
   public SoyProtoType(
       final SoyTypeRegistry typeRegistry, Descriptor descriptor, Set<FieldDescriptor> extensions) {
@@ -233,6 +238,15 @@ public final class SoyProtoType extends SoyType {
                       && fieldName.equals(field.getFullyQualifiedName());
                 })
             .collect(ImmutableSet.toImmutableSet());
+    // TODO(b/123417146): Remove map in August 2020 - 6 months after deprecating using simple names
+    // for extension fields.
+    this.simpleToFullExtensionFieldNames =
+        fields.values().stream()
+            .filter(field -> field.getDescriptor().isExtension())
+            .sorted(Comparator.comparing(Field::getFullyQualifiedName))
+            .collect(
+                ImmutableListMultimap.toImmutableListMultimap(
+                    Field::getName, Field::getFullyQualifiedName));
   }
 
   @Override
@@ -279,6 +293,11 @@ public final class SoyProtoType extends SoyType {
   /** Returns all the fully qualified extension field names of this proto. */
   public ImmutableSet<String> getExtensionFieldNames() {
     return extensionFieldNames;
+  }
+
+  /** Returns all fully qualified names of extensions given the simple name. */
+  public List<String> getFullyQualifiedExtensionName(String simpleName) {
+    return simpleToFullExtensionFieldNames.get(simpleName);
   }
 
   /** Returns this proto's type name for the given backend. */
