@@ -18,7 +18,6 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -170,8 +169,9 @@ public final class ExprEquivalenceTest {
 
   private void assertEquivalent(SourceLocation location, ExprNode left, ExprNode right) {
     StandardSubjectBuilder assertion = assertWithMessage("assertion @ " + location);
-    Wrapper<ExprNode> wrappedLeft = ExprEquivalence.get().wrap(left);
-    Wrapper<ExprNode> wrappedRight = ExprEquivalence.get().wrap(right);
+    ExprEquivalence exprEquivalence = new ExprEquivalence();
+    ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
+    ExprEquivalence.Wrapper wrappedRight = exprEquivalence.wrap(right);
 
     assertion.that(wrappedLeft).isEqualTo(wrappedRight);
     // Test symmetry
@@ -183,8 +183,9 @@ public final class ExprEquivalenceTest {
   private static void assertNotEquivalent(SourceLocation location, ExprNode left, ExprNode right) {
     StandardSubjectBuilder assertion = assertWithMessage("assertion @ " + location);
     // test symmetry
-    Wrapper<ExprNode> wrappedLeft = ExprEquivalence.get().wrap(left);
-    Wrapper<ExprNode> wrappedRight = ExprEquivalence.get().wrap(right);
+    ExprEquivalence exprEquivalence = new ExprEquivalence();
+    ExprEquivalence.Wrapper wrappedLeft = exprEquivalence.wrap(left);
+    ExprEquivalence.Wrapper wrappedRight = exprEquivalence.wrap(right);
     assertion.that(wrappedRight).isNotEqualTo(wrappedLeft);
     assertion.that(wrappedLeft).isNotEqualTo(wrappedRight);
   }

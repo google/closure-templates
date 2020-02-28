@@ -28,6 +28,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.IntegerNode;
@@ -1009,6 +1010,7 @@ public final class TemplateParserTest {
   @Test
   public void testParseMsgStmt() throws Exception {
 
+    ExprEquivalence exprEquivalence = new ExprEquivalence();
     String templateBody =
         "{@param usedMb :?}{@param learnMoreUrl :?}\n"
             + "  {msg desc=\"Tells user's quota usage.\"}\n"
@@ -1057,9 +1059,9 @@ public final class TemplateParserTest {
     MsgPlaceholderNode mpn6 = (MsgPlaceholderNode) mn0.getChild(6);
     MsgHtmlTagNode mhtn6 = (MsgHtmlTagNode) mpn6.getChild(0);
     assertEquals("BREAK", mhtn6.genBasePhName());
-    assertTrue(mpn6.shouldUseSameVarNameAs((MsgPlaceholderNode) mn0.getChild(7)));
-    assertFalse(mpn6.shouldUseSameVarNameAs(mpn5));
-    assertFalse(mpn5.shouldUseSameVarNameAs(mpn3));
+    assertTrue(mpn6.shouldUseSameVarNameAs((MsgPlaceholderNode) mn0.getChild(7), exprEquivalence));
+    assertFalse(mpn6.shouldUseSameVarNameAs(mpn5, exprEquivalence));
+    assertFalse(mpn5.shouldUseSameVarNameAs(mpn3, exprEquivalence));
 
     MsgFallbackGroupNode mfgn1 = (MsgFallbackGroupNode) nodes.get(1);
     assertEquals(

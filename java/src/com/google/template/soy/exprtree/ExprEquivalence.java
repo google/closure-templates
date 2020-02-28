@@ -16,13 +16,18 @@
 
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Equivalence;
+import com.google.common.primitives.Booleans;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -37,12 +42,30 @@ import java.util.Objects;
  *   <li>{@link ExprNode#getParent()}
  * </ul>
  */
-public final class ExprEquivalence extends Equivalence<ExprNode> {
-  private static final ExprEquivalence INSTANCE = new ExprEquivalence();
+public final class ExprEquivalence {
 
-  public static ExprEquivalence get() {
-    return INSTANCE;
-  }
+  /**
+   * A map to cache the wrapper objects.
+   *
+   * <p>Due to how Exprs recursively hash each other by calling {@code wrap(expr).hashCode()}, if we
+   * cache the wrappers we can ensure we only hash each node once, and that work on sub-expressions
+   * is shared. This is important for some cases where the compiler needs to hash all subexpression,
+   * like when ResolveExpressionTypesPass implements the 'type narrowing' logic.
+   */
+  private final Map<ExprNode, Wrapper> interningMap = new IdentityHashMap<>();
+
+  private final Equivalence<ExprNode> equivalence =
+      new Equivalence<ExprNode>() {
+        @Override
+        protected boolean doEquivalent(ExprNode a, ExprNode b) {
+          return a.getKind() == b.getKind() && new EqualsVisitor(a).exec(b);
+        }
+
+        @Override
+        protected int doHash(ExprNode t) {
+          return 31 * t.getKind().hashCode() + hashCodeVisitor.exec(t);
+        }
+      };
 
   private final AbstractReturningExprNodeVisitor<Integer> hashCodeVisitor =
       new AbstractReturningExprNodeVisitor<Integer>() {
@@ -65,13 +88,13 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
         @Override
         protected Integer visitMethodNode(MethodNode node) {
-          return Objects.hash(
-              pairwise().wrap(node.getChildren()), node.isNullSafe(), node.getMethodName());
+          return 31 * (node.getMethodName().hashCode() * 31 + hashChildren(node))
+              + Boolean.hashCode(node.isNullSafe());
         }
 
         @Override
         protected Integer visitFunctionNode(FunctionNode node) {
-          return Objects.hash(pairwise().wrap(node.getChildren()), node.getFunctionName());
+          return node.getFunctionName().hashCode() * 31 + hashChildren(node);
         }
 
         @Override
@@ -117,7 +140,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
 
         @Override
         protected Integer visitBooleanNode(BooleanNode node) {
-          return Boolean.valueOf(node.getValue()).hashCode();
+          return Booleans.hashCode(node.getValue());
         }
 
         @Override
@@ -156,7 +179,7 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
         }
 
         private int hashChildren(ParentExprNode node) {
-          return pairwise().hash(node.getChildren());
+          return hash(node.getChildren());
         }
       };
 
@@ -297,12 +320,12 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     }
 
     private boolean compareChildren(ParentExprNode node) {
-      return pairwise().equivalent(node.getChildren(), ((ParentExprNode) other).getChildren());
+      return equivalent(node.getChildren(), ((ParentExprNode) other).getChildren());
     }
   }
 
-  private final HashMap<String, Equivalence.Wrapper<ExprNode>> protoInitFields(ProtoInitNode node) {
-    HashMap<String, Equivalence.Wrapper<ExprNode>> map = new HashMap<>();
+  private final HashMap<String, Wrapper> protoInitFields(ProtoInitNode node) {
+    HashMap<String, Wrapper> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i++) {
       map.put(node.getParamName(i).identifier(), wrap(children.get(i)));
@@ -310,9 +333,8 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     return map;
   }
 
-  private final HashMap<String, Equivalence.Wrapper<ExprNode>> recordLiteralFields(
-      RecordLiteralNode node) {
-    HashMap<String, Equivalence.Wrapper<ExprNode>> map = new HashMap<>();
+  private final HashMap<String, Wrapper> recordLiteralFields(RecordLiteralNode node) {
+    HashMap<String, Wrapper> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i++) {
       map.put(node.getKey(i).identifier(), wrap(children.get(i)));
@@ -320,11 +342,10 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     return map;
   }
 
-  private final HashMap<Equivalence.Wrapper<ExprNode>, Equivalence.Wrapper<ExprNode>>
-      mapLiteralFields(MapLiteralNode node) {
+  private final HashMap<Wrapper, Wrapper> mapLiteralFields(MapLiteralNode node) {
     // both of these nodes store keys and values as alternating children.  We don't want order to
     // matter so we store in a map
-    HashMap<Equivalence.Wrapper<ExprNode>, Equivalence.Wrapper<ExprNode>> map = new HashMap<>();
+    HashMap<Wrapper, Wrapper> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i += 2) {
       map.put(wrap(children.get(i)), wrap(children.get(i + 1)));
@@ -332,15 +353,76 @@ public final class ExprEquivalence extends Equivalence<ExprNode> {
     return map;
   }
 
-  private ExprEquivalence() {}
-
-  @Override
-  protected boolean doEquivalent(ExprNode a, ExprNode b) {
-    return a.getKind() == b.getKind() && new EqualsVisitor(a).exec(b);
+  public final boolean equivalent(ExprNode a, ExprNode b) {
+    return equivalence.equivalent(a, b);
   }
 
-  @Override
-  protected int doHash(ExprNode t) {
-    return 31 * t.getKind().hashCode() + hashCodeVisitor.exec(t);
+  public final boolean equivalent(List<ExprNode> a, List<ExprNode> b) {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (int i = 0; i < a.size(); i++) {
+      if (!equivalent(a.get(i), b.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public final int hash(ExprNode a) {
+    return wrap(a).hashCode();
+  }
+
+  public final int hash(List<ExprNode> a) {
+    int result = 1;
+    for (ExprNode element : a) {
+      result = 31 * result + wrap(element).hashCode();
+    }
+    return result;
+  }
+
+  public Wrapper wrap(ExprNode expr) {
+    return interningMap.computeIfAbsent(expr, this::createWrapper);
+  }
+
+  private Wrapper createWrapper(ExprNode expr) {
+    return new Wrapper(equivalence, expr);
+  }
+
+  /** A wrapper type that provides value semantics to ExprNode. */
+  public static final class Wrapper {
+    private final Equivalence<ExprNode> equivalence;
+    private final ExprNode expr;
+    private final int hashCode;
+
+    Wrapper(Equivalence<ExprNode> equivalence, ExprNode expr) {
+      this.equivalence = equivalence;
+      this.expr = checkNotNull(expr);
+      this.hashCode = equivalence.hash(expr);
+    }
+
+    public ExprNode get() {
+      return expr;
+    }
+
+    @Override
+    public int hashCode() {
+      return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (this == other) {
+        return true;
+      }
+      if (other instanceof Wrapper) {
+        Wrapper otherWrapper = (Wrapper) other;
+        if (otherWrapper.equivalence != equivalence) {
+          return false;
+        }
+        return equivalence.equivalent(this.expr, otherWrapper.expr);
+      }
+      return false;
+    }
   }
 }

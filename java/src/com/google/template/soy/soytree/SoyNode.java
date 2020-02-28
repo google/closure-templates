@@ -21,6 +21,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
 import javax.annotation.Nullable;
@@ -282,7 +283,7 @@ public interface SoyNode extends Node {
      *
      * @param other The other substitution unit to check against.
      */
-    boolean shouldUseSameVarNameAs(MsgSubstUnitNode other);
+    boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence);
   }
 
   // -----------------------------------------------------------------------------------------------

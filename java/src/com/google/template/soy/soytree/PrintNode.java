@@ -274,7 +274,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     @Override
     protected boolean doEquivalent(PrintNode a, PrintNode b) {
-      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
       if (!exprEquivalence.equivalent(a.getExpr(), b.getExpr())) {
         return false;
       }
@@ -294,7 +294,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         List<ExprNode> one = (List<ExprNode>) ((List<?>) aDirective.getExprList());
         @SuppressWarnings("unchecked")
         List<ExprNode> two = (List<ExprNode>) ((List<?>) bDirective.getExprList());
-        if (!exprEquivalence.pairwise().equivalent(one, two)) {
+        if (!exprEquivalence.equivalent(one, two)) {
           return false;
         }
       }
@@ -303,14 +303,14 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
     @Override
     protected int doHash(PrintNode t) {
-      ExprEquivalence exprEquivalence = ExprEquivalence.get();
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
       int hc = exprEquivalence.hash(t.getExpr());
       for (PrintDirectiveNode child : t.getChildren()) {
         // cast ImmutableList<ExprRootNode> to List<ExprNode>
         @SuppressWarnings("unchecked")
         List<ExprNode> list = (List<ExprNode>) ((List<?>) child.getExprList());
         hc = 31 * hc + child.getName().hashCode();
-        hc = 31 * hc + exprEquivalence.pairwise().hash(list);
+        hc = 31 * hc + exprEquivalence.hash(list);
       }
       return hc;
     }

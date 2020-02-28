@@ -35,6 +35,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.CopyState.Listener;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -510,6 +511,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
       Map<MsgSubstUnitNode, String> repNodeToExample = new HashMap<>();
       Deque<SoyNode> traversalQueue = new ArrayDeque<>();
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
 
       // Seed the traversal queue with the direct children of this MsgNode.
       // NOTE: the placeholder name selection algorithm depends on the order of iteration in these
@@ -546,7 +548,7 @@ public final class MsgNode extends AbstractBlockCommandNode
           } else {
             boolean isNew = true;
             for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
-              if (substUnit.shouldUseSameVarNameAs(other)) {
+              if (substUnit.shouldUseSameVarNameAs(other, exprEquivalence)) {
                 // Case 2: Should use same var name as another node we've seen.
                 nonRepNodeToRepNodeMap.put(substUnit, other);
                 String example = checkCompatibleExamples(substUnit, other, reporter);

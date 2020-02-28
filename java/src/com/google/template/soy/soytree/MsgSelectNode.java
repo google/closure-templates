@@ -110,13 +110,13 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   }
 
   @Override
-  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence) {
     if (!(other instanceof MsgSelectNode)) {
       return false;
     }
 
     MsgSelectNode that = (MsgSelectNode) other;
-    return ExprEquivalence.get().equivalent(this.selectExpr, that.selectExpr);
+    return exprEquivalence.equivalent(this.selectExpr, that.selectExpr);
   }
 
   @Override

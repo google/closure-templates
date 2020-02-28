@@ -18,8 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.base.Equivalence;
-import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -156,6 +154,7 @@ final class TemplateAnalysis {
   private static final class PseudoEvaluatorVisitor extends AbstractSoyNodeVisitor<Void> {
     final Map<VarDefn, AccessGraph> letNodes = new HashMap<>();
     final PseudoEvaluatorExprVisitor exprVisitor = new PseudoEvaluatorExprVisitor(letNodes);
+    final ExprEquivalence exprEquivalence = new ExprEquivalence();
     Block current;
 
     AccessGraph evaluate(TemplateNode node) {
@@ -168,7 +167,7 @@ final class TemplateAnalysis {
       // nodes with unconditional branches.  We could reduce the size of the graph by trying to
       // eliminate such nodes.  This may be worth it if we end up doing many traversals instead of
       // the current 1.
-      return new AccessGraph(start, finalNode);
+      return new AccessGraph(start, finalNode, exprEquivalence);
     }
 
     /**
@@ -275,7 +274,7 @@ final class TemplateAnalysis {
       for (StandaloneNode child : node.getChildren()) {
         block = exec(block, child);
       }
-      letNodes.put(node.getVar(), new AccessGraph(startBlock, block));
+      letNodes.put(node.getVar(), new AccessGraph(startBlock, block, exprEquivalence));
     }
 
     @Override
@@ -283,7 +282,7 @@ final class TemplateAnalysis {
       // see visitLetContentNode
       Block start = new Block();
       Block end = exprVisitor.eval(start, node.getExpr());
-      letNodes.put(node.getVar(), new AccessGraph(start, end));
+      letNodes.put(node.getVar(), new AccessGraph(start, end, exprEquivalence));
     }
 
     @Override
@@ -779,10 +778,12 @@ final class TemplateAnalysis {
   private static final class AccessGraph {
     final Block start;
     final Block end;
+    final ExprEquivalence exprEquivalence;
 
-    AccessGraph(Block start, Block end) {
+    AccessGraph(Block start, Block end, ExprEquivalence exprEquivalence) {
       this.start = start;
       this.end = end;
+      this.exprEquivalence = exprEquivalence;
     }
 
     /** Creates a copy of the block. Note, this does not clone the {@code #exprs}. */
@@ -790,7 +791,7 @@ final class TemplateAnalysis {
       Map<Block, Block> originalToCopy = new IdentityHashMap<>();
       Block newStart = shallowCopyBlock(start, originalToCopy);
       Block newEnd = originalToCopy.get(end);
-      return new AccessGraph(newStart, newEnd);
+      return new AccessGraph(newStart, newEnd, exprEquivalence);
     }
 
     /** Returns a set of ExprNodes that have definitely already been resolved. */
@@ -813,14 +814,14 @@ final class TemplateAnalysis {
       // edges.
 
       Set<ExprNode> resolvedExprs = Sets.newIdentityHashSet();
-      Map<Block, Set<Equivalence.Wrapper<ExprNode>>> blockToAccessedExprs = new IdentityHashMap<>();
+      Map<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs = new IdentityHashMap<>();
       for (Block current : getTopologicalOrdering()) {
         // First calculate the set of exprs that were definitely accessed prior to this node
-        Set<Equivalence.Wrapper<ExprNode>> currentBlockSet =
+        Set<ExprEquivalence.Wrapper> currentBlockSet =
             mergePredecessors(blockToAccessedExprs, current);
         // Then figure out which nodes in this block were _already_ accessed.
         for (ExprNode expr : current.exprs) {
-          Equivalence.Wrapper<ExprNode> wrapped = ExprEquivalence.get().wrap(expr);
+          ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(expr);
           if (!currentBlockSet.add(wrapped)) {
             resolvedExprs.add(expr);
           }
@@ -830,11 +831,11 @@ final class TemplateAnalysis {
       return resolvedExprs;
     }
 
-    static Set<Equivalence.Wrapper<ExprNode>> mergePredecessors(
-        Map<Block, Set<Equivalence.Wrapper<ExprNode>>> blockToAccessedExprs, Block current) {
-      Set<Equivalence.Wrapper<ExprNode>> currentBlockSet = null;
+    static Set<ExprEquivalence.Wrapper> mergePredecessors(
+        Map<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs, Block current) {
+      Set<ExprEquivalence.Wrapper> currentBlockSet = null;
       for (Block predecessor : current.predecessors) {
-        Set<Wrapper<ExprNode>> predecessorBlockSet = blockToAccessedExprs.get(predecessor);
+        Set<ExprEquivalence.Wrapper> predecessorBlockSet = blockToAccessedExprs.get(predecessor);
         if (currentBlockSet == null) {
           currentBlockSet = new HashSet<>(predecessorBlockSet);
         } else {

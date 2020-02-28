@@ -229,10 +229,11 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
     } else if (baseExpr instanceof MapLiteralNode) {
       MapLiteralNode mapLiteral = (MapLiteralNode) baseExpr;
       boolean areAllKeysConstants = true;
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
       for (int i = 0; i < mapLiteral.numChildren(); i += 2) {
         ExprNode key = mapLiteral.getChild(i);
         ExprNode value = mapLiteral.getChild(i + 1);
-        if (ExprEquivalence.get().equivalent(keyExpr, key)) {
+        if (exprEquivalence.equivalent(keyExpr, key)) {
           node.getParent().replaceChild(node, value);
           return;
         }

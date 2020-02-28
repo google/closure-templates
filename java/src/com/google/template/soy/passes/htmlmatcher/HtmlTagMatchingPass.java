@@ -16,7 +16,6 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
-import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -24,7 +23,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherGraphNode.EdgeKind;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -102,7 +100,10 @@ public final class HtmlTagMatchingPass {
    * Record of nodes and their related tag nodes. This is used to "save" a record of actions to be
    * taken. At the end of the graph traversal, if there are no errors, "commit" the changes.
    */
-  HashMultimap<HtmlTagNode, Optional<HtmlTagNode>> annotationMap = HashMultimap.create();
+  private final HashMultimap<HtmlTagNode, Optional<HtmlTagNode>> annotationMap =
+      HashMultimap.create();
+
+  private final ExprEquivalence exprEquivalence = new ExprEquivalence();
 
   public HtmlTagMatchingPass(
       ErrorReporter errorReporter,
@@ -269,7 +270,7 @@ public final class HtmlTagMatchingPass {
   /** Perform tag matching/error reporting for invalid HTML. */
   private List<QueuedTask> visit(
       HtmlMatcherTagNode tagNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     HtmlTagNode tag = (HtmlTagNode) tagNode.getSoyNode().get();
     TagName openTagName = tag.getTagName();
@@ -364,7 +365,7 @@ public final class HtmlTagMatchingPass {
    */
   private List<QueuedTask> visit(
       HtmlMatcherBlockNode blockNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     if (blockNode.getGraph().getRootNode().isPresent()) {
       new HtmlTagMatchingPass(
@@ -386,9 +387,9 @@ public final class HtmlTagMatchingPass {
    */
   private List<QueuedTask> visit(
       HtmlMatcherConditionNode condNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
-    Equivalence.Wrapper<ExprNode> condition = ExprEquivalence.get().wrap(condNode.getExpression());
+    ExprEquivalence.Wrapper condition = exprEquivalence.wrap(condNode.getExpression());
     // In some cases we may encounter a condition we have already made a decision for. Consider
     // this case:
     // <pre>@code {
@@ -406,13 +407,13 @@ public final class HtmlTagMatchingPass {
     if (!condNode.isInternallyBalanced(stack.inForeignContent, idGenerator)
         && nextNode.isPresent()
         && !Boolean.FALSE.equals(originalState)) {
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> lMap = new HashMap<>(exprValueMap);
+      Map<ExprEquivalence.Wrapper, Boolean> lMap = new HashMap<>(exprValueMap);
       lMap.put(condition, true);
       tasks.add(visit(nextNode, lMap, stack));
     }
 
     if (nextAltNode.isPresent() && !Boolean.TRUE.equals(originalState)) {
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> rMap = new HashMap<>(exprValueMap);
+      Map<ExprEquivalence.Wrapper, Boolean> rMap = new HashMap<>(exprValueMap);
       rMap.put(condition, false);
       tasks.add(visit(nextAltNode, rMap, stack));
     }
@@ -422,7 +423,7 @@ public final class HtmlTagMatchingPass {
   /** Accumulator nodes mostly work like HTMLMatcherTagNodes, but don't add any elements. */
   private List<QueuedTask> visit(
       HtmlMatcherAccumulatorNode accNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     Optional<HtmlMatcherGraphNode> nextNode = accNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     return ImmutableList.of(visit(nextNode, exprValueMap, stack));
@@ -441,7 +442,7 @@ public final class HtmlTagMatchingPass {
 
   private QueuedTask visit(
       Optional<HtmlMatcherGraphNode> maybeNode,
-      Map<Equivalence.Wrapper<ExprNode>, Boolean> exprValueMap,
+      Map<ExprEquivalence.Wrapper, Boolean> exprValueMap,
       HtmlStack stack) {
     if (!maybeNode.isPresent()) {
       return () -> {

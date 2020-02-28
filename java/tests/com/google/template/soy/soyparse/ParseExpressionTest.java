@@ -597,7 +597,7 @@ public final class ParseExpressionTest {
   // Helpers.
 
   private static void assertNodeEquals(ExprNode expected, ExprNode actual) {
-    if (!ExprEquivalence.get().equivalent(expected, actual)) {
+    if (!new ExprEquivalence().equivalent(expected, actual)) {
       fail(
           String.format(
               "Expected <%s> but was: <%s>", expected.toSourceString(), actual.toSourceString()));

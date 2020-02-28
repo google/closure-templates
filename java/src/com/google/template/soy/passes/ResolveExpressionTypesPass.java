@@ -19,12 +19,10 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 
-import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -279,6 +277,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
 
+  private ExprEquivalence exprEquivalence;
+
   ResolveExpressionTypesPass(
       SoyTypeRegistry typeRegistry,
       ErrorReporter errorReporter,
@@ -292,6 +292,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     substitutions = null; // make sure substitutions don't leak across files
+    exprEquivalence = new ExprEquivalence();
     new TypeAssignmentSoyVisitor().exec(file);
   }
 
@@ -461,8 +462,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
           TypeSubstitution previousSubstitutionState = substitutions;
 
-          Map<Wrapper<ExprNode>, SoyType> positiveTypeConstraints = new HashMap<>();
-          positiveTypeConstraints.put(ExprEquivalence.get().wrap(switchExpr), caseType);
+          Map<ExprEquivalence.Wrapper, SoyType> positiveTypeConstraints = new HashMap<>();
+          positiveTypeConstraints.put(exprEquivalence.wrap(switchExpr), caseType);
           addTypeSubstitutions(positiveTypeConstraints);
           visitChildren(scn);
 
@@ -471,10 +472,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           if (nullFound) {
             // If a case statement has a null literal, the switch expression can't be null for any
             // of the following case statements.
-            Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = new HashMap<>();
+            Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new HashMap<>();
             negativeTypeConstraints.put(
-                ExprEquivalence.get().wrap(switchExpr),
-                SoyTypes.tryRemoveNull(switchExpr.getType()));
+                exprEquivalence.wrap(switchExpr), SoyTypes.tryRemoveNull(switchExpr.getType()));
             addTypeSubstitutions(negativeTypeConstraints);
           }
         } else if (child instanceof SwitchDefaultNode) {
@@ -509,13 +509,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
   // Given a map of type subsitutions, add all the entries to the current set of
   // active substitutions.
-  private void addTypeSubstitutions(Map<Wrapper<ExprNode>, SoyType> substitutionsToAdd) {
-    for (Map.Entry<Wrapper<ExprNode>, SoyType> entry : substitutionsToAdd.entrySet()) {
+  private void addTypeSubstitutions(Map<ExprEquivalence.Wrapper, SoyType> substitutionsToAdd) {
+    for (Map.Entry<ExprEquivalence.Wrapper, SoyType> entry : substitutionsToAdd.entrySet()) {
       ExprNode expr = entry.getKey().get();
       // Get the existing type
       SoyType previousType = expr.getType();
       for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
-        if (ExprEquivalence.get().equivalent(subst.expression, expr)) {
+        if (exprEquivalence.equivalent(subst.expression, expr)) {
           previousType = subst.type;
           break;
         }
@@ -1778,7 +1778,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       // If there's a type substitution in effect for this expression, then change
       // the type of the variable reference to the substituted type.
       for (TypeSubstitution subst = substitutions; subst != null; subst = subst.parent) {
-        if (ExprEquivalence.get().equivalent(subst.expression, expr)) {
+        if (exprEquivalence.equivalent(subst.expression, expr)) {
           return subst.type;
         }
       }
@@ -1993,10 +1993,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
    */
   private final class TypeNarrowingConditionVisitor extends AbstractExprNodeVisitor<Void> {
     // Type constraints that are valid if the condition is true.
-    Map<Wrapper<ExprNode>, SoyType> positiveTypeConstraints = new LinkedHashMap<>();
+    Map<ExprEquivalence.Wrapper, SoyType> positiveTypeConstraints = new LinkedHashMap<>();
 
     // Type constraints that are valid if the condition is false.
-    Map<Wrapper<ExprNode>, SoyType> negativeTypeConstraints = new LinkedHashMap<>();
+    Map<ExprEquivalence.Wrapper, SoyType> negativeTypeConstraints = new LinkedHashMap<>();
 
     @Override
     public Void exec(ExprNode node) {
@@ -2015,7 +2015,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       // So for example an expression like {if $var} should be treated as
       // {if $var != null} but something like {if $var > 0} should not be changed.
       visit(node);
-      Wrapper<ExprNode> wrapped = ExprEquivalence.get().wrap(node);
+      ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(node);
       positiveTypeConstraints.put(wrapped, SoyTypes.tryRemoveNull(node.getType()));
       // TODO(lukes): The 'negative' type constraint here is not optimal.  What we really know is
       // that the value of the expression is 'falsy' we could use that to inform later checks but
@@ -2033,14 +2033,16 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       rightVisitor.visitAndImplicitlyCastToBoolean(node.getChild(1));
 
       // Both the left side and right side constraints will be valid if the condition is true.
-      positiveTypeConstraints.putAll(
-          computeConstraintUnion(
-              leftVisitor.positiveTypeConstraints, rightVisitor.positiveTypeConstraints));
+      computeConstraintUnionInto(
+          leftVisitor.positiveTypeConstraints,
+          rightVisitor.positiveTypeConstraints,
+          /*into=*/ positiveTypeConstraints);
       // If the condition is false, then the overall constraint is the intersection of
       // the complements of the true constraints.
-      negativeTypeConstraints.putAll(
-          computeConstraintIntersection(
-              leftVisitor.negativeTypeConstraints, rightVisitor.negativeTypeConstraints));
+      computeConstraintIntersectionInto(
+          leftVisitor.negativeTypeConstraints,
+          rightVisitor.negativeTypeConstraints,
+          /*into=*/ negativeTypeConstraints);
     }
 
     @Override
@@ -2054,14 +2056,16 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
       // If the condition is true, then only constraints that appear on both sides of the
       // operator will be valid.
-      positiveTypeConstraints.putAll(
-          computeConstraintIntersection(
-              leftVisitor.positiveTypeConstraints, rightVisitor.positiveTypeConstraints));
+      computeConstraintIntersectionInto(
+          leftVisitor.positiveTypeConstraints,
+          rightVisitor.positiveTypeConstraints,
+          /*into=*/ positiveTypeConstraints);
       // If the condition is false, then both sides must be false, so the overall constraint
       // is the union of the complements of the constraints on each side.
-      negativeTypeConstraints.putAll(
-          computeConstraintUnion(
-              leftVisitor.negativeTypeConstraints, rightVisitor.negativeTypeConstraints));
+      computeConstraintUnionInto(
+          leftVisitor.negativeTypeConstraints,
+          rightVisitor.negativeTypeConstraints,
+          /*into=*/ negativeTypeConstraints);
     }
 
     @Override
@@ -2077,12 +2081,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     @Override
     protected void visitEqualOpNode(EqualOpNode node) {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
         negativeTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
         negativeTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
@@ -2093,12 +2097,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     @Override
     protected void visitNotEqualOpNode(NotEqualOpNode node) {
       if (node.getChild(1).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       } else if (node.getChild(0).getKind() == ExprNode.Kind.NULL_NODE) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(1));
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(1));
         positiveTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
@@ -2126,12 +2130,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       if (node.numChildren() != 1) {
         return;
       } else if (node.getFunctionName().equals("isNonnull")) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
       } else if (node.getFunctionName().equals("isNull")) {
-        Wrapper<ExprNode> wrappedExpr = ExprEquivalence.get().wrap(node.getChild(0));
+        ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
         negativeTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
@@ -2152,30 +2156,25 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
      *
      * @param left Constraints from the left side.
      * @param right Constraints from the right side.
-     * @return The combined constraint.
      */
-    private <T> Map<T, SoyType> computeConstraintUnion(
-        Map<T, SoyType> left, Map<T, SoyType> right) {
+    private <T> void computeConstraintUnionInto(
+        Map<T, SoyType> left, Map<T, SoyType> right, Map<T, SoyType> into) {
       if (left.isEmpty()) {
-        return right;
+        return;
       }
       if (right.isEmpty()) {
-        return left;
+        return;
       }
-      Map<T, SoyType> result = new LinkedHashMap<>(left);
+      into.putAll(left);
       for (Map.Entry<T, SoyType> entry : right.entrySet()) {
         // The union of two constraints is a *stricter* constraint.
         // Thus "((a instanceof any) AND (a instanceof bool)) == (a instanceof bool)"
-        if (left.containsKey(entry.getKey())) {
-          // For now, it's sufficient that the map contains an entry for the variable
-          // (since we're only testing for nullability). Once we add support for more
-          // complex type tests, we'll need to add code here that combines the two
-          // constraints.
-        } else {
-          result.put(entry.getKey(), entry.getValue());
-        }
+        // For now, it's sufficient that the map contains an entry for the variable
+        // (since we're only testing for nullability). Once we add support for more
+        // complex type tests, we'll need to add code here that combines the two
+        // constraints.
+        into.putIfAbsent(entry.getKey(), entry.getValue());
       }
-      return result;
     }
 
     /**
@@ -2185,30 +2184,27 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
      *
      * @param left Constraints from the left side.
      * @param right Constraints from the right side.
-     * @return The combined constraint.
      */
-    private Map<Wrapper<ExprNode>, SoyType> computeConstraintIntersection(
-        Map<Wrapper<ExprNode>, SoyType> left, Map<Wrapper<ExprNode>, SoyType> right) {
+    private <T> void computeConstraintIntersectionInto(
+        Map<T, SoyType> left, Map<T, SoyType> right, Map<T, SoyType> into) {
       if (left.isEmpty()) {
-        return left;
+        return;
       }
       if (right.isEmpty()) {
-        return right;
+        return;
       }
-      Map<Wrapper<ExprNode>, SoyType> result = Maps.newHashMapWithExpectedSize(left.size());
-      for (Map.Entry<Wrapper<ExprNode>, SoyType> entry : left.entrySet()) {
+      for (Map.Entry<T, SoyType> entry : left.entrySet()) {
         // A variable must be present in both the left and right sides in order to be
         // included in the output.
-        if (right.containsKey(entry.getKey())) {
+        SoyType rightSideType = right.get(entry.getKey());
+        if (rightSideType != null) {
           // The intersection of two constraints is a *looser* constraint.
           // Thus "((a instanceof any) OR (a instanceof bool)) == (a instanceof any)"
-          SoyType rightSideType = right.get(entry.getKey());
-          result.put(
+          into.put(
               entry.getKey(),
               SoyTypes.computeLowestCommonType(typeRegistry, entry.getValue(), rightSideType));
         }
       }
-      return result;
     }
   }
 

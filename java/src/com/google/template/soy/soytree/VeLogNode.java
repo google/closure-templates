@@ -29,8 +29,8 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -62,16 +62,16 @@ public final class VeLogNode extends AbstractBlockCommandNode
       if (!(other instanceof SamenessKey)) {
         return false;
       }
+      ExprEquivalence exprEquivalence = new ExprEquivalence();
+
       SamenessKey otherKey = (SamenessKey) other;
-      return ExprEquivalence.get().equivalent(delegate.veDataExpr, otherKey.delegate.veDataExpr)
-          && ExprEquivalence.get().equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr);
+      return exprEquivalence.equivalent(delegate.veDataExpr, otherKey.delegate.veDataExpr)
+          && exprEquivalence.equivalent(delegate.logonlyExpr, otherKey.delegate.logonlyExpr);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(
-          ExprEquivalence.get().wrap(delegate.veDataExpr),
-          ExprEquivalence.get().wrap(delegate.logonlyExpr));
+      return new ExprEquivalence().hash(Arrays.asList(delegate.veDataExpr, delegate.logonlyExpr));
     }
   }
 

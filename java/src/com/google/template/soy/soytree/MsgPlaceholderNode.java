@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import javax.annotation.Nullable;
 
@@ -97,7 +98,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    * represented by the same placeholder.
    */
   @Override
-  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence) {
     return (other instanceof MsgPlaceholderNode)
         && this.initialNodeKind == ((MsgPlaceholderNode) other).initialNodeKind
         && this.samenessKey.equals(((MsgPlaceholderNode) other).samenessKey);

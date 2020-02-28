@@ -90,13 +90,13 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   }
 
   @Override
-  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other) {
+  public boolean shouldUseSameVarNameAs(MsgSubstUnitNode other, ExprEquivalence exprEquivalence) {
     if (!(other instanceof MsgPluralNode)) {
       return false;
     }
 
     MsgPluralNode that = (MsgPluralNode) other;
-    return ExprEquivalence.get().equivalent(this.pluralExpr, that.pluralExpr)
+    return exprEquivalence.equivalent(this.pluralExpr, that.pluralExpr)
         && this.offset == that.offset;
   }
 

@@ -103,7 +103,7 @@ final class RewriteRemaindersPass implements CompilerFilePass {
         return;
       }
       // 'remainder' with a different expression than the enclosing 'plural'. Bad!
-      if (!ExprEquivalence.get()
+      if (!new ExprEquivalence()
           .equivalent(functionNode.getChild(0), currPluralNode.getExpr().getRoot())) {
         errorReporter.report(functionNode.getSourceLocation(), REMAINDER_PLURAL_EXPR_MISMATCH);
         removeBadRemainder(functionNode);
