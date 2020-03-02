@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
@@ -218,7 +219,7 @@ final class TemplateCompiler {
       TemplateDelegateNode delegateNode = (TemplateDelegateNode) templateNode;
       deltemplateMetadata =
           createDelTemplateMetadata(
-              delegateNode.getDelPackageName() == null ? "" : delegateNode.getDelPackageName(),
+              nullToEmpty(delegateNode.getDelPackageName()),
               delegateNode.getDelTemplateName(),
               delegateNode.getDelTemplateVariant());
     } else {
