@@ -443,6 +443,7 @@ public final class JsType {
         return VE_TYPE;
       case VE_DATA:
         return VE_DATA_TYPE;
+      case NAMED_TEMPLATE:
       case TEMPLATE:
         throw new UnsupportedOperationException("Not implemented!");
       case ERROR:

@@ -146,6 +146,7 @@ final class KeyCommandPass implements CompilerFilePass {
         case LEGACY_OBJECT_MAP:
         case MAP:
         case PROTO:
+        case NAMED_TEMPLATE:
         case TEMPLATE:
         case VE:
         case VE_DATA:

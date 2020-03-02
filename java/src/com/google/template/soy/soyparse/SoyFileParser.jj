@@ -82,6 +82,7 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.AliasDeclaration;
@@ -3741,6 +3742,11 @@ private ExprNode GlobalOrFunctionCallLike() :
         return VeLiteral(ident);
       }
     |
+      LOOKAHEAD( {ident.identifier().equals("template")} )
+     {
+        return TemplateLiteral(ident);
+     }
+    |
       [
         // this can be any expr, for a function call; for proto init or record literal, must be a
         // single-ident global
@@ -4098,6 +4104,35 @@ private StringNode StringLiteral() :
     String unescaped = SoyParseUtils.unescapeString(rawString, errorReporter, loc);
     return new StringNode(unescaped, quoteStyle, loc);
   }
+}
+
+private TemplateLiteralNode TemplateLiteral(Identifier ident) :
+{
+    Identifier templateName;
+    Token closeParen;
+}
+{
+  (
+    templateName = PartialTemplateNameInExpression()
+  |
+    templateName = Identifier()
+  )
+  closeParen = <RPAREN>
+  {
+    return new TemplateLiteralNode(
+        SoyParseUtils.calculateFullCalleeName(templateName, headerInfo, errorReporter),
+        ident.location().extend(createSrcLoc(closeParen)));
+  }
+}
+
+private Identifier PartialTemplateNameInExpression() :
+{
+  Token dot, name;
+}
+{
+  dot = <DOT>
+  name = <IDENT>
+  { return Identifier.create("." + name.image, createSrcLoc(dot, name)); }
 }
 
 /**

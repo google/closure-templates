@@ -386,6 +386,13 @@ public final class PassManager {
           ImmutableList.builder();
       addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
+        // Upgrade the "named template" placeholder types to proper template types, now that their
+        // signatures are known.
+        addPass(
+            new UpgradeTemplateTypesPass(registry, errorReporter),
+            crossTemplateCheckingPassesBuilder);
+        // Make sure we really upgraded *all* the template types.
+        addPass(new CheckNoNamedTemplateTypesPass(), crossTemplateCheckingPassesBuilder);
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       }
       addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);

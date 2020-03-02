@@ -179,6 +179,7 @@ public final class TofuTypeChecks {
           return CheckResult.fromBool(
               value instanceof SoyString || value instanceof SanitizedContent);
         }
+      case NAMED_TEMPLATE:
       case TEMPLATE:
         throw new UnsupportedOperationException("Not implemented!");
       case TRUSTED_RESOURCE_URI:

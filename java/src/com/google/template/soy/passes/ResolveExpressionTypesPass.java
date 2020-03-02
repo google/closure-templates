@@ -73,6 +73,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -1484,6 +1485,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       node.setType(type);
     }
 
+    @Override
+    protected void visitTemplateLiteralNode(TemplateLiteralNode node) {
+      // Template literal nodes are instantiated with a temporary type because we don't have enough
+      // information to give them a type at the time this pass is run -- we need to know the
+      // signature of the referenced template. The type is resolved and checked in a later pass.
+    }
+
     private void visitComparisonOpNode(AbstractOperatorNode node) {
       visitChildren(node);
       SoyType left = node.getChild(0).getType();
@@ -1670,6 +1678,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case FLOAT:
         case TRUSTED_RESOURCE_URI:
         case MAP:
+        case NAMED_TEMPLATE:
         case PROTO_ENUM:
         case TEMPLATE:
         case VE:
@@ -1776,6 +1785,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case RECORD:
         case PROTO:
         case PROTO_ENUM:
+        case NAMED_TEMPLATE:
         case TEMPLATE:
         case VE:
         case VE_DATA:

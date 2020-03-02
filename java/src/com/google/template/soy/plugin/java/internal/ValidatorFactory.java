@@ -410,6 +410,7 @@ final class ValidatorFactory extends JavaValueFactory {
       case VE_DATA:
         expectedClasses = VE_DATA_TYPES;
         break;
+      case NAMED_TEMPLATE:
       case TEMPLATE:
         throw new IllegalStateException("Cannot have template type from function signature");
       case ERROR:

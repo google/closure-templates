@@ -87,4 +87,9 @@ public final class ListType extends SoyType {
   public int hashCode() {
     return Objects.hash(this.getClass(), elementType);
   }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

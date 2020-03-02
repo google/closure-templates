@@ -76,4 +76,9 @@ public final class VeType extends SoyType {
   public int hashCode() {
     return Objects.hash(this.getClass(), dataType);
   }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

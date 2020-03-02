@@ -84,4 +84,9 @@ public final class SoyProtoEnumType extends SoyType {
   void doToProto(SoyTypeP.Builder builder) {
     builder.setProtoEnum(getName());
   }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

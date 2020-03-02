@@ -17,7 +17,7 @@
 package com.google.template.soy.types;
 
 /** Base class for primitive types. */
-abstract class PrimitiveType extends SoyType {
+public abstract class PrimitiveType extends SoyType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
@@ -36,5 +36,10 @@ abstract class PrimitiveType extends SoyType {
   public int hashCode() {
     // All instances of a given primitive type are considered equal.
     return this.getClass().hashCode();
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

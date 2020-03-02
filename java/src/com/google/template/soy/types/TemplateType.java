@@ -59,8 +59,16 @@ public final class TemplateType extends SoyType {
     return Kind.TEMPLATE;
   }
 
+  public ImmutableList<Argument> getArguments() {
+    return arguments;
+  }
+
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    if (srcType.getKind() == Kind.NAMED_TEMPLATE) {
+      // Checking happens later for named templates.
+      return true;
+    }
     if (srcType.getKind() == Kind.TEMPLATE) {
       TemplateType srcTemplate = (TemplateType) srcType;
       // The source template must have the exact same template argument names, and each individual
@@ -125,5 +133,10 @@ public final class TemplateType extends SoyType {
   @Override
   public int hashCode() {
     return Objects.hash(this.getClass(), arguments, returnType);
+  }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
   }
 }

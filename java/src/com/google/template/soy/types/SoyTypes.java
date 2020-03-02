@@ -256,6 +256,105 @@ public final class SoyTypes {
   }
 
   /**
+   * Returns true if the given type matches the given kind, or if the given type transitively
+   * contains a type of the given kind -- e.g., within a union, list, record, map, or template
+   * argument.
+   */
+  public static boolean transitivelyContainsKind(SoyType type, Kind kind) {
+    return type.accept(
+        new SoyTypeVisitor<Boolean>() {
+          @Override
+          public Boolean visit(ErrorType type) {
+            return type.getKind() == kind;
+          }
+
+          @Override
+          public Boolean visit(LegacyObjectMapType type) {
+            return type.getKind() == kind
+                || (type.getKeyType() != null && type.getKeyType().accept(this))
+                || (type.getValueType() != null && type.getValueType().accept(this));
+          }
+
+          @Override
+          public Boolean visit(ListType type) {
+            return type.getKind() == kind
+                || (type.getElementType() != null && type.getElementType().accept(this));
+          }
+
+          @Override
+          public Boolean visit(MapType type) {
+            return type.getKind() == kind
+                || (type.getKeyType() != null && type.getKeyType().accept(this))
+                || (type.getValueType() != null && type.getValueType().accept(this));
+          }
+
+          @Override
+          public Boolean visit(NamedTemplateType type) {
+            return type.getKind() == kind;
+          }
+
+          @Override
+          public Boolean visit(PrimitiveType type) {
+            return type.getKind() == kind;
+          }
+
+          @Override
+          public Boolean visit(RecordType type) {
+            if (type.getKind() == kind) {
+              return true;
+            }
+            for (RecordType.Member member : type.getMembers()) {
+              if (member.type().accept(this)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visit(SoyProtoEnumType type) {
+            return type.getKind() == kind;
+          }
+
+          @Override
+          public Boolean visit(SoyProtoType type) {
+            return type.getKind() == kind;
+          }
+
+          @Override
+          public Boolean visit(TemplateType type) {
+            if (type.getKind() == kind) {
+              return true;
+            }
+            for (TemplateType.Argument argument : type.getArguments()) {
+              if (argument.type().accept(this)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visit(UnionType type) {
+            if (type.getKind() == kind) {
+              return true;
+            }
+            for (SoyType member : type.getMembers()) {
+              if (member.accept(this)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visit(VeType type) {
+            return type.getKind() == kind;
+          }
+        });
+  }
+
+  /**
    * Returns true if the given type matches any of the given kinds, or is a union which includes any
    * of the given kinds
    */

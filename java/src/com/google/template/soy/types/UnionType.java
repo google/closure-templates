@@ -156,4 +156,9 @@ public final class UnionType extends SoyType {
   public int hashCode() {
     return Objects.hash(this.getClass(), members);
   }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

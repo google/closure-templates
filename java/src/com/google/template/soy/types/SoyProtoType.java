@@ -337,4 +337,9 @@ public final class SoyProtoType extends SoyType {
   public boolean shouldCheckFieldPresenceToEmulateJspbNullability(String fieldName) {
     return fields.get(fieldName).shouldCheckFieldPresenceToEmulateJspbNullability();
   }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

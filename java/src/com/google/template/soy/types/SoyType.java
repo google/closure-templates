@@ -103,6 +103,7 @@ public abstract class SoyType {
     RECORD,
     LEGACY_OBJECT_MAP,
     MAP,
+    NAMED_TEMPLATE,
     PROTO,
     PROTO_ENUM,
     TEMPLATE,
@@ -205,4 +206,6 @@ public abstract class SoyType {
 
   @ForOverride
   abstract void doToProto(SoyTypeP.Builder builder);
+
+  public abstract <T> T accept(SoyTypeVisitor<T> visitor);
 }

@@ -151,6 +151,7 @@ final class InvocationBuilderTypeUtils {
       case NULL:
       case VE:
       case VE_DATA:
+      case NAMED_TEMPLATE:
       case TEMPLATE:
         break;
     }

@@ -128,4 +128,9 @@ public final class MapType extends AbstractMapType {
   public int hashCode() {
     return Objects.hash(this.getClass(), keyType, valueType);
   }
+
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 }

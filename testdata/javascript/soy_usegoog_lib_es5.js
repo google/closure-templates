@@ -7663,7 +7663,12 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
 var JSCompiler_inline_result$jscomp$8;
-JSCompiler_inline_result$jscomp$8 = goog.global.document && goog.userAgent.IE ? goog.userAgent.getDocumentMode_() : void 0;
+if (goog.global.document && goog.userAgent.IE) {
+  var documentMode$jscomp$inline_14 = goog.userAgent.getDocumentMode_();
+  JSCompiler_inline_result$jscomp$8 = documentMode$jscomp$inline_14 ? documentMode$jscomp$inline_14 : parseInt(goog.userAgent.VERSION, 10) || void 0;
+} else {
+  JSCompiler_inline_result$jscomp$8 = void 0;
+}
 goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$8;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
