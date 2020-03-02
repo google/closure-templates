@@ -457,11 +457,7 @@ final class ExpressionCompiler {
 
                   if (visitedFilter != null) {
                     visitedFilter.gen(adapter);
-                    BytecodeUtils.constant(false).gen(adapter);
-                    adapter.ifCmp(
-                        Type.BOOLEAN_TYPE,
-                        Opcodes.IFEQ,
-                        loopContinue); // if (!filter.test(a)) continue;
+                    adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
                   }
 
                   resultVar.local().gen(adapter);
