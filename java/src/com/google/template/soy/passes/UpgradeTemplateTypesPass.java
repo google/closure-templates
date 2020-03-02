@@ -81,8 +81,7 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
       TemplateRegistry templateRegistry) {
     for (SoyFileNode file : sourceFiles) {
       for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
-        if (exprNode.getType() != null
-            && SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
+        if (SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
           boolean isTemplateLiteral = exprNode.getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
           SoyType resolvedType =
               exprNode

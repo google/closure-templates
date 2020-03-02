@@ -37,8 +37,7 @@ final class CheckNoNamedTemplateTypesPass implements CompilerFileSetPass {
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
       for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
-        if (exprNode.getType() != null
-            && SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
+        if (SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
           throw new IllegalStateException(
               "Found non-upgraded Named Template type after they should have all been removed."
                   + " This is most likely a parsing error; please file a go/soy-bug. Problem"

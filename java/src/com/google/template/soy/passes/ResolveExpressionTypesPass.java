@@ -375,6 +375,16 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         }
       }
 
+      for (ExprRootNode expr : node.getExprList()) {
+        if (expr.getType() != null) {
+          continue; // must be a default value
+        }
+        // any other expression in a template declaration
+        // currently this is just variant expressions, but might be other things in the future.
+        new ResolveTypesExprVisitor(/* isDefaultInitializerForInferredParam=*/ false, node)
+            .exec(expr);
+      }
+
       visitChildren(node);
     }
 
