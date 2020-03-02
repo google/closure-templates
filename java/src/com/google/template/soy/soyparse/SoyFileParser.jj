@@ -1973,13 +1973,13 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       if (paramTypeNode instanceof UnionTypeNode) {
         UnionTypeNode utn = (UnionTypeNode) paramTypeNode;
         for (TypeNode tn : utn.candidates()) {
-          if (tn instanceof NamedTypeNode && ((NamedTypeNode) tn).name().equals("null")) {
+          if (tn instanceof NamedTypeNode && ((NamedTypeNode) tn).name().identifier().equals("null")) {
             isNullable = true;
             break;
           }
         }
       } else if (paramTypeNode instanceof NamedTypeNode
-          && ((NamedTypeNode) paramTypeNode).name().equals("null")) {
+          && ((NamedTypeNode) paramTypeNode).name().identifier().equals("null")) {
         isNullable = true;
       }
       // Optional params become nullable

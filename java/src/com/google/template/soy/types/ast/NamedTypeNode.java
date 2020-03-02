@@ -24,20 +24,20 @@ import com.google.template.soy.base.internal.Identifier;
 @AutoValue
 public abstract class NamedTypeNode extends TypeNode {
   public static NamedTypeNode create(Identifier identifier) {
-    return create(identifier.location(), identifier.identifier());
+    return new AutoValue_NamedTypeNode(identifier.location(), identifier);
   }
 
   public static NamedTypeNode create(SourceLocation sourceLocation, String name) {
-    return new AutoValue_NamedTypeNode(sourceLocation, name);
+    return create(Identifier.create(name, sourceLocation));
   }
 
   NamedTypeNode() {}
 
-  public abstract String name();
+  public abstract Identifier name();
 
   @Override
   public final String toString() {
-    return name();
+    return name().identifier();
   }
 
   @Override
@@ -47,7 +47,7 @@ public abstract class NamedTypeNode extends TypeNode {
 
   @Override
   public NamedTypeNode copy() {
-    NamedTypeNode copy = create(sourceLocation(), name());
+    NamedTypeNode copy = create(name());
     copy.copyResolvedTypeFrom(this);
     return copy;
   }

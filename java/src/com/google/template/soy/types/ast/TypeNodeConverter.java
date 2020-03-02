@@ -153,7 +153,7 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(NamedTypeNode node) {
-    String name = node.name();
+    String name = node.name().identifier();
     SanitizedType safeProtoType = SoyTypeRegistry.SAFE_PROTO_TO_SANITIZED_TYPE.get(name);
     if (safeProtoType != null) {
       String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();

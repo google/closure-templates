@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types.ast;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
@@ -188,7 +189,8 @@ public final class TypeNodeTest {
 
           @Override
           public Void visit(NamedTypeNode node) {
-            assertThat(((NamedTypeNode) right).name()).isEqualTo(node.name());
+            assertThat(((NamedTypeNode) right).name().identifier())
+                .isEqualTo(node.name().identifier());
             return null;
           }
 
@@ -221,14 +223,14 @@ public final class TypeNodeTest {
           public Void visit(TemplateTypeNode node) {
             assertThat(node.arguments()).hasSize(((TemplateTypeNode) right).arguments().size());
             ImmutableMap<String, TypeNode> leftArgumentMap =
-                Streams.stream(node.arguments())
+                node.arguments().stream()
                     .collect(
-                        ImmutableMap.toImmutableMap(
+                        toImmutableMap(
                             TemplateTypeNode.Argument::name, TemplateTypeNode.Argument::type));
             ImmutableMap<String, TypeNode> rightArgumentMap =
                 Streams.stream(((TemplateTypeNode) right).arguments())
                     .collect(
-                        ImmutableMap.toImmutableMap(
+                        toImmutableMap(
                             TemplateTypeNode.Argument::name, TemplateTypeNode.Argument::type));
             assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
             for (String key : leftArgumentMap.keySet()) {
