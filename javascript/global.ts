@@ -5,7 +5,7 @@
  * runtime cost for requiring incrementaldom directly.
  */
 
-import {assertInstanceof} from 'goog:goog.asserts';  // from //javascript/closure/asserts
+import {assert, assertInstanceof} from 'goog:goog.asserts';  // from //javascript/closure/asserts
 import {IjData} from 'goog:goog.soy';  // from //javascript/closure/soy
 
 import {SoyElement} from './element_lib_idom';
@@ -30,7 +30,13 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
  */
 export function getSoy<TElement extends SoyElement<{}|null, {}>>(
     node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
-  const soyEl = assertInstanceof(getSoyUntyped(node), elementCtor, message);
+  const untypedEl = getSoyUntyped(node);
+  assert(untypedEl, (message || '') + `
+
+Did not find an idom-rendered {element} on the DOM node.`.trim());
+  const soyEl = assertInstanceof(untypedEl, elementCtor, message && message + `
+
+The DOM node has an {element} of type ${untypedEl!.constructor.name}.`);
   // We disable state syncing by default when elements are accessed on the
   // theory that the application wants to take control now.
   soyEl.setSyncState(false);
@@ -39,9 +45,9 @@ export function getSoy<TElement extends SoyElement<{}|null, {}>>(
 
 /** Retrieves the Soy element in a type-safe way, or null if it doesn't exist */
 export function getSoyOptional<TElement extends SoyElement<{}, {}>>(
-    node: Node, elementCtor: ElementCtor<TElement>) {
+    node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
   if (!node.__soy) return null;
-  return getSoy(node, elementCtor);
+  return getSoy(node, elementCtor, message);
 }
 
 /**
