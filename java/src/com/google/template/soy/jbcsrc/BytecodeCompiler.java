@@ -21,6 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.template.soy.base.internal.SoyFileSupplier;
@@ -28,19 +29,26 @@ import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
+import com.google.template.soy.jbcsrc.shared.PluginRuntimeInstanceInfo;
+import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
+import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /** The entry point to the {@code jbcsrc} compiler. */
@@ -115,6 +123,11 @@ public final class BytecodeCompiler {
     }
     try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       final Set<String> delTemplates = new TreeSet<>();
+
+      // A map of plugin names -> info about the required instance class (only for plugins that
+      // require a runtime class).
+      Map<String, PluginRuntimeInstanceInfo.Builder> pluginInstances = new TreeMap<>();
+
       compileTemplates(
           compilerRegistry,
           fileSet,
@@ -131,11 +144,61 @@ public final class BytecodeCompiler {
             void onCompileDelTemplate(String name) {
               delTemplates.add(name);
             }
+
+            @Override
+            void onFunctionCallFound(FunctionNode fnNode) {
+              // For each function call, check if the plugin needs an instance class. If so, add an
+              // entry to pluginInstances.
+              if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction) {
+                if (!pluginInstances.containsKey(fnNode.getFunctionName())) {
+                  Set<String> instances =
+                      PluginAnalyzer.analyze(
+                              (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
+                          .pluginInstanceNames();
+                  if (!instances.isEmpty()) {
+                    // We guarantee there's either 0 or 1 instances required for the plugin because
+                    // we already passed through PluginResolver, which checked this.
+                    pluginInstances.put(
+                        fnNode.getFunctionName(),
+                        PluginRuntimeInstanceInfo.builder()
+                            .setPluginName(fnNode.getFunctionName())
+                            .setInstanceClassName(Iterables.getOnlyElement(instances)));
+                  }
+                }
+
+                if (pluginInstances.containsKey(fnNode.getFunctionName())) {
+                  // Add the source location to the list of places the function is used.
+                  pluginInstances
+                      .get(fnNode.getFunctionName())
+                      .sourceLocationsBuilder()
+                      .add(fnNode.getSourceLocation().toString());
+                }
+              }
+            }
           });
       if (!delTemplates.isEmpty()) {
         String delData = Joiner.on('\n').join(delTemplates);
         writer.writeEntry(
             Names.META_INF_DELTEMPLATE_PATH, ByteSource.wrap(delData.getBytes(UTF_8)));
+      }
+
+      // If there were required plugin runtime instances, write a meta-inf file containing each
+      // plugin's name, it's runtime class name, and the locations in soy where the function is
+      // used. Each line is formatted as:
+      // pluginName:instanceClassName:srcLoc1,srcLoc2,srcLoc3
+      if (!pluginInstances.isEmpty()) {
+        String pluginData = "";
+        for (String pluginName : pluginInstances.keySet()) {
+          PluginRuntimeInstanceInfo pluginInstanceInfo = pluginInstances.get(pluginName).build();
+          pluginData +=
+              pluginName
+                  + ":"
+                  + pluginInstanceInfo.instanceClassName()
+                  + ":"
+                  + String.join(",", pluginInstanceInfo.sourceLocations())
+                  + "\n";
+        }
+        writer.writeEntry(Names.META_INF_PLUGIN_PATH, ByteSource.wrap(pluginData.getBytes(UTF_8)));
       }
     }
   }
@@ -186,6 +249,13 @@ public final class BytecodeCompiler {
      */
     void onCompileTemplate(String name) {}
 
+    /**
+     * Callback to notify that a function call was found.
+     *
+     * @param function The function call node.
+     */
+    void onFunctionCallFound(FunctionNode function) {}
+
     T getResult() {
       return null;
     }
@@ -214,6 +284,11 @@ public final class BytecodeCompiler {
             listener.onCompileDelTemplate(template.getTemplateName());
           } else {
             listener.onCompileTemplate(template.getTemplateName());
+          }
+
+          /** For each function call in the template, trigger the function call listener. */
+          for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+            listener.onFunctionCallFound(fnNode);
           }
           // Report unexpected errors and keep going to try to collect more.
         } catch (UnexpectedCompilerFailureException e) {

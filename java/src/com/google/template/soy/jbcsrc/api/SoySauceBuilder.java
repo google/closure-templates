@@ -51,6 +51,14 @@ public final class SoySauceBuilder {
    *
    * <p>These are used to supply the runtime instances needed by SoyJavaSourceFunction
    * implementations which use the {@code callInstanceMethod} API.
+   *
+   * <p>Note about plugin validation: We considered adding validation in build() to make sure that
+   * withPluginInstances() was called with instance classes for all of the plugins in the meta-inf
+   * plugin files. However, many people use barebones soy sauce builders (e.g. "new
+   * SoySauceBuilder().build()") to render simple templates that won't need plugin instances, and
+   * it's not realistic for all of those cases to pass in plugin instances for all included soy
+   * libraries (esp in shared code). Long term, we could consider adding a "buildWithoutChecks()"
+   * and migrate these cases over, and then we could add validation to build().
    */
   public SoySauceBuilder withPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
     this.userPluginInstances = ImmutableMap.copyOf(pluginInstances);
