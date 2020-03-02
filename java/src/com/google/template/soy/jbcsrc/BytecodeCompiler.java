@@ -150,7 +150,7 @@ public final class BytecodeCompiler {
    * namespaces. We should consider using the soy namespace directly as a java package in the
    * future.
    *
-   * @param registry All the templates in the current compilation unit
+   * @param soyFileSet All the templates in the current compilation unit
    * @param files The source files by file path
    * @param sink The source to write the jar file
    */
