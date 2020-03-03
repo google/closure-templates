@@ -134,8 +134,8 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
         // We don't use string because the targets don't have the dependency on
         // goog.soy.data.UnsanitizedText.
         NamedTypeNode.create(SourceLocation.UNKNOWN, "any"),
-        /* isRequired= */ false,
         /* isInjected= */ true,
+        /* optional= */ true,
         /* desc= */ "Created by ContentSecurityPolicyNonceInjectionPass.",
         /* defaultValue= */ null);
   }

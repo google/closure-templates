@@ -1970,30 +1970,6 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           desc,
           createSrcLoc(name));
     } else {
-      boolean isNullable = false;
-      if (paramTypeNode instanceof UnionTypeNode) {
-        UnionTypeNode utn = (UnionTypeNode) paramTypeNode;
-        for (TypeNode tn : utn.candidates()) {
-          if (tn instanceof NamedTypeNode && ((NamedTypeNode) tn).name().identifier().equals("null")) {
-            isNullable = true;
-            break;
-          }
-        }
-      } else if (paramTypeNode instanceof NamedTypeNode
-          && ((NamedTypeNode) paramTypeNode).name().identifier().equals("null")) {
-        isNullable = true;
-      }
-      // Optional params become nullable
-      if (optional && !isNullable && paramTypeNode != null) {
-        NamedTypeNode nullType = NamedTypeNode.create(paramTypeNode.sourceLocation(), "null");
-        paramTypeNode = paramTypeNode instanceof UnionTypeNode
-            ? UnionTypeNode.create(
-                ImmutableList.<TypeNode>builder()
-                    .addAll(((UnionTypeNode) paramTypeNode).candidates())
-                    .add(nullType)
-                    .build())
-            : UnionTypeNode.create(ImmutableList.of(paramTypeNode, nullType));
-      }
       if (value != null) {
         if (inject) {
           errorReporter.report(createSrcLoc(tagBegin), INJECT_DEFAULT_PARAM);
@@ -2004,12 +1980,9 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       return new TemplateParam(
           name.image,
           createSrcLoc(name),
-          // Optional params become nullable
           paramTypeNode,
-          // the param is required if there isn't a default value, it isn't optional and the parsed
-          // type isn't nullable.
-          value == null && !optional && !isNullable,
           inject,
+          optional,
           desc,
           value);
     }

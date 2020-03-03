@@ -41,6 +41,9 @@ public interface TemplateHeaderVarDefn extends VarDefn {
   @Nullable
   TypeNode getTypeNode();
 
+  @Nullable
+  TypeNode getOriginalTypeNode();
+
   /**
    * The variable description, provided via Soy doc comments. {@see
    * https://developers.google.com/closure/templates/docs/commands#param}.

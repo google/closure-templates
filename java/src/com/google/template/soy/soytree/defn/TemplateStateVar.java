@@ -55,8 +55,13 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     copyState.updateRefs(old.initialValue, this.initialValue);
   }
 
-  @Nullable
+  @Override
   public TypeNode getTypeNode() {
+    return typeNode;
+  }
+
+  @Override
+  public TypeNode getOriginalTypeNode() {
     return typeNode;
   }
 
