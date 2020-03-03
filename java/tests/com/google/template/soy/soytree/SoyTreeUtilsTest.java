@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
@@ -28,11 +29,14 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -400,6 +404,58 @@ public final class SoyTreeUtilsTest {
         boolean isConstantExpr = SoyTreeUtils.isConstantExpr(fn.getChild(0));
         assertWithMessage("assertion @ " + fn.getSourceLocation()).that(isConstantExpr).isFalse();
       }
+    }
+  }
+
+  @Test
+  public void testIsDescendant() {
+    String testFileContent =
+        Joiner.on('\n')
+            .join(
+                "{namespace boo}",
+                "",
+                "{template .foo}",
+                "  {@param p : ?}",
+                "  {if $p}",
+                "    {$p + 2}",
+                "  {/if}",
+                "{/template}");
+    TemplateNode template =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .parse()
+            .fileSet()
+            .getChild(0)
+            .getChild(0);
+
+    IfNode ifNode =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, IfNode.class));
+    // test SoyNode/SoyNode combo
+    assertIsDescendent(ifNode, template);
+    assertIsNotDescendent(template, ifNode);
+
+    IntegerNode number =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, IntegerNode.class));
+    OperatorNode plusOp =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, OperatorNode.class));
+
+    // ExprNode/ExprNode combo
+    assertIsDescendent(number, plusOp);
+    assertIsNotDescendent(plusOp, number);
+
+    // SoyNode/ExprNode combo
+    assertIsDescendent(number, ifNode);
+    assertIsNotDescendent(ifNode, number);
+  }
+
+  private static void assertIsDescendent(Node child, Node ancestor) {
+    if (!SoyTreeUtils.isDescendantOf(child, ancestor)) {
+      fail("Expected " + child + " to be a descendent of " + ancestor);
+    }
+  }
+
+  private static void assertIsNotDescendent(Node child, Node ancestor) {
+    if (SoyTreeUtils.isDescendantOf(child, ancestor)) {
+      fail("Expected " + child + " to not be a descendent of " + ancestor);
     }
   }
 }

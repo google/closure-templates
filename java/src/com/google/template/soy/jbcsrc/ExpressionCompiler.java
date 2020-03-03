@@ -918,9 +918,7 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
-      // TODO(user): Why doesn't the code in visitLetNodeVar work here?
-      // TODO(b/143239042): Stop downcasting.
-      Expression expression = ((TemplateVariableManager) varManager).getVariable(var.name());
+      Expression expression = parameters.getLocal(var);
       expression = detacher.resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(
           varRef.getType(),
