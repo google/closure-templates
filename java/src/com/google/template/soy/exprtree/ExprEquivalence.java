@@ -103,6 +103,11 @@ public final class ExprEquivalence {
         }
 
         @Override
+        protected Integer visitGroupNode(GroupNode node) {
+          return hashChildren(node);
+        }
+
+        @Override
         protected Integer visitListLiteralNode(ListLiteralNode node) {
           return hashChildren(node);
         }

@@ -45,7 +45,7 @@ public final class GroupNode extends AbstractParentExprNode {
 
   @Override
   public String toSourceString() {
-    return "(" + this.getChild(0) + ")";
+    return "(" + this.getChild(0).toSourceString() + ")";
   }
 
   @Override
