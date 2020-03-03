@@ -48,8 +48,10 @@ import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -153,7 +155,10 @@ public class ExpressionCompilerTest {
               throw new UnsupportedOperationException();
             }
           },
-          new TemplateVariableManager(fields, null, getRenderMethod()),
+          new TemplateVariableManager(
+              fields,
+              LocalVariable.createThisVar(TypeInfo.create(Object.class), new Label(), new Label()),
+              getRenderMethod()),
           fields,
           ErrorReporter.exploding(),
           new SoyTypeRegistry());

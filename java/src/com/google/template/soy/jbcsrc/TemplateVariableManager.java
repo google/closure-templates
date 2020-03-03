@@ -237,7 +237,6 @@ final class TemplateVariableManager implements LocalVariableManager {
   private final SimpleLocalVariableManager delegate;
   private final Map<VarKey, AbstractVariable> variablesByKey = new LinkedHashMap<>();
   private final LocalVariable thisVar;
-  private int numberOfActiveTemporaries;
 
   /**
    * @param fields The field manager for the current class.
@@ -256,7 +255,6 @@ final class TemplateVariableManager implements LocalVariableManager {
     final LocalVariableManager.Scope delegateScope = delegate.enterScope();
     return new Scope() {
       final List<VarKey> activeVariables = new ArrayList<>();
-      int activeTemporariesInThisScope;
 
       @Override
       void createTrivial(String name, Expression expression) {
@@ -277,15 +275,19 @@ final class TemplateVariableManager implements LocalVariableManager {
       }
 
       @Override
-      public LocalVariable createLocal(String name, Type type) {
-        numberOfActiveTemporaries++;
-        activeTemporariesInThisScope++;
-        return delegateScope.createLocal(name, type);
+      public LocalVariable createTemporary(String proposedName, Type type) {
+        return delegateScope.createTemporary(proposedName, type);
+      }
+
+      @Override
+      public LocalVariable createNamedLocal(String name, Type type) {
+        LocalVariable var = delegateScope.createNamedLocal(name, type);
+        putVariable(VarKey.create(name), new TrivialVariable(var));
+        return var;
       }
 
       @Override
       public Statement exitScope() {
-        numberOfActiveTemporaries -= activeTemporariesInThisScope;
         for (VarKey key : activeVariables) {
           AbstractVariable var = variablesByKey.remove(key);
           if (var == null) {
@@ -302,14 +304,14 @@ final class TemplateVariableManager implements LocalVariableManager {
           case DERIVED:
             var =
                 new DerivedVariable(
-                    initExpr, delegateScope.createLocal(proposedName, initExpr.resultType()));
+                    initExpr, delegateScope.createTemporary(proposedName, initExpr.resultType()));
             break;
           case STORE:
             var =
                 new FieldSavedVariable(
                     proposedName,
                     initExpr,
-                    delegateScope.createLocal(proposedName, initExpr.resultType()));
+                    delegateScope.createTemporary(proposedName, initExpr.resultType()));
             break;
           default:
             throw new AssertionError();
@@ -337,7 +339,8 @@ final class TemplateVariableManager implements LocalVariableManager {
    * Looks up a user defined variable with the given name. The variable must have been created in a
    * currently active scope.
    */
-  Expression getVariable(String name) {
+  @Override
+  public Expression getVariable(String name) {
     return getVariable(VarKey.create(name));
   }
 
@@ -354,7 +357,8 @@ final class TemplateVariableManager implements LocalVariableManager {
     if (var != null) {
       return var.accessor();
     }
-    throw new IllegalArgumentException("No variable: '" + varKey + "' is bound");
+    throw new IllegalArgumentException(
+        "No variable: '" + varKey + "' is bound. " + variablesByKey.keySet() + " are in scope");
   }
 
   /** Statements for saving and restoring local variables in class fields. */
@@ -367,11 +371,6 @@ final class TemplateVariableManager implements LocalVariableManager {
 
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
   SaveRestoreState saveRestoreState() {
-    if (numberOfActiveTemporaries > 0) {
-      throw new IllegalStateException(
-          "Can't generate save/restore state when there are active non-saved temporary variables: "
-              + numberOfActiveTemporaries);
-    }
     List<Statement> saves = new ArrayList<>();
     List<Statement> restores = new ArrayList<>();
     // The map is in insertion order.  This is important since it means derived variables will work

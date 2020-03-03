@@ -729,12 +729,12 @@ final class ProtoUtils {
       Expression getMapIterator =
           resolved.invoke(MethodRef.MAP_ENTRY_SET).invoke(MethodRef.GET_ITERATOR);
       final LocalVariable iter =
-          scope.createLocal(field.getName() + "__iter", getMapIterator.resultType());
+          scope.createTemporary(field.getName() + "__iter", getMapIterator.resultType());
       Statement loopInitialization = iter.store(getMapIterator, iter.start());
       // (Map.Entry) iter.next()
       Expression iterNext = iter.invoke(MethodRef.ITERATOR_NEXT).checkedCast(MAP_ENTRY_TYPE);
       final LocalVariable mapEntry =
-          scope.createLocal(field.getName() + "__mapEntry", iterNext.resultType());
+          scope.createTemporary(field.getName() + "__mapEntry", iterNext.resultType());
       Statement initMapEntry = mapEntry.store(iterNext, mapEntry.start());
       // exitScope must be called after creating all the variables
       final Statement scopeExit = scope.exitScope();
@@ -896,10 +896,11 @@ final class ProtoUtils {
 
       // Create local variables: list, loop index, list size
       final LocalVariable list =
-          scope.createLocal(field.getName() + "__list", resolved.resultType());
+          scope.createTemporary(field.getName() + "__list", resolved.resultType());
 
-      final LocalVariable listSize = scope.createLocal(field.getName() + "__size", Type.INT_TYPE);
-      final LocalVariable index = scope.createLocal(field.getName() + "__index", Type.INT_TYPE);
+      final LocalVariable listSize =
+          scope.createTemporary(field.getName() + "__size", Type.INT_TYPE);
+      final LocalVariable index = scope.createTemporary(field.getName() + "__index", Type.INT_TYPE);
       Statement indexInitialization = index.store(constant(0), index.start());
       Statement loopInitialization =
           Statement.concat(

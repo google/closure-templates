@@ -142,7 +142,7 @@ final class PrintDirectives {
 
     AppendableAndOptions prev = AppendableAndOptions.create(appendable);
     LocalVariable prevVar =
-        scope.createLocal("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
+        scope.createTemporary("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
     wrapVars.add(prevVar.store(prev.appendable(), prevVar.start()));
 
     // Apply the directives to the appendable in reverse
@@ -151,7 +151,7 @@ final class PrintDirectives {
     for (DirectiveWithArgs directiveToApply : Lists.reverse(directivesToApply)) {
       AppendableAndOptions curr = directiveToApply.apply(context, prevVar);
       LocalVariable currVar =
-          scope.createLocal("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
+          scope.createTemporary("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
       wrapVars.add(currVar.store(curr.appendable(), currVar.start()));
 
       if (curr.closeable()) {

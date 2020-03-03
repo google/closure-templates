@@ -70,8 +70,8 @@ interface ExpressionDetacher {
   /**
    * An {@link ExpressionDetacher} for use by the {@link ExpressionCompiler#createConstantCompiler}.
    *
-   * <p>This assumes that no SoyValueProviders will be accessed and has no-op implementations of the
-   * list and map resolvers for use by the proto-init code.
+   * <p>This assumes that all SoyValueProviders will be already resolved and simply adds runtime
+   * assertions they are SoyValue objects.
    */
   static final class NullDetatcher implements ExpressionDetacher, Factory {
     static final NullDetatcher INSTANCE = new NullDetatcher();
@@ -82,22 +82,21 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      throw new AssertionError("shouldn't be called");
+    public Expression resolveSoyValueProvider(Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      return soyValueProvider.checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
     }
 
-    // These 2 are used by proto-init code for repeated fields.
-
     @Override
-    public Expression resolveSoyValueProviderList(final Expression soyValueProviderList) {
+    public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
       soyValueProviderList.checkAssignableTo(BytecodeUtils.LIST_TYPE);
-      return soyValueProviderList;
+      return MethodRef.RUNTIME_CHECK_RESOLVED_LIST.invoke(soyValueProviderList);
     }
 
     @Override
-    public Expression resolveSoyValueProviderMap(final Expression soyValueProviderMap) {
+    public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
       soyValueProviderMap.checkAssignableTo(BytecodeUtils.MAP_TYPE);
-      return soyValueProviderMap;
+      return MethodRef.RUNTIME_CHECK_RESOLVED_MAP.invoke(soyValueProviderMap);
     }
   }
 

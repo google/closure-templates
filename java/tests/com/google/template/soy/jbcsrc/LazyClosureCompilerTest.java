@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
@@ -24,6 +25,7 @@ import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import static java.util.Arrays.asList;
 
+import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -32,6 +34,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
@@ -196,6 +199,26 @@ public class LazyClosureCompilerTest {
     tester.rendersAs("0", ImmutableMap.of("comments", ImmutableList.of()));
     tester.rendersAs(
         "3", ImmutableMap.of("comments", ImmutableList.of("a", "b", "c", "d"), "numComments", 1));
+  }
+
+  @Test
+  public void testLetValueNode_complexConstant() throws Exception {
+    CompiledTemplates templates =
+        compileTemplateBody(
+            "{let $fancyList: [$a + 1 for $a in range(100)] /}", "{join($fancyList,',')}");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    Class<? extends CompiledTemplate> templateClass =
+        factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+    Field fancyListField = templateClass.getDeclaredField("let_fancyList");
+    assertThat(Modifier.toString(fancyListField.getModifiers())).isEqualTo("private static final");
+    assertThat(fancyListField.getType()).isAssignableTo(SoyList.class);
+    fancyListField.setAccessible(true);
+    ImmutableList<Long> list =
+        ((SoyList) fancyListField.get(null))
+            .asJavaList().stream()
+                .map(svp -> ((SoyValue) svp).longValue())
+                .collect(toImmutableList());
+    assertThat(list).containsExactlyElementsIn(ContiguousSet.closedOpen(1L, 101L));
   }
 
   @Test

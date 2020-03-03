@@ -250,6 +250,12 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_APPLY_ESCAPERS =
       create(JbcSrcRuntime.class, "applyEscapers", CompiledTemplate.class, ImmutableList.class);
 
+  public static final MethodRef RUNTIME_CHECK_RESOLVED_LIST =
+      create(JbcSrcRuntime.class, "checkResolved", List.class);
+
+  public static final MethodRef RUNTIME_CHECK_RESOLVED_MAP =
+      create(JbcSrcRuntime.class, "checkResolved", Map.class);
+
   public static final MethodRef GET_KEY_OBJECT =
       MethodRef.create(JbcSrcRuntime.class, "getKeyObject", SoyValue.class).asCheap();
 

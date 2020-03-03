@@ -787,4 +787,33 @@ public final class JbcSrcRuntime {
     return UnsafeSanitizedContentOrdainer.ordainAsSafe(
         output.toString(), ContentKind.HTML, appendable.getSanitizedContentDirectionality());
   }
+
+  /** Asserts that all members of the list are resolved. */
+  public static <T extends SoyValueProvider> List<T> checkResolved(List<T> providerList) {
+    for (int i = 0; i < providerList.size(); i++) {
+      T provider = providerList.get(i);
+      if (!(provider instanceof SoyValue)) {
+        throw new IllegalStateException(
+            "item " + i + " was expected to be a SoyValue, instead it is: " + provider.getClass());
+      }
+    }
+    return providerList;
+  }
+
+  /** Asserts that all members of the map are resolved. */
+  public static <K, V extends SoyValueProvider> Map<K, V> checkResolved(Map<K, V> providerMap) {
+    for (Map.Entry<K, V> entry : providerMap.entrySet()) {
+      V provider = entry.getValue();
+      if (!(provider instanceof SoyValue)) {
+        throw new IllegalStateException(
+            "item "
+                + entry.getKey()
+                + " was expected to be a SoyValue, instead it is: "
+                + provider.getClass());
+      }
+    }
+    return providerMap;
+  }
+
+  private JbcSrcRuntime() {}
 }

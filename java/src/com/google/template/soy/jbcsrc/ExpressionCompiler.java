@@ -19,8 +19,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopIndex;
 import static com.google.template.soy.jbcsrc.SyntheticVarName.foreachLoopLength;
-import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.DERIVED;
-import static com.google.template.soy.jbcsrc.TemplateVariableManager.SaveStrategy.STORE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULL_POINTER_EXCEPTION_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
@@ -39,6 +37,7 @@ import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
@@ -82,8 +81,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Variable;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
@@ -91,6 +88,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
+import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
@@ -98,7 +96,6 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -192,7 +189,47 @@ final class ExpressionCompiler {
       SoyTypeRegistry registry) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
-            /* parameters= */ null,
+            new AbstractTemplateParameterLookup() {
+              UnsupportedOperationException unsupported() {
+                return new UnsupportedOperationException(
+                    "This method isn't supported in constant context");
+              }
+
+              @Override
+              FieldRef getParamField(TemplateParam param) {
+                throw unsupported();
+              }
+
+              @Override
+              FieldRef getParamsRecordField() {
+                throw unsupported();
+              }
+
+              @Override
+              FieldRef getIjRecordField() {
+                throw unsupported();
+              }
+
+              @Override
+              Expression getCompiledTemplate() {
+                throw unsupported();
+              }
+
+              @Override
+              public Expression getLocal(AbstractLocalVarDefn<?> local) {
+                return varManager.getVariable(local.name());
+              }
+
+              @Override
+              public Expression getLocal(SyntheticVarName varName) {
+                throw unsupported();
+              }
+
+              @Override
+              public RenderContextExpression getRenderContext() {
+                throw unsupported();
+              }
+            },
             varManager,
             fields,
             ExpressionDetacher.NullDetatcher.INSTANCE,
@@ -212,19 +249,18 @@ final class ExpressionCompiler {
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
-    return new BasicExpressionCompiler(
-        checkNotNull(parameters), varManager, fields, reporter, registry);
+    return new BasicExpressionCompiler(parameters, varManager, fields, reporter, registry);
   }
 
   /**
    * Returns {@code true} if the value can be compiled to a constant expression in a static
-   * initializere.
+   * initializer.
    */
-  static boolean canCompileToConstant(ExprNode expr) {
+  static boolean canCompileToConstant(ExprRootNode expr) {
     return CanCompileToConstantVisitor.INSTANCE.exec(expr);
   }
 
-  @Nullable private final TemplateParameterLookup parameters;
+  private final TemplateParameterLookup parameters;
   private final LocalVariableManager varManager;
   private final FieldManager fields;
   private final ExpressionDetacher.Factory detacherFactory;
@@ -233,13 +269,13 @@ final class ExpressionCompiler {
 
   private ExpressionCompiler(
       ExpressionDetacher.Factory detacherFactory,
-      @Nullable TemplateParameterLookup parameters,
+      TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
     this.detacherFactory = detacherFactory;
-    this.parameters = parameters;
+    this.parameters = checkNotNull(parameters);
     this.varManager = checkNotNull(varManager);
     this.fields = checkNotNull(fields);
     this.reporter = reporter;
@@ -303,15 +339,14 @@ final class ExpressionCompiler {
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     // is null when we are generating code with no detaches.
     @Nullable final ExpressionDetacher detacher;
-    // is null when this is a 'constant' compiler
-    @Nullable final TemplateParameterLookup parameters;
+    final TemplateParameterLookup parameters;
     final LocalVariableManager varManager;
     final FieldManager fields;
     final ErrorReporter reporter;
     final SoyTypeRegistry registry;
 
     CompilerVisitor(
-        @Nullable TemplateParameterLookup parameters,
+        TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         FieldManager fields,
         ExpressionDetacher detacher,
@@ -379,6 +414,8 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitListComprehensionNode(ListComprehensionNode node) {
+      // TODO(lukes): consider adding a special case for when the listExpr is a range() function
+      // invocation, as we do for regular loops.
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
       Expression javaList;
@@ -390,26 +427,24 @@ final class ExpressionCompiler {
       ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
-      SyntheticVarName list = SyntheticVarName.listComprehensionList(node);
-      SyntheticVarName i = SyntheticVarName.listComprehensionIndex(node);
-      SyntheticVarName length = SyntheticVarName.listComprehensionLength(node);
-      SyntheticVarName result = SyntheticVarName.listComprehensionResult(node);
-
-      // TODO(b/143239042): Stop downcasting.
-      Scope scope = ((TemplateVariableManager) varManager).enterScope();
-      Variable listVar = scope.createSynthetic(list, javaList, STORE);
-      Variable resultVar =
-          scope.createSynthetic(result, ConstructorRef.ARRAY_LIST.construct(), STORE);
-      Variable sizeVar =
-          scope.createSynthetic(length, MethodRef.LIST_SIZE.invoke(listVar.local()), DERIVED);
-      Variable indexVar = scope.createSynthetic(i, constant(0), STORE);
-      Variable itemVar =
-          scope.create(
-              node.getListIterVar().name(),
-              MethodRef.LIST_GET
-                  .invoke(listVar.local(), indexVar.local())
-                  .checkedCast(SOY_VALUE_PROVIDER_TYPE),
-              DERIVED);
+      String varName = node.getListIterVar().name();
+      LocalVariableManager.Scope scope = varManager.enterScope();
+      LocalVariable listVar = scope.createTemporary(varName + "_input_list", LIST_TYPE);
+      Statement listVarInitializer = listVar.store(javaList, listVar.start());
+      LocalVariable resultVar = scope.createTemporary(varName + "_output_list", LIST_TYPE);
+      Statement resultVarInitializer =
+          resultVar.store(ConstructorRef.ARRAY_LIST.construct(), resultVar.start());
+      LocalVariable sizeVar = scope.createTemporary(varName + "_input_list_size", Type.INT_TYPE);
+      Statement sizeVarInitializer =
+          sizeVar.store(listVar.invoke(MethodRef.LIST_SIZE), sizeVar.start());
+      LocalVariable indexVar = scope.createTemporary(varName + "_index", Type.INT_TYPE);
+      Statement indexVarInitializer = indexVar.store(constant(0), indexVar.start());
+      LocalVariable itemVar =
+          scope.createNamedLocal(node.getListIterVar().name(), SOY_VALUE_PROVIDER_TYPE);
+      Statement itemVarInitializer =
+          itemVar.store(
+              listVar.invoke(MethodRef.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE),
+              itemVar.start());
 
       SoyExpression visitedMap = visit(mapExpr).box();
       SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr).coerceToBoolean() : null;
@@ -438,10 +473,10 @@ final class ExpressionCompiler {
               new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_NULLABLE) {
                 @Override
                 protected void doGen(CodeBuilder adapter) {
-                  listVar.initializer().gen(adapter); //   List<?> a_list = ...;
-                  resultVar.initializer().gen(adapter); // List<?> a_result = new ArrayList<>();
-                  sizeVar.initializer().gen(adapter); //   int a_length = a_list.size();
-                  indexVar.initializer().gen(adapter); //  int a_i = 0;
+                  listVarInitializer.gen(adapter); //   List<?> a_list = ...;
+                  resultVarInitializer.gen(adapter); // List<?> a_result = new ArrayList<>();
+                  sizeVarInitializer.gen(adapter); //   int a_length = a_list.size();
+                  indexVarInitializer.gen(adapter); //  int a_i = 0;
 
                   Label loopStart = new Label();
                   Label loopContinue = new Label();
@@ -449,30 +484,30 @@ final class ExpressionCompiler {
 
                   adapter.mark(loopStart);
 
-                  indexVar.local().gen(adapter);
-                  sizeVar.local().gen(adapter);
+                  indexVar.gen(adapter);
+                  sizeVar.gen(adapter);
                   adapter.ifICmp(Opcodes.IFGE, loopEnd); // if (a_i >= a_length) break;
 
-                  itemVar.initializer().gen(adapter); // Object a = a_list.get(a_i);
+                  itemVarInitializer.gen(adapter); // Object a = a_list.get(a_i);
 
                   if (visitedFilter != null) {
                     visitedFilter.gen(adapter);
                     adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
                   }
 
-                  resultVar.local().gen(adapter);
+                  resultVar.gen(adapter);
                   visitedMap.gen(adapter);
                   MethodRef.ARRAY_LIST_ADD.invokeUnchecked(adapter); // a_result.add(map.apply(a));
                   adapter.pop(); // pop boolean return value of List.add()
 
                   adapter.mark(loopContinue);
 
-                  adapter.iinc(indexVar.local().index(), 1); // a_i++
+                  adapter.iinc(indexVar.index(), 1); // a_i++
                   adapter.goTo(loopStart);
 
                   adapter.mark(loopEnd);
 
-                  resultVar.local().gen(adapter); // "return" a_result;
+                  resultVar.gen(adapter); // "return" a_result;
                   // exit the loop
                   exitScope.gen(adapter);
                 }
@@ -1390,8 +1425,22 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitVarRefNode(VarRefNode node) {
-      // no variable references are allowed in constant context.
-      return false;
+      // no variable references are allowed in constant context, except for those defined in the
+      // same context which at this point is simply list comprehensions.
+      // NOTE: this logic is only valid if the whole expression is being compiled to a constant. If
+      // we ever try compiling subexpressions to constants we will need to check that the
+      // declaringNode is in the same subexpression.
+      switch (node.getDefnDecl().kind()) {
+        case COMPREHENSION_VAR:
+          return true;
+        case PARAM:
+        case LOCAL_VAR:
+        case STATE:
+          return false;
+        case UNDECLARED:
+          break;
+      }
+      throw new AssertionError();
     }
 
     @Override
@@ -1420,8 +1469,7 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
-      // TODO(b/143239042): Return true when this is actually constant.
-      return false;
+      return areAllChildrenConstant(node);
     }
 
     @Override
@@ -1456,12 +1504,14 @@ final class ExpressionCompiler {
       if (!areAllChildrenConstant(node)) {
         return false;
       }
-      if (!node.getSoyFunction().getClass().isAnnotationPresent(SoyPureFunction.class)) {
+      if (!node.isPure()) {
         return false;
       }
       // We can evaluate the function if
       // all the parameters are constants and we have an implementation that doesn't depend on the
       // render context.
+      // TODO(lukes): if the plugin is annotated as @SoyPureFunction, but it accesses the context,
+      // then it isn't pure.  add logic in the vallidator?
       if (node.getSoyFunction() instanceof SoyJavaSourceFunction) {
         try {
           PluginAnalyzer.PluginMetadata metadata =
