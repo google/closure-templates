@@ -26,13 +26,18 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
@@ -57,6 +62,8 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          {template .foo}{@param wo[...]{call .bar /}{/template}",
             "      RawTextNode              Hello{lb}",
             "      PrintNode                {print $world}",
+            "        ExprRootNode           $world",
+            "          VarRefNode           $world",
             "      RawTextNode              {rb}!",
             "      CallBasicNode            {call .bar /}",
             "    TemplateBasicNode          {template .bar}Gooodbye{/template}",
@@ -88,17 +95,25 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          {template .foo}{call .pla[...]am}{/delcall}{/template}",
             "      CallBasicNode            {call .planet}{param inde[...]'}Jupiter{/param}{/call}",
             "        CallParamValueNode     {param index: 5 /}",
+            "          ExprRootNode         5",
+            "            IntegerNode        5",
             "        CallParamContentNode   {param name kind='text'}Jupiter{/param}",
             "          RawTextNode          Jupiter",
             "      CallDelegateNode         {delcall ns.maybePlanet}{[...]}Pluto{/param}{/delcall}",
             "        CallParamValueNode     {param index: 9 /}",
+            "          ExprRootNode         9",
+            "            IntegerNode        9",
             "        CallParamContentNode   {param name kind='text'}Pluto{/param}",
             "          RawTextNode          Pluto",
             "    TemplateBasicNode          {template .planet}{@param[...]ex}: {$name}.{/template}",
             "      RawTextNode              Planet #",
             "      PrintNode                {$index}",
+            "        ExprRootNode           $index",
+            "          VarRefNode           $index",
             "      RawTextNode              :",
             "      PrintNode                {$name}",
+            "        ExprRootNode           $name",
+            "          VarRefNode           $name",
             "      RawTextNode              .",
             ""),
         JOINER.join(
@@ -134,11 +149,19 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          {template .foo}{@param i [...]ssy{/switch}!{/template}",
             "      RawTextNode              Hello,",
             "      SwitchNode               {switch $i}{case 0}Mercur[...]s{default}Gassy{/switch}",
+            "        ExprRootNode           $i",
+            "          VarRefNode           $i",
             "        SwitchCaseNode         {case 0}Mercury",
+            "          ExprRootNode         0",
+            "            IntegerNode        0",
             "          RawTextNode          Mercury",
             "        SwitchCaseNode         {case 1}Venus",
+            "          ExprRootNode         1",
+            "            IntegerNode        1",
             "          RawTextNode          Venus",
             "        SwitchCaseNode         {case 2}Mars",
+            "          ExprRootNode         2",
+            "            IntegerNode        2",
             "          RawTextNode          Mars",
             "        SwitchDefaultNode      {default}Gassy",
             "          RawTextNode          Gassy",
@@ -172,6 +195,8 @@ public final class SourceLocationTest {
             "  SoyFileNode",
             "    TemplateBasicNode          {template .foo}{@param ve[...]</h1>{/velog}{/template}",
             "      VeLogNode                {velog $veData}<h1>Hello</h1>{/velog}",
+            "        ExprRootNode           $veData",
+            "          VarRefNode           $veData",
             "        RawTextNode            <h1>Hello</h1>",
             ""),
         JOINER.join(
@@ -194,9 +219,16 @@ public final class SourceLocationTest {
             "    TemplateBasicNode          {template .foo}Hello{for [...]r void{/for}!{/template}",
             "      RawTextNode              Hello",
             "      ForNode                  {for $planet in ['mercury[...] interstellar void{/for}",
+            "        ExprRootNode           ['mercury', 'mars', 'venus']",
+            "          ListLiteralNode      ['mercury', 'mars', 'venus']",
+            "            StringNode         'mercury'",
+            "            StringNode         'mars'",
+            "            StringNode         'venus'",
             "        ForNonemptyNode        {for $planet in ['mercury[...]venus']},{print $planet}",
             "          RawTextNode          ,",
             "          PrintNode            {print $planet}",
+            "            ExprRootNode       $planet",
+            "              VarRefNode       $planet",
             "        ForIfemptyNode         {ifempty}lifeless interstellar void",
             "          RawTextNode          lifeless interstellar void",
             "      RawTextNode              !",
@@ -226,8 +258,12 @@ public final class SourceLocationTest {
             "      RawTextNode              Hello,",
             "      IfNode                   {if $skyIsBlue}Earth{else[...]nus{else}Cincinatti{/if}",
             "        IfCondNode             {if $skyIsBlue}Earth",
+            "          ExprRootNode         $skyIsBlue",
+            "            VarRefNode         $skyIsBlue",
             "          RawTextNode          Earth",
             "        IfCondNode             {elseif $isReallyReallyHot}Venus",
+            "          ExprRootNode         $isReallyReallyHot",
+            "            VarRefNode         $isReallyReallyHot",
             "          RawTextNode          Venus",
             "        IfElseNode             {else}Cincinatti",
             "          RawTextNode          Cincinatti",
@@ -259,11 +295,19 @@ public final class SourceLocationTest {
             "  SoyFileNode",
             "    TemplateBasicNode          {template .approximateDis[...] {$formatted}{/template}",
             "      LetValueNode             {let $approx: round($distance, 2) /}",
+            "        ExprRootNode           round($distance, 2)",
+            "          FunctionNode         round($distance, 2)",
+            "            VarRefNode         $distance",
+            "            IntegerNode        2",
             "      LetContentNode           {let $formatted kind='tex[...]pprox} light years{/let}",
             "        PrintNode              {$approx}",
+            "          ExprRootNode         $approx",
+            "            VarRefNode         $approx",
             "        RawTextNode            light years",
             "      RawTextNode              Approximately",
             "      PrintNode                {$formatted}",
+            "        ExprRootNode           $formatted",
+            "          VarRefNode           $formatted",
             ""),
         JOINER.join(
             "{namespace ns}",
@@ -307,23 +351,33 @@ public final class SourceLocationTest {
             "      MsgFallbackGroupNode     {msg desc='Generic messag[...]t Earth has 1 moon{/msg}",
             "        MsgNode                {msg desc='Generic messag[...] {$count} moons{/plural}",
             "          MsgPluralNode        {plural $count}{case 0}Pl[...] {$count} moons{/plural}",
+            "            ExprRootNode       $count",
+            "              VarRefNode       $count",
             "            MsgPluralCaseNode  {case 0}Planet {$planet} has no moons",
             "              RawTextNode      Planet",
-            "              MsgPlaceholderNode {$planet}",
+            "              MsgPlaceholde... {$planet}",
             "                PrintNode      {$planet}",
+            "                  ExprRootNode $planet",
+            "                    VarRefNode $planet",
             "              RawTextNode      has no moons",
             "            MsgPluralCaseNode  {case 1}Planet {$planet} has 1 moon",
             "              RawTextNode      Planet",
-            "              MsgPlaceholderNode {$planet}",
+            "              MsgPlaceholde... {$planet}",
             "                PrintNode      {$planet}",
+            "                  ExprRootNode $planet",
+            "                    VarRefNode $planet",
             "              RawTextNode      has 1 moon",
-            "            MsgPluralDefaultNode {default}Planet {$planet} has {$count} moons",
+            "            MsgPluralDefaul... {default}Planet {$planet} has {$count} moons",
             "              RawTextNode      Planet",
-            "              MsgPlaceholderNode {$planet}",
+            "              MsgPlaceholde... {$planet}",
             "                PrintNode      {$planet}",
+            "                  ExprRootNode $planet",
+            "                    VarRefNode $planet",
             "              RawTextNode      has",
-            "              MsgPlaceholderNode {$count}",
+            "              MsgPlaceholde... {$count}",
             "                PrintNode      {$count}",
+            "                  ExprRootNode $count",
+            "                    VarRefNode $count",
             "              RawTextNode      moons",
             "        MsgNode                {fallbackmsg desc='Specif[...]}Planet Earth has 1 moon",
             "          RawTextNode          Planet Earth has 1 moon",
@@ -331,11 +385,15 @@ public final class SourceLocationTest {
             "      MsgFallbackGroupNode     {msg desc='The name of a [...]t}{$moon}{/select}{/msg}",
             "        MsgNode                {msg desc='The name of a [...]default}{$moon}{/select}",
             "          MsgSelectNode        {select $moon}{case 'Luna[...]default}{$moon}{/select}",
+            "            ExprRootNode       $moon",
+            "              VarRefNode       $moon",
             "            MsgSelectCaseNode  {case 'Luna'}Earth's moon",
             "              RawTextNode      Earth's moon",
-            "            MsgSelectDefaultNode {default}{$moon}",
-            "              MsgPlaceholderNode {$moon}",
+            "            MsgSelectDefaul... {default}{$moon}",
+            "              MsgPlaceholde... {$moon}",
             "                PrintNode      {$moon}",
+            "                  ExprRootNode $moon",
+            "                    VarRefNode $moon",
             ""),
         JOINER.join(
             "{namespace ns}",
@@ -368,6 +426,92 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testExpressions() throws Exception {
+    assertSourceRanges(
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .math}{@param a[...]gth($l) : $c}{/template}",
+            "      ExprRootNode             [1, 2, 3*4]",
+            "        ListLiteralNode        [1, 2, 3*4]",
+            "          IntegerNode          1",
+            "          IntegerNode          2",
+            "          TimesOpNode          3*4",
+            "            IntegerNode        3",
+            "            IntegerNode        4",
+            "      PrintNode                {$a + $b + $c}",
+            "        ExprRootNode           $a + $b + $c",
+            "          PlusOpNode           $a + $b + $c",
+            "            PlusOpNode         $a + $b",
+            "              VarRefNode       $a",
+            "              VarRefNode       $b",
+            "            VarRefNode         $c",
+            "      PrintNode                {$a + -$b}",
+            "        ExprRootNode           $a + -$b",
+            "          PlusOpNode           $a + -$b",
+            "            VarRefNode         $a",
+            "            NegativeOpNode     -$b",
+            "              VarRefNode       $b",
+            "      PrintNode                {$a / $b % $c}",
+            "        ExprRootNode           $a / $b % $c",
+            "          ModOpNode            $a / $b % $c",
+            "            DivideByOpNode     $a / $b",
+            "              VarRefNode       $a",
+            "              VarRefNode       $b",
+            "            VarRefNode         $c",
+            "      PrintNode                {$a / ($b % $c)}",
+            "        ExprRootNode           $a / ($b % $c)",
+            "          DivideByOpNode       $a / ($b % $c", // TODO(b/147886598): Fix location.
+            "            VarRefNode         $a",
+            "            ModOpNode          $b % $c",
+            "              VarRefNode       $b",
+            "              VarRefNode       $c",
+            "      PrintNode                {($a / $b) % $c}",
+            "        ExprRootNode           ($a / $b) % $c",
+            "          ModOpNode            $a / $b) % $c", // TODO(b/147886598): Fix location.
+            "            DivideByOpNode     $a / $b",
+            "              VarRefNode       $a",
+            "              VarRefNode       $b",
+            "            VarRefNode         $c",
+            "      PrintNode                {$l[$a * $b] < $c and not[...]?: $b ? length($l) : $c}",
+            "        ExprRootNode           $l[$a * $b] < $c and not [...] ?: $b ? length($l) : $c",
+            "          NullCoalescingOpNode $l[$a * $b] < $c and not [...] ?: $b ? length($l) : $c",
+            "            AndOpNode          $l[$a * $b] < $c and not $l?[$c]",
+            "              LessThanOpNode   $l[$a * $b] < $c",
+            "                ItemAccessNode $l[$a * $b]",
+            "                  VarRefNode   $l",
+            "                  TimesOpNode  $a * $b",
+            "                    VarRefNode $a",
+            "                    VarRefNode $b",
+            "                VarRefNode     $c",
+            "              NotOpNode        not $l?[$c]",
+            "                ItemAccessNode $l?[$c]",
+            "                  VarRefNode   $l",
+            "                  VarRefNode   $c",
+            "            ConditionalOpNode  $b ? length($l) : $c",
+            "              VarRefNode       $b",
+            "              FunctionNode     length($l)",
+            "                VarRefNode     $l",
+            "              VarRefNode       $c",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .math}",
+            "  {@param a: int}",
+            "  {@param b: int}",
+            "  {@param c: int}",
+            "  {@param l: list<number> = [1, 2, 3*4]}",
+            "  {$a + $b + $c}",
+            "  {$a + -$b}",
+            "  {$a / $b % $c}",
+            "  {$a / ($b % $c)}",
+            "  {($a / $b) % $c}",
+            "  {$l[$a * $b] < $c and not $l?[$c] ?: $b ? length($l) : $c}",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testTrailingCommentsInNonClosingNodes() {
     assertSourceRanges(
         JOINER.join(
@@ -375,17 +519,31 @@ public final class SourceLocationTest {
             "  SoyFileNode",
             "    TemplateBasicNode          {template .foo}{@param fo[...]comment{/msg}{/template}",
             "      ForNode                  {for $foo in $foolist}{if[...]ld include this...{/for}",
+            "        ExprRootNode           $foolist",
+            "          VarRefNode           $foolist",
             "        ForNonemptyNode        {for $foo in $foolist}{if[...]uld include this comm...",
             "          IfNode               {if $foo == 'a'}a // TODO[...] include this co...{/if}",
             "            IfCondNode         {if $foo == 'a'}a",
+            "              ExprRootNode     $foo == 'a'",
+            "                EqualOpNode    $foo == 'a'",
+            "                  VarRefNode   $foo",
+            "                  StringNode   'a'",
             "              RawTextNode      a",
             "            IfCondNode         {elseif $foo == 'b'}b",
+            "              ExprRootNode     $foo == 'b'",
+            "                EqualOpNode    $foo == 'b'",
+            "                  VarRefNode   $foo",
+            "                  StringNode   'b'",
             "              RawTextNode      b",
             "            IfElseNode         {else}{switch $foo}{case [...] include...{/switch}text",
             "              SwitchNode       {switch $foo}{case 'c'}c [...]ould include...{/switch}",
+            "                ExprRootNode   $foo",
+            "                  VarRefNode   $foo",
             "                SwitchCaseNode {case 'c'}c",
+            "                  ExprRootNode 'c'",
+            "                    StringNode 'c'",
             "                  RawTextNode  c",
-            "                SwitchDefaultNode {default}d",
+            "                SwitchDefau... {default}d",
             "                  RawTextNode  d",
             "              RawTextNode      text",
             "        ForIfemptyNode         {ifempty}empty",
@@ -395,16 +553,23 @@ public final class SourceLocationTest {
             "          RawTextNode          bar",
             "        MsgNode                {fallbackmsg desc='baz'}{[...]tNode should...{/plural}",
             "          MsgPluralNode        {plural length($foolist)}[...]tNode should...{/plural}",
+            "            ExprRootNode       length($foolist)",
+            "              FunctionNode     length($foolist)",
+            "                VarRefNode     $foolist",
             "            MsgPluralCaseNode  {case 0}0",
             "              RawTextNode      0",
-            "            MsgPluralDefaultNode {default}n",
+            "            MsgPluralDefaul... {default}n",
             "              RawTextNode      n",
             "      MsgFallbackGroupNode     {msg desc='baz'}{select $[...]clude this comment{/msg}",
             "        MsgNode                {msg desc='baz'}{select $[...]ultNode shou...{/select}",
             "          MsgSelectNode        {select $foolist[0]}{case[...]ultNode shou...{/select}",
+            "            ExprRootNode       $foolist[0]",
+            "              ItemAccessNode   $foolist[0]",
+            "                VarRefNode     $foolist",
+            "                IntegerNode    0",
             "            MsgSelectCaseNode  {case 'foo'}foo",
             "              RawTextNode      foo",
-            "            MsgSelectDefaultNode {default}baz",
+            "            MsgSelectDefaul... {default}baz",
             "              RawTextNode      baz",
             ""),
         JOINER.join(
@@ -619,42 +784,109 @@ public final class SourceLocationTest {
       }
     }
 
-    String actual = new AsciiArtVisitor(soySourceCode).exec(soyTree);
+    String actual = new AsciiArtNodeVisitor(soySourceCode).exec(soyTree);
     assertEquals(
         // Make the message be something copy-pasteable to make it easier to update this test when
         // fixing source locations bugs.
-        "REPLACE_WITH:\n\"" + actual.replaceAll("\n", "\",\n\"") + "\"\n\n",
+        "REPLACE_WITH:\n\"" + actual.replace("\n", "\",\n\"") + "\"\n\n",
         asciiArtExpectedOutput,
         actual);
   }
 
   /** Generates a concise readable summary of a soy tree and its source locations. */
-  private static class AsciiArtVisitor extends AbstractSoyNodeVisitor<String> {
-    private final String[] soySourceCode;
-    final StringBuilder sb = new StringBuilder();
-    int depth;
+  private static class AsciiArtNodeVisitor extends AbstractSoyNodeVisitor<String> {
+    private final AsciiArtPrinter printer;
+    private final AsciiArtExprVisitor exprVisitor;
 
-    public AsciiArtVisitor(String soySourceCode) {
-      this.soySourceCode = soySourceCode.split("\n");
+    public AsciiArtNodeVisitor(String soySourceCode) {
+      this.printer = new AsciiArtPrinter(soySourceCode);
+      this.exprVisitor = new AsciiArtExprVisitor(this.printer);
     }
 
     @Override
     public String exec(SoyNode node) {
       visit(node);
-      return sb.toString();
+      return printer.toString();
     }
 
     @Override
     protected void visitSoyNode(SoyNode node) {
+      printer.printNode(node);
+
+      if (node instanceof ExprHolderNode) {
+        printer.openIndent();
+        for (ExprNode expr : ((ExprHolderNode) node).getExprList()) {
+          visit(expr);
+        }
+        printer.closeIndent();
+      }
+      if (node instanceof ParentSoyNode<?>) {
+        printer.openIndent();
+        visitChildren((ParentSoyNode<?>) node);
+        printer.closeIndent();
+      }
+    }
+
+    private void visit(ExprNode node) {
+      exprVisitor.exec(node);
+    }
+  }
+
+  private static class AsciiArtExprVisitor extends AbstractExprNodeVisitor<String> {
+    private final AsciiArtPrinter printer;
+
+    public AsciiArtExprVisitor(AsciiArtPrinter printer) {
+      this.printer = printer;
+    }
+
+    @Override
+    public String exec(ExprNode node) {
+      visit(node);
+      return printer.toString();
+    }
+
+    @Override
+    protected void visitExprNode(ExprNode node) {
+      printer.printNode(node);
+
+      if (node instanceof ParentExprNode) {
+        printer.openIndent();
+        visitChildren((ParentExprNode) node);
+        printer.closeIndent();
+      }
+    }
+  }
+
+  private static class AsciiArtPrinter {
+    private final String[] soySourceCode;
+    private final StringBuilder sb = new StringBuilder();
+    private int depth = 0;
+
+    public AsciiArtPrinter(String soySourceCode) {
+      this.soySourceCode = soySourceCode.split("\n");
+    }
+
+    public void openIndent() {
+      depth++;
+    }
+
+    public void closeIndent() {
+      depth--;
+    }
+
+    void printNode(Node node) {
       // Output a header like:
       //   <indent> <node class>                    {code fragment}
       // or
       //   <indent> <node class>                    @ <location>
       // where indent is 2 spaces per level, and the @ sign is indented to the 31st column
-      for (int indent = depth; --indent >= 0; ) {
+      for (int indent = depth; indent > 0; indent--) {
         sb.append("  ");
       }
       String typeName = node.getClass().getSimpleName();
+      if (typeName.length() + depth * 2 > 30) {
+        typeName = typeName.substring(0, 27 - depth * 2) + "...";
+      }
       sb.append(typeName);
       // SoyFileSetNode and SoyFileNode don't have source locations.
       if (!(node instanceof SoyFileSetNode) && !(node instanceof SoyFileNode)) {
@@ -664,45 +896,39 @@ public final class SourceLocationTest {
           ++pos;
         }
         sb.append(' ');
-        StringBuilder codeFragment = getCodeFragment(node.getSourceLocation());
-        if (codeFragment.length() == 0) {
-          sb.append("@ ").append(node.getSourceLocation());
-        } else {
-          sb.append(codeFragment);
-        }
+        sb.append(getCodeFragment(node.getSourceLocation()));
       }
       sb.append('\n');
-
-      if (node instanceof ParentSoyNode<?>) {
-        ++depth;
-        visitChildren((ParentSoyNode<?>) node);
-        --depth;
-      }
     }
 
     private StringBuilder getCodeFragment(SourceLocation location) {
+      StringBuilder sb = new StringBuilder();
       if (location.getBeginLine() == location.getEndLine()) {
         String line = this.soySourceCode[location.getBeginLine() - 1];
-        return new StringBuilder(
-            line.substring(location.getBeginColumn() - 1, location.getEndColumn()).trim());
+        sb.append(line.substring(location.getBeginColumn() - 1, location.getEndColumn()).trim());
+      } else {
+        sb.append(
+            this.soySourceCode[location.getBeginLine() - 1]
+                .substring(location.getBeginColumn() - 1)
+                .trim());
+        for (int i = location.getBeginLine() + 1; i < location.getEndLine(); i++) {
+          sb.append(this.soySourceCode[i - 1].trim());
+        }
+        sb.append(
+            this.soySourceCode[location.getEndLine() - 1]
+                .substring(0, location.getEndColumn())
+                .trim());
       }
-      StringBuilder sb = new StringBuilder();
-      sb.append(
-          this.soySourceCode[location.getBeginLine() - 1]
-              .substring(location.getBeginColumn() - 1)
-              .trim());
-      for (int i = location.getBeginLine() + 1; i < location.getEndLine(); i++) {
-        sb.append(this.soySourceCode[i - 1].trim());
-      }
-      sb.append(
-          this.soySourceCode[location.getEndLine() - 1]
-              .substring(0, location.getEndColumn())
-              .trim());
       if (sb.length() > 54) {
         // Add an ellipsis to bring the fragment to a length of 54.
         return sb.replace(25, sb.length() - 24, "[...]");
       }
       return sb;
+    }
+
+    @Override
+    public String toString() {
+      return this.sb.toString();
     }
   }
 }

@@ -16,6 +16,9 @@
 
 package com.google.template.soy.exprtree;
 
+import static java.util.stream.Collectors.toList;
+
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
@@ -55,6 +58,19 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
   @Override
   public Operator getOperator() {
     return operator;
+  }
+
+  @Override
+  public SourceLocation getSourceLocation() {
+    List<SourceLocation> locations =
+        getChildren().stream().map(ExprNode::getSourceLocation).collect(toList());
+    locations.add(super.getSourceLocation());
+    locations.sort((a, b) -> a.compareTo(b));
+    return locations.get(0).extend(Iterables.getLast(locations));
+  }
+
+  public SourceLocation getOperatorLocation() {
+    return super.getSourceLocation();
   }
 
   @Override

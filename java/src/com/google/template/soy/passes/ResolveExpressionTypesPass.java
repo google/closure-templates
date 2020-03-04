@@ -818,7 +818,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               node.getBaseExprChild().getType(),
               node.getKeyExprChild().getType(),
               node.isNullSafe(),
-              node.getSourceLocation(),
+              node.getAccessSourceLocation(),
               node.getKeyExprChild().getSourceLocation());
       node.setType(itemType);
       tryApplySubstitution(node);
@@ -976,7 +976,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       if (SoyTypes.isNumericOrUnknown(childType)) {
         node.setType(childType);
       } else {
-        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_ARITHMETIC_OP_UNARY, childType);
+        errorReporter.report(
+            node.getOperatorLocation(), INCOMPATIBLE_ARITHMETIC_OP_UNARY, childType);
         node.setType(UnknownType.getInstance());
       }
       tryApplySubstitution(node);
@@ -1011,7 +1012,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypePlusOperator());
       if (result == null) {
-        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
+        errorReporter.report(node.getOperatorLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
         result = UnknownType.getInstance();
       }
       node.setType(result);
@@ -1080,7 +1081,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       ExprNode lhs = node.getChild(0);
       if (SoyTreeUtils.isConstantExpr(lhs)) {
         errorReporter.warn(
-            node.getSourceLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
+            node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, lhs.toSourceString());
       }
       visit(lhs); // Assign normal types to left child
 
@@ -1098,7 +1099,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       visit(rhs);
       if (SoyTreeUtils.isConstantExpr(rhs)) {
         errorReporter.warn(
-            node.getSourceLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
+            node.getOperatorLocation(), OR_OPERATOR_HAS_CONSTANT_OPERAND, rhs.toSourceString());
       }
 
       // Restore substitutions to previous state
@@ -1509,7 +1510,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyType result =
           SoyTypes.getSoyTypeForBinaryOperator(left, right, new SoyTypes.SoyTypeComparisonOp());
       if (result == null) {
-        errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
+        errorReporter.report(node.getOperatorLocation(), TYPE_MISMATCH, left, right);
       }
       node.setType(BoolType.getInstance());
     }
@@ -1522,7 +1523,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeEqualComparisonOp());
       if (result == null) {
-        errorReporter.report(node.getSourceLocation(), TYPE_MISMATCH, left, right);
+        errorReporter.report(node.getOperatorLocation(), TYPE_MISMATCH, left, right);
       }
       node.setType(BoolType.getInstance());
     }
@@ -1536,7 +1537,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           SoyTypes.getSoyTypeForBinaryOperator(
               left, right, new SoyTypes.SoyTypeArithmeticOperator());
       if (result == null) {
-        errorReporter.report(node.getSourceLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
+        errorReporter.report(node.getOperatorLocation(), INCOMPATIBLE_ARITHMETIC_OP, left, right);
         result = UnknownType.getInstance();
       }
       // Division is special. it is always coerced to a float. For other operators, use the value
