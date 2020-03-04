@@ -149,6 +149,8 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
+  private final SourceLocation openTagLocation;
+
   /** The string representation of genderExprs, for debugging. */
   @Nullable private final String genderExprsString;
 
@@ -161,6 +163,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   public MsgNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       String commandName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
@@ -172,6 +175,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     ImmutableList<ExprRootNode> genders = null;
 
     this.attributes = attributes;
+    this.openTagLocation = openTagLocation;
     for (CommandTagAttribute attr : attributes) {
       String name = attr.getName().identifier();
 
@@ -227,6 +231,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    */
   private MsgNode(MsgNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.openTagLocation = orig.openTagLocation;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     if (orig.genderExprs != null) {
@@ -261,6 +266,12 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
     this.genderExprsString = orig.genderExprsString;
     this.escapingMode = orig.escapingMode;
+  }
+
+  /** The location of the {msg ...} */
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return this.openTagLocation;
   }
 
   @Override

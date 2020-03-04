@@ -2133,12 +2133,13 @@ private MsgFallbackGroupNode MsgStmt() :
 
   {
     SourceLocation msgLocation = createSrcLoc(tagBegin, tagEnd);
+    SourceLocation srcLocation = msgLocation;
     SourceLocation blockLocation = createSrcLoc(templateBlock);
     // Makes sure that the error message for empty message does have a known location.
     if (blockLocation.isKnown()) {
-      msgLocation = msgLocation.extend(blockLocation);
+      srcLocation = msgLocation.extend(blockLocation);
     }
-    MsgNode msg = new MsgNode(nodeIdGen.genId(), msgLocation, "msg", attributes, errorReporter);
+    MsgNode msg = new MsgNode(nodeIdGen.genId(), srcLocation, msgLocation, "msg", attributes, errorReporter);
     msg.addChildren(templateBlock);
   }
 
@@ -2155,13 +2156,14 @@ private MsgFallbackGroupNode MsgStmt() :
     fallbackTemplateBlock = TemplateBlockForMsg()
     {
       msgLocation = createSrcLoc(fallbackTagBegin, tagEnd);
+      SourceLocation openTag = msgLocation;
       blockLocation = createSrcLoc(fallbackTemplateBlock);
       // Makes sure that the error message for empty message does have a known location.
       if (blockLocation.isKnown()) {
         msgLocation = msgLocation.extend(blockLocation);
       }
       fallback =
-          new MsgNode(nodeIdGen.genId(), msgLocation, "fallbackmsg", attributes, errorReporter);
+          new MsgNode(nodeIdGen.genId(), msgLocation, openTag, "fallbackmsg", attributes, errorReporter);
       fallback.addChildren(fallbackTemplateBlock);
     }
   ]
@@ -3004,11 +3006,11 @@ private CallNode CallStmt() :
       Identifier name =
           SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter);
 
-
+      SourceLocation loc = createSrcLoc(tagBegin, tagClose);
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagClose),
-          (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : null,
+          (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : loc,
           name,
           attributes,
           errorReporter);

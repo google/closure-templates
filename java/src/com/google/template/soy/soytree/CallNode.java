@@ -277,6 +277,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return (ParentSoyNode<StandaloneNode>) super.getParent();
   }
 
+  @Override
   public SourceLocation getOpenTagLocation() {
     return openTagLocation;
   }

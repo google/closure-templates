@@ -395,6 +395,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** The location of the {(del)template ...} */
+  @Override
   public SourceLocation getOpenTagLocation() {
     return this.openTagLocation;
   }

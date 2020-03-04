@@ -72,8 +72,10 @@ public final class CommandTagAttribute {
    * A node that contains command tag attributes. Some examples of this include calls, templates,
    * msg, etc.
    */
-  public static interface CommandTagAttributesHolder {
+  public static interface CommandTagAttributesHolder extends SoyNode {
     List<CommandTagAttribute> getAttributes();
+
+    SourceLocation getOpenTagLocation();
   }
 
   /**
@@ -289,6 +291,10 @@ public final class CommandTagAttribute {
       return valueExprList.get(0);
     }
     return Iterables.getOnlyElement(valueExprList);
+  }
+
+  public boolean hasExprValue() {
+    return valueExprList != null;
   }
 
   /** Returns the value as an expression list. Only call on an expression list attribute. */

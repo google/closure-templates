@@ -130,6 +130,11 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }
 
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return getSourceLocation();
+  }
+
   /**
    * Gets the HTML source context immediately prior to the node (typically tag, attribute value,
    * HTML PCDATA, or plain text) which this node emits in. This affects how the node is escaped (for
