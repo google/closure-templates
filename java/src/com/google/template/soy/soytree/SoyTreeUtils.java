@@ -88,7 +88,11 @@ public final class SoyTreeUtils {
 
   /** Returns the next sibling of {@code node} or {@code null} if none exists. */
   public static SoyNode nextSibling(SoyNode node) {
-    ParentSoyNode<?> parent = node.getParent();
+    return (SoyNode) nextSiblingNode(node);
+  }
+
+  public static Node nextSiblingNode(Node node) {
+    ParentNode<?> parent = node.getParent();
     if (parent == null) {
       return null;
     }
