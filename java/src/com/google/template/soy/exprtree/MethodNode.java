@@ -85,6 +85,11 @@ public final class MethodNode extends DataAccessNode {
     return this.methods;
   }
 
+  /** Returns the method's parameters. */
+  public List<ExprNode> getParams() {
+    return getChildren().subList(1, getChildren().size()); // First child is the method's base expr.
+  }
+
   /** Returns true if the methods have been resolved to exactly one SoySourceFunction. */
   public boolean isMethodResolved() {
     return getSoyMethods().size() == 1;
