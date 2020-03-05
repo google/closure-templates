@@ -3577,6 +3577,7 @@ private ExprNode PrecExpr9() :
             Identifier.create(ident.image, createSrcLoc(ident)),
             createSrcLoc(op, close),
             op.kind == QDOT);
+        params = ImmutableList.of(); // Reset params after consuming.
       }
     |
       { // TODO(lukes):  add the source location of the ident as a separate field.  This would be
