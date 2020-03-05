@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
  */
 public final class TemplateStateVar extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final String desc;
+  private final SourceLocation sourceLocation;
   @Nullable private final TypeNode typeNode;
   private final ExprRootNode initialValue;
 
@@ -40,11 +41,13 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
       @Nullable TypeNode typeNode,
       ExprNode initialValue,
       @Nullable String desc,
-      @Nullable SourceLocation nameLocation) {
+      @Nullable SourceLocation nameLocation,
+      SourceLocation sourceLocation) {
     super(name, nameLocation, /*type=*/ null);
     this.typeNode = typeNode;
     this.desc = desc;
     this.initialValue = new ExprRootNode(initialValue);
+    this.sourceLocation = sourceLocation;
   }
 
   private TemplateStateVar(TemplateStateVar old, CopyState copyState) {
@@ -52,7 +55,13 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
     this.typeNode = old.typeNode == null ? null : old.typeNode.copy();
     this.desc = old.desc;
     this.initialValue = old.initialValue.copy(copyState);
+    this.sourceLocation = old.sourceLocation;
     copyState.updateRefs(old.initialValue, this.initialValue);
+  }
+
+  @Override
+  public SourceLocation getSourceLocation() {
+    return sourceLocation;
   }
 
   @Override

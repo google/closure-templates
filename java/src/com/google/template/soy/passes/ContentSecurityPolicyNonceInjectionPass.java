@@ -131,6 +131,7 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
     return new TemplateParam(
         CSP_NONCE_VARIABLE_NAME,
         SourceLocation.UNKNOWN,
+        SourceLocation.UNKNOWN,
         // We don't use string because the targets don't have the dependency on
         // goog.soy.data.UnsanitizedText.
         NamedTypeNode.create(SourceLocation.UNKNOWN, "any"),

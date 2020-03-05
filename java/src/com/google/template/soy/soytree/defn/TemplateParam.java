@@ -41,6 +41,7 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
   private final TypeNode typeNode;
   private final TypeNode originalTypeNode;
   private final String desc;
+  private final SourceLocation sourceLocation;
 
   /** Whether the param is required. */
   private final boolean isRequired;
@@ -53,6 +54,7 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
   public TemplateParam(
       String name,
       SourceLocation nameLocation,
+      SourceLocation sourceLocation,
       @Nullable TypeNode typeNode,
       boolean isInjected,
       boolean optional,
@@ -63,6 +65,7 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
     this.isInjected = isInjected;
     this.desc = desc;
     this.defaultValue = defaultValue == null ? null : new ExprRootNode(defaultValue);
+    this.sourceLocation = sourceLocation;
 
     boolean isNullable = false;
     if (typeNode instanceof UnionTypeNode) {
@@ -99,10 +102,16 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
     this.typeNode = param.typeNode == null ? null : param.typeNode.copy();
     this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
+    this.sourceLocation = param.sourceLocation;
     this.desc = param.desc;
     this.defaultValue =
         param.defaultValue == null ? null : param.defaultValue.copy(new CopyState());
     this.originalTypeNode = param.originalTypeNode == null ? null : param.originalTypeNode.copy();
+  }
+
+  @Override
+  public SourceLocation getSourceLocation() {
+    return sourceLocation;
   }
 
   @Override

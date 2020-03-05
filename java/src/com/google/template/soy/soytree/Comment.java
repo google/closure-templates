@@ -28,9 +28,7 @@ public abstract class Comment {
     /** A line comment. */
     LINE,
     /** A range comment, including unhandled doc comments. */
-    RANGE,
-    /** A Soy doc comment that was recognized and stored in the AST. */
-    DOC_HANDLED
+    RANGE
   }
 
   public static Comment create(Type type, String source, SourceLocation location) {

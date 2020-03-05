@@ -531,8 +531,6 @@ public class SoyFileParser {
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
 
-  private Set<SourceLocation> handledDocComments = new HashSet<SourceLocation>();
-
   /**
    * Constructor that takes a reader object providing the input.
    *
@@ -694,17 +692,9 @@ public class SoyFileParser {
   private ImmutableList<Comment> buildComments(SoyFileParserTokenManager manager) {
     ImmutableList.Builder<Comment> comments = ImmutableList.builder();
     for (Comment comment : manager.comments) {
-      if (handledDocComments.contains(comment.getSourceLocation())) {
-        comments.add(comment.withType(Comment.Type.DOC_HANDLED));
-      } else {
-        comments.add(comment);
-      }
+      comments.add(comment);
     }
     return comments.build();
-  }
-
-  private void handleDocComment(Token token) {
-    handledDocComments.add(createSrcLoc(token));
   }
 
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
@@ -1652,7 +1642,6 @@ private void TemplateOpenTagHelper(
     Token soyDoc = open.specialToken;
     if (soyDoc != null && soyDoc.kind == SOYDOC) {
       builder.setSoyDoc(soyDoc.image, createSrcLoc(soyDoc));
-      handleDocComment(soyDoc);
     }
   }
   close = <CMD_END>
@@ -1864,9 +1853,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
       (
         param = ParamDecl(soyDoc)
         {
-          if (soyDocToken != null) {
-            handleDocComment(soyDocToken);
-          }
           switch (param.kind()) {
           case PARAM:
             // we just parsed a param, preceding whitespace/doc comments are not important
@@ -1912,6 +1898,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
 private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
 {
   Token tagBegin, name;
+  Token tagEnd = null;
   TypeNode paramTypeNode = null;
   ExprNode value = null;
   boolean optional = false;
@@ -1930,7 +1917,6 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   // was passed to us.
   { if (tagBegin.specialToken != null) {
       desc = tagBegin.specialToken.image;
-      handleDocComment(tagBegin.specialToken);
     }
   }
 
@@ -1948,7 +1934,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       <CMD_COLON_EQ>
       value = Expr()
     )
-    <CMD_END>
+    tagEnd = <CMD_END>
   } catch (ParseException parseException) {
     reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
@@ -1968,7 +1954,8 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           paramTypeNode,
           value,
           desc,
-          createSrcLoc(name));
+          createSrcLoc(name),
+          tagEnd == null? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagEnd));
     } else {
       if (value != null) {
         if (inject) {
@@ -1980,6 +1967,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
       return new TemplateParam(
           name.image,
           createSrcLoc(name),
+          tagEnd == null? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagEnd),
           paramTypeNode,
           inject,
           optional,
