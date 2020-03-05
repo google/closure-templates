@@ -21,6 +21,7 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /** Represents a variable declaration. */
@@ -80,9 +81,9 @@ public abstract class VariableDeclaration extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (GoogRequire require : allRequires()) {
-      collector.add(require);
+      collector.accept(require);
     }
   }
 

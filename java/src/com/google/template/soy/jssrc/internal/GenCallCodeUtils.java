@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
@@ -27,13 +28,12 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAUL
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
@@ -152,10 +152,10 @@ public class GenCallCodeUtils {
     // migrating it to CodeChunk would be a major change. Therefore, we convert our CodeChunks
     // to JsExpr and back here.
     JsExpr callResult = call.singleExprOrName();
-    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
-    call.collectRequires(collector);
+    ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
+    call.collectRequires(requiresBuilder::add);
     for (SoyPrintDirective directive : callNode.getEscapingDirectives()) {
-      Preconditions.checkState(
+      checkState(
           directive instanceof SoyJsSrcPrintDirective,
           "Contextual autoescaping produced a bogus directive: %s",
           directive.getName());
@@ -164,19 +164,19 @@ public class GenCallCodeUtils {
       if (directive instanceof SoyLibraryAssistedJsSrcPrintDirective) {
         for (String name :
             ((SoyLibraryAssistedJsSrcPrintDirective) directive).getRequiredJsLibNames()) {
-          collector.add(GoogRequire.create(name));
+          requiresBuilder.add(GoogRequire.create(name));
         }
       }
     }
 
-    return fromExpr(callResult, collector.get()).withInitialStatements(call.initialStatements());
+    return fromExpr(callResult, requiresBuilder.build())
+        .withInitialStatements(call.initialStatements());
   }
 
   /**
    * @param callNode The call to generate code for.
    * @param templateAliases A mapping of fully qualified calls to a variable in scope.
-   * @param translationContext
-   * @param errorReporter
+   * @param exprTranslator
    * @return The JS expression for the template to call
    */
   public Expression genCallee(

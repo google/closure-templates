@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /**
  * Represents a JavaScript grouping ({@code (...)}).
@@ -62,7 +63,7 @@ abstract class Group extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     underlying().collectRequires(collector);
   }
 

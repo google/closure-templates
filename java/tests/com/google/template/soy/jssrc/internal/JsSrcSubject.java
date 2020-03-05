@@ -37,7 +37,6 @@ import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -270,7 +269,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     JsSrcSubject.ForExprs withPrecedence(Operator operator) {
       Preconditions.checkNotNull(this.chunk, "Call generatesCode() first.");
 
-      assertThat(this.chunk.assertExprAndCollectRequires(RequiresCollector.NULL).getPrecedence())
+      assertThat(this.chunk.assertExprAndCollectRequires(r -> {}).getPrecedence())
           .isEqualTo(operator.getPrecedence());
 
       return this;

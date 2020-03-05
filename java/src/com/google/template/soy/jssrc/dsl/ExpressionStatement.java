@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /** Evaluates an expression as a statement. */
@@ -50,7 +51,7 @@ abstract class ExpressionStatement extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     expr().collectRequires(collector);
   }
 }

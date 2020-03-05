@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript function call. */
 @AutoValue
@@ -50,9 +51,9 @@ abstract class Call extends Operation {
   Associativity associativity() {
     return LEFT;
   }
-  
+
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     receiver().collectRequires(collector);
     for (Expression arg : args()) {
       arg.collectRequires(collector);

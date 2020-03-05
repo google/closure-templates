@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript binary operation. */
 @AutoValue
@@ -90,7 +91,7 @@ abstract class BinaryOperation extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     arg1().collectRequires(collector);
     arg2().collectRequires(collector);
   }

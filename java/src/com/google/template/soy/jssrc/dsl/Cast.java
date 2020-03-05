@@ -19,8 +19,8 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript type cast. */
 @AutoValue
@@ -48,9 +48,9 @@ abstract class Cast extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (GoogRequire require : googRequires()) {
-      collector.add(require);
+      collector.accept(require);
     }
     expr().collectRequires(collector);
   }

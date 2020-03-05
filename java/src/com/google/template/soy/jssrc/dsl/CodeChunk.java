@@ -22,6 +22,7 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /**
  * DSL for constructing sequences of JavaScript code. Unlike {@link JsExpr}, it can handle code that
@@ -52,36 +53,8 @@ import com.google.template.soy.jssrc.restricted.JsExpr;
 @Immutable
 public abstract class CodeChunk {
 
-  /**
-   * A trivial interface for {@link #collectRequires(RequiresCollector)} that can be used to collect
-   * all required namespaces from a code chunk.
-   */
-  public interface RequiresCollector {
-    /** Drops all requires. */
-    final RequiresCollector NULL =
-        new RequiresCollector() {
-          @Override
-          public void add(GoogRequire require) {}
-        };
-
-    /** Collects requires into an ImmutableSet that can be accessed via {@link #get} */
-    final class IntoImmutableSet implements RequiresCollector {
-      private final ImmutableSet.Builder<GoogRequire> builder = ImmutableSet.builder();
-
-      @Override
-      public void add(GoogRequire require) {
-        builder.add(require);
-      }
-
-      public ImmutableSet<GoogRequire> get() {
-        return builder.build();
-      }
-    }
-    void add(GoogRequire require);
-  }
-
   /** Adds all the 'goog.require' identifiers needed by this CodeChunk to the given collection. */
-  public abstract void collectRequires(RequiresCollector collector);
+  public abstract void collectRequires(Consumer<GoogRequire> collector);
 
   /**
    * Returns a sequence of JavaScript statements. In the special case that this chunk is
@@ -156,9 +129,9 @@ public abstract class CodeChunk {
    * <p>TODO(b/32224284): remove.
    */
   public final JsExpr assertExpr() {
-    RequiresCollector.IntoImmutableSet collector = new RequiresCollector.IntoImmutableSet();
-    JsExpr expr = assertExprAndCollectRequires(collector);
-    ImmutableSet<GoogRequire> requires = collector.get();
+    ImmutableSet.Builder<GoogRequire> requiresBuilder = ImmutableSet.builder();
+    JsExpr expr = assertExprAndCollectRequires(requiresBuilder::add);
+    ImmutableSet<GoogRequire> requires = requiresBuilder.build();
     if (!requires.isEmpty()) {
       throw new IllegalStateException("calling assertExpr() would drop requires!: " + requires);
     }
@@ -177,7 +150,7 @@ public abstract class CodeChunk {
    *
    * <p>TODO(b/32224284): remove.
    */
-  public final JsExpr assertExprAndCollectRequires(RequiresCollector collector) {
+  public final JsExpr assertExprAndCollectRequires(Consumer<GoogRequire> collector) {
     Expression expression = (Expression) this;
     if (!expression.isRepresentableAsSingleExpression()) {
       throw new IllegalStateException(String.format("Not an expr:\n%s", this.getCode()));

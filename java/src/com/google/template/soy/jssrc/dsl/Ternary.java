@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /**
  * Represents a ternary expression. Its consequent and alternate chunks are required to be
@@ -79,7 +80,7 @@ abstract class Ternary extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     predicate().collectRequires(collector);
     consequent().collectRequires(collector);
     alternate().collectRequires(collector);

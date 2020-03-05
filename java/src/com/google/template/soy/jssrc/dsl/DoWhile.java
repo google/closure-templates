@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 
 /** Represents a {@code do {....} while(...);} loop. */
 @AutoValue
@@ -33,7 +34,7 @@ public abstract class DoWhile extends Statement {
   abstract Expression condition();
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     condition().collectRequires(collector);
     body().collectRequires(collector);
   }

@@ -21,6 +21,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /**
  * Despite the name, {@link JsExpr} instances don't have to contain valid JavaScript expressions.
@@ -56,9 +57,9 @@ abstract class LeafStatement extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (GoogRequire require : requires()) {
-      collector.add(require);
+      collector.accept(require);
     }
   }
 }

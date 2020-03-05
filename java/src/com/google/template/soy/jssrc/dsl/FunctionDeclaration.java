@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /**
  * Represents an anonymous JavaScript function declaration.
@@ -65,7 +66,7 @@ abstract class FunctionDeclaration extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     body().collectRequires(collector);
     jsDoc().collectRequires(collector);
   }

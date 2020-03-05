@@ -187,7 +187,7 @@ public final class JsTypeTest {
         .getTypeAssertion(
             id(varName), CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
         .get()
-        .assertExprAndCollectRequires(CodeChunk.RequiresCollector.NULL)
+        .assertExprAndCollectRequires(r -> {})
         .getText();
   }
 
@@ -198,7 +198,7 @@ public final class JsTypeTest {
             varName,
             CodeChunk.Generator.create(JsSrcNameGenerators.forLocalVariables()))
         .get()
-        .assertExprAndCollectRequires(CodeChunk.RequiresCollector.NULL)
+        .assertExprAndCollectRequires(r -> {})
         .getText();
   }
 

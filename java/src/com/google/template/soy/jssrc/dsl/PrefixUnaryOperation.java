@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript unary operation. */
 @AutoValue
@@ -58,9 +59,9 @@ abstract class PrefixUnaryOperation extends Operation {
     ctx.append(operator());
     formatOperand(arg(), OperandPosition.LEFT /* it's unary, doesn't matter */, ctx);
   }
-  
+
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     arg().collectRequires(collector);
   }
 

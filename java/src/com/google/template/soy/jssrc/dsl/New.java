@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.exprtree.Operator.Associativity;
+import java.util.function.Consumer;
 
 /** Represents the JavaScript {@code new} operator. */
 @AutoValue
@@ -56,7 +57,7 @@ abstract class New extends Operation {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     ctor().collectRequires(collector);
   }
 

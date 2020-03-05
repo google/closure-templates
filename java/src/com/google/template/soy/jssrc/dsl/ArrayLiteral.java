@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /** Represents a JavaScript array literal expression. */
 @AutoValue
@@ -37,7 +38,7 @@ abstract class ArrayLiteral extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (Expression element : elements()) {
       element.collectRequires(collector);
     }

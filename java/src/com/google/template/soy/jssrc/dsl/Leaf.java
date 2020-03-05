@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.jssrc.restricted.JsExpr;
+import java.util.function.Consumer;
 
 /**
  * Holds {@link JsExpr expressions}. These chunks can always be represented as single expressions
@@ -81,9 +82,9 @@ abstract class Leaf extends Expression {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (GoogRequire require : requires()) {
-      collector.add(require);
+      collector.accept(require);
     }
   }
 

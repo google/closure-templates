@@ -93,14 +93,6 @@ public class JsCodeBuilder {
   /** The current indent (some even number of spaces). */
   private String indent;
 
-  private final CodeChunk.RequiresCollector requireCollector =
-      new CodeChunk.RequiresCollector() {
-        @Override
-        public void add(GoogRequire require) {
-          addGoogRequire(require);
-        }
-      };
-
   // the set of symbols to require, indexed by symbol name to detect conflicting imports
   private final Map<String, GoogRequire> googRequires = new TreeMap<>();
 
@@ -164,11 +156,11 @@ public class JsCodeBuilder {
   public JsCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
     if (currOutputVarIsInited) {
       Expression rhs = CodeChunkUtils.concatChunks(codeChunks);
-      rhs.collectRequires(requireCollector);
+      rhs.collectRequires(this::addGoogRequire);
       appendLine(currOutputVar.plusEquals(rhs).getCode());
     } else {
       Expression rhs = CodeChunkUtils.concatChunksForceString(codeChunks);
-      rhs.collectRequires(requireCollector);
+      rhs.collectRequires(this::addGoogRequire);
       append(
           VariableDeclaration.builder(currOutputVar.singleExprOrName().getText())
               .setRhs(rhs)
@@ -257,7 +249,7 @@ public class JsCodeBuilder {
    * current indentation level.
    */
   public JsCodeBuilder append(CodeChunk codeChunk) {
-    codeChunk.collectRequires(requireCollector);
+    codeChunk.collectRequires(this::addGoogRequire);
     return append(codeChunk.getStatementsForInsertingIntoForeignCodeAtIndent(indent.length()));
   }
 
@@ -266,7 +258,7 @@ public class JsCodeBuilder {
    * indentation level.
    */
   public JsCodeBuilder append(JsDoc jsDoc) {
-    jsDoc.collectRequires(requireCollector);
+    jsDoc.collectRequires(this::addGoogRequire);
     return appendLine(jsDoc.toString());
   }
 

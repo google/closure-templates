@@ -20,6 +20,7 @@ package com.google.template.soy.jssrc.dsl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.Immutable;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /** Represents a {@code switch} statement. */
@@ -77,7 +78,7 @@ abstract class Switch extends Statement {
   }
 
   @Override
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     switchOn().collectRequires(collector);
     for (CaseClause caseClause : caseClauses()) {
       for (Expression caseLabel : caseClause.caseLabels) {

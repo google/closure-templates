@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.dsl;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import com.google.template.soy.jssrc.restricted.JsExprUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,13 +68,11 @@ public final class CodeChunkUtils {
   public static Expression concatChunksForceString(List<? extends Expression> chunks) {
     if (!chunks.isEmpty()
         && chunks.get(0).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(
-            chunks.get(0).assertExprAndCollectRequires(RequiresCollector.NULL))) {
+        && JsExprUtils.isStringLiteral(chunks.get(0).assertExprAndCollectRequires(r -> {}))) {
       return concatChunks(chunks);
     } else if (chunks.size() > 1
         && chunks.get(1).isRepresentableAsSingleExpression()
-        && JsExprUtils.isStringLiteral(
-            chunks.get(1).assertExprAndCollectRequires(RequiresCollector.NULL))) {
+        && JsExprUtils.isStringLiteral(chunks.get(1).assertExprAndCollectRequires(r -> {}))) {
       return concatChunks(chunks);
     } else {
       return concatChunks(

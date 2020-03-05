@@ -20,8 +20,8 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.jssrc.dsl.CodeChunk.RequiresCollector;
 import java.util.Map;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 /** Expresses JSDoc comment blocks and how to print them out. */
@@ -37,9 +37,9 @@ public abstract class JsDoc {
 
   abstract ImmutableList<Param> params();
 
-  public void collectRequires(RequiresCollector collector) {
+  public void collectRequires(Consumer<GoogRequire> collector) {
     for (GoogRequire require : requires()) {
-      collector.add(require);
+      collector.accept(require);
     }
   }
 
