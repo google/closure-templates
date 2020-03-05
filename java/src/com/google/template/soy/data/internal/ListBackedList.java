@@ -69,7 +69,7 @@ abstract class ListBackedList extends SoyAbstractValue implements SoyList {
   @Override
   @Nonnull
   public final List<SoyValue> asResolvedJavaList() {
-    return Lists.transform(asJavaList(), Transforms.RESOLVE_FUNCTION);
+    return Lists.transform(asJavaList(), SoyValueProvider::resolve);
   }
 
   @Override

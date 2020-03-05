@@ -196,7 +196,7 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   @Override
   @Nonnull
   public final Map<String, ? extends SoyValue> asResolvedJavaStringMap() {
-    return Maps.transformValues(asJavaStringMap(), Transforms.RESOLVE_FUNCTION);
+    return Maps.transformValues(asJavaStringMap(), SoyValueProvider::resolve);
   }
 
   @Nonnull
