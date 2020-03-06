@@ -103,7 +103,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   @Override
   public String getCommandText() {
     return (offset > 0)
-        ? pluralExpr.toSourceString() + " offset=" + offset
+        ? pluralExpr.toSourceString() + " offset=\"" + offset + "\""
         : pluralExpr.toSourceString();
   }
 
