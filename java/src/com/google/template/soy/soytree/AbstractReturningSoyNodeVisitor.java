@@ -127,6 +127,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
       case CALL_PARAM_CONTENT_NODE:
         return visitCallParamContentNode((CallParamContentNode) node);
 
+      case HTML_COMMENT_NODE:
+        return visitHtmlCommentNode((HtmlCommentNode) node);
       case HTML_CLOSE_TAG_NODE:
         return visitHtmlCloseTagNode((HtmlCloseTagNode) node);
       case HTML_OPEN_TAG_NODE:
@@ -148,10 +150,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitLogNode((LogNode) node);
       case DEBUGGER_NODE:
         return visitDebuggerNode((DebuggerNode) node);
-
-      default:
-        return visitSoyNode(node);
     }
+    return visitSoyNode(node);
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -342,6 +342,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitDebuggerNode(DebuggerNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitHtmlCommentNode(HtmlCommentNode node) {
     return visitSoyNode(node);
   }
 
