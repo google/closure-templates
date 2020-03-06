@@ -827,10 +827,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     } else {
       // Case 2: Normal case.
 
-      jsCodeBuilder.pushOutputVar("output");
+      jsCodeBuilder.pushOutputVar("$output");
       Statement codeChunk = visitChildrenReturningCodeChunk(node);
       jsCodeBuilder.popOutputVar();
-      bodyStatements.add(Statement.of(codeChunk, returnValue(sanitize(id("output"), kind))));
+      bodyStatements.add(Statement.of(codeChunk, returnValue(sanitize(id("$output"), kind))));
     }
     return Statement.of(bodyStatements.build());
   }
