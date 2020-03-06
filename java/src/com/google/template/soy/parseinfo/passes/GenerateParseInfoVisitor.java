@@ -16,21 +16,24 @@
 
 package com.google.template.soy.parseinfo.passes;
 
+import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
+import static com.google.common.collect.Streams.stream;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableMap;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSet;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
+import static java.util.stream.Collectors.toSet;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ascii;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -39,7 +42,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
@@ -54,8 +56,6 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
-import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
-import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -85,9 +85,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 /**
  * Visitor for generating Java classes containing the parse info.
@@ -135,7 +133,7 @@ public final class GenerateParseInfoVisitor
                 "Trying to generate Java class name based on Soy file name, but Soy file name was"
                     + " not provided.");
           }
-          if (fileName.toLowerCase().endsWith(".soy")) {
+          if (Ascii.toLowerCase(fileName).endsWith(".soy")) {
             fileName = fileName.substring(0, fileName.length() - 4);
           }
           return makeUpperCamelCase(fileName);
@@ -265,12 +263,10 @@ public final class GenerateParseInfoVisitor
     // + all the param keys from all templates (including private),
     // + for each param key, the list of templates that list it directly.
     // + for any params whose type is a proto, get the proto name and Java class name.
-    // + all plugin instances used by any SoyJavaSourceFunctions
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
     Set<String> allParamKeys = Sets.newLinkedHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
     SortedSet<String> protoTypes = Sets.newTreeSet();
-    Map<String, String> pluginInstances = new TreeMap<>();
     for (TemplateNode template : node.getChildren()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
@@ -322,21 +318,6 @@ public final class GenerateParseInfoVisitor
           SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class)) {
         if (protoInit.getType().getKind() == SoyType.Kind.PROTO) {
           protoTypes.add(((SoyProtoType) protoInit.getType()).getDescriptorExpression());
-        }
-      }
-      // Add plugin instances
-      for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
-        if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction
-            && !pluginInstances.containsKey(fnNode.getFunctionName())) {
-          Set<String> instances =
-              PluginAnalyzer.analyze(
-                      (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
-                  .pluginInstanceNames();
-          if (!instances.isEmpty()) {
-            // We guarantee there's either 0 or 1 instances in the plugin because we already
-            // passed through PluginResolver, which checked this.
-            pluginInstances.put(fnNode.getFunctionName(), Iterables.getOnlyElement(instances));
-          }
         }
       }
     }
@@ -510,16 +491,8 @@ public final class GenerateParseInfoVisitor
     SortedSet<String> cssNames =
         collectCssNames(node).stream()
             .map(s -> String.format("\"%s\"", s))
-            .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
+            .collect(toImmutableSortedSet(Ordering.natural()));
     appendImmutableSet(ilb, "<String>", cssNames);
-    ilb.appendLineEnd(",");
-
-    // Plugin Instances
-    ImmutableMap.Builder<String, String> pluginInstanceSnippets = ImmutableMap.builder();
-    for (Map.Entry<String, String> entry : pluginInstances.entrySet()) {
-      pluginInstanceSnippets.put("\"" + entry.getKey() + "\"", "\"" + entry.getValue() + "\"");
-    }
-    appendImmutableMap(ilb, "<String, String>", pluginInstanceSnippets.build());
     ilb.appendLineEnd(");");
 
     ilb.decreaseIndent(2);
@@ -759,7 +732,7 @@ public final class GenerateParseInfoVisitor
    * @param root The type to search.
    */
   private Set<String> findProtoTypes(SoyType root) {
-    return Streams.stream(typeIterator(root))
+    return stream(typeIterator(root))
         .map(
             type -> {
               switch (type.getKind()) {
@@ -772,7 +745,7 @@ public final class GenerateParseInfoVisitor
               }
             })
         .filter(Predicates.notNull())
-        .collect(Collectors.toSet());
+        .collect(toSet());
   }
 
   private Iterator<? extends SoyType> typeIterator(SoyType root) {

@@ -43,15 +43,18 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
     /** The full template name of the .demoFor_Range template. */
     public static final String DEMO_FOR_RANGE = "soy.examples.features.demoFor_Range";
     /** The full template name of the .demoCallWithoutParam template. */
-    public static final String DEMO_CALL_WITHOUT_PARAM = "soy.examples.features.demoCallWithoutParam";
+    public static final String DEMO_CALL_WITHOUT_PARAM =
+        "soy.examples.features.demoCallWithoutParam";
     /** The full template name of the .demoCallOtherFile template. */
     public static final String DEMO_CALL_OTHER_FILE = "soy.examples.features.demoCallOtherFile";
     /** The full template name of the .demoCallWithParam template. */
     public static final String DEMO_CALL_WITH_PARAM = "soy.examples.features.demoCallWithParam";
     /** The full template name of the .demoCallWithParamBlock template. */
-    public static final String DEMO_CALL_WITH_PARAM_BLOCK = "soy.examples.features.demoCallWithParamBlock";
+    public static final String DEMO_CALL_WITH_PARAM_BLOCK =
+        "soy.examples.features.demoCallWithParamBlock";
     /** The full template name of the .demoParamWithKindAttribute template. */
-    public static final String DEMO_PARAM_WITH_KIND_ATTRIBUTE = "soy.examples.features.demoParamWithKindAttribute";
+    public static final String DEMO_PARAM_WITH_KIND_ATTRIBUTE =
+        "soy.examples.features.demoParamWithKindAttribute";
     /** The full template name of the .demoExpressions template. */
     public static final String DEMO_EXPRESSIONS = "soy.examples.features.demoExpressions";
     /** The full template name of the .demoDoubleBraces template. */
@@ -824,8 +827,7 @@ public final class FeaturesSoyInfo extends SoyFileInfo {
             DEMO_BIDI_SUPPORT,
             BIDI_GLOBAL_DIR,
             EXAMPLE_HEADER),
-        ImmutableSet.of(),
-        ImmutableMap.of());
+        ImmutableSet.of());
   }
 
 

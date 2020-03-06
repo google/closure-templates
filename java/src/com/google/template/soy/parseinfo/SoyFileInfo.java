@@ -17,7 +17,6 @@
 package com.google.template.soy.parseinfo;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
 
@@ -39,9 +38,6 @@ public class SoyFileInfo {
   /** The CSS names appearing in this file. */
   private final ImmutableSet<String> cssNames;
 
-  /** Map of function name to plugin instances used by all templates in this file. */
-  private final ImmutableMap<String, String> pluginInstances;
-
   /**
    * Constructor for internal use only.
    *
@@ -56,13 +52,11 @@ public class SoyFileInfo {
       String fileName,
       String namespace,
       ImmutableList<SoyTemplateInfo> templates,
-      ImmutableSet<String> cssNames,
-      ImmutableMap<String, String> pluginInstances) {
+      ImmutableSet<String> cssNames) {
     this.fileName = fileName;
     this.namespace = namespace;
     this.templates = templates;
     this.cssNames = cssNames;
-    this.pluginInstances = pluginInstances;
   }
 
   /** Returns the source Soy file's name. */
@@ -92,14 +86,5 @@ public class SoyFileInfo {
    */
   public ImmutableList<FileDescriptor> getProtoDescriptors() {
     return ImmutableList.of();
-  }
-
-  /**
-   * Returns the map of plugin instances (where the key is the function name and the value is the
-   * fully qualified classname of the instance used by that function) used by all templates in this
-   * file.
-   */
-  public ImmutableMap<String, String> getPluginInstances() {
-    return pluginInstances;
   }
 }
