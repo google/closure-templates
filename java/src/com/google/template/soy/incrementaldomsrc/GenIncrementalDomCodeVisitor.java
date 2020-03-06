@@ -132,6 +132,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * Generates a series of JavaScript control statements and function calls for rendering one or more
@@ -1333,26 +1334,25 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     Expression isLogOnly = Expression.LITERAL_FALSE;
     VariableDeclaration isLogOnlyVar = null;
     Expression isLogOnlyReference = null;
+    List<Statement> stmts = new ArrayList<>();
     if (node.getLogonlyExpression() != null) {
       String idName = "velog_" + staticsCounter++;
       isLogOnlyReference = id(idName);
       isLogOnly = getExprTranslator().exec(node.getLogonlyExpression());
       isLogOnlyVar = VariableDeclaration.builder(idName).setRhs(isLogOnly).build();
-      getJsCodeBuilder()
-          .append(
-              Statement.of(
-                  isLogOnlyVar,
-                  Statement.ifStatement(
-                          INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
-                          Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
-                      .build()));
+      stmts.add(isLogOnlyVar);
+      stmts.add(
+          Statement.ifStatement(
+                  INCREMENTAL_DOM_VERIFY_LOGONLY.call(isLogOnlyVar.ref()),
+                  Statement.assign(INCREMENTAL_DOM, INCREMENTAL_DOM_TONULL.call()))
+              .build());
     }
     Expression veData = getExprTranslator().exec(node.getVeDataExpression());
-    return new VeLogStateHolder(
-        isLogOnlyReference, INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
+    stmts.add(INCREMENTAL_DOM_ENTER.call(veData, isLogOnly).asStatement());
+    return new VeLogStateHolder(isLogOnlyReference, Statement.of(stmts));
   }
 
-  Statement exitVeLogNode(VeLogNode node, Expression isLogOnly) {
+  Statement exitVeLogNode(VeLogNode node, @Nullable Expression isLogOnly) {
     Statement exit = INCREMENTAL_DOM_EXIT.call().asStatement();
     if (isLogOnly != null) {
       return Statement.of(
