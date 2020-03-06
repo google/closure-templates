@@ -54,7 +54,7 @@ abstract class For extends Statement {
         .appendInitialStatements(limit())
         .appendInitialStatements(increment());
 
-    ctx.append("for (var " + localVar() + " = ")
+    ctx.append("for (let " + localVar() + " = ")
         .appendOutputExpression(initial())
         .append("; " + localVar() + " < ")
         .appendOutputExpression(limit())

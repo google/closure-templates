@@ -40,46 +40,46 @@ public final class NullSafeAccumulatorTest {
         .generates("a == null ? null : a.b;");
     assertThat(accum.bracketAccess(Expression.id("c"), /* nullSafe= */ true))
         .generates(
-            "var $tmp$$1;\n"
+            "let $tmp$$1;\n"
                 + "if (a == null) {\n"
                 + "  $tmp$$1 = null;\n"
                 + "} else {\n"
-                + "  var $tmp = a.b;\n"
+                + "  let $tmp = a.b;\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp[c];\n"
                 + "}");
     assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
         .generates(
-            "var $tmp$$3;\n"
+            "let $tmp$$3;\n"
                 + "if (a == null) {\n"
                 + "  $tmp$$3 = null;\n"
                 + "} else {\n"
-                + "  var $tmp$$2;\n"
-                + "  var $tmp = a.b;\n"
+                + "  let $tmp$$2;\n"
+                + "  let $tmp = a.b;\n"
                 + "  if ($tmp == null) {\n"
                 + "    $tmp$$2 = null;\n"
                 + "  } else {\n"
-                + "    var $tmp$$1 = $tmp[c];\n"
+                + "    let $tmp$$1 = $tmp[c];\n"
                 + "    $tmp$$2 = $tmp$$1 == null ? null : $tmp$$1.d;\n"
                 + "  }\n"
                 + "  $tmp$$3 = $tmp$$2;\n"
                 + "}");
     assertThat(accum.bracketAccess(Expression.id("e"), /* nullSafe= */ true))
         .generates(
-            "var $tmp$$5;\n"
+            "let $tmp$$5;\n"
                 + "if (a == null) {\n"
                 + "  $tmp$$5 = null;\n"
                 + "} else {\n"
-                + "  var $tmp$$4;\n"
-                + "  var $tmp = a.b;\n"
+                + "  let $tmp$$4;\n"
+                + "  let $tmp = a.b;\n"
                 + "  if ($tmp == null) {\n"
                 + "    $tmp$$4 = null;\n"
                 + "  } else {\n"
-                + "    var $tmp$$3;\n"
-                + "    var $tmp$$1 = $tmp[c];\n"
+                + "    let $tmp$$3;\n"
+                + "    let $tmp$$1 = $tmp[c];\n"
                 + "    if ($tmp$$1 == null) {\n"
                 + "      $tmp$$3 = null;\n"
                 + "    } else {\n"
-                + "      var $tmp$$2 = $tmp$$1.d;\n"
+                + "      let $tmp$$2 = $tmp$$1.d;\n"
                 + "      $tmp$$3 = $tmp$$2 == null ? null : $tmp$$2[e];\n"
                 + "    }\n"
                 + "    $tmp$$4 = $tmp$$3;\n"
@@ -111,20 +111,20 @@ public final class NullSafeAccumulatorTest {
         .generates("a == null ? null : a.b[c];");
     assertThat(accum.dotAccess(FieldAccess.id("d"), /* nullSafe= */ true))
         .generates(
-            "var $tmp$$1;\n"
+            "let $tmp$$1;\n"
                 + "if (a == null) {\n"
                 + "  $tmp$$1 = null;\n"
                 + "} else {\n"
-                + "  var $tmp = a.b[c];\n"
+                + "  let $tmp = a.b[c];\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp.d;\n"
                 + "}");
     assertThat(accum.bracketAccess(Expression.id("e"), /* nullSafe= */ false))
         .generates(
-            "var $tmp$$1;\n"
+            "let $tmp$$1;\n"
                 + "if (a == null) {\n"
                 + "  $tmp$$1 = null;\n"
                 + "} else {\n"
-                + "  var $tmp = a.b[c];\n"
+                + "  let $tmp = a.b[c];\n"
                 + "  $tmp$$1 = $tmp == null ? null : $tmp.d[e];\n"
                 + "}");
   }
@@ -135,7 +135,7 @@ public final class NullSafeAccumulatorTest {
     assertThat(accum.dotAccess(FieldAccess.call("b", Expression.id("c")), /* nullSafe= */ false))
         .generates("a.b(c);");
     assertThat(accum.dotAccess(FieldAccess.call("d", Expression.id("e")), /* nullSafe= */ true))
-        .generates("var $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
+        .generates("let $tmp = a.b(c);\n$tmp == null ? null : $tmp.d(e);");
   }
 
   @Test

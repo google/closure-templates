@@ -134,9 +134,9 @@ public class JsCodeBuilder {
       return;
     }
 
-    // var output = '';
+    // let output = '';
     appendLine(
-        "var ",
+        "let ",
         // Don't tell the chunk about the current indent level.
         // We're in the middle of a line!
         currOutputVar.assertExpr().getText(),

@@ -111,35 +111,35 @@ public final class TranslateExprNodeVisitorTest {
     assertThatSoyExpr("( (8-4) + (2-1) )").generatesCode("8 - 4 + (2 - 1);").withPrecedence(PLUS);
 
     assertThatSoyExpr("$foo ?: 0")
-        .generatesCode("var $tmp = opt_data.foo;", "$tmp != null ? $tmp : 0;");
+        .generatesCode("let $tmp = opt_data.foo;", "$tmp != null ? $tmp : 0;");
   }
 
   @Test
   public void testNullCoalescingNested() {
     assertThatSoyExpr("$boo ?: -1")
-        .generatesCode("var $tmp = opt_data.boo;", "$tmp != null ? $tmp : -1;");
+        .generatesCode("let $tmp = opt_data.boo;", "$tmp != null ? $tmp : -1;");
 
     assertThatSoyExpr("$a ?: $b ?: $c")
         .generatesCode(
-            "var $tmp$$2;",
-            "var $tmp$$1 = opt_data.a;",
+            "let $tmp$$2;",
+            "let $tmp$$1 = opt_data.a;",
             "if ($tmp$$1 != null) {",
             "  $tmp$$2 = $tmp$$1;",
             "} else {",
-            "  var $tmp = opt_data.b;",
+            "  let $tmp = opt_data.b;",
             "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
             "}");
 
     assertThatSoyExpr("$a ?: $b ? $c : $d")
         .generatesCode(
-            "var $tmp = opt_data.a;",
+            "let $tmp = opt_data.a;",
             "$tmp != null ? $tmp : opt_data.b ? opt_data.c : opt_data.d;");
 
     assertThatSoyExpr("$a ? $b ?: $c : $d")
         .generatesCode(
-            "var $tmp$$1;",
+            "let $tmp$$1;",
             "if (opt_data.a) {",
-            "  var $tmp = opt_data.b;",
+            "  let $tmp = opt_data.b;",
             "  $tmp$$1 = $tmp != null ? $tmp : opt_data.c;",
             "} else {",
             "  $tmp$$1 = opt_data.d;",
@@ -147,34 +147,34 @@ public final class TranslateExprNodeVisitorTest {
 
     assertThatSoyExpr("$a ? $b : $c ?: $d")
         .generatesCode(
-            "var $tmp$$1;",
+            "let $tmp$$1;",
             "if (opt_data.a) {",
             "  $tmp$$1 = opt_data.b;",
             "} else {",
-            "  var $tmp = opt_data.c;",
+            "  let $tmp = opt_data.c;",
             "  $tmp$$1 = $tmp != null ? $tmp : opt_data.d;",
             "}");
 
     assertThatSoyExpr("($a ?: $b) ?: $c")
         .generatesCode(
-            "var $tmp = opt_data.a;",
-            "var $tmp$$1 = $tmp != null ? $tmp : opt_data.b;",
+            "let $tmp = opt_data.a;",
+            "let $tmp$$1 = $tmp != null ? $tmp : opt_data.b;",
             "$tmp$$1 != null ? $tmp$$1 : opt_data.c;");
 
     assertThatSoyExpr("$a ?: ($b ?: $c)")
         .generatesCode(
-            "var $tmp$$2;",
-            "var $tmp$$1 = opt_data.a;",
+            "let $tmp$$2;",
+            "let $tmp$$1 = opt_data.a;",
             "if ($tmp$$1 != null) {",
             "  $tmp$$2 = $tmp$$1;",
             "} else {",
-            "  var $tmp = opt_data.b;",
+            "  let $tmp = opt_data.b;",
             "  $tmp$$2 = $tmp != null ? $tmp : opt_data.c;",
             "}");
 
     assertThatSoyExpr("($a ?: $b) ? $c : $d")
         .generatesCode(
-            "var $tmp = opt_data.a;",
+            "let $tmp = opt_data.a;",
             "($tmp != null ? $tmp : opt_data.b) ? opt_data.c : opt_data.d;");
   }
 
@@ -239,7 +239,7 @@ public final class TranslateExprNodeVisitorTest {
             + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData_deprecated ||"
             + " opt_ijData);\n"
             + "  /** @type {?} */\n"
-            + "  var goo = opt_data.goo;\n"
+            + "  let goo = opt_data.goo;\n"
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml((goo.length()));\n"
             + "};\n"
             + "/**\n"
