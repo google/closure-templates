@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /** Reflective utilities related to {@link SoyTemplate}. */
@@ -54,5 +55,25 @@ public final class SoyTemplates {
       throw new RuntimeException(
           "Unexpected error while calling builder() on " + type.getName(), e);
     }
+  }
+
+  private static final ClassValue<String> templateNameValue =
+      new ClassValue<String>() {
+        @Override
+        protected String computeValue(Class<?> type) {
+          try {
+            Field field = type.getDeclaredField("__NAME__");
+            field.setAccessible(true); // the field is private
+            return (String) field.get(null);
+          } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(
+                "Unexpected error while accessing the template name of " + type.getName(), e);
+          }
+        }
+      };
+
+  /** Returns the name of the Soy template that this template class would render. */
+  public static String getTemplateName(Class<? extends SoyTemplate> type) {
+    return templateNameValue.get(type);
   }
 }
