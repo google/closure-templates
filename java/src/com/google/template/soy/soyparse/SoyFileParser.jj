@@ -2270,7 +2270,7 @@ private List<StandaloneNode> TemplateBlockForMsg() :
  */
 private MsgPluralNode MsgPlural() :
 {
-  Token tagBegin, caseBeginTag, tagClose;
+  Token tagBegin, tagEnd, caseBeginTag, tagClose;
   ExprNode pluralExpr;
   ExprNode caseExpr;
   CommandTagAttribute offsetAttr = null;
@@ -2281,10 +2281,10 @@ private MsgPluralNode MsgPlural() :
   try {
     pluralExpr = Expr()
     [ offsetAttr = Attribute() ]
-    <CMD_END>
+    tagEnd = <CMD_END>
   } catch (ParseException e) {
     pluralExpr = errorExpr(tagBegin);
-    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
@@ -2385,7 +2385,13 @@ private MsgPluralNode MsgPlural() :
 
   {
     MsgPluralNode pluralNode =
-        new MsgPluralNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose), pluralExpr, offset);
+        new MsgPluralNode(
+            nodeIdGen.genId(),
+            createSrcLoc(tagBegin, tagClose),
+            createSrcLoc(tagBegin, tagEnd),
+            pluralExpr,
+            offsetAttr == null ? ImmutableList.of() : ImmutableList.of(offsetAttr),
+            offset);
     pluralNode.addChildren(caseNodes);
     return pluralNode;
   }

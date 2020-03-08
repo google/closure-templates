@@ -16,15 +16,19 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
+import java.util.List;
 
 /**
  * Node representing a 'plural' block.
@@ -33,10 +37,18 @@ import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
  *
  */
 public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefaultNode>
-    implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
+    implements MsgSubstUnitNode,
+        SplitLevelTopNode<CaseOrDefaultNode>,
+        ExprHolderNode,
+        CommandTagAttributesHolder {
 
   /** Fallback base plural var name. */
   public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";
+
+  /** The location of the {plural ...} tag. */
+  private final SourceLocation openTagLocation;
+
+  private final List<CommandTagAttribute> attributes;
 
   /** The offset. */
   private final int offset;
@@ -47,10 +59,18 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   /** The base plural var name (what the translator sees). */
   private final String basePluralVarName;
 
-  public MsgPluralNode(int id, SourceLocation location, ExprNode expr, int offset) {
+  public MsgPluralNode(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      ExprNode expr,
+      List<CommandTagAttribute> attributes,
+      int offset) {
     super(id, location, "plural");
-    this.offset = offset;
+    this.openTagLocation = openTagLocation;
     this.pluralExpr = new ExprRootNode(expr);
+    this.attributes = ImmutableList.copyOf(attributes);
+    this.offset = offset;
     this.basePluralVarName =
         MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLURAL_VAR_NAME);
   }
@@ -62,10 +82,24 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
    */
   private MsgPluralNode(MsgPluralNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.offset = orig.offset;
+    this.openTagLocation = orig.openTagLocation;
     this.pluralExpr = orig.pluralExpr.copy(copyState);
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+    this.offset = orig.offset;
     this.basePluralVarName = orig.basePluralVarName;
     copyState.updateRefs(orig, this);
+  }
+
+  /** The location of the {plural ...} tag. */
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return this.openTagLocation;
+  }
+
+  @Override
+  public List<CommandTagAttribute> getAttributes() {
+    return this.attributes;
   }
 
   @Override
