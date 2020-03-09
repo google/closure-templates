@@ -528,9 +528,6 @@
                 <banDuplicateClasses>
                   <findAllDuplicates>true</findAllDuplicates>
                   <ignoreClasses>
-                    <!-- present in both junit and hamcrest-core -->
-                    <ignoreClass>org.hamcrest.*</ignoreClass>
-                    <ignoreClass>org.hamcrest.core.*</ignoreClass>
                     <!-- see https://issues.apache.org/jira/browse/MENFORCER-283 -->
                     <ignoreClass>module-info</ignoreClass>
                   </ignoreClasses>
