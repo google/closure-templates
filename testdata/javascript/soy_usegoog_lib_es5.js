@@ -5,6 +5,13 @@
 */
 var $jscomp = $jscomp || {};
 $jscomp.scope = {};
+$jscomp.createTemplateTagFirstArg = function(arrayStrings) {
+  return arrayStrings.raw = arrayStrings;
+};
+$jscomp.createTemplateTagFirstArgWithRaw = function(arrayStrings, rawArrayStrings) {
+  arrayStrings.raw = rawArrayStrings;
+  return arrayStrings;
+};
 $jscomp.arrayIteratorImpl = function(array) {
   var index = 0;
   return function() {
