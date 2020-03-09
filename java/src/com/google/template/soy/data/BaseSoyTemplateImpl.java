@@ -19,12 +19,12 @@ package com.google.template.soy.data;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
-import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.ForOverride;
@@ -47,17 +47,10 @@ import javax.annotation.Nullable;
  */
 public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
-  private final String name;
   private final ImmutableMap<String, SoyValueProvider> data;
 
-  protected BaseSoyTemplateImpl(String name, Map<String, SoyValueProvider> data) {
-    this.name = name;
-    this.data = ImmutableMap.copyOf(data);
-  }
-
-  @Override
-  public final String getTemplateName() {
-    return name;
+  protected BaseSoyTemplateImpl(ImmutableMap<String, SoyValueProvider> data) {
+    this.data = data;
   }
 
   @Override
@@ -99,17 +92,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public abstract static class AbstractBuilder<
           B extends AbstractBuilder<?, T>, T extends SoyTemplate>
       implements Builder<T> {
-    private final String templateName;
-    private final ImmutableMap<String, SoyTemplateParam<?>> params;
     private final SoyValueConverter soyValueConverter;
     private final Map<String, SoyValueProvider> data;
     private final Map<String, List<SoyValueProvider>> accummulatorData;
 
-    protected AbstractBuilder(String templateName, Iterable<SoyTemplateParam<?>> params) {
-      this.templateName = templateName;
-      this.params =
-          Streams.stream(params)
-              .collect(toImmutableMap(SoyTemplateParam::getName, Functions.identity()));
+    protected AbstractBuilder() {
       this.soyValueConverter = SoyValueConverter.INSTANCE;
       this.data = new HashMap<>();
       this.accummulatorData = new HashMap<>();
@@ -117,17 +104,22 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     @Override
     public final T build() {
-      ImmutableMap<String, SoyValueProvider> finalData = buildDataMapWithChecks(true, false);
-      return buildInternal(templateName, finalData);
+      ImmutableMap<String, SoyValueProvider> finalData =
+          buildDataMapWithChecks(/* checkRequired= */ true);
+      return buildInternal(finalData);
     }
 
     final T buildPartialForTests() {
-      ImmutableMap<String, SoyValueProvider> finalData = buildDataMapWithChecks(false, false);
-      return buildInternal(templateName, finalData);
+      ImmutableMap<String, SoyValueProvider> finalData =
+          buildDataMapWithChecks(/* checkRequired= */ false);
+      return buildInternal(finalData);
     }
 
     @ForOverride
-    protected abstract T buildInternal(String name, ImmutableMap<String, SoyValueProvider> data);
+    protected abstract ImmutableSet<SoyTemplateParam<?>> allParams();
+
+    @ForOverride
+    protected abstract T buildInternal(ImmutableMap<String, SoyValueProvider> data);
 
     /**
      * Sets an arbitrary parameter to an arbitrary value.
@@ -145,7 +137,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     @Override
     public final <V> B setParam(SoyTemplateParam<? super V> param, V value) {
-      if (!params.containsValue(param)) {
+      if (!allParams().contains(param)) {
         throw new IllegalArgumentException(
             "No param in " + this.getClass().getName() + " like " + param);
       }
@@ -155,7 +147,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     @Override
     public final <V> B setParamFuture(
         SoyTemplateParam<? super V> param, ListenableFuture<V> value) {
-      if (!params.containsValue(param)) {
+      if (!allParams().contains(param)) {
         throw new IllegalArgumentException(
             "No param in " + this.getClass().getName() + " like " + param);
       }
@@ -164,7 +156,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     @Override
     public final boolean hasParam(SoyTemplateParam<?> param) {
-      return params.containsValue(param);
+      return allParams().contains(param);
     }
 
     //
@@ -306,10 +298,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
           .collect(toImmutableMap(e -> key.apply(e.getKey()), e -> value.apply(e.getValue())));
     }
 
-    private ImmutableMap<String, SoyValueProvider> buildDataMapWithChecks(
-        boolean checkRequired, boolean checkNoExtras) {
-      // checkNoExtras=true only needed in the future if we add a public setter that takes an
-      // arbitrary String param name.
+    /**
+     * @param checkRequired Whether or not to enforce that all required parameters are set.
+     * @return the fully built parameter map
+     */
+    private ImmutableMap<String, SoyValueProvider> buildDataMapWithChecks(boolean checkRequired) {
       // checkRequired=false could be used in the future for "build partial"
       ImmutableMap.Builder<String, SoyValueProvider> finalDataBuilder =
           ImmutableMap.<String, SoyValueProvider>builder().putAll(data);
@@ -325,33 +318,20 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
               "Missing required params: " + Joiner.on(", ").join(missingParams));
         }
       }
-      if (checkNoExtras) {
-        Set<String> extraParams = getExtraParamNames(finalData);
-        if (!extraParams.isEmpty()) {
-          throw new IllegalStateException("Illegal params: " + Joiner.on(", ").join(extraParams));
-        }
-      }
       return finalData;
     }
 
     private Set<String> getMissingParamNames(Map<String, ?> data) {
-      Set<String> missing = new HashSet<>();
-      for (SoyTemplateParam<?> param : params.values()) {
+      Set<String> missing = ImmutableSet.of();
+      for (SoyTemplateParam<?> param : allParams()) {
         if (param.isRequired() && !data.containsKey(param.getName())) {
+          if (missing.isEmpty()) {
+            missing = new HashSet<>();
+          }
           missing.add(param.getName());
         }
       }
       return missing;
-    }
-
-    private Set<String> getExtraParamNames(Map<String, ?> data) {
-      Set<String> extra = new HashSet<>();
-      for (String name : data.keySet()) {
-        if (!params.containsKey(name)) {
-          extra.add(name);
-        }
-      }
-      return extra;
     }
   }
 }

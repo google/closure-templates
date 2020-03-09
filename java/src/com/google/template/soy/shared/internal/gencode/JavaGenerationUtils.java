@@ -222,7 +222,7 @@ public final class JavaGenerationUtils {
    * @param functionCallSnippet Code snippet for the function call (without parenthesis or params).
    * @param params Params to put in parenthesis for the function call.
    */
-  private static void appendFunctionCallWithParamsOnNewLines(
+  public static void appendFunctionCallWithParamsOnNewLines(
       IndentedLinesBuilder ilb, String functionCallSnippet, Collection<String> params) {
 
     if (params.isEmpty()) {

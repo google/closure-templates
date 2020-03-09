@@ -26,7 +26,7 @@ import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.OPTIONAL_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.REQUIRED_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM;
-import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
+import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
 
@@ -192,13 +192,22 @@ public final class GenInvocationBuildersVisitor
     appendFutureWrapperMethod(paramsClass);
 
     // Constructor for Foo.
-    ilb.appendLine("private " + paramsClass + "(java.util.Map<String, SoyValueProvider> data) {");
+    ilb.appendLine("private " + paramsClass + "(ImmutableMap<String, SoyValueProvider> data) {");
     ilb.increaseIndent();
-    ilb.appendLine("super(" + TEMPLATE_NAME_FIELD + ", data);");
+    ilb.appendLine("super(data);");
     ilb.decreaseIndent();
     ilb.appendLine("}");
 
     ilb.appendLine();
+
+    ilb.appendLine("@Override");
+    ilb.appendLine("public final String getTemplateName() {");
+    ilb.increaseIndent();
+    ilb.appendLine("return " + TEMPLATE_NAME_FIELD + ";");
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+    ilb.appendLine();
+
     appendParamsBuilderClass(template, paramsClass);
 
     // End of Foo class.
@@ -297,6 +306,7 @@ public final class GenInvocationBuildersVisitor
               + " parameters are optional.",
           false,
           true);
+      // TODO(lukes): use a static final instance instead of a new one each time?
       ilb.appendLine("public static " + templateParamsClassname + " getDefaultInstance() {");
       ilb.increaseIndent();
       ilb.appendLine("return builder().build();");
@@ -309,7 +319,7 @@ public final class GenInvocationBuildersVisitor
     // Start of Foo.Builder class.
     ilb.appendLine("@CanIgnoreReturnValue");
     ilb.appendLine(
-        "public static class Builder extends AbstractBuilder<Builder, "
+        "public static final class Builder extends AbstractBuilder<Builder, "
             + templateParamsClassname
             + "> {");
     ilb.appendLine();
@@ -318,8 +328,16 @@ public final class GenInvocationBuildersVisitor
     // Constructor for Foo.Builder.
     ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
-    ilb.appendLine("super(" + TEMPLATE_NAME_FIELD + ", " + PARAMS_FIELD + ");");
     appendRecordListInitializations(ilb, nonInjectedParams);
+    ilb.decreaseIndent();
+    ilb.appendLine("}");
+    ilb.appendLine();
+
+    // #buildInternal() for FooTemplate.Builder.
+    ilb.appendLine("@Override");
+    ilb.appendLine("protected ImmutableSet<SoyTemplateParam<?>> allParams() {");
+    ilb.increaseIndent();
+    ilb.appendLine("return " + PARAMS_FIELD + ";");
     ilb.decreaseIndent();
     ilb.appendLine("}");
     ilb.appendLine();
@@ -329,7 +347,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine(
         "protected "
             + templateParamsClassname
-            + " buildInternal(String name, ImmutableMap<String, SoyValueProvider> data) {");
+            + " buildInternal(ImmutableMap<String, SoyValueProvider> data) {");
     ilb.increaseIndent();
     ilb.appendLine("return new " + templateParamsClassname + "(data);");
     ilb.decreaseIndent();
@@ -402,9 +420,9 @@ public final class GenInvocationBuildersVisitor
     }
 
     ilb.appendLineStart(
-        "private static final ImmutableList<SoyTemplateParam<?>> " + PARAMS_FIELD + " = ");
+        "private static final ImmutableSet<SoyTemplateParam<?>> " + PARAMS_FIELD + " = ");
     // Omit injected params from the list of params passed to the builder.
-    appendImmutableListInline(ilb, "<SoyTemplateParam<?>>", nonInjected);
+    appendFunctionCallWithParamsOnNewLines(ilb, "ImmutableSet.of", nonInjected);
     ilb.appendLineEnd(";");
     ilb.appendLine();
   }
@@ -439,8 +457,8 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine("import static com.google.common.base.Preconditions.checkNotNull;");
     ilb.appendLine("import static com.google.template.soy.data.SoyValueConverter.markAsSoyMap;");
     ilb.appendLine();
-    ilb.appendLine("import com.google.common.collect.ImmutableList;");
     ilb.appendLine("import com.google.common.collect.ImmutableMap;");
+    ilb.appendLine("import com.google.common.collect.ImmutableSet;");
     ilb.appendLine("import com.google.common.html.types.SafeHtml;");
     ilb.appendLine("import com.google.common.html.types.SafeScript;");
     ilb.appendLine("import com.google.common.html.types.SafeStyle;");
