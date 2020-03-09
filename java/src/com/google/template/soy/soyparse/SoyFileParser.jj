@@ -1399,6 +1399,7 @@ private CommandTagAttribute Attribute() :
   Token nameToken, value;
   ImmutableList<ExprNode> exprList = ImmutableList.of();
   Token qToken;
+  Token startValue;
   QuoteStyle quoteStyle;
 }
 {
@@ -1486,18 +1487,18 @@ private CommandTagAttribute Attribute() :
   |
     // Non-expression attributes
     (
-      <CMD_DOUBLE_QUOTE>
+      startValue = <CMD_DOUBLE_QUOTE>
       { token_source.pushState(IN_DQ_ATTRIBUTE_VALUE); }
       value = <DQ_ATTRIBUTE_VALUE>
       { quoteStyle = QuoteStyle.DOUBLE; }
     |
-      <CMD_SINGLE_QUOTE>
+      startValue = <CMD_SINGLE_QUOTE>
       { token_source.pushState(IN_SQ_ATTRIBUTE_VALUE); }
       value = <SQ_ATTRIBUTE_VALUE>
       { quoteStyle = QuoteStyle.SINGLE; }
     )
     {
-      return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(value));
+      return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(startValue, value));
     }
   )
 }
