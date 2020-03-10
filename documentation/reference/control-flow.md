@@ -65,7 +65,8 @@ Each `case` can have one or more expressions (use a comma-separated list if you
 have more than one), and the `case` matches when any one of its expressions
 matches the value of the `switch` expression. `{default}` executes only when
 none of the expressions from the `case` statements match the `switch`
-expression.
+expression. Cases with an empty body do not "fall through" as they might in Java
+or JavaScript.
 
 For example:
 
@@ -75,7 +76,8 @@ For example:
     You have no marbles.
   {case 1, 2, 3}
     You have a normal number of marbles.
-  {default}  // 4 or more
+  {case 4}
+  {default}  // 5 or more
     You have more marbles than you know what to do with.
 {/switch}
 ```
@@ -83,6 +85,8 @@ For example:
 Example output (for `numMarbles` = 2):
 
     You have a normal number of marbles.
+
+For `numMarbles` = 4, the output would be empty.
 
 ## for, ifempty {#for}
 
