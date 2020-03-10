@@ -4954,545 +4954,6 @@ goog.i18n.bidi.DirectionalString.prototype
  */
 goog.i18n.bidi.DirectionalString.prototype.getDirection;
 
-//third_party/javascript/closure/string/internal.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview String functions called from Closure packages that couldn't
- * depend on each other. Outside Closure, use goog.string function which
- * delegate to these.
- * @visibility {//javascript/closure:__pkg__}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
- * @visibility {//javascript/closure/dom:__pkg__}
- * @visibility {//javascript/closure/html:__pkg__}
- * @visibility {//javascript/closure/labs/useragent:__pkg__}
- */
-
-
-goog.provide('goog.string.internal');
-
-
-/**
- * Fast prefix-checker.
- * @param {string} str The string to check.
- * @param {string} prefix A string to look for at the start of `str`.
- * @return {boolean} True if `str` begins with `prefix`.
- * @see goog.string.startsWith
- */
-goog.string.internal.startsWith = function(str, prefix) {
-  return str.lastIndexOf(prefix, 0) == 0;
-};
-
-
-/**
- * Fast suffix-checker.
- * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of `str`.
- * @return {boolean} True if `str` ends with `suffix`.
- * @see goog.string.endsWith
- */
-goog.string.internal.endsWith = function(str, suffix) {
-  const l = str.length - suffix.length;
-  return l >= 0 && str.indexOf(suffix, l) == l;
-};
-
-
-/**
- * Case-insensitive prefix-checker.
- * @param {string} str The string to check.
- * @param {string} prefix  A string to look for at the end of `str`.
- * @return {boolean} True if `str` begins with `prefix` (ignoring
- *     case).
- * @see goog.string.caseInsensitiveStartsWith
- */
-goog.string.internal.caseInsensitiveStartsWith = function(str, prefix) {
-  return goog.string.internal.caseInsensitiveCompare(
-             prefix, str.substr(0, prefix.length)) == 0;
-};
-
-
-/**
- * Case-insensitive suffix-checker.
- * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of `str`.
- * @return {boolean} True if `str` ends with `suffix` (ignoring
- *     case).
- * @see goog.string.caseInsensitiveEndsWith
- */
-goog.string.internal.caseInsensitiveEndsWith = function(str, suffix) {
-  return (
-      goog.string.internal.caseInsensitiveCompare(
-          suffix, str.substr(str.length - suffix.length, suffix.length)) == 0);
-};
-
-
-/**
- * Case-insensitive equality checker.
- * @param {string} str1 First string to check.
- * @param {string} str2 Second string to check.
- * @return {boolean} True if `str1` and `str2` are the same string,
- *     ignoring case.
- * @see goog.string.caseInsensitiveEquals
- */
-goog.string.internal.caseInsensitiveEquals = function(str1, str2) {
-  return str1.toLowerCase() == str2.toLowerCase();
-};
-
-
-/**
- * Checks if a string is empty or contains only whitespaces.
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty or whitespace only.
- * @see goog.string.isEmptyOrWhitespace
- */
-goog.string.internal.isEmptyOrWhitespace = function(str) {
-  // testing length == 0 first is actually slower in all browsers (about the
-  // same in Opera).
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return /^[\s\xa0]*$/.test(str);
-};
-
-
-/**
- * Trims white spaces to the left and right of a string.
- * @param {string} str The string to trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.internal.trim =
-    (goog.TRUSTED_SITE && String.prototype.trim) ? function(str) {
-      return str.trim();
-    } : function(str) {
-      // Since IE doesn't include non-breaking-space (0xa0) in their \s
-      // character class (as required by section 7.2 of the ECMAScript spec),
-      // we explicitly include it in the regexp to enforce consistent
-      // cross-browser behavior.
-      // NOTE: We don't use String#replace because it might have side effects
-      // causing this function to not compile to 0 bytes.
-      return /^[\s\xa0]*([\s\S]*?)[\s\xa0]*$/.exec(str)[1];
-    };
-
-
-/**
- * A string comparator that ignores case.
- * -1 = str1 less than str2
- *  0 = str1 equals str2
- *  1 = str1 greater than str2
- *
- * @param {string} str1 The string to compare.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} The comparator result, as described above.
- * @see goog.string.caseInsensitiveCompare
- */
-goog.string.internal.caseInsensitiveCompare = function(str1, str2) {
-  const test1 = String(str1).toLowerCase();
-  const test2 = String(str2).toLowerCase();
-
-  if (test1 < test2) {
-    return -1;
-  } else if (test1 == test2) {
-    return 0;
-  } else {
-    return 1;
-  }
-};
-
-
-/**
- * Converts \n to <br>s or <br />s.
- * @param {string} str The string in which to convert newlines.
- * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} A copy of `str` with converted newlines.
- * @see goog.string.newLineToBr
- */
-goog.string.internal.newLineToBr = function(str, opt_xml) {
-  return str.replace(/(\r\n|\r|\n)/g, opt_xml ? '<br />' : '<br>');
-};
-
-
-/**
- * Escapes double quote '"' and single quote '\'' characters in addition to
- * '&', '<', and '>' so that a string can be included in an HTML tag attribute
- * value within double or single quotes.
- * @param {string} str string to be escaped.
- * @param {boolean=} opt_isLikelyToContainHtmlChars
- * @return {string} An escaped copy of `str`.
- * @see goog.string.htmlEscape
- */
-goog.string.internal.htmlEscape = function(
-    str, opt_isLikelyToContainHtmlChars) {
-  if (opt_isLikelyToContainHtmlChars) {
-    str = str.replace(goog.string.internal.AMP_RE_, '&amp;')
-              .replace(goog.string.internal.LT_RE_, '&lt;')
-              .replace(goog.string.internal.GT_RE_, '&gt;')
-              .replace(goog.string.internal.QUOT_RE_, '&quot;')
-              .replace(goog.string.internal.SINGLE_QUOTE_RE_, '&#39;')
-              .replace(goog.string.internal.NULL_RE_, '&#0;');
-    return str;
-
-  } else {
-    // quick test helps in the case when there are no chars to replace, in
-    // worst case this makes barely a difference to the time taken
-    if (!goog.string.internal.ALL_RE_.test(str)) return str;
-
-    // str.indexOf is faster than regex.test in this case
-    if (str.indexOf('&') != -1) {
-      str = str.replace(goog.string.internal.AMP_RE_, '&amp;');
-    }
-    if (str.indexOf('<') != -1) {
-      str = str.replace(goog.string.internal.LT_RE_, '&lt;');
-    }
-    if (str.indexOf('>') != -1) {
-      str = str.replace(goog.string.internal.GT_RE_, '&gt;');
-    }
-    if (str.indexOf('"') != -1) {
-      str = str.replace(goog.string.internal.QUOT_RE_, '&quot;');
-    }
-    if (str.indexOf('\'') != -1) {
-      str = str.replace(goog.string.internal.SINGLE_QUOTE_RE_, '&#39;');
-    }
-    if (str.indexOf('\x00') != -1) {
-      str = str.replace(goog.string.internal.NULL_RE_, '&#0;');
-    }
-    return str;
-  }
-};
-
-
-/**
- * Regular expression that matches an ampersand, for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.AMP_RE_ = /&/g;
-
-
-/**
- * Regular expression that matches a less than sign, for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.LT_RE_ = /</g;
-
-
-/**
- * Regular expression that matches a greater than sign, for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.GT_RE_ = />/g;
-
-
-/**
- * Regular expression that matches a double quote, for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.QUOT_RE_ = /"/g;
-
-
-/**
- * Regular expression that matches a single quote, for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.SINGLE_QUOTE_RE_ = /'/g;
-
-
-/**
- * Regular expression that matches null character, for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.NULL_RE_ = /\x00/g;
-
-
-/**
- * Regular expression that matches any character that needs to be escaped.
- * @const {!RegExp}
- * @private
- */
-goog.string.internal.ALL_RE_ = /[\x00&<>"']/;
-
-
-/**
- * Do escaping of whitespace to preserve spatial formatting. We use character
- * entity #160 to make it safer for xml.
- * @param {string} str The string in which to escape whitespace.
- * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} An escaped copy of `str`.
- * @see goog.string.whitespaceEscape
- */
-goog.string.internal.whitespaceEscape = function(str, opt_xml) {
-  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
-  return goog.string.internal.newLineToBr(
-      str.replace(/  /g, ' &#160;'), opt_xml);
-};
-
-
-/**
- * Determines whether a string contains a substring.
- * @param {string} str The string to search.
- * @param {string} subString The substring to search for.
- * @return {boolean} Whether `str` contains `subString`.
- * @see goog.string.contains
- */
-goog.string.internal.contains = function(str, subString) {
-  return str.indexOf(subString) != -1;
-};
-
-
-/**
- * Determines whether a string contains a substring, ignoring case.
- * @param {string} str The string to search.
- * @param {string} subString The substring to search for.
- * @return {boolean} Whether `str` contains `subString`.
- * @see goog.string.caseInsensitiveContains
- */
-goog.string.internal.caseInsensitiveContains = function(str, subString) {
-  return goog.string.internal.contains(
-      str.toLowerCase(), subString.toLowerCase());
-};
-
-
-/**
- * Compares two version numbers.
- *
- * @param {string|number} version1 Version of first item.
- * @param {string|number} version2 Version of second item.
- *
- * @return {number}  1 if `version1` is higher.
- *                   0 if arguments are equal.
- *                  -1 if `version2` is higher.
- * @see goog.string.compareVersions
- */
-goog.string.internal.compareVersions = function(version1, version2) {
-  let order = 0;
-  // Trim leading and trailing whitespace and split the versions into
-  // subversions.
-  const v1Subs = goog.string.internal.trim(String(version1)).split('.');
-  const v2Subs = goog.string.internal.trim(String(version2)).split('.');
-  const subCount = Math.max(v1Subs.length, v2Subs.length);
-
-  // Iterate over the subversions, as long as they appear to be equivalent.
-  for (let subIdx = 0; order == 0 && subIdx < subCount; subIdx++) {
-    let v1Sub = v1Subs[subIdx] || '';
-    let v2Sub = v2Subs[subIdx] || '';
-
-    do {
-      // Split the subversions into pairs of numbers and qualifiers (like 'b').
-      // Two different RegExp objects are use to make it clear the code
-      // is side-effect free
-      const v1Comp = /(\d*)(\D*)(.*)/.exec(v1Sub) || ['', '', '', ''];
-      const v2Comp = /(\d*)(\D*)(.*)/.exec(v2Sub) || ['', '', '', ''];
-      // Break if there are no more matches.
-      if (v1Comp[0].length == 0 && v2Comp[0].length == 0) {
-        break;
-      }
-
-      // Parse the numeric part of the subversion. A missing number is
-      // equivalent to 0.
-      const v1CompNum = v1Comp[1].length == 0 ? 0 : parseInt(v1Comp[1], 10);
-      const v2CompNum = v2Comp[1].length == 0 ? 0 : parseInt(v2Comp[1], 10);
-
-      // Compare the subversion components. The number has the highest
-      // precedence. Next, if the numbers are equal, a subversion without any
-      // qualifier is always higher than a subversion with any qualifier. Next,
-      // the qualifiers are compared as strings.
-      order = goog.string.internal.compareElements_(v1CompNum, v2CompNum) ||
-          goog.string.internal.compareElements_(
-              v1Comp[2].length == 0, v2Comp[2].length == 0) ||
-          goog.string.internal.compareElements_(v1Comp[2], v2Comp[2]);
-      // Stop as soon as an inequality is discovered.
-
-      v1Sub = v1Comp[3];
-      v2Sub = v2Comp[3];
-    } while (order == 0);
-  }
-
-  return order;
-};
-
-
-/**
- * Compares elements of a version number.
- *
- * @param {string|number|boolean} left An element from a version number.
- * @param {string|number|boolean} right An element from a version number.
- *
- * @return {number}  1 if `left` is higher.
- *                   0 if arguments are equal.
- *                  -1 if `right` is higher.
- * @private
- */
-goog.string.internal.compareElements_ = function(left, right) {
-  if (left < right) {
-    return -1;
-  } else if (left > right) {
-    return 1;
-  }
-  return 0;
-};
-
-//javascript/closure/labs/useragent/util.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
- * should not be used outside of goog.labs.userAgent.*.
- *
- * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
- * @visibility {//javascript/closure/dom:__subpackages__}
- * @visibility {//javascript/closure/style:__pkg__}
- * @visibility {//javascript/closure/testing:__pkg__}
- * @visibility {//javascript/closure/useragent:__subpackages__}
- * @visibility {//testing/puppet/modules:__pkg__}
- * @visibility {:util_legacy_users}
- */
-
-goog.provide('goog.labs.userAgent.util');
-
-goog.require('goog.string.internal');
-
-
-/**
- * Gets the native userAgent string from navigator if it exists.
- * If navigator or navigator.userAgent string is missing, returns an empty
- * string.
- * @return {string}
- * @private
- */
-goog.labs.userAgent.util.getNativeUserAgentString_ = function() {
-  var navigator = goog.labs.userAgent.util.getNavigator_();
-  if (navigator) {
-    var userAgent = navigator.userAgent;
-    if (userAgent) {
-      return userAgent;
-    }
-  }
-  return '';
-};
-
-
-/**
- * Getter for the native navigator.
- * This is a separate function so it can be stubbed out in testing.
- * @return {Navigator}
- * @private
- */
-goog.labs.userAgent.util.getNavigator_ = function() {
-  return goog.global.navigator;
-};
-
-
-/**
- * A possible override for applications which wish to not check
- * navigator.userAgent but use a specified value for detection instead.
- * @private {string}
- */
-goog.labs.userAgent.util.userAgent_ =
-    goog.labs.userAgent.util.getNativeUserAgentString_();
-
-
-/**
- * Applications may override browser detection on the built in
- * navigator.userAgent object by setting this string. Set to null to use the
- * browser object instead.
- * @param {?string=} opt_userAgent The User-Agent override.
- */
-goog.labs.userAgent.util.setUserAgent = function(opt_userAgent) {
-  goog.labs.userAgent.util.userAgent_ =
-      opt_userAgent || goog.labs.userAgent.util.getNativeUserAgentString_();
-};
-
-
-/**
- * @return {string} The user agent string.
- */
-goog.labs.userAgent.util.getUserAgent = function() {
-  return goog.labs.userAgent.util.userAgent_;
-};
-
-
-/**
- * @param {string} str
- * @return {boolean} Whether the user agent contains the given string.
- */
-goog.labs.userAgent.util.matchUserAgent = function(str) {
-  var userAgent = goog.labs.userAgent.util.getUserAgent();
-  return goog.string.internal.contains(userAgent, str);
-};
-
-
-/**
- * @param {string} str
- * @return {boolean} Whether the user agent contains the given string, ignoring
- *     case.
- */
-goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
-  var userAgent = goog.labs.userAgent.util.getUserAgent();
-  return goog.string.internal.caseInsensitiveContains(userAgent, str);
-};
-
-
-/**
- * Parses the user agent into tuples for each section.
- * @param {string} userAgent
- * @return {!Array<!Array<string>>} Tuples of key, version, and the contents
- *     of the parenthetical.
- */
-goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
-  // Matches each section of a user agent string.
-  // Example UA:
-  // Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us)
-  // AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405
-  // This has three version tuples: Mozilla, AppleWebKit, and Mobile.
-
-  var versionRegExp = new RegExp(
-      // Key. Note that a key may have a space.
-      // (i.e. 'Mobile Safari' in 'Mobile Safari/5.0')
-      '(\\w[\\w ]+)' +
-
-          '/' +                // slash
-          '([^\\s]+)' +        // version (i.e. '5.0b')
-          '\\s*' +             // whitespace
-          '(?:\\((.*?)\\))?',  // parenthetical info. parentheses not matched.
-      'g');
-
-  var data = [];
-  var match;
-
-  // Iterate and collect the version tuples.  Each iteration will be the
-  // next regex match.
-  while (match = versionRegExp.exec(userAgent)) {
-    data.push([
-      match[1],  // key
-      match[2],  // value
-      // || undefined as this is not undefined in IE7 and IE8
-      match[3] || undefined  // info
-    ]);
-  }
-
-  return data;
-};
-
 //third_party/javascript/closure/debug/error.js
 /**
  * @license
@@ -7717,6 +7178,601 @@ goog.array.concatMap = function(arr, f, opt_obj) {
   return goog.array.concat.apply([], goog.array.map(arr, f, opt_obj));
 };
 
+//third_party/javascript/closure/dom/htmlelement.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+goog.provide('goog.dom.HtmlElement');
+
+
+
+/**
+ * This subclass of HTMLElement is used when only a HTMLElement is possible and
+ * not any of its subclasses. Normally, a type can refer to an instance of
+ * itself or an instance of any subtype. More concretely, if HTMLElement is used
+ * then the compiler must assume that it might still be e.g. HTMLScriptElement.
+ * With this, the type check knows that it couldn't be any special element.
+ *
+ * @constructor
+ * @extends {HTMLElement}
+ */
+goog.dom.HtmlElement = function() {};
+
+//third_party/javascript/closure/dom/tagname.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Defines the goog.dom.TagName class. Its constants enumerate
+ * all HTML tag names specified in either the W3C HTML 4.01 index of elements
+ * or the HTML5.1 specification.
+ *
+ * References:
+ * https://www.w3.org/TR/html401/index/elements.html
+ * https://www.w3.org/TR/html51/dom.html#elements
+ */
+goog.provide('goog.dom.TagName');
+
+goog.require('goog.dom.HtmlElement');
+
+
+/**
+ * A tag name with the type of the element stored in the generic.
+ * @param {string} tagName
+ * @constructor
+ * @template T
+ */
+goog.dom.TagName = function(tagName) {
+  /** @private {string} */
+  this.tagName_ = tagName;
+};
+
+
+/**
+ * Returns the tag name.
+ * @return {string}
+ * @override
+ */
+goog.dom.TagName.prototype.toString = function() {
+  return this.tagName_;
+};
+
+
+// Closure Compiler unconditionally converts the following constants to their
+// string value (goog.dom.TagName.A -> 'A'). These are the consequences:
+// 1. Don't add any members or static members to goog.dom.TagName as they
+//    couldn't be accessed after this optimization.
+// 2. Keep the constant name and its string value the same:
+//    goog.dom.TagName.X = new goog.dom.TagName('Y');
+//    is converted to 'X', not 'Y'.
+
+
+/** @type {!goog.dom.TagName<!HTMLAnchorElement>} */
+goog.dom.TagName.A = new goog.dom.TagName('A');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ABBR = new goog.dom.TagName('ABBR');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ACRONYM = new goog.dom.TagName('ACRONYM');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ADDRESS = new goog.dom.TagName('ADDRESS');
+
+
+/** @type {!goog.dom.TagName<!HTMLAppletElement>} */
+goog.dom.TagName.APPLET = new goog.dom.TagName('APPLET');
+
+
+/** @type {!goog.dom.TagName<!HTMLAreaElement>} */
+goog.dom.TagName.AREA = new goog.dom.TagName('AREA');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ARTICLE = new goog.dom.TagName('ARTICLE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.ASIDE = new goog.dom.TagName('ASIDE');
+
+
+/** @type {!goog.dom.TagName<!HTMLAudioElement>} */
+goog.dom.TagName.AUDIO = new goog.dom.TagName('AUDIO');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.B = new goog.dom.TagName('B');
+
+
+/** @type {!goog.dom.TagName<!HTMLBaseElement>} */
+goog.dom.TagName.BASE = new goog.dom.TagName('BASE');
+
+
+/** @type {!goog.dom.TagName<!HTMLBaseFontElement>} */
+goog.dom.TagName.BASEFONT = new goog.dom.TagName('BASEFONT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.BDI = new goog.dom.TagName('BDI');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.BDO = new goog.dom.TagName('BDO');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.BIG = new goog.dom.TagName('BIG');
+
+
+/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
+goog.dom.TagName.BLOCKQUOTE = new goog.dom.TagName('BLOCKQUOTE');
+
+
+/** @type {!goog.dom.TagName<!HTMLBodyElement>} */
+goog.dom.TagName.BODY = new goog.dom.TagName('BODY');
+
+
+/** @type {!goog.dom.TagName<!HTMLBRElement>} */
+goog.dom.TagName.BR = new goog.dom.TagName('BR');
+
+
+/** @type {!goog.dom.TagName<!HTMLButtonElement>} */
+goog.dom.TagName.BUTTON = new goog.dom.TagName('BUTTON');
+
+
+/** @type {!goog.dom.TagName<!HTMLCanvasElement>} */
+goog.dom.TagName.CANVAS = new goog.dom.TagName('CANVAS');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableCaptionElement>} */
+goog.dom.TagName.CAPTION = new goog.dom.TagName('CAPTION');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.CENTER = new goog.dom.TagName('CENTER');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.CITE = new goog.dom.TagName('CITE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.CODE = new goog.dom.TagName('CODE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
+goog.dom.TagName.COL = new goog.dom.TagName('COL');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
+goog.dom.TagName.COLGROUP = new goog.dom.TagName('COLGROUP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.COMMAND = new goog.dom.TagName('COMMAND');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DATA = new goog.dom.TagName('DATA');
+
+
+/** @type {!goog.dom.TagName<!HTMLDataListElement>} */
+goog.dom.TagName.DATALIST = new goog.dom.TagName('DATALIST');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DD = new goog.dom.TagName('DD');
+
+
+/** @type {!goog.dom.TagName<!HTMLModElement>} */
+goog.dom.TagName.DEL = new goog.dom.TagName('DEL');
+
+
+/** @type {!goog.dom.TagName<!HTMLDetailsElement>} */
+goog.dom.TagName.DETAILS = new goog.dom.TagName('DETAILS');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DFN = new goog.dom.TagName('DFN');
+
+
+/** @type {!goog.dom.TagName<!HTMLDialogElement>} */
+goog.dom.TagName.DIALOG = new goog.dom.TagName('DIALOG');
+
+
+/** @type {!goog.dom.TagName<!HTMLDirectoryElement>} */
+goog.dom.TagName.DIR = new goog.dom.TagName('DIR');
+
+
+/** @type {!goog.dom.TagName<!HTMLDivElement>} */
+goog.dom.TagName.DIV = new goog.dom.TagName('DIV');
+
+
+/** @type {!goog.dom.TagName<!HTMLDListElement>} */
+goog.dom.TagName.DL = new goog.dom.TagName('DL');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.DT = new goog.dom.TagName('DT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.EM = new goog.dom.TagName('EM');
+
+
+/** @type {!goog.dom.TagName<!HTMLEmbedElement>} */
+goog.dom.TagName.EMBED = new goog.dom.TagName('EMBED');
+
+
+/** @type {!goog.dom.TagName<!HTMLFieldSetElement>} */
+goog.dom.TagName.FIELDSET = new goog.dom.TagName('FIELDSET');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.FIGCAPTION = new goog.dom.TagName('FIGCAPTION');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.FIGURE = new goog.dom.TagName('FIGURE');
+
+
+/** @type {!goog.dom.TagName<!HTMLFontElement>} */
+goog.dom.TagName.FONT = new goog.dom.TagName('FONT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.FOOTER = new goog.dom.TagName('FOOTER');
+
+
+/** @type {!goog.dom.TagName<!HTMLFormElement>} */
+goog.dom.TagName.FORM = new goog.dom.TagName('FORM');
+
+
+/** @type {!goog.dom.TagName<!HTMLFrameElement>} */
+goog.dom.TagName.FRAME = new goog.dom.TagName('FRAME');
+
+
+/** @type {!goog.dom.TagName<!HTMLFrameSetElement>} */
+goog.dom.TagName.FRAMESET = new goog.dom.TagName('FRAMESET');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H1 = new goog.dom.TagName('H1');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H2 = new goog.dom.TagName('H2');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H3 = new goog.dom.TagName('H3');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H4 = new goog.dom.TagName('H4');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H5 = new goog.dom.TagName('H5');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
+goog.dom.TagName.H6 = new goog.dom.TagName('H6');
+
+
+/** @type {!goog.dom.TagName<!HTMLHeadElement>} */
+goog.dom.TagName.HEAD = new goog.dom.TagName('HEAD');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.HEADER = new goog.dom.TagName('HEADER');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.HGROUP = new goog.dom.TagName('HGROUP');
+
+
+/** @type {!goog.dom.TagName<!HTMLHRElement>} */
+goog.dom.TagName.HR = new goog.dom.TagName('HR');
+
+
+/** @type {!goog.dom.TagName<!HTMLHtmlElement>} */
+goog.dom.TagName.HTML = new goog.dom.TagName('HTML');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.I = new goog.dom.TagName('I');
+
+
+/** @type {!goog.dom.TagName<!HTMLIFrameElement>} */
+goog.dom.TagName.IFRAME = new goog.dom.TagName('IFRAME');
+
+
+/** @type {!goog.dom.TagName<!HTMLImageElement>} */
+goog.dom.TagName.IMG = new goog.dom.TagName('IMG');
+
+
+/** @type {!goog.dom.TagName<!HTMLInputElement>} */
+goog.dom.TagName.INPUT = new goog.dom.TagName('INPUT');
+
+
+/** @type {!goog.dom.TagName<!HTMLModElement>} */
+goog.dom.TagName.INS = new goog.dom.TagName('INS');
+
+
+/** @type {!goog.dom.TagName<!HTMLIsIndexElement>} */
+goog.dom.TagName.ISINDEX = new goog.dom.TagName('ISINDEX');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.KBD = new goog.dom.TagName('KBD');
+
+
+// HTMLKeygenElement is deprecated.
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.KEYGEN = new goog.dom.TagName('KEYGEN');
+
+
+/** @type {!goog.dom.TagName<!HTMLLabelElement>} */
+goog.dom.TagName.LABEL = new goog.dom.TagName('LABEL');
+
+
+/** @type {!goog.dom.TagName<!HTMLLegendElement>} */
+goog.dom.TagName.LEGEND = new goog.dom.TagName('LEGEND');
+
+
+/** @type {!goog.dom.TagName<!HTMLLIElement>} */
+goog.dom.TagName.LI = new goog.dom.TagName('LI');
+
+
+/** @type {!goog.dom.TagName<!HTMLLinkElement>} */
+goog.dom.TagName.LINK = new goog.dom.TagName('LINK');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.MAIN = new goog.dom.TagName('MAIN');
+
+
+/** @type {!goog.dom.TagName<!HTMLMapElement>} */
+goog.dom.TagName.MAP = new goog.dom.TagName('MAP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.MARK = new goog.dom.TagName('MARK');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.MATH = new goog.dom.TagName('MATH');
+
+
+/** @type {!goog.dom.TagName<!HTMLMenuElement>} */
+goog.dom.TagName.MENU = new goog.dom.TagName('MENU');
+
+
+/** @type {!goog.dom.TagName<!HTMLMenuItemElement>} */
+goog.dom.TagName.MENUITEM = new goog.dom.TagName('MENUITEM');
+
+
+/** @type {!goog.dom.TagName<!HTMLMetaElement>} */
+goog.dom.TagName.META = new goog.dom.TagName('META');
+
+
+/** @type {!goog.dom.TagName<!HTMLMeterElement>} */
+goog.dom.TagName.METER = new goog.dom.TagName('METER');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.NAV = new goog.dom.TagName('NAV');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.NOFRAMES = new goog.dom.TagName('NOFRAMES');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.NOSCRIPT = new goog.dom.TagName('NOSCRIPT');
+
+
+/** @type {!goog.dom.TagName<!HTMLObjectElement>} */
+goog.dom.TagName.OBJECT = new goog.dom.TagName('OBJECT');
+
+
+/** @type {!goog.dom.TagName<!HTMLOListElement>} */
+goog.dom.TagName.OL = new goog.dom.TagName('OL');
+
+
+/** @type {!goog.dom.TagName<!HTMLOptGroupElement>} */
+goog.dom.TagName.OPTGROUP = new goog.dom.TagName('OPTGROUP');
+
+
+/** @type {!goog.dom.TagName<!HTMLOptionElement>} */
+goog.dom.TagName.OPTION = new goog.dom.TagName('OPTION');
+
+
+/** @type {!goog.dom.TagName<!HTMLOutputElement>} */
+goog.dom.TagName.OUTPUT = new goog.dom.TagName('OUTPUT');
+
+
+/** @type {!goog.dom.TagName<!HTMLParagraphElement>} */
+goog.dom.TagName.P = new goog.dom.TagName('P');
+
+
+/** @type {!goog.dom.TagName<!HTMLParamElement>} */
+goog.dom.TagName.PARAM = new goog.dom.TagName('PARAM');
+
+
+/** @type {!goog.dom.TagName<!HTMLPictureElement>} */
+goog.dom.TagName.PICTURE = new goog.dom.TagName('PICTURE');
+
+
+/** @type {!goog.dom.TagName<!HTMLPreElement>} */
+goog.dom.TagName.PRE = new goog.dom.TagName('PRE');
+
+
+/** @type {!goog.dom.TagName<!HTMLProgressElement>} */
+goog.dom.TagName.PROGRESS = new goog.dom.TagName('PROGRESS');
+
+
+/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
+goog.dom.TagName.Q = new goog.dom.TagName('Q');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RP = new goog.dom.TagName('RP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RT = new goog.dom.TagName('RT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RTC = new goog.dom.TagName('RTC');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.RUBY = new goog.dom.TagName('RUBY');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.S = new goog.dom.TagName('S');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SAMP = new goog.dom.TagName('SAMP');
+
+
+/** @type {!goog.dom.TagName<!HTMLScriptElement>} */
+goog.dom.TagName.SCRIPT = new goog.dom.TagName('SCRIPT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SECTION = new goog.dom.TagName('SECTION');
+
+
+/** @type {!goog.dom.TagName<!HTMLSelectElement>} */
+goog.dom.TagName.SELECT = new goog.dom.TagName('SELECT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SMALL = new goog.dom.TagName('SMALL');
+
+
+/** @type {!goog.dom.TagName<!HTMLSourceElement>} */
+goog.dom.TagName.SOURCE = new goog.dom.TagName('SOURCE');
+
+
+/** @type {!goog.dom.TagName<!HTMLSpanElement>} */
+goog.dom.TagName.SPAN = new goog.dom.TagName('SPAN');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.STRIKE = new goog.dom.TagName('STRIKE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.STRONG = new goog.dom.TagName('STRONG');
+
+
+/** @type {!goog.dom.TagName<!HTMLStyleElement>} */
+goog.dom.TagName.STYLE = new goog.dom.TagName('STYLE');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SUB = new goog.dom.TagName('SUB');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SUMMARY = new goog.dom.TagName('SUMMARY');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SUP = new goog.dom.TagName('SUP');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.SVG = new goog.dom.TagName('SVG');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableElement>} */
+goog.dom.TagName.TABLE = new goog.dom.TagName('TABLE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
+goog.dom.TagName.TBODY = new goog.dom.TagName('TBODY');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
+goog.dom.TagName.TD = new goog.dom.TagName('TD');
+
+
+/** @type {!goog.dom.TagName<!HTMLTemplateElement>} */
+goog.dom.TagName.TEMPLATE = new goog.dom.TagName('TEMPLATE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTextAreaElement>} */
+goog.dom.TagName.TEXTAREA = new goog.dom.TagName('TEXTAREA');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
+goog.dom.TagName.TFOOT = new goog.dom.TagName('TFOOT');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
+goog.dom.TagName.TH = new goog.dom.TagName('TH');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
+goog.dom.TagName.THEAD = new goog.dom.TagName('THEAD');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.TIME = new goog.dom.TagName('TIME');
+
+
+/** @type {!goog.dom.TagName<!HTMLTitleElement>} */
+goog.dom.TagName.TITLE = new goog.dom.TagName('TITLE');
+
+
+/** @type {!goog.dom.TagName<!HTMLTableRowElement>} */
+goog.dom.TagName.TR = new goog.dom.TagName('TR');
+
+
+/** @type {!goog.dom.TagName<!HTMLTrackElement>} */
+goog.dom.TagName.TRACK = new goog.dom.TagName('TRACK');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.TT = new goog.dom.TagName('TT');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.U = new goog.dom.TagName('U');
+
+
+/** @type {!goog.dom.TagName<!HTMLUListElement>} */
+goog.dom.TagName.UL = new goog.dom.TagName('UL');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.VAR = new goog.dom.TagName('VAR');
+
+
+/** @type {!goog.dom.TagName<!HTMLVideoElement>} */
+goog.dom.TagName.VIDEO = new goog.dom.TagName('VIDEO');
+
+
+/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
+goog.dom.TagName.WBR = new goog.dom.TagName('WBR');
+
 //third_party/javascript/closure/object/object.js
 /**
  * @license
@@ -8484,982 +8540,6 @@ goog.object.getSuperClass = function(constructor) {
   var proto = Object.getPrototypeOf(constructor.prototype);
   return proto && proto.constructor;
 };
-
-//javascript/closure/labs/useragent/browser.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Closure user agent detection (Browser).
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For more information on rendering engine, platform, or device see the other
- * sub-namespaces in goog.labs.userAgent, goog.labs.userAgent.platform,
- * goog.labs.userAgent.device respectively.)
- */
-
-goog.provide('goog.labs.userAgent.browser');
-
-goog.require('goog.array');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.object');
-goog.require('goog.string.internal');
-
-
-// TODO(nnaze): Refactor to remove excessive exclusion logic in matching
-// functions.
-
-
-/**
- * @return {boolean} Whether the user's browser is Opera.  Note: Chromium
- *     based Opera (Opera 15+) is detected as Chrome to avoid unnecessary
- *     special casing.
- * @private
- */
-goog.labs.userAgent.browser.matchOpera_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Opera');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is IE.
- * @private
- */
-goog.labs.userAgent.browser.matchIE_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
-      goog.labs.userAgent.util.matchUserAgent('MSIE');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Edge. This refers to EdgeHTML
- * based Edge.
- * @private
- */
-goog.labs.userAgent.browser.matchEdgeHtml_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Edge');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Chromium based Edge.
- * @private
- */
-goog.labs.userAgent.browser.matchEdgeChromium_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Edg/');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Chromium based Opera.
- * @private
- */
-goog.labs.userAgent.browser.matchOperaChromium_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('OPR');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Firefox.
- * @private
- */
-goog.labs.userAgent.browser.matchFirefox_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Firefox') ||
-      goog.labs.userAgent.util.matchUserAgent('FxiOS');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Safari.
- * @private
- */
-goog.labs.userAgent.browser.matchSafari_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Safari') &&
-      !(goog.labs.userAgent.browser.matchChrome_() ||
-        goog.labs.userAgent.browser.matchCoast_() ||
-        goog.labs.userAgent.browser.matchOpera_() ||
-        goog.labs.userAgent.browser.matchEdgeHtml_() ||
-        goog.labs.userAgent.browser.matchEdgeChromium_() ||
-        goog.labs.userAgent.browser.matchOperaChromium_() ||
-        goog.labs.userAgent.browser.matchFirefox_() ||
-        goog.labs.userAgent.browser.isSilk() ||
-        goog.labs.userAgent.util.matchUserAgent('Android'));
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
- *     iOS browser).
- * @private
- */
-goog.labs.userAgent.browser.matchCoast_ = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Coast');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is iOS Webview.
- * @private
- */
-goog.labs.userAgent.browser.matchIosWebview_ = function() {
-  // iOS Webview does not show up as Chrome or Safari. Also check for Opera's
-  // WebKit-based iOS browser, Coast.
-  return (goog.labs.userAgent.util.matchUserAgent('iPad') ||
-          goog.labs.userAgent.util.matchUserAgent('iPhone')) &&
-      !goog.labs.userAgent.browser.matchSafari_() &&
-      !goog.labs.userAgent.browser.matchChrome_() &&
-      !goog.labs.userAgent.browser.matchCoast_() &&
-      !goog.labs.userAgent.browser.matchFirefox_() &&
-      goog.labs.userAgent.util.matchUserAgent('AppleWebKit');
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is any Chromium browser. This
- * returns true for Chrome, Opera 15+, and Edge Chromium.
- * @private
- */
-goog.labs.userAgent.browser.matchChrome_ = function() {
-  return (goog.labs.userAgent.util.matchUserAgent('Chrome') ||
-          goog.labs.userAgent.util.matchUserAgent('CriOS')) &&
-      !goog.labs.userAgent.browser.matchEdgeHtml_();
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is the Android browser.
- * @private
- */
-goog.labs.userAgent.browser.matchAndroidBrowser_ = function() {
-  // Android can appear in the user agent string for Chrome on Android.
-  // This is not the Android standalone browser if it does.
-  return goog.labs.userAgent.util.matchUserAgent('Android') &&
-      !(goog.labs.userAgent.browser.isChrome() ||
-        goog.labs.userAgent.browser.isFirefox() ||
-        goog.labs.userAgent.browser.isOpera() ||
-        goog.labs.userAgent.browser.isSilk());
-};
-
-
-/**
- * @return {boolean} Whether the user's browser is Opera.
- */
-goog.labs.userAgent.browser.isOpera = goog.labs.userAgent.browser.matchOpera_;
-
-
-/**
- * @return {boolean} Whether the user's browser is IE.
- */
-goog.labs.userAgent.browser.isIE = goog.labs.userAgent.browser.matchIE_;
-
-
-/**
- * @return {boolean} Whether the user's browser is EdgeHTML based Edge.
- */
-goog.labs.userAgent.browser.isEdge = goog.labs.userAgent.browser.matchEdgeHtml_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Chromium based Edge.
- */
-goog.labs.userAgent.browser.isEdgeChromium =
-    goog.labs.userAgent.browser.matchEdgeChromium_;
-
-/**
- * @return {boolean} Whether the user's browser is Chromium based Opera.
- */
-goog.labs.userAgent.browser.isOperaChromium =
-    goog.labs.userAgent.browser.matchOperaChromium_;
-
-/**
- * @return {boolean} Whether the user's browser is Firefox.
- */
-goog.labs.userAgent.browser.isFirefox =
-    goog.labs.userAgent.browser.matchFirefox_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Safari.
- */
-goog.labs.userAgent.browser.isSafari = goog.labs.userAgent.browser.matchSafari_;
-
-
-/**
- * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
- *     iOS browser).
- */
-goog.labs.userAgent.browser.isCoast = goog.labs.userAgent.browser.matchCoast_;
-
-
-/**
- * @return {boolean} Whether the user's browser is iOS Webview.
- */
-goog.labs.userAgent.browser.isIosWebview =
-    goog.labs.userAgent.browser.matchIosWebview_;
-
-
-/**
- * @return {boolean} Whether the user's browser is any Chromium based browser (
- * Chrome, Blink-based Opera (15+) and Edge Chromium).
- */
-goog.labs.userAgent.browser.isChrome = goog.labs.userAgent.browser.matchChrome_;
-
-
-/**
- * @return {boolean} Whether the user's browser is the Android browser.
- */
-goog.labs.userAgent.browser.isAndroidBrowser =
-    goog.labs.userAgent.browser.matchAndroidBrowser_;
-
-
-/**
- * For more information, see:
- * http://docs.aws.amazon.com/silk/latest/developerguide/user-agent.html
- * @return {boolean} Whether the user's browser is Silk.
- */
-goog.labs.userAgent.browser.isSilk = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Silk');
-};
-
-
-/**
- * @return {string} The browser version or empty string if version cannot be
- *     determined. Note that for Internet Explorer, this returns the version of
- *     the browser, not the version of the rendering engine. (IE 8 in
- *     compatibility mode will return 8.0 rather than 7.0. To determine the
- *     rendering engine version, look at document.documentMode instead. See
- *     http://msdn.microsoft.com/en-us/library/cc196988(v=vs.85).aspx for more
- *     details.)
- */
-goog.labs.userAgent.browser.getVersion = function() {
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  // Special case IE since IE's version is inside the parenthesis and
-  // without the '/'.
-  if (goog.labs.userAgent.browser.isIE()) {
-    return goog.labs.userAgent.browser.getIEVersion_(userAgentString);
-  }
-
-  var versionTuples =
-      goog.labs.userAgent.util.extractVersionTuples(userAgentString);
-
-  // Construct a map for easy lookup.
-  var versionMap = {};
-  goog.array.forEach(versionTuples, function(tuple) {
-    // Note that the tuple is of length three, but we only care about the
-    // first two.
-    var key = tuple[0];
-    var value = tuple[1];
-    versionMap[key] = value;
-  });
-
-  var versionMapHasKey = goog.partial(goog.object.containsKey, versionMap);
-
-  // Gives the value with the first key it finds, otherwise empty string.
-  function lookUpValueWithKeys(keys) {
-    var key = goog.array.find(keys, versionMapHasKey);
-    return versionMap[key] || '';
-  }
-
-  // Check Opera before Chrome since Opera 15+ has "Chrome" in the string.
-  // See
-  // http://my.opera.com/ODIN/blog/2013/07/15/opera-user-agent-strings-opera-15-and-beyond
-  if (goog.labs.userAgent.browser.isOpera()) {
-    // Opera 10 has Version/10.0 but Opera/9.8, so look for "Version" first.
-    // Opera uses 'OPR' for more recent UAs.
-    return lookUpValueWithKeys(['Version', 'Opera']);
-  }
-
-  // Check Edge before Chrome since it has Chrome in the string.
-  if (goog.labs.userAgent.browser.isEdge()) {
-    return lookUpValueWithKeys(['Edge']);
-  }
-
-  // Check Chromium Edge before Chrome since it has Chrome in the string.
-  if (goog.labs.userAgent.browser.isEdgeChromium()) {
-    return lookUpValueWithKeys(['Edg']);
-  }
-
-  if (goog.labs.userAgent.browser.isChrome()) {
-    return lookUpValueWithKeys(['Chrome', 'CriOS', 'HeadlessChrome']);
-  }
-
-  // Usually products browser versions are in the third tuple after "Mozilla"
-  // and the engine.
-  var tuple = versionTuples[2];
-  return tuple && tuple[1] || '';
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the browser version is higher or the same as the
- *     given version.
- */
-goog.labs.userAgent.browser.isVersionOrHigher = function(version) {
-  return goog.string.internal.compareVersions(
-             goog.labs.userAgent.browser.getVersion(), version) >= 0;
-};
-
-
-/**
- * Determines IE version. More information:
- * http://msdn.microsoft.com/en-us/library/ie/bg182625(v=vs.85).aspx#uaString
- * http://msdn.microsoft.com/en-us/library/hh869301(v=vs.85).aspx
- * http://blogs.msdn.com/b/ie/archive/2010/03/23/introducing-ie9-s-user-agent-string.aspx
- * http://blogs.msdn.com/b/ie/archive/2009/01/09/the-internet-explorer-8-user-agent-string-updated-edition.aspx
- *
- * @param {string} userAgent the User-Agent.
- * @return {string}
- * @private
- */
-goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
-  // IE11 may identify itself as MSIE 9.0 or MSIE 10.0 due to an IE 11 upgrade
-  // bug. Example UA:
-  // Mozilla/5.0 (MSIE 9.0; Windows NT 6.1; WOW64; Trident/7.0; rv:11.0)
-  // like Gecko.
-  // See http://www.whatismybrowser.com/developers/unknown-user-agent-fragments.
-  var rv = /rv: *([\d\.]*)/.exec(userAgent);
-  if (rv && rv[1]) {
-    return rv[1];
-  }
-
-  var version = '';
-  var msie = /MSIE +([\d\.]+)/.exec(userAgent);
-  if (msie && msie[1]) {
-    // IE in compatibility mode usually identifies itself as MSIE 7.0; in this
-    // case, use the Trident version to determine the version of IE. For more
-    // details, see the links above.
-    var tridentVersion = /Trident\/(\d.\d)/.exec(userAgent);
-    if (msie[1] == '7.0') {
-      if (tridentVersion && tridentVersion[1]) {
-        switch (tridentVersion[1]) {
-          case '4.0':
-            version = '8.0';
-            break;
-          case '5.0':
-            version = '9.0';
-            break;
-          case '6.0':
-            version = '10.0';
-            break;
-          case '7.0':
-            version = '11.0';
-            break;
-        }
-      } else {
-        version = '7.0';
-      }
-    } else {
-      version = msie[1];
-    }
-  }
-  return version;
-};
-
-//third_party/javascript/closure/dom/htmlelement.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-goog.provide('goog.dom.HtmlElement');
-
-
-
-/**
- * This subclass of HTMLElement is used when only a HTMLElement is possible and
- * not any of its subclasses. Normally, a type can refer to an instance of
- * itself or an instance of any subtype. More concretely, if HTMLElement is used
- * then the compiler must assume that it might still be e.g. HTMLScriptElement.
- * With this, the type check knows that it couldn't be any special element.
- *
- * @constructor
- * @extends {HTMLElement}
- */
-goog.dom.HtmlElement = function() {};
-
-//third_party/javascript/closure/dom/tagname.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Defines the goog.dom.TagName class. Its constants enumerate
- * all HTML tag names specified in either the W3C HTML 4.01 index of elements
- * or the HTML5.1 specification.
- *
- * References:
- * https://www.w3.org/TR/html401/index/elements.html
- * https://www.w3.org/TR/html51/dom.html#elements
- */
-goog.provide('goog.dom.TagName');
-
-goog.require('goog.dom.HtmlElement');
-
-
-/**
- * A tag name with the type of the element stored in the generic.
- * @param {string} tagName
- * @constructor
- * @template T
- */
-goog.dom.TagName = function(tagName) {
-  /** @private {string} */
-  this.tagName_ = tagName;
-};
-
-
-/**
- * Returns the tag name.
- * @return {string}
- * @override
- */
-goog.dom.TagName.prototype.toString = function() {
-  return this.tagName_;
-};
-
-
-// Closure Compiler unconditionally converts the following constants to their
-// string value (goog.dom.TagName.A -> 'A'). These are the consequences:
-// 1. Don't add any members or static members to goog.dom.TagName as they
-//    couldn't be accessed after this optimization.
-// 2. Keep the constant name and its string value the same:
-//    goog.dom.TagName.X = new goog.dom.TagName('Y');
-//    is converted to 'X', not 'Y'.
-
-
-/** @type {!goog.dom.TagName<!HTMLAnchorElement>} */
-goog.dom.TagName.A = new goog.dom.TagName('A');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ABBR = new goog.dom.TagName('ABBR');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ACRONYM = new goog.dom.TagName('ACRONYM');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ADDRESS = new goog.dom.TagName('ADDRESS');
-
-
-/** @type {!goog.dom.TagName<!HTMLAppletElement>} */
-goog.dom.TagName.APPLET = new goog.dom.TagName('APPLET');
-
-
-/** @type {!goog.dom.TagName<!HTMLAreaElement>} */
-goog.dom.TagName.AREA = new goog.dom.TagName('AREA');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ARTICLE = new goog.dom.TagName('ARTICLE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.ASIDE = new goog.dom.TagName('ASIDE');
-
-
-/** @type {!goog.dom.TagName<!HTMLAudioElement>} */
-goog.dom.TagName.AUDIO = new goog.dom.TagName('AUDIO');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.B = new goog.dom.TagName('B');
-
-
-/** @type {!goog.dom.TagName<!HTMLBaseElement>} */
-goog.dom.TagName.BASE = new goog.dom.TagName('BASE');
-
-
-/** @type {!goog.dom.TagName<!HTMLBaseFontElement>} */
-goog.dom.TagName.BASEFONT = new goog.dom.TagName('BASEFONT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.BDI = new goog.dom.TagName('BDI');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.BDO = new goog.dom.TagName('BDO');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.BIG = new goog.dom.TagName('BIG');
-
-
-/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
-goog.dom.TagName.BLOCKQUOTE = new goog.dom.TagName('BLOCKQUOTE');
-
-
-/** @type {!goog.dom.TagName<!HTMLBodyElement>} */
-goog.dom.TagName.BODY = new goog.dom.TagName('BODY');
-
-
-/** @type {!goog.dom.TagName<!HTMLBRElement>} */
-goog.dom.TagName.BR = new goog.dom.TagName('BR');
-
-
-/** @type {!goog.dom.TagName<!HTMLButtonElement>} */
-goog.dom.TagName.BUTTON = new goog.dom.TagName('BUTTON');
-
-
-/** @type {!goog.dom.TagName<!HTMLCanvasElement>} */
-goog.dom.TagName.CANVAS = new goog.dom.TagName('CANVAS');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableCaptionElement>} */
-goog.dom.TagName.CAPTION = new goog.dom.TagName('CAPTION');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.CENTER = new goog.dom.TagName('CENTER');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.CITE = new goog.dom.TagName('CITE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.CODE = new goog.dom.TagName('CODE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
-goog.dom.TagName.COL = new goog.dom.TagName('COL');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableColElement>} */
-goog.dom.TagName.COLGROUP = new goog.dom.TagName('COLGROUP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.COMMAND = new goog.dom.TagName('COMMAND');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DATA = new goog.dom.TagName('DATA');
-
-
-/** @type {!goog.dom.TagName<!HTMLDataListElement>} */
-goog.dom.TagName.DATALIST = new goog.dom.TagName('DATALIST');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DD = new goog.dom.TagName('DD');
-
-
-/** @type {!goog.dom.TagName<!HTMLModElement>} */
-goog.dom.TagName.DEL = new goog.dom.TagName('DEL');
-
-
-/** @type {!goog.dom.TagName<!HTMLDetailsElement>} */
-goog.dom.TagName.DETAILS = new goog.dom.TagName('DETAILS');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DFN = new goog.dom.TagName('DFN');
-
-
-/** @type {!goog.dom.TagName<!HTMLDialogElement>} */
-goog.dom.TagName.DIALOG = new goog.dom.TagName('DIALOG');
-
-
-/** @type {!goog.dom.TagName<!HTMLDirectoryElement>} */
-goog.dom.TagName.DIR = new goog.dom.TagName('DIR');
-
-
-/** @type {!goog.dom.TagName<!HTMLDivElement>} */
-goog.dom.TagName.DIV = new goog.dom.TagName('DIV');
-
-
-/** @type {!goog.dom.TagName<!HTMLDListElement>} */
-goog.dom.TagName.DL = new goog.dom.TagName('DL');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.DT = new goog.dom.TagName('DT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.EM = new goog.dom.TagName('EM');
-
-
-/** @type {!goog.dom.TagName<!HTMLEmbedElement>} */
-goog.dom.TagName.EMBED = new goog.dom.TagName('EMBED');
-
-
-/** @type {!goog.dom.TagName<!HTMLFieldSetElement>} */
-goog.dom.TagName.FIELDSET = new goog.dom.TagName('FIELDSET');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.FIGCAPTION = new goog.dom.TagName('FIGCAPTION');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.FIGURE = new goog.dom.TagName('FIGURE');
-
-
-/** @type {!goog.dom.TagName<!HTMLFontElement>} */
-goog.dom.TagName.FONT = new goog.dom.TagName('FONT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.FOOTER = new goog.dom.TagName('FOOTER');
-
-
-/** @type {!goog.dom.TagName<!HTMLFormElement>} */
-goog.dom.TagName.FORM = new goog.dom.TagName('FORM');
-
-
-/** @type {!goog.dom.TagName<!HTMLFrameElement>} */
-goog.dom.TagName.FRAME = new goog.dom.TagName('FRAME');
-
-
-/** @type {!goog.dom.TagName<!HTMLFrameSetElement>} */
-goog.dom.TagName.FRAMESET = new goog.dom.TagName('FRAMESET');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H1 = new goog.dom.TagName('H1');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H2 = new goog.dom.TagName('H2');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H3 = new goog.dom.TagName('H3');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H4 = new goog.dom.TagName('H4');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H5 = new goog.dom.TagName('H5');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadingElement>} */
-goog.dom.TagName.H6 = new goog.dom.TagName('H6');
-
-
-/** @type {!goog.dom.TagName<!HTMLHeadElement>} */
-goog.dom.TagName.HEAD = new goog.dom.TagName('HEAD');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.HEADER = new goog.dom.TagName('HEADER');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.HGROUP = new goog.dom.TagName('HGROUP');
-
-
-/** @type {!goog.dom.TagName<!HTMLHRElement>} */
-goog.dom.TagName.HR = new goog.dom.TagName('HR');
-
-
-/** @type {!goog.dom.TagName<!HTMLHtmlElement>} */
-goog.dom.TagName.HTML = new goog.dom.TagName('HTML');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.I = new goog.dom.TagName('I');
-
-
-/** @type {!goog.dom.TagName<!HTMLIFrameElement>} */
-goog.dom.TagName.IFRAME = new goog.dom.TagName('IFRAME');
-
-
-/** @type {!goog.dom.TagName<!HTMLImageElement>} */
-goog.dom.TagName.IMG = new goog.dom.TagName('IMG');
-
-
-/** @type {!goog.dom.TagName<!HTMLInputElement>} */
-goog.dom.TagName.INPUT = new goog.dom.TagName('INPUT');
-
-
-/** @type {!goog.dom.TagName<!HTMLModElement>} */
-goog.dom.TagName.INS = new goog.dom.TagName('INS');
-
-
-/** @type {!goog.dom.TagName<!HTMLIsIndexElement>} */
-goog.dom.TagName.ISINDEX = new goog.dom.TagName('ISINDEX');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.KBD = new goog.dom.TagName('KBD');
-
-
-// HTMLKeygenElement is deprecated.
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.KEYGEN = new goog.dom.TagName('KEYGEN');
-
-
-/** @type {!goog.dom.TagName<!HTMLLabelElement>} */
-goog.dom.TagName.LABEL = new goog.dom.TagName('LABEL');
-
-
-/** @type {!goog.dom.TagName<!HTMLLegendElement>} */
-goog.dom.TagName.LEGEND = new goog.dom.TagName('LEGEND');
-
-
-/** @type {!goog.dom.TagName<!HTMLLIElement>} */
-goog.dom.TagName.LI = new goog.dom.TagName('LI');
-
-
-/** @type {!goog.dom.TagName<!HTMLLinkElement>} */
-goog.dom.TagName.LINK = new goog.dom.TagName('LINK');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.MAIN = new goog.dom.TagName('MAIN');
-
-
-/** @type {!goog.dom.TagName<!HTMLMapElement>} */
-goog.dom.TagName.MAP = new goog.dom.TagName('MAP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.MARK = new goog.dom.TagName('MARK');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.MATH = new goog.dom.TagName('MATH');
-
-
-/** @type {!goog.dom.TagName<!HTMLMenuElement>} */
-goog.dom.TagName.MENU = new goog.dom.TagName('MENU');
-
-
-/** @type {!goog.dom.TagName<!HTMLMenuItemElement>} */
-goog.dom.TagName.MENUITEM = new goog.dom.TagName('MENUITEM');
-
-
-/** @type {!goog.dom.TagName<!HTMLMetaElement>} */
-goog.dom.TagName.META = new goog.dom.TagName('META');
-
-
-/** @type {!goog.dom.TagName<!HTMLMeterElement>} */
-goog.dom.TagName.METER = new goog.dom.TagName('METER');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.NAV = new goog.dom.TagName('NAV');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.NOFRAMES = new goog.dom.TagName('NOFRAMES');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.NOSCRIPT = new goog.dom.TagName('NOSCRIPT');
-
-
-/** @type {!goog.dom.TagName<!HTMLObjectElement>} */
-goog.dom.TagName.OBJECT = new goog.dom.TagName('OBJECT');
-
-
-/** @type {!goog.dom.TagName<!HTMLOListElement>} */
-goog.dom.TagName.OL = new goog.dom.TagName('OL');
-
-
-/** @type {!goog.dom.TagName<!HTMLOptGroupElement>} */
-goog.dom.TagName.OPTGROUP = new goog.dom.TagName('OPTGROUP');
-
-
-/** @type {!goog.dom.TagName<!HTMLOptionElement>} */
-goog.dom.TagName.OPTION = new goog.dom.TagName('OPTION');
-
-
-/** @type {!goog.dom.TagName<!HTMLOutputElement>} */
-goog.dom.TagName.OUTPUT = new goog.dom.TagName('OUTPUT');
-
-
-/** @type {!goog.dom.TagName<!HTMLParagraphElement>} */
-goog.dom.TagName.P = new goog.dom.TagName('P');
-
-
-/** @type {!goog.dom.TagName<!HTMLParamElement>} */
-goog.dom.TagName.PARAM = new goog.dom.TagName('PARAM');
-
-
-/** @type {!goog.dom.TagName<!HTMLPictureElement>} */
-goog.dom.TagName.PICTURE = new goog.dom.TagName('PICTURE');
-
-
-/** @type {!goog.dom.TagName<!HTMLPreElement>} */
-goog.dom.TagName.PRE = new goog.dom.TagName('PRE');
-
-
-/** @type {!goog.dom.TagName<!HTMLProgressElement>} */
-goog.dom.TagName.PROGRESS = new goog.dom.TagName('PROGRESS');
-
-
-/** @type {!goog.dom.TagName<!HTMLQuoteElement>} */
-goog.dom.TagName.Q = new goog.dom.TagName('Q');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RP = new goog.dom.TagName('RP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RT = new goog.dom.TagName('RT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RTC = new goog.dom.TagName('RTC');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.RUBY = new goog.dom.TagName('RUBY');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.S = new goog.dom.TagName('S');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SAMP = new goog.dom.TagName('SAMP');
-
-
-/** @type {!goog.dom.TagName<!HTMLScriptElement>} */
-goog.dom.TagName.SCRIPT = new goog.dom.TagName('SCRIPT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SECTION = new goog.dom.TagName('SECTION');
-
-
-/** @type {!goog.dom.TagName<!HTMLSelectElement>} */
-goog.dom.TagName.SELECT = new goog.dom.TagName('SELECT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SMALL = new goog.dom.TagName('SMALL');
-
-
-/** @type {!goog.dom.TagName<!HTMLSourceElement>} */
-goog.dom.TagName.SOURCE = new goog.dom.TagName('SOURCE');
-
-
-/** @type {!goog.dom.TagName<!HTMLSpanElement>} */
-goog.dom.TagName.SPAN = new goog.dom.TagName('SPAN');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.STRIKE = new goog.dom.TagName('STRIKE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.STRONG = new goog.dom.TagName('STRONG');
-
-
-/** @type {!goog.dom.TagName<!HTMLStyleElement>} */
-goog.dom.TagName.STYLE = new goog.dom.TagName('STYLE');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SUB = new goog.dom.TagName('SUB');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SUMMARY = new goog.dom.TagName('SUMMARY');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SUP = new goog.dom.TagName('SUP');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.SVG = new goog.dom.TagName('SVG');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableElement>} */
-goog.dom.TagName.TABLE = new goog.dom.TagName('TABLE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
-goog.dom.TagName.TBODY = new goog.dom.TagName('TBODY');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
-goog.dom.TagName.TD = new goog.dom.TagName('TD');
-
-
-/** @type {!goog.dom.TagName<!HTMLTemplateElement>} */
-goog.dom.TagName.TEMPLATE = new goog.dom.TagName('TEMPLATE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTextAreaElement>} */
-goog.dom.TagName.TEXTAREA = new goog.dom.TagName('TEXTAREA');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
-goog.dom.TagName.TFOOT = new goog.dom.TagName('TFOOT');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableCellElement>} */
-goog.dom.TagName.TH = new goog.dom.TagName('TH');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableSectionElement>} */
-goog.dom.TagName.THEAD = new goog.dom.TagName('THEAD');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.TIME = new goog.dom.TagName('TIME');
-
-
-/** @type {!goog.dom.TagName<!HTMLTitleElement>} */
-goog.dom.TagName.TITLE = new goog.dom.TagName('TITLE');
-
-
-/** @type {!goog.dom.TagName<!HTMLTableRowElement>} */
-goog.dom.TagName.TR = new goog.dom.TagName('TR');
-
-
-/** @type {!goog.dom.TagName<!HTMLTrackElement>} */
-goog.dom.TagName.TRACK = new goog.dom.TagName('TRACK');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.TT = new goog.dom.TagName('TT');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.U = new goog.dom.TagName('U');
-
-
-/** @type {!goog.dom.TagName<!HTMLUListElement>} */
-goog.dom.TagName.UL = new goog.dom.TagName('UL');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.VAR = new goog.dom.TagName('VAR');
-
-
-/** @type {!goog.dom.TagName<!HTMLVideoElement>} */
-goog.dom.TagName.VIDEO = new goog.dom.TagName('VIDEO');
-
-
-/** @type {!goog.dom.TagName<!goog.dom.HtmlElement>} */
-goog.dom.TagName.WBR = new goog.dom.TagName('WBR');
 
 //third_party/javascript/closure/dom/tags.js
 /**
@@ -10753,6 +9833,391 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(
  * @const
  */
 goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
+
+//third_party/javascript/closure/string/internal.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview String functions called from Closure packages that couldn't
+ * depend on each other. Outside Closure, use goog.string function which
+ * delegate to these.
+ * @visibility {//javascript/closure:__pkg__}
+ * @visibility {//javascript/closure/bin/sizetests:__pkg__}
+ * @visibility {//javascript/closure/dom:__pkg__}
+ * @visibility {//javascript/closure/html:__pkg__}
+ * @visibility {//javascript/closure/labs/useragent:__pkg__}
+ */
+
+
+goog.provide('goog.string.internal');
+
+
+/**
+ * Fast prefix-checker.
+ * @param {string} str The string to check.
+ * @param {string} prefix A string to look for at the start of `str`.
+ * @return {boolean} True if `str` begins with `prefix`.
+ * @see goog.string.startsWith
+ */
+goog.string.internal.startsWith = function(str, prefix) {
+  return str.lastIndexOf(prefix, 0) == 0;
+};
+
+
+/**
+ * Fast suffix-checker.
+ * @param {string} str The string to check.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix`.
+ * @see goog.string.endsWith
+ */
+goog.string.internal.endsWith = function(str, suffix) {
+  const l = str.length - suffix.length;
+  return l >= 0 && str.indexOf(suffix, l) == l;
+};
+
+
+/**
+ * Case-insensitive prefix-checker.
+ * @param {string} str The string to check.
+ * @param {string} prefix  A string to look for at the end of `str`.
+ * @return {boolean} True if `str` begins with `prefix` (ignoring
+ *     case).
+ * @see goog.string.caseInsensitiveStartsWith
+ */
+goog.string.internal.caseInsensitiveStartsWith = function(str, prefix) {
+  return goog.string.internal.caseInsensitiveCompare(
+             prefix, str.substr(0, prefix.length)) == 0;
+};
+
+
+/**
+ * Case-insensitive suffix-checker.
+ * @param {string} str The string to check.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix` (ignoring
+ *     case).
+ * @see goog.string.caseInsensitiveEndsWith
+ */
+goog.string.internal.caseInsensitiveEndsWith = function(str, suffix) {
+  return (
+      goog.string.internal.caseInsensitiveCompare(
+          suffix, str.substr(str.length - suffix.length, suffix.length)) == 0);
+};
+
+
+/**
+ * Case-insensitive equality checker.
+ * @param {string} str1 First string to check.
+ * @param {string} str2 Second string to check.
+ * @return {boolean} True if `str1` and `str2` are the same string,
+ *     ignoring case.
+ * @see goog.string.caseInsensitiveEquals
+ */
+goog.string.internal.caseInsensitiveEquals = function(str1, str2) {
+  return str1.toLowerCase() == str2.toLowerCase();
+};
+
+
+/**
+ * Checks if a string is empty or contains only whitespaces.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty or whitespace only.
+ * @see goog.string.isEmptyOrWhitespace
+ */
+goog.string.internal.isEmptyOrWhitespace = function(str) {
+  // testing length == 0 first is actually slower in all browsers (about the
+  // same in Opera).
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return /^[\s\xa0]*$/.test(str);
+};
+
+
+/**
+ * Trims white spaces to the left and right of a string.
+ * @param {string} str The string to trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.internal.trim =
+    (goog.TRUSTED_SITE && String.prototype.trim) ? function(str) {
+      return str.trim();
+    } : function(str) {
+      // Since IE doesn't include non-breaking-space (0xa0) in their \s
+      // character class (as required by section 7.2 of the ECMAScript spec),
+      // we explicitly include it in the regexp to enforce consistent
+      // cross-browser behavior.
+      // NOTE: We don't use String#replace because it might have side effects
+      // causing this function to not compile to 0 bytes.
+      return /^[\s\xa0]*([\s\S]*?)[\s\xa0]*$/.exec(str)[1];
+    };
+
+
+/**
+ * A string comparator that ignores case.
+ * -1 = str1 less than str2
+ *  0 = str1 equals str2
+ *  1 = str1 greater than str2
+ *
+ * @param {string} str1 The string to compare.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} The comparator result, as described above.
+ * @see goog.string.caseInsensitiveCompare
+ */
+goog.string.internal.caseInsensitiveCompare = function(str1, str2) {
+  const test1 = String(str1).toLowerCase();
+  const test2 = String(str2).toLowerCase();
+
+  if (test1 < test2) {
+    return -1;
+  } else if (test1 == test2) {
+    return 0;
+  } else {
+    return 1;
+  }
+};
+
+
+/**
+ * Converts \n to <br>s or <br />s.
+ * @param {string} str The string in which to convert newlines.
+ * @param {boolean=} opt_xml Whether to use XML compatible tags.
+ * @return {string} A copy of `str` with converted newlines.
+ * @see goog.string.newLineToBr
+ */
+goog.string.internal.newLineToBr = function(str, opt_xml) {
+  return str.replace(/(\r\n|\r|\n)/g, opt_xml ? '<br />' : '<br>');
+};
+
+
+/**
+ * Escapes double quote '"' and single quote '\'' characters in addition to
+ * '&', '<', and '>' so that a string can be included in an HTML tag attribute
+ * value within double or single quotes.
+ * @param {string} str string to be escaped.
+ * @param {boolean=} opt_isLikelyToContainHtmlChars
+ * @return {string} An escaped copy of `str`.
+ * @see goog.string.htmlEscape
+ */
+goog.string.internal.htmlEscape = function(
+    str, opt_isLikelyToContainHtmlChars) {
+  if (opt_isLikelyToContainHtmlChars) {
+    str = str.replace(goog.string.internal.AMP_RE_, '&amp;')
+              .replace(goog.string.internal.LT_RE_, '&lt;')
+              .replace(goog.string.internal.GT_RE_, '&gt;')
+              .replace(goog.string.internal.QUOT_RE_, '&quot;')
+              .replace(goog.string.internal.SINGLE_QUOTE_RE_, '&#39;')
+              .replace(goog.string.internal.NULL_RE_, '&#0;');
+    return str;
+
+  } else {
+    // quick test helps in the case when there are no chars to replace, in
+    // worst case this makes barely a difference to the time taken
+    if (!goog.string.internal.ALL_RE_.test(str)) return str;
+
+    // str.indexOf is faster than regex.test in this case
+    if (str.indexOf('&') != -1) {
+      str = str.replace(goog.string.internal.AMP_RE_, '&amp;');
+    }
+    if (str.indexOf('<') != -1) {
+      str = str.replace(goog.string.internal.LT_RE_, '&lt;');
+    }
+    if (str.indexOf('>') != -1) {
+      str = str.replace(goog.string.internal.GT_RE_, '&gt;');
+    }
+    if (str.indexOf('"') != -1) {
+      str = str.replace(goog.string.internal.QUOT_RE_, '&quot;');
+    }
+    if (str.indexOf('\'') != -1) {
+      str = str.replace(goog.string.internal.SINGLE_QUOTE_RE_, '&#39;');
+    }
+    if (str.indexOf('\x00') != -1) {
+      str = str.replace(goog.string.internal.NULL_RE_, '&#0;');
+    }
+    return str;
+  }
+};
+
+
+/**
+ * Regular expression that matches an ampersand, for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.AMP_RE_ = /&/g;
+
+
+/**
+ * Regular expression that matches a less than sign, for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.LT_RE_ = /</g;
+
+
+/**
+ * Regular expression that matches a greater than sign, for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.GT_RE_ = />/g;
+
+
+/**
+ * Regular expression that matches a double quote, for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.QUOT_RE_ = /"/g;
+
+
+/**
+ * Regular expression that matches a single quote, for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.SINGLE_QUOTE_RE_ = /'/g;
+
+
+/**
+ * Regular expression that matches null character, for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.NULL_RE_ = /\x00/g;
+
+
+/**
+ * Regular expression that matches any character that needs to be escaped.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.internal.ALL_RE_ = /[\x00&<>"']/;
+
+
+/**
+ * Do escaping of whitespace to preserve spatial formatting. We use character
+ * entity #160 to make it safer for xml.
+ * @param {string} str The string in which to escape whitespace.
+ * @param {boolean=} opt_xml Whether to use XML compatible tags.
+ * @return {string} An escaped copy of `str`.
+ * @see goog.string.whitespaceEscape
+ */
+goog.string.internal.whitespaceEscape = function(str, opt_xml) {
+  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
+  return goog.string.internal.newLineToBr(
+      str.replace(/  /g, ' &#160;'), opt_xml);
+};
+
+
+/**
+ * Determines whether a string contains a substring.
+ * @param {string} str The string to search.
+ * @param {string} subString The substring to search for.
+ * @return {boolean} Whether `str` contains `subString`.
+ * @see goog.string.contains
+ */
+goog.string.internal.contains = function(str, subString) {
+  return str.indexOf(subString) != -1;
+};
+
+
+/**
+ * Determines whether a string contains a substring, ignoring case.
+ * @param {string} str The string to search.
+ * @param {string} subString The substring to search for.
+ * @return {boolean} Whether `str` contains `subString`.
+ * @see goog.string.caseInsensitiveContains
+ */
+goog.string.internal.caseInsensitiveContains = function(str, subString) {
+  return goog.string.internal.contains(
+      str.toLowerCase(), subString.toLowerCase());
+};
+
+
+/**
+ * Compares two version numbers.
+ *
+ * @param {string|number} version1 Version of first item.
+ * @param {string|number} version2 Version of second item.
+ *
+ * @return {number}  1 if `version1` is higher.
+ *                   0 if arguments are equal.
+ *                  -1 if `version2` is higher.
+ * @see goog.string.compareVersions
+ */
+goog.string.internal.compareVersions = function(version1, version2) {
+  let order = 0;
+  // Trim leading and trailing whitespace and split the versions into
+  // subversions.
+  const v1Subs = goog.string.internal.trim(String(version1)).split('.');
+  const v2Subs = goog.string.internal.trim(String(version2)).split('.');
+  const subCount = Math.max(v1Subs.length, v2Subs.length);
+
+  // Iterate over the subversions, as long as they appear to be equivalent.
+  for (let subIdx = 0; order == 0 && subIdx < subCount; subIdx++) {
+    let v1Sub = v1Subs[subIdx] || '';
+    let v2Sub = v2Subs[subIdx] || '';
+
+    do {
+      // Split the subversions into pairs of numbers and qualifiers (like 'b').
+      // Two different RegExp objects are use to make it clear the code
+      // is side-effect free
+      const v1Comp = /(\d*)(\D*)(.*)/.exec(v1Sub) || ['', '', '', ''];
+      const v2Comp = /(\d*)(\D*)(.*)/.exec(v2Sub) || ['', '', '', ''];
+      // Break if there are no more matches.
+      if (v1Comp[0].length == 0 && v2Comp[0].length == 0) {
+        break;
+      }
+
+      // Parse the numeric part of the subversion. A missing number is
+      // equivalent to 0.
+      const v1CompNum = v1Comp[1].length == 0 ? 0 : parseInt(v1Comp[1], 10);
+      const v2CompNum = v2Comp[1].length == 0 ? 0 : parseInt(v2Comp[1], 10);
+
+      // Compare the subversion components. The number has the highest
+      // precedence. Next, if the numbers are equal, a subversion without any
+      // qualifier is always higher than a subversion with any qualifier. Next,
+      // the qualifiers are compared as strings.
+      order = goog.string.internal.compareElements_(v1CompNum, v2CompNum) ||
+          goog.string.internal.compareElements_(
+              v1Comp[2].length == 0, v2Comp[2].length == 0) ||
+          goog.string.internal.compareElements_(v1Comp[2], v2Comp[2]);
+      // Stop as soon as an inequality is discovered.
+
+      v1Sub = v1Comp[3];
+      v2Sub = v2Comp[3];
+    } while (order == 0);
+  }
+
+  return order;
+};
+
+
+/**
+ * Compares elements of a version number.
+ *
+ * @param {string|number|boolean} left An element from a version number.
+ * @param {string|number|boolean} right An element from a version number.
+ *
+ * @return {number}  1 if `left` is higher.
+ *                   0 if arguments are equal.
+ *                  -1 if `right` is higher.
+ * @private
+ */
+goog.string.internal.compareElements_ = function(left, right) {
+  if (left < right) {
+    return -1;
+  } else if (left > right) {
+    return 1;
+  }
+  return 0;
+};
 
 //third_party/javascript/closure/html/safeurl.js
 /**
@@ -12431,6 +11896,525 @@ goog.html.SafeStyleSheet.prototype.initSecurityPrivateDoNotAccessOrElse_ =
 goog.html.SafeStyleSheet.EMPTY =
     goog.html.SafeStyleSheet
         .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse('');
+
+//third_party/javascript/closure/labs/useragent/util.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
+ * should not be used outside of goog.labs.userAgent.*.
+ *
+ * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
+ * @visibility {//javascript/closure/dom:__subpackages__}
+ * @visibility {//javascript/closure/style:__pkg__}
+ * @visibility {//javascript/closure/testing:__pkg__}
+ * @visibility {//javascript/closure/useragent:__subpackages__}
+ * @visibility {//testing/puppet/modules:__pkg__}
+ * @visibility {:util_legacy_users}
+ */
+
+goog.provide('goog.labs.userAgent.util');
+
+goog.require('goog.string.internal');
+
+
+/**
+ * Gets the native userAgent string from navigator if it exists.
+ * If navigator or navigator.userAgent string is missing, returns an empty
+ * string.
+ * @return {string}
+ * @private
+ */
+goog.labs.userAgent.util.getNativeUserAgentString_ = function() {
+  var navigator = goog.labs.userAgent.util.getNavigator_();
+  if (navigator) {
+    var userAgent = navigator.userAgent;
+    if (userAgent) {
+      return userAgent;
+    }
+  }
+  return '';
+};
+
+
+/**
+ * Getter for the native navigator.
+ * This is a separate function so it can be stubbed out in testing.
+ * @return {Navigator}
+ * @private
+ */
+goog.labs.userAgent.util.getNavigator_ = function() {
+  return goog.global.navigator;
+};
+
+
+/**
+ * A possible override for applications which wish to not check
+ * navigator.userAgent but use a specified value for detection instead.
+ * @private {string}
+ */
+goog.labs.userAgent.util.userAgent_ =
+    goog.labs.userAgent.util.getNativeUserAgentString_();
+
+
+/**
+ * Applications may override browser detection on the built in
+ * navigator.userAgent object by setting this string. Set to null to use the
+ * browser object instead.
+ * @param {?string=} opt_userAgent The User-Agent override.
+ */
+goog.labs.userAgent.util.setUserAgent = function(opt_userAgent) {
+  goog.labs.userAgent.util.userAgent_ =
+      opt_userAgent || goog.labs.userAgent.util.getNativeUserAgentString_();
+};
+
+
+/**
+ * @return {string} The user agent string.
+ */
+goog.labs.userAgent.util.getUserAgent = function() {
+  return goog.labs.userAgent.util.userAgent_;
+};
+
+
+/**
+ * @param {string} str
+ * @return {boolean} Whether the user agent contains the given string.
+ */
+goog.labs.userAgent.util.matchUserAgent = function(str) {
+  var userAgent = goog.labs.userAgent.util.getUserAgent();
+  return goog.string.internal.contains(userAgent, str);
+};
+
+
+/**
+ * @param {string} str
+ * @return {boolean} Whether the user agent contains the given string, ignoring
+ *     case.
+ */
+goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
+  var userAgent = goog.labs.userAgent.util.getUserAgent();
+  return goog.string.internal.caseInsensitiveContains(userAgent, str);
+};
+
+
+/**
+ * Parses the user agent into tuples for each section.
+ * @param {string} userAgent
+ * @return {!Array<!Array<string>>} Tuples of key, version, and the contents
+ *     of the parenthetical.
+ */
+goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
+  // Matches each section of a user agent string.
+  // Example UA:
+  // Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us)
+  // AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405
+  // This has three version tuples: Mozilla, AppleWebKit, and Mobile.
+
+  var versionRegExp = new RegExp(
+      // Key. Note that a key may have a space.
+      // (i.e. 'Mobile Safari' in 'Mobile Safari/5.0')
+      '(\\w[\\w ]+)' +
+
+          '/' +                // slash
+          '([^\\s]+)' +        // version (i.e. '5.0b')
+          '\\s*' +             // whitespace
+          '(?:\\((.*?)\\))?',  // parenthetical info. parentheses not matched.
+      'g');
+
+  var data = [];
+  var match;
+
+  // Iterate and collect the version tuples.  Each iteration will be the
+  // next regex match.
+  while (match = versionRegExp.exec(userAgent)) {
+    data.push([
+      match[1],  // key
+      match[2],  // value
+      // || undefined as this is not undefined in IE7 and IE8
+      match[3] || undefined  // info
+    ]);
+  }
+
+  return data;
+};
+
+//third_party/javascript/closure/labs/useragent/browser.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Closure user agent detection (Browser).
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For more information on rendering engine, platform, or device see the other
+ * sub-namespaces in goog.labs.userAgent, goog.labs.userAgent.platform,
+ * goog.labs.userAgent.device respectively.)
+ */
+
+goog.provide('goog.labs.userAgent.browser');
+
+goog.require('goog.array');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.object');
+goog.require('goog.string.internal');
+
+
+// TODO(nnaze): Refactor to remove excessive exclusion logic in matching
+// functions.
+
+
+/**
+ * @return {boolean} Whether the user's browser is Opera.  Note: Chromium
+ *     based Opera (Opera 15+) is detected as Chrome to avoid unnecessary
+ *     special casing.
+ * @private
+ */
+goog.labs.userAgent.browser.matchOpera_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Opera');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is IE.
+ * @private
+ */
+goog.labs.userAgent.browser.matchIE_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
+      goog.labs.userAgent.util.matchUserAgent('MSIE');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Edge. This refers to EdgeHTML
+ * based Edge.
+ * @private
+ */
+goog.labs.userAgent.browser.matchEdgeHtml_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Edge');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Chromium based Edge.
+ * @private
+ */
+goog.labs.userAgent.browser.matchEdgeChromium_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Edg/');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Chromium based Opera.
+ * @private
+ */
+goog.labs.userAgent.browser.matchOperaChromium_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('OPR');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Firefox.
+ * @private
+ */
+goog.labs.userAgent.browser.matchFirefox_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Firefox') ||
+      goog.labs.userAgent.util.matchUserAgent('FxiOS');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Safari.
+ * @private
+ */
+goog.labs.userAgent.browser.matchSafari_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Safari') &&
+      !(goog.labs.userAgent.browser.matchChrome_() ||
+        goog.labs.userAgent.browser.matchCoast_() ||
+        goog.labs.userAgent.browser.matchOpera_() ||
+        goog.labs.userAgent.browser.matchEdgeHtml_() ||
+        goog.labs.userAgent.browser.matchEdgeChromium_() ||
+        goog.labs.userAgent.browser.matchOperaChromium_() ||
+        goog.labs.userAgent.browser.matchFirefox_() ||
+        goog.labs.userAgent.browser.isSilk() ||
+        goog.labs.userAgent.util.matchUserAgent('Android'));
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
+ *     iOS browser).
+ * @private
+ */
+goog.labs.userAgent.browser.matchCoast_ = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Coast');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is iOS Webview.
+ * @private
+ */
+goog.labs.userAgent.browser.matchIosWebview_ = function() {
+  // iOS Webview does not show up as Chrome or Safari. Also check for Opera's
+  // WebKit-based iOS browser, Coast.
+  return (goog.labs.userAgent.util.matchUserAgent('iPad') ||
+          goog.labs.userAgent.util.matchUserAgent('iPhone')) &&
+      !goog.labs.userAgent.browser.matchSafari_() &&
+      !goog.labs.userAgent.browser.matchChrome_() &&
+      !goog.labs.userAgent.browser.matchCoast_() &&
+      !goog.labs.userAgent.browser.matchFirefox_() &&
+      goog.labs.userAgent.util.matchUserAgent('AppleWebKit');
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is any Chromium browser. This
+ * returns true for Chrome, Opera 15+, and Edge Chromium.
+ * @private
+ */
+goog.labs.userAgent.browser.matchChrome_ = function() {
+  return (goog.labs.userAgent.util.matchUserAgent('Chrome') ||
+          goog.labs.userAgent.util.matchUserAgent('CriOS')) &&
+      !goog.labs.userAgent.browser.matchEdgeHtml_();
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is the Android browser.
+ * @private
+ */
+goog.labs.userAgent.browser.matchAndroidBrowser_ = function() {
+  // Android can appear in the user agent string for Chrome on Android.
+  // This is not the Android standalone browser if it does.
+  return goog.labs.userAgent.util.matchUserAgent('Android') &&
+      !(goog.labs.userAgent.browser.isChrome() ||
+        goog.labs.userAgent.browser.isFirefox() ||
+        goog.labs.userAgent.browser.isOpera() ||
+        goog.labs.userAgent.browser.isSilk());
+};
+
+
+/**
+ * @return {boolean} Whether the user's browser is Opera.
+ */
+goog.labs.userAgent.browser.isOpera = goog.labs.userAgent.browser.matchOpera_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is IE.
+ */
+goog.labs.userAgent.browser.isIE = goog.labs.userAgent.browser.matchIE_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is EdgeHTML based Edge.
+ */
+goog.labs.userAgent.browser.isEdge = goog.labs.userAgent.browser.matchEdgeHtml_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Chromium based Edge.
+ */
+goog.labs.userAgent.browser.isEdgeChromium =
+    goog.labs.userAgent.browser.matchEdgeChromium_;
+
+/**
+ * @return {boolean} Whether the user's browser is Chromium based Opera.
+ */
+goog.labs.userAgent.browser.isOperaChromium =
+    goog.labs.userAgent.browser.matchOperaChromium_;
+
+/**
+ * @return {boolean} Whether the user's browser is Firefox.
+ */
+goog.labs.userAgent.browser.isFirefox =
+    goog.labs.userAgent.browser.matchFirefox_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Safari.
+ */
+goog.labs.userAgent.browser.isSafari = goog.labs.userAgent.browser.matchSafari_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is Coast (Opera's Webkit-based
+ *     iOS browser).
+ */
+goog.labs.userAgent.browser.isCoast = goog.labs.userAgent.browser.matchCoast_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is iOS Webview.
+ */
+goog.labs.userAgent.browser.isIosWebview =
+    goog.labs.userAgent.browser.matchIosWebview_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is any Chromium based browser (
+ * Chrome, Blink-based Opera (15+) and Edge Chromium).
+ */
+goog.labs.userAgent.browser.isChrome = goog.labs.userAgent.browser.matchChrome_;
+
+
+/**
+ * @return {boolean} Whether the user's browser is the Android browser.
+ */
+goog.labs.userAgent.browser.isAndroidBrowser =
+    goog.labs.userAgent.browser.matchAndroidBrowser_;
+
+
+/**
+ * For more information, see:
+ * http://docs.aws.amazon.com/silk/latest/developerguide/user-agent.html
+ * @return {boolean} Whether the user's browser is Silk.
+ */
+goog.labs.userAgent.browser.isSilk = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Silk');
+};
+
+
+/**
+ * @return {string} The browser version or empty string if version cannot be
+ *     determined. Note that for Internet Explorer, this returns the version of
+ *     the browser, not the version of the rendering engine. (IE 8 in
+ *     compatibility mode will return 8.0 rather than 7.0. To determine the
+ *     rendering engine version, look at document.documentMode instead. See
+ *     http://msdn.microsoft.com/en-us/library/cc196988(v=vs.85).aspx for more
+ *     details.)
+ */
+goog.labs.userAgent.browser.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  // Special case IE since IE's version is inside the parenthesis and
+  // without the '/'.
+  if (goog.labs.userAgent.browser.isIE()) {
+    return goog.labs.userAgent.browser.getIEVersion_(userAgentString);
+  }
+
+  var versionTuples =
+      goog.labs.userAgent.util.extractVersionTuples(userAgentString);
+
+  // Construct a map for easy lookup.
+  var versionMap = {};
+  goog.array.forEach(versionTuples, function(tuple) {
+    // Note that the tuple is of length three, but we only care about the
+    // first two.
+    var key = tuple[0];
+    var value = tuple[1];
+    versionMap[key] = value;
+  });
+
+  var versionMapHasKey = goog.partial(goog.object.containsKey, versionMap);
+
+  // Gives the value with the first key it finds, otherwise empty string.
+  function lookUpValueWithKeys(keys) {
+    var key = goog.array.find(keys, versionMapHasKey);
+    return versionMap[key] || '';
+  }
+
+  // Check Opera before Chrome since Opera 15+ has "Chrome" in the string.
+  // See
+  // http://my.opera.com/ODIN/blog/2013/07/15/opera-user-agent-strings-opera-15-and-beyond
+  if (goog.labs.userAgent.browser.isOpera()) {
+    // Opera 10 has Version/10.0 but Opera/9.8, so look for "Version" first.
+    // Opera uses 'OPR' for more recent UAs.
+    return lookUpValueWithKeys(['Version', 'Opera']);
+  }
+
+  // Check Edge before Chrome since it has Chrome in the string.
+  if (goog.labs.userAgent.browser.isEdge()) {
+    return lookUpValueWithKeys(['Edge']);
+  }
+
+  // Check Chromium Edge before Chrome since it has Chrome in the string.
+  if (goog.labs.userAgent.browser.isEdgeChromium()) {
+    return lookUpValueWithKeys(['Edg']);
+  }
+
+  if (goog.labs.userAgent.browser.isChrome()) {
+    return lookUpValueWithKeys(['Chrome', 'CriOS', 'HeadlessChrome']);
+  }
+
+  // Usually products browser versions are in the third tuple after "Mozilla"
+  // and the engine.
+  var tuple = versionTuples[2];
+  return tuple && tuple[1] || '';
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the browser version is higher or the same as the
+ *     given version.
+ */
+goog.labs.userAgent.browser.isVersionOrHigher = function(version) {
+  return goog.string.internal.compareVersions(
+             goog.labs.userAgent.browser.getVersion(), version) >= 0;
+};
+
+
+/**
+ * Determines IE version. More information:
+ * http://msdn.microsoft.com/en-us/library/ie/bg182625(v=vs.85).aspx#uaString
+ * http://msdn.microsoft.com/en-us/library/hh869301(v=vs.85).aspx
+ * http://blogs.msdn.com/b/ie/archive/2010/03/23/introducing-ie9-s-user-agent-string.aspx
+ * http://blogs.msdn.com/b/ie/archive/2009/01/09/the-internet-explorer-8-user-agent-string-updated-edition.aspx
+ *
+ * @param {string} userAgent the User-Agent.
+ * @return {string}
+ * @private
+ */
+goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
+  // IE11 may identify itself as MSIE 9.0 or MSIE 10.0 due to an IE 11 upgrade
+  // bug. Example UA:
+  // Mozilla/5.0 (MSIE 9.0; Windows NT 6.1; WOW64; Trident/7.0; rv:11.0)
+  // like Gecko.
+  // See http://www.whatismybrowser.com/developers/unknown-user-agent-fragments.
+  var rv = /rv: *([\d\.]*)/.exec(userAgent);
+  if (rv && rv[1]) {
+    return rv[1];
+  }
+
+  var version = '';
+  var msie = /MSIE +([\d\.]+)/.exec(userAgent);
+  if (msie && msie[1]) {
+    // IE in compatibility mode usually identifies itself as MSIE 7.0; in this
+    // case, use the Trident version to determine the version of IE. For more
+    // details, see the links above.
+    var tridentVersion = /Trident\/(\d.\d)/.exec(userAgent);
+    if (msie[1] == '7.0') {
+      if (tridentVersion && tridentVersion[1]) {
+        switch (tridentVersion[1]) {
+          case '4.0':
+            version = '8.0';
+            break;
+          case '5.0':
+            version = '9.0';
+            break;
+          case '6.0':
+            version = '10.0';
+            break;
+          case '7.0':
+            version = '11.0';
+            break;
+        }
+      } else {
+        version = '7.0';
+      }
+    } else {
+      version = msie[1];
+    }
+  }
+  return version;
+};
 
 //third_party/javascript/closure/html/safehtml.js
 /**
@@ -32425,342 +32409,6 @@ goog.i18n.NumberFormat.prototype.isCurrencyCodeBeforeValue = function() {
   return posCurrSymbol < posCurrValue;
 };
 
-//javascript/closure/labs/useragent/engine.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Closure user agent detection.
- * @see http://en.wikipedia.org/wiki/User_agent
- * For more information on browser brand, platform, or device see the other
- * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
- */
-
-goog.provide('goog.labs.userAgent.engine');
-
-goog.require('goog.array');
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.string');
-
-
-/**
- * @return {boolean} Whether the rendering engine is Presto.
- */
-goog.labs.userAgent.engine.isPresto = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Presto');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Trident.
- */
-goog.labs.userAgent.engine.isTrident = function() {
-  // IE only started including the Trident token in IE8.
-  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
-      goog.labs.userAgent.util.matchUserAgent('MSIE');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is EdgeHTML.
- */
-goog.labs.userAgent.engine.isEdge = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Edge');
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is WebKit. This will return
- * true for Chrome, Blink-based Opera (15+), Edge Chromium and Safari.
- */
-goog.labs.userAgent.engine.isWebKit = function() {
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
-      !goog.labs.userAgent.engine.isEdge();
-};
-
-
-/**
- * @return {boolean} Whether the rendering engine is Gecko.
- */
-goog.labs.userAgent.engine.isGecko = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
-      !goog.labs.userAgent.engine.isWebKit() &&
-      !goog.labs.userAgent.engine.isTrident() &&
-      !goog.labs.userAgent.engine.isEdge();
-};
-
-
-/**
- * @return {string} The rendering engine's version or empty string if version
- *     can't be determined.
- */
-goog.labs.userAgent.engine.getVersion = function() {
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  if (userAgentString) {
-    var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
-
-    var engineTuple = goog.labs.userAgent.engine.getEngineTuple_(tuples);
-    if (engineTuple) {
-      // In Gecko, the version string is either in the browser info or the
-      // Firefox version.  See Gecko user agent string reference:
-      // http://goo.gl/mULqa
-      if (engineTuple[0] == 'Gecko') {
-        return goog.labs.userAgent.engine.getVersionForKey_(tuples, 'Firefox');
-      }
-
-      return engineTuple[1];
-    }
-
-    // MSIE has only one version identifier, and the Trident version is
-    // specified in the parenthetical. IE Edge is covered in the engine tuple
-    // detection.
-    var browserTuple = tuples[0];
-    var info;
-    if (browserTuple && (info = browserTuple[2])) {
-      var match = /Trident\/([^\s;]+)/.exec(info);
-      if (match) {
-        return match[1];
-      }
-    }
-  }
-  return '';
-};
-
-
-/**
- * @param {!Array<!Array<string>>} tuples Extracted version tuples.
- * @return {!Array<string>|undefined} The engine tuple or undefined if not
- *     found.
- * @private
- */
-goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
-  if (!goog.labs.userAgent.engine.isEdge()) {
-    return tuples[1];
-  }
-  for (var i = 0; i < tuples.length; i++) {
-    var tuple = tuples[i];
-    if (tuple[0] == 'Edge') {
-      return tuple;
-    }
-  }
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the rendering engine version is higher or the same
- *     as the given version.
- */
-goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
-  return goog.string.compareVersions(
-             goog.labs.userAgent.engine.getVersion(), version) >= 0;
-};
-
-
-/**
- * @param {!Array<!Array<string>>} tuples Version tuples.
- * @param {string} key The key to look for.
- * @return {string} The version string of the given key, if present.
- *     Otherwise, the empty string.
- * @private
- */
-goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
-  // TODO(nnaze): Move to util if useful elsewhere.
-
-  var pair = goog.array.find(tuples, function(pair) { return key == pair[0]; });
-
-  return pair && pair[1] || '';
-};
-
-//javascript/closure/labs/useragent/platform.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Closure user agent platform detection.
- * @see <a href="http://www.useragentstring.com/">User agent strings</a>
- * For more information on browser brand, rendering engine, or device see the
- * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
- * respectively).
- */
-
-goog.provide('goog.labs.userAgent.platform');
-
-goog.require('goog.labs.userAgent.util');
-goog.require('goog.string');
-
-
-/**
- * @return {boolean} Whether the platform is Android.
- */
-goog.labs.userAgent.platform.isAndroid = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Android');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPod.
- */
-goog.labs.userAgent.platform.isIpod = function() {
-  return goog.labs.userAgent.util.matchUserAgent('iPod');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPhone.
- */
-goog.labs.userAgent.platform.isIphone = function() {
-  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
-      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
-      !goog.labs.userAgent.util.matchUserAgent('iPad');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iPad.
- */
-goog.labs.userAgent.platform.isIpad = function() {
-  return goog.labs.userAgent.util.matchUserAgent('iPad');
-};
-
-
-/**
- * @return {boolean} Whether the platform is iOS.
- */
-goog.labs.userAgent.platform.isIos = function() {
-  return goog.labs.userAgent.platform.isIphone() ||
-      goog.labs.userAgent.platform.isIpad() ||
-      goog.labs.userAgent.platform.isIpod();
-};
-
-
-/**
- * @return {boolean} Whether the platform is Mac.
- */
-goog.labs.userAgent.platform.isMacintosh = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
-};
-
-
-/**
- * Note: ChromeOS is not considered to be Linux as it does not report itself
- * as Linux in the user agent string.
- * @return {boolean} Whether the platform is Linux.
- */
-goog.labs.userAgent.platform.isLinux = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Linux');
-};
-
-
-/**
- * @return {boolean} Whether the platform is Windows.
- */
-goog.labs.userAgent.platform.isWindows = function() {
-  return goog.labs.userAgent.util.matchUserAgent('Windows');
-};
-
-
-/**
- * @return {boolean} Whether the platform is ChromeOS.
- */
-goog.labs.userAgent.platform.isChromeOS = function() {
-  return goog.labs.userAgent.util.matchUserAgent('CrOS');
-};
-
-/**
- * @return {boolean} Whether the platform is Chromecast.
- */
-goog.labs.userAgent.platform.isChromecast = function() {
-  return goog.labs.userAgent.util.matchUserAgent('CrKey');
-};
-
-/**
- * @return {boolean} Whether the platform is KaiOS.
- */
-goog.labs.userAgent.platform.isKaiOS = function() {
-  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
-};
-
-/**
- * The version of the platform. We only determine the version for Windows,
- * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
- * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
- * version 0.0.
- *
- * @return {string} The platform version or empty string if version cannot be
- *     determined.
- */
-goog.labs.userAgent.platform.getVersion = function() {
-  var userAgentString = goog.labs.userAgent.util.getUserAgent();
-  var version = '', re;
-  if (goog.labs.userAgent.platform.isWindows()) {
-    re = /Windows (?:NT|Phone) ([0-9.]+)/;
-    var match = re.exec(userAgentString);
-    if (match) {
-      version = match[1];
-    } else {
-      version = '0.0';
-    }
-  } else if (goog.labs.userAgent.platform.isIos()) {
-    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
-    var match = re.exec(userAgentString);
-    // Report the version as x.y.z and not x_y_z
-    version = match && match[1].replace(/_/g, '.');
-  } else if (goog.labs.userAgent.platform.isMacintosh()) {
-    re = /Mac OS X ([0-9_.]+)/;
-    var match = re.exec(userAgentString);
-    // Note: some old versions of Camino do not report an OSX version.
-    // Default to 10.
-    version = match ? match[1].replace(/_/g, '.') : '10';
-  } else if (goog.labs.userAgent.platform.isKaiOS()) {
-    re = /(?:KaiOS)\/(\S+)/i;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  } else if (goog.labs.userAgent.platform.isAndroid()) {
-    re = /Android\s+([^\);]+)(\)|;)/;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  } else if (goog.labs.userAgent.platform.isChromeOS()) {
-    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
-    var match = re.exec(userAgentString);
-    version = match && match[1];
-  }
-  return version || '';
-};
-
-
-/**
- * @param {string|number} version The version to check.
- * @return {boolean} Whether the browser version is higher or the same as the
- *     given version.
- */
-goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
-  return goog.string.compareVersions(
-             goog.labs.userAgent.platform.getVersion(), version) >= 0;
-};
-
 //third_party/javascript/closure/iter/iter.js
 /**
  * @license
@@ -38366,6 +38014,326 @@ goog.debug.errorcontext.getErrorContext = function(err) {
 // able to use ES6.
 /** @private @const {string} */
 goog.debug.errorcontext.CONTEXT_KEY_ = '__closure__error__context__984382';
+
+//third_party/javascript/closure/labs/useragent/engine.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Closure user agent detection.
+ * @see http://en.wikipedia.org/wiki/User_agent
+ * For more information on browser brand, platform, or device see the other
+ * sub-namespaces in goog.labs.userAgent (browser, platform, and device).
+ */
+
+goog.provide('goog.labs.userAgent.engine');
+
+goog.require('goog.array');
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Presto.
+ */
+goog.labs.userAgent.engine.isPresto = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Presto');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Trident.
+ */
+goog.labs.userAgent.engine.isTrident = function() {
+  // IE only started including the Trident token in IE8.
+  return goog.labs.userAgent.util.matchUserAgent('Trident') ||
+      goog.labs.userAgent.util.matchUserAgent('MSIE');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is EdgeHTML.
+ */
+goog.labs.userAgent.engine.isEdge = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Edge');
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is WebKit. This will return
+ * true for Chrome, Blink-based Opera (15+), Edge Chromium and Safari.
+ */
+goog.labs.userAgent.engine.isWebKit = function() {
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
+      !goog.labs.userAgent.engine.isEdge();
+};
+
+
+/**
+ * @return {boolean} Whether the rendering engine is Gecko.
+ */
+goog.labs.userAgent.engine.isGecko = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
+      !goog.labs.userAgent.engine.isWebKit() &&
+      !goog.labs.userAgent.engine.isTrident() &&
+      !goog.labs.userAgent.engine.isEdge();
+};
+
+
+/**
+ * @return {string} The rendering engine's version or empty string if version
+ *     can't be determined.
+ */
+goog.labs.userAgent.engine.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  if (userAgentString) {
+    var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
+
+    var engineTuple = goog.labs.userAgent.engine.getEngineTuple_(tuples);
+    if (engineTuple) {
+      // In Gecko, the version string is either in the browser info or the
+      // Firefox version.  See Gecko user agent string reference:
+      // http://goo.gl/mULqa
+      if (engineTuple[0] == 'Gecko') {
+        return goog.labs.userAgent.engine.getVersionForKey_(tuples, 'Firefox');
+      }
+
+      return engineTuple[1];
+    }
+
+    // MSIE has only one version identifier, and the Trident version is
+    // specified in the parenthetical. IE Edge is covered in the engine tuple
+    // detection.
+    var browserTuple = tuples[0];
+    var info;
+    if (browserTuple && (info = browserTuple[2])) {
+      var match = /Trident\/([^\s;]+)/.exec(info);
+      if (match) {
+        return match[1];
+      }
+    }
+  }
+  return '';
+};
+
+
+/**
+ * @param {!Array<!Array<string>>} tuples Extracted version tuples.
+ * @return {!Array<string>|undefined} The engine tuple or undefined if not
+ *     found.
+ * @private
+ */
+goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
+  if (!goog.labs.userAgent.engine.isEdge()) {
+    return tuples[1];
+  }
+  for (var i = 0; i < tuples.length; i++) {
+    var tuple = tuples[i];
+    if (tuple[0] == 'Edge') {
+      return tuple;
+    }
+  }
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the rendering engine version is higher or the same
+ *     as the given version.
+ */
+goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
+  return goog.string.compareVersions(
+             goog.labs.userAgent.engine.getVersion(), version) >= 0;
+};
+
+
+/**
+ * @param {!Array<!Array<string>>} tuples Version tuples.
+ * @param {string} key The key to look for.
+ * @return {string} The version string of the given key, if present.
+ *     Otherwise, the empty string.
+ * @private
+ */
+goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
+  // TODO(nnaze): Move to util if useful elsewhere.
+
+  var pair = goog.array.find(tuples, function(pair) { return key == pair[0]; });
+
+  return pair && pair[1] || '';
+};
+
+//third_party/javascript/closure/labs/useragent/platform.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Closure user agent platform detection.
+ * @see <a href="http://www.useragentstring.com/">User agent strings</a>
+ * For more information on browser brand, rendering engine, or device see the
+ * other sub-namespaces in goog.labs.userAgent (browser, engine, and device
+ * respectively).
+ */
+
+goog.provide('goog.labs.userAgent.platform');
+
+goog.require('goog.labs.userAgent.util');
+goog.require('goog.string');
+
+
+/**
+ * @return {boolean} Whether the platform is Android.
+ */
+goog.labs.userAgent.platform.isAndroid = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Android');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPod.
+ */
+goog.labs.userAgent.platform.isIpod = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPod');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPhone.
+ */
+goog.labs.userAgent.platform.isIphone = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPod') &&
+      !goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iPad.
+ */
+goog.labs.userAgent.platform.isIpad = function() {
+  return goog.labs.userAgent.util.matchUserAgent('iPad');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is iOS.
+ */
+goog.labs.userAgent.platform.isIos = function() {
+  return goog.labs.userAgent.platform.isIphone() ||
+      goog.labs.userAgent.platform.isIpad() ||
+      goog.labs.userAgent.platform.isIpod();
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Mac.
+ */
+goog.labs.userAgent.platform.isMacintosh = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Macintosh');
+};
+
+
+/**
+ * Note: ChromeOS is not considered to be Linux as it does not report itself
+ * as Linux in the user agent string.
+ * @return {boolean} Whether the platform is Linux.
+ */
+goog.labs.userAgent.platform.isLinux = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Linux');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is Windows.
+ */
+goog.labs.userAgent.platform.isWindows = function() {
+  return goog.labs.userAgent.util.matchUserAgent('Windows');
+};
+
+
+/**
+ * @return {boolean} Whether the platform is ChromeOS.
+ */
+goog.labs.userAgent.platform.isChromeOS = function() {
+  return goog.labs.userAgent.util.matchUserAgent('CrOS');
+};
+
+/**
+ * @return {boolean} Whether the platform is Chromecast.
+ */
+goog.labs.userAgent.platform.isChromecast = function() {
+  return goog.labs.userAgent.util.matchUserAgent('CrKey');
+};
+
+/**
+ * @return {boolean} Whether the platform is KaiOS.
+ */
+goog.labs.userAgent.platform.isKaiOS = function() {
+  return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
+};
+
+/**
+ * The version of the platform. We only determine the version for Windows,
+ * Mac, and Chrome OS. It doesn't make much sense on Linux. For Windows, we only
+ * look at the NT version. Non-NT-based versions (e.g. 95, 98, etc.) are given
+ * version 0.0.
+ *
+ * @return {string} The platform version or empty string if version cannot be
+ *     determined.
+ */
+goog.labs.userAgent.platform.getVersion = function() {
+  var userAgentString = goog.labs.userAgent.util.getUserAgent();
+  var version = '', re;
+  if (goog.labs.userAgent.platform.isWindows()) {
+    re = /Windows (?:NT|Phone) ([0-9.]+)/;
+    var match = re.exec(userAgentString);
+    if (match) {
+      version = match[1];
+    } else {
+      version = '0.0';
+    }
+  } else if (goog.labs.userAgent.platform.isIos()) {
+    re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/;
+    var match = re.exec(userAgentString);
+    // Report the version as x.y.z and not x_y_z
+    version = match && match[1].replace(/_/g, '.');
+  } else if (goog.labs.userAgent.platform.isMacintosh()) {
+    re = /Mac OS X ([0-9_.]+)/;
+    var match = re.exec(userAgentString);
+    // Note: some old versions of Camino do not report an OSX version.
+    // Default to 10.
+    version = match ? match[1].replace(/_/g, '.') : '10';
+  } else if (goog.labs.userAgent.platform.isKaiOS()) {
+    re = /(?:KaiOS)\/(\S+)/i;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isAndroid()) {
+    re = /Android\s+([^\);]+)(\)|;)/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  } else if (goog.labs.userAgent.platform.isChromeOS()) {
+    re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/;
+    var match = re.exec(userAgentString);
+    version = match && match[1];
+  }
+  return version || '';
+};
+
+
+/**
+ * @param {string|number} version The version to check.
+ * @return {boolean} Whether the browser version is higher or the same as the
+ *     given version.
+ */
+goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
+  return goog.string.compareVersions(
+             goog.labs.userAgent.platform.getVersion(), version) >= 0;
+};
 
 //third_party/javascript/closure/reflect/reflect.js
 /**

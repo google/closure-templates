@@ -132,6 +132,9 @@ public final class SimplifyExprVisitorTest {
 
     assertThat("record(a:1, b:3).a").simplifiesTo("1");
     assertThat("record(a:1, b:3)?.a").simplifiesTo("1");
+
+    assertThat("null?.a").simplifiesTo("null");
+    assertThat("null?[2]").simplifiesTo("null");
   }
 
   @Test

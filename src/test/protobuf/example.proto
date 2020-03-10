@@ -76,7 +76,12 @@ message SomeExtension {
   extend ExampleExtendable {
     optional SomeExtension some_extension_field = 314159;
   }
+  extend SomeExtension {
+    optional SomeExtension recursive_extension = 1001;
+  }
   optional int32 some_extension_num = 1;
+
+  extensions 1000 to max;
 }
 
 message SomeNestedExtension {
