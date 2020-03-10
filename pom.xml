@@ -679,6 +679,23 @@
               </transformers>
             </configuration>
           </execution>
+          <execution>
+            <id>SoyToJbcSrcCompiler</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>SoyToJbcSrcCompiler</shadedClassifierName>
+              <transformers>
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToJbcSrcCompiler</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -858,6 +875,31 @@
                 </argument>
                 <argument>--outputFile</argument>
                 <argument>${soy.examples.out}/examples_extracted.xlf
+                </argument>
+                <argument>--srcs</argument>
+                <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>jbcsrc-generation-example</id>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>-jar</argument>
+                <argument>
+                  ${project.build.directory}/${project.build.finalName}-SoyToJbcSrcCompiler.jar
+                </argument>
+                <argument>--output</argument>
+                <argument>${soy.examples.out}/examples.jar</argument>
+                <argument>--outputSrcJar</argument>
+                <argument>${soy.examples.out}/examples-src.jar</argument>
+                <argument>--compileTimeGlobalsFile</argument>
+                <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
                 </argument>
                 <argument>--srcs</argument>
                 <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
