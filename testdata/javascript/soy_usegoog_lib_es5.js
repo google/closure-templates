@@ -2036,11 +2036,17 @@ goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
 goog.html.SafeScript.EMPTY = goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse("");
 goog.fs = {};
 goog.fs.url = {};
-goog.fs.url.createObjectUrl = function(blob) {
-  return goog.fs.url.getUrlObject_().createObjectURL(blob);
+goog.fs.url.createObjectUrl = function(obj) {
+  return goog.fs.url.getUrlObject_().createObjectURL(obj);
 };
 goog.fs.url.revokeObjectUrl = function(url) {
   goog.fs.url.getUrlObject_().revokeObjectURL(url);
+};
+goog.fs.url.UrlObject_ = function() {
+};
+goog.fs.url.UrlObject_.prototype.createObjectURL = function() {
+};
+goog.fs.url.UrlObject_.prototype.revokeObjectURL = function() {
 };
 goog.fs.url.getUrlObject_ = function() {
   var urlObject = goog.fs.url.findUrlObject_();
@@ -2279,6 +2285,11 @@ goog.html.SafeUrl.isSafeMimeType = function(mimeType) {
 };
 goog.html.SafeUrl.fromBlob = function(blob) {
   var url = goog.html.SafeUrl.isSafeMimeType(blob.type) ? goog.fs.url.createObjectUrl(blob) : goog.html.SafeUrl.INNOCUOUS_STRING;
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
+};
+goog.html.SafeUrl.fromMediaSource = function(mediaSource) {
+  goog.asserts.assert("MediaSource" in goog.global, "No support for MediaSource");
+  var url = mediaSource instanceof MediaSource ? goog.fs.url.createObjectUrl(mediaSource) : goog.html.SafeUrl.INNOCUOUS_STRING;
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 goog.html.DATA_URL_PATTERN_ = /^data:([^,]*);base64,[a-z0-9+\/]+=*$/i;
