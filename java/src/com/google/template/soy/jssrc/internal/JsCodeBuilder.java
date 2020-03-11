@@ -16,9 +16,9 @@
 
 package com.google.template.soy.jssrc.internal;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
@@ -163,6 +163,7 @@ public class JsCodeBuilder {
       rhs.collectRequires(this::addGoogRequire);
       append(
           VariableDeclaration.builder(currOutputVar.singleExprOrName().getText())
+              .setMutable()
               .setRhs(rhs)
               .build());
       setOutputVarInited();
@@ -196,7 +197,7 @@ public class JsCodeBuilder {
    */
   private JsCodeBuilder changeIndentHelper(int chg) {
     int newIndentDepth = indent.length() + chg * INDENT_SIZE;
-    Preconditions.checkState(newIndentDepth >= 0);
+    checkState(newIndentDepth >= 0);
     indent = Strings.repeat(" ", newIndentDepth);
     return this;
   }

@@ -78,7 +78,7 @@ public final class ConditionalExpressionBuilder {
       return ternary;
     }
     // Otherwise we need to introduce a temporary and assign to it in each branch
-    VariableDeclaration decl = codeGenerator.declarationBuilder().build();
+    VariableDeclaration decl = codeGenerator.declarationBuilder().setMutable().build();
     Expression var = decl.ref();
     ConditionalBuilder builder = null;
     for (IfThenPair<Expression> oldCondition : pairs) {

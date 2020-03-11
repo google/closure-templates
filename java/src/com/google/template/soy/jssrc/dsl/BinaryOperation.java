@@ -71,7 +71,7 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to true.
-    Expression tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
+    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
     return Composite.create(
         ImmutableList.of(Statement.ifStatement(tmp, tmp.assign(rhs).asStatement()).build()), tmp);
   }
@@ -84,7 +84,7 @@ abstract class BinaryOperation extends Operation {
     }
     // Otherwise, generate explicit short-circuiting code.
     // rhs should be evaluated only if lhs evaluates to false.
-    Expression tmp = codeGenerator.declarationBuilder().setRhs(lhs).build().ref();
+    Expression tmp = codeGenerator.declarationBuilder().setMutable().setRhs(lhs).build().ref();
     return Composite.create(
         ImmutableList.of(Statement.ifStatement(not(tmp), tmp.assign(rhs).asStatement()).build()),
         tmp);

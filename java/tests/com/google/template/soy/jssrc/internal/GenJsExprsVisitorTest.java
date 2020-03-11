@@ -105,7 +105,7 @@ public final class GenJsExprsVisitorTest {
     String soyNodeCode = JOINER.join("{@param boo : string}", "{map('a': 'b', $boo: 'c')[$boo]}");
     String expectedGenCode =
         JOINER.join(
-            "let $tmp = new Map();",
+            "const $tmp = new Map();",
             "$tmp.set(soy.$$checkNotNull('a'), 'b');",
             "$tmp.set(soy.$$checkNotNull(opt_data.boo), 'c');",
             "$tmp.get(opt_data.boo);");

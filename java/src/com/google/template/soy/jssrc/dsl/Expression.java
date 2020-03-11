@@ -371,7 +371,7 @@ public abstract class Expression extends CodeChunk {
     return PrefixUnaryOperation.create("typeof ", Operator.NOT.getPrecedence(), this);
   }
 
-  public final Expression assign(Expression rhs) {
+  public Expression assign(Expression rhs) {
     return BinaryOperation.create(
         "=",
         0, // the precedence of JS assignments is lower than any Soy operator

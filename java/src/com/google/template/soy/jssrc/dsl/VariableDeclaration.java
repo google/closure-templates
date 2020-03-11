@@ -32,7 +32,9 @@ public abstract class VariableDeclaration extends Statement {
   public static Builder builder(String name) {
     return new AutoValue_VariableDeclaration.Builder()
         .setVarName(name)
-        .setGoogRequires(ImmutableSet.of());
+        .setGoogRequires(ImmutableSet.of())
+        // All variables should be const by default
+        .setIsMutable(false);
   }
 
   abstract String varName();
@@ -44,6 +46,8 @@ public abstract class VariableDeclaration extends Statement {
   abstract JsDoc jsDoc();
 
   abstract ImmutableSet<GoogRequire> googRequires();
+
+  abstract boolean isMutable();
 
   /** Returns an {@link Expression} representing a reference to this declared variable. */
   public Expression ref() {
@@ -73,7 +77,8 @@ public abstract class VariableDeclaration extends Statement {
     if (jsDoc() != null) {
       ctx.append(jsDoc()).endLine();
     }
-    ctx.append("let ").append(varName());
+    // variables without initializing expressions cannot be const
+    ctx.append((isMutable() || rhs() == null) ? "let " : "const ").append(varName());
     if (rhs() != null) {
       ctx.append(" = ").appendOutputExpression(rhs());
     }
@@ -120,6 +125,12 @@ public abstract class VariableDeclaration extends Statement {
     }
 
     abstract Builder setGoogRequires(ImmutableSet<GoogRequire> requires);
+
+    public final Builder setMutable() {
+      return setIsMutable(true);
+    }
+
+    abstract Builder setIsMutable(boolean isConst);
 
     public abstract VariableDeclaration build();
   }

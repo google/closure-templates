@@ -234,15 +234,20 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
             .setRhs(Expression.regexLiteral(PLACEHOLDER_REGEX))
             .build();
     // The current placeholder from the regex.
-    VariableDeclaration matchVar = VariableDeclaration.builder("match_" + node.getId()).build();
+    VariableDeclaration matchVar =
+        VariableDeclaration.builder("match_" + node.getId()).setMutable().build();
     // The index of the end of the previous placeholder, where the next raw text run starts.
     VariableDeclaration lastIndexVar =
         VariableDeclaration.builder("lastIndex_" + node.getId())
+            .setMutable()
             .setRhs(Expression.number(0))
             .build();
     // A counter to increment and update the statics array.
     VariableDeclaration counter =
-        VariableDeclaration.builder("counter_" + node.getId()).setRhs(Expression.number(0)).build();
+        VariableDeclaration.builder("counter_" + node.getId())
+            .setMutable()
+            .setRhs(Expression.number(0))
+            .build();
 
     List<Statement> doBody = new ArrayList<>();
     // Execute the regex on the string to get the next matching pair.

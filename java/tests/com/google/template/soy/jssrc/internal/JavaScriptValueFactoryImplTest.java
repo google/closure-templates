@@ -49,7 +49,7 @@ public final class JavaScriptValueFactoryImplTest {
 
     Expression expr = applyFunction(opts, moduleExportFn);
 
-    assertThat(getRequires(expr)).isEqualTo("let $fooBar = goog.require('foo.bar');\n");
+    assertThat(getRequires(expr)).isEqualTo("const $fooBar = goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("$fooBar.baz.qux;");
   }
 
@@ -71,7 +71,7 @@ public final class JavaScriptValueFactoryImplTest {
 
     Expression expr = applyFunction(opts, callModuleFn);
 
-    assertThat(getRequires(expr)).isEqualTo("let $fooBar = goog.require('foo.bar');\n");
+    assertThat(getRequires(expr)).isEqualTo("const $fooBar = goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("$fooBar.baz();");
   }
 

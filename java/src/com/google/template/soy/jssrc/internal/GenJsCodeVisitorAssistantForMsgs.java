@@ -224,6 +224,7 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     // the caller.
     Expression selectedMsg =
         VariableDeclaration.builder(tmpVarName)
+            .setMutable()
             .setRhs(
                 Expression.dottedIdNoRequire("goog.getMsgWithFallback")
                     .call(primaryCodeGenInfo.googMsgVar, fallbackCodeGenInfo.googMsgVar))

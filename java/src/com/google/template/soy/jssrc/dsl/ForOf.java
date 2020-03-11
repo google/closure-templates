@@ -45,7 +45,7 @@ abstract class ForOf extends Statement {
   void doFormatInitialStatements(FormattingContext ctx) {
     ctx.appendInitialStatements(collection());
 
-    ctx.append("for (let " + localVar())
+    ctx.append("for (const " + localVar())
         .append(" of ")
         .appendOutputExpression(collection())
         .append(") ");

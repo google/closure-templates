@@ -1586,11 +1586,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           jsType.getValueCoercion(paramChunk, generator, /* hasDefault=*/ param.hasDefault());
       if (coerced != null) {
         // since we have coercion logic, dump into a temporary
-        paramChunk = generator.declarationBuilder().setRhs(coerced).build().ref();
+        paramChunk = generator.declarationBuilder().setMutable().setRhs(coerced).build().ref();
       }
       if (param.hasDefault()) {
         if (coerced == null) {
-          paramChunk = generator.declarationBuilder().setRhs(paramChunk).build().ref();
+          paramChunk = generator.declarationBuilder().setMutable().setRhs(paramChunk).build().ref();
         }
         declarations.add(
             genParamDefault(

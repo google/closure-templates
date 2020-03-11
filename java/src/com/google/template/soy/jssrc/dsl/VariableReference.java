@@ -39,6 +39,14 @@ abstract class VariableReference extends Expression {
   }
 
   @Override
+  public Expression assign(Expression rhs) {
+    if (!declaration().isMutable()) {
+      throw new IllegalStateException("Can't assign const variables");
+    }
+    return super.assign(rhs);
+  }
+
+  @Override
   public boolean isCheap() {
     return true;
   }
