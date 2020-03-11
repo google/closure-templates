@@ -57,12 +57,12 @@ public class SoyTemplateInfo {
   }
 
   /** Returns the full template name, e.g. {@code myNamespace.myTemplate}. */
-  public final String getName() {
+  public String getName() {
     return name;
   }
 
   /** Returns the partial template name (starting from the last dot), e.g. {@code .myTemplate}. */
-  public final String getPartialName() {
+  public String getPartialName() {
     String name = getName();
     return name.substring(name.lastIndexOf('.'));
   }
@@ -73,7 +73,7 @@ public class SoyTemplateInfo {
    * @deprecated Use {@link #getParamNames} or other related method.
    */
   @Deprecated
-  public final ImmutableMap<String, ParamRequisiteness> getParams() {
+  public ImmutableMap<String, ParamRequisiteness> getParams() {
     return paramMap;
   }
 
