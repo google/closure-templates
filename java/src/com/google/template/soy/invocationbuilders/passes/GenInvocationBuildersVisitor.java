@@ -25,7 +25,7 @@ import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INJECTED_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.OPTIONAL_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.REQUIRED_P;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.SET_PARAM_INTERNAL;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
@@ -33,7 +33,6 @@ import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtil
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils;
 import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
@@ -316,10 +315,20 @@ public final class GenInvocationBuildersVisitor
     }
     appendParamConstants(ilb, combinedParams);
 
+    boolean anyAccumulatorParameters =
+        nonInjectedParams.stream()
+            .flatMap(param -> param.javaTypes().stream())
+            .anyMatch(
+                javaType ->
+                    javaType instanceof RecordJavaType && ((RecordJavaType) javaType).isList());
     // Start of Foo.Builder class.
     ilb.appendLine("@CanIgnoreReturnValue");
     ilb.appendLine(
-        "public static final class Builder extends AbstractBuilder<Builder, "
+        "public static final class Builder extends "
+            + (anyAccumulatorParameters
+                ? "AbstractBuilderWithAccumulatorParameters"
+                : "AbstractBuilder")
+            + "<Builder, "
             + templateParamsClassname
             + "> {");
     ilb.appendLine();
@@ -369,7 +378,7 @@ public final class GenInvocationBuildersVisitor
     Set<String> usedNames = new LinkedHashSet<>();
     List<String> nonInjected = new ArrayList<>();
     for (ParamInfo param : params) {
-      String fieldName = BaseUtils.convertToUpperUnderscore(param.name());
+      String fieldName = param.constantFieldName();
       // Naming collisions should not occur, but guard anyway.
       if (!usedNames.add(fieldName)) {
         continue;
@@ -437,7 +446,7 @@ public final class GenInvocationBuildersVisitor
         if (types.size() == 1
             && types.get(0) instanceof RecordJavaType
             && ((RecordJavaType) types.get(0)).isList()) {
-          ilb.appendLine(String.format("%s(\"%s\");", INIT_LIST_PARAM, param.name()));
+          ilb.appendLine(String.format("%s(%s);", INIT_LIST_PARAM, param.constantFieldName()));
         }
       }
     }
@@ -512,13 +521,12 @@ public final class GenInvocationBuildersVisitor
 
   /** Writes a setter method for the given param and java type. */
   private static void writeSetter(IndentedLinesBuilder ilb, ParamInfo param, JavaType javaType) {
-    String paramName = param.name();
     String paramDescription = param.param().getDescription();
     ilb.appendLine();
     appendJavadoc(
         ilb,
         "Sets "
-            + paramName
+            + param.name()
             + (Strings.isNullOrEmpty(paramDescription) ? "." : ": " + paramDescription),
         /* forceMultiline= */ false,
         /* wrapAt100Chars= */ true);
@@ -539,7 +547,12 @@ public final class GenInvocationBuildersVisitor
       ilb.increaseIndent();
 
       String newVariableName = javaType.asInlineCast("value");
-      ilb.appendLine("return " + SET_PARAM + "(\"", paramName, "\", ", newVariableName, ");");
+      ilb.appendLine(
+          "return " + SET_PARAM_INTERNAL + "(",
+          param.constantFieldName(),
+          ", ",
+          newVariableName,
+          ");");
       ilb.decreaseIndent();
       ilb.appendLine("}");
     }
@@ -571,9 +584,10 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLineEnd(") {");
     ilb.increaseIndent();
 
-    CodeGenUtils.Member delegate = type.isList() ? ADD_TO_LIST_PARAM : SET_PARAM;
+    CodeGenUtils.Member delegate = type.isList() ? ADD_TO_LIST_PARAM : SET_PARAM_INTERNAL;
 
-    ilb.appendLineStart("return ", delegate, "(\"", param.name(), "\", " + AS_RECORD + "(");
+    ilb.appendLineStart(
+        "return ", delegate, "(", param.constantFieldName(), ", " + AS_RECORD + "(");
     int numParams = paramNames.size();
     for (int i = 0; i < numParams; i++) {
       if (i != 0) {
@@ -612,7 +626,13 @@ public final class GenInvocationBuildersVisitor
     ilb.increaseIndent();
 
     ilb.appendLine(
-        "return " + SET_PARAM + "(\"" + param.name() + "\", " + CHECK_NOT_NULL + "(future));");
+        "return "
+            + SET_PARAM_INTERNAL
+            + "("
+            + param.constantFieldName()
+            + ", "
+            + CHECK_NOT_NULL
+            + "(future));");
     ilb.decreaseIndent();
     ilb.appendLine("}");
   }

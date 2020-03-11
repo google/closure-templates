@@ -19,6 +19,7 @@ package com.google.template.soy.invocationbuilders.javatypes;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder;
+import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilderWithAccumulatorParameters;
 import com.google.template.soy.data.SoyTemplateParam;
 import com.google.template.soy.data.SoyValueConverter;
 import java.lang.reflect.Field;
@@ -35,11 +36,12 @@ public final class CodeGenUtils {
 
   public static final Member AS_MAP_OF_NUMBERS =
       MethodImpl.method(AbstractBuilder.class, "asMapOfNumbers");
-  public static final Member SET_PARAM = MethodImpl.method(AbstractBuilder.class, "setParam");
+  public static final Member SET_PARAM_INTERNAL =
+      MethodImpl.method(AbstractBuilder.class, "setParamInternal");
   public static final Member ADD_TO_LIST_PARAM =
-      MethodImpl.method(AbstractBuilder.class, "addToListParam");
+      MethodImpl.method(AbstractBuilderWithAccumulatorParameters.class, "addToListParam");
   public static final Member INIT_LIST_PARAM =
-      MethodImpl.method(AbstractBuilder.class, "initListParam");
+      MethodImpl.method(AbstractBuilderWithAccumulatorParameters.class, "initListParam");
   public static final Member CHECK_NOT_NULL =
       MethodImpl.method(Preconditions.class, "checkNotNull");
   public static final Member AS_RECORD = MethodImpl.method(AbstractBuilder.class, "asRecord");

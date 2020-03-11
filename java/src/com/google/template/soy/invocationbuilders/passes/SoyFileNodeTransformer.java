@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
@@ -214,6 +215,10 @@ public class SoyFileNodeTransformer {
 
     public String name() {
       return param().getName();
+    }
+
+    public String constantFieldName() {
+      return BaseUtils.convertToUpperUnderscore(name());
     }
 
     public String setterName() {
