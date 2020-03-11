@@ -16,6 +16,11 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -75,5 +80,51 @@ public final class SoyTemplates {
   /** Returns the name of the Soy template that this template class would render. */
   public static String getTemplateName(Class<? extends SoyTemplate> type) {
     return templateNameValue.get(type);
+  }
+
+  private static final ClassValue<ImmutableSet<SoyTemplateParam<?>>> templateParamsValue =
+      new ClassValue<ImmutableSet<SoyTemplateParam<?>>>() {
+        @Override
+        @SuppressWarnings("unchecked")
+        protected ImmutableSet<SoyTemplateParam<?>> computeValue(Class<?> type) {
+          try {
+            Field field = type.getDeclaredField("__PARAMS__");
+            field.setAccessible(true); // the field is private
+            return (ImmutableSet<SoyTemplateParam<?>>) field.get(null);
+          } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(
+                "Unexpected error while accessing the template params of " + type.getName(), e);
+          }
+        }
+      };
+
+  /** Returns the set of params of the Soy template that this template class would render. */
+  public static ImmutableSet<SoyTemplateParam<?>> getParams(Class<? extends SoyTemplate> type) {
+    return templateParamsValue.get(type);
+  }
+
+  /** Returns a {@link SoyTemplateInfo} representation of a template class. */
+  public static SoyTemplateInfo asSoyTemplateInfo(Class<? extends SoyTemplate> type) {
+    return new SoyTemplateInfoShim(type);
+  }
+
+  private static final class SoyTemplateInfoShim extends SoyTemplateInfo {
+    SoyTemplateInfoShim(Class<? extends SoyTemplate> type) {
+      super(getTemplateName(type), paramsAsMap(SoyTemplates.getParams(type)));
+    }
+
+    private static ImmutableMap<String, ParamRequisiteness> paramsAsMap(
+        ImmutableSet<SoyTemplateParam<?>> params) {
+      return params.stream()
+          .collect(
+              toImmutableMap(
+                  SoyTemplateParam::getName,
+                  p ->
+                      p.isIndirect()
+                          ? ParamRequisiteness.INDIRECT
+                          : (p.isRequired()
+                              ? ParamRequisiteness.REQUIRED
+                              : ParamRequisiteness.OPTIONAL)));
+    }
   }
 }
