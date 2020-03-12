@@ -29,6 +29,9 @@ import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendFunctionCallWithParamsOnNewLines;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeLowerCamelCase;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -55,7 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * Visitor for generating Java template parameter builders (see {@link
@@ -74,6 +76,7 @@ public final class GenInvocationBuildersVisitor
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
+  private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
   private final SoyFileNodeTransformer transformer;
 
@@ -292,11 +295,23 @@ public final class GenInvocationBuildersVisitor
                   }
                   return false;
                 })
-            .collect(Collectors.toList());
+            .collect(toList());
     List<ParamInfo> nonInjectedParams =
-        combinedParams.stream().filter(p -> !p.injected()).collect(Collectors.toList());
+        combinedParams.stream().filter(p -> !p.injected()).collect(toList());
 
     if (nonInjectedParams.stream().map(ParamInfo::param).noneMatch(Parameter::isRequired)) {
+      // Invoke the constructor directly. For these templates it could allow callers to avoid
+      // loading the builder completely.
+      ilb.appendLine(
+          "private static final "
+              + templateParamsClassname
+              + " "
+              + DEFAULT_INSTANCE_FIELD
+              + " = new "
+              + templateParamsClassname
+              + "(ImmutableMap.of());");
+      ilb.appendLine();
+
       appendJavadoc(
           ilb,
           "Creates a new instance of "
@@ -305,10 +320,9 @@ public final class GenInvocationBuildersVisitor
               + " parameters are optional.",
           false,
           true);
-      // TODO(lukes): use a static final instance instead of a new one each time?
       ilb.appendLine("public static " + templateParamsClassname + " getDefaultInstance() {");
       ilb.increaseIndent();
-      ilb.appendLine("return builder().build();");
+      ilb.appendLine("return " + DEFAULT_INSTANCE_FIELD + ";");
       ilb.decreaseIndent();
       ilb.appendLine("}");
       ilb.appendLine();
@@ -686,10 +700,7 @@ public final class GenInvocationBuildersVisitor
   /** Logs a warning if two soy files mapped to the same generated java file name. */
   private static void logWarningIfFilenamesNotUnique(ImmutableList<GeneratedFile> files) {
     ImmutableList<String> duplicateFilenames =
-        files.stream()
-            .collect(Collectors.groupingBy(GeneratedFile::fileName, Collectors.counting()))
-            .entrySet()
-            .stream()
+        files.stream().collect(groupingBy(GeneratedFile::fileName, counting())).entrySet().stream()
             .filter(e -> e.getValue() > 1) // We only care about duplicate filenames.
             .map(e -> e.getKey())
             .collect(toImmutableList());
