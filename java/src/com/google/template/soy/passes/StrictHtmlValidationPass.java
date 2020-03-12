@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -83,19 +84,20 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
   }
 
   private void checkTemplateNode(TemplateNode node, IdGenerator idGenerator) {
+    ErrorReporter reporter = ErrorReporter.create(ImmutableMap.of());
+    htmlMatcherGraph = new HtmlTagVisitor(idGenerator, reporter).exec(node);
+    new HtmlTagMatchingPass(
+            reporter,
+            idGenerator,
+            /** inCondition */
+            false,
+            /** inForeignContent */
+            false,
+            /** parentBlockType */
+            null)
+        .run(htmlMatcherGraph);
     if (node.isStrictHtml()) {
-      htmlMatcherGraph = new HtmlTagVisitor(idGenerator, errorReporter).exec(node);
-      new HtmlTagMatchingPass(
-              errorReporter,
-              idGenerator,
-              /** inCondition */
-              false,
-              /** inForeignContent */
-              false,
-              /** parentBlockType */
-              null)
-          .run(htmlMatcherGraph);
-
+      reporter.copyTo(this.errorReporter);
     }
   }
 
@@ -139,17 +141,11 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      if (node.getTagName().isExcludedOptionalTag()) {
-        return;
-      }
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      if (node.getTagName().isExcludedOptionalTag()) {
-        return;
-      }
       htmlMatcherGraph.addNode(new HtmlMatcherTagNode(node));
     }
 

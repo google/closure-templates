@@ -188,21 +188,24 @@ public final class HtmlTagMatchingPass {
     for (HtmlTagNode tag : annotationMap.keySet()) {
       if (tag instanceof HtmlOpenTagNode) {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) tag;
-        if (annotationMap.containsEntry(openTag, INVALID_NODE)) {
-          if (annotationMap.get(openTag).size() == 1) {
+        if (!annotationMap.containsEntry(openTag, INVALID_NODE)) {
+          continue;
+        }
+        if (annotationMap.get(openTag).size() == 1) {
+          if (!tag.getTagName().isExcludedOptionalTag()) {
             errorReporter.report(
                 openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_ALWAYS));
-          } else {
-            errorReporter.report(
-                openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_SOMETIMES));
           }
+        } else {
+          errorReporter.report(
+              openTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_OPEN_TAG_SOMETIMES));
         }
       }
     }
     // Do not annotate in inCondition because if there are errors, the nodes will be annotated
     // in the parent pass. The reason this happens is when the condition node is not balanced
     // internally but balanced globally.
-    if (!errorReporter.getErrors().isEmpty() && inCondition) {
+    if (errorReporter.hasErrors() && inCondition) {
       return;
     }
     for (HtmlTagNode openTag : annotationMap.keySet()) {
@@ -323,7 +326,7 @@ public final class HtmlTagMatchingPass {
           break;
         }
         // This is for cases similar to {block}</p>{/block}
-        if (stack.isEmpty()) {
+        if (stack.isEmpty() && !closeTag.getTagName().isExcludedOptionalTag()) {
           errorReporter.report(
               closeTag.getSourceLocation(), makeSoyErrorKind(UNEXPECTED_CLOSE_TAG));
           break;
@@ -345,11 +348,13 @@ public final class HtmlTagMatchingPass {
             prev = prev.pop();
           } else {
             annotationMap.put(nextOpenTag, INVALID_NODE);
-            errorReporter.report(
-                closeTag.getSourceLocation(),
-                makeSoyErrorKind(UNEXPECTED_CLOSE_TAG_KNOWN),
-                nextOpenTag.getTagName(),
-                nextOpenTag.getSourceLocation());
+            if (!closeTag.getTagName().isExcludedOptionalTag()) {
+              errorReporter.report(
+                  closeTag.getSourceLocation(),
+                  makeSoyErrorKind(UNEXPECTED_CLOSE_TAG_KNOWN),
+                  nextOpenTag.getTagName(),
+                  nextOpenTag.getSourceLocation());
+            }
             prev = prev.pop();
           }
         }
