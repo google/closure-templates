@@ -50,7 +50,7 @@ public final class SoyAstCacheTest {
   private final SoyFileNode fileNode1 =
       new SoyFileNode(
           0xdeadbeef,
-          "test.soy",
+          SourceLocation.UNKNOWN,
           new NamespaceDeclaration(
               Identifier.create("fake.namespace", SourceLocation.UNKNOWN),
               ImmutableList.of(),

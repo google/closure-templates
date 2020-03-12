@@ -48,18 +48,18 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
   /**
    * @param id The id for this node.
-   * @param filePath The path to the Soy source file.
+   * @param sourceLocation The source location of the file.
    * @param namespaceDeclaration This Soy file's namespace and attributes. Nullable for backwards
    *     compatibility only.
    * @param headerInfo Other file metadata, (e.g. delpackages, aliases)
    */
   public SoyFileNode(
       int id,
-      String filePath,
+      SourceLocation sourceLocation,
       NamespaceDeclaration namespaceDeclaration,
       SoyFileHeaderInfo headerInfo,
       ImmutableList<Comment> comments) {
-    super(id, new SourceLocation(filePath));
+    super(id, sourceLocation);
     this.headerInfo = headerInfo;
     this.delPackageName = headerInfo.getDelPackageName();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
@@ -148,8 +148,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     return headerInfo.aliasUsed(alias);
   }
 
-  /** @deprecated SoyFileNodes don't have source locations. */
-  @Deprecated
   @Override
   public SourceLocation getSourceLocation() {
     return super.getSourceLocation();

@@ -1257,6 +1257,7 @@ private SoyFileNode SoyFile() :
   AliasDeclaration alias;
   List<AliasDeclaration> aliases = ImmutableList.of();
   TemplateNode template;
+  Token eof;
 }
 {
   [ delpackageName = DelPackage() ]
@@ -1289,11 +1290,14 @@ private SoyFileNode SoyFile() :
     }
   )+
 
-  <EOF>
+  eof = <EOF>
 
   {
     SoyFileNode sfn = new SoyFileNode(
-        nodeIdGen.genId(), filePath, namespace, headerInfo, buildComments(token_source));
+        nodeIdGen.genId(),
+        new SourceLocation(filePath, SourceLocation.Point.create(1, 1),
+            SourceLocation.Point.create(eof.beginLine, eof.beginColumn)),
+            namespace, headerInfo, buildComments(token_source));
     sfn.addChildren(templates);
     return sfn;
   }

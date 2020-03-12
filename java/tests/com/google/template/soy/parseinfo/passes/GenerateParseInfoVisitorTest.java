@@ -203,7 +203,7 @@ public final class GenerateParseInfoVisitorTest {
   private static SoyFileNode forFilePathAndNamespace(String filePath, String namespace) {
     return new SoyFileNode(
         0,
-        filePath,
+        new SourceLocation(filePath),
         new NamespaceDeclaration(
             Identifier.create(namespace, SourceLocation.UNKNOWN),
             ImmutableList.of(),
