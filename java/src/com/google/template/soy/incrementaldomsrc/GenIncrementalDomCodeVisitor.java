@@ -1164,6 +1164,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
     IncrementalDomCodeBuilder jsCodeBuilder = getJsCodeBuilder();
+    getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
     if (!node.isSkipRoot()) {
       if (node.getKeyNode() != null) {
         // Push key BEFORE emitting `elementOpen`. Later, for `elementOpen` calls of keyed elements,
@@ -1221,6 +1222,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // This case occurs in the case where we encounter the end of a keyed element. If the open tag
     // mapped to this close tag contains a key node, pop the keyCounterStack to return
     // to the state before entering the keyed node.
+    getJsCodeBuilder().appendLine("// " + node.getSourceLocation());
     if (node.getTaggedPairs().size() == 1) {
       HtmlOpenTagNode openTag = (HtmlOpenTagNode) node.getTaggedPairs().get(0);
       if (openTag.getKeyNode() != null && !(openTag.getParent() instanceof SkipNode)) {
