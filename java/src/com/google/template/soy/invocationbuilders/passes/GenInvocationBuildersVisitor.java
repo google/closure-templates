@@ -440,7 +440,7 @@ public final class GenInvocationBuildersVisitor
           "?".equals(genericType)
               // TODO(user): this should probably be a wildcard type
               ? "com.google.common.reflect.TypeToken.of(java.lang.Object.class)"
-              : (genericType.matches("\\w+")
+              : (genericType.matches("(\\.|\\w)+")
                   ? "com.google.common.reflect.TypeToken.of(" + genericType + ".class" + ")"
                   : "new com.google.common.reflect.TypeToken<" + genericType + ">() {}");
       ilb.appendLine(
