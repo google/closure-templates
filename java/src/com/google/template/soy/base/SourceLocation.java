@@ -208,6 +208,48 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   /**
+   * Returns a new SourceLocation that covers the union of the two points. If the two locations are
+   * not adjacent or overlapping, throws an error.
+   */
+  public SourceLocation unionWith(SourceLocation other) {
+    if (!isKnown() || !other.isKnown()) {
+      return UNKNOWN;
+    }
+    checkState(
+        filePath.equals(other.filePath),
+        "Mismatched files paths: %s and %s",
+        filePath,
+        other.filePath);
+
+    checkState(
+        isAdjacentOrOverlappingWith(other),
+        "Cannot compute union of nonadjacent source locations: %s and %s",
+        this.asLineColumnRange(),
+        other.asLineColumnRange());
+
+    Point newBegin = begin.isBefore(other.getBeginPoint()) ? begin : other.getBeginPoint();
+    Point newEnd = end.isAfter(other.getEndPoint()) ? end : other.getEndPoint();
+    return new SourceLocation(filePath, newBegin, newEnd);
+  }
+
+  /** Returns whether the two source locations are adjacent or overlapping. */
+  public boolean isAdjacentOrOverlappingWith(SourceLocation other) {
+    Point lowerEndPoint = end.isBefore(other.getEndPoint()) ? end : other.getEndPoint();
+    Point higherBeginPoint = begin.isAfter(other.getBeginPoint()) ? begin : other.getBeginPoint();
+
+    SourceLocation locWithLowerEndPoint = end.isBefore(other.getEndPoint()) ? this : other;
+    SourceLocation locWithHigherEndPoint = locWithLowerEndPoint.equals(this) ? other : this;
+
+    return locWithLowerEndPoint.isJustBefore(locWithHigherEndPoint) // Adjacent
+        || lowerEndPoint.equals(higherBeginPoint) // Contiguous
+        || lowerEndPoint.isAfter(higherBeginPoint); // Overlapping (or one is a subset).
+  }
+
+  private String asLineColumnRange() {
+    return getBeginLine() + ":" + getBeginColumn() + " - " + getEndLine() + ":" + getEndColumn();
+  }
+
+  /**
    * Returns a new SourceLocation that starts where this SourceLocation starts and ends {@code
    * lines} and {@code cols} further than where it ends.
    */
