@@ -37,7 +37,7 @@ public final class ListJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "Iterable<" + elementType.asGenericsTypeArgumentString() + ">";
+    return "java.lang.Iterable<" + elementType.asGenericsTypeArgumentString() + ">";
   }
 
   @Override

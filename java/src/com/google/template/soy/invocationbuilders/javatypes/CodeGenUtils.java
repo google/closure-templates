@@ -17,6 +17,7 @@
 package com.google.template.soy.invocationbuilders.javatypes;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilder;
 import com.google.template.soy.data.BaseSoyTemplateImpl.AbstractBuilderWithAccumulatorParameters;
@@ -43,7 +44,7 @@ public final class CodeGenUtils {
   public static final Member INIT_LIST_PARAM =
       MethodImpl.method(AbstractBuilderWithAccumulatorParameters.class, "initListParam");
   public static final Member CHECK_NOT_NULL =
-      MethodImpl.method(Preconditions.class, "checkNotNull");
+      MethodImpl.fullyQualifiedMethod(Preconditions.class, "checkNotNull");
   public static final Member AS_RECORD = MethodImpl.method(AbstractBuilder.class, "asRecord");
   public static final Member AS_NUMBER = MethodImpl.method(AbstractBuilder.class, "asNumber");
   public static final Member AS_NULLABLE_NUMBER =
@@ -62,7 +63,7 @@ public final class CodeGenUtils {
   public static final Member AS_LIST_OF_LONGS =
       MethodImpl.method(AbstractBuilder.class, "asListOfLongs");
   public static final Member MARK_AS_SOY_MAP =
-      MethodImpl.method(SoyValueConverter.class, "markAsSoyMap");
+      MethodImpl.fullyQualifiedMethod(SoyValueConverter.class, "markAsSoyMap");
   public static final Member AS_NULLABLE_ATTRIBUTES =
       MethodImpl.method(AbstractBuilder.class, "asNullableAttributes");
   public static final Member AS_ATTRIBUTES =
@@ -70,12 +71,17 @@ public final class CodeGenUtils {
   public static final Member AS_NULLABLE_CSS =
       MethodImpl.method(AbstractBuilder.class, "asNullableCss");
   public static final Member AS_CSS = MethodImpl.method(AbstractBuilder.class, "asCss");
-  public static final Member TO_IMMUTABLE_MAP = unchecked("ImmutableMap.copyOf");
+  public static final Member TO_IMMUTABLE_MAP =
+      MethodImpl.fullyQualifiedMethod(ImmutableMap.class, "copyOf");
 
-  public static final Member OPTIONAL_P = MethodImpl.method(SoyTemplateParam.class, "optional");
-  public static final Member REQUIRED_P = MethodImpl.method(SoyTemplateParam.class, "required");
-  public static final Member INDIRECT_P = MethodImpl.method(SoyTemplateParam.class, "indirect");
-  public static final Member INJECTED_P = MethodImpl.method(SoyTemplateParam.class, "injected");
+  public static final Member OPTIONAL_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "optional");
+  public static final Member REQUIRED_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "required");
+  public static final Member INDIRECT_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "indirect");
+  public static final Member INJECTED_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "injected");
 
   /** A field or method that can be printed in code generation. */
   @Immutable
@@ -84,29 +90,24 @@ public final class CodeGenUtils {
     String toString();
   }
 
-  private static Member unchecked(String s) {
-    return new Member() {
-      @Override
-      public String toString() {
-        return s;
-      }
-    };
-  }
-
   @Immutable
   private static class MethodImpl implements Member {
     private final String name;
 
-    private MethodImpl(java.lang.reflect.Member method) {
-      this.name = method.getName();
+    private MethodImpl(java.lang.reflect.Member method, boolean qualified) {
+      this.name = (qualified ? method.getDeclaringClass().getName() + "." : "") + method.getName();
     }
 
     private static MethodImpl method(Class<?> type, String methodName) {
-      return new MethodImpl(findAnyMethod(type, methodName));
+      return new MethodImpl(findAnyMethod(type, methodName), /*qualified=*/ false);
+    }
+
+    private static MethodImpl fullyQualifiedMethod(Class<?> type, String methodName) {
+      return new MethodImpl(findAnyMethod(type, methodName), /*qualified=*/ true);
     }
 
     private static MethodImpl field(Class<?> type, String fieldName) {
-      return new MethodImpl(findAnyField(type, fieldName));
+      return new MethodImpl(findAnyField(type, fieldName), /*qualified=*/ false);
     }
 
     @Override

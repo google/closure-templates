@@ -38,18 +38,22 @@ public class SimpleJavaType extends JavaType {
    */
   public static final SimpleJavaType BOOLEAN = new BooleanJavaType(false);
 
-  public static final SimpleJavaType HTML = new SimpleJavaType("SafeHtml", false);
+  public static final SimpleJavaType HTML =
+      new SimpleJavaType("com.google.common.html.types.SafeHtml", false);
 
-  public static final SimpleJavaType JS = new SimpleJavaType("SafeScript", false);
+  public static final SimpleJavaType JS =
+      new SimpleJavaType("com.google.common.html.types.SafeScript", false);
 
-  public static final SimpleJavaType URL = new SimpleJavaType("SafeUrl", false);
+  public static final SimpleJavaType URL =
+      new SimpleJavaType("com.google.common.html.types.SafeUrl", false);
 
   public static final SimpleJavaType TRUSTED_RESOURCE_URL =
-      new SimpleJavaType("TrustedResourceUrl", false);
+      new SimpleJavaType("com.google.common.html.types.TrustedResourceUrl", false);
 
-  public static final SimpleJavaType STRING = new SimpleJavaType("String", false);
+  public static final SimpleJavaType STRING = new SimpleJavaType("java.lang.String", false);
 
-  public static final SimpleJavaType OBJECT = new SimpleJavaType("Object", "?", false, false);
+  public static final SimpleJavaType OBJECT =
+      new SimpleJavaType("java.lang.Object", "?", false, false);
 
   public static final SimpleJavaType ATTRIBUTES = new AttributesJavaType(false);
 
@@ -107,7 +111,11 @@ public class SimpleJavaType extends JavaType {
   private static final class BooleanJavaType extends SimpleJavaType {
     BooleanJavaType(boolean isNullable) {
       // Use boxed boolean if the type needs to be nullable. Otherwise use primitive boolean.
-      super(isNullable ? "Boolean" : "boolean", "Boolean", !isNullable, isNullable);
+      super(
+          isNullable ? "java.lang.Boolean" : "boolean",
+          "java.lang.Boolean",
+          !isNullable,
+          isNullable);
     }
 
     @Override
@@ -128,7 +136,7 @@ public class SimpleJavaType extends JavaType {
   private static final class AttributesJavaType extends SimpleJavaType {
 
     AttributesJavaType(boolean isNullable) {
-      super("SanitizedContent", null, false, isNullable);
+      super("com.google.template.soy.data.SanitizedContent", null, false, isNullable);
     }
 
     @Override

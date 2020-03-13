@@ -35,7 +35,7 @@ public final class FutureJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "Future<" + type.asGenericsTypeArgumentString() + ">";
+    return "java.util.concurrent.Future<" + type.asGenericsTypeArgumentString() + ">";
   }
 
   @Override

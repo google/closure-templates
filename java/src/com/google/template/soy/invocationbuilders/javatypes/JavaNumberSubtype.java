@@ -47,9 +47,14 @@ public class JavaNumberSubtype extends JavaType {
       new JavaNumberSubtype(NumberSubtype.NUMBER, /* isNullable= */ true);
 
   private enum NumberSubtype {
-    DOUBLE("double", "Double", CodeGenUtils.AS_LIST_OF_DOUBLES, CodeGenUtils.DOUBLE_MAPPER),
-    LONG("long", "Long", CodeGenUtils.AS_LIST_OF_LONGS, CodeGenUtils.LONG_MAPPER),
-    NUMBER("Number", "Number", CodeGenUtils.AS_NUMBER_COLLECTION, CodeGenUtils.NUMBER_MAPPER);
+    DOUBLE(
+        "double", "java.lang.Double", CodeGenUtils.AS_LIST_OF_DOUBLES, CodeGenUtils.DOUBLE_MAPPER),
+    LONG("long", "java.lang.Long", CodeGenUtils.AS_LIST_OF_LONGS, CodeGenUtils.LONG_MAPPER),
+    NUMBER(
+        "java.lang.Number",
+        "java.lang.Number",
+        CodeGenUtils.AS_NUMBER_COLLECTION,
+        CodeGenUtils.NUMBER_MAPPER);
 
     private final String primitiveTypeString;
     private final String boxedTypeString;
@@ -108,7 +113,7 @@ public class JavaNumberSubtype extends JavaType {
 
   @Override
   String asGenericsTypeArgumentString() {
-    return "? extends Number"; // For caller ease b/c of autoboxing.
+    return "? extends java.lang.Number"; // For caller ease b/c of autoboxing.
   }
 
   @Override
