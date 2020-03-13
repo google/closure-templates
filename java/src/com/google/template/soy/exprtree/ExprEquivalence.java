@@ -320,6 +320,11 @@ public final class ExprEquivalence {
     }
 
     @Override
+    protected Boolean visitGroupNode(GroupNode node) {
+      return compareChildren(node);
+    }
+
+    @Override
     protected Boolean visitExprNode(ExprNode node) {
       throw new UnsupportedOperationException(node.toSourceString());
     }
