@@ -851,6 +851,7 @@ final class HtmlRewriter {
       boolean foundHyphen = advanceWhileMatches(NOT_HYPHEN);
       // consume all raw text preceding the hyphen (or end)
       RawTextNode remainingTextNode = consumeAsRawText();
+      SourceLocation.Point point = currentPointOrEnd();
       if (remainingTextNode != null) {
         context.addCommentChild(remainingTextNode);
       }
@@ -860,7 +861,6 @@ final class HtmlRewriter {
           consume();
           // At this point we haven't remove the current raw text node (which contains -->) yet.
           edits.remove(currentRawTextNode);
-          SourceLocation.Point point = currentPointOrEnd();
           context.setState(context.createHtmlComment(point), point);
         } else {
           advance();

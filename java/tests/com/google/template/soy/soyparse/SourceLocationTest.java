@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
+import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
@@ -58,6 +59,7 @@ public final class SourceLocationTest {
   @Test
   public void testLocationsInParsedContent() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -91,6 +93,7 @@ public final class SourceLocationTest {
   @Test
   public void testTemplateCall() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -145,6 +148,7 @@ public final class SourceLocationTest {
   @Test
   public void testSwitches() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -192,6 +196,7 @@ public final class SourceLocationTest {
   @Test
   public void testVeid() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -199,7 +204,11 @@ public final class SourceLocationTest {
             "      VeLogNode                {velog $veData}<h1>Hello</h1>{/velog}",
             "        ExprRootNode           $veData",
             "          VarRefNode           $veData",
-            "        RawTextNode            <h1>Hello</h1>",
+            "        HtmlOpenTagNode        <h1>",
+            "          RawTextNode          h1",
+            "        RawTextNode            Hello",
+            "        HtmlCloseTagNode       </h1>",
+            "          RawTextNode          h1",
             ""),
         JOINER.join(
             "{namespace ns}",
@@ -215,6 +224,7 @@ public final class SourceLocationTest {
   @Test
   public void testForLoop() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -253,6 +263,7 @@ public final class SourceLocationTest {
   @Test
   public void testConditional() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -292,6 +303,7 @@ public final class SourceLocationTest {
   @Test
   public void testLet() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -327,6 +339,7 @@ public final class SourceLocationTest {
   @Test
   public void testLiteral() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -346,6 +359,7 @@ public final class SourceLocationTest {
   @Test
   public void testI18nNodes() throws Exception {
     assertSourceRanges(
+        false,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -430,6 +444,7 @@ public final class SourceLocationTest {
   @Test
   public void testExpressions() throws Exception {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -514,8 +529,33 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testHtmlComment() {
+    assertSourceRanges(
+        true,
+        JOINER.join(
+            "SoyFileSetNode",
+            "  SoyFileNode",
+            "    TemplateBasicNode          {template .foo}<!-- some [...]-><div></div>{/template}",
+            "      HtmlCommentNode          <!-- some html comment -",
+            "        RawTextNode            some html comment",
+            "      HtmlOpenTagNode          <div>",
+            "        RawTextNode            div",
+            "      HtmlCloseTagNode         </div>",
+            "        RawTextNode            div",
+            ""),
+        JOINER.join(
+            "{namespace ns}",
+            "{template .foo}",
+            "  <!-- some html comment -->",
+            "  <div></div>",
+            "{/template}",
+            ""));
+  }
+
+  @Test
   public void testTrailingCommentsInNonClosingNodes() {
     assertSourceRanges(
+        true,
         JOINER.join(
             "SoyFileSetNode",
             "  SoyFileNode",
@@ -893,7 +933,8 @@ public final class SourceLocationTest {
     }
   }
 
-  private static void assertSourceRanges(String asciiArtExpectedOutput, String soySourceCode) {
+  private static void assertSourceRanges(
+      boolean rewriteHtml, String asciiArtExpectedOutput, String soySourceCode) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forSuppliers(
                 SoyFileSupplier.Factory.create(soySourceCode, "/example/file.soy"))
@@ -902,6 +943,9 @@ public final class SourceLocationTest {
 
     assertThat(soyTree.numChildren()).isEqualTo(1);
     SoyFileNode soyFile = soyTree.getChild(0);
+    if (rewriteHtml) {
+      HtmlRewriter.rewrite(soyFile, new IncrementingIdGenerator(), ErrorReporter.createForTest());
+    }
     assertThat(soyFile.numChildren()).isGreaterThan(0);
     // Verify that the filename is correctly stored in the SourceLocation of each node.
     for (TemplateNode templateNode : soyFile.getChildren()) {
