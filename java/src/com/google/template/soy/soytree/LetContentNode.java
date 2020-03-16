@@ -60,15 +60,19 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   /** The let node's content kind, or null if no 'kind' attribute was present. */
   private final SanitizedContentKind contentKind;
 
+  private final SourceLocation openTagLocation;
+
   public LetContentNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       String varName,
       SourceLocation varNameLocation,
       CommandTagAttribute kindAttr,
       ErrorReporter errorReporter) {
     super(id, location, varName, varNameLocation);
     this.parentMixin = new MixinParentNode<>(this);
+    this.openTagLocation = openTagLocation;
 
     Optional<SanitizedContentKind> parsedKind = Optional.empty();
     if (!kindAttr.hasName("kind")) {
@@ -93,6 +97,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     super(id, location, varName, varNameLocation);
     this.parentMixin = new MixinParentNode<>(this);
     this.contentKind = contentKind;
+    this.openTagLocation = SourceLocation.UNKNOWN;
   }
 
   /**
@@ -104,6 +109,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     super(orig, copyState);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.contentKind = orig.contentKind;
+    this.openTagLocation = orig.openTagLocation;
   }
 
   @Override
@@ -114,6 +120,11 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Override
   public SanitizedContentKind getContentKind() {
     return contentKind;
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return openTagLocation;
   }
 
   @Override

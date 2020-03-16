@@ -29,8 +29,9 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 public final class MsgSelectDefaultNode extends CaseOrDefaultNode implements MsgBlockNode {
 
   /** @param id The id for this node. */
-  public MsgSelectDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default");
+  public MsgSelectDefaultNode(
+      int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "default");
   }
 
   /**

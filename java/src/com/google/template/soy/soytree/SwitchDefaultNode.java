@@ -16,8 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 
 /**
@@ -26,14 +28,15 @@ import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SwitchDefaultNode extends CaseOrDefaultNode implements ConditionalBlockNode {
+public final class SwitchDefaultNode extends CaseOrDefaultNode
+    implements ConditionalBlockNode, CommandTagAttributesHolder {
 
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
    */
-  public SwitchDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default");
+  public SwitchDefaultNode(int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "default");
   }
 
   /**
@@ -53,5 +56,10 @@ public final class SwitchDefaultNode extends CaseOrDefaultNode implements Condit
   @Override
   public SwitchDefaultNode copy(CopyState copyState) {
     return new SwitchDefaultNode(this, copyState);
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return ImmutableList.of();
   }
 }

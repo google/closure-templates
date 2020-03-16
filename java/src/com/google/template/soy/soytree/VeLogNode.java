@@ -82,10 +82,11 @@ public final class VeLogNode extends AbstractBlockCommandNode
   public VeLogNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       ExprNode veDataExpr,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    super(id, location, "velog");
+    super(id, location, openTagLocation, "velog");
     this.veDataExpr = new ExprRootNode(checkNotNull(veDataExpr));
     ExprRootNode logonlyExpr = null;
     for (CommandTagAttribute attr : attributes) {

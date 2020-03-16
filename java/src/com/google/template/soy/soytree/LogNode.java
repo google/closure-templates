@@ -29,7 +29,7 @@ public final class LogNode extends AbstractBlockCommandNode
     implements StandaloneNode, StatementNode {
 
   public LogNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "log");
+    super(id, sourceLocation, sourceLocation, "log");
   }
 
   /**

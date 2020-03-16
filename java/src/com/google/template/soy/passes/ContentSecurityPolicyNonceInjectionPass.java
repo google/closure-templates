@@ -197,7 +197,11 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
     IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
     IfCondNode ifCondNode =
         new IfCondNode(
-            nodeIdGen.genId(), insertionLocation, "if", referenceCspNonce(insertionLocation, defn));
+            nodeIdGen.genId(),
+            insertionLocation,
+            SourceLocation.UNKNOWN,
+            "if",
+            referenceCspNonce(insertionLocation, defn));
     ifNode.addChild(ifCondNode);
     HtmlAttributeNode nonceAttribute =
         new HtmlAttributeNode(

@@ -132,13 +132,16 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
     msg.clearChildren();
 
     MsgSelectCaseNode femaleCase =
-        new MsgSelectCaseNode(nodeIdGen.genId(), msg.getSourceLocation(), "female");
+        new MsgSelectCaseNode(
+            nodeIdGen.genId(), msg.getSourceLocation(), msg.getOpenTagLocation(), "female");
     femaleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
     MsgSelectCaseNode maleCase =
-        new MsgSelectCaseNode(nodeIdGen.genId(), msg.getSourceLocation(), "male");
+        new MsgSelectCaseNode(
+            nodeIdGen.genId(), msg.getSourceLocation(), msg.getOpenTagLocation(), "male");
     maleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
     MsgSelectDefaultNode defaultCase =
-        new MsgSelectDefaultNode(nodeIdGen.genId(), msg.getSourceLocation());
+        new MsgSelectDefaultNode(
+            nodeIdGen.genId(), msg.getSourceLocation(), msg.getOpenTagLocation());
     defaultCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
 
     MsgSelectNode selectNode =

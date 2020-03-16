@@ -378,7 +378,8 @@ public final class SimplifyVisitor {
             }
             // Replace this child with a new IfElseNode.
             IfElseNode newElseNode =
-                new IfElseNode(nodeIdGen.genId(), condNode.getSourceLocation());
+                new IfElseNode(
+                    nodeIdGen.genId(), condNode.getSourceLocation(), condNode.getOpenTagLocation());
             newElseNode.addChildren(condNode.getChildren());
             node.replaceChild(condIndex, newElseNode);
             // Stop processing.
@@ -446,7 +447,8 @@ public final class SimplifyVisitor {
             }
             // Replace this child with a new SwitchDefaultNode.
             SwitchDefaultNode newDefaultNode =
-                new SwitchDefaultNode(nodeIdGen.genId(), caseNode.getSourceLocation());
+                new SwitchDefaultNode(
+                    nodeIdGen.genId(), caseNode.getSourceLocation(), caseNode.getOpenTagLocation());
             newDefaultNode.addChildren(caseNode.getChildren());
             node.replaceChild(caseIndex, newDefaultNode);
             // Stop processing.

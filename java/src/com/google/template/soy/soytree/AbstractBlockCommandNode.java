@@ -28,13 +28,17 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 abstract class AbstractBlockCommandNode extends AbstractParentCommandNode<StandaloneNode>
     implements BlockCommandNode {
 
+  private final SourceLocation openTagLocation;
+
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
    * @param commandName The name of the Soy command.
    */
-  public AbstractBlockCommandNode(int id, SourceLocation sourceLocation, String commandName) {
+  public AbstractBlockCommandNode(
+      int id, SourceLocation sourceLocation, SourceLocation openTagLocation, String commandName) {
     super(id, sourceLocation, commandName);
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -44,5 +48,11 @@ abstract class AbstractBlockCommandNode extends AbstractParentCommandNode<Standa
    */
   protected AbstractBlockCommandNode(AbstractBlockCommandNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.openTagLocation = orig.openTagLocation;
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return openTagLocation;
   }
 }

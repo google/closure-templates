@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -187,7 +188,9 @@ public interface SoyNode extends Node {
   // -----------------------------------------------------------------------------------------------
 
   /** A node that represents a Soy command that encloses a template block. */
-  interface BlockCommandNode extends CommandNode, BlockNode {}
+  interface BlockCommandNode extends CommandNode, BlockNode {
+    SourceLocation getOpenTagLocation();
+  }
 
   // -----------------------------------------------------------------------------------------------
 

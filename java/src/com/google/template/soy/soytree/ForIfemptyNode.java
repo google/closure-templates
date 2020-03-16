@@ -32,8 +32,8 @@ public final class ForIfemptyNode extends AbstractBlockCommandNode implements Co
    * @param id The id for this node.
    * @param location The node's source location.
    */
-  public ForIfemptyNode(int id, SourceLocation location) {
-    super(id, location, "ifempty");
+  public ForIfemptyNode(int id, SourceLocation location, SourceLocation openTagLocation) {
+    super(id, location, openTagLocation, "ifempty");
   }
 
   /**

@@ -2332,7 +2332,7 @@ private MsgPluralNode MsgPlural() :
     (
       caseBeginTag = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      <CMD_END>
+      tagEnd = <CMD_END>
       {
         int value;
         if (!(caseExpr instanceof IntegerNode)) {
@@ -2359,6 +2359,7 @@ private MsgPluralNode MsgPlural() :
             new MsgPluralCaseNode(
                 nodeIdGen.genId(),
                 createSrcLoc(caseBeginTag, templateBlock),
+                createSrcLoc(caseBeginTag, tagEnd),
                 value);
         caseNode.addChildren(templateBlock);
         caseNodes.add(caseNode);
@@ -2376,7 +2377,8 @@ private MsgPluralNode MsgPlural() :
             PLURAL_AND_SELECT_NOT_ALLOWED_INSIDE_PLURAL_BLOCK);
       }
       MsgPluralDefaultNode defaultNode =
-          new MsgPluralDefaultNode(nodeIdGen.genId(), createSrcLoc(caseBeginTag, templateBlock));
+          new MsgPluralDefaultNode(nodeIdGen.genId(), createSrcLoc(caseBeginTag, templateBlock),
+              createSrcLoc(caseBeginTag));
       defaultNode.addChildren(templateBlock);
       caseNodes.add(defaultNode);
     }
@@ -2411,6 +2413,7 @@ private MsgPluralNode MsgPlural() :
 private MsgSelectNode MsgSelect() :
 {
   Token tagBegin, caseTagBegin, tagClose;
+  Token tagEnd = null;
   ExprNode selectExpr;
   ExprNode caseExpr;
   List<StandaloneNode> templateBlock;
@@ -2437,13 +2440,14 @@ private MsgSelectNode MsgSelect() :
     (
       caseTagBegin = <CMD_BEGIN_CASE>
       caseExpr = Expr()
-      <CMD_END>
+      tagEnd = <CMD_END>
       templateBlock = TemplateBlockForMsg()
 
       {
         String value = ParseErrors.validateSelectCaseLabel(caseExpr, errorReporter);
         MsgSelectCaseNode caseNode =
-            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(caseTagBegin, templateBlock), value);
+            new MsgSelectCaseNode(nodeIdGen.genId(), createSrcLoc(caseTagBegin, templateBlock),
+                createSrcLoc(caseTagBegin, tagEnd), value);
         caseNodes.add(caseNode);
         caseNode.addChildren(templateBlock);
       }
@@ -2454,7 +2458,8 @@ private MsgSelectNode MsgSelect() :
 
     {
       MsgSelectDefaultNode defaultNode =
-          new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(caseTagBegin, templateBlock));
+          new MsgSelectDefaultNode(nodeIdGen.genId(), createSrcLoc(caseTagBegin, templateBlock),
+              createSrcLoc(caseTagBegin));
       caseNodes.add(defaultNode);
       defaultNode.addChildren(templateBlock);
     }
@@ -2632,7 +2637,7 @@ private SkipNode SkipStmt() :
  */
 private LetNode LetStmt() :
 {
-  Token tagBegin, tagClose, nameTok = null;
+  Token tagBegin, tagClose, nameTok = null, tagBeginEnd = null;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
@@ -2673,7 +2678,7 @@ private LetNode LetStmt() :
     // Content block
     try {
       attr = Attribute()
-      <CMD_END>
+      tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
       reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
@@ -2690,6 +2695,7 @@ private LetNode LetStmt() :
           new LetContentNode(
               nodeIdGen.genId(),
               createSrcLoc(tagBegin, tagClose),
+              tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
               nameTok.image,
               createSrcLoc(nameTok),
               attr,
@@ -2710,6 +2716,7 @@ private LetNode LetStmt() :
 private IfNode IfStmt() :
 {
   Token tagBegin, tagClose, condTagBegin, elseTag;
+  Token tagBeginEnd = null;
   ExprNode ifExpr;
   List<StandaloneNode> templateBlock;
 }
@@ -2717,7 +2724,7 @@ private IfNode IfStmt() :
   tagBegin = <CMD_BEGIN_IF>
   try {
     ifExpr = Expr()
-    <CMD_END>
+    tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     ifExpr = errorExpr(tagBegin);
     reportTemplateBodyErrorAndSkipTo(e, CMD_END);
@@ -2729,6 +2736,7 @@ private IfNode IfStmt() :
     IfCondNode ifCondNode = new IfCondNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, templateBlock),
+        createSrcLoc(tagBegin, tagBeginEnd),
         "if",
         ifExpr);
     condNodes.add(ifCondNode);
@@ -2739,7 +2747,7 @@ private IfNode IfStmt() :
     condTagBegin = <CMD_BEGIN_ELSEIF>
     try {
       ifExpr = Expr()
-      <CMD_END>
+      tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
       ifExpr = errorExpr(condTagBegin);
       reportTemplateBodyErrorAndSkipTo(e, CMD_END);
@@ -2750,6 +2758,7 @@ private IfNode IfStmt() :
       ifCondNode = new IfCondNode(
           nodeIdGen.genId(),
           createSrcLoc(condTagBegin, templateBlock),
+          createSrcLoc(tagBegin, tagBeginEnd),
           "elseif",
           ifExpr);
       condNodes.add(ifCondNode);
@@ -2762,7 +2771,8 @@ private IfNode IfStmt() :
     templateBlock = TemplateBlock()
     {
       IfElseNode ifElseNode =
-          new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag, templateBlock));
+          new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag, templateBlock),
+              createSrcLoc(elseTag));
       condNodes.add(ifElseNode);
       ifElseNode.addChildren(templateBlock);
     }
@@ -2786,6 +2796,7 @@ private VeLogNode VeLogStmt() :
 {
   ExprNode veDataExpr = null;
   Token tagBegin, tagClose;
+  Token tagBeginEnd = null;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<StandaloneNode> templateBlock;
 }
@@ -2794,7 +2805,7 @@ private VeLogNode VeLogStmt() :
   try {
     veDataExpr = Expr()
     attributes = Attributes()
-    <CMD_END>
+    tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     if (veDataExpr == null) {
       veDataExpr = errorExpr(tagBegin);
@@ -2810,6 +2821,7 @@ private VeLogNode VeLogStmt() :
     VeLogNode node = new VeLogNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, tagClose),
+        tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
         veDataExpr,
         attributes,
         errorReporter);
@@ -2828,6 +2840,7 @@ private VeLogNode VeLogStmt() :
 private SwitchNode SwitchStmt() :
 {
   Token tagBegin, caseTag, defaultTag, tagClose;
+  Token tagEnd = null;
   ExprNode switchExpr;
   ImmutableList<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
@@ -2836,7 +2849,7 @@ private SwitchNode SwitchStmt() :
   tagBegin = <CMD_BEGIN_SWITCH>
   try {
     switchExpr = Expr()
-    <CMD_END>
+    tagEnd = <CMD_END>
   } catch (ParseException e) {
     switchExpr = errorExpr(tagBegin);
     reportTemplateBodyErrorAndSkipTo(e, CMD_END);
@@ -2855,12 +2868,13 @@ private SwitchNode SwitchStmt() :
     (
       caseTag = <CMD_BEGIN_CASE>
       caseExprs = ExprList()
-      <CMD_END>
+      tagEnd = <CMD_END>
       templateBlock = TemplateBlock()
       {
         SwitchCaseNode caseNode = new SwitchCaseNode(
             nodeIdGen.genId(),
             createSrcLoc(caseTag, templateBlock),
+            createSrcLoc(caseTag, tagEnd),
             caseExprs);
         caseNode.addChildren(templateBlock);
         cases.add(caseNode);
@@ -2872,7 +2886,8 @@ private SwitchNode SwitchStmt() :
       templateBlock = TemplateBlock()
       {
         SwitchDefaultNode defaultNode =
-            new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag, templateBlock));
+            new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag, templateBlock),
+                createSrcLoc(defaultTag));
         defaultNode.addChildren(templateBlock);
         cases.add(defaultNode);
       }
@@ -2899,6 +2914,7 @@ private SwitchNode SwitchStmt() :
 private ForNode ForStmt() :
 {
   Token tagBegin, tagClose, ifemptyTag, nameTok;
+  Token tagBeginEnd = null;
   Identifier nameId = null;
   ExprNode expr = null;
   String name = null;
@@ -2915,7 +2931,7 @@ private ForNode ForStmt() :
     <IN>
     expr = Expr()
 
-    <CMD_END>
+    tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     reportTemplateBodyErrorAndSkipTo(
         e,
@@ -2944,7 +2960,8 @@ private ForNode ForStmt() :
     ifemptyTag = <CMD_FULL_IFEMPTY>
     templateBlock = TemplateBlock()
     {
-      ifempty = new ForIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag, templateBlock));
+      ifempty = new ForIfemptyNode(nodeIdGen.genId(), createSrcLoc(ifemptyTag, templateBlock),
+          createSrcLoc(ifemptyTag));
       ifempty.addChildren(templateBlock);
     }
   ]
@@ -2955,6 +2972,7 @@ private ForNode ForStmt() :
         new ForNode(
             nodeIdGen.genId(),
             createSrcLoc(tagBegin, tagClose),
+            tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
             expr);
     forNode.addChild(nonEmpty);
     if (ifempty != null) {
@@ -3089,7 +3107,7 @@ private List<CallParamNode> CallParams() :
  */
 private CallParamNode CallParam() :
 {
-  Token tagBegin, tagClose;
+  Token tagBegin, tagClose, tagBeginEnd = null;
   Identifier key;
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
@@ -3134,7 +3152,7 @@ private CallParamNode CallParam() :
   |
     try {
       attr = Attribute()
-      <CMD_END>
+      tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
       reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
@@ -3151,6 +3169,7 @@ private CallParamNode CallParam() :
           new CallParamContentNode(
               nodeIdGen.genId(),
               createSrcLoc(tagBegin, tagClose),
+              createSrcLoc(tagBegin, tagBeginEnd),
               key,
               attr,
               errorReporter);

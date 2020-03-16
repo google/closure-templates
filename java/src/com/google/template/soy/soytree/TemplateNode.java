@@ -295,7 +295,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
       SoyFileHeaderInfo soyFileHeaderInfo,
       Visibility visibility,
       ImmutableList<TemplateHeaderVarDefn> params) {
-    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, cmdName);
+    super(nodeBuilder.getId(), nodeBuilder.sourceLocation, nodeBuilder.openTagLocation, cmdName);
     checkNotNull(params);
     this.headerParams = params == null ? ImmutableList.of() : params;
     this.soyFileHeaderInfo = soyFileHeaderInfo;

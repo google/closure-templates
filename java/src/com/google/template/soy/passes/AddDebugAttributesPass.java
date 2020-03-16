@@ -154,7 +154,9 @@ final class AddDebugAttributesPass implements CompilerFilePass {
                   BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO.getName(), insertionLocation),
               BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO,
               insertionLocation);
-      IfCondNode ifCondNode = new IfCondNode(nodeIdGen.genId(), insertionLocation, "if", funcNode);
+      IfCondNode ifCondNode =
+          new IfCondNode(
+              nodeIdGen.genId(), insertionLocation, SourceLocation.UNKNOWN, "if", funcNode);
       HtmlAttributeNode attribute =
           new HtmlAttributeNode(
               nodeIdGen.genId(), insertionLocation, insertionLocation.getBeginPoint());

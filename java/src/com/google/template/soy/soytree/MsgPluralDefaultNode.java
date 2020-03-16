@@ -31,9 +31,11 @@ public final class MsgPluralDefaultNode extends CaseOrDefaultNode implements Msg
   /**
    * @param id The id for this node.
    * @param sourceLocation The node's source location.
+   * @param openTagLocation The node's open tag location
    */
-  public MsgPluralDefaultNode(int id, SourceLocation sourceLocation) {
-    super(id, sourceLocation, "default");
+  public MsgPluralDefaultNode(
+      int id, SourceLocation sourceLocation, SourceLocation openTagLocation) {
+    super(id, sourceLocation, openTagLocation, "default");
   }
 
   /**

@@ -40,14 +40,18 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   /** The parsed expression for the list that we're iterating over. */
   private final ExprRootNode expr;
 
+  private final SourceLocation openTagLocation;
+
   /**
    * @param id The id for this node.
    * @param location The node's source location
+   * @param openTagLocation The source location of the {for ...} block.
    * @param expr The loop collection expression
    */
-  public ForNode(int id, SourceLocation location, ExprNode expr) {
+  public ForNode(int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
     super(id, location, "for");
     this.expr = new ExprRootNode(expr);
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -58,6 +62,7 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   private ForNode(ForNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
+    this.openTagLocation = orig.openTagLocation;
   }
 
   @Override
@@ -73,6 +78,10 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   /** Returns the parsed expression. */
   public ExprRootNode getExpr() {
     return expr;
+  }
+
+  public SourceLocation getOpenTagLocation() {
+    return openTagLocation;
   }
 
   @Override

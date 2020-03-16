@@ -33,8 +33,9 @@ public final class MsgSelectCaseNode extends CaseOrDefaultNode implements MsgBlo
   /** The value for this case. */
   private final String caseValue;
 
-  public MsgSelectCaseNode(int id, SourceLocation location, String caseValue) {
-    super(id, location, "case");
+  public MsgSelectCaseNode(
+      int id, SourceLocation location, SourceLocation openTagLocation, String caseValue) {
+    super(id, location, openTagLocation, "case");
     this.caseValue = checkNotNull(caseValue);
   }
 

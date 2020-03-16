@@ -167,7 +167,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       String commandName,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    super(id, location, commandName);
+    super(id, location, openTagLocation, commandName);
 
     String meaning = null;
     String desc = null;

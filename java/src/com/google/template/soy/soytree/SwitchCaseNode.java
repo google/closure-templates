@@ -36,8 +36,12 @@ public final class SwitchCaseNode extends CaseOrDefaultNode
   /** The parsed expression list. */
   private final ImmutableList<ExprRootNode> exprList;
 
-  public SwitchCaseNode(int id, SourceLocation location, ImmutableList<ExprNode> exprList) {
-    super(id, location, "case");
+  public SwitchCaseNode(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      ImmutableList<ExprNode> exprList) {
+    super(id, location, openTagLocation, "case");
     this.exprList = ExprRootNode.wrap(exprList);
   }
 

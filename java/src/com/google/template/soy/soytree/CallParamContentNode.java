@@ -43,9 +43,12 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   /** The param's content kind, or null if no 'kind' attribute was present. */
   private final SanitizedContentKind contentKind;
 
+  private final SourceLocation openTagLocation;
+
   public CallParamContentNode(
       int id,
       SourceLocation location,
+      SourceLocation openTagLocation,
       Identifier key,
       CommandTagAttribute kindAttr,
       ErrorReporter errorReporter) {
@@ -64,6 +67,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
       parsedKind = kindAttr.valueAsContentKind(errorReporter);
     }
     this.contentKind = parsedKind.orElse(SanitizedContentKind.HTML);
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -75,6 +79,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     super(orig, copyState);
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.contentKind = orig.contentKind;
+    this.openTagLocation = orig.openTagLocation;
   }
 
   @Override
@@ -182,5 +187,10 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   @Override
   public void appendSourceStringForChildren(StringBuilder sb) {
     parentMixin.appendSourceStringForChildren(sb);
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return openTagLocation;
   }
 }
