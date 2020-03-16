@@ -32,6 +32,7 @@ import com.google.template.soy.soytree.CommandChar;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlCommentNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.RawTextNode.SourceOffsets.Reason;
@@ -660,8 +661,6 @@ public final class HtmlRewriterTest {
   public void testNilCommandCharInHrefAttribute() {
     TemplateNode node = runPass("<a href=\"www.google.com\n{nil}/search\">hi, friend</div>");
 
-    // TODO(b/149435495): Reparent nil nodes so they're in the right place. This only affects the
-    // formatter, since these nodes are empty.
     assertThatASTStringNoCombine(node)
         .isEqualTo(
             ""
@@ -672,7 +671,7 @@ public final class HtmlRewriterTest {
                 + "    HTML_ATTRIBUTE_VALUE_NODE\n"
                 + "      RAW_TEXT_NODE\n"
                 + "      RAW_TEXT_NODE\n"
-                + "RAW_TEXT_NODE\n" // Weird floating {nil} node. See todo above.
+                + "      RAW_TEXT_NODE\n"
                 + "RAW_TEXT_NODE\n"
                 + "HTML_CLOSE_TAG_NODE\n"
                 + "  RAW_TEXT_NODE\n"
@@ -683,9 +682,32 @@ public final class HtmlRewriterTest {
     assertThat(((RawTextNode) openTag.getChild(0)).getRawText()).isEqualTo("a");
     HtmlAttributeValueNode attributeValue =
         (HtmlAttributeValueNode) ((HtmlAttributeNode) openTag.getChild(1)).getChild(1);
-    assertThat(attributeValue.toSourceString()).isEqualTo("\"www.google.com/search\"");
-    assertThat(((RawTextNode) node.getChild(1)).isNilCommandChar()).isTrue();
-    assertThat(((RawTextNode) node.getChild(2)).getRawText()).isEqualTo("hi, friend");
+    assertThat(attributeValue.toSourceString()).isEqualTo("\"www.google.com{nil}/search\"");
+    assertThat(((RawTextNode) attributeValue.getChild(1)).isNilCommandChar()).isTrue();
+    assertThat(((RawTextNode) node.getChild(1)).getRawText()).isEqualTo("hi, friend");
+  }
+
+  @Test
+  public void testNilCommandCharInHtmlComment() {
+    TemplateNode node =
+        runPass("<div>\n" + "<!-- html comment with a {nil} character -->hi, friend\n" + "</div>");
+
+    assertThatASTStringNoCombine(node)
+        .isEqualTo(
+            ""
+                + "HTML_OPEN_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "HTML_COMMENT_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "RAW_TEXT_NODE\n"
+                + "HTML_CLOSE_TAG_NODE\n"
+                + "  RAW_TEXT_NODE\n"
+                + "");
+
+    HtmlCommentNode commentNode = (HtmlCommentNode) node.getChild(1);
+    assertThat(((RawTextNode) commentNode.getChild(1)).isNilCommandChar()).isTrue();
   }
 
   @Test

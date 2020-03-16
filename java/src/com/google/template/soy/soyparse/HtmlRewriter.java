@@ -693,6 +693,43 @@ final class HtmlRewriter {
       // about them.
       if (currentRawTextNode.isEmpty() && !currentRawTextNode.isNilCommandChar()) {
         edits.remove(currentRawTextNode);
+      } else {
+        maybeReparentNilNode(node);
+      }
+    }
+
+    /** Reparents {nil} nodes in states where we've inserted new ast nodes (like HTML_OPEN_TAG). */
+    protected void maybeReparentNilNode(RawTextNode node) {
+      if (!node.isNilCommandChar()) {
+        return;
+      }
+
+      switch (context.getState()) {
+        case DOUBLE_QUOTED_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_ATTRIBUTE_VALUE:
+          context.addAttributeValuePart(node);
+          break;
+        case HTML_COMMENT:
+          context.addCommentChild(node);
+          break;
+        case NONE:
+        case PCDATA:
+        case BEFORE_ATTRIBUTE_VALUE:
+        case AFTER_TAG_NAME_OR_ATTRIBUTE:
+        case BEFORE_ATTRIBUTE_NAME:
+        case UNQUOTED_ATTRIBUTE_VALUE:
+        case AFTER_ATTRIBUTE_NAME:
+        case HTML_TAG_NAME:
+        case RCDATA_STYLE:
+        case RCDATA_TITLE:
+        case RCDATA_XMP:
+        case RCDATA_SCRIPT:
+        case RCDATA_TEXTAREA:
+        case CDATA:
+        case XML_DECLARATION:
+        case DOUBLE_QUOTED_XML_ATTRIBUTE_VALUE:
+        case SINGLE_QUOTED_XML_ATTRIBUTE_VALUE:
+          break;
       }
     }
 
