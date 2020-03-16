@@ -2736,7 +2736,7 @@ private IfNode IfStmt() :
     IfCondNode ifCondNode = new IfCondNode(
         nodeIdGen.genId(),
         createSrcLoc(tagBegin, templateBlock),
-        createSrcLoc(tagBegin, tagBeginEnd),
+        tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
         "if",
         ifExpr);
     condNodes.add(ifCondNode);
@@ -2758,7 +2758,7 @@ private IfNode IfStmt() :
       ifCondNode = new IfCondNode(
           nodeIdGen.genId(),
           createSrcLoc(condTagBegin, templateBlock),
-          createSrcLoc(tagBegin, tagBeginEnd),
+          tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
           "elseif",
           ifExpr);
       condNodes.add(ifCondNode);
