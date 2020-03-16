@@ -73,7 +73,7 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
   private void maybeRewriteNode(MsgNode msg, IdGenerator nodeIdGen) {
     List<ExprRootNode> genderExprs = msg.getAndRemoveGenderExprs();
     if (genderExprs == null) {
-      return;  // not a msg that this pass should rewrite
+      return; // not a msg that this pass should rewrite
     }
 
     // ------ Do the rewrite. ------
@@ -83,8 +83,9 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
     genderExprs = Lists.reverse(genderExprs);
 
     Checkpoint checkpoint = errorReporter.checkpoint();
-    List<String> baseSelectVarNames = MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
-        ExprRootNode.unwrap(genderExprs), FALLBACK_BASE_SELECT_VAR_NAME, errorReporter);
+    List<String> baseSelectVarNames =
+        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
+            ExprRootNode.unwrap(genderExprs), FALLBACK_BASE_SELECT_VAR_NAME, errorReporter);
     if (errorReporter.errorsSince(checkpoint)) {
       return; // To prevent an IndexOutOfBoundsException below.
     }
@@ -96,10 +97,10 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
       // Check whether the generated base name would be the same (both for the old naive algorithm
       // and the new algorithm). If so, then there's no need to specify the baseSelectVarName.
       if (MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-          genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
+                  genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)
           && MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
-              genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
+                  genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)) {
         baseSelectVarName = null;
       }
@@ -146,7 +147,11 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
 
     MsgSelectNode selectNode =
         new MsgSelectNode(
-            nodeIdGen.genId(), msg.getSourceLocation(), genderExpr, baseSelectVarName);
+            nodeIdGen.genId(),
+            msg.getSourceLocation(),
+            msg.getOpenTagLocation(),
+            genderExpr,
+            baseSelectVarName);
     selectNode.addChild(femaleCase);
     selectNode.addChild(maleCase);
     selectNode.addChild(defaultCase);

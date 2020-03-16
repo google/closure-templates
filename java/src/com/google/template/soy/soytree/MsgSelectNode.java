@@ -22,7 +22,10 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import javax.annotation.Nullable;
@@ -34,7 +37,10 @@ import javax.annotation.Nullable;
  *
  */
 public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefaultNode>
-    implements MsgSubstUnitNode, SplitLevelTopNode<CaseOrDefaultNode>, ExprHolderNode {
+    implements MsgSubstUnitNode,
+        SplitLevelTopNode<CaseOrDefaultNode>,
+        ExprHolderNode,
+        CommandTagAttributesHolder {
 
   /** Fallback base select var name. */
   public static final String FALLBACK_BASE_SELECT_VAR_NAME = "STATUS";
@@ -42,16 +48,20 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** The expression for the value to select on. */
   private final ExprRootNode selectExpr;
 
+  private final SourceLocation openTagLocation;
+
   /**
    * The base select var name (what the translator sees). Null if it should be generated from the
    * select expression.
    */
   @Nullable private final String baseSelectVarName;
 
-  public MsgSelectNode(int id, SourceLocation location, ExprNode selectExpr) {
+  public MsgSelectNode(
+      int id, SourceLocation location, SourceLocation openTagLocation, ExprNode selectExpr) {
     super(id, location, "select");
     this.selectExpr = new ExprRootNode(selectExpr);
     this.baseSelectVarName = null;
+    this.openTagLocation = openTagLocation;
 
     // TODO: Maybe allow user to write 'phname' attribute in 'select' tag.
     // Note: If we do add support for 'phname' for 'select', it would also be a good time to clean
@@ -71,11 +81,13 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   public MsgSelectNode(
       int id,
       SourceLocation sourceLocation,
+      SourceLocation openTagLocation,
       ExprRootNode selectExpr,
       @Nullable String baseSelectVarName) {
     super(id, sourceLocation, "select");
     this.selectExpr = selectExpr;
     this.baseSelectVarName = baseSelectVarName;
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -87,6 +99,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     super(orig, copyState);
     this.selectExpr = orig.selectExpr.copy(copyState);
     this.baseSelectVarName = orig.baseSelectVarName;
+    this.openTagLocation = orig.openTagLocation;
     copyState.updateRefs(orig, this);
   }
 
@@ -98,6 +111,16 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** Returns the expression for the value to select on. */
   public ExprRootNode getExpr() {
     return selectExpr;
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return this.openTagLocation;
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return ImmutableList.of();
   }
 
   /** Returns the base select var name (what the translator sees). */

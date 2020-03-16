@@ -21,8 +21,11 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -34,14 +37,22 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  *
  */
 public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
-    implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode, ExprHolderNode {
+    implements StandaloneNode,
+        SplitLevelTopNode<BlockNode>,
+        StatementNode,
+        ExprHolderNode,
+        CommandTagAttributesHolder {
 
   /** The parsed expression. */
   private final ExprRootNode expr;
 
-  public SwitchNode(int id, SourceLocation location, ExprNode expr) {
+  private final SourceLocation openTagLocation;
+
+  public SwitchNode(
+      int id, SourceLocation location, SourceLocation openTagLocation, ExprNode expr) {
     super(id, location, "switch");
     this.expr = new ExprRootNode(expr);
+    this.openTagLocation = openTagLocation;
   }
 
   /**
@@ -52,11 +63,22 @@ public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
   private SwitchNode(SwitchNode orig, CopyState copyState) {
     super(orig, copyState);
     this.expr = orig.expr.copy(copyState);
+    this.openTagLocation = orig.openTagLocation;
   }
 
   @Override
   public Kind getKind() {
     return Kind.SWITCH_NODE;
+  }
+
+  @Override
+  public SourceLocation getOpenTagLocation() {
+    return this.openTagLocation;
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return ImmutableList.of();
   }
 
   /** Returns true if this switch has a {@code default} case. */
