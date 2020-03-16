@@ -16,9 +16,12 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 /**
@@ -28,11 +31,6 @@ import javax.annotation.Nonnull;
  *
  */
 public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvider {
-  private static final FutureBlockCallback NOOP =
-      new FutureBlockCallback() {
-        @Override
-        public void beforeBlock() {}
-      };
 
   /**
    * Allows threads to register a {@link FutureBlockCallback}.
@@ -48,26 +46,24 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
       new ThreadLocal<FutureBlockCallback>() {
         @Override
         protected FutureBlockCallback initialValue() {
-          return NOOP;
+          return () -> {};
         }
       };
 
-
   /** The wrapped Future object that will provide the value, if needed. */
   private final Future<?> future;
+
+  private final Function<Object, SoyValueProvider> converter;
 
   /** A callback that gets fired just before this provider will block on a future. */
   public interface FutureBlockCallback {
     void beforeBlock();
   }
 
-  /**
-   * @param valueConverter The instance of SoyValueConverter to use for converting the future value
-   *     (after retrieval).
-   * @param future The underlying Future object.
-   */
-  public SoyFutureValueProvider(Future<?> future) {
-    this.future = future;
+  /** @param future The underlying Future object. */
+  public SoyFutureValueProvider(Future<?> future, Function<Object, SoyValueProvider> converter) {
+    this.future = checkNotNull(future);
+    this.converter = checkNotNull(converter);
   }
 
   @Override
@@ -86,10 +82,14 @@ public final class SoyFutureValueProvider extends SoyAbstractCachingValueProvide
       if (!future.isDone()) {
         futureBlockCallback.get().beforeBlock();
       }
-      return SoyValueConverter.INSTANCE.convert(future.get()).resolve();
+      return converter.apply(future.get()).resolve();
     } catch (ExecutionException e) {
       throw new SoyFutureException(e.getCause());
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new SoyFutureException(ie);
     } catch (Throwable e) {
+      // this would be an exception from the conversion process, this is rare but possible
       throw new SoyFutureException(e);
     }
   }

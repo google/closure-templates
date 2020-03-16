@@ -106,7 +106,7 @@ public final class SoyValueConverter {
 
     cheapConverterMap.put(Float.class, input -> FloatData.forValue(input.doubleValue()));
     cheapConverterMap.put(Double.class, FloatData::forValue);
-    cheapConverterMap.put(Future.class, SoyFutureValueProvider::new);
+    cheapConverterMap.put(Future.class, (f) -> new SoyFutureValueProvider(f, this::convert));
     // Proto enum that was obtained via reflection (e.g. from SoyProtoValue)
     cheapConverterMap.put(
         EnumValueDescriptor.class, input -> IntegerData.forValue(input.getNumber()));
