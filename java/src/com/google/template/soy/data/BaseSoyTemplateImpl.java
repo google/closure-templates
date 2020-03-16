@@ -224,7 +224,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws NullPointerException if n is null.
      */
     protected final Number asNumber(Number n) {
-      return n instanceof Float || n instanceof Double ? n.doubleValue() : n.longValue();
+      // don't rewrite as a ternary, otherwise the long will get implicitly coerced to a double.
+      if (n instanceof Float || n instanceof Double) {
+        return n.doubleValue();
+      }
+      return n.longValue();
     }
 
     /** Converts a {@code Number} into a number type supported by Soy. */
