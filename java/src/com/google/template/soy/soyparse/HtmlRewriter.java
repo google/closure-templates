@@ -886,21 +886,27 @@ final class HtmlRewriter {
      */
     void handleHtmlComment() {
       boolean foundHyphen = advanceWhileMatches(NOT_HYPHEN);
-      // consume all raw text preceding the hyphen (or end)
-      RawTextNode remainingTextNode = consumeAsRawText();
-      SourceLocation.Point point = currentPointOrEnd();
-      if (remainingTextNode != null) {
-        context.addCommentChild(remainingTextNode);
-      }
       if (foundHyphen) {
-        if (matchPrefix("-->", true)) {
+        if (matchPrefix("-->", false)) {
+          // consume all raw text preceding the hyphen (or end)
+          RawTextNode remainingTextNode = consumeAsRawText();
+          SourceLocation.Point point = currentPointOrEnd();
+          if (remainingTextNode != null) {
+            context.addCommentChild(remainingTextNode);
+          }
           // Consume the suffix here.
+          advance(3);
           consume();
           // At this point we haven't remove the current raw text node (which contains -->) yet.
           edits.remove(currentRawTextNode);
           context.setState(context.createHtmlComment(point), point);
         } else {
           advance();
+        }
+      } else {
+        RawTextNode remainingTextNode = consumeAsRawText();
+        if (remainingTextNode != null) {
+          context.addCommentChild(remainingTextNode);
         }
       }
     }

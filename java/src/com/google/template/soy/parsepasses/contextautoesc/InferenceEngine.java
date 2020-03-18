@@ -214,6 +214,7 @@ final class InferenceEngine {
       if (context.uriPart() == UriPart.TRUSTED_RESOURCE_URI_END) {
         uriStart = rawTextNode;
       }
+      rawTextNode.setHtmlContext(context.state());
     }
 
     @Override
@@ -433,6 +434,7 @@ final class InferenceEngine {
       // if the tag name is a constant, transition to an appropriate tag state
       if (tag.getTagName().isStatic()) {
         context = context.transitionToTagName(tag);
+        ((RawTextNode) tag.getChild(0)).setHtmlContext(HtmlContext.HTML_TAG_NAME);
       } else {
         // dynamic tag name
         visit(tag.getChild(0));
@@ -452,6 +454,7 @@ final class InferenceEngine {
       SoyNode first = node.getChild(0);
       if (first.getKind() == SoyNode.Kind.RAW_TEXT_NODE) {
         context = context.transitionToAttrName(((RawTextNode) first).getRawText());
+        ((RawTextNode) first).setHtmlContext(HtmlContext.HTML_ATTRIBUTE_NAME);
       } else {
         visit(first);
       }
