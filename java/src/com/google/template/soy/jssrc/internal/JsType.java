@@ -21,8 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.ARRAY_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_HTML;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_FUNCTION;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_DATA_SANITIZED_CONTENT;
@@ -135,7 +135,7 @@ public final class JsType {
       builder().addType("string").setPredicate(typeofTypePredicate("string")).build();
 
   private static final JsType RAW_ARRAY_TYPE =
-      builder().addType("!Array").setPredicate(GOOG_IS_ARRAY).build();
+      builder().addType("!Array").setPredicate(ARRAY_IS_ARRAY).build();
 
   private static final JsType RAW_OBJECT_TYPE =
       builder().addType("!Object").setPredicate(GOOG_IS_OBJECT).build();
@@ -313,7 +313,7 @@ public final class JsType {
         return builder()
             .addType("!Array<" + element.typeExpr() + ">")
             .addRequires(element.getGoogRequires())
-            .setPredicate(GOOG_IS_ARRAY)
+            .setPredicate(ARRAY_IS_ARRAY)
             .build();
 
       case LEGACY_OBJECT_MAP:

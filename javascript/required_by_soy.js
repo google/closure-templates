@@ -99,7 +99,6 @@ goog.exportSymbol('goog.i18n.bidi.Dir.LTR', goog.i18n.bidi.Dir.LTR);
 goog.exportSymbol('goog.i18n.bidi.Dir.NEUTRAL', goog.i18n.bidi.Dir.NEUTRAL);
 goog.exportSymbol('goog.i18n.bidi.Dir.RTL', goog.i18n.bidi.Dir.RTL);
 goog.exportSymbol('goog.i18n.bidi.estimateDirection', goog.i18n.bidi.estimateDirection);
-goog.exportSymbol('goog.isArray', goog.isArray);
 goog.exportSymbol('goog.isFunction', goog.isFunction);
 goog.exportSymbol('goog.isObject', goog.isObject);
 goog.exportSymbol('goog.module', goog.module);

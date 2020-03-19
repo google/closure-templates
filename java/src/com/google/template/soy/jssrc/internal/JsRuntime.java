@@ -67,7 +67,7 @@ public final class JsRuntime {
 
   public static final Expression GOOG_GET_MSG = dottedIdNoRequire("goog.getMsg");
 
-  public static final Expression GOOG_IS_ARRAY = dottedIdNoRequire("goog.isArray");
+  public static final Expression ARRAY_IS_ARRAY = dottedIdNoRequire("Array.isArray");
 
   public static final Expression GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
 

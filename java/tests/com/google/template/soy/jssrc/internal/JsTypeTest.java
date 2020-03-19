@@ -159,15 +159,15 @@ public final class JsTypeTest {
     assertThat(getTypeAssertion(HtmlType.getInstance(), "x"))
         .isEqualTo("goog.soy.data.SanitizedHtml.isCompatibleWith(x)");
 
-    assertThat(getTypeAssertion(LIST_OF_HTML, "x")).isEqualTo("goog.isArray(x)");
+    assertThat(getTypeAssertion(LIST_OF_HTML, "x")).isEqualTo("Array.isArray(x)");
 
     assertThat(getTypeAssertion(NULLABLE_LIST_OF_HTML, "x"))
-        .isEqualTo("x == null || goog.isArray(x)");
+        .isEqualTo("x == null || Array.isArray(x)");
 
     assertThat(
             getTypeAssertion(
                 UnionType.of(StringType.getInstance(), ListType.of(IntType.getInstance())), "x"))
-        .isEqualTo("goog.isArray(x) || typeof x === 'string'");
+        .isEqualTo("Array.isArray(x) || typeof x === 'string'");
   }
 
   @Test
