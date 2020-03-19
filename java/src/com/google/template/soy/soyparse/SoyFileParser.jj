@@ -1335,7 +1335,7 @@ private AliasDeclaration Alias() :
     if (alias == null) {  // Implicit alias is the last part of the namespace.
       alias = namespace.extractPartAfterLastDot();
     }
-    return AliasDeclaration.create(namespace, alias);
+    return AliasDeclaration.create(srcLoc, namespace, alias);
   }
 }
 

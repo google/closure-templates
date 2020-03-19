@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.auto.value.AutoValue;
 import com.google.errorprone.annotations.Immutable;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.Identifier.Type;
 
@@ -28,11 +29,14 @@ import com.google.template.soy.base.internal.Identifier.Type;
 @Immutable
 public abstract class AliasDeclaration {
 
-  public static AliasDeclaration create(Identifier namespace, Identifier alias) {
+  public static AliasDeclaration create(
+      SourceLocation location, Identifier namespace, Identifier alias) {
     checkArgument(namespace.type() != Type.DOT_IDENT);
     checkArgument(alias.type() == Type.SINGLE_IDENT);
-    return new AutoValue_AliasDeclaration(namespace, alias);
+    return new AutoValue_AliasDeclaration(location, namespace, alias);
   }
+
+  public abstract SourceLocation location();
 
   public abstract Identifier namespace();
 
