@@ -850,10 +850,10 @@ final class HtmlRewriter {
             // TODO(b/144050436): upgrade to error
             if (matchPrefixIgnoreCase("<script", /* advance= */ false)
                 || matchPrefixIgnoreCase("<!--", /* advance= */ false)) {
-              errorReporter.warn(currentLocation(), DISALLOWED_SCRIPT_SEQUENCE);
+              errorReporter.report(currentLocation(), DISALLOWED_SCRIPT_SEQUENCE);
             } else if (matchPrefixIgnoreCasePastEnd("<script")
                 || matchPrefixIgnoreCasePastEnd("<!--")) {
-              errorReporter.warn(
+              errorReporter.report(
                   currentLocation().extend(currentRawTextNode.getSourceLocation().getEndLocation()),
                   DISALLOWED_SCRIPT_SEQUENCE_PREFIX);
             }
