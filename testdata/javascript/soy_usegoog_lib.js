@@ -10482,13 +10482,13 @@ goog.html.SafeUrl.fromConstant = function(url) {
 goog.html.SAFE_MIME_TYPE_PATTERN_ = new RegExp(
     // Note: Due to content-sniffing concerns, only add MIME types for
     // media formats.
-    '^(?:audio/(?:3gpp2|3gpp|aac|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-wav|wav|webm)|' +
+    '^(?:audio/(?:3gpp2|3gpp|aac|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-matroska|x-wav|wav|webm)|' +
         'image/(?:bmp|gif|jpeg|jpg|png|tiff|webp|x-icon)|' +
         // TODO(b/68188949): Due to content-sniffing concerns, text/csv should
         // be removed from the whitelist.
         'text/csv|' +
-        'video/(?:mpeg|mp4|ogg|webm|quicktime))' +
-        '(?:;\\w+=(?:\\w+|"[\\w;=]+"))*$',  // MIME type parameters
+        'video/(?:mpeg|mp4|ogg|webm|quicktime|x-matroska))' +
+        '(?:;\\w+=(?:\\w+|"[\\w;,= ]+"))*$',  // MIME type parameters
     'i');
 
 
@@ -10543,7 +10543,7 @@ goog.html.SafeUrl.fromMediaSource = function(mediaSource) {
  * @const
  * @private
  */
-goog.html.DATA_URL_PATTERN_ = /^data:([^,]*);base64,[a-z0-9+\/]+=*$/i;
+goog.html.DATA_URL_PATTERN_ = /^data:(.*);base64,[a-z0-9+\/]+=*$/i;
 
 
 /**
@@ -29257,8 +29257,9 @@ goog.dom.safe.replaceLocation = function(loc, url) {
  * @param {string|!goog.html.SafeUrl} url The URL to open.
  * @param {Window=} opt_openerWin Window of which to call the .open() method.
  *     Defaults to the global window.
- * @param {!goog.string.Const=} opt_name Name of the window to open in. Can be
- *     _top, etc as allowed by window.open().
+ * @param {!goog.string.Const|string=} opt_name Name of the window to open in.
+ *     Can be _top, etc as allowed by window.open(). This accepts string for
+ *     legacy reasons. Pass goog.string.Const if possible.
  * @param {string=} opt_specs Comma-separated list of specifications, same as
  *     in window.open().
  * @param {boolean=} opt_replace Whether to replace the current entry in browser
@@ -29275,14 +29276,15 @@ goog.dom.safe.openInWindow = function(
     safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   }
   var win = opt_openerWin || goog.global;
+  // If opt_name is undefined, simply passing that in to open() causes IE to
+  // reuse the current window instead of opening a new one. Thus we pass '' in
+  // instead, which according to spec opens a new window. See
+  // https://html.spec.whatwg.org/multipage/browsers.html#dom-open .
+  var name = opt_name instanceof goog.string.Const ?
+      goog.string.Const.unwrap(opt_name) :
+      opt_name || '';
   return win.open(
-      goog.html.SafeUrl.unwrap(safeUrl),
-      // If opt_name is undefined, simply passing that in to open() causes IE to
-      // reuse the current window instead of opening a new one. Thus we pass ''
-      // in instead, which according to spec opens a new window. See
-      // https://html.spec.whatwg.org/multipage/browsers.html#dom-open .
-      opt_name ? goog.string.Const.unwrap(opt_name) : '', opt_specs,
-      opt_replace);
+      goog.html.SafeUrl.unwrap(safeUrl), name, opt_specs, opt_replace);
 };
 
 
