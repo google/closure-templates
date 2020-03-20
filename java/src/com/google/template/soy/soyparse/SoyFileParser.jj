@@ -760,12 +760,23 @@ TOKEN_MGR_DECLS: {
     prevState = -1;
   }
 
+  void addBlankLines(Token blankLinesToken) {
+    comments.add(
+        Comment.create(
+            Comment.Type.BLANK_LINES,
+            blankLinesToken.image,
+            // SourceLocation for the blank line starts at the end of the previous line.
+            parser.createSrcLoc(blankLinesToken)));
+  }
+
   void addLineComment(Token commentToken) {
-    comments.add(Comment.create(Comment.Type.LINE, commentToken.image, parser.createSrcLoc(commentToken)));
+    comments.add(
+        Comment.create(Comment.Type.LINE, commentToken.image, parser.createSrcLoc(commentToken)));
   }
 
   void addRangeComment(Token commentToken) {
-    comments.add(Comment.create(Comment.Type.RANGE, commentToken.image, parser.createSrcLoc(commentToken)));
+    comments.add(
+        Comment.create(Comment.Type.RANGE, commentToken.image, parser.createSrcLoc(commentToken)));
   }
 
   void trimTokenBegin(Token token, int by) {
@@ -799,6 +810,13 @@ TOKEN_MGR_DECLS: {
 
 // -------------------------------------------------------------------------------------------------
 // Whitespace and comments.
+
+// This only matches blank lines that are not swallowed by SkipWhitespace.
+// TODO(b/151747854): Preserve blank lines in other locations.
+// TODO(b/151747854): Add TEMPLATE_DEFAULT.
+<DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SPECIAL_TOKEN: {
+  < <BLANK_LINES> > { addBlankLines(matchedToken); }
+}
 
 <DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SKIP: {
   < <WS> >
@@ -1224,6 +1242,7 @@ TOKEN_MGR_DECLS: {
 
 <*> TOKEN: {
   < #WS: [" ", "\t", "\n", "\r"] | "\r\n" >
+| < #BLANK_LINES: ( (" ")* ("\r")? "\n" ){2,} > // One or more consecutive blank lines.
 | < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 | < #DEC_DIGITS: ( ["0"-"9"] )+ >
 | < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
@@ -1920,7 +1939,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   )
   // If there is a special token directly attached to the {@param, use that instead of whatever
   // was passed to us.
-  { if (tagBegin.specialToken != null) {
+  { if (tagBegin.specialToken != null && tagBegin.specialToken.kind == SOYDOC) {
       desc = tagBegin.specialToken.image;
     }
   }

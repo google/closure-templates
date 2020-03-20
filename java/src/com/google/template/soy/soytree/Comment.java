@@ -27,8 +27,10 @@ public abstract class Comment {
   public enum Type {
     /** A line comment. */
     LINE,
-    /** A range comment, including unhandled doc comments. */
-    RANGE
+    /** A range comment, including doc comments. */
+    RANGE,
+    /** One or more blank lines in the code, which are treated as an empty separator comment. */
+    BLANK_LINES,
   }
 
   public static Comment create(Type type, String source, SourceLocation location) {
