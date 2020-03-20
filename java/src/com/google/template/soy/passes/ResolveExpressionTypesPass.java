@@ -884,7 +884,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         node.setType(ErrorType.getInstance());
         return;
       }
-      node.setType(protoType.getFieldType(fieldName, errorReporter, node.getSourceLocation()));
+      node.setType(protoType.getFieldType(fieldName));
     }
 
     @Nullable
@@ -1436,8 +1436,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                 expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
           }
 
-          SoyType fieldType =
-              protoType.getFieldType(fieldName.identifier(), errorReporter, fieldName.location());
+          SoyType fieldType = protoType.getFieldType(fieldName.identifier());
 
           // Let args with unknown or error types pass
           if (argType.equals(UnknownType.getInstance())
@@ -1597,7 +1596,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case PROTO:
           {
             SoyProtoType protoType = (SoyProtoType) baseType;
-            SoyType fieldType = protoType.getFieldType(fieldName, errorReporter, sourceLocation);
+            SoyType fieldType = protoType.getFieldType(fieldName);
             if (fieldType != null) {
               return fieldType;
             } else {

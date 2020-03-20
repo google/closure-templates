@@ -69,22 +69,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     }
   }
 
-  private abstract static class FieldWithInterpreter extends Field {
-    FieldWithInterpreter(FieldDescriptor fieldDesc) {
-      super(fieldDesc);
-    }
-
-    abstract SoyValue interpretField(Message owner);
-
-    abstract void assignField(Message.Builder builder, SoyValue value);
-
-    abstract boolean hasField(Message proto);
-  }
-
-  private static final class NormalFieldWithInterpreter extends FieldWithInterpreter {
+  private static final class FieldWithInterpreter extends Field {
     @LazyInit ProtoFieldInterpreter interpreter;
 
-    NormalFieldWithInterpreter(FieldDescriptor fieldDesc) {
+    FieldWithInterpreter(FieldDescriptor fieldDesc) {
       super(fieldDesc);
     }
 
@@ -96,17 +84,14 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       return local;
     }
 
-    @Override
     public SoyValue interpretField(Message message) {
       return impl().soyFromProto(message.getField(getDescriptor()));
     }
 
-    @Override
     public void assignField(Message.Builder builder, SoyValue value) {
       builder.setField(getDescriptor(), impl().protoFromSoy(value));
     }
 
-    @Override
     boolean hasField(Message proto) {
       // TODO(lukes):  Currently we assume that a field is present if it is repeated, has an
       // explicit default value or is set.  However, the type of fields is not generally nullable,
@@ -117,53 +102,12 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     }
   }
 
-  private static final class AmbiguousFieldWithInterpreter extends FieldWithInterpreter {
-    final Set<FieldWithInterpreter> fields;
-
-    AmbiguousFieldWithInterpreter(Set<FieldWithInterpreter> fields) {
-      super(fields.iterator().next().getDescriptor());
-      this.fields = fields;
-    }
-
-    @Override
-    SoyValue interpretField(Message owner) {
-      throw ambiguousFieldsError(getName(), fields);
-    }
-
-    @Override
-    void assignField(com.google.protobuf.Message.Builder builder, SoyValue value) {
-      throw ambiguousFieldsError(getName(), fields);
-    }
-
-    @Override
-    boolean hasField(Message proto) {
-      for (FieldWithInterpreter field : fields) {
-        if (field.hasField(proto)) {
-          return true;
-        }
-      }
-      return false;
-    }
-  }
-
   private static final LoadingCache<Descriptor, ProtoClass> classCache =
       CacheBuilder.newBuilder()
           .weakKeys()
           .build(
               new CacheLoader<Descriptor, ProtoClass>() {
-                final Field.Factory<FieldWithInterpreter> factory =
-                    new Field.Factory<FieldWithInterpreter>() {
-                      @Override
-                      public FieldWithInterpreter create(FieldDescriptor fieldDescriptor) {
-                        return new NormalFieldWithInterpreter(fieldDescriptor);
-                      }
-
-                      @Override
-                      public FieldWithInterpreter createAmbiguousFieldSet(
-                          Set<FieldWithInterpreter> fields) {
-                        return new AmbiguousFieldWithInterpreter(fields);
-                      }
-                    };
+                final Field.Factory<FieldWithInterpreter> factory = FieldWithInterpreter::new;
 
                 @Override
                 public ProtoClass load(Descriptor descriptor) throws Exception {

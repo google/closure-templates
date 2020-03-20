@@ -25,9 +25,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SoyBackendKind;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
@@ -154,15 +152,7 @@ public final class SoyProtoType extends SoyType {
     }
   }
 
-  private abstract static class FieldWithType extends Field {
-    FieldWithType(FieldDescriptor fieldDesc) {
-      super(fieldDesc);
-    }
-
-    abstract SoyType getType(ErrorReporter reporter, SourceLocation location);
-  }
-
-  private static final class NormalFieldWithType extends FieldWithType {
+  private static final class FieldWithType extends Field {
     // NOTE: we lazily resolve types so we can handle recursive messages
     @GuardedBy("this")
     SoyType type;
@@ -170,34 +160,18 @@ public final class SoyProtoType extends SoyType {
     @GuardedBy("this")
     TypeVisitor visitor;
 
-    NormalFieldWithType(FieldDescriptor fieldDesc, TypeVisitor visitor) {
+    FieldWithType(FieldDescriptor fieldDesc, TypeVisitor visitor) {
       super(fieldDesc);
       this.visitor = visitor;
     }
 
-    @Override
-    synchronized SoyType getType(ErrorReporter reporter, SourceLocation location) {
+    synchronized SoyType getType() {
       if (type == null) {
         type = FieldVisitor.visitField(getDescriptor(), visitor);
         checkNotNull(type, "Couldn't find a type for: %s", getDescriptor());
         visitor = null;
       }
       return type;
-    }
-  }
-
-  private static final class AmbiguousFieldWithType extends FieldWithType {
-    final Set<FieldWithType> fields;
-
-    AmbiguousFieldWithType(Set<FieldWithType> fields) {
-      super(fields.iterator().next().getDescriptor());
-      this.fields = fields;
-    }
-
-    @Override
-    SoyType getType(ErrorReporter reporter, SourceLocation location) {
-      Field.reportAmbiguousFieldsError(reporter, location, getName(), fields);
-      return ErrorType.getInstance();
     }
   }
 
@@ -218,12 +192,7 @@ public final class SoyProtoType extends SoyType {
 
               @Override
               public FieldWithType create(FieldDescriptor fieldDescriptor) {
-                return new NormalFieldWithType(fieldDescriptor, visitor);
-              }
-
-              @Override
-              public FieldWithType createAmbiguousFieldSet(Set<FieldWithType> fields) {
-                return new AmbiguousFieldWithType(fields);
+                return new FieldWithType(fieldDescriptor, visitor);
               }
             });
     this.extensionFieldNames =
@@ -280,9 +249,9 @@ public final class SoyProtoType extends SoyType {
 
   /** Returns the {@link SoyType} of the given field, or null if the field does not exist. */
   @Nullable
-  public SoyType getFieldType(String fieldName, ErrorReporter reporter, SourceLocation location) {
+  public SoyType getFieldType(String fieldName) {
     FieldWithType field = fields.get(fieldName);
-    return field != null ? field.getType(reporter, location) : null;
+    return field != null ? field.getType() : null;
   }
 
   /** Returns all the field names of this proto. */
