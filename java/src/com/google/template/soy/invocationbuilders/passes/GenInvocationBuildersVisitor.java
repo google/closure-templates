@@ -19,7 +19,6 @@ package com.google.template.soy.invocationbuilders.passes;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_RECORD;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.CHECK_NOT_NULL;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INDIRECT_P;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INIT_LIST_PARAM;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INJECTED_P;
@@ -415,6 +414,7 @@ public final class GenInvocationBuildersVisitor
       List<JavaType> types = param.javaTypes();
       if (types.size() == 1) {
         JavaType javaType = types.get(0);
+        // this is basically 'instanceof RecordJavaType' at this point
         if (javaType.isTypeLiteralSupported()) {
           genericType = javaType.asTypeLiteralString();
         }
@@ -647,8 +647,8 @@ public final class GenInvocationBuildersVisitor
             + "("
             + param.constantFieldName()
             + ", "
-            + CHECK_NOT_NULL
-            + "(future));");
+            + javaType.asInlineCast("future")
+            + ");");
     ilb.decreaseIndent();
     ilb.appendLine("}");
   }

@@ -16,26 +16,41 @@
 
 package com.google.template.soy.data;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.Streams.stream;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
+import com.google.common.html.types.SafeHtml;
+import com.google.common.html.types.SafeScript;
+import com.google.common.html.types.SafeUrl;
+import com.google.common.html.types.TrustedResourceUrl;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
+import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.restricted.BooleanData;
+import com.google.template.soy.data.restricted.FloatData;
+import com.google.template.soy.data.restricted.IntegerData;
+import com.google.template.soy.data.restricted.NullData;
+import com.google.template.soy.data.restricted.NumberData;
+import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -93,21 +108,18 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   public abstract static class AbstractBuilder<
           B extends AbstractBuilder<?, T>, T extends SoyTemplate>
       implements Builder<T> {
-    final SoyValueConverter soyValueConverter;
-    private final Map<SoyTemplateParam<?>, SoyValueProvider> data;
+    // Use IdentityHashMaps instead of HashMaps since:
+    //  1. They use less memory internally
+    //  2. We have an appropriate key object that we know will be a singleton
+    //  3. They tend to be faster.
+    //  One downside is that they have less efficient entrySet() implementations, but we can
+    // easily workaround that.
+    // fairly strong contract with our subclass so it is ok.  We know that this method is just
+    // returning a static final field.
+    private final Map<SoyTemplateParam<?>, SoyValueProvider> data =
+        new IdentityHashMap<>(/* expectedMaxSize= */ allParams().size());
 
-    protected AbstractBuilder() {
-      this.soyValueConverter = SoyValueConverter.INSTANCE;
-      // Use IdentityHashMaps instead of HashMaps since:
-      //  1. They use less memory internally
-      //  2. We have an appropriate key object that we know will be a singleton
-      //  3. They tend to be faster.
-      //  One downside is that they have less efficient entrySet() implementations, but we can
-      // easily workaround that.
-      // fairly strong contract with our subclass so it is ok.  We know that this method is just
-      // returning a static final field.
-      data = new IdentityHashMap<>(/* expectedMaxSize= */ allParams().size());
-    }
+    protected AbstractBuilder() {}
 
     @Override
     public final T build() {
@@ -135,9 +147,9 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
-    protected final B setParamInternal(SoyTemplateParam<?> name, Object value) {
-      Preconditions.checkNotNull(name);
-      SoyValueProvider soyValue = soyValueConverter.convert(value);
+    protected final B setParamInternal(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
+      checkNotNull(name);
+      checkNotNull(soyValue);
       data.put(name, soyValue);
       return (B) this;
     }
@@ -148,7 +160,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
         throw new IllegalArgumentException(
             "No param in " + this.getClass().getName() + " like " + param);
       }
-      return setParamInternal(param, value);
+      return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
     }
 
     @Override
@@ -158,7 +170,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
         throw new IllegalArgumentException(
             "No param in " + this.getClass().getName() + " like " + param);
       }
-      return setParamInternal(param, value);
+      return setParamInternal(param, SoyValueConverter.INSTANCE.convert(value));
     }
 
     @Override
@@ -172,50 +184,56 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     //
 
     /** Converts any Iterable to a Collection. Used by ListJavaType. */
-    protected final <I> Collection<I> asCollection(Iterable<I> iterable) {
-      return iterable instanceof Collection
-          ? (Collection<I>) iterable
-          : ImmutableList.copyOf(iterable);
+    protected static <T> SoyList asList(
+        Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return ListImpl.forProviderList(stream(iterable).map(mapper).collect(toImmutableList()));
     }
 
-    /**
-     * Makes sure that a {@code List<? extends Number>} actually contains a type of Number supported
-     * by Soy.
-     */
-    protected final ImmutableList<Number> asNumberCollection(Iterable<? extends Number> iterable) {
-      return Streams.stream(iterable).map(this::asNumber).collect(toImmutableList());
+    protected static <T> SoyValue asNullableList(
+        @Nullable Iterable<T> iterable, Function<? super T, ? extends SoyValueProvider> mapper) {
+      return iterable == null ? NullData.INSTANCE : asList(iterable, mapper);
     }
 
-    /**
-     * Makes sure that a {@code List<? extends Number>} actually contains Doubles. Used by
-     * ListJavaType.
-     */
-    protected final ImmutableList<Double> asListOfDoubles(Iterable<? extends Number> value) {
-      return Streams.stream(value).map(Number::doubleValue).collect(toImmutableList());
+    protected static SoyProtoValue asProto(Message proto) {
+      return SoyProtoValue.create(proto);
     }
 
-    /**
-     * Makes sure that a {@code List<? extends Number>} actually contains Longs. Used by
-     * ListJavaType.
-     */
-    protected final ImmutableList<Long> asListOfLongs(Iterable<? extends Number> value) {
-      return Streams.stream(value).map(Number::longValue).collect(toImmutableList());
+    protected static SoyValue asNullableProto(@Nullable Message proto) {
+      return proto == null ? NullData.INSTANCE : SoyProtoValue.create(proto);
+    }
+
+    protected static BooleanData asBool(boolean b) {
+      return b ? BooleanData.TRUE : BooleanData.FALSE;
+    }
+
+    protected static SoyValue asNullableBool(@Nullable Boolean b) {
+      return b == null ? NullData.INSTANCE : asBool(b);
+    }
+
+    protected static StringData asString(String s) {
+      return StringData.forValue(s);
+    }
+
+    protected static SoyValue asNullableString(@Nullable String s) {
+      return s == null ? NullData.INSTANCE : asString(s);
     }
 
     /**
      * Used in code generated for Soy record types. The parameters are interleaved key-value pairs.
      */
-    protected final ImmutableMap<String, Object> asRecord(
-        String firstKey, Object firstValue, Object... more) {
-      Preconditions.checkArgument((more.length % 2) == 0);
-      // Uses soyValueConverter.convert to allow NULL values in the ImmutableMap.
-      ImmutableMap.Builder<String, Object> map =
-          ImmutableMap.<String, Object>builder()
-              .put(firstKey, soyValueConverter.convert(firstValue));
+    protected static SoyRecord asRecord(
+        String firstKey, SoyValueProvider firstValue, Object... more) {
+      checkArgument((more.length % 2) == 0);
+      ImmutableMap.Builder<String, SoyValueProvider> map =
+          ImmutableMap.<String, SoyValueProvider>builderWithExpectedSize(1 + more.length / 2)
+              .put(firstKey, firstValue);
       for (int i = 0; i < more.length; i += 2) {
-        map.put((String) more[i], soyValueConverter.convert(more[i + 1]));
+        map.put((String) more[i], (SoyValueProvider) more[i + 1]);
       }
-      return map.build();
+      // TODO(lukes): this should be LEGACY_OBJECT_MAP_OR_RECORD, but some tests rely on this being
+      // 'UNKNOWN' change this to use a type that only implements SoyRecord to improve type
+      // checking.
+      return DictImpl.forProviderMap(map.build(), RuntimeMapTypeTracker.Type.UNKNOWN);
     }
 
     /**
@@ -223,17 +241,88 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      *
      * @throws NullPointerException if n is null.
      */
-    protected final Number asNumber(Number n) {
-      // don't rewrite as a ternary, otherwise the long will get implicitly coerced to a double.
-      if (n instanceof Float || n instanceof Double) {
-        return n.doubleValue();
-      }
-      return n.longValue();
+    protected static NumberData asNumber(Number n) {
+      return n instanceof Float || n instanceof Double
+          ? FloatData.forValue(n.doubleValue())
+          : IntegerData.forValue(n.longValue());
     }
 
     /** Converts a {@code Number} into a number type supported by Soy. */
-    protected final Number asNullableNumber(@Nullable Number n) {
-      return n == null ? null : asNumber(n);
+    protected static SoyValue asNullableNumber(@Nullable Number n) {
+      return n == null ? NullData.INSTANCE : asNumber(n);
+    }
+
+    protected static IntegerData asInt(long n) {
+      return IntegerData.forValue(n);
+    }
+
+    protected static IntegerData asBoxedInt(Number n) {
+      return asInt(n.longValue());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableInt(@Nullable Number n) {
+      return n == null ? NullData.INSTANCE : asInt(n.longValue());
+    }
+
+    protected static FloatData asFloat(double n) {
+      return FloatData.forValue(n);
+    }
+
+    protected static FloatData asBoxedFloat(Number n) {
+      return asFloat(n.doubleValue());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableFloat(@Nullable Number n) {
+      return n == null ? NullData.INSTANCE : asFloat(n.doubleValue());
+    }
+
+    protected static IntegerData asProtoEnum(ProtocolMessageEnum protoEnum) {
+      return IntegerData.forValue(protoEnum.getNumber());
+    }
+
+    /** Converts a {@code Number} into a number type supported by Soy. */
+    protected static SoyValue asNullableProtoEnum(@Nullable ProtocolMessageEnum protoEnum) {
+      return protoEnum == null ? NullData.INSTANCE : asProtoEnum(protoEnum);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static <T> SoyFutureValueProvider asFuture(
+        Future<? extends T> future, Function<? super T, SoyValueProvider> mapper) {
+      return new SoyFutureValueProvider(future, (Function) mapper);
+    }
+
+    protected static SanitizedContent asHtml(SafeHtml html) {
+      return SanitizedContents.fromSafeHtml(html);
+    }
+
+    protected static SoyValue asNullableHtml(@Nullable SafeHtml html) {
+      return html == null ? NullData.INSTANCE : asHtml(html);
+    }
+
+    protected static SanitizedContent asUri(SafeUrl url) {
+      return SanitizedContents.fromSafeUrl(url);
+    }
+
+    protected static SoyValue asNullableUri(@Nullable SafeUrl url) {
+      return url == null ? NullData.INSTANCE : asUri(url);
+    }
+
+    protected static SanitizedContent asJs(SafeScript script) {
+      return SanitizedContents.fromSafeScript(script);
+    }
+
+    protected static SoyValue asNullableJs(@Nullable SafeScript script) {
+      return script == null ? NullData.INSTANCE : asJs(script);
+    }
+
+    protected static SanitizedContent asTrustedResourceUri(TrustedResourceUrl url) {
+      return SanitizedContents.fromTrustedResourceUrl(url);
+    }
+
+    protected static SoyValue asNullableTrustedResourceUri(@Nullable TrustedResourceUrl url) {
+      return url == null ? NullData.INSTANCE : asTrustedResourceUri(url);
     }
 
     /**
@@ -241,15 +330,18 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      *
      * @throws NullPointerException if content is null.
      */
-    protected final SanitizedContent asAttributes(SanitizedContent content) {
-      Preconditions.checkArgument(
-          content.getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES);
+    protected static SanitizedContent asAttributes(SanitizedContent content) {
+      checkArgument(
+          content.getContentKind() == SanitizedContent.ContentKind.ATTRIBUTES,
+          "expected %s but got %s",
+          SanitizedContent.ContentKind.ATTRIBUTES,
+          content.getContentKind());
       return content;
     }
 
     /** Validates that {@code content} is of type ATTRIBUTES. */
-    protected final SanitizedContent asNullableAttributes(@Nullable SanitizedContent content) {
-      return content == null ? null : asAttributes(content);
+    protected static SoyValue asNullableAttributes(@Nullable SanitizedContent content) {
+      return content == null ? NullData.INSTANCE : asAttributes(content);
     }
 
     /**
@@ -257,35 +349,47 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      *
      * @throws NullPointerException if css is null.
      */
-    protected final Object asCss(CssParam css) {
-      return css.toSoyValue();
+    protected static SanitizedContent asCss(CssParam css) {
+      switch (css.type()) {
+        case SAFE_STYLE:
+          return SanitizedContents.fromSafeStyle(css.safeStyle());
+        case SAFE_STYLE_SHEET:
+          return SanitizedContents.fromSafeStyleSheet(css.safeStyleSheet());
+      }
+      throw new AssertionError();
     }
 
     /** Converts CssParam into a value that Soy can use. */
-    protected final Object asNullableCss(@Nullable CssParam css) {
-      return css == null ? null : asCss(css);
+    protected static SoyValue asNullableCss(@Nullable CssParam css) {
+      return css == null ? NullData.INSTANCE : asCss(css);
     }
 
-    protected final Function<Object, Object> longMapper = t -> ((Number) t).longValue();
-    protected final Function<Object, Object> doubleMapper = t -> ((Number) t).doubleValue();
-    protected final Function<Object, Object> numberMapper = t -> asNumber((Number) t);
+    protected static <K, V> SoyMap asMap(
+        Map<K, V> map,
+        Function<? super K, ? extends SoyValue> keyMapper,
+        Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      ImmutableMap.Builder<SoyValue, SoyValueProvider> builder =
+          ImmutableMap.builderWithExpectedSize(map.size());
+      map.forEach((k, v) -> builder.put(keyMapper.apply(k), valueMapper.apply(v)));
+      return SoyMapImpl.forProviderMap(builder.build());
+    }
 
-    /**
-     * Makes sure that a Map with key or value type {@code <? extends Number>} has keys and/or
-     * values that are actually Long/Double. This is necessary because Soy doesn't support any
-     * implementation of Number.
-     *
-     * @see #longMapper
-     * @see #doubleMapper
-     */
-    protected final ImmutableMap<?, ?> asMapOfNumbers(
-        Map<?, ?> map,
-        @Nullable Function<Object, Object> keyMapper,
-        @Nullable Function<Object, Object> valueMapper) {
-      Function<Object, Object> key = keyMapper != null ? keyMapper : l -> l;
-      Function<Object, Object> value = valueMapper != null ? valueMapper : l -> l;
-      return map.entrySet().stream()
-          .collect(toImmutableMap(e -> key.apply(e.getKey()), e -> value.apply(e.getValue())));
+    protected static <V> SoyLegacyObjectMap asLegacyObjectMap(
+        Map<?, V> map, Function<? super V, ? extends SoyValueProvider> valueMapper) {
+      ImmutableMap.Builder<String, SoyValueProvider> builder =
+          ImmutableMap.builderWithExpectedSize(map.size());
+      for (Map.Entry<?, V> entry : map.entrySet()) {
+        // coerce key to a string, legacy object maps always coerce keys to strings.
+        builder.put(entry.getKey().toString(), valueMapper.apply(entry.getValue()));
+      }
+      // TODO(lukes): this should be LEGACY_OBJECT_MAP_OR_RECORD, but some tests rely on this being
+      // 'UNKNOWN' change this to use a type that only implements SoyLegacyObjectMap to improve type
+      // checking.
+      return DictImpl.forProviderMap(builder.build(), RuntimeMapTypeTracker.Type.UNKNOWN);
+    }
+
+    protected static SoyValueProvider asSoyValue(@Nullable Object object) {
+      return SoyValueConverter.INSTANCE.convert(object);
     }
 
     @ForOverride
@@ -357,9 +461,8 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
      * @throws SoyDataException if {@code value} is not convertable to a {@link SoyValueProvider}
      */
     @SuppressWarnings("unchecked")
-    protected final B addToListParam(SoyTemplateParam<?> name, Object value) {
-      Preconditions.checkNotNull(name);
-      SoyValueProvider soyValue = soyValueConverter.convert(value);
+    protected final B addToListParam(SoyTemplateParam<?> name, SoyValueProvider soyValue) {
+      checkNotNull(name);
       // for required parameters the list will be eagerly initialized via initListParam, for others
       // we need to check when adding
       accummulatorData.computeIfAbsent(name, s -> new ArrayList<>()).add(soyValue);
@@ -368,7 +471,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     @SuppressWarnings("unchecked")
     protected final B initListParam(SoyTemplateParam<?> name) {
-      Preconditions.checkNotNull(name);
+      checkNotNull(name);
       accummulatorData.computeIfAbsent(name, s -> new ArrayList<>());
       return (B) this;
     }

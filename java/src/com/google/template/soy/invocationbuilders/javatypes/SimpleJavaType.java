@@ -16,10 +16,7 @@
 
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_ATTRIBUTES;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_CSS;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_NULLABLE_ATTRIBUTES;
-import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_NULLABLE_CSS;
+import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.castFunction;
 
 /**
  * Class for simple java types (e.g. boolean, String, Number, SafeHtml) that do not need specialized
@@ -36,62 +33,119 @@ public class SimpleJavaType extends JavaType {
    * Constants for all of the simple types we support. Use {@link #asNullable} to get the
    * corresponding nullable type.
    */
-  public static final SimpleJavaType BOOLEAN = new BooleanJavaType(false);
+  public static final SimpleJavaType BOOLEAN =
+      new PrimitiveJavaType(
+          /* boxedType= */ "java.lang.Boolean",
+          /* primitiveType= */ "boolean",
+          /* genericType=*/ "java.lang.Boolean",
+          /* isNullable=*/ false,
+          castFunction("asBool"),
+          castFunction("asBool"),
+          castFunction("asNullableBool"));
+
+  public static final SimpleJavaType INT =
+      new PrimitiveJavaType(
+          /* boxedType= */ "java.lang.Long",
+          /* primitiveType= */ "long",
+          /* genericType=*/ "? extends java.lang.Number",
+          /* isNullable=*/ false,
+          castFunction("asInt"),
+          castFunction("asBoxedInt"),
+          castFunction("asNullableInt"));
+
+  public static final SimpleJavaType FLOAT =
+      new PrimitiveJavaType(
+          /* boxedType= */ "java.lang.Double",
+          /* primitiveType= */ "double",
+          /* genericType=*/ "? extends java.lang.Number",
+          /* isNullable=*/ false,
+          castFunction("asFloat"),
+          castFunction("asBoxedFloat"),
+          castFunction("asNullableFloat"));
+
+  public static final SimpleJavaType NUMBER =
+      new SimpleJavaType(
+          "java.lang.Number",
+          "? extends java.lang.Number",
+          /* isNullable=*/ false,
+          castFunction("asNumber"),
+          castFunction("asNullableNumber"));
 
   public static final SimpleJavaType HTML =
-      new SimpleJavaType("com.google.common.html.types.SafeHtml", false);
+      new SimpleJavaType(
+          "com.google.common.html.types.SafeHtml",
+          castFunction("asHtml"),
+          castFunction("asNullableHtml"));
 
   public static final SimpleJavaType JS =
-      new SimpleJavaType("com.google.common.html.types.SafeScript", false);
+      new SimpleJavaType(
+          "com.google.common.html.types.SafeScript",
+          castFunction("asJs"),
+          castFunction("asNullableJs"));
 
   public static final SimpleJavaType URL =
-      new SimpleJavaType("com.google.common.html.types.SafeUrl", false);
+      new SimpleJavaType(
+          "com.google.common.html.types.SafeUrl",
+          castFunction("asUri"),
+          castFunction("asNullableUri"));
 
   public static final SimpleJavaType TRUSTED_RESOURCE_URL =
-      new SimpleJavaType("com.google.common.html.types.TrustedResourceUrl", false);
+      new SimpleJavaType(
+          "com.google.common.html.types.TrustedResourceUrl",
+          /* asReference=*/ castFunction("asTrustedResourceUri"),
+          /* asNullableReference=*/ castFunction("asNullableTrustedResourceUri"));
 
-  public static final SimpleJavaType STRING = new SimpleJavaType("java.lang.String", false);
+  public static final SimpleJavaType STRING =
+      new SimpleJavaType(
+          "java.lang.String",
+          /* asReference=*/ castFunction("asString"),
+          /* asNullableReference=*/ castFunction("asNullableString"));
+
+  private static final CodeGenUtils.Member AS_SOY_VALUE = castFunction("asSoyValue");
 
   public static final SimpleJavaType OBJECT =
-      new SimpleJavaType("java.lang.Object", "?", false, false);
+      new SimpleJavaType(
+          "java.lang.Object", "?", /* isNullable=*/ false, AS_SOY_VALUE, AS_SOY_VALUE);
 
-  public static final SimpleJavaType ATTRIBUTES = new AttributesJavaType(false);
-
-  // Don't support as list/map type for now because we don't have a way of running the toSoyValue
-  // over all values.
-  public static final SimpleJavaType CSS = new CssJavaType(false);
+  public static final SimpleJavaType ATTRIBUTES =
+      new SimpleJavaType(
+          "com.google.template.soy.data.SanitizedContent",
+          /* asReference=*/ castFunction("asAttributes"),
+          /* asNullableReference=*/ castFunction("asNullableAttributes"));
+  public static final SimpleJavaType CSS =
+      new SimpleJavaType(
+          "com.google.template.soy.data.CssParam",
+          /* asReference=*/ castFunction("asCss"),
+          /* asNullableReference=*/ castFunction("asNullableCss"));
 
   private final String javaTypeString;
   private final String genericsTypeArgumentString;
-  private final boolean isPrimitive;
+  final CodeGenUtils.Member asReference;
+  final CodeGenUtils.Member asNullableReference;
+
+  private SimpleJavaType(
+      String javaTypeString,
+      CodeGenUtils.Member asReference,
+      CodeGenUtils.Member asNullableReference) {
+    this(javaTypeString, javaTypeString, /* isNullable=*/ false, asReference, asNullableReference);
+  }
 
   private SimpleJavaType(
       String javaTypeString,
       String genericsTypeArgumentString,
-      boolean isPrimitive,
-      boolean isNullable) {
+      boolean isNullable,
+      CodeGenUtils.Member asReference,
+      CodeGenUtils.Member asNullableReference) {
     super(isNullable);
     this.javaTypeString = javaTypeString;
     this.genericsTypeArgumentString = genericsTypeArgumentString;
-    this.isPrimitive = isPrimitive;
-  }
-
-  /**
-   * Construct overload that =defaults to non-nullable and uses {@code javaTypeString} as the {@code
-   * genericsTypeArgumentString} as well.
-   */
-  private SimpleJavaType(String javaTypeString, boolean isPrimitive) {
-    this(javaTypeString, javaTypeString, isPrimitive, false);
+    this.asReference = asReference;
+    this.asNullableReference = asNullableReference;
   }
 
   @Override
   public String toJavaTypeString() {
     return javaTypeString;
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return isPrimitive;
   }
 
   @Override
@@ -101,75 +155,81 @@ public class SimpleJavaType extends JavaType {
 
   @Override
   public SimpleJavaType asNullable() {
-    return new SimpleJavaType(javaTypeString, genericsTypeArgumentString, isPrimitive, true);
+    return new SimpleJavaType(
+        javaTypeString, genericsTypeArgumentString, true, asReference, asNullableReference);
+  }
+
+  @Override
+  public String getAsInlineCastFunction(int depth) {
+    return "AbstractBuilder::" + getMapperFunction();
+  }
+
+  CodeGenUtils.Member getMapperFunction() {
+    return isNullable() ? asNullableReference : asReference;
+  }
+
+  @Override
+  public String asInlineCast(String variable, int depth) {
+    return getMapperFunction() + "(" + variable + ")";
   }
 
   /**
    * Special boolean subtype. Uses primitive unless the type needs to be nullable, and then we
    * switch to the boxed Boolean.
    */
-  private static final class BooleanJavaType extends SimpleJavaType {
-    BooleanJavaType(boolean isNullable) {
-      // Use boxed boolean if the type needs to be nullable. Otherwise use primitive boolean.
-      super(
-          isNullable ? "java.lang.Boolean" : "boolean",
-          "java.lang.Boolean",
-          !isNullable,
-          isNullable);
-    }
+  private static final class PrimitiveJavaType extends SimpleJavaType {
+    final String primitiveType;
+    final String boxedType;
+    final String genericType;
+    final CodeGenUtils.Member asFunctionBoxed;
 
-    @Override
-    public BooleanJavaType asNullable() {
-      return new BooleanJavaType(true);
+    PrimitiveJavaType(
+        String boxedType,
+        String primitiveType,
+        String genericType,
+        boolean isNullable,
+        CodeGenUtils.Member asFunctionUnboxed,
+        CodeGenUtils.Member asFunctionBoxed,
+        CodeGenUtils.Member asNullableFunction) {
+      // Use the boxed type if the type needs to be nullable (or generic). Otherwise use the
+      // primitive.
+      super(
+          isNullable ? boxedType : primitiveType,
+          boxedType,
+          isNullable,
+          asFunctionUnboxed,
+          asNullableFunction);
+      this.genericType = genericType;
+      this.asFunctionBoxed = asFunctionBoxed;
+      this.primitiveType = primitiveType;
+      this.boxedType = boxedType;
     }
 
     @Override
     public String asTypeLiteralString() {
-      return asGenericsTypeArgumentString();
-    }
-  }
-
-  /**
-   * The Attributes type needs special runtime operations. This subclass preserves the {@link
-   * JavaType#asInlineCast} override when {@link #asNullable} is called.
-   */
-  private static final class AttributesJavaType extends SimpleJavaType {
-
-    AttributesJavaType(boolean isNullable) {
-      super("com.google.template.soy.data.SanitizedContent", null, false, isNullable);
+      return boxedType;
     }
 
     @Override
-    public String asInlineCast(String variableName) {
-      return (isNullable() ? AS_NULLABLE_ATTRIBUTES : AS_ATTRIBUTES) + "(" + variableName + ")";
+    String asGenericsTypeArgumentString() {
+      return genericType;
     }
 
     @Override
-    public AttributesJavaType asNullable() {
-      return new AttributesJavaType(true);
-    }
-  }
-
-  private static final class CssJavaType extends SimpleJavaType {
-
-    CssJavaType(boolean isNullable) {
-      super("com.google.template.soy.data.CssParam", null, false, isNullable);
-    }
-
-    @Override
-    public String asInlineCast(String variableName) {
-      return (isNullable() ? AS_NULLABLE_CSS : AS_CSS) + "(" + variableName + ")";
+    public PrimitiveJavaType asNullable() {
+      return new PrimitiveJavaType(
+          boxedType,
+          primitiveType,
+          genericType,
+          true,
+          asReference,
+          asFunctionBoxed,
+          asNullableReference);
     }
 
     @Override
-    public CssJavaType asNullable() {
-      return new CssJavaType(true);
-    }
-
-    @Override
-    public boolean isTypeLiteralSupported() {
-      // Not supported because there's no hook to unwrap the value.
-      return false;
+    public String getAsInlineCastFunction(int depth) {
+      return "AbstractBuilder::" + (isNullable() ? asNullableReference : asFunctionBoxed);
     }
   }
 }

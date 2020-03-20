@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
-import com.google.template.soy.invocationbuilders.javatypes.JavaNumberSubtype;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.javatypes.ListJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.MapJavaType;
@@ -72,11 +71,10 @@ final class InvocationBuilderTypeUtils {
         types = ImmutableList.of(SimpleJavaType.BOOLEAN);
         break;
       case INT:
-        types = ImmutableList.of(JavaNumberSubtype.LONG);
-
+        types = ImmutableList.of(SimpleJavaType.INT);
         break;
       case FLOAT:
-        types = ImmutableList.of(JavaNumberSubtype.DOUBLE);
+        types = ImmutableList.of(SimpleJavaType.FLOAT);
         break;
       case STRING:
         types = ImmutableList.of(SimpleJavaType.STRING);
@@ -237,11 +235,11 @@ final class InvocationBuilderTypeUtils {
   private static ImmutableList<JavaType> convertSoyUnionTypeToJavaTypes(UnionType unionType) {
     if (unionType.equals(
         UnionType.of(NullType.getInstance(), IntType.getInstance(), FloatType.getInstance()))) {
-      return ImmutableList.of(JavaNumberSubtype.NUMBER.asNullable());
+      return ImmutableList.of(SimpleJavaType.NUMBER.asNullable());
     }
 
     if (unionType.equals(UnionType.of(IntType.getInstance(), FloatType.getInstance()))) {
-      return ImmutableList.of(JavaNumberSubtype.NUMBER);
+      return ImmutableList.of(SimpleJavaType.NUMBER);
     }
 
     // Figure out if the union contains the {@link NullType}, which tells us if the param setters

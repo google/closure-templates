@@ -47,11 +47,6 @@ public class RecordJavaType extends JavaType {
   }
 
   @Override
-  boolean isPrimitive() {
-    return false;
-  }
-
-  @Override
   public JavaType asNullable() {
     return this;
   }
@@ -74,5 +69,10 @@ public class RecordJavaType extends JavaType {
   @Override
   public boolean isTypeLiteralSupported() {
     return false;
+  }
+
+  @Override
+  public String asInlineCast(String variable, int depth) {
+    return CodeGenUtils.AS_RECORD + "(" + variable + ")";
   }
 }

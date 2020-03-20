@@ -44,14 +44,4 @@ public abstract class CssParam {
   abstract SafeStyle safeStyle();
 
   abstract SafeStyleSheet safeStyleSheet();
-
-  public Object toSoyValue() {
-    switch (type()) {
-      case SAFE_STYLE:
-        return safeStyle();
-      case SAFE_STYLE_SHEET:
-        return safeStyleSheet();
-    }
-    throw new AssertionError();
-  }
 }

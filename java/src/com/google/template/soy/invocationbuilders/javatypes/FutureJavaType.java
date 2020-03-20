@@ -15,22 +15,18 @@
  */
 package com.google.template.soy.invocationbuilders.javatypes;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /** Represents a Future<T> type for generated Soy Java invocation builders. */
 public final class FutureJavaType extends JavaType {
 
+  private static final CodeGenUtils.Member AS_FUTURE = CodeGenUtils.castFunction("asFuture");
   private final JavaType type;
 
   public FutureJavaType(JavaType type) {
     super(/* isNullable= */ false);
-    Preconditions.checkArgument(type.isGenericsTypeSupported());
+    checkArgument(type.isGenericsTypeSupported());
     this.type = type;
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return false;
   }
 
   @Override
@@ -48,7 +44,13 @@ public final class FutureJavaType extends JavaType {
   }
 
   @Override
+  public String asInlineCast(String variableName, int depth) {
+    return AS_FUTURE + "(" + variableName + ", " + type.getAsInlineCastFunction(depth) + ")";
+  }
+
+  @Override
   public JavaType asNullable() {
+    // TODO(lukes): throw UnsupportedOperationExceptiopn?
     return this;
   }
 }

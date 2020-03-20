@@ -20,6 +20,9 @@ package com.google.template.soy.invocationbuilders.javatypes;
 public final class ListJavaType extends JavaType {
 
   private final JavaType elementType; // The type of the list's elements.
+  private static final CodeGenUtils.Member AS_LIST = CodeGenUtils.castFunction("asList");
+  private static final CodeGenUtils.Member AS_NULLABLE_LIST =
+      CodeGenUtils.castFunction("asNullableList");
 
   public ListJavaType(JavaType elementType) {
     this(elementType, /* isNullable= */ false);
@@ -28,11 +31,6 @@ public final class ListJavaType extends JavaType {
   public ListJavaType(JavaType elementType, boolean isNullable) {
     super(isNullable);
     this.elementType = elementType;
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return false;
   }
 
   @Override
@@ -48,16 +46,13 @@ public final class ListJavaType extends JavaType {
   }
 
   @Override
-  public String asInlineCast(String variableName) {
-    if (elementType instanceof JavaNumberSubtype) {
-      // Convert Iterable<? extends Number> to ImmutableList<Long> or ImmutableList<Double>.
-      JavaNumberSubtype elementNumberType = (JavaNumberSubtype) elementType;
-      return elementNumberType.getListConverterMethod() + "(" + variableName + ")";
-    } else {
-      // Soy internals want a Java Collection for Soy list<> type. To support Iterable here we
-      // need to convert to Collection if necessary.
-      return CodeGenUtils.AS_COLLECTION + "(" + variableName + ")";
-    }
+  public String asInlineCast(String variableName, int depth) {
+    return (isNullable() ? AS_NULLABLE_LIST : AS_LIST)
+        + "("
+        + variableName
+        + ", "
+        + elementType.getAsInlineCastFunction(depth)
+        + ")";
   }
 
   JavaType getElementType() {

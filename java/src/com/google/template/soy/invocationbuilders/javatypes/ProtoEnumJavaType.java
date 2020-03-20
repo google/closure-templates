@@ -20,7 +20,10 @@ import com.google.template.soy.internal.proto.JavaQualifiedNames;
 
 /** Represents a proto enum for generated Soy Java invocation builders. */
 public final class ProtoEnumJavaType extends JavaType {
-  final EnumDescriptor enumDescriptor;
+  private static final CodeGenUtils.Member AS_PROTO_ENUM = CodeGenUtils.castFunction("asProtoEnum");
+  private static final CodeGenUtils.Member AS_NULLABLE_PROTO_ENUM =
+      CodeGenUtils.castFunction("asNullableProtoEnum");
+  private final EnumDescriptor enumDescriptor;
 
   public ProtoEnumJavaType(EnumDescriptor enumDescriptor) {
     this(enumDescriptor, /* isNullable= */ false);
@@ -29,11 +32,6 @@ public final class ProtoEnumJavaType extends JavaType {
   public ProtoEnumJavaType(EnumDescriptor enumDescriptor, boolean isNullable) {
     super(isNullable);
     this.enumDescriptor = enumDescriptor;
-  }
-
-  @Override
-  boolean isPrimitive() {
-    return false;
   }
 
   @Override
@@ -49,5 +47,19 @@ public final class ProtoEnumJavaType extends JavaType {
   @Override
   public ProtoEnumJavaType asNullable() {
     return new ProtoEnumJavaType(enumDescriptor, /* isNullable= */ true);
+  }
+
+  @Override
+  public String getAsInlineCastFunction(int depth) {
+    return "AbstractBuilder::" + getCastFunction();
+  }
+
+  private CodeGenUtils.Member getCastFunction() {
+    return (isNullable() ? AS_NULLABLE_PROTO_ENUM : AS_PROTO_ENUM);
+  }
+
+  @Override
+  public String asInlineCast(String variable, int depth) {
+    return getCastFunction() + "(" + variable + ")";
   }
 }
