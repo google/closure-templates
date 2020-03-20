@@ -67,16 +67,6 @@ public class SoyTemplateInfo {
     return name.substring(name.lastIndexOf('.'));
   }
 
-  /**
-   * Returns a map from each param to whether it's required for this template.
-   *
-   * @deprecated Use {@link #getParamNames} or other related method.
-   */
-  @Deprecated
-  public ImmutableMap<String, ParamRequisiteness> getParams() {
-    return paramMap;
-  }
-
   /** Returns the number of parameters in this template. */
   public final int getParamCount() {
     return paramMap.size();
