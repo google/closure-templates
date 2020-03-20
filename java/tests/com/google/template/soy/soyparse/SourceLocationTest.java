@@ -55,6 +55,7 @@ import org.junit.runners.JUnit4;
 public final class SourceLocationTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
+  private static final String FAKE_FILE_PATH = "fakefile.soy";
 
   @Test
   public void testLocationsInParsedContent() throws Exception {
@@ -831,6 +832,100 @@ public final class SourceLocationTest {
 
     assertThat(outerRange.unionWith(innerRange)).isEqualTo(outerRange);
     assertThat(innerRange.unionWith(outerRange)).isEqualTo(outerRange);
+  }
+
+  @Test
+  public void testFullyContainsRange() throws Exception {
+    // One is a subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(2, 4), Point.create(5, 7));
+
+    assertThat(outerRange.fullyContainsRange(innerRange)).isTrue();
+    assertThat(innerRange.fullyContainsRange(outerRange)).isFalse();
+  }
+
+  @Test
+  public void testFullyContainsRange_sameStartPoint() throws Exception {
+    // One is a subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(5, 7));
+
+    assertThat(outerRange.fullyContainsRange(innerRange)).isTrue();
+    assertThat(innerRange.fullyContainsRange(outerRange)).isFalse();
+  }
+
+  @Test
+  public void testFullyContainsRange_sameEndPoint() throws Exception {
+    // One is a subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 5), Point.create(8, 7));
+
+    assertThat(outerRange.fullyContainsRange(innerRange)).isTrue();
+    assertThat(innerRange.fullyContainsRange(outerRange)).isFalse();
+  }
+
+  @Test
+  public void testFullyContainsRange_sameRange() throws Exception {
+    // One is a subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+
+    assertThat(outerRange.fullyContainsRange(innerRange)).isTrue();
+    assertThat(innerRange.fullyContainsRange(outerRange)).isTrue();
+  }
+
+  @Test
+  public void testFullyContainsRange_failsIfEndsAfter() throws Exception {
+    // One is not a subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 5), Point.create(10, 7));
+
+    assertThat(outerRange.fullyContainsRange(innerRange)).isFalse();
+    assertThat(innerRange.fullyContainsRange(outerRange)).isFalse();
+  }
+
+  @Test
+  public void testFullyContainsRange_failsIfBeginsBefore() throws Exception {
+    // One is a not subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 1), Point.create(6, 7));
+
+    assertThat(outerRange.fullyContainsRange(innerRange)).isFalse();
+    assertThat(innerRange.fullyContainsRange(outerRange)).isFalse();
+  }
+
+  @Test
+  public void testFullyContainsRange_failsIfBothUnknown() throws Exception {
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.UNKNOWN_POINT, Point.UNKNOWN_POINT);
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.UNKNOWN_POINT, Point.UNKNOWN_POINT);
+
+    assertThat(range1.fullyContainsRange(range2)).isFalse();
+    assertThat(range2.fullyContainsRange(range1)).isFalse();
+  }
+
+  @Test
+  public void testFullyContainsRange_failsIfOneUnknown() throws Exception {
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(5, 8));
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.UNKNOWN_POINT, Point.UNKNOWN_POINT);
+
+    assertThat(range1.fullyContainsRange(range2)).isFalse();
+    assertThat(range2.fullyContainsRange(range1)).isFalse();
   }
 
   @Test

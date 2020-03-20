@@ -266,6 +266,21 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return begin;
   }
 
+  /** Whether this source location fully contains the given {@code range}, inclusively. */
+  public boolean fullyContainsRange(SourceLocation range) {
+    // If either location is unknown, return false.
+    if (!this.isKnown() || !range.isKnown()) {
+      return false;
+    }
+    // This source location should start before or at the same point as the given range.
+    boolean rangeStartsAfterOrAtBeginPoint = !this.begin.isAfter(range.begin);
+
+    // This source location should end after or at the same point as the given range.
+    boolean rangeEndsAfterOrAtEndPoint = !this.end.isBefore(range.end);
+
+    return rangeStartsAfterOrAtBeginPoint && rangeEndsAfterOrAtEndPoint;
+  }
+
   /** Returns a new location that points to the last character of this location. */
   public SourceLocation getEndLocation() {
     return new SourceLocation(filePath, end, end);
