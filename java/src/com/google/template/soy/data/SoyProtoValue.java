@@ -331,7 +331,8 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
           String.format(
               "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
                   + "\n\t%s",
-              fullName, type, locationKey));
+              fullName, type, locationKey),
+          new Exception("bad proto access @" + locationKey));
     }
     return Flags.allowReflectiveProtoAccess();
   }
