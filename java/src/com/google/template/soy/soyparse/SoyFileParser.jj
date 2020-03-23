@@ -761,12 +761,15 @@ TOKEN_MGR_DECLS: {
   }
 
   void addBlankLines(Token blankLinesToken) {
-    comments.add(
-        Comment.create(
-            Comment.Type.BLANK_LINES,
-            blankLinesToken.image,
-            // SourceLocation for the blank line starts at the end of the previous line.
-            parser.createSrcLoc(blankLinesToken)));
+    SourceLocation tokenLocation = parser.createSrcLoc(blankLinesToken);
+    // SourceLocation for the blank line token starts at the end of the previous line.
+    // Manually setting it at the beginning of the first blank line.
+    SourceLocation loc =
+        new SourceLocation(
+            tokenLocation.getFilePath(),
+            SourceLocation.Point.create(tokenLocation.getBeginLine() + 1, 1),
+            tokenLocation.getEndPoint());
+    comments.add(Comment.create(Comment.Type.BLANK_LINES, blankLinesToken.image, loc));
   }
 
   void addLineComment(Token commentToken) {
