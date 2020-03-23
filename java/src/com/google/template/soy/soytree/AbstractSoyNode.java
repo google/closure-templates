@@ -32,7 +32,7 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
   private int id;
 
   /** The location in the file from which this node was parsed or derived. */
-  private final SourceLocation srcLoc;
+  private SourceLocation srcLoc;
 
   /**
    * @param id The id for this node.
@@ -76,6 +76,10 @@ public abstract class AbstractSoyNode extends AbstractNode implements SoyNode {
       throw new UnsupportedOperationException();
     }
     return srcLoc;
+  }
+
+  public void setSourceLocation(SourceLocation location) {
+    this.srcLoc = location;
   }
 
   @Override

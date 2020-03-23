@@ -208,6 +208,25 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   /**
+   * Returns a new SourceLocation that starts where this SourceLocation starts and ends where {@code
+   * other} ends.
+   */
+  public SourceLocation extend(Point other) {
+    if (!isKnown() || !other.isKnown()) {
+      return UNKNOWN;
+    }
+    return new SourceLocation(filePath, begin, other);
+  }
+
+  /**
+   * Returns a new SourceLocation that starts where this SourceLocation starts and ends {@code
+   * lines} and {@code cols} further than where it ends.
+   */
+  public SourceLocation extend(int lines, int cols) {
+    return new SourceLocation(filePath, begin, end.offset(lines, cols));
+  }
+
+  /**
    * Returns a new SourceLocation that covers the union of the two points. If the two locations are
    * not adjacent or overlapping, throws an error.
    */
@@ -247,14 +266,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   private String asLineColumnRange() {
     return getBeginLine() + ":" + getBeginColumn() + " - " + getEndLine() + ":" + getEndColumn();
-  }
-
-  /**
-   * Returns a new SourceLocation that starts where this SourceLocation starts and ends {@code
-   * lines} and {@code cols} further than where it ends.
-   */
-  public SourceLocation extend(int lines, int cols) {
-    return new SourceLocation(filePath, begin, end.offset(lines, cols));
   }
 
   /** Returns a new location that points to the first character of this location. */
