@@ -54,6 +54,12 @@ final class SoyValueUnconverter {
               .collect(toImmutableMap(e -> unconvert(e.getKey()), e -> unconvert(e.getValue())));
     } else if (soyValue instanceof SoyProtoValue) {
       return ((SoyProtoValue) soyValue).getProto();
+    } else if (soyValue instanceof SoyRecord) {
+      // this needs to come after checking for SoyProtoValue since SoyProtoValue implements
+      // SoyRecord
+      return ((SoyRecord) soyValue)
+          .recordAsMap().entrySet().stream()
+              .collect(toImmutableMap(e -> e.getKey(), e -> unconvert(e.getValue())));
     } else if (soyValue instanceof SanitizedContent) {
       SanitizedContent sc = (SanitizedContent) soyValue;
       switch (sc.getContentKind()) {

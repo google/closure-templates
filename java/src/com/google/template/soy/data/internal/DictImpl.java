@@ -126,6 +126,12 @@ public final class DictImpl extends SoyAbstractValue implements SoyDict, SoyMap 
   }
 
   @Override
+  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    typeTracker.maybeSetLegacyObjectMapOrRecordType();
+    return ImmutableMap.copyOf(providerMap);
+  }
+
+  @Override
   public final int getItemCnt() {
     typeTracker.maybeSetLegacyObjectMapOrRecordType();
     return providerMap.size();

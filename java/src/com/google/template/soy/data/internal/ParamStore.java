@@ -16,6 +16,7 @@
 
 package com.google.template.soy.data.internal;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
@@ -73,6 +74,11 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
 
   @Override
   public final int hashCode() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
     throw new UnsupportedOperationException();
   }
 

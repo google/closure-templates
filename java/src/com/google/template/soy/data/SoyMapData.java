@@ -239,6 +239,11 @@ public class SoyMapData extends CollectionData implements SoyDict, SoyMap {
     return getSingle(name);
   }
 
+  @Override
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    return ImmutableMap.copyOf(map);
+  }
+
   // -----------------------------------------------------------------------------------------------
   // SoyLegacyObjectMap.
 

@@ -242,6 +242,10 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
     return clazz().fields.get(name).interpretField(proto).resolve();
   }
 
+  @Override
+  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    throw new UnsupportedOperationException();
+  }
   // -----------------------------------------------------------------------------------------------
   // SoyMap.
 
