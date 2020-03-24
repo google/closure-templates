@@ -3775,10 +3775,12 @@ private ExprNode GlobalOrFunctionCallLike() :
 {
   Identifier ident, paramName;
   Token openParen = null, closeParen = null, recordKey;
+  Token comma;
   ExprNode key, val;
   List<ExprNode> params = new ArrayList<ExprNode>();
   Set<String> paramNames;
   List<Identifier> paramIds;
+  List<SourceLocation.Point> commaLocations = new ArrayList<SourceLocation.Point>();
 }
 {
   ident = Identifier()
@@ -3901,16 +3903,19 @@ private ExprNode GlobalOrFunctionCallLike() :
           { params.add(key); }
 
           (
-            <COMMA>
+            comma = <COMMA>
             val = Expr()
-            { params.add(val); }
+            {
+              params.add(val);
+              commaLocations.add(SourceLocation.Point.create(comma.beginLine, comma.beginColumn));
+            }
           )*
 
           closeParen = <RPAREN>
 
           {
             SourceLocation loc = ident.location().extend(createSrcLoc(closeParen));
-            FunctionNode fnNode = new FunctionNode(ident, loc);
+            FunctionNode fnNode = new FunctionNode(ident, loc, commaLocations);
             fnNode.addChildren(params);
             return fnNode;
           }
@@ -3933,7 +3938,7 @@ private ExprNode GlobalOrFunctionCallLike() :
       errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
       return new RecordLiteralNode(ident, ImmutableList.of(), loc);
     }
-    return new FunctionNode(ident, loc);
+    return new FunctionNode(ident, loc, commaLocations);
   }
 }
 
@@ -4004,7 +4009,7 @@ private ExprNode List() :
   (
       // Empty [] case.
       end = <RBRACKET>
-      { return new ListLiteralNode(new ArrayList<ExprNode>(), createSrcLoc(begin, end)); }
+      { return new ListLiteralNode(new ArrayList<ExprNode>(), createSrcLoc(begin, end), ImmutableList.of()); }
     |
       firstExpr = Expr()
       ( // After the first expr, we have enough info to branch: list comprehensions will have "FOR"
@@ -4070,7 +4075,9 @@ private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
 {
   Token end;
   ExprNode itemExpr;
+  Token comma;
   List<ExprNode> items = ImmutableList.of();
+  List<SourceLocation.Point> commaLocations = new ArrayList<SourceLocation.Point>();
 }
 {
   (
@@ -4083,13 +4090,16 @@ private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
     // The next item will be a comma for a list
     ( // this lookahead is necessary to make this loop unambiguous with the trailing comma
       LOOKAHEAD( { getToken(1).kind == COMMA && getToken(2).kind != RBRACKET } )
-      <COMMA>
+      comma = <COMMA>
       itemExpr = Expr()
-      { items.add(itemExpr); }
+      {
+        items.add(itemExpr);
+        commaLocations.add(SourceLocation.Point.create(comma.beginLine, comma.beginColumn));
+      }
     )*
     [ <COMMA> ]  // trailing comma
     end = <RBRACKET>
-    { return new ListLiteralNode(items, createSrcLoc(begin, end)); }
+    { return new ListLiteralNode(items, createSrcLoc(begin, end), commaLocations); }
   )
 }
 

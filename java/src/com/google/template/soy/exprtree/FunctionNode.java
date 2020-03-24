@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 public final class FunctionNode extends AbstractParentExprNode {
 
   private final Identifier name;
+  private final List<SourceLocation.Point> commaLocations;
 
   /**
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
@@ -52,18 +53,25 @@ public final class FunctionNode extends AbstractParentExprNode {
   @Nullable private ImmutableList<SoyType> allowedParamTypes;
 
   /** Convenience constructor for when the function is available. */
-  public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
-    this(name, sourceLocation);
+  public FunctionNode(
+      Identifier name,
+      Object soyFunction,
+      SourceLocation sourceLocation,
+      List<SourceLocation.Point> commaLocations) {
+    this(name, sourceLocation, commaLocations);
     setSoyFunction(soyFunction);
   }
 
-  /**
-   * @param soyFunction The SoyFunction.
-   * @param sourceLocation The node's source location.
-   */
-  public FunctionNode(Identifier name, SourceLocation sourceLocation) {
+  public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
+    this(name, sourceLocation, ImmutableList.of());
+    setSoyFunction(soyFunction);
+  }
+
+  public FunctionNode(
+      Identifier name, SourceLocation sourceLocation, List<SourceLocation.Point> commaLocations) {
     super(sourceLocation);
     this.name = name;
+    this.commaLocations = commaLocations;
   }
 
   /**
@@ -76,6 +84,11 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.name = orig.name;
     this.soyFunction = orig.soyFunction;
     this.allowedParamTypes = orig.allowedParamTypes;
+    this.commaLocations = ImmutableList.copyOf(orig.commaLocations);
+  }
+
+  public List<SourceLocation.Point> getCommaLocations() {
+    return commaLocations;
   }
 
   @Override
