@@ -132,6 +132,10 @@ public final class GeneratePySanitizeEscapingDirectiveCode
         .append("except ImportError:\n")
         .append("  from urllib import quote  # Python 2\n")
         .append("\n")
+        .append("# An empty string which is 'str' type in Python 2 (i.e. a bytestring)\n")
+        .append("# and 'str' type in Python 3 (i.e. a unicode string).\n")
+        .append("ACTUALLY_STR_EMPTY_STRING = str()\n")
+        .append("\n")
         .append("try:\n")
         .append("  str = unicode\n")
         .append("except NameError:\n")
@@ -180,7 +184,7 @@ public final class GeneratePySanitizeEscapingDirectiveCode
         .append("_helper(v):\n")
         .append("  return ")
         .append(existingFunction)
-        .append("(str(v), \'\')\n")
+        .append("(str(v), ACTUALLY_STR_EMPTY_STRING)\n")
         .append("\n");
   }
 

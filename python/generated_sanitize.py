@@ -8,6 +8,10 @@ try:
 except ImportError:
   from urllib import quote  # Python 2
 
+# An empty string which is 'str' type in Python 2 (i.e. a bytestring)
+# and 'str' type in Python 3 (i.e. a unicode string).
+ACTUALLY_STR_EMPTY_STRING = str()
+
 try:
   str = unicode
 except NameError:
@@ -15,7 +19,7 @@ except NameError:
 
 
 def escape_uri_helper(v):
-  return quote(str(v), '')
+  return quote(str(v), ACTUALLY_STR_EMPTY_STRING)
 
 _ESCAPE_MAP_FOR_ESCAPE_HTML__AND__NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE = {
   '\x00': '&#0;',
