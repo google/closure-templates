@@ -38,6 +38,7 @@ import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -230,10 +231,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       for (int i = 0; i < more.length; i += 2) {
         map.put((String) more[i], (SoyValueProvider) more[i + 1]);
       }
-      // TODO(lukes): this should be LEGACY_OBJECT_MAP_OR_RECORD, but some tests rely on this being
-      // 'UNKNOWN' change this to use a type that only implements SoyRecord to improve type
-      // checking.
-      return DictImpl.forProviderMap(map.build(), RuntimeMapTypeTracker.Type.UNKNOWN);
+      return new SoyRecordImpl(map.build());
     }
 
     /**
