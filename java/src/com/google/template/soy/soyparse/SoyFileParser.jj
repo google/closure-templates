@@ -2885,6 +2885,8 @@ private SwitchNode SwitchStmt() :
   ExprNode switchExpr;
   ImmutableList<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
+  SwitchDefaultNode defaultNode = null;
+  SwitchCaseNode lastCaseNode = null;
 }
 {
   tagBegin = <CMD_BEGIN_SWITCH>
@@ -2912,12 +2914,19 @@ private SwitchNode SwitchStmt() :
       caseTagEnd = <CMD_END>
       templateBlock = TemplateBlock()
       {
+        if (lastCaseNode != null) {
+          lastCaseNode.setSourceLocation(
+              lastCaseNode
+                  .getSourceLocation()
+                  .extend(Tokens.getPreviousPointOrBeginOfLine(caseTag)));
+        }
         SwitchCaseNode caseNode = new SwitchCaseNode(
             nodeIdGen.genId(),
             createSrcLoc(caseTag, templateBlock),
             createSrcLoc(caseTag, caseTagEnd),
             caseExprs);
         caseNode.addChildren(templateBlock);
+        lastCaseNode = caseNode;
         cases.add(caseNode);
       }
     )+
@@ -2926,7 +2935,13 @@ private SwitchNode SwitchStmt() :
       defaultTag = <CMD_FULL_DEFAULT>
       templateBlock = TemplateBlock()
       {
-        SwitchDefaultNode defaultNode =
+        if (lastCaseNode != null) {
+          lastCaseNode.setSourceLocation(
+              lastCaseNode
+                  .getSourceLocation()
+                  .extend(Tokens.getPreviousPointOrBeginOfLine(defaultTag)));
+        }
+        defaultNode =
             new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag, templateBlock),
                 createSrcLoc(defaultTag));
         defaultNode.addChildren(templateBlock);
@@ -2940,6 +2955,17 @@ private SwitchNode SwitchStmt() :
   }
 
   {
+    if (defaultNode != null) {
+      defaultNode.setSourceLocation(
+          defaultNode
+              .getSourceLocation()
+              .extend(Tokens.getPreviousPointOrBeginOfLine(tagClose)));
+    } else if (lastCaseNode != null) {
+      lastCaseNode.setSourceLocation(
+          lastCaseNode
+              .getSourceLocation()
+              .extend(Tokens.getPreviousPointOrBeginOfLine(tagClose)));
+    }
     SwitchNode switchNode =
         new SwitchNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose),
             tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
