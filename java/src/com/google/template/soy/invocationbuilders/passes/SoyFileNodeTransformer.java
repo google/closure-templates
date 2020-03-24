@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
+import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -41,6 +42,7 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -152,6 +154,10 @@ public class SoyFileNodeTransformer {
       String className = fqClassName();
       return className.substring(className.lastIndexOf(".") + 1);
     }
+
+    public Set<String> getProtoTypes(SoyTypeRegistry typeRegistry) {
+      return JavaGenerationUtils.getProtoTypes(template(), typeRegistry);
+    }
   }
 
   /** Status categories for {@link ParamInfo}. */
@@ -246,7 +252,6 @@ public class SoyFileNodeTransformer {
       return InvocationBuilderTypeUtils.getJavaTypes(type());
     }
   }
-
 
   private final String javaPackage;
   private final IndirectParamsCalculator indirectParamsCalculator;

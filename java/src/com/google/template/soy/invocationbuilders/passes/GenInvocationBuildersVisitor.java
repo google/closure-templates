@@ -51,6 +51,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -75,14 +76,18 @@ public final class GenInvocationBuildersVisitor
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
+  private static final String PROTOS_FIELD = "__PROTOS__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
+  private final SoyTypeRegistry typeRegistry;
   private final SoyFileNodeTransformer transformer;
 
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
-  public GenInvocationBuildersVisitor(String javaPackage, TemplateRegistry templateRegistry) {
+  public GenInvocationBuildersVisitor(
+      String javaPackage, TemplateRegistry templateRegistry, SoyTypeRegistry typeRegistry) {
+    this.typeRegistry = typeRegistry;
     this.transformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
   }
 
@@ -188,6 +193,7 @@ public final class GenInvocationBuildersVisitor
             + template.templateName()
             + "\";");
     ilb.appendLine();
+    appendProtoDescriptors(template);
 
     appendFutureWrapperMethod(paramsClass);
 
@@ -217,6 +223,32 @@ public final class GenInvocationBuildersVisitor
     // End of Foo class.
     ilb.decreaseIndent();
     ilb.appendLine("}");
+    ilb.appendLine();
+  }
+
+  private void appendProtoDescriptors(TemplateInfo template) {
+    List<String> protoTypes =
+        template.getProtoTypes(typeRegistry).stream().sorted().collect(toList());
+
+    if (protoTypes.isEmpty()) {
+      return;
+    }
+
+    appendJavadoc(
+        ilb,
+        "The list of protos used by this template, which are 1) used by the edit-refresh "
+            + "development compiler and 2) the java compiler to enforce strict proto deps.",
+        false,
+        true);
+    ilb.appendLineStart(
+        "private static final com.google.common.collect.ImmutableList<"
+            + "com.google.protobuf.Descriptors.FileDescriptor> "
+            + PROTOS_FIELD
+            + " = ");
+    // Omit injected params from the list of params passed to the builder.
+    appendFunctionCallWithParamsOnNewLines(
+        ilb, "com.google.common.collect.ImmutableList.of", protoTypes);
+    ilb.appendLineEnd(";");
     ilb.appendLine();
   }
 

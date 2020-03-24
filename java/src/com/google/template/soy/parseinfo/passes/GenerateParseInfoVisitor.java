@@ -17,20 +17,17 @@
 package com.google.template.soy.parseinfo.passes;
 
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
-import static com.google.common.collect.Streams.stream;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableList;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableListInline;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableMap;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendImmutableSet;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.appendJavadoc;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
-import static java.util.stream.Collectors.toSet;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -42,22 +39,16 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.basicmethods.GetExtensionMethod;
-import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.MethodNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
+import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -69,15 +60,9 @@ import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyProtoEnumType;
-import com.google.template.soy.types.SoyProtoType;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -266,7 +251,6 @@ public final class GenerateParseInfoVisitor
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
     Set<String> allParamKeys = Sets.newLinkedHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
-    SortedSet<String> protoTypes = Sets.newTreeSet();
     for (TemplateNode template : node.getChildren()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
@@ -277,50 +261,9 @@ public final class GenerateParseInfoVisitor
         allParamKeys.add(param.name());
         paramKeyToTemplatesMultimap.put(param.name(), template);
       }
-      for (TemplateHeaderVarDefn varDefn : template.getHeaderParams()) {
-        protoTypes.addAll(findProtoTypes(varDefn.type()));
-      }
-      // TODO(b/77597955): Scan all expressions, to pick up types from function return values and
-      // anything else that may have a type now or in the future.
-      // Field access nodes need special handling to ensure that extension references are handled.
-      for (FieldAccessNode fieldAccess :
-          SoyTreeUtils.getAllNodesOfType(template, FieldAccessNode.class)) {
-        SoyType baseType = fieldAccess.getBaseExprChild().getType();
-        if (baseType.getKind() == SoyType.Kind.PROTO) {
-          FieldDescriptor desc =
-              ((SoyProtoType) baseType).getFieldDescriptor(fieldAccess.getFieldName());
-          if (desc.isExtension()) {
-            protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
-          }
-        }
-      }
-      // Add extension references from getExtension method.
-      for (MethodNode methodNode : SoyTreeUtils.getAllNodesOfType(template, MethodNode.class)) {
-        if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
-          SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
-          String fieldName = GetExtensionMethod.getExtensionId(methodNode);
-          FieldDescriptor desc = ((SoyProtoType) baseType).getFieldDescriptor(fieldName);
-          protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
-        }
-      }
-      // Note: we need to add descriptors from other parts of the expression api that contain direct
-      // proto references.  We do not just scan for all referenced proto types since that would
-      // cause us to add direct references to the parseinfos for protos that are only indirectly
-      // referenced.  If we were to do this it would trigger strict deps issues.
-      // Add enums
-      for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(template, GlobalNode.class)) {
-        if (global.isResolved() && global.getType().getKind() == SoyType.Kind.PROTO_ENUM) {
-          protoTypes.add(((SoyProtoEnumType) global.getType()).getDescriptorExpression());
-        }
-      }
-      // Add proto init
-      for (ProtoInitNode protoInit :
-          SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class)) {
-        if (protoInit.getType().getKind() == SoyType.Kind.PROTO) {
-          protoTypes.add(((SoyProtoType) protoInit.getType()).getDescriptorExpression());
-        }
-      }
     }
+    SortedSet<String> protoTypes =
+        Sets.newTreeSet(JavaGenerationUtils.getProtoTypes(node, typeRegistry));
     // allParamKeysMap is a map from upper-underscore key to original key.
     SortedMap<String, String> allParamKeysMap = Maps.newTreeMap();
     for (String key : allParamKeys) {
@@ -724,32 +667,6 @@ public final class GenerateParseInfoVisitor
   private String convertToUpperUnderscore(String ident) {
     String result = convertedIdents.computeIfAbsent(ident, BaseUtils::convertToUpperUnderscore);
     return result;
-  }
-
-  /**
-   * Recursively search for protocol buffer types within the given type.
-   *
-   * @param root The type to search.
-   */
-  private Set<String> findProtoTypes(SoyType root) {
-    return stream(typeIterator(root))
-        .map(
-            type -> {
-              switch (type.getKind()) {
-                case PROTO:
-                  return ((SoyProtoType) type).getDescriptorExpression();
-                case PROTO_ENUM:
-                  return ((SoyProtoEnumType) type).getDescriptorExpression();
-                default:
-                  return null;
-              }
-            })
-        .filter(Predicates.notNull())
-        .collect(toSet());
-  }
-
-  private Iterator<? extends SoyType> typeIterator(SoyType root) {
-    return SoyTypes.getTypeTraverser(root, typeRegistry);
   }
 
   // -----------------------------------------------------------------------------------------------
