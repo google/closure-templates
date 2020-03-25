@@ -34,9 +34,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
-import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
-import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.BooleanData;
@@ -380,10 +379,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
         // coerce key to a string, legacy object maps always coerce keys to strings.
         builder.put(entry.getKey().toString(), valueMapper.apply(entry.getValue()));
       }
-      // TODO(lukes): this should be LEGACY_OBJECT_MAP_OR_RECORD, but some tests rely on this being
-      // 'UNKNOWN' change this to use a type that only implements SoyLegacyObjectMap to improve type
-      // checking.
-      return DictImpl.forProviderMap(builder.build(), RuntimeMapTypeTracker.Type.UNKNOWN);
+      return new SoyLegacyObjectMapImpl(builder.build());
     }
 
     protected static SoyValueProvider asSoyValue(@Nullable Object object) {
