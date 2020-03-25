@@ -93,6 +93,11 @@ public final class ExprEquivalence {
         }
 
         @Override
+        protected Integer visitNullSafeAccessNode(NullSafeAccessNode node) {
+          return hashChildren(node);
+        }
+
+        @Override
         protected Integer visitFunctionNode(FunctionNode node) {
           return node.getFunctionName().hashCode() * 31 + hashChildren(node);
         }
@@ -234,6 +239,11 @@ public final class ExprEquivalence {
       return node.getMethodName().equals(typedOther.getMethodName())
           && node.isNullSafe() == typedOther.isNullSafe()
           && compareChildren(node);
+    }
+
+    @Override
+    protected Boolean visitNullSafeAccessNode(NullSafeAccessNode node) {
+      return compareChildren(node);
     }
 
     @Override

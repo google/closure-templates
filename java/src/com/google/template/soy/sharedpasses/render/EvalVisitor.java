@@ -34,8 +34,6 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicmethods.GetExtensionMethod;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyDataException;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
@@ -58,6 +56,7 @@ import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
@@ -71,6 +70,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -108,7 +108,6 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnionType;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -314,99 +313,73 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitVarRefNode(VarRefNode node) {
-    return visitNullSafeNode(node);
-  }
-
-  @Override
-  protected SoyValue visitDataAccessNode(DataAccessNode node) {
-    return visitNullSafeNode(node);
-  }
-
-  /**
-   * Helper function which ensures that {@link NullSafetySentinel} instances don't escape from this
-   * visitor.
-   *
-   * @param node The node to evaluate.
-   * @return The result of evaluating the node.
-   */
-  private SoyValue visitNullSafeNode(ExprNode node) {
-    SoyValue value = visitNullSafeNodeRecurse(node);
-    // Transform null sentinel into a normal null value.
-    if (value == NullSafetySentinel.INSTANCE) {
-      return NullData.INSTANCE;
-    }
-    return value;
-  }
-
-  /**
-   * Helper function which recursively evaluates data references. This bypasses the normal visitor
-   * mechanism as follows: As soon as the EvalVisitor sees a node which is a data reference, it
-   * calls this function which evaluates that data reference and any descendant data references,
-   * returning either the result of the evaluation, or a special sentinel value which indicates that
-   * a null-safety check failed. Internally this sentinel value is used to short-circuit evaluations
-   * that would otherwise fail because of the null value.
-   *
-   * <p>If any descendant node is not a data reference, then this uses the normal visitor mechanism
-   * to evaluate that node.
-   *
-   * <p>The reason for bypassing the normal visitor mechanism is that we want to detect the
-   * transition between data-reference nodes and non-data-reference nodes. So for example, if a
-   * FieldAccessNode has a parent node which is a data reference, we want to propagate the sentinel
-   * value upward, whereas if the parent is not a data reference, then we want to convert the
-   * sentinel value into a regular null value.
-   *
-   * @param node The node to evaluate.
-   * @return The result of evaluating the node.
-   */
-  private SoyValue visitNullSafeNodeRecurse(ExprNode node) {
-    switch (node.getKind()) {
-      case VAR_REF_NODE:
-        return visitNullSafeVarRefNode((VarRefNode) node);
-
-      case FIELD_ACCESS_NODE:
-        return visitNullSafeFieldAccessNode((FieldAccessNode) node);
-
-      case ITEM_ACCESS_NODE:
-        return visitNullSafeItemAccessNode((ItemAccessNode) node);
-
-      case METHOD_NODE:
-        return visitNullSafeMethodNode((MethodNode) node);
-
-      default:
-        return visit(node);
-    }
-  }
-
-  private SoyValue visitNullSafeVarRefNode(VarRefNode varRef) {
-    if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
+    if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
       throw new AssertionError(); // should have been desugared
     } else {
-      SoyValue value = env.getVar(varRef.getDefnDecl());
-      if (varRef.getDefnDecl().kind() == VarDefn.Kind.PARAM
-          && ((TemplateParam) varRef.getDefnDecl()).hasDefault()
+      SoyValue value = env.getVar(node.getDefnDecl());
+      if (node.getDefnDecl().kind() == VarDefn.Kind.PARAM
+          && ((TemplateParam) node.getDefnDecl()).hasDefault()
           && (UndefinedData.INSTANCE == value)) {
         // Use the default value if it has one and the parameter is undefined.
-        value = visit(((TemplateParam) varRef.getDefnDecl()).defaultValue());
+        value = visit(((TemplateParam) node.getDefnDecl()).defaultValue());
       }
       return value;
     }
   }
 
-  private SoyValue visitNullSafeFieldAccessNode(FieldAccessNode fieldAccess) {
-    SoyValue base = visitNullSafeNodeRecurse(fieldAccess.getBaseExprChild());
+  @Override
+  protected SoyValue visitDataAccessNode(DataAccessNode node) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!node.isNullSafe());
+    SoyValue base = visit(node.getBaseExprChild());
+    return visitDataAccessNode(node, base, /*nullSafe=*/ false);
+  }
 
+  private SoyValue visitDataAccessNode(DataAccessNode node, SoyValue base, boolean nullSafe) {
+    switch (node.getKind()) {
+      case FIELD_ACCESS_NODE:
+        return visitFieldAccessNode((FieldAccessNode) node, base, nullSafe);
+      case ITEM_ACCESS_NODE:
+        return visitItemAccessNode((ItemAccessNode) node, base, nullSafe);
+      case METHOD_NODE:
+        return visitMethodNode((MethodNode) node, base);
+      default:
+        throw new AssertionError(node.getKind());
+    }
+  }
+
+  @Override
+  protected SoyValue visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
+    SoyValue value = visit(nullSafeAccessNode.getBase());
+    ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
+    while (!isNullOrUndefinedBase(value) && dataAccess.getKind() == Kind.NULL_SAFE_ACCESS_NODE) {
+      NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
+      value = accumulateDataAccess((DataAccessNode) node.getBase(), value);
+      dataAccess = node.getDataAccess();
+    }
+    if (isNullOrUndefinedBase(value)) {
+      return NullData.INSTANCE;
+    }
+    return accumulateDataAccess((DataAccessNode) dataAccess, value);
+  }
+
+  private SoyValue accumulateDataAccess(DataAccessNode dataAccessNode, SoyValue base) {
+    boolean accessChain = false;
+    if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
+      base = accumulateDataAccess((DataAccessNode) dataAccessNode.getBaseExprChild(), base);
+      accessChain = true;
+    }
+    return visitDataAccessNode(dataAccessNode, base, !accessChain);
+  }
+
+  private SoyValue visitFieldAccessNode(
+      FieldAccessNode fieldAccess, SoyValue base, boolean nullSafe) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!fieldAccess.isNullSafe());
     // attempting field access on non-SoyRecord
     if (!(base instanceof SoyRecord) && !(base instanceof SoyProtoValue)) {
-      if (base == NullSafetySentinel.INSTANCE) {
-        // Bail out if base expression failed a null-safety check.
-        return NullSafetySentinel.INSTANCE;
-      }
-
-      if (fieldAccess.isNullSafe()) {
-        if (isNullOrUndefinedBase(base)) {
-          // Return the sentinel value that indicates that a null-safety check failed.
-          return NullSafetySentinel.INSTANCE;
-        } else {
+      if (nullSafe) {
+        if (!isNullOrUndefinedBase(base)) {
           throw RenderException.create(
               String.format(
                   "While evaluating \"%s\", encountered non-record just before accessing \"%s\".",
@@ -475,21 +448,13 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return false;
   }
 
-  private SoyValue visitNullSafeItemAccessNode(ItemAccessNode itemAccess) {
-    SoyValue base = visitNullSafeNodeRecurse(itemAccess.getBaseExprChild());
-
+  private SoyValue visitItemAccessNode(ItemAccessNode itemAccess, SoyValue base, boolean nullSafe) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!itemAccess.isNullSafe());
     // attempting item access on non-SoyMap
     if (!(base instanceof SoyLegacyObjectMap || base instanceof SoyMap)) {
-      if (base == NullSafetySentinel.INSTANCE) {
-        // Bail out if base expression failed a null-safety check.
-        return NullSafetySentinel.INSTANCE;
-      }
-
-      if (itemAccess.isNullSafe()) {
-        if (isNullOrUndefinedBase(base)) {
-          // Return the sentinel value that indicates that a null-safety check failed.
-          return NullSafetySentinel.INSTANCE;
-        } else {
+      if (nullSafe) {
+        if (!isNullOrUndefinedBase(base)) {
           throw RenderException.create(
               String.format(
                   "While evaluating \"%s\", encountered non-map/list just before accessing \"%s\".",
@@ -556,13 +521,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
-  private SoyValue visitNullSafeMethodNode(MethodNode methodNode) {
-    SoyValue base = visitNullSafeNodeRecurse(methodNode.getBaseExprChild());
-
-    if (methodNode.isNullSafe() && isNullOrUndefinedBase(base)) {
-      return NullSafetySentinel.INSTANCE;
-    }
-
+  private static SoyValue visitMethodNode(MethodNode methodNode, SoyValue base) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!methodNode.isNullSafe());
     // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     checkArgument(methodNode.isMethodResolved());
@@ -578,10 +539,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   // Returns true if the base SoyValue of a data access chain is null or undefined.
   private static boolean isNullOrUndefinedBase(SoyValue base) {
-    return base == null
-        || base instanceof NullData
-        || base instanceof UndefinedData
-        || base == NullSafetySentinel.INSTANCE;
+    return base == null || base instanceof NullData || base instanceof UndefinedData;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -965,43 +923,5 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
    */
   private SoyValue convertResult(String s) {
     return StringData.forValue(s);
-  }
-
-  /**
-   * Class that represents a sentinel value indicating that a null-safety check failed. This value
-   * should never "leak" outside this class, in other words, no code outside of this class should
-   * ever see a value of this type.
-   */
-  private static final class NullSafetySentinel extends SoyAbstractValue {
-
-    /** Static singleton instance of SafeNullData. */
-    public static final NullSafetySentinel INSTANCE = new NullSafetySentinel();
-
-    private NullSafetySentinel() {}
-
-    @Override
-    public boolean equals(Object other) {
-      return other == this;
-    }
-
-    @Override
-    public int hashCode() {
-      return System.identityHashCode(this);
-    }
-
-    @Override
-    public boolean coerceToBoolean() {
-      return false;
-    }
-
-    @Override
-    public String coerceToString() {
-      return "null";
-    }
-
-    @Override
-    public void render(LoggingAdvisingAppendable appendable) throws IOException {
-      appendable.append(coerceToString());
-    }
   }
 }

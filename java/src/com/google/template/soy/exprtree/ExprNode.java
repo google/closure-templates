@@ -57,6 +57,7 @@ public interface ExprNode extends Node {
     ITEM_ACCESS_NODE,
     METHOD_NODE,
     PROTO_EXTENSION_ID_NODE,
+    NULL_SAFE_ACCESS_NODE,
 
     GLOBAL_NODE,
     GROUP_NODE,

@@ -308,9 +308,9 @@ public class EvalVisitorTest {
     //assertRenderException(
     //    "$foo.baz.moo.tar", "encountered undefined LHS just before accessing \".moo\"");
     assertThat(eval("$foo.baz.moo.tar")).isInstanceOf(UndefinedData.class);
-    assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"?[2]\"");
+    assertRenderException("$boo?[2]", "encountered non-map/list just before accessing \"[2]\"");
     assertRenderException(
-        "$boo?['xyz']", "encountered non-map/list just before accessing \"?['xyz']\"");
+        "$boo?['xyz']", "encountered non-map/list just before accessing \"['xyz']\"");
     assertDataException(
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type"
@@ -329,13 +329,13 @@ public class EvalVisitorTest {
     // Note: Null-safe access only helps when left side is undefined or null, not when it's the
     // wrong type.
     assertRenderException(
-        "$foo?.bar?.moo.tar", "encountered non-record just before accessing \"?.moo\"");
+        "$foo?.bar?.moo.tar", "encountered non-record just before accessing \".moo\"");
     assertThat(eval("$foo?.baz?.moo.tar")).isInstanceOf(NullData.class);
     assertDataException(
         "$foo[2]",
         "SoyDict accessed with non-string key (got key type"
             + " com.google.template.soy.data.restricted.IntegerData).");
-    assertRenderException("$moo?.too", "encountered non-record just before accessing \"?.too\"");
+    assertRenderException("$moo?.too", "encountered non-record just before accessing \".too\"");
     assertThat(eval("$roo?.too")).isInstanceOf(NullData.class);
     assertThat(eval("$roo?[2]")).isInstanceOf(NullData.class);
   }

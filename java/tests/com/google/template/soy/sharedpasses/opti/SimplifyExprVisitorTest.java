@@ -200,8 +200,7 @@ public final class SimplifyExprVisitorTest {
             new ExpressionParser("$r.n?.a.b")
                 .withVar("r", "record(n: true ? null : record(a: record(b: 2)))")
                 .parseForParentNode())
-        // TODO(b/146158788): this should simplify to null
-        .simplifiesTo("null.b");
+        .simplifiesTo("null");
     // $r.n.a?.b when $r.n.a is null should be null
     assertThat(
             new ExpressionParser("$r.n.a?.b")
@@ -224,8 +223,7 @@ public final class SimplifyExprVisitorTest {
                     "true ? null : record(a: record(b: record(c: record(d: record(e: record(f:"
                         + " 1))))))")
                 .parseForParentNode())
-        // TODO(b/146158788): this should simplify to null
-        .simplifiesTo("null.b?.c.d?.e.f");
+        .simplifiesTo("null");
     // $r?.a.b?.c.d?.e.f when r.a.b is null should be null
     assertThat(
             new ExpressionParser("$r?.a.b?.c.d?.e.f")
@@ -234,8 +232,7 @@ public final class SimplifyExprVisitorTest {
                     "record(a: record(b: true ? null : record(c: record(d: record(e: record(f:"
                         + " 1))))))")
                 .parseForParentNode())
-        // TODO(b/146158788): this should simplify to null
-        .simplifiesTo("null.d?.e.f");
+        .simplifiesTo("null");
     // $r?.a.b?.c.d?.e.f when r.a.b.c.d is null should be null
     assertThat(
             new ExpressionParser("$r?.a.b?.c.d?.e.f")
@@ -244,8 +241,7 @@ public final class SimplifyExprVisitorTest {
                     "record(a: record(b: record(c: record(d: true ? null : record(e: record(f:"
                         + " 1))))))")
                 .parseForParentNode())
-        // TODO(b/146158788): this should simplify to null
-        .simplifiesTo("null.f");
+        .simplifiesTo("null");
     // $r?.a.b?.c.d?.e.f when r.a.b.c.d.e.f is 1 should be 1
     assertThat(
             new ExpressionParser("$r?.a.b?.c.d?.e.f")

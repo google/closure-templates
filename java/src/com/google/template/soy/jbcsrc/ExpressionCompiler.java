@@ -58,6 +58,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -964,14 +965,221 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitDataAccessNode(DataAccessNode node) {
-      return new NullSafeAccessVisitor().visit(node);
+      return visitDataAccessNodeRecurse(node);
     }
 
-    // Field access
+    private SoyExpression visitDataAccessNodeRecurse(ExprNode node) {
+      switch (node.getKind()) {
+        case FIELD_ACCESS_NODE:
+        case ITEM_ACCESS_NODE:
+        case METHOD_NODE:
+          SoyExpression baseExpr =
+              visitDataAccessNodeRecurse(((DataAccessNode) node).getBaseExprChild());
+          // Mark non nullable.
+          // Dereferencing for access below may require unboxing and there is no point in adding
+          // null safety checks to the unboxing code.  So we just mark non nullable. In otherwords,
+          // if we are going to hit an NPE while dereferencing this expression, it makes no
+          // difference if it is due to the unboxing or the actual dereference.
+          if (baseExpr.soyType() != NullType.getInstance()) {
+            baseExpr = baseExpr.asNonNullable();
+          } else {
+            // Unless, the type actually is 'null'.  In this case the code is bugged, but this
+            // can happen due to inlining+@state desugaring.  The code we generate will always
+            // fail, so performance isn't a concern.
+            // Consider:
+            // {@state foo: Bar|null = null}
+            // ...
+            // {$foo.field}
+            // State desugaring will rewrite this to
+            // {let $foo: null /}
+            // and the inliner will inline it to
+            // {null.field}
+            // This code will always fail with an NPE, so do that here.
+            return SoyExpression.forSoyValue(
+                node.getType(),
+                new Expression(
+                    SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), Feature.CHEAP) {
+                  @Override
+                  protected void doGen(CodeBuilder cb) {
+                    String accessType;
+                    switch (node.getKind()) {
+                      case FIELD_ACCESS_NODE:
+                        accessType = "field " + ((FieldAccessNode) node).getFieldName();
+                        break;
+                      case ITEM_ACCESS_NODE:
+                        accessType = "element " + ((ItemAccessNode) node).getSourceStringSuffix();
+                        break;
+                      case METHOD_NODE:
+                        accessType = "method " + ((MethodNode) node).getMethodName().identifier();
+                        break;
+                      default:
+                        throw new AssertionError();
+                    }
+                    cb.throwException(
+                        NULL_POINTER_EXCEPTION_TYPE,
+                        String.format("Attempted to access %s of null", accessType));
+                  }
+                });
+          }
+          return visitDataAccess((DataAccessNode) node, baseExpr);
+        default:
+          return visit(node);
+      }
+    }
+
+    private SoyExpression visitDataAccess(DataAccessNode node, SoyExpression baseExpr) {
+      switch (node.getKind()) {
+        case FIELD_ACCESS_NODE:
+          return visitFieldAccess(baseExpr, (FieldAccessNode) node)
+              .withSourceLocation(node.getSourceLocation());
+        case ITEM_ACCESS_NODE:
+          return visitItemAccess(baseExpr, (ItemAccessNode) node)
+              .withSourceLocation(node.getSourceLocation());
+        case METHOD_NODE:
+          return visitMethod(baseExpr, (MethodNode) node)
+              .withSourceLocation(node.getSourceLocation());
+        default:
+          throw new AssertionError();
+      }
+    }
+
+    private SoyExpression visitFieldAccess(SoyExpression baseExpr, FieldAccessNode node) {
+      // All null safe accesses should've already been converted to NullSafeAccessNodes.
+      checkArgument(!node.isNullSafe());
+      if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
+        if (baseExpr.soyType().getKind() == Kind.PROTO) {
+          // It is a single known proto field.  Generate code to call the getter directly
+          SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+          return ProtoUtils.accessField(protoType, baseExpr, node);
+        } else {
+          // this must be some kind of union of protos which has support via the boxing apis
+          return SoyExpression.forSoyValue(
+              node.getType(),
+              MethodRef.RUNTIME_GET_PROTO_FIELD
+                  .invoke(
+                      baseExpr.box().checkedCast(SoyProtoValue.class),
+                      BytecodeUtils.constant(node.getFieldName()))
+                  .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+        }
+      }
+      // Otherwise this must be a vanilla SoyRecord.  Box, call getFieldProvider and resolve the
+      // provider
+      Expression fieldProvider =
+          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+              baseExpr.box().checkedCast(SoyRecord.class), constant(node.getFieldName()));
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          detacher
+              .resolveSoyValueProvider(fieldProvider)
+              .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+    }
+
+    private SoyExpression visitItemAccess(SoyExpression baseExpr, ItemAccessNode node) {
+      // All null safe accesses should've already been converted to NullSafeAccessNodes.
+      checkArgument(!node.isNullSafe());
+      // KeyExprs never participate in the current null access chain.
+      SoyExpression keyExpr = visit(node.getKeyExprChild());
+
+      Expression soyValueProvider;
+      // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
+      // optimized the same way because there is no real way to 'unbox' a SoyMap.
+      if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
+        soyValueProvider =
+            MethodRef.RUNTIME_GET_LIST_ITEM.invoke(baseExpr.unboxAsList(), keyExpr.unboxAsLong());
+      } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
+        // Box and do a map style lookup.
+        soyValueProvider =
+            MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
+                baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
+      } else {
+        // Box and do a map style lookup.
+        soyValueProvider =
+            MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(
+                baseExpr.box().checkedCast(SoyLegacyObjectMap.class), keyExpr.box());
+      }
+      Expression soyValue =
+          detacher
+              .resolveSoyValueProvider(soyValueProvider)
+              // Just like javac, we insert cast operations when removing from a collection.
+              .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
+      return SoyExpression.forSoyValue(node.getType(), soyValue);
+    }
+
+    private static SoyExpression visitMethod(SoyExpression baseExpr, MethodNode node) {
+      // All null safe accesses should've already been converted to NullSafeAccessNodes.
+      checkArgument(!node.isNullSafe());
+      // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
+      // from the base type during compile time and the node has multiple SoySourceFunctions.
+      checkArgument(node.isMethodResolved());
+
+      if (GetExtensionMethod.isGetExtensionMethod(node)) {
+        SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+        return ProtoUtils.accessExtensionField(protoType, baseExpr, node);
+      }
+      // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
+      return baseExpr;
+    }
 
     @Override
-    protected SoyExpression visitFieldAccessNode(FieldAccessNode node) {
-      return new NullSafeAccessVisitor().visit(node);
+    protected SoyExpression visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
+      // A null safe access {@code $foo?.bar?.baz} is syntactic sugar for {@code $foo == null ?
+      // null : $foo.bar == null ? null : $foo.bar.baz)}. So to generate code for it we need to have
+      // a way to 'exit' the full access chain as soon as we observe a failed null safety check.
+      Label nullSafeExit = new Label();
+      SoyExpression accumulator = visit(nullSafeAccessNode.getBase());
+      ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
+      while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
+        NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
+        accumulator =
+            accumulateNullSafeDataAccess(
+                (DataAccessNode) node.getBase(), accumulator, nullSafeExit);
+        dataAccess = node.getDataAccess();
+      }
+      accumulator =
+          accumulateNullSafeDataAccess((DataAccessNode) dataAccess, accumulator, nullSafeExit);
+      if (BytecodeUtils.isPrimitive(accumulator.resultType())) {
+        // proto accessors will return primitives, so in order to allow it to be compatible with
+        // a nullable expression we need to box.
+        accumulator = accumulator.box();
+      }
+      return accumulator.asNullable().labelEnd(nullSafeExit);
+    }
+
+    private static SoyExpression addNullSafetyCheck(
+        final SoyExpression baseExpr, Label nullSafeExit) {
+      // need to check if baseExpr == null
+      return baseExpr
+          .withSource(
+              new Expression(baseExpr.resultType(), baseExpr.features()) {
+                @Override
+                protected void doGen(CodeBuilder adapter) {
+                  baseExpr.gen(adapter);
+                  BytecodeUtils.nullCoalesce(adapter, nullSafeExit);
+                }
+              })
+          .asNonNullable();
+    }
+
+    private SoyExpression accumulateNullSafeDataAccess(
+        DataAccessNode dataAccessNode, SoyExpression baseExpr, Label nullSafeExit) {
+      baseExpr = addNullSafetyCheck(baseExpr, nullSafeExit);
+      return accumulateDataAccess(dataAccessNode, baseExpr);
+    }
+
+    private SoyExpression accumulateDataAccess(
+        DataAccessNode dataAccessNode, SoyExpression baseExpr) {
+      if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
+        baseExpr =
+            accumulateDataAccess((DataAccessNode) dataAccessNode.getBaseExprChild(), baseExpr)
+                // Mark non nullable.
+                // Dereferencing for access below may require unboxing and there is no point in
+                // adding null safety checks to the unboxing code.  So we just mark non nullable.
+                // In otherwords, if we are going to hit an NPE while dereferencing this
+                // expression, it makes no difference if it is due to the unboxing or the actual
+                // dereference.
+                .asNonNullable();
+      }
+      return visitDataAccess(dataAccessNode, baseExpr);
     }
 
     // Builtin functions
@@ -1220,198 +1428,6 @@ final class ExpressionCompiler {
       throw new UnsupportedOperationException(
           "Support for " + node.getKind() + " has not been added yet");
     }
-
-    /**
-     * A helper for generating code for null safe access expressions.
-     *
-     * <p>A null safe access {@code $foo?.bar?.baz} is syntactic sugar for {@code $foo == null ?
-     * null : ($foo.bar == null ? null : $foo.bar.baz)}. So to generate code for it we need to have
-     * a way to 'exit' the full access chain as soon as we observe a failed null safety check.
-     */
-    private final class NullSafeAccessVisitor {
-      Label nullSafeExit;
-
-      Label getNullSafeExit() {
-        Label local = nullSafeExit;
-        return local == null ? nullSafeExit = new Label() : local;
-      }
-
-      SoyExpression visit(DataAccessNode node) {
-        SoyExpression dataAccess = visitNullSafeNodeRecurse(node);
-        if (nullSafeExit == null) {
-          return dataAccess;
-        }
-        if (BytecodeUtils.isPrimitive(dataAccess.resultType())) {
-          // proto accessors will return primitives, so in order to allow it to be compatible with
-          // a nullable expression we need to box.
-          dataAccess = dataAccess.box();
-        }
-        return dataAccess.asNullable().labelEnd(nullSafeExit);
-      }
-
-      SoyExpression addNullSafetyCheck(final SoyExpression baseExpr) {
-        // need to check if baseExpr == null
-        final Label nullSafeExit = getNullSafeExit();
-        return baseExpr
-            .withSource(
-                new Expression(baseExpr.resultType(), baseExpr.features()) {
-                  @Override
-                  protected void doGen(CodeBuilder adapter) {
-                    baseExpr.gen(adapter);
-                    BytecodeUtils.nullCoalesce(adapter, nullSafeExit);
-                  }
-                })
-            .asNonNullable();
-      }
-
-      SoyExpression visitNullSafeNodeRecurse(ExprNode node) {
-        switch (node.getKind()) {
-          case FIELD_ACCESS_NODE:
-          case ITEM_ACCESS_NODE:
-          case METHOD_NODE:
-            SoyExpression baseExpr =
-                visitNullSafeNodeRecurse(((DataAccessNode) node).getBaseExprChild());
-            if (((DataAccessNode) node).isNullSafe()) {
-              baseExpr = addNullSafetyCheck(baseExpr);
-            } else {
-              // Mark non nullable.
-              // Dereferencing for access below may require unboxing and there is no point in
-              // adding null safety checks to the unboxing code.  So we just mark non nullable. In
-              // otherwords, if we are going to hit an NPE while dereferencing this expression, it
-              // makes no difference if it is due to the unboxing or the actual dereference.
-              if (baseExpr.soyType() != NullType.getInstance()) {
-                baseExpr = baseExpr.asNonNullable();
-              } else {
-                // Unless, the type actually is 'null'.  In this case the code is bugged, but this
-                // can happen due to inlining+@state desugaring.  The code we generate will always
-                // fail, so performance isn't a concern.
-                // Consider:
-                // {@state foo: Bar|null = null}
-                // ...
-                // {$foo.field}
-                // State desugaring will rewrite this to
-                // {let $foo: null /}
-                // and the inliner will inline it to
-                // {null.field}
-                // This code will always fail with an NPE, so do that here.
-                return SoyExpression.forSoyValue(
-                    node.getType(),
-                    new Expression(
-                        SoyRuntimeType.getBoxedType(node.getType()).runtimeType(), Feature.CHEAP) {
-                      @Override
-                      protected void doGen(CodeBuilder cb) {
-                        String accessType;
-                        switch (node.getKind()) {
-                          case FIELD_ACCESS_NODE:
-                            accessType = "field " + ((FieldAccessNode) node).getFieldName();
-                            break;
-                          case ITEM_ACCESS_NODE:
-                            accessType =
-                                "element " + ((ItemAccessNode) node).getSourceStringSuffix();
-                            break;
-                          case METHOD_NODE:
-                            accessType =
-                                "method " + ((MethodNode) node).getMethodName().identifier();
-                            break;
-                          default:
-                            throw new AssertionError();
-                        }
-                        cb.throwException(
-                            NULL_POINTER_EXCEPTION_TYPE,
-                            String.format("Attempted to access %s of null", accessType));
-                      }
-                    });
-              }
-            }
-            switch (node.getKind()) {
-              case FIELD_ACCESS_NODE:
-                return visitNullSafeFieldAccess(baseExpr, (FieldAccessNode) node)
-                    .withSourceLocation(node.getSourceLocation());
-              case ITEM_ACCESS_NODE:
-                return visitNullSafeItemAccess(baseExpr, (ItemAccessNode) node)
-                    .withSourceLocation(node.getSourceLocation());
-              case METHOD_NODE:
-                return visitNullSafeMethod(baseExpr, (MethodNode) node)
-                    .withSourceLocation(node.getSourceLocation());
-              default:
-                throw new AssertionError();
-            }
-          default:
-            return CompilerVisitor.this.visit(node);
-        }
-      }
-
-      SoyExpression visitNullSafeFieldAccess(SoyExpression baseExpr, FieldAccessNode node) {
-        if (baseExpr.soyRuntimeType().isKnownProtoOrUnionOfProtos()) {
-          if (baseExpr.soyType().getKind() == Kind.PROTO) {
-            // It is a single known proto field.  Generate code to call the getter directly
-            SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-            return ProtoUtils.accessField(protoType, baseExpr, node);
-          } else {
-            // this must be some kind of union of protos which has support via the boxing apis
-            return SoyExpression.forSoyValue(
-                node.getType(),
-                MethodRef.RUNTIME_GET_PROTO_FIELD
-                    .invoke(
-                        baseExpr.box().checkedCast(SoyProtoValue.class),
-                        BytecodeUtils.constant(node.getFieldName()))
-                    .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
-          }
-        }
-        // Otherwise this must be a vanilla SoyRecord.  Box, call getFieldProvider and resolve the
-        // provider
-        Expression fieldProvider =
-            MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-                baseExpr.box().checkedCast(SoyRecord.class), constant(node.getFieldName()));
-        return SoyExpression.forSoyValue(
-            node.getType(),
-            detacher
-                .resolveSoyValueProvider(fieldProvider)
-                .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
-      }
-
-      SoyExpression visitNullSafeItemAccess(SoyExpression baseExpr, ItemAccessNode node) {
-        // KeyExprs never participate in the current null access chain.
-        SoyExpression keyExpr = CompilerVisitor.this.visit(node.getKeyExprChild());
-
-        Expression soyValueProvider;
-        // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
-        // optimized the same way because there is no real way to 'unbox' a SoyMap.
-        if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
-          soyValueProvider =
-              MethodRef.RUNTIME_GET_LIST_ITEM.invoke(baseExpr.unboxAsList(), keyExpr.unboxAsLong());
-        } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
-          // Box and do a map style lookup.
-          soyValueProvider =
-              MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
-                  baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
-        } else {
-          // Box and do a map style lookup.
-          soyValueProvider =
-              MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(
-                  baseExpr.box().checkedCast(SoyLegacyObjectMap.class), keyExpr.box());
-        }
-        Expression soyValue =
-            detacher
-                .resolveSoyValueProvider(soyValueProvider)
-                // Just like javac, we insert cast operations when removing from a collection.
-                .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
-        return SoyExpression.forSoyValue(node.getType(), soyValue);
-      }
-
-      private SoyExpression visitNullSafeMethod(SoyExpression baseExpr, MethodNode node) {
-        // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
-        // from the base type during compile time and the node has multiple SoySourceFunctions.
-        checkArgument(node.isMethodResolved());
-
-        if (GetExtensionMethod.isGetExtensionMethod(node)) {
-          SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-          return ProtoUtils.accessExtensionField(protoType, baseExpr, node);
-        }
-        // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
-        return baseExpr;
-      }
-    }
   }
 
   private static final class CanCompileToConstantVisitor
@@ -1492,6 +1508,11 @@ final class ExpressionCompiler {
       // If this could be compiled to a constant expression, then the optimizer should have already
       // evaluated it.  So don't bother.
       return false;
+    }
+
+    @Override
+    protected Boolean visitNullSafeAccessNode(NullSafeAccessNode node) {
+      return visit(node.getBase()) && areAllChildrenConstant(node);
     }
 
     @Override

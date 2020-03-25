@@ -40,6 +40,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
+import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -53,6 +54,8 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
@@ -801,8 +804,70 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
+      visit(nullSafeAccessNode.getBase());
+      visitNullSafeAccessNodeRecurse(nullSafeAccessNode);
+    }
+
+    private void visitNullSafeAccessNodeRecurse(NullSafeAccessNode nullSafeAccessNode) {
+      if (nullSafeAccessNode.getDataAccess().getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
+        NullSafeAccessNode dataAccess = (NullSafeAccessNode) nullSafeAccessNode.getDataAccess();
+        calculateAccessChainTypes(
+            nullSafeAccessNode.getBase().getType(),
+            (DataAccessNode) dataAccess.getBase(),
+            /* nullSafe= */ true);
+        visitNullSafeAccessNodeRecurse(dataAccess);
+      } else {
+        calculateAccessChainTypes(
+            nullSafeAccessNode.getBase().getType(),
+            (DataAccessNode) nullSafeAccessNode.getDataAccess(),
+            /* nullSafe= */ true);
+      }
+      // TODO(b/138252762): This should be nullable.
+      nullSafeAccessNode.setType(nullSafeAccessNode.getDataAccess().getType());
+      tryApplySubstitution(nullSafeAccessNode);
+    }
+
+    private void calculateAccessChainTypes(
+        SoyType baseType, DataAccessNode dataAccess, boolean nullSafe) {
+      if (dataAccess.getBaseExprChild() instanceof DataAccessNode) {
+        calculateAccessChainTypes(
+            baseType, (DataAccessNode) dataAccess.getBaseExprChild(), nullSafe);
+        nullSafe = false;
+        baseType = dataAccess.getBaseExprChild().getType();
+      }
+
+      ExprNode base = dataAccess.getBaseExprChild();
+      if (base.getKind() == ExprNode.Kind.GLOBAL_NODE) {
+        GlobalNode global = (GlobalNode) base;
+        if (!global.isResolved()) {
+          global.resolve(baseType, new NullNode(base.getSourceLocation()));
+        }
+      }
+
+      switch (dataAccess.getKind()) {
+        case FIELD_ACCESS_NODE:
+          finishFieldAccessNode((FieldAccessNode) dataAccess);
+          break;
+        case ITEM_ACCESS_NODE:
+          finishItemAccessNode((ItemAccessNode) dataAccess, nullSafe);
+          break;
+        case METHOD_NODE:
+          finishMethodNode((MethodNode) dataAccess, nullSafe);
+          break;
+        default:
+          throw new AssertionError(dataAccess.getKind());
+      }
+    }
+
+    @Override
     protected void visitFieldAccessNode(FieldAccessNode node) {
+      checkState(!node.isNullSafe());
       visit(node.getBaseExprChild());
+      finishFieldAccessNode(node);
+    }
+
+    private void finishFieldAccessNode(FieldAccessNode node) {
       node.setType(
           getFieldType(
               node.getBaseExprChild().getType(), node.getFieldName(), node.getSourceLocation()));
@@ -811,13 +876,18 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Override
     protected void visitItemAccessNode(ItemAccessNode node) {
+      checkState(!node.isNullSafe());
       visit(node.getBaseExprChild());
+      finishItemAccessNode(node, /* nullSafe= */ false);
+    }
+
+    private void finishItemAccessNode(ItemAccessNode node, boolean nullSafe) {
       visit(node.getKeyExprChild());
       SoyType itemType =
           getItemType(
               node.getBaseExprChild().getType(),
               node.getKeyExprChild().getType(),
-              node.isNullSafe(),
+              nullSafe,
               node.getAccessSourceLocation(),
               node.getKeyExprChild().getSourceLocation());
       node.setType(itemType);
@@ -826,9 +896,18 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Override
     protected void visitMethodNode(MethodNode node) {
-      visitChildren(node);
-      SoyType baseType = node.getBaseExprChild().getType();
-      SoySourceFunction method = resolveMethodFromBaseType(node, baseType, node.getSoyMethods());
+      checkState(!node.isNullSafe());
+      visit(node.getBaseExprChild());
+      finishMethodNode(node, /* nullSafe= */ false);
+    }
+
+    private void finishMethodNode(MethodNode node, boolean nullSafe) {
+      for (ExprNode child : node.getChildren().subList(1, node.numChildren())) {
+        visit(child);
+      }
+      SoySourceFunction method =
+          resolveMethodFromBaseType(
+              node, node.getBaseExprChild().getType(), node.getSoyMethods(), nullSafe);
       if (method != null) {
         node.setSoyMethods(ImmutableList.of(method));
       } else {
@@ -889,7 +968,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Nullable
     private SoySourceFunction resolveMethodFromBaseType(
-        MethodNode node, SoyType baseType, List<SoySourceFunction> methods) {
+        MethodNode node, SoyType baseType, List<SoySourceFunction> methods, boolean nullSafe) {
       // The methods list is empty when there are no methods with a name matching the one that the
       // method node is called with, and an error is reported during the ResolvePluginsPass.
       if (methods.isEmpty()) {
@@ -898,7 +977,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
 
       if (SoyTypes.isNullable(baseType)) {
-        if (!node.isNullSafe()) {
+        if (!nullSafe) {
           errorReporter.report(
               node.getBaseExprChild().getSourceLocation(),
               METHOD_BASE_TYPE_NULL_SAFE_REQUIRED,

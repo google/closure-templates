@@ -245,6 +245,25 @@ public final class SoyTreeUtils {
     return sb;
   }
 
+  /**
+   * Similar to {@link #buildAstString}, but for ExprNodes and also prints the source string for
+   * debug usages.
+   */
+  public static StringBuilder buildAstStringWithPreview(
+      ParentExprNode node, int indent, StringBuilder sb) {
+    for (ExprNode child : node.getChildren()) {
+      sb.append(Strings.repeat("  ", indent))
+          .append(child.getKind())
+          .append(": ")
+          .append(child.toSourceString())
+          .append('\n');
+      if (child instanceof ParentExprNode) {
+        buildAstStringWithPreview((ParentExprNode) child, indent + 1, sb);
+      }
+    }
+    return sb;
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Utils for executing an ExprNode visitor on all expressions in a Soy tree.
 

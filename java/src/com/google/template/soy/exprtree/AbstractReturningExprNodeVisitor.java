@@ -104,6 +104,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitItemAccessNode((ItemAccessNode) node);
       case METHOD_NODE:
         return visitMethodNode((MethodNode) node);
+      case NULL_SAFE_ACCESS_NODE:
+        return visitNullSafeAccessNode((NullSafeAccessNode) node);
 
       case GLOBAL_NODE:
         return visitGlobalNode((GlobalNode) node);
@@ -244,6 +246,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
   protected R visitMethodNode(MethodNode node) {
     return visitDataAccessNode(node);
+  }
+
+  protected R visitNullSafeAccessNode(NullSafeAccessNode node) {
+    return visitExprNode(node);
   }
 
   protected R visitGlobalNode(GlobalNode node) {

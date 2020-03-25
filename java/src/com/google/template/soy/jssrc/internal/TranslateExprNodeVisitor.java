@@ -18,6 +18,7 @@ package com.google.template.soy.jssrc.internal;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
@@ -56,6 +57,7 @@ import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -76,6 +78,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
@@ -353,7 +356,22 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitDataAccessNode(DataAccessNode node) {
-    return visitNullSafeNode(node).result(codeGenerator);
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!node.isNullSafe());
+    return accumulateDataAccess(node).result(codeGenerator);
+  }
+
+  @Override
+  protected Expression visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
+    NullSafeAccumulator accumulator = new NullSafeAccumulator(visit(nullSafeAccessNode.getBase()));
+    ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
+    while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
+      NullSafeAccessNode nullSafe = (NullSafeAccessNode) dataAccess;
+      accumulator = accumulateNullSafeDataAccess((DataAccessNode) nullSafe.getBase(), accumulator);
+      dataAccess = nullSafe.getDataAccess();
+    }
+    return accumulateNullSafeDataAccess((DataAccessNode) dataAccess, accumulator)
+        .result(codeGenerator);
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
@@ -361,42 +379,63 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return JS_TO_PROTO_PACK_FN.get(messageType.getFullName());
   }
 
-  /** See {@link NullSafeAccumulator} for discussion. */
-  private NullSafeAccumulator visitNullSafeNode(ExprNode node) {
-    switch (node.getKind()) {
-      case FIELD_ACCESS_NODE:
-        {
-          FieldAccessNode fieldAccess = (FieldAccessNode) node;
-          NullSafeAccumulator base = visitNullSafeNode(fieldAccess.getBaseExprChild());
-          FieldAccess access =
-              genCodeForFieldAccess(
-                  fieldAccess.getBaseExprChild().getType(),
-                  fieldAccess,
-                  fieldAccess.getFieldName());
-          return base.dotAccess(access, fieldAccess.isNullSafe());
-        }
+  private NullSafeAccumulator accumulateNullSafeDataAccess(
+      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!dataAccessNode.isNullSafe());
+    boolean accessChain = false;
+    if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
+      // This is an access chain (e.g. $foo.bar.baz), so recurse through the base expression
+      // ($foo.bar) first.
+      accumulator =
+          accumulateNullSafeDataAccess(
+              (DataAccessNode) dataAccessNode.getBaseExprChild(), accumulator);
+      accessChain = true;
+    }
+    return accumulateDataAccess(dataAccessNode, accumulator, !accessChain);
+  }
 
+  private NullSafeAccumulator accumulateDataAccess(DataAccessNode dataAccessNode) {
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!dataAccessNode.isNullSafe());
+    NullSafeAccumulator accumulator;
+    if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
+      // This is an access chain (e.g. $foo.bar.baz), so recurse through the base expression
+      // ($foo.bar) first.
+      accumulator = accumulateDataAccess((DataAccessNode) dataAccessNode.getBaseExprChild());
+    } else {
+      // The base expression is not a DataAccessNode, so this is the base of an access chain.
+      accumulator = new NullSafeAccumulator(visit(dataAccessNode.getBaseExprChild()));
+    }
+    return accumulateDataAccess(dataAccessNode, accumulator, /* nullSafe= */ false);
+  }
+
+  private NullSafeAccumulator accumulateDataAccess(
+      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator, boolean nullSafe) {
+    switch (dataAccessNode.getKind()) {
+      case FIELD_ACCESS_NODE:
+        FieldAccessNode fieldAccess = (FieldAccessNode) dataAccessNode;
+        FieldAccess access =
+            genCodeForFieldAccess(
+                fieldAccess.getBaseExprChild().getType(),
+                fieldAccess.getSourceLocation(),
+                fieldAccess.getFieldName());
+        return accumulator.dotAccess(access, nullSafe);
       case ITEM_ACCESS_NODE:
-        {
-          ItemAccessNode itemAccess = (ItemAccessNode) node;
-          NullSafeAccumulator base = visitNullSafeNode(itemAccess.getBaseExprChild());
-          ExprNode keyNode = itemAccess.getKeyExprChild();
-          SoyType baseType = itemAccess.getBaseExprChild().getType();
-          return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP)
-              ? base.mapGetAccess(genMapKeyCode(keyNode), itemAccess.isNullSafe()) // soy.Map
-              : base.bracketAccess(
-                  // The key type may not match JsCompiler's type system (passing number as enum, or
-                  // nullable proto field).  I could instead cast this to the map's key type.
-                  visit(keyNode).castAs("?"), itemAccess.isNullSafe()); // vanilla bracket access
-        }
+        ItemAccessNode itemAccess = (ItemAccessNode) dataAccessNode;
+        ExprNode keyNode = itemAccess.getKeyExprChild();
+        SoyType baseType = itemAccess.getBaseExprChild().getType();
+        return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP) // soy.Map
+            ? accumulator.mapGetAccess(genMapKeyCode(keyNode), nullSafe)
+            : accumulator.bracketAccess(
+                // The key type may not match JsCompiler's type system (passing number as enum, or
+                // nullable proto field).  I could instead cast this to the map's key type.
+                visit(keyNode).castAs("?"), nullSafe); // vanilla bracket access
       case METHOD_NODE:
-        {
-          MethodNode method = (MethodNode) node;
-          NullSafeAccumulator base = visitNullSafeNode(method.getBaseExprChild());
-          return genCodeForMethodCall(base, method);
-        }
+        MethodNode method = (MethodNode) dataAccessNode;
+        return genCodeForMethodCall(accumulator, method, nullSafe);
       default:
-        return new NullSafeAccumulator(visit(node));
+        throw new AssertionError(dataAccessNode.getKind());
     }
   }
 
@@ -404,11 +443,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * Generates the code for a field access, e.g. {@code .foo} or {@code .getFoo()}.
    *
    * @param baseType The type of the object that contains the field.
-   * @param fieldAccessNode The field access node.
+   * @param sourceLocation The location of the access.
    * @param fieldName The field name.
    */
   private FieldAccess genCodeForFieldAccess(
-      SoyType baseType, FieldAccessNode fieldAccessNode, String fieldName) {
+      SoyType baseType, SourceLocation sourceLocation, String fieldName) {
     Preconditions.checkNotNull(baseType);
     // For unions, attempt to generate the field access code for each member
     // type, and then see if they all agree.
@@ -419,12 +458,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       for (SoyType memberType : unionType.getMembers()) {
         if (memberType.getKind() != SoyType.Kind.NULL) {
           FieldAccess fieldAccessForType =
-              genCodeForFieldAccess(memberType, fieldAccessNode, fieldName);
+              genCodeForFieldAccess(memberType, sourceLocation, fieldName);
           if (fieldAccess == null) {
             fieldAccess = fieldAccessForType;
           } else if (!fieldAccess.equals(fieldAccessForType)) {
-            errorReporter.report(
-                fieldAccessNode.getSourceLocation(), UNION_ACCESSOR_MISMATCH, fieldName, baseType);
+            errorReporter.report(sourceLocation, UNION_ACCESSOR_MISMATCH, fieldName, baseType);
           }
         }
       }
@@ -452,7 +490,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @param methodNode The method node.
    */
   private static NullSafeAccumulator genCodeForMethodCall(
-      NullSafeAccumulator base, MethodNode methodNode) {
+      NullSafeAccumulator base, MethodNode methodNode, boolean nullSafe) {
     // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(methodNode.isMethodResolved());
@@ -468,7 +506,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           "Error in proto %s, field not found: %s",
           protoType.getDescriptor().getFullName(),
           fieldName);
-      return base.dotAccess(ProtoCall.create(fieldName, desc), methodNode.isNullSafe());
+      return base.dotAccess(ProtoCall.create(fieldName, desc), nullSafe);
     }
     // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
     return base;

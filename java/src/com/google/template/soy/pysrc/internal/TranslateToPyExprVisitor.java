@@ -16,6 +16,7 @@
 
 package com.google.template.soy.pysrc.internal;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
@@ -38,6 +39,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
 import com.google.template.soy.exprtree.Operator.SyntaxElement;
@@ -147,6 +149,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       new PyExpr("raise Exception('Soy compilation failed')", Integer.MAX_VALUE);
 
   private static final PyExpr NONE = new PyExpr("None", Integer.MAX_VALUE);
+
+  private static final PyExpr DATA = new PyExpr("data", Integer.MAX_VALUE);
+  private static final PyExpr IJ_DATA = new PyExpr("ijData", Integer.MAX_VALUE);
 
   private final LocalVariableStack localVarExprs;
 
@@ -270,118 +275,118 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   @Override
   protected PyExpr visitVarRefNode(VarRefNode node) {
-    return visitNullSafeNode(node);
+    if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
+      throw new AssertionError(); // should have been desugared
+    } else if (node.isInjected()) {
+      // Case 1: Injected data reference.
+      return new PyExpr(genCodeForLiteralKeyAccess(IJ_DATA, node.getName()), Integer.MAX_VALUE);
+    } else {
+      PyExpr translation = localVarExprs.getVariableExpression(node.getName());
+      if (translation != null) {
+        // Case 2: In-scope local var.
+        return new PyExpr(translation.getText(), Integer.MAX_VALUE);
+      } else {
+        // Case 3: Data reference.
+        NotFoundBehavior notFoundBehavior = NotFoundBehavior.throwException();
+        if (node.getDefnDecl().kind() == VarDefn.Kind.PARAM
+            && ((TemplateParam) node.getDefnDecl()).hasDefault()) {
+          // This evaluates the default value at every access of a parameter with a default
+          // value. This could be made more performant by only evaluating the default value
+          // once at the beginning of the template. But the Python backend is minimally
+          // supported so this is fine.
+          PyExpr defaultValue = visit(((TemplateParam) node.getDefnDecl()).defaultValue());
+          notFoundBehavior = NotFoundBehavior.defaultValue(defaultValue);
+        }
+        return new PyExpr(
+            genCodeForLiteralKeyAccess(DATA, node.getName(), notFoundBehavior), Integer.MAX_VALUE);
+      }
+    }
   }
 
   @Override
   protected PyExpr visitDataAccessNode(DataAccessNode node) {
-    return visitNullSafeNode(node);
+    // All null safe accesses should've already been converted to NullSafeAccessNodes.
+    checkArgument(!node.isNullSafe());
+    // First recursively visit base expression.
+    PyExpr base = visit(node.getBaseExprChild());
+    return new PyExpr(visitDataAccessNode(node, base), Integer.MAX_VALUE);
   }
 
-  private PyExpr visitNullSafeNode(ExprNode node) {
+  private String visitDataAccessNode(
+      DataAccessNode dataAccess, StringBuilder nullSafetyPrefix, PyExpr base, boolean nullSafe) {
+    // Generate null safety check for base expression.
+    if (nullSafe) {
+      nullSafetyPrefix.append("None if ").append(base.getText()).append(" is None else ");
+    }
+    return visitDataAccessNode(dataAccess, base);
+  }
+
+  private String visitDataAccessNode(DataAccessNode dataAccess, PyExpr base) {
+    // Generate access to field
+    if (dataAccess.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
+      FieldAccessNode fieldAccess = (FieldAccessNode) dataAccess;
+      return genCodeForFieldAccess(
+          fieldAccess, fieldAccess.getBaseExprChild().getType(), base, fieldAccess.getFieldName());
+    } else if (dataAccess.getKind() == ExprNode.Kind.METHOD_NODE) {
+      MethodNode method = (MethodNode) dataAccess;
+      return genCodeForMethod(method, base);
+    } else {
+      ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
+      Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
+      PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
+      switch (baseKind) {
+        case LIST:
+          return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
+        case UNKNOWN:
+          errorReporter.report(
+              itemAccess.getKeyExprChild().getSourceLocation(),
+              UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED);
+          // fall through
+        case MAP:
+        case UNION:
+          return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.returnNone());
+        case LEGACY_OBJECT_MAP:
+        case RECORD:
+          return genCodeForKeyAccess(base, keyPyExpr, NotFoundBehavior.throwException());
+        default:
+          throw new AssertionError("illegal item access on " + baseKind);
+      }
+    }
+  }
+
+  @Override
+  protected PyExpr visitNullSafeAccessNode(NullSafeAccessNode nullSafeAccessNode) {
     StringBuilder nullSafetyPrefix = new StringBuilder();
-    String refText = visitNullSafeNodeRecurse(node, nullSafetyPrefix);
+
+    PyExpr access = visit(nullSafeAccessNode.getBase());
+    ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
+    while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
+      NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
+      access = accumulateDataAccess((DataAccessNode) node.getBase(), access, nullSafetyPrefix);
+      dataAccess = node.getDataAccess();
+    }
+    access = accumulateDataAccess((DataAccessNode) dataAccess, access, nullSafetyPrefix);
 
     if (nullSafetyPrefix.length() == 0) {
-      return new PyExpr(refText, Integer.MAX_VALUE);
+      return access;
     } else {
       return new PyExpr(
-          nullSafetyPrefix + refText, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
+          nullSafetyPrefix + access.getText(),
+          PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL));
     }
   }
 
-  private String visitNullSafeNodeRecurse(ExprNode node, StringBuilder nullSafetyPrefix) {
-    switch (node.getKind()) {
-      case VAR_REF_NODE:
-        {
-          VarRefNode varRef = (VarRefNode) node;
-          if (varRef.getDefnDecl().kind() == VarDefn.Kind.STATE) {
-            throw new AssertionError(); // should have been desugared
-          } else if (varRef.isInjected()) {
-            // Case 1: Injected data reference.
-            return genCodeForLiteralKeyAccess("ijData", varRef.getName());
-          } else {
-            PyExpr translation = localVarExprs.getVariableExpression(varRef.getName());
-            if (translation != null) {
-              // Case 2: In-scope local var.
-              return translation.getText();
-            } else {
-              // Case 3: Data reference.
-              NotFoundBehavior notFoundBehavior = NotFoundBehavior.throwException();
-              if (varRef.getDefnDecl().kind() == VarDefn.Kind.PARAM
-                  && ((TemplateParam) varRef.getDefnDecl()).hasDefault()) {
-                // This evaluates the default value at every access of a parameter with a default
-                // value. This could be made more performant by only evaluating the default value
-                // once at the beginning of the template. But the Python backend is minimally
-                // supported so this is fine.
-                PyExpr defaultValue =
-                    new PyExpr(
-                        visitNullSafeNodeRecurse(
-                            ((TemplateParam) varRef.getDefnDecl()).defaultValue(),
-                            nullSafetyPrefix),
-                        Integer.MAX_VALUE);
-                notFoundBehavior = NotFoundBehavior.defaultValue(defaultValue);
-              }
-              return genCodeForLiteralKeyAccess("data", varRef.getName(), notFoundBehavior);
-            }
-          }
-        }
-
-      case FIELD_ACCESS_NODE:
-      case ITEM_ACCESS_NODE:
-      case METHOD_NODE:
-        {
-          DataAccessNode dataAccess = (DataAccessNode) node;
-          // First recursively visit base expression.
-          String refText =
-              visitNullSafeNodeRecurse(dataAccess.getBaseExprChild(), nullSafetyPrefix);
-
-          // Generate null safety check for base expression.
-          if (dataAccess.isNullSafe()) {
-            nullSafetyPrefix.append("None if ").append(refText).append(" is None else ");
-          }
-
-          // Generate access to field
-          if (node.getKind() == ExprNode.Kind.FIELD_ACCESS_NODE) {
-            FieldAccessNode fieldAccess = (FieldAccessNode) node;
-            return genCodeForFieldAccess(
-                fieldAccess,
-                fieldAccess.getBaseExprChild().getType(),
-                refText,
-                fieldAccess.getFieldName());
-          } else if (node.getKind() == ExprNode.Kind.METHOD_NODE) {
-            MethodNode method = (MethodNode) node;
-            return genCodeForMethod(method, refText);
-          } else {
-            ItemAccessNode itemAccess = (ItemAccessNode) node;
-            Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
-            PyExpr keyPyExpr = visit(itemAccess.getKeyExprChild());
-            switch (baseKind) {
-              case LIST:
-                return genCodeForKeyAccess(refText, keyPyExpr, NotFoundBehavior.returnNone());
-              case UNKNOWN:
-                errorReporter.report(
-                    itemAccess.getKeyExprChild().getSourceLocation(),
-                    UNTYPED_BRACKET_ACCESS_NOT_SUPPORTED);
-                // fall through
-              case MAP:
-              case UNION:
-                return genCodeForKeyAccess(refText, keyPyExpr, NotFoundBehavior.returnNone());
-              case LEGACY_OBJECT_MAP:
-              case RECORD:
-                return genCodeForKeyAccess(refText, keyPyExpr, NotFoundBehavior.throwException());
-              default:
-                throw new AssertionError("illegal item access on " + baseKind);
-            }
-          }
-        }
-
-      default:
-        {
-          PyExpr value = visit(node);
-          return PyExprUtils.maybeProtect(value, Integer.MAX_VALUE).getText();
-        }
+  private PyExpr accumulateDataAccess(
+      DataAccessNode dataAccessNode, PyExpr base, StringBuilder nullSafetyPrefix) {
+    boolean nullSafe = true;
+    if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
+      base =
+          accumulateDataAccess(
+              (DataAccessNode) dataAccessNode.getBaseExprChild(), base, nullSafetyPrefix);
+      nullSafe = false;
     }
+    return new PyExpr(
+        visitDataAccessNode(dataAccessNode, nullSafetyPrefix, base, nullSafe), Integer.MAX_VALUE);
   }
 
   @Override
@@ -598,12 +603,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    *
    * @param key the String literal value to be used as a key
    */
-  private static String genCodeForLiteralKeyAccess(String containerExpr, String key) {
+  private static String genCodeForLiteralKeyAccess(PyExpr containerExpr, String key) {
     return genCodeForLiteralKeyAccess(containerExpr, key, NotFoundBehavior.throwException());
   }
 
   private static String genCodeForLiteralKeyAccess(
-      String containerExpr, String key, NotFoundBehavior notFoundBehavior) {
+      PyExpr containerExpr, String key, NotFoundBehavior notFoundBehavior) {
     return genCodeForKeyAccess(containerExpr, new PyStringExpr("'" + key + "'"), notFoundBehavior);
   }
 
@@ -616,17 +621,17 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @param coerceKeyToString Whether or not the key should be coerced to a string.
    */
   private static String genCodeForKeyAccess(
-      String containerExpr, PyExpr key, NotFoundBehavior notFoundBehavior) {
+      PyExpr containerExpr, PyExpr key, NotFoundBehavior notFoundBehavior) {
     switch (notFoundBehavior.getType()) {
       case RETURN_NONE:
         return new PyFunctionExprBuilder("runtime.key_safe_data_access")
-            .addArg(new PyExpr(containerExpr, Integer.MAX_VALUE))
+            .addArg(containerExpr)
             .addArg(key)
             .build();
       case THROW:
-        return new PyFunctionExprBuilder(containerExpr + ".get").addArg(key).build();
+        return new PyFunctionExprBuilder(containerExpr.getText() + ".get").addArg(key).build();
       case DEFAULT_VALUE:
-        return new PyFunctionExprBuilder(containerExpr + ".get")
+        return new PyFunctionExprBuilder(containerExpr.getText() + ".get")
             .addArg(key)
             .addArg(notFoundBehavior.getDefaultValue())
             .build();
@@ -644,7 +649,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
    * @param fieldName the field name
    */
   private String genCodeForFieldAccess(
-      ExprNode node, SoyType baseType, String containerExpr, String fieldName) {
+      ExprNode node, SoyType baseType, PyExpr containerExpr, String fieldName) {
     if (baseType != null && baseType.getKind() == SoyType.Kind.PROTO) {
       errorReporter.report(node.getSourceLocation(), PROTO_ACCESS_NOT_SUPPORTED);
       return ".ERROR";
@@ -652,7 +657,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return genCodeForLiteralKeyAccess(containerExpr, fieldName);
   }
 
-  private String genCodeForMethod(MethodNode node, String containerExpr) {
+  private String genCodeForMethod(MethodNode node, PyExpr containerExpr) {
     // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(node.isMethodResolved());
@@ -660,7 +665,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
     if (method instanceof SoyPythonSourceFunction) {
       // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
-      return containerExpr;
+      return containerExpr.getText();
     } else {
       errorReporter.report(
           node.getSourceLocation(), SOY_PY_SRC_METHOD_NOT_FOUND, node.getMethodName());

@@ -334,6 +334,9 @@ public final class PassManager {
       }
       if (!disableAllTypeChecking) {
         addPass(new CheckDeclaredTypesPass(errorReporter), singleFilePassesBuilder);
+        // Run before ResolveExpressionTypesPass since this makes type analysis on null safe
+        // accesses simpler.
+        addPass(new NullSafeAccessPass(), singleFilePassesBuilder);
         addPass(
             new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
             singleFilePassesBuilder);
