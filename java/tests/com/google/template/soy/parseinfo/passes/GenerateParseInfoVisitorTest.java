@@ -207,7 +207,8 @@ public final class GenerateParseInfoVisitorTest {
         new NamespaceDeclaration(
             Identifier.create(namespace, SourceLocation.UNKNOWN),
             ImmutableList.of(),
-            ErrorReporter.exploding()),
+            ErrorReporter.exploding(),
+            SourceLocation.UNKNOWN),
         new TemplateNode.SoyFileHeaderInfo(namespace),
         ImmutableList.of());
   }

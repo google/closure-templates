@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -29,11 +30,15 @@ public final class NamespaceDeclaration {
   private final Identifier namespace;
   private final ImmutableList<String> requiredCssNamespaces;
   private final String cssBaseNamespace;
+  private final SourceLocation srcLoc;
 
   final ImmutableList<CommandTagAttribute> attrs;
 
   public NamespaceDeclaration(
-      Identifier namespace, List<CommandTagAttribute> attrs, ErrorReporter errorReporter) {
+      Identifier namespace,
+      List<CommandTagAttribute> attrs,
+      ErrorReporter errorReporter,
+      SourceLocation srcLoc) {
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     String cssBaseNamespace = null;
     for (CommandTagAttribute attr : attrs) {
@@ -62,6 +67,7 @@ public final class NamespaceDeclaration {
     this.namespace = namespace;
     this.requiredCssNamespaces = requiredCssNamespaces;
     this.cssBaseNamespace = cssBaseNamespace;
+    this.srcLoc = srcLoc;
     this.attrs = ImmutableList.copyOf(attrs);
   }
 
@@ -69,7 +75,8 @@ public final class NamespaceDeclaration {
     return new NamespaceDeclaration(
         namespace,
         attrs.stream().map(attr -> attr.copy(copyState)).collect(ImmutableList.toImmutableList()),
-        ErrorReporter.exploding());
+        ErrorReporter.exploding(),
+        srcLoc);
   }
 
   public String getNamespace() {
@@ -83,6 +90,10 @@ public final class NamespaceDeclaration {
   @Nullable
   String getCssBaseNamespace() {
     return cssBaseNamespace;
+  }
+
+  public SourceLocation getSourceLocation() {
+    return srcLoc;
   }
 
   /** Returns an approximation of what the original source for this namespace looked like. */

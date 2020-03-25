@@ -1378,7 +1378,7 @@ private NamespaceDeclaration Namespace() :
   name = DottedIdent()
   attributes = Attributes()
   close = <CMD_END>
-  { return new NamespaceDeclaration(name, attributes, errorReporter); }
+  { return new NamespaceDeclaration(name, attributes, errorReporter, createSrcLoc(open, close)); }
 }
 
 

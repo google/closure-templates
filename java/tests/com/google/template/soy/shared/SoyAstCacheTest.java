@@ -54,7 +54,8 @@ public final class SoyAstCacheTest {
           new NamespaceDeclaration(
               Identifier.create("fake.namespace", SourceLocation.UNKNOWN),
               ImmutableList.of(),
-              ErrorReporter.exploding()),
+              ErrorReporter.exploding(),
+              SourceLocation.UNKNOWN),
           new TemplateNode.SoyFileHeaderInfo("fake.namespace"),
           ImmutableList.of());
 
