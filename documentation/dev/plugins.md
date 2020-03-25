@@ -109,11 +109,11 @@ public class UniqueIdFunction implements
 }
 ```
 
-Given this implementation, the `applyForJavaSource` method will invoked by the
-compiler to generate Java bytecode to call the "nextId" method for server-side
-rendering, and the `computeForJsSrc` method will be invoked by the compiler to
-generate JS code for client-side rendering (the implementation will call the
-given JS library function).
+Given this implementation, the value returned from the `applyForJavaSource`
+method will tell the compiler how to generate Java bytecode which calls the
+`nextId` method, and the value returned from the `applyforJavaScriptSource`
+method will tell the compiler how to generate JS code that invokes the specified
+function.
 
 If the Java implementation needs any non-static dependencies at runtime, the
 `applyForJavaSource` method can use `JavaValueFactory.callInstanceMethod`. For
