@@ -34,10 +34,13 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
+import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.BasicParamStore;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
-import com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -145,8 +148,8 @@ public final class SoySauceImpl implements SoySauce {
             .withSoyPrintDirectives(printDirectives)
             .withPluginInstances(SoySauceImpl.this.pluginInstances);
 
-    private SoyRecord data = SoyValueConverter.EMPTY_DICT;
-    private SoyRecord ij = SoyValueConverter.EMPTY_DICT;
+    private SoyRecord data = ParamStore.EMPTY_INSTANCE;
+    private SoyRecord ij = ParamStore.EMPTY_INSTANCE;
     // TODO(b/129547159): Clean up this variable.
     private ContentKind expectedContentKind = ContentKind.HTML;
     private Map<String, Supplier<Object>> perRenderPluginInstances = null;
@@ -154,21 +157,35 @@ public final class SoySauceImpl implements SoySauce {
 
     RendererImpl(
         String templateName,
-        Factory templateFactory,
+        CompiledTemplate.Factory templateFactory,
         ContentKind contentKind,
         @Nullable Map<String, ?> data) {
       this.templateName = templateName;
       this.templateFactory = checkNotNull(templateFactory);
       this.contentKind = contentKind;
       if (data != null) {
-        setData(data);
+        this.data = soyValueProviderMapAsParamStore(data);
         this.dataSetInConstructor = true;
       }
+    }
+
+    private BasicParamStore soyValueProviderMapAsParamStore(Map<String, ?> source) {
+      BasicParamStore dest = new BasicParamStore(source.size());
+      for (Map.Entry<String, ?> entry : source.entrySet()) {
+        dest.setField(entry.getKey(), (SoyValueProvider) entry.getValue());
+      }
+      return dest;
     }
 
     @Override
     public RendererImpl setIj(Map<String, ?> record) {
       this.ij = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
+      return this;
+    }
+
+    @Override
+    public RendererImpl setIj(SoyTemplateData templateData) {
+      this.ij = soyValueProviderMapAsParamStore(templateData.getParamsAsMap());
       return this;
     }
 
