@@ -132,6 +132,8 @@ public final class GenInvocationBuildersVisitor
 
     ilb.increaseIndent();
 
+    appendProtoDescriptors(fileInfo);
+
     // Add FooParams subclasses for the templates in this file.
     generateParamsClassesForEachTemplate(fileInfo);
 
@@ -193,7 +195,6 @@ public final class GenInvocationBuildersVisitor
             + template.templateName()
             + "\";");
     ilb.appendLine();
-    appendProtoDescriptors(template);
 
     appendFutureWrapperMethod(paramsClass);
 
@@ -226,18 +227,20 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
   }
 
-  private void appendProtoDescriptors(TemplateInfo template) {
+  private void appendProtoDescriptors(FileInfo fileInfo) {
     List<String> protoTypes =
-        template.getProtoTypes(typeRegistry).stream().sorted().collect(toList());
+        fileInfo.getProtoTypes(typeRegistry).stream().sorted().collect(toList());
 
     if (protoTypes.isEmpty()) {
       return;
     }
 
+    ilb.appendLine();
     appendJavadoc(
         ilb,
-        "The list of protos used by this template, which are 1) used by the edit-refresh "
-            + "development compiler and 2) the java compiler to enforce strict proto deps.",
+        "The list of protos used by all templates (public and private) in this Soy file, which are "
+            + "used by 1) the edit-refresh development compiler and 2) the java compiler to "
+            + "enforce strict proto deps.",
         false,
         true);
     ilb.appendLineStart(
@@ -249,7 +252,6 @@ public final class GenInvocationBuildersVisitor
     appendFunctionCallWithParamsOnNewLines(
         ilb, "com.google.common.collect.ImmutableList.of", protoTypes);
     ilb.appendLineEnd(";");
-    ilb.appendLine();
   }
 
   /**

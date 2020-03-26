@@ -275,7 +275,7 @@ public final class JavaGenerationUtils {
         .collect(toSet());
   }
 
-  public static Set<String> getProtoTypes(TemplateNode template, SoyTypeRegistry typeRegistry) {
+  private static Set<String> getProtoTypes(TemplateNode template, SoyTypeRegistry typeRegistry) {
     // Collect the following:
     // + for any params whose type is a proto, get the proto name and Java class name.
     Set<String> protoTypes = new HashSet<>();

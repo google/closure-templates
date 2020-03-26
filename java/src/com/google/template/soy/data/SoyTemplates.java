@@ -18,10 +18,8 @@ package com.google.template.soy.data;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -128,30 +126,5 @@ public final class SoyTemplates {
                               ? ParamRequisiteness.REQUIRED
                               : ParamRequisiteness.OPTIONAL)));
     }
-  }
-
-  private static final ClassValue<ImmutableList<FileDescriptor>> protoDescValue =
-      new ClassValue<ImmutableList<FileDescriptor>>() {
-        @Override
-        @SuppressWarnings("unchecked")
-        protected ImmutableList<FileDescriptor> computeValue(Class<?> type) {
-          try {
-            Field field = type.getDeclaredField("__PROTOS__");
-            field.setAccessible(true); // the field is private
-            return (ImmutableList<FileDescriptor>) field.get(null);
-          } catch (NoSuchFieldException e) {
-            // This is expected for empty lists.
-            return ImmutableList.of();
-          } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(
-                "Unexpected error while accessing the proto descriptors of " + type.getName(), e);
-          }
-        }
-      };
-
-  /** Returns the list of proto descriptors of the Soy template that {@code type} renders. */
-  public static ImmutableList<FileDescriptor> getProtoDescriptors(
-      Class<? extends SoyTemplate> type) {
-    return protoDescValue.get(type);
   }
 }

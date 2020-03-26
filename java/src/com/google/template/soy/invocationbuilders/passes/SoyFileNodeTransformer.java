@@ -69,6 +69,8 @@ public class SoyFileNodeTransformer {
   @AutoValue
   public abstract static class FileInfo {
 
+    abstract SoyFileNode fileNode();
+
     abstract Path soyFilePath();
 
     /**
@@ -101,6 +103,10 @@ public class SoyFileNodeTransformer {
 
     public TemplateInfo findTemplate(TemplateNode node) {
       return templates().stream().filter(t -> t.template().equals(node)).findFirst().get();
+    }
+
+    public Set<String> getProtoTypes(SoyTypeRegistry typeRegistry) {
+      return JavaGenerationUtils.getProtoTypes(fileNode(), typeRegistry);
     }
   }
 
@@ -153,10 +159,6 @@ public class SoyFileNodeTransformer {
     public String className() {
       String className = fqClassName();
       return className.substring(className.lastIndexOf(".") + 1);
-    }
-
-    public Set<String> getProtoTypes(SoyTypeRegistry typeRegistry) {
-      return JavaGenerationUtils.getProtoTypes(template(), typeRegistry);
     }
   }
 
@@ -281,7 +283,7 @@ public class SoyFileNodeTransformer {
     }
 
     return new AutoValue_SoyFileNodeTransformer_FileInfo(
-        path, fqClassName, ImmutableList.copyOf(templates));
+        node, path, fqClassName, ImmutableList.copyOf(templates));
   }
 
   private TemplateInfo transform(TemplateNode template, String className) {
