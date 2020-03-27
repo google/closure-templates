@@ -88,7 +88,7 @@ public final class SoyTemplates {
         @SuppressWarnings("unchecked")
         protected ImmutableSet<SoyTemplateParam<?>> computeValue(Class<?> type) {
           try {
-            Field field = type.getDeclaredField("__PARAMS__");
+            Field field = type.getDeclaredField("__ALL_PARAMS__");
             field.setAccessible(true); // the field is private
             return (ImmutableSet<SoyTemplateParam<?>>) field.get(null);
           } catch (ReflectiveOperationException e) {
@@ -98,8 +98,11 @@ public final class SoyTemplates {
         }
       };
 
-  /** Returns the set of params of the Soy template that {@code type} renders. */
-  public static ImmutableSet<SoyTemplateParam<?>> getParams(Class<? extends SoyTemplate> type) {
+  /**
+   * Returns the set of params of the Soy template that {@code type} renders. This list will not
+   * include params unsupported by the type-safe API, like indirect proto params.
+   */
+  static ImmutableSet<SoyTemplateParam<?>> getParams(Class<? extends SoyTemplate> type) {
     return templateParamsValue.get(type);
   }
 
@@ -119,12 +122,7 @@ public final class SoyTemplates {
           .collect(
               toImmutableMap(
                   SoyTemplateParam::getName,
-                  p ->
-                      p.isIndirect()
-                          ? ParamRequisiteness.INDIRECT
-                          : (p.isRequired()
-                              ? ParamRequisiteness.REQUIRED
-                              : ParamRequisiteness.OPTIONAL)));
+                  p -> p.isRequired() ? ParamRequisiteness.REQUIRED : ParamRequisiteness.OPTIONAL));
     }
   }
 }

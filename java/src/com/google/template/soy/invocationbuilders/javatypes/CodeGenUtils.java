@@ -39,10 +39,8 @@ public final class CodeGenUtils {
       MethodImpl.method(AbstractBuilderWithAccumulatorParameters.class, "initListParam");
   public static final Member AS_RECORD = castFunction("asRecord");
 
-  public static final Member OPTIONAL_P =
-      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "optional");
-  public static final Member REQUIRED_P =
-      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "required");
+  public static final Member STANDARD_P =
+      MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "standard");
   public static final Member INDIRECT_P =
       MethodImpl.fullyQualifiedMethod(SoyTemplateParam.class, "indirect");
   public static final Member INJECTED_P =

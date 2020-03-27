@@ -31,8 +31,7 @@ public class SoyTemplateInfo {
   /** Enum for whether a param is required or optional for a specific template. */
   public enum ParamRequisiteness {
     REQUIRED,
-    OPTIONAL,
-    INDIRECT
+    OPTIONAL
   }
 
   /** The full template name. */
