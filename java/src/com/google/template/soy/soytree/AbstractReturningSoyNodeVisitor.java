@@ -165,7 +165,7 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitSoyNode(node);
   }
 
-  protected R visitTemplateBasicNode(TemplateNode node) {
+  protected R visitTemplateBasicNode(TemplateBasicNode node) {
     return visitTemplateNode(node);
   }
 
@@ -173,7 +173,7 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
     return visitTemplateNode(node);
   }
 
-  protected R visitTemplateDelegateNode(TemplateNode node) {
+  protected R visitTemplateDelegateNode(TemplateDelegateNode node) {
     return visitTemplateNode(node);
   }
 
