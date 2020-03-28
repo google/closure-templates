@@ -40,13 +40,17 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import org.objectweb.asm.Type;
 
 /** Adapts JavaValueFactory to working with Expressions for jbc src. */
@@ -371,6 +375,26 @@ final class JbcSrcValueFactory extends JavaValueFactory {
           soyExpr = SoyExpression.forList(ListType.of(UnknownType.getInstance()), expr);
         } else {
           throw new IllegalStateException("Invalid type: " + expectedType);
+        }
+      } else if (Map.class.isAssignableFrom(type)) {
+        // We could implement more precise coercions depending on the static types, for now we
+        // dispatch to generic conversion functions.
+        // TODO(lukes): it would be especially nice to reuse the logic in GenInvocationBuilders, but
+        // that seems fairly hard.
+        if (expectedType instanceof MapType) {
+          soyExpr =
+              SoyExpression.forSoyValue(
+                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_MAP.invoke(expr));
+        } else if (expectedType instanceof LegacyObjectMapType) {
+          soyExpr =
+              SoyExpression.forSoyValue(
+                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP.invoke(expr));
+        } else if (expectedType instanceof RecordType) {
+          soyExpr =
+              SoyExpression.forSoyValue(
+                  expectedType, MethodRef.BOX_JAVA_MAP_AS_SOY_RECORD.invoke(expr));
+        } else {
+          throw new IllegalStateException("java map cannot be converted to: " + expectedType);
         }
       } else if (SoyValue.class.isAssignableFrom(type)) {
         soyExpr =

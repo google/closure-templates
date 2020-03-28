@@ -30,12 +30,14 @@ import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Validates plugin functions. */
@@ -116,6 +118,13 @@ public class JavaPluginValidator {
         } else if (expectedType.getKind() == SoyType.Kind.UNKNOWN
             || expectedType.getKind() == SoyType.Kind.ANY) {
           actualSoyType = ListType.of(UnknownType.getInstance());
+        } else {
+          reporter.invalidReturnType(actualClass, expectedType, method);
+          return;
+        }
+      } else if (Map.class.isAssignableFrom(actualClass)) {
+        if (expectedType instanceof MapType) {
+          actualSoyType = expectedType;
         } else {
           reporter.invalidReturnType(actualClass, expectedType, method);
           return;

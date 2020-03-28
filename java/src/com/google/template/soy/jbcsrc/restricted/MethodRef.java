@@ -456,6 +456,15 @@ public abstract class MethodRef {
       MethodRef.create(
           JbcSrcRuntime.class, "flushLogsAndRender", SoyValueProvider.class, SoyLogger.class);
 
+  public static final MethodRef BOX_JAVA_MAP_AS_SOY_MAP =
+      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyMap", Map.class);
+
+  public static final MethodRef BOX_JAVA_MAP_AS_SOY_RECORD =
+      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyRecord", Map.class);
+
+  public static final MethodRef BOX_JAVA_MAP_AS_SOY_LEGACY_OBJECT_MAP =
+      MethodRef.create(JbcSrcRuntime.class, "boxJavaMapAsSoyLegacyObjectMap", Map.class);
+
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;
     try {
