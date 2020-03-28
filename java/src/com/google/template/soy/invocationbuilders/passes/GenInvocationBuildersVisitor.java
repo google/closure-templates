@@ -75,6 +75,7 @@ public final class GenInvocationBuildersVisitor
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
+  private static final String ALL_PARAMS_FIELD = "__ALL_PARAMS__";
   private static final String PROTOS_FIELD = "__PROTOS__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
@@ -501,6 +502,21 @@ public final class GenInvocationBuildersVisitor
     // Omit injected params from the list of params passed to the builder.
     appendFunctionCallWithParamsOnNewLines(
         ilb, "com.google.common.collect.ImmutableSet.of", nonInjected);
+    ilb.appendLineEnd(";");
+    ilb.appendLine();
+
+    ilb.appendLineStart(
+        "private static final"
+            + " com.google.common.collect.ImmutableSet<com.google.template.soy.data.SoyTemplateParam<?>>"
+            + " "
+            + ALL_PARAMS_FIELD
+            + " = ");
+    if (usedNames.size() == nonInjected.size()) {
+      ilb.append(PARAMS_FIELD);
+    } else {
+      appendFunctionCallWithParamsOnNewLines(
+          ilb, "com.google.common.collect.ImmutableSet.of", usedNames);
+    }
     ilb.appendLineEnd(";");
     ilb.appendLine();
   }

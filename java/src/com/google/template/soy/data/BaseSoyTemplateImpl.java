@@ -416,7 +416,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     private Set<String> getMissingParamNames(Map<String, ?> data) {
       Set<String> missing = ImmutableSet.of();
       for (SoyTemplateParam<?> param : allParams()) {
-        if (param.isRequiredAndNotIndirect() && !data.containsKey(param.getName())) {
+        if (param.isRequired() && !data.containsKey(param.getName())) {
           if (missing.isEmpty()) {
             missing = new HashSet<>();
           }

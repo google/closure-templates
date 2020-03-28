@@ -352,6 +352,7 @@ public class SoyFileNodeTransformer {
             paramName,
             ParamInfo.of(
                 param.toBuilder()
+                    .setRequired(false) // Indirect params must always be optional.
                     .setType(superType.get())
                     .setDescription(
                         modifyIndirectDesc(
