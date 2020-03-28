@@ -88,7 +88,7 @@ public final class SoyTemplates {
         @SuppressWarnings("unchecked")
         protected ImmutableSet<SoyTemplateParam<?>> computeValue(Class<?> type) {
           try {
-            Field field = type.getDeclaredField("__ALL_PARAMS__");
+            Field field = type.getDeclaredField("__PARAMS__");
             field.setAccessible(true); // the field is private
             return (ImmutableSet<SoyTemplateParam<?>>) field.get(null);
           } catch (ReflectiveOperationException e) {
