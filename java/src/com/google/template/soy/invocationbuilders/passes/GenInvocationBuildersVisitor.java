@@ -48,7 +48,6 @@ import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -75,7 +74,6 @@ public final class GenInvocationBuildersVisitor
 
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
-  private static final String ALL_PARAMS_FIELD = "__ALL_PARAMS__";
   private static final String PROTOS_FIELD = "__PROTOS__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
@@ -337,7 +335,7 @@ public final class GenInvocationBuildersVisitor
     List<ParamInfo> nonInjectedParams =
         combinedParams.stream().filter(p -> !p.injected()).collect(toList());
 
-    if (nonInjectedParams.stream().map(ParamInfo::param).noneMatch(Parameter::isRequired)) {
+    if (nonInjectedParams.stream().noneMatch(ParamInfo::requiredAndNotIndirect)) {
       // Invoke the constructor directly. For these templates it could allow callers to avoid
       // loading the builder completely.
       ilb.appendLine(
@@ -488,7 +486,7 @@ public final class GenInvocationBuildersVisitor
       ilb.appendLine(factory, "(");
       ilb.increaseIndent(2);
       ilb.appendLine("\"", param.name(), "\",");
-      ilb.appendLine("/* required= */ ", param.param().isRequired(), ",");
+      ilb.appendLine("/* required= */ ", param.required(), ",");
       ilb.appendLine(typeToken, ");");
       ilb.decreaseIndent(6);
       ilb.appendLine();
@@ -505,21 +503,6 @@ public final class GenInvocationBuildersVisitor
         ilb, "com.google.common.collect.ImmutableSet.of", nonInjected);
     ilb.appendLineEnd(";");
     ilb.appendLine();
-
-    ilb.appendLineStart(
-        "private static final"
-            + " com.google.common.collect.ImmutableSet<com.google.template.soy.data.SoyTemplateParam<?>>"
-            + " "
-            + ALL_PARAMS_FIELD
-            + " = ");
-    if (usedNames.size() == nonInjected.size()) {
-      ilb.append(PARAMS_FIELD);
-    } else {
-      appendFunctionCallWithParamsOnNewLines(
-          ilb, "com.google.common.collect.ImmutableSet.of", usedNames);
-    }
-    ilb.appendLineEnd(";");
-    ilb.appendLine();
   }
 
   private static void appendRecordListInitializations(
@@ -527,7 +510,7 @@ public final class GenInvocationBuildersVisitor
     // For every required param that's of type list<[...]> (list of records), initialize the list
     // so that upon building the template we do not throw an error for zero records.
     for (ParamInfo param : params) {
-      if (param.param().isRequired()) {
+      if (param.required()) {
         List<JavaType> types = param.javaTypes();
         if (types.size() == 1
             && types.get(0) instanceof RecordJavaType

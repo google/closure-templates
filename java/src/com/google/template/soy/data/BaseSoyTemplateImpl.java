@@ -419,7 +419,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       ImmutableList<SoyTemplateParam<?>> params = allParams().asList();
       for (int i = 0; i < params.size(); i++) {
         SoyTemplateParam<?> param = params.get(i);
-        if (param.isRequired() && !data.containsKey(param.getName())) {
+        if (param.isRequiredAndNotIndirect() && !data.containsKey(param.getName())) {
           if (missing.isEmpty()) {
             missing = new ArrayList<>();
           }

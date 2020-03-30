@@ -253,6 +253,14 @@ public class SoyFileNodeTransformer {
     public List<JavaType> javaTypes() {
       return InvocationBuilderTypeUtils.getJavaTypes(type());
     }
+
+    public boolean required() {
+      return param().isRequired();
+    }
+
+    public boolean requiredAndNotIndirect() {
+      return required() && !indirect();
+    }
   }
 
   private final String javaPackage;
@@ -352,7 +360,6 @@ public class SoyFileNodeTransformer {
             paramName,
             ParamInfo.of(
                 param.toBuilder()
-                    .setRequired(false) // Indirect params must always be optional.
                     .setType(superType.get())
                     .setDescription(
                         modifyIndirectDesc(
