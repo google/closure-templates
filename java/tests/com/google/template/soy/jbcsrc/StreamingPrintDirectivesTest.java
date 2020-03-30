@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import static org.junit.Assert.assertThrows;
 
@@ -35,9 +34,12 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -46,6 +48,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
+import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -110,8 +113,13 @@ public final class StreamingPrintDirectivesTest {
     SettableFuture<String> future2 = SettableFuture.create();
     CompiledTemplate create =
         factory.create(
-            SoyValueConverterUtility.newDict("future1", future1, "future2", future2),
-            SoyValueConverter.EMPTY_DICT);
+            new SoyRecordImpl(
+                ImmutableMap.of(
+                    "future1",
+                    SoyValueConverter.INSTANCE.convert(future1),
+                    "future2",
+                    SoyValueConverter.INSTANCE.convert(future2))),
+            ParamStore.EMPTY_INSTANCE);
 
     RenderResult result = create.render(output, context);
     // rendering paused because it found our future
@@ -172,7 +180,7 @@ public final class StreamingPrintDirectivesTest {
     BufferingAppendable output = BufferingAppendable.buffering();
     templates
         .getTemplateFactory("ns.streamable")
-        .create(badParam, EMPTY_DICT)
+        .create(badParam, ParamStore.EMPTY_INSTANCE)
         .render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("(stream: notAnInt)");
 
@@ -182,7 +190,7 @@ public final class StreamingPrintDirectivesTest {
             () ->
                 templates
                     .getTemplateFactory("ns.nonstreamable")
-                    .create(badParam, EMPTY_DICT)
+                    .create(badParam, ParamStore.EMPTY_INSTANCE)
                     .render(output, context));
     assertThat(cce)
         .hasMessageThat()
@@ -210,7 +218,10 @@ public final class StreamingPrintDirectivesTest {
             "{/template}");
     RenderContext context = getDefaultContext(templates);
     BufferingAppendable output = BufferingAppendable.buffering();
-    templates.getTemplateFactory("ns.tag").create(EMPTY_DICT, EMPTY_DICT).render(output, context);
+    templates
+        .getTemplateFactory("ns.tag")
+        .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE)
+        .render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("<div class=\"foo\"></div>");
   }
 
@@ -241,7 +252,7 @@ public final class StreamingPrintDirectivesTest {
     CompiledTemplate template =
         templates
             .getTemplateFactory("ns.foo")
-            .create(SoyValueConverterUtility.newDict("future", future), EMPTY_DICT);
+            .create(SoyValueConverterUtility.newDict("future", future), ParamStore.EMPTY_INSTANCE);
     template.render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("<script>var x=\"\\x22");
     future.set("hello");
@@ -267,7 +278,7 @@ public final class StreamingPrintDirectivesTest {
     CompiledTemplate template =
         templates
             .getTemplateFactory("ns.foo")
-            .create(SoyValueConverterUtility.newDict("s", "hello"), EMPTY_DICT);
+            .create(SoyValueConverterUtility.newDict("s", "hello"), ParamStore.EMPTY_INSTANCE);
     template.render(output, context);
     assertThat(output.getAndClearBuffer()).isEqualTo("(second: (first: hello))");
   }
@@ -317,7 +328,8 @@ public final class StreamingPrintDirectivesTest {
     RenderResult result =
         templates
             .getTemplateFactory(name)
-            .create(SoyValueConverter.INSTANCE.newDictFromMap(params), EMPTY_DICT)
+            .create(
+                (SoyRecord) SoyValueConverter.INSTANCE.convert(params), ParamStore.EMPTY_INSTANCE)
             .render(output, context);
     assertThat(result.isDone()).isTrue();
     return output.getAndClearBuffer();

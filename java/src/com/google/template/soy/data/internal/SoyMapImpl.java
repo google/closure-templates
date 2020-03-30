@@ -18,13 +18,13 @@ package com.google.template.soy.data.internal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -39,6 +39,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 @ParametersAreNonnullByDefault
 public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
+  public static final SoyMapImpl EMPTY = new SoyMapImpl(ImmutableMap.of());
+
   /** Creates a SoyDict implementation for a particular underlying provider map. */
   public static SoyMapImpl forProviderMap(
       Map<? extends SoyValue, ? extends SoyValueProvider> providerMap) {
@@ -51,7 +53,7 @@ public final class SoyMapImpl extends SoyAbstractValue implements SoyMap {
       throw new IllegalArgumentException(
           String.format("null key in entry: null=%s", providerMap.get(null)));
     }
-    this.providerMap = Collections.unmodifiableMap(providerMap);
+    this.providerMap = providerMap;
   }
 
   /** Map containing each data provider. */

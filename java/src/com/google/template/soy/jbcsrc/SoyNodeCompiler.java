@@ -1035,7 +1035,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Expression prepareParamsHelper(CallNode node, Label reattachPoint) {
     if (node.numChildren() == 0) {
       if (!node.isPassingData()) {
-        return FieldRef.EMPTY_DICT.accessor();
+        return FieldRef.EMPTY_PARAMS.accessor();
       } else if (!node.isPassingAllData()) {
         return getDataRecordExpression(node, reattachPoint);
       }

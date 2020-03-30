@@ -19,7 +19,6 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.truth.Fact.simpleFact;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
@@ -38,6 +37,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -203,17 +203,20 @@ public final class TemplateTester {
 
     CompiledTemplateSubject logsOutput(String expected) {
       compile();
-      return rendersAndLogs("", expected, EMPTY_DICT, EMPTY_DICT, defaultContext);
+      return rendersAndLogs(
+          "", expected, ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected) {
       compile();
-      return rendersAndLogs(expected, "", EMPTY_DICT, EMPTY_DICT, defaultContext);
+      return rendersAndLogs(
+          expected, "", ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params) {
       compile();
-      return rendersAndLogs(expected, "", asRecord(params), EMPTY_DICT, defaultContext);
+      return rendersAndLogs(
+          expected, "", asRecord(params), ParamStore.EMPTY_INSTANCE, defaultContext);
     }
 
     CompiledTemplateSubject rendersAs(String expected, Map<String, ?> params, Map<String, ?> ij) {
@@ -230,7 +233,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
+        factory.create(asRecord(params), ParamStore.EMPTY_INSTANCE).render(builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(
@@ -252,7 +255,7 @@ public final class TemplateTester {
       BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
       compile();
       try {
-        factory.create(asRecord(params), EMPTY_DICT).render(builder, defaultContext);
+        factory.create(asRecord(params), ParamStore.EMPTY_INSTANCE).render(builder, defaultContext);
         failWithoutActual(
             simpleFact(
                 String.format(

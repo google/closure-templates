@@ -17,8 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_LIST;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatElementBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
@@ -42,11 +40,12 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.data.SoyDict;
+import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
-import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueConverterUtility;
 import com.google.template.soy.data.internal.BasicParamStore;
+import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
@@ -86,6 +85,7 @@ import org.junit.runners.JUnit4;
 /** A test for the template compiler, notably {@link BytecodeCompiler} and its collaborators. */
 @RunWith(JUnit4.class)
 public class BytecodeCompilerTest {
+  public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
 
   @Test
   public void testDelCall_delPackageSelections() throws IOException {
@@ -253,7 +253,10 @@ public class BytecodeCompilerTest {
   private static String renderWithContext(CompiledTemplate.Factory factory, RenderContext context)
       throws IOException {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
-    assertThat(factory.create(EMPTY_DICT, EMPTY_DICT).render(builder, context))
+    assertThat(
+            factory
+                .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE)
+                .render(builder, context))
         .isEqualTo(RenderResult.done());
     String string = builder.toString();
     return string;
@@ -291,21 +294,27 @@ public class BytecodeCompilerTest {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertThat(
             factory
-                .create(TemplateTester.asRecord(ImmutableMap.of("variant", "v1")), EMPTY_DICT)
+                .create(
+                    TemplateTester.asRecord(ImmutableMap.of("variant", "v1")),
+                    ParamStore.EMPTY_INSTANCE)
                 .render(builder, context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("v1");
 
     assertThat(
             factory
-                .create(TemplateTester.asRecord(ImmutableMap.of("variant", "v2")), EMPTY_DICT)
+                .create(
+                    TemplateTester.asRecord(ImmutableMap.of("variant", "v2")),
+                    ParamStore.EMPTY_INSTANCE)
                 .render(builder, context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.getAndClearBuffer()).isEqualTo("v2");
 
     assertThat(
             factory
-                .create(TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")), EMPTY_DICT)
+                .create(
+                    TemplateTester.asRecord(ImmutableMap.of("variant", "unknown")),
+                    ParamStore.EMPTY_INSTANCE)
                 .render(builder, context))
         .isEqualTo(RenderResult.done());
     assertThat(builder.toString()).isEmpty();
@@ -440,7 +449,8 @@ public class BytecodeCompilerTest {
 
   private String render(CompiledTemplates templates, SoyRecord params, String name)
       throws IOException {
-    CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
+    CompiledTemplate caller =
+        templates.getTemplateFactory(name).create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertThat(caller.render(builder, getDefaultContext(templates))).isEqualTo(RenderResult.done());
     String output = builder.toString();
@@ -818,10 +828,12 @@ public class BytecodeCompilerTest {
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
 
     SoyDict params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
-    singleParam.create(params, EMPTY_DICT).render(builder, context);
+    singleParam.create(params, ParamStore.EMPTY_INSTANCE).render(builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    singleParam.create(EMPTY_DICT, EMPTY_DICT).render(builder, context);
+    singleParam
+        .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE)
+        .render(builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("-1");
 
     templates = TemplateTester.compileTemplateBody("{@inject foo : int}", "{$foo}");
@@ -829,11 +841,10 @@ public class BytecodeCompilerTest {
     context = getDefaultContext(templates);
 
     params = SoyValueConverterUtility.newDict("foo", IntegerData.forValue(1));
-    singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
+    singleIj.create(ParamStore.EMPTY_INSTANCE, params).render(builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("1");
 
-    params = SoyValueConverterUtility.newDict();
-    singleIj.create(SoyValueConverter.EMPTY_DICT, params).render(builder, context);
+    singleIj.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).render(builder, context);
     assertThat(builder.getAndClearBuffer()).isEqualTo("null");
   }
 
@@ -902,7 +913,8 @@ public class BytecodeCompilerTest {
         .isEqualTo("com.google.template.soy.jbcsrc.gen.ns.foo$Factory");
     assertThat(factory.getClass().getSimpleName()).isEqualTo("Factory");
 
-    CompiledTemplate templateInstance = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate templateInstance =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     Class<? extends CompiledTemplate> templateClass = templateInstance.getClass();
     assertThat(templateClass.getName()).isEqualTo("com.google.template.soy.jbcsrc.gen.ns.foo");
     assertThat(templateClass.getSimpleName()).isEqualTo("foo");

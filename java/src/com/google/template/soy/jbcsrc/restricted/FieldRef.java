@@ -20,7 +20,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
-import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
@@ -39,12 +40,12 @@ public abstract class FieldRef {
   public static final FieldRef BOOLEAN_DATA_TRUE = staticFieldReference(BooleanData.class, "TRUE");
   public static final FieldRef NULL_PROVIDER =
       staticFieldReference(JbcSrcRuntime.class, "NULL_PROVIDER");
-  public static final FieldRef EMPTY_DICT =
-      staticFieldReference(SoyValueConverter.class, "EMPTY_DICT");
-  public static final FieldRef EMPTY_MAP =
-      staticFieldReference(SoyValueConverter.class, "EMPTY_MAP");
+  public static final FieldRef EMPTY_MAP = staticFieldReference(SoyMapImpl.class, "EMPTY");
   public static final FieldRef EMPTY_STRING_DATA =
       staticFieldReference(StringData.class, "EMPTY_STRING");
+
+  public static final FieldRef EMPTY_PARAMS =
+      staticFieldReference(ParamStore.class, "EMPTY_INSTANCE");
 
   public static FieldRef create(
       TypeInfo owner, String name, Type type, int modifiers, boolean isNullable) {

@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
@@ -31,6 +30,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
@@ -92,7 +92,8 @@ public final class DetachStateTest {
     CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
@@ -114,7 +115,8 @@ public final class DetachStateTest {
             "{let $foo: 'foo'/}", "{css($foo, 'bar')}", "{css('baz')}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
@@ -132,7 +134,8 @@ public final class DetachStateTest {
     CompiledTemplates templates = TemplateTester.compileTemplateBody("{xid('foo')}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
@@ -156,7 +159,8 @@ public final class DetachStateTest {
             "world");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
@@ -182,7 +186,8 @@ public final class DetachStateTest {
         TemplateTester.compileTemplateBody("{for $i in range(10)}", "  {$i}", "{/for}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     // Basic stuff works
     TestAppendable output = new TestAppendable();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
@@ -207,7 +212,7 @@ public final class DetachStateTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     CompiledTemplate template =
-        factory.create(asRecord(ImmutableMap.of("foo", future)), EMPTY_DICT);
+        factory.create(asRecord(ImmutableMap.of("foo", future)), ParamStore.EMPTY_INSTANCE);
 
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
@@ -244,7 +249,7 @@ public final class DetachStateTest {
     List<SettableFuture<String>> futures =
         ImmutableList.of(SettableFuture.create(), SettableFuture.create(), SettableFuture.create());
     CompiledTemplate template =
-        factory.create(asRecord(ImmutableMap.of("list", futures)), EMPTY_DICT);
+        factory.create(asRecord(ImmutableMap.of("list", futures)), ParamStore.EMPTY_INSTANCE);
 
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
@@ -286,7 +291,7 @@ public final class DetachStateTest {
     RenderContext context = getDefaultContext(templates);
     SoyRecord params = asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2, 3, 4), "foo", 1));
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
-    assertThat(factory.create(params, EMPTY_DICT).render(output, context))
+    assertThat(factory.create(params, ParamStore.EMPTY_INSTANCE).render(output, context))
         .isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("2345");
   }
@@ -312,7 +317,7 @@ public final class DetachStateTest {
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.caller");
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
-    CompiledTemplate template = factory.create(params, EMPTY_DICT);
+    CompiledTemplate template = factory.create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertThat(template.render(output, getDefaultContext(templates)))
         .isEqualTo(RenderResult.continueAfter(param));
@@ -349,7 +354,7 @@ public final class DetachStateTest {
     RenderContext context = getDefaultContext(templates);
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("callerParam", param));
-    CompiledTemplate template = factory.create(params, EMPTY_DICT);
+    CompiledTemplate template = factory.create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
     assertThat(output.toString()).isEqualTo("prefix ");
@@ -375,7 +380,7 @@ public final class DetachStateTest {
     RenderContext context = getDefaultContext(templates);
     SettableFuture<String> param = SettableFuture.create();
     SoyRecord params = asRecord(ImmutableMap.of("p", param));
-    CompiledTemplate template = factory.create(params, EMPTY_DICT);
+    CompiledTemplate template = factory.create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
     assertThat(output.toString()).isEqualTo("Hello ");
@@ -388,7 +393,10 @@ public final class DetachStateTest {
   public void testNoDetachesForTrivialBlocks() throws IOException {
     CompiledTemplates templates =
         TemplateTester.compileFile("{namespace ns}", "", "{template .t}", "", "{/template}", "");
-    CompiledTemplate template = templates.getTemplateFactory("ns.t").create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        templates
+            .getTemplateFactory("ns.t")
+            .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     assertThat(template.render(output, getDefaultContext(templates)))
         .isEqualTo(RenderResult.done());
