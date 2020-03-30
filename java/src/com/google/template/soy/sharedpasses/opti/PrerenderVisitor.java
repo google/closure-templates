@@ -18,7 +18,7 @@ package com.google.template.soy.sharedpasses.opti;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyRecord;
-import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -62,7 +62,7 @@ final class PrerenderVisitor extends RenderVisitor {
         outputBuf,
         basicTemplates,
         /* deltemplates=*/ new DelTemplateSelector.Builder<TemplateDelegateNode>().build(),
-        SoyValueConverter.EMPTY_DICT,
+        ParamStore.EMPTY_INSTANCE,
         /* ijData= */ null,
         /* activeDelPackageSelector= */ null,
         /* msgBundle= */ null,

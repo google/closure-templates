@@ -17,7 +17,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 
 import com.google.common.base.Joiner;
@@ -30,6 +29,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -456,7 +456,8 @@ public final class ProtoSupportTest {
   }
 
   private String render(CompiledTemplates templates, String name, SoyRecord params) {
-    CompiledTemplate caller = templates.getTemplateFactory(name).create(params, EMPTY_DICT);
+    CompiledTemplate caller =
+        templates.getTemplateFactory(name).create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable sb = LoggingAdvisingAppendable.buffering();
     try {
       assertThat(caller.render(sb, getDefaultContext(templates))).isEqualTo(RenderResult.done());

@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.compileTemplateBody;
@@ -36,6 +35,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -98,7 +98,8 @@ public class LazyClosureCompilerTest {
             "{$foo}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
@@ -146,7 +147,8 @@ public class LazyClosureCompilerTest {
             "  {$bar}",
             "{/for}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
     innerClasses.remove(factory.getClass());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
@@ -208,7 +210,7 @@ public class LazyClosureCompilerTest {
             "{let $fancyList: [$a + 1 for $a in range(100)] /}", "{join($fancyList,',')}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     Class<? extends CompiledTemplate> templateClass =
-        factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).getClass();
     Field fancyListField = templateClass.getDeclaredField("let_fancyList");
     assertThat(Modifier.toString(fancyListField.getModifiers())).isEqualTo("private static final");
     assertThat(fancyListField.getType()).isAssignableTo(SoyList.class);
@@ -229,7 +231,8 @@ public class LazyClosureCompilerTest {
             "{@param bar : string }", "{let $foo : $bar + $bar /}", "before use", "{$foo}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template = factory.create(asRecord(ImmutableMap.of("bar", bar)), EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(asRecord(ImmutableMap.of("bar", bar)), ParamStore.EMPTY_INSTANCE);
     BufferingAppendable output = LoggingAdvisingAppendable.buffering();
     RenderResult result = template.render(output, context);
     assertThat(result.type()).isEqualTo(RenderResult.Type.DETACH);
@@ -253,7 +256,8 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar + 1 /}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    CompiledTemplate template = factory.create(EMPTY_DICT, EMPTY_DICT);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
 
     assertThat(template.getClass().getDeclaredClasses()).hasLength(2);
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
@@ -328,7 +332,8 @@ public class LazyClosureCompilerTest {
     CompiledTemplates templates =
         compileTemplateBody("{let $bar : 'a' /}", "{let $foo : $bar /} {$foo}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    Class<?> template = factory.create(EMPTY_DICT, EMPTY_DICT).getClass();
+    Class<?> template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).getClass();
     // no inner classes besides the factory
     assertThat(asList(template.getDeclaredClasses())).containsExactly(factory.getClass());
     // we only store bar in a private static field

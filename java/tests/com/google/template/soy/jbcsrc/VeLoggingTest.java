@@ -16,7 +16,6 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.template.soy.data.SoyValueConverter.EMPTY_DICT;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
@@ -27,6 +26,7 @@ import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.api.OutputAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -318,7 +318,7 @@ public final class VeLoggingTest {
     RenderResult result =
         templates
             .getTemplateFactory("ns.foo")
-            .create(TemplateTester.asRecord(params), EMPTY_DICT)
+            .create(TemplateTester.asRecord(params), ParamStore.EMPTY_INSTANCE)
             .render(output, ctx);
     assertThat(result).isEqualTo(RenderResult.done());
   }
