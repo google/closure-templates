@@ -24,6 +24,7 @@ import static com.google.common.collect.Streams.stream;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.html.types.SafeHtml;
@@ -45,11 +46,9 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -114,12 +113,11 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     //  3. They tend to be faster.
     //  One downside is that they have less efficient entrySet() implementations, but we can
     // easily workaround that.
-    // fairly strong contract with our subclass so it is ok.  We know that this method is just
-    // returning a static final field.
-    private final Map<SoyTemplateParam<?>, SoyValueProvider> data =
-        new IdentityHashMap<>(/* expectedMaxSize= */ allParams().size());
+    private final IdentityHashMap<SoyTemplateParam<?>, SoyValueProvider> data;
 
-    protected AbstractBuilder() {}
+    protected AbstractBuilder(int numParams) {
+      this.data = new IdentityHashMap<>(/* expectedMaxSize= */ numParams);
+    }
 
     @Override
     public final T build() {
@@ -156,6 +154,9 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
 
     @Override
     public final <V> B setParam(SoyTemplateParam<? super V> param, V value) {
+      // TODO(lukes): allParams uses .equals, perhaps we should use == so people don't use one
+      // templates param that happens to have the same name/type in a different template.
+      // Or maybe we should add some kind of 'cast' method to adapt one builder to another?
       if (!allParams().contains(param)) {
         throw new IllegalArgumentException(
             "No param in " + this.getClass().getName() + " like " + param);
@@ -404,7 +405,7 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       ImmutableMap<String, SoyValueProvider> finalData = finalDataBuilder.build();
 
       if (checkRequired) {
-        Set<String> missingParams = getMissingParamNames(finalData);
+        List<String> missingParams = getMissingParamNames(finalData);
         if (!missingParams.isEmpty()) {
           throw new IllegalStateException(
               "Missing required params: " + Joiner.on(", ").join(missingParams));
@@ -413,12 +414,14 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
       return finalData;
     }
 
-    private Set<String> getMissingParamNames(Map<String, ?> data) {
-      Set<String> missing = ImmutableSet.of();
-      for (SoyTemplateParam<?> param : allParams()) {
+    private List<String> getMissingParamNames(Map<String, ?> data) {
+      List<String> missing = ImmutableList.of();
+      ImmutableList<SoyTemplateParam<?>> params = allParams().asList();
+      for (int i = 0; i < params.size(); i++) {
+        SoyTemplateParam<?> param = params.get(i);
         if (param.isRequired() && !data.containsKey(param.getName())) {
           if (missing.isEmpty()) {
-            missing = new HashSet<>();
+            missing = new ArrayList<>();
           }
           missing.add(param.getName());
         }
@@ -441,7 +444,9 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
     private final Map<SoyTemplateParam<?>, List<SoyValueProvider>> accummulatorData =
         new IdentityHashMap<>();
 
-    protected AbstractBuilderWithAccumulatorParameters() {}
+    protected AbstractBuilderWithAccumulatorParameters(int numParams) {
+      super(numParams);
+    }
 
     @Override
     void prepareDataForBuild() {

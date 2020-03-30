@@ -390,6 +390,7 @@ public final class GenInvocationBuildersVisitor
     // Constructor for Foo.Builder.
     ilb.appendLine("private Builder() {");
     ilb.increaseIndent();
+    ilb.appendLine("super(", nonInjectedParams.size(), ");");
     appendRecordListInitializations(ilb, nonInjectedParams);
     ilb.decreaseIndent();
     ilb.appendLine("}");
