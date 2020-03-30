@@ -29,9 +29,11 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnionType;
@@ -123,7 +125,11 @@ public class JavaPluginValidator {
           return;
         }
       } else if (Map.class.isAssignableFrom(actualClass)) {
-        if (expectedType instanceof MapType) {
+        // maps are allowed as long as the value is one of our static map types.  We don't allow
+        // maps to be returned as ? (unlike lists which are less ambiguous)
+        if (expectedType instanceof MapType
+            || expectedType instanceof RecordType
+            || expectedType instanceof LegacyObjectMapType) {
           actualSoyType = expectedType;
         } else {
           reporter.invalidReturnType(actualClass, expectedType, method);
