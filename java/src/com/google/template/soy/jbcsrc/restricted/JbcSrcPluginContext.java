@@ -28,5 +28,5 @@ public interface JbcSrcPluginContext {
   Expression getULocale();
 
   /** Returns all required css namespaces. */
-  Expression getAllRequiredCssNamespaces(Expression template);
+  Expression getAllRequiredCssNamespaces(SoyExpression template);
 }

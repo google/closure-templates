@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -96,28 +95,8 @@ public final class RenderContext {
     return msgBundle.getLocale();
   }
 
-  public ImmutableList<String> getAllRequiredCssNamespaces(Object templateOrList) {
-    if (templateOrList instanceof StringData || templateOrList instanceof String) {
-      String template;
-      if (templateOrList instanceof StringData) {
-        template = ((StringData) templateOrList).stringValue();
-      } else {
-        template = (String) templateOrList;
-      }
+  public ImmutableList<String> getAllRequiredCssNamespaces(String template) {
       return templates.getAllRequiredCssNamespaces(template, activeDelPackageSelector, false);
-    } else {
-      @SuppressWarnings("unchecked")
-      SoyList templateList = ((SoyList) templateOrList);
-      return templateList.asJavaList().stream()
-          .flatMap(
-              template ->
-                  templates
-                      .getAllRequiredCssNamespaces(
-                          template.resolve().stringValue(), activeDelPackageSelector, false)
-                      .stream())
-          .distinct()
-          .collect(ImmutableList.toImmutableList());
-    }
   }
 
   public BidiGlobalDir getBidiGlobalDir() {

@@ -1362,7 +1362,7 @@ final class ExpressionCompiler {
                       }
 
                       @Override
-                      public Expression getAllRequiredCssNamespaces(Expression template) {
+                      public Expression getAllRequiredCssNamespaces(SoyExpression template) {
                         return error();
                       }
 

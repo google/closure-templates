@@ -260,7 +260,7 @@ public class SoyJavaSourceFunctionTester {
     }
 
     @Override
-    public Expression getAllRequiredCssNamespaces(Expression template) {
+    public Expression getAllRequiredCssNamespaces(SoyExpression template) {
       throw new UnsupportedOperationException("Not implemented yet");
     }
 

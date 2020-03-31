@@ -20,6 +20,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
+import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
 abstract class AbstractTemplateParameterLookup implements TemplateParameterLookup {
@@ -63,7 +64,7 @@ abstract class AbstractTemplateParameterLookup implements TemplateParameterLooku
       }
 
       @Override
-      public Expression getAllRequiredCssNamespaces(Expression template) {
+      public Expression getAllRequiredCssNamespaces(SoyExpression template) {
         return getRenderContext().getAllRequiredCssNamespaces(template);
       }
     };
