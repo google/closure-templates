@@ -29,6 +29,8 @@ import java.util.Map;
  */
 public final class SoyTemplateData {
 
+  public static final SoyTemplateData EMPTY = SoyTemplateData.builder().build();
+
   /** Returns a new builder. */
   public static Builder builder() {
     return new Builder();
