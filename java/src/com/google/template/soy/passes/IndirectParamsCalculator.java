@@ -19,11 +19,11 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.DataAllCallSituation;
@@ -55,10 +55,10 @@ public final class IndirectParamsCalculator {
     /**
      * Multimap from param key (direct or indirect) to transitive callees that declare the param.
      */
-    public final ImmutableMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
+    public final ImmutableSetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
 
     /** Multimap from indirect param key to param types. */
-    public final ImmutableMultimap<String, SoyType> indirectParamTypes;
+    public final ImmutableSetMultimap<String, SoyType> indirectParamTypes;
 
     /**
      * Whether the template (that the pass was run on) may have indirect params in external basic
@@ -83,8 +83,8 @@ public final class IndirectParamsCalculator {
      */
     public IndirectParamsInfo(
         ImmutableSortedMap<String, TemplateMetadata.Parameter> indirectParams,
-        ImmutableMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap,
-        ImmutableMultimap<String, SoyType> indirectParamTypes,
+        ImmutableSetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap,
+        ImmutableSetMultimap<String, SoyType> indirectParamTypes,
         boolean mayHaveIndirectParamsInExternalCalls,
         boolean mayHaveIndirectParamsInExternalDelCalls) {
       this.indirectParams = indirectParams;
@@ -161,10 +161,10 @@ public final class IndirectParamsCalculator {
   private Map<String, Parameter> indirectParams;
 
   /** Multimap from param key (direct or indirect) to callees that explicitly list the param. */
-  private Multimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
+  private SetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap;
 
   /** Multimap from indirect param key to param types. */
-  private Multimap<String, SoyType> indirectParamTypes;
+  private SetMultimap<String, SoyType> indirectParamTypes;
 
   /**
    * Whether the template (that the pass was run on) may have indirect params in external basic
@@ -195,8 +195,8 @@ public final class IndirectParamsCalculator {
 
     return new IndirectParamsInfo(
         ImmutableSortedMap.copyOf(indirectParams),
-        ImmutableMultimap.copyOf(paramKeyToCalleesMultimap),
-        ImmutableMultimap.copyOf(indirectParamTypes),
+        ImmutableSetMultimap.copyOf(paramKeyToCalleesMultimap),
+        ImmutableSetMultimap.copyOf(indirectParamTypes),
         mayHaveIndirectParamsInExternalCalls,
         mayHaveIndirectParamsInExternalDelCalls);
   }

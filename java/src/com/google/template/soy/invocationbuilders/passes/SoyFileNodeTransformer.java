@@ -24,7 +24,6 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -316,58 +315,46 @@ public class SoyFileNodeTransformer {
 
   private void addIndirectParams(TemplateNode template, Map<String, ParamInfo> params) {
     Set<String> directParamNames = ImmutableSet.copyOf(params.keySet());
-    Map<String, SoyType> directParamTypes =
-        params.entrySet().stream()
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> e.getValue().type()));
 
     IndirectParamsInfo idi =
         indirectParamsCalculator.calculateIndirectParams(TemplateMetadata.fromTemplate(template));
 
     for (Map.Entry<String, Parameter> entry : idi.indirectParams.entrySet()) {
       String paramName = entry.getKey();
+      if (directParamNames.contains(paramName)) {
+        // if the param is direct, just use that definition of the type preferably
+        continue;
+      }
       Parameter param = entry.getValue();
 
-      boolean overridesDirectParam = directParamNames.contains(paramName);
-
       // Combine the types from all parameters, direct and indirect, with the same name.
-      Set<SoyType> allTypes = new HashSet<>(idi.indirectParamTypes.get(paramName));
-      if (overridesDirectParam) {
-        allTypes.add(directParamTypes.get(paramName));
-      }
-      Optional<SoyType> superType = upcastTypesForIndirectParams(allTypes);
+      Optional<SoyType> superType =
+          upcastTypesForIndirectParams(idi.indirectParamTypes.get(paramName));
 
       // If we can't combine all those types into a single supported type then fail.
-      if (overridesDirectParam) {
-        if (!superType.isPresent()) {
-          changeParamStatus(params, paramName, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES);
-          continue;
-        }
-        // Possibly upcast the existing direct parameter.
-        changeParamType(params, paramName, superType.get());
-      } else {
-        if (!superType.isPresent()) {
-          params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
-          continue;
-        } else if (hasProtoDep(superType.get())) {
-          // Temporarily skip any indirect params with proto dependencies since they can cause java
-          // build errors.
-          params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_PROTO, true));
-          continue;
-        }
 
-        // Create a new indirect parameter.
-        params.put(
-            paramName,
-            ParamInfo.of(
-                param.toBuilder()
-                    .setType(superType.get())
-                    .setDescription(
-                        modifyIndirectDesc(
-                            param.getDescription(), idi.paramKeyToCalleesMultimap.get(paramName)))
-                    .build(),
-                ParamStatus.HANDLED,
-                true));
+      if (!superType.isPresent()) {
+        params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_INCOMPATIBLE_TYPES, true));
+        continue;
+      } else if (hasProtoDep(superType.get())) {
+        // Temporarily skip any indirect params with proto dependencies since they can cause java
+        // build errors.
+        params.put(paramName, ParamInfo.of(param, ParamStatus.INDIRECT_PROTO, true));
+        continue;
       }
+
+      // Create a new indirect parameter.
+      params.put(
+          paramName,
+          ParamInfo.of(
+              param.toBuilder()
+                  .setType(superType.get())
+                  .setDescription(
+                      modifyIndirectDesc(
+                          param.getDescription(), idi.paramKeyToCalleesMultimap.get(paramName)))
+                  .build(),
+              ParamStatus.HANDLED,
+              true));
     }
   }
 
@@ -439,19 +426,6 @@ public class SoyFileNodeTransformer {
             previous.indirect(),
             previous.injected(),
             futureStatus));
-  }
-
-  private static void changeParamType(
-      Map<String, ParamInfo> params, String paramName, SoyType type) {
-    ParamInfo previous = params.get(paramName);
-    params.put(
-        paramName,
-        ParamInfo.of(
-            previous.param().toBuilder().setType(type).build(),
-            previous.status(),
-            previous.indirect(),
-            previous.injected(),
-            previous.futureStatus()));
   }
 
   private static void changeParamStatus(
