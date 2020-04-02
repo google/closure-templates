@@ -330,8 +330,7 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
 
-    @Override
-    @Deprecated
+    @Override @Deprecated
     public WriteContinuation render(AdvisingAppendable out) throws IOException {
       enforceContentKind(expectedContentKind);
       return startRender(OutputAppendable.create(out, logger));

@@ -16,6 +16,7 @@
 package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -37,34 +38,7 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   }
 
   public static OutputAppendable create(final StringBuilder sb, SoyLogger logger) {
-    return new OutputAppendable(
-        new AdvisingAppendable() {
-          @Override
-          public AdvisingAppendable append(CharSequence csq) throws IOException {
-            sb.append(csq);
-            return this;
-          }
-
-          @Override
-          public AdvisingAppendable append(CharSequence csq, int start, int end)
-              throws IOException {
-            sb.append(csq, start, end);
-            return this;
-          }
-
-          @Override
-          public AdvisingAppendable append(char c) throws IOException {
-            sb.append(c);
-            return this;
-          }
-
-          @Override
-          public boolean softLimitReached() {
-            // no limits in a stringbuilder
-            return false;
-          }
-        },
-        logger);
+    return new OutputAppendable(asAdvisingAppendable(sb), logger);
   }
 
   private final SoyLogger logger;
