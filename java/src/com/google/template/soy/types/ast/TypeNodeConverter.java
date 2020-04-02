@@ -19,6 +19,7 @@ package com.google.template.soy.types.ast;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -138,8 +139,8 @@ public final class TypeNodeConverter
   private final SoyTypeRegistry typeRegistry;
 
   public TypeNodeConverter(ErrorReporter errorReporter, SoyTypeRegistry typeRegistry) {
-    this.errorReporter = errorReporter;
-    this.typeRegistry = typeRegistry;
+    this.errorReporter = Preconditions.checkNotNull(errorReporter);
+    this.typeRegistry = Preconditions.checkNotNull(typeRegistry);
   }
 
   /**
