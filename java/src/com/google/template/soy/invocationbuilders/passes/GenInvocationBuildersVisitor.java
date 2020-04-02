@@ -51,7 +51,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -431,14 +431,14 @@ public final class GenInvocationBuildersVisitor
   }
 
   private static void appendParamConstants(IndentedLinesBuilder ilb, List<ParamInfo> params) {
-    Set<String> usedNames = new LinkedHashSet<>();
+    Set<String> usedNames = new HashSet<>();
     List<String> nonInjected = new ArrayList<>();
     for (ParamInfo param : params) {
-      String fieldName = param.constantFieldName();
-      // Naming collisions should not occur, but guard anyway.
-      if (!usedNames.add(fieldName)) {
-        continue;
+      while (usedNames.contains(param.constantFieldName())) {
+        param.updateConstantFieldName();
       }
+      String fieldName = param.constantFieldName();
+      usedNames.add(fieldName);
       if (!param.injected()) {
         nonInjected.add(fieldName);
       }

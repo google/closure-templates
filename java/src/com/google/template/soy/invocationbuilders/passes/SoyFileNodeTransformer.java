@@ -209,6 +209,8 @@ public class SoyFileNodeTransformer {
           param, status, indirect, injected, futureStatus);
     }
 
+    private int uniqueSerial = 0;
+
     public abstract Parameter param();
 
     public abstract ParamStatus status();
@@ -224,7 +226,12 @@ public class SoyFileNodeTransformer {
     }
 
     public String constantFieldName() {
-      return BaseUtils.convertToUpperUnderscore(name());
+      String baseName = BaseUtils.convertToUpperUnderscore(name());
+      return uniqueSerial == 0 ? baseName : baseName + "__" + uniqueSerial;
+    }
+
+    public void updateConstantFieldName() {
+      uniqueSerial++;
     }
 
     public String setterName() {
