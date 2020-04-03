@@ -32,6 +32,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -54,6 +55,10 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
       SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNUSED_VAR =
       SoyErrorKind.of("''{0}'' unused in template body.");
+  private static final SoyErrorKind INJECTED_PARAM_COLLISION =
+      SoyErrorKind.of(
+          "Injected param ''{0}'' conflicts with indirect param with the same name in template"
+              + " ''{1}''.");
 
   private final ErrorReporter errorReporter;
 
@@ -106,6 +111,17 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
         new IndirectParamsCalculator(templateRegistry)
             .calculateIndirectParams(templateRegistry.getMetadata(node));
 
+    // Check for naming collisions between @inject in this template and @param in a data=all callee
+    for (TemplateHeaderVarDefn param : node.getInjectedParams()) {
+      for (TemplateMetadata template : ipi.paramKeyToCalleesMultimap.get(param.name())) {
+        errorReporter.report(
+            param.getSourceLocation(),
+            INJECTED_PARAM_COLLISION,
+            param.name(),
+            template.getTemplateName());
+      }
+    }
+
     Set<String> allHeaderVarNames = new HashSet<>();
     List<TemplateHeaderVarDefn> unusedParams = new ArrayList<>();
     // Process @param header variables.
@@ -117,10 +133,11 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
         // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
         // but not declared in SoyDoc.
         dataKeys.removeAll(param.name());
-        // TODO: This should only be allowed for @param and not @inject or @state.
-      } else if (ipi.paramKeyToCalleesMultimap.containsKey(param.name())
-          || ipi.mayHaveIndirectParamsInExternalCalls
-          || ipi.mayHaveIndirectParamsInExternalDelCalls) {
+      } else if (!param.isInjected()
+          && (ipi.paramKeyToCalleesMultimap.containsKey(param.name())
+              || ipi.mayHaveIndirectParamsInExternalCalls
+              || ipi.mayHaveIndirectParamsInExternalDelCalls)) {
+        // TODO: Skip this for @state too
         // Good: Declared in SoyDoc and either (a) used in a call that passes all data or (b) used
         // in an external call or delcall that passes all data, which may need the param (we can't
         // verify).
