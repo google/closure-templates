@@ -70,6 +70,7 @@ public abstract class AbstractVarDefn implements VarDefn {
     return type;
   }
 
+  @Override
   public boolean hasType() {
     return type != null;
   }
