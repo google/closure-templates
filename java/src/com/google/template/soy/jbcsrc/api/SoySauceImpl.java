@@ -177,9 +177,23 @@ public final class SoySauceImpl implements SoySauce {
       return dest;
     }
 
+    private BasicParamStore mapAsParamStore(Map<String, ?> source) {
+      BasicParamStore dest = new BasicParamStore(source.size());
+      for (Map.Entry<String, ?> entry : source.entrySet()) {
+        dest.setField(
+            entry.getKey(),
+            // lazily convert values for backwards compatibility with the old DictImpl
+            // some users depend on being able to pass broken values to soy, this is ok as long as
+            // they aren't accessed.
+            // TODO(lukes): replace convertLazy with convert
+            SoyValueConverter.INSTANCE.convertLazy(Suppliers.ofInstance(entry.getValue())));
+      }
+      return dest;
+    }
+
     @Override
     public RendererImpl setIj(Map<String, ?> record) {
-      this.ij = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
+      this.ij = mapAsParamStore(record);
       return this;
     }
 
@@ -201,7 +215,7 @@ public final class SoySauceImpl implements SoySauce {
           !dataSetInConstructor,
           "May not call setData on a Renderer createdd from a TemplateParams");
 
-      this.data = SoyValueConverter.INSTANCE.newDictFromMap(checkNotNull(record));
+      this.data = mapAsParamStore(record);
       return this;
     }
 

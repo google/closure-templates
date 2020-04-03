@@ -83,16 +83,6 @@ public final class SoyValueConverter {
 
   public static final SoyValueConverter INSTANCE = UNCUSTOMIZED_INSTANCE;
 
-  /** An immutable empty dict. */
-  public static final SoyDict EMPTY_DICT =
-      DictImpl.forProviderMap(ImmutableMap.of(), RuntimeMapTypeTracker.Type.UNKNOWN);
-
-  /** An immutable empty list. */
-  public static final SoyList EMPTY_LIST = ListImpl.forProviderList(ImmutableList.of());
-
-  /** An immutable empty map. */
-  public static final SoyMapImpl EMPTY_MAP = SoyMapImpl.forProviderMap(ImmutableMap.of());
-
   private final TypeMap cheapConverterMap = new TypeMap();
   private final TypeMap expensiveConverterMap = new TypeMap();
 
@@ -148,7 +138,7 @@ public final class SoyValueConverter {
    * Creates a Soy dictionary from a Java string map. While this is O(n) in the map's shallow size,
    * the Java values are converted into Soy values lazily and only once.
    */
-  public SoyDict newDictFromMap(Map<String, ?> javaStringMap) {
+  SoyDict newDictFromMap(Map<String, ?> javaStringMap) {
     // Create a dictionary backed by a map which has eagerly converted each value into a lazy
     // value provider. Specifically, the map iteration is done eagerly so that the lazy value
     // provider can cache its value.

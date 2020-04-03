@@ -17,6 +17,7 @@
 package com.google.template.soy.data;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -24,6 +25,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -109,5 +112,13 @@ public class SoyValueConverterTest {
                 .resolve()
                 .stringValue())
         .isEqualTo("foo");
+  }
+
+  @Test
+  public void testRejectNullKeysInLegacyObjectMap() {
+    Map<String, String> mapWithNullKey = new HashMap<>();
+    mapWithNullKey.put(null, "");
+    assertThrows(
+        NullPointerException.class, () -> SoyValueConverter.INSTANCE.convert(mapWithNullKey));
   }
 }

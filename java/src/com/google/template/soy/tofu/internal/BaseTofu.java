@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
@@ -31,6 +32,8 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.internal.BasicParamStore;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -313,10 +316,10 @@ public final class BaseTofu implements SoyTofu {
     }
 
     if (data == null) {
-      data = SoyValueConverter.EMPTY_DICT;
+      data = ParamStore.EMPTY_INSTANCE;
     }
     if (ijData == null) {
-      ijData = SoyValueConverter.EMPTY_DICT;
+      ijData = ParamStore.EMPTY_INSTANCE;
     }
 
     try {
@@ -380,13 +383,24 @@ public final class BaseTofu implements SoyTofu {
       }
     }
 
+    private static BasicParamStore mapAsParamStore(Map<String, ?> source) {
+      BasicParamStore dest = new BasicParamStore(source.size());
+      for (Map.Entry<String, ?> entry : source.entrySet()) {
+        dest.setField(
+            entry.getKey(),
+            // lazily convert values for backwards compatibility with the old DictImpl
+            SoyValueConverter.INSTANCE.convertLazy(Suppliers.ofInstance(entry.getValue())));
+      }
+      return dest;
+    }
+
     @Override
     public RendererImpl setData(Map<String, ?> data) {
       Preconditions.checkState(
           !dataSetInConstructor,
           "May not call setData on a Renderer created from a TemplateParams");
 
-      this.data = data != null ? SoyValueConverter.INSTANCE.newDictFromMap(data) : null;
+      this.data = data != null ? mapAsParamStore(data) : null;
       return this;
     }
 
@@ -401,7 +415,7 @@ public final class BaseTofu implements SoyTofu {
 
     @Override
     public RendererImpl setIjData(Map<String, ?> ijData) {
-      this.ijData = (ijData == null) ? null : SoyValueConverter.INSTANCE.newDictFromMap(ijData);
+      this.ijData = (ijData == null) ? null : mapAsParamStore(ijData);
       return this;
     }
 
