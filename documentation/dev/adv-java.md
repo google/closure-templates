@@ -80,6 +80,7 @@ progress is made before we need to wait for any asynchronous data.
 
 ### Asynchronous rendering {#async}
 
+
 The `SoySauce` backend has built in support for responding to asynchronous IO.
 There are two kinds of asynchronous events that we handle:
 
