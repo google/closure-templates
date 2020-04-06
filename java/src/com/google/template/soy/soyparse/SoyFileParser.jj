@@ -3679,8 +3679,7 @@ private ExprNode PrecExpr9() :
         params = ImmutableList.of(); // Reset params after consuming.
       }
     |
-      { // TODO(lukes):  add the source location of the ident as a separate field.  This would be
-        // more useful for error messages about the access
+      {
         expr =
             new FieldAccessNode(
                 expr,

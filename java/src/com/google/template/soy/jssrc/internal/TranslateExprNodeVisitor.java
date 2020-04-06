@@ -418,7 +418,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         FieldAccess access =
             genCodeForFieldAccess(
                 fieldAccess.getBaseExprChild().getType(),
-                fieldAccess.getSourceLocation(),
+                fieldAccess.getAccessSourceLocation(),
                 fieldAccess.getFieldName());
         return accumulator.dotAccess(access, nullSafe);
       case ITEM_ACCESS_NODE:

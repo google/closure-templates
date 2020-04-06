@@ -102,7 +102,7 @@ final class ResolvePluginsPass implements CompilerFilePass {
     for (MethodNode methodNode : SoyTreeUtils.getAllNodesOfType(file, MethodNode.class)) {
       methodNode.setSoyMethods(
           resolver.lookupSoyMethod(
-              methodNode.getMethodName().identifier(), methodNode.getSourceLocation()));
+              methodNode.getMethodName().identifier(), methodNode.getAccessSourceLocation()));
     }
   }
 

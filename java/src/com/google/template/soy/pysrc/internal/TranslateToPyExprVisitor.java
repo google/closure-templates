@@ -668,7 +668,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return containerExpr.getText();
     } else {
       errorReporter.report(
-          node.getSourceLocation(), SOY_PY_SRC_METHOD_NOT_FOUND, node.getMethodName());
+          node.getAccessSourceLocation(), SOY_PY_SRC_METHOD_NOT_FOUND, node.getMethodName());
       return ".ERROR";
     }
   }

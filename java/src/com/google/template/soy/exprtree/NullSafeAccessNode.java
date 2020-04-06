@@ -119,7 +119,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
             new FieldAccessNode(
                 basePlaceholder,
                 ((FieldAccessNode) node).getFieldName(),
-                node.getSourceLocation(),
+                node.getAccessSourceLocation(),
                 /* isNullSafe= */ false);
         break;
       case ITEM_ACCESS_NODE:
@@ -127,7 +127,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
             new ItemAccessNode(
                 basePlaceholder,
                 ((ItemAccessNode) node).getKeyExprChild(),
-                node.getSourceLocation(),
+                node.getAccessSourceLocation(),
                 /* isNullSafe= */ false);
         break;
       case METHOD_NODE:
@@ -136,7 +136,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
                 basePlaceholder,
                 node.getChildren().subList(1, node.getChildren().size()),
                 ((MethodNode) node).getMethodName(),
-                node.getSourceLocation(),
+                node.getAccessSourceLocation(),
                 /* isNullSafe= */ false);
         childMethod.setSoyMethods(((MethodNode) node).getSoyMethods());
         child = childMethod;

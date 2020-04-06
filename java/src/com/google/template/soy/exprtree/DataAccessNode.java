@@ -32,12 +32,12 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
 
   /**
    * @param base The base expression, that is a reference to the object containing the named field.
-   * @param sourceLocation The node's source location.
+   * @param accessLocation The location of the access part of expression.
    * @param isNullSafe If true, checks during evaluation whether the base expression is null and
    *     returns null instead of causing an invalid dereference.
    */
-  protected DataAccessNode(ExprNode base, SourceLocation sourceLocation, boolean isNullSafe) {
-    super(sourceLocation);
+  protected DataAccessNode(ExprNode base, SourceLocation accessLocation, boolean isNullSafe) {
+    super(accessLocation);
     Preconditions.checkArgument(base != null);
     addChild(base);
     this.isNullSafe = isNullSafe;
@@ -56,6 +56,15 @@ public abstract class DataAccessNode extends AbstractParentExprNode {
   /** Returns whether this field reference is null-safe. */
   public boolean isNullSafe() {
     return isNullSafe;
+  }
+
+  @Override
+  public final SourceLocation getSourceLocation() {
+    return getBaseExprChild().getSourceLocation().extend(getAccessSourceLocation());
+  }
+
+  public final SourceLocation getAccessSourceLocation() {
+    return super.getSourceLocation();
   }
 
   /**
