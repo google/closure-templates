@@ -870,9 +870,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     private void finishFieldAccessNode(FieldAccessNode node) {
       node.setType(
           getFieldType(
-              node.getBaseExprChild().getType(),
-              node.getFieldName(),
-              node.getAccessSourceLocation()));
+              node.getBaseExprChild().getType(), node.getFieldName(), node.getSourceLocation()));
       tryApplySubstitution(node);
     }
 
@@ -1034,7 +1032,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       int numParameters = node.numChildren() - 1;
       if (!validParamsSize.contains(numParameters)) {
         errorReporter.report(
-            node.getAccessSourceLocation(),
+            node.getSourceLocation(),
             METHOD_INVALID_PARAM_NUM,
             node.getMethodName().identifier(),
             numParameters,

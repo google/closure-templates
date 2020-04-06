@@ -48,6 +48,15 @@ public final class ItemAccessNode extends DataAccessNode {
   }
 
   @Override
+  public SourceLocation getSourceLocation() {
+    return getBaseExprChild().getSourceLocation().extend(getAccessSourceLocation());
+  }
+
+  public SourceLocation getAccessSourceLocation() {
+    return super.getSourceLocation();
+  }
+
+  @Override
   public Kind getKind() {
     return Kind.ITEM_ACCESS_NODE;
   }
