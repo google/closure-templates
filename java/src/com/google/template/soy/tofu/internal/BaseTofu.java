@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterables;
@@ -31,6 +30,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueConverter;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
@@ -386,10 +386,15 @@ public final class BaseTofu implements SoyTofu {
     private static BasicParamStore mapAsParamStore(Map<String, ?> source) {
       BasicParamStore dest = new BasicParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
-        dest.setField(
-            entry.getKey(),
-            // lazily convert values for backwards compatibility with the old DictImpl
-            SoyValueConverter.INSTANCE.convertLazy(Suppliers.ofInstance(entry.getValue())));
+        String key = entry.getKey();
+        SoyValueProvider value;
+        try {
+          value = SoyValueConverter.INSTANCE.convert(entry.getValue());
+        } catch (Exception e) {
+          throw new IllegalArgumentException(
+              "Unable to convert param " + key + " to a SoyValue", e);
+        }
+        dest.setField(key, value);
       }
       return dest;
     }
