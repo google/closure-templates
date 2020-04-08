@@ -194,7 +194,7 @@ public final class MsgNode extends AbstractBlockCommandNode
           hidden = attr.valueAsEnabled(errorReporter);
           break;
         case "genders":
-          genders = ExprRootNode.wrap(attr.valueAsExprList());
+          genders = attr.valueAsExprList();
           if (genders.isEmpty() || genders.size() > 3) {
             errorReporter.report(attr.getValueLocation(), WRONG_NUMBER_OF_GENDER_EXPRS);
           }

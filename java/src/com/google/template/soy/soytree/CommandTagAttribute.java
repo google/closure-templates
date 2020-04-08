@@ -33,6 +33,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -101,7 +102,7 @@ public final class CommandTagAttribute {
   private final QuoteStyle quoteStyle;
   // either value or valueExprList must be set, but not both.
   @Nullable private final String value;
-  @Nullable private final ImmutableList<ExprNode> valueExprList;
+  @Nullable private final ImmutableList<ExprRootNode> valueExprList;
 
   public CommandTagAttribute(
       Identifier key, QuoteStyle quoteStyle, String value, SourceLocation valueLocation) {
@@ -125,7 +126,7 @@ public final class CommandTagAttribute {
             .getSourceLocation()
             .extend(Iterables.getLast(valueExprList).getSourceLocation());
     this.value = null;
-    this.valueExprList = valueExprList;
+    this.valueExprList = ExprRootNode.wrap(valueExprList);
   }
 
   public CommandTagAttribute copy(CopyState copyState) {
@@ -134,7 +135,7 @@ public final class CommandTagAttribute {
           key,
           quoteStyle,
           valueExprList.stream()
-              .map(expr -> expr.copy(copyState))
+              .map(expr -> expr.getRoot().copy(copyState))
               .collect(ImmutableList.toImmutableList()));
     }
     return new CommandTagAttribute(key, quoteStyle, value, valueLocation);
@@ -282,7 +283,7 @@ public final class CommandTagAttribute {
   }
 
   /** Returns the value as an expression. Only call on an expression attribute. */
-  public ExprNode valueAsExpr(ErrorReporter reporter) {
+  public ExprRootNode valueAsExpr(ErrorReporter reporter) {
     checkState(value == null);
     if (valueExprList.size() > 1) {
       reporter.report(
@@ -298,7 +299,7 @@ public final class CommandTagAttribute {
   }
 
   /** Returns the value as an expression list. Only call on an expression list attribute. */
-  public ImmutableList<ExprNode> valueAsExprList() {
+  public ImmutableList<ExprRootNode> valueAsExprList() {
     checkState(value == null);
     return checkNotNull(valueExprList);
   }

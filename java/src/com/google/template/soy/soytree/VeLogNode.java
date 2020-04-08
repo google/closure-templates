@@ -92,7 +92,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
     for (CommandTagAttribute attr : attributes) {
       switch (attr.getName().identifier()) {
         case "logonly":
-          logonlyExpr = new ExprRootNode(attr.valueAsExpr(errorReporter));
+          logonlyExpr = attr.valueAsExpr(errorReporter);
           break;
         case "data":
           // TODO(b/124762130): Remove this after 2019-08-26, when people are used to the new syntax

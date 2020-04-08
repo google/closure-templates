@@ -24,7 +24,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
@@ -116,18 +115,18 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
       switch (name) {
         case "data":
-          ExprNode dataExpr = attr.valueAsExpr(reporter);
-          if ((dataExpr instanceof GlobalNode) && ((GlobalNode) dataExpr).getName().equals("all")) {
+          ExprRootNode dataExpr = attr.valueAsExpr(reporter);
+          if ((dataExpr.getRoot() instanceof GlobalNode)
+              && ((GlobalNode) dataExpr.getRoot()).getName().equals("all")) {
             this.isPassingAllData = true;
             this.dataExpr = null;
           } else {
             this.isPassingAllData = false;
-            this.dataExpr = new ExprRootNode(dataExpr);
+            this.dataExpr = dataExpr;
           }
           break;
         case "key":
-          ExprNode keyExpr = attr.valueAsExpr(reporter);
-          this.keyExpr = new ExprRootNode(keyExpr);
+          this.keyExpr = attr.valueAsExpr(reporter);
           break;
         case MessagePlaceholders.PHNAME_ATTR:
           phname =

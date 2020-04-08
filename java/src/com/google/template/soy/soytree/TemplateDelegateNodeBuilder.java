@@ -82,9 +82,9 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
         case "variant":
           // need to get variant parsing out of this.  maybe we can expose some sort of limited
           // primitiveOrGlobal parsing solution?
-          ExprNode variantExpr = attribute.valueAsExpr(errorReporter);
-          validateVariantExpression(variantExpr, errorReporter);
-          this.delTemplateVariantExpr = new ExprRootNode(variantExpr);
+          ExprRootNode variantExpr = attribute.valueAsExpr(errorReporter);
+          validateVariantExpression(variantExpr.getRoot(), errorReporter);
+          this.delTemplateVariantExpr = variantExpr;
           break;
         default:
           errorReporter.report(

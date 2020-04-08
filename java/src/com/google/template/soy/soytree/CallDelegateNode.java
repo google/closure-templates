@@ -28,7 +28,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -98,19 +97,19 @@ public final class CallDelegateNode extends CallNode {
           // Parsed in CallNode.
           break;
         case "variant":
-          ExprNode value = attr.valueAsExpr(errorReporter);
+          ExprRootNode value = attr.valueAsExpr(errorReporter);
           // Do some sanity checks on the variant expression.
-          if (value instanceof StringNode) {
+          if (value.getRoot() instanceof StringNode) {
             // If the variant is a fixed string, it evaluate to an identifier.
-            String variantStr = ((StringNode) value).getValue();
+            String variantStr = ((StringNode) value.getRoot()).getValue();
             if (!BaseUtils.isIdentifier(variantStr)) {
               errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
             }
-          } else if (value instanceof PrimitiveNode) {
+          } else if (value.getRoot() instanceof PrimitiveNode) {
             // Variant should not be other primitives (boolean, number, etc.)
             errorReporter.report(location, INVALID_VARIANT_EXPRESSION, value.toSourceString());
           }
-          variantExpr = new ExprRootNode(value);
+          variantExpr = value;
           break;
         case "allowemptydefault":
           allowEmptyDefault = attr.valueAsEnabled(errorReporter);
