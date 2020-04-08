@@ -180,13 +180,15 @@ public final class SoySauceImpl implements SoySauce {
     private BasicParamStore mapAsParamStore(Map<String, ?> source) {
       BasicParamStore dest = new BasicParamStore(source.size());
       for (Map.Entry<String, ?> entry : source.entrySet()) {
-        dest.setField(
-            entry.getKey(),
-            // lazily convert values for backwards compatibility with the old DictImpl
-            // some users depend on being able to pass broken values to soy, this is ok as long as
-            // they aren't accessed.
-            // TODO(lukes): replace convertLazy with convert
-            SoyValueConverter.INSTANCE.convertLazy(Suppliers.ofInstance(entry.getValue())));
+        String key = entry.getKey();
+        SoyValueProvider value;
+        try {
+          value = SoyValueConverter.INSTANCE.convert(entry.getValue());
+        } catch (Exception e) {
+          throw new IllegalArgumentException(
+              "Unable to convert param " + key + " to a SoyValue", e);
+        }
+        dest.setField(key, value);
       }
       return dest;
     }
