@@ -43,19 +43,7 @@ soy.examples.helloWorld = function(opt_data, opt_ijData) {
 ```
 
 The exact signature of the generated JavaScript function is an implementation
-detail. Currently, it is:
-
-```js
-/*
- * @param {Object<string, *>=} opt_data
- * @param {Object<string, *>=} opt_ijData
- * @param {Object<string, *>=} opt_ijData_deprecated
- * @return {!goog.soy.data.SanitizedHtml}
- */
-soy.examples.helloWorld = function(opt_data, opt_ijData, opt_ijData_deprecated) {
-  // ...
-}
-```
+detail.
 
 
 The generated JavaScript function takes optional params representing the

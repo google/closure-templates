@@ -762,7 +762,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
     // TODO(lukes): remove |Object<string, *> and only add the '=/?' if ij data is truly optional
     jsDocBuilder.addParam("opt_ijData", "(?goog.soy.IjData|?Object<string, *>)=");
-    jsDocBuilder.addParam("opt_ijData_deprecated", "(?goog.soy.IjData|?Object<string, *>)=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
@@ -779,11 +778,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   protected Statement generateFunctionBody(TemplateNode node, String alias) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
     bodyStatements.add(
-        Statement.assign(
-            JsRuntime.OPT_IJ_DATA,
-            id("opt_ijData_deprecated")
-                .or(JsRuntime.OPT_IJ_DATA, templateTranslationContext.codeGenerator())
-                .castAs("!goog.soy.IjData")));
+        Statement.assign(JsRuntime.OPT_IJ_DATA, JsRuntime.OPT_IJ_DATA.castAs("!goog.soy.IjData")));
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
       for (TemplateStateVar stateVar : elementNode.getStateVars()) {
