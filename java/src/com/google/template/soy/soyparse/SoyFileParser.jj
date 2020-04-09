@@ -1354,8 +1354,10 @@ private AliasDeclaration Alias() :
       return null;
     }
 
-    if (alias == null) {  // Implicit alias is the last part of the namespace.
-      alias = namespace.extractPartAfterLastDot();
+    if (alias == null) {
+      // The alias command contains only the namespace, and the alias portion (i.e. as Foo) is
+      // missing. The namespace is implicitly aliased to the last portion of the dotted identifier.
+      return AliasDeclaration.create(srcLoc, namespace);
     }
     return AliasDeclaration.create(srcLoc, namespace, alias);
   }
