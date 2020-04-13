@@ -45,7 +45,8 @@ public final class MethodNode extends DataAccessNode {
   /**
    * @param base The base expression that the method is called on.
    * @param methodName The name of the method.
-   * @param location The location of the method call expression.
+   * @param location The location of the method call expression, i.e. the dot, method name and
+   *     parameters.
    * @param isNullSafe If true, checks during evaluation whether the base expression is null and
    *     returns null instead of causing an invalid dereference.
    */
