@@ -34,8 +34,8 @@ import javax.annotation.Nullable;
 public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
     implements SplitLevelTopNode<TemplateNode> {
 
-  /** The name of the containing delegate package, or null if none. */
-  @Nullable private final String delPackageName;
+  /** The name and location of the containing delegate package, or null if none. */
+  @Nullable private final DelPackageDeclaration delPackage;
 
   /** This Soy file's namespace, or null if syntax version V1. */
   private final NamespaceDeclaration namespaceDeclaration;
@@ -61,7 +61,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
       ImmutableList<Comment> comments) {
     super(id, sourceLocation);
     this.headerInfo = headerInfo;
-    this.delPackageName = headerInfo.getDelPackageName();
+    this.delPackage = headerInfo.getDelPackage();
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
     this.comments = comments;
@@ -74,7 +74,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
    */
   private SoyFileNode(SoyFileNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.delPackageName = orig.delPackageName;
+    this.delPackage = orig.delPackage;
     this.namespaceDeclaration = orig.namespaceDeclaration.copy(copyState);
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
@@ -94,7 +94,13 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
   /** Returns the name of the containing delegate package, or null if none. */
   @Nullable
   public String getDelPackageName() {
-    return delPackageName;
+    return delPackage == null ? null : delPackage.name().identifier();
+  }
+
+  /** Returns info about the containing delegate package, or null if none. */
+  @Nullable
+  public DelPackageDeclaration getDelPackage() {
+    return delPackage;
   }
 
   /** Returns this Soy file's namespace. */
@@ -158,8 +164,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<TemplateNode>
 
     StringBuilder sb = new StringBuilder();
 
-    if (delPackageName != null) {
-      sb.append("{delpackage ").append(delPackageName).append("}\n");
+    if (delPackage != null) {
+      sb.append("{delpackage ").append(delPackage.name()).append("}\n");
     }
     sb.append(namespaceDeclaration.toSourceString());
 

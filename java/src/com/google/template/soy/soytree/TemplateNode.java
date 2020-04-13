@@ -106,7 +106,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     /** Map from aliases to namespaces for this file. */
     private final ImmutableList<AliasDeclaration> aliasDeclarations;
 
-    @Nullable private final String delPackageName;
+    @Nullable private final DelPackageDeclaration delPackage;
     private final Priority priority;
     @Nullable private final String namespace;
 
@@ -114,11 +114,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
     public SoyFileHeaderInfo(
         ErrorReporter errorReporter,
-        @Nullable Identifier delpackageName,
+        @Nullable DelPackageDeclaration delPackage,
         NamespaceDeclaration namespaceDeclaration,
         Collection<AliasDeclaration> aliases) {
       this(
-          delpackageName == null ? null : delpackageName.identifier(),
+          delPackage,
           namespaceDeclaration.getNamespace(),
           createAliasMap(errorReporter, namespaceDeclaration, aliases),
           ImmutableList.copyOf(aliases));
@@ -130,12 +130,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     private SoyFileHeaderInfo(
-        @Nullable String delPackageName,
+        @Nullable DelPackageDeclaration delPackage,
         String namespace,
         ImmutableMap<String, String> aliasToNamespaceMap,
         ImmutableList<AliasDeclaration> aliasDeclarations) {
-      this.delPackageName = delPackageName;
-      this.priority = (delPackageName == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
+      this.delPackage = delPackage;
+      this.priority = (delPackage == null) ? Priority.STANDARD : Priority.HIGH_PRIORITY;
       this.namespace = namespace;
       this.aliasToNamespaceMap = aliasToNamespaceMap;
       this.aliasDeclarations = aliasDeclarations;
@@ -143,7 +143,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     private SoyFileHeaderInfo(SoyFileHeaderInfo orig) {
-      this.delPackageName = orig.delPackageName;
+      this.delPackage = orig.delPackage;
       this.priority = orig.priority;
       this.namespace = orig.namespace;
       this.aliasToNamespaceMap = orig.aliasToNamespaceMap;
@@ -188,7 +188,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     }
 
     public String getDelPackageName() {
-      return delPackageName;
+      return delPackage == null ? null : delPackage.name().identifier();
+    }
+
+    public DelPackageDeclaration getDelPackage() {
+      return delPackage;
     }
 
     public ImmutableList<AliasDeclaration> getAliases() {
@@ -357,7 +361,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   /** Returns the name of the containing delegate package, or null if none. */
   public String getDelPackageName() {
-    return soyFileHeaderInfo.delPackageName;
+    return soyFileHeaderInfo.getDelPackageName();
   }
 
   @Override

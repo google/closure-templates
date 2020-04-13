@@ -86,6 +86,7 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.AliasDeclaration;
+import com.google.template.soy.soytree.DelPackageDeclaration;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
@@ -1274,7 +1275,7 @@ TOKEN_MGR_DECLS: {
  */
 private SoyFileNode SoyFile() :
 {
-  Identifier delpackageName = null;
+  DelPackageDeclaration delpackageDecl = null;
   NamespaceDeclaration namespace;
   AliasDeclaration alias;
   List<AliasDeclaration> aliases = ImmutableList.of();
@@ -1282,7 +1283,7 @@ private SoyFileNode SoyFile() :
   Token eof;
 }
 {
-  [ delpackageName = DelPackage() ]
+  [ delpackageDecl = DelPackage() ]
 
   namespace = Namespace()
 
@@ -1298,7 +1299,7 @@ private SoyFileNode SoyFile() :
   )*
 
   {
-    headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageName, namespace, aliases);
+    headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageDecl, namespace, aliases);
     List<TemplateNode> templates = new ArrayList<TemplateNode>();
   }
 
@@ -1537,15 +1538,16 @@ private CommandTagAttribute Attribute() :
  *
  * DelPackage -> DelpackageOpen DottedIdent CmdEnd
  */
-private Identifier DelPackage() :
+private DelPackageDeclaration DelPackage() :
 {
   Identifier name;
+  Token open, close;
 }
 {
-  <DELPACKAGE_OPEN>
+  open = <DELPACKAGE_OPEN>
   name = DottedIdent()
-  <CMD_END>
-  { return name; }
+  close = <CMD_END>
+  { return DelPackageDeclaration.create(createSrcLoc(open,close), name); }
 }
 
 
