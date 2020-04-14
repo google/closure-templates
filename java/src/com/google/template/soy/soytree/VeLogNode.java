@@ -16,6 +16,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.SoyTreeUtils.getNodeAsHtmlTagNode;
 
 import com.google.common.collect.ImmutableList;
@@ -26,6 +27,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -37,7 +39,7 @@ import javax.annotation.Nullable;
  * Node for a <code {@literal {}velog...}</code> statement.
  */
 public final class VeLogNode extends AbstractBlockCommandNode
-    implements ExprHolderNode, StatementNode, MsgBlockNode {
+    implements ExprHolderNode, StatementNode, MsgBlockNode, CommandTagAttributesHolder {
 
   private static final SoyErrorKind DATA_ATTRIBUTE_UNSUPPORTED =
       SoyErrorKind.of(
@@ -77,6 +79,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
 
   private final ExprRootNode veDataExpr;
   private boolean needsSyntheticVelogNode = false;
+  private final List<CommandTagAttribute> attributes;
   @Nullable private final ExprRootNode logonlyExpr;
 
   public VeLogNode(
@@ -89,6 +92,7 @@ public final class VeLogNode extends AbstractBlockCommandNode
     super(id, location, openTagLocation, "velog");
     this.veDataExpr = new ExprRootNode(checkNotNull(veDataExpr));
     ExprRootNode logonlyExpr = null;
+    this.attributes = attributes;
     for (CommandTagAttribute attr : attributes) {
       switch (attr.getName().identifier()) {
         case "logonly":
@@ -114,8 +118,15 @@ public final class VeLogNode extends AbstractBlockCommandNode
   private VeLogNode(VeLogNode orig, CopyState copyState) {
     super(orig, copyState);
     this.veDataExpr = orig.veDataExpr.copy(copyState);
+    this.attributes =
+        orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
     this.needsSyntheticVelogNode = orig.needsSyntheticVelogNode;
+  }
+
+  @Override
+  public List<CommandTagAttribute> getAttributes() {
+    return this.attributes;
   }
 
   SamenessKey getSamenessKey() {
