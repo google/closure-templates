@@ -8197,10 +8197,16 @@ soy.$$htmlToText = function(value) {
   if (null == value) {
     return "";
   }
-  if (!soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
-    return goog.asserts.assertString(value);
+  if (value instanceof goog.html.SafeHtml) {
+    var html = goog.html.SafeHtml.unwrap(value);
+  } else {
+    if (soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
+      html = value.toString();
+    } else {
+      return goog.asserts.assertString(value);
+    }
   }
-  for (var html = value.toString(), text = "", start = 0, removingUntil = "", wsPreservingUntil = "", tagRe = /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi, match; match = tagRe.exec(html);) {
+  for (var text = "", start = 0, removingUntil = "", wsPreservingUntil = "", tagRe = /<(?:!--.*?--|(?:!|(\/?[a-z][\w:-]*))(?:[^>'"]|"[^"]*"|'[^']*')*)>|$/gi, match; match = tagRe.exec(html);) {
     var tag = match[1], offset = match.index;
     if (removingUntil) {
       removingUntil == tag.toLowerCase() && (removingUntil = "");

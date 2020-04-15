@@ -906,18 +906,23 @@ soy.$$cleanHtml = function(value, opt_safeTags) {
  * converting entities.
  *
  * The last two parameters are idom functions.
- * @param {string|?goog.soy.data.SanitizedHtml|?soydata.IdomFunction|?Function|
- *     undefined} value
+ * @param {string|?goog.soy.data.SanitizedHtml|?goog.html.SafeHtml|
+ *     ?soydata.IdomFunction|?Function|undefined} value
  * @return {string}
  */
 soy.$$htmlToText = function(value) {
   if (value == null) {
     return '';
   }
-  if (!soydata.isContentKind_(value, goog.soy.data.SanitizedContentKind.HTML)) {
+  var html;
+  if (value instanceof goog.html.SafeHtml) {
+    html = goog.html.SafeHtml.unwrap(value);
+  } else if (soydata.isContentKind_(
+                 value, goog.soy.data.SanitizedContentKind.HTML)) {
+    html = value.toString();
+  } else {
     return goog.asserts.assertString(value);
   }
-  var html = value.toString();
   var text = '';
   var start = 0;
   // Tag name to stop removing contents, e.g. '/script'.
