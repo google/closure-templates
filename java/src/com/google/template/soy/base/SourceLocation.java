@@ -358,5 +358,18 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     public final boolean isAfter(SourceLocation o) {
       return isAfter(o.getEndPoint());
     }
+
+    @Override
+    public final boolean equals(Object o) {
+      if (!(o instanceof Point)) {
+        return false;
+      }
+      return compareTo(((Point) o)) == 0;
+    }
+
+    @Override
+    public final int hashCode() {
+      return (line() * 31 * 31) + (column() * 31);
+    }
   }
 }
