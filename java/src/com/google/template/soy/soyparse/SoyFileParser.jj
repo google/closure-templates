@@ -3068,6 +3068,7 @@ private CallNode CallStmt() :
   Token tagBegin, tagClose;
   Token tagBeginEnd = null;
   Identifier calleeName = null;
+  boolean selfClosing = false;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
 }
@@ -3081,6 +3082,7 @@ private CallNode CallStmt() :
       attributes = Attributes()
       (
         tagClose = <CMD_SELF_CLOSE>
+        { selfClosing = true; }
       |
         tagBeginEnd = <CMD_END>
         params = CallParams()
@@ -3104,6 +3106,7 @@ private CallNode CallStmt() :
           (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : loc,
           name,
           attributes,
+          selfClosing,
           errorReporter);
       node.addChildren(params);
       return node;
@@ -3117,6 +3120,7 @@ private CallNode CallStmt() :
       attributes = Attributes()
       (
         tagClose = <CMD_SELF_CLOSE>
+        { selfClosing = true; }
       |
         tagBeginEnd = <CMD_END>
         params = CallParams()
@@ -3140,6 +3144,7 @@ private CallNode CallStmt() :
           (tagBeginEnd != null) ? createSrcLoc(tagBeginEnd) : tag,
           calleeName,
           attributes,
+          selfClosing,
           errorReporter);
       node.addChildren(params);
       return node;

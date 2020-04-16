@@ -61,6 +61,9 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   private boolean isPassingAllData;
 
   /** Used for formatting */
+  private final boolean selfClosing;
+
+  /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
   private final SourceLocation openTagLocation;
@@ -105,6 +108,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
       SourceLocation openTagLocation,
       String commandName,
       List<CommandTagAttribute> attributes,
+      boolean selfClosing,
       ErrorReporter reporter) {
     super(id, location, commandName);
 
@@ -145,6 +149,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     }
 
     this.attributes = attributes;
+    this.selfClosing = selfClosing;
     this.userSuppliedPlaceholderName = phname;
     this.userSuppliedPlaceholderExample = phex;
     this.openTagLocation = openTagLocation;
@@ -166,6 +171,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.callKey = orig.callKey;
     this.isPcData = orig.getIsPcData();
     this.openTagLocation = orig.openTagLocation;
+    this.selfClosing = orig.selfClosing;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }
@@ -199,6 +205,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   public boolean isPassingAllData() {
     return isPassingAllData;
+  }
+
+  public boolean isSelfClosing() {
+    return this.selfClosing;
   }
 
   @Override

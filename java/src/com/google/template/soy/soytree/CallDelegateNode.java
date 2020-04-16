@@ -79,8 +79,9 @@ public final class CallDelegateNode extends CallNode {
       SourceLocation openTagLocation,
       Identifier delCalleeName,
       List<CommandTagAttribute> attributes,
+      boolean selfClosing,
       ErrorReporter errorReporter) {
-    super(id, location, openTagLocation, "delcall", attributes, errorReporter);
+    super(id, location, openTagLocation, "delcall", attributes, selfClosing, errorReporter);
     this.delCalleeName = delCalleeName.identifier();
     this.sourceDelCalleeName = delCalleeName;
     ExprRootNode variantExpr = null;
