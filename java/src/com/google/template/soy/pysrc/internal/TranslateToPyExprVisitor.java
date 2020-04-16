@@ -26,6 +26,7 @@ import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -43,6 +44,7 @@ import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.Operator.Operand;
 import com.google.template.soy.exprtree.Operator.SyntaxElement;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
@@ -312,13 +314,21 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return new PyExpr(visitDataAccessNode(node, base), Integer.MAX_VALUE);
   }
 
-  private String visitDataAccessNode(
-      DataAccessNode dataAccess, StringBuilder nullSafetyPrefix, PyExpr base, boolean nullSafe) {
+  private PyExpr visitDataAccessNode(
+      DataAccessNode dataAccess,
+      StringBuilder nullSafetyPrefix,
+      PyExpr base,
+      boolean nullSafe,
+      boolean hasAssertNonNull) {
     // Generate null safety check for base expression.
     if (nullSafe) {
       nullSafetyPrefix.append("None if ").append(base.getText()).append(" is None else ");
     }
-    return visitDataAccessNode(dataAccess, base);
+    PyExpr result = new PyExpr(visitDataAccessNode(dataAccess, base), Integer.MAX_VALUE);
+    if (hasAssertNonNull) {
+      result = assertNotNull(result);
+    }
+    return result;
   }
 
   private String visitDataAccessNode(DataAccessNode dataAccess, PyExpr base) {
@@ -362,10 +372,16 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
     while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
-      access = accumulateDataAccess((DataAccessNode) node.getBase(), access, nullSafetyPrefix);
+      access =
+          accumulateDataAccess(
+              (DataAccessNode) node.getBase(),
+              access,
+              nullSafetyPrefix,
+              /* hasAssertNonNull= */ false);
       dataAccess = node.getDataAccess();
     }
-    access = accumulateDataAccess((DataAccessNode) dataAccess, access, nullSafetyPrefix);
+    access =
+        accumulateDataAccessTail((AccessChainComponentNode) dataAccess, access, nullSafetyPrefix);
 
     if (nullSafetyPrefix.length() == 0) {
       return access;
@@ -377,16 +393,33 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private PyExpr accumulateDataAccess(
-      DataAccessNode dataAccessNode, PyExpr base, StringBuilder nullSafetyPrefix) {
+      DataAccessNode dataAccessNode,
+      PyExpr base,
+      StringBuilder nullSafetyPrefix,
+      boolean hasAssertNonNull) {
     boolean nullSafe = true;
     if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
       base =
           accumulateDataAccess(
-              (DataAccessNode) dataAccessNode.getBaseExprChild(), base, nullSafetyPrefix);
+              (DataAccessNode) dataAccessNode.getBaseExprChild(),
+              base,
+              nullSafetyPrefix,
+              /* hasAssertNonNull= */ false);
       nullSafe = false;
     }
-    return new PyExpr(
-        visitDataAccessNode(dataAccessNode, nullSafetyPrefix, base, nullSafe), Integer.MAX_VALUE);
+    return visitDataAccessNode(dataAccessNode, nullSafetyPrefix, base, nullSafe, hasAssertNonNull);
+  }
+
+  private PyExpr accumulateDataAccessTail(
+      AccessChainComponentNode dataAccessNode, PyExpr base, StringBuilder nullSafetyPrefix) {
+    boolean hasAssertNonNull = false;
+    if (dataAccessNode.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
+      AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccessNode;
+      dataAccessNode = (AccessChainComponentNode) assertNonNull.getChild(0);
+      hasAssertNonNull = true;
+    }
+    return accumulateDataAccess(
+        (DataAccessNode) dataAccessNode, base, nullSafetyPrefix, hasAssertNonNull);
   }
 
   @Override
@@ -483,6 +516,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return genTernaryConditional(conditionalExpr, trueExpr, falseExpr);
   }
 
+  @Override
+  protected PyExpr visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+    return assertNotNull(node.getChild(0));
+  }
+
   /**
    * {@inheritDoc}
    *
@@ -525,7 +563,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case INDEX:
         return visitForEachFunction(node, "__index");
       case CHECK_NOT_NULL:
-        return visitCheckNotNullFunction(node);
+        return assertNotNull(node.getChild(0));
       case CSS:
         return visitCssFunction(node);
       case XID:
@@ -562,9 +600,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return localVarExprs.getVariableExpression(varName + suffix);
   }
 
-  private PyExpr visitCheckNotNullFunction(FunctionNode node) {
-    PyExpr childExpr = visit(node.getChild(0));
-    return new PyFunctionExprBuilder("runtime.check_not_null").addArg(childExpr).asPyExpr();
+  private PyExpr assertNotNull(ExprNode node) {
+    return assertNotNull(visit(node));
+  }
+
+  private static PyExpr assertNotNull(PyExpr expr) {
+    return new PyFunctionExprBuilder("runtime.check_not_null").addArg(expr).asPyExpr();
   }
 
   private PyExpr visitCssFunction(FunctionNode node) {

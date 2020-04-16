@@ -56,6 +56,7 @@ import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -72,6 +73,7 @@ import com.google.template.soy.exprtree.MethodNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -332,20 +334,29 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!node.isNullSafe());
     SoyValue base = visit(node.getBaseExprChild());
-    return visitDataAccessNode(node, base, /*nullSafe=*/ false);
+    return visitDataAccessNode(node, base, /*nullSafe=*/ false, /* hasAssertNonNull= */ false);
   }
 
-  private SoyValue visitDataAccessNode(DataAccessNode node, SoyValue base, boolean nullSafe) {
+  private SoyValue visitDataAccessNode(
+      DataAccessNode node, SoyValue base, boolean nullSafe, boolean hasAssertNonNull) {
+    SoyValue result;
     switch (node.getKind()) {
       case FIELD_ACCESS_NODE:
-        return visitFieldAccessNode((FieldAccessNode) node, base, nullSafe);
+        result = visitFieldAccessNode((FieldAccessNode) node, base, nullSafe);
+        break;
       case ITEM_ACCESS_NODE:
-        return visitItemAccessNode((ItemAccessNode) node, base, nullSafe);
+        result = visitItemAccessNode((ItemAccessNode) node, base, nullSafe);
+        break;
       case METHOD_NODE:
-        return visitMethodNode((MethodNode) node, base);
+        result = visitMethodNode((MethodNode) node, base);
+        break;
       default:
         throw new AssertionError(node.getKind());
     }
+    if (hasAssertNonNull) {
+      result = assertNotNull(result, node);
+    }
+    return result;
   }
 
   @Override
@@ -354,22 +365,40 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
     while (!isNullOrUndefinedBase(value) && dataAccess.getKind() == Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
-      value = accumulateDataAccess((DataAccessNode) node.getBase(), value);
+      value =
+          accumulateDataAccess(
+              (DataAccessNode) node.getBase(), value, /* hasAssertNonNull= */ false);
       dataAccess = node.getDataAccess();
     }
     if (isNullOrUndefinedBase(value)) {
       return NullData.INSTANCE;
     }
-    return accumulateDataAccess((DataAccessNode) dataAccess, value);
+    return accumulateDataAccessTail((AccessChainComponentNode) dataAccess, value);
   }
 
-  private SoyValue accumulateDataAccess(DataAccessNode dataAccessNode, SoyValue base) {
+  private SoyValue accumulateDataAccess(
+      DataAccessNode dataAccessNode, SoyValue base, boolean hasAssertNonNull) {
     boolean accessChain = false;
     if (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
-      base = accumulateDataAccess((DataAccessNode) dataAccessNode.getBaseExprChild(), base);
+      base =
+          accumulateDataAccess(
+              (DataAccessNode) dataAccessNode.getBaseExprChild(),
+              base,
+              /* hasAssertNonNull= */ false);
       accessChain = true;
     }
-    return visitDataAccessNode(dataAccessNode, base, !accessChain);
+    return visitDataAccessNode(dataAccessNode, base, !accessChain, hasAssertNonNull);
+  }
+
+  private SoyValue accumulateDataAccessTail(
+      AccessChainComponentNode dataAccessNode, SoyValue base) {
+    boolean hasAssertNonNull = false;
+    if (dataAccessNode.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
+      AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccessNode;
+      dataAccessNode = (AccessChainComponentNode) assertNonNull.getChild(0);
+      hasAssertNonNull = true;
+    }
+    return accumulateDataAccess((DataAccessNode) dataAccessNode, base, hasAssertNonNull);
   }
 
   private SoyValue visitFieldAccessNode(
@@ -666,6 +695,11 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return operand0;
   }
 
+  @Override
+  protected SoyValue visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+    return assertNotNull(node.getChild(0));
+  }
+
   // -----------------------------------------------------------------------------------------------
   // Implementations for functions.
 
@@ -683,7 +717,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case INDEX:
           return visitIndexFunction(node);
         case CHECK_NOT_NULL:
-          return visitCheckNotNullFunction(node.getChild(0));
+          return assertNotNull(node.getChild(0));
         case CSS:
           return visitCssFunction(node);
         case XID:
@@ -750,12 +784,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     return builder.build();
   }
 
-  private SoyValue visitCheckNotNullFunction(ExprNode child) {
-    SoyValue childValue = visit(child);
-    if (childValue instanceof NullData || childValue instanceof UndefinedData) {
-      throw new SoyDataException(child.toSourceString() + " is null");
+  private SoyValue assertNotNull(ExprNode child) {
+    return assertNotNull(visit(child), child);
+  }
+
+  private static SoyValue assertNotNull(SoyValue value, ExprNode node) {
+    if (value instanceof NullData || value instanceof UndefinedData) {
+      throw new SoyDataException(node.toSourceString() + " is null");
     }
-    return childValue;
+    return value;
   }
 
   /**

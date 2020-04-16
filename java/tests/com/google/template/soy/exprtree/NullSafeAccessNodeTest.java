@@ -334,10 +334,9 @@ public class NullSafeAccessNodeTest {
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
-                "NULL_SAFE_ACCESS_NODE: $foo!.messageField?.foo",
-                "  FIELD_ACCESS_NODE: $foo!.messageField",
-                "    ASSERT_NON_NULL_OP_NODE: $foo!",
-                "      VAR_REF_NODE: $foo",
+                "NULL_SAFE_ACCESS_NODE: $foo.messageField?.foo",
+                "  FIELD_ACCESS_NODE: $foo.messageField",
+                "    VAR_REF_NODE: $foo",
                 "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
                 "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
                 ""));

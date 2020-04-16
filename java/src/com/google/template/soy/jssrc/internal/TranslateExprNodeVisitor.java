@@ -65,6 +65,7 @@ import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
@@ -81,6 +82,7 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
@@ -367,10 +369,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     ExprNode dataAccess = nullSafeAccessNode.getDataAccess();
     while (dataAccess.getKind() == ExprNode.Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode nullSafe = (NullSafeAccessNode) dataAccess;
-      accumulator = accumulateNullSafeDataAccess((DataAccessNode) nullSafe.getBase(), accumulator);
+      accumulator =
+          accumulateNullSafeDataAccess(
+              (DataAccessNode) nullSafe.getBase(), accumulator, /* assertNonNull= */ false);
       dataAccess = nullSafe.getDataAccess();
     }
-    return accumulateNullSafeDataAccess((DataAccessNode) dataAccess, accumulator)
+    return accumulateNullSafeDataAccessTail((AccessChainComponentNode) dataAccess, accumulator)
         .result(codeGenerator);
   }
 
@@ -379,8 +383,20 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return JS_TO_PROTO_PACK_FN.get(messageType.getFullName());
   }
 
+  private NullSafeAccumulator accumulateNullSafeDataAccessTail(
+      AccessChainComponentNode dataAccess, NullSafeAccumulator accumulator) {
+    boolean foundAssertNonNull = false;
+    if (dataAccess.getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
+      AssertNonNullOpNode assertNonNull = (AssertNonNullOpNode) dataAccess;
+      dataAccess = (AccessChainComponentNode) assertNonNull.getChild(0);
+      foundAssertNonNull = true;
+    }
+    return accumulateNullSafeDataAccess(
+        (DataAccessNode) dataAccess, accumulator, foundAssertNonNull);
+  }
+
   private NullSafeAccumulator accumulateNullSafeDataAccess(
-      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator) {
+      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator, boolean assertNonNull) {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
     checkArgument(!dataAccessNode.isNullSafe());
     boolean accessChain = false;
@@ -389,10 +405,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // ($foo.bar) first.
       accumulator =
           accumulateNullSafeDataAccess(
-              (DataAccessNode) dataAccessNode.getBaseExprChild(), accumulator);
+              (DataAccessNode) dataAccessNode.getBaseExprChild(),
+              accumulator,
+              /* assertNonNull= */ false);
       accessChain = true;
     }
-    return accumulateDataAccess(dataAccessNode, accumulator, !accessChain);
+    return accumulateDataAccess(dataAccessNode, accumulator, !accessChain, assertNonNull);
   }
 
   private NullSafeAccumulator accumulateDataAccess(DataAccessNode dataAccessNode) {
@@ -407,11 +425,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       // The base expression is not a DataAccessNode, so this is the base of an access chain.
       accumulator = new NullSafeAccumulator(visit(dataAccessNode.getBaseExprChild()));
     }
-    return accumulateDataAccess(dataAccessNode, accumulator, /* nullSafe= */ false);
+    return accumulateDataAccess(
+        dataAccessNode, accumulator, /* nullSafe= */ false, /* assertNonNull= */ false);
   }
 
   private NullSafeAccumulator accumulateDataAccess(
-      DataAccessNode dataAccessNode, NullSafeAccumulator accumulator, boolean nullSafe) {
+      DataAccessNode dataAccessNode,
+      NullSafeAccumulator accumulator,
+      boolean nullSafe,
+      boolean assertNonNull) {
     switch (dataAccessNode.getKind()) {
       case FIELD_ACCESS_NODE:
         FieldAccessNode fieldAccess = (FieldAccessNode) dataAccessNode;
@@ -420,20 +442,20 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 fieldAccess.getBaseExprChild().getType(),
                 fieldAccess.getAccessSourceLocation(),
                 fieldAccess.getFieldName());
-        return accumulator.dotAccess(access, nullSafe);
+        return accumulator.dotAccess(access, nullSafe, assertNonNull);
       case ITEM_ACCESS_NODE:
         ItemAccessNode itemAccess = (ItemAccessNode) dataAccessNode;
         ExprNode keyNode = itemAccess.getKeyExprChild();
         SoyType baseType = itemAccess.getBaseExprChild().getType();
         return SoyTypes.isKindOrUnionOfKind(SoyTypes.removeNull(baseType), Kind.MAP) // soy.Map
-            ? accumulator.mapGetAccess(genMapKeyCode(keyNode), nullSafe)
+            ? accumulator.mapGetAccess(genMapKeyCode(keyNode), nullSafe, assertNonNull)
             : accumulator.bracketAccess(
                 // The key type may not match JsCompiler's type system (passing number as enum, or
                 // nullable proto field).  I could instead cast this to the map's key type.
-                visit(keyNode).castAs("?"), nullSafe); // vanilla bracket access
+                visit(keyNode).castAs("?"), nullSafe, assertNonNull); // vanilla bracket access
       case METHOD_NODE:
         MethodNode method = (MethodNode) dataAccessNode;
-        return genCodeForMethodCall(accumulator, method, nullSafe);
+        return genCodeForMethodCall(accumulator, method, nullSafe, assertNonNull);
       default:
         throw new AssertionError(dataAccessNode.getKind());
     }
@@ -490,7 +512,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @param methodNode The method node.
    */
   private static NullSafeAccumulator genCodeForMethodCall(
-      NullSafeAccumulator base, MethodNode methodNode, boolean nullSafe) {
+      NullSafeAccumulator base, MethodNode methodNode, boolean nullSafe, boolean assertNonNull) {
     // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(methodNode.isMethodResolved());
@@ -506,7 +528,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           "Error in proto %s, field not found: %s",
           protoType.getDescriptor().getFullName(),
           fieldName);
-      return base.dotAccess(ProtoCall.create(fieldName, desc), nullSafe);
+      return base.dotAccess(ProtoCall.create(fieldName, desc), nullSafe, assertNonNull);
     }
     // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
     return base;
@@ -639,6 +661,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   @Override
+  protected Expression visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+    return assertNonNull(node.getChild(0));
+  }
+
+  @Override
   protected Expression visitProtoInitNode(ProtoInitNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
     Expression proto = construct(protoConstructor(type));
@@ -764,12 +791,16 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   private Expression visitCheckNotNullFunction(FunctionNode node) {
+    return assertNonNull(node.getChild(0));
+  }
+
+  private Expression assertNonNull(ExprNode expr) {
     return SOY_CHECK_NOT_NULL
-        .call(visit(node.getChild(0)))
+        .call(visit(expr))
         // It is impossible to make a Closure template function that takes T|null and returns T.  To
         // avoid JSCompiler errors when passing checkNotNull to a function that doesn't accept null,
         // we manually cast away the nullness.
-        .castAs(jsTypeFor(SoyTypes.tryRemoveNull(node.getChild(0).getType())).typeExpr());
+        .castAs(jsTypeFor(SoyTypes.tryRemoveNull(expr.getType())).typeExpr());
   }
 
   private Expression visitIsFirstFunction(FunctionNode node) {

@@ -329,7 +329,7 @@ public final class SimplifyExprVisitorTest {
                 .withVar("r", "true ? record(a: true ? record(b: $p) : null) : null")
                 .withExperimentalFeatures("enableNonNullAssertionOperator")
                 .parseForParentNode())
-        .simplifiesTo("record(a: record(b: $p))!.a?.b");
+        .simplifiesTo("$p");
 
     assertThat(
             new ExpressionParser("$r?.a?.b!")

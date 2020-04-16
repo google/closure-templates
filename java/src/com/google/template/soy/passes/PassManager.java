@@ -345,6 +345,9 @@ public final class PassManager {
         addPass(
             new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
             singleFilePassesBuilder);
+        // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
+        // types of non-null assertion operators.
+        addPass(new SimplifyAssertNonNullPass(), singleFilePassesBuilder);
         // Needs to come after types have been set.
         addPass(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
