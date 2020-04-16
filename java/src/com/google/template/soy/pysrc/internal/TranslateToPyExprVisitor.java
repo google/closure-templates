@@ -38,7 +38,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
@@ -337,9 +337,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       FieldAccessNode fieldAccess = (FieldAccessNode) dataAccess;
       return genCodeForFieldAccess(
           fieldAccess, fieldAccess.getBaseExprChild().getType(), base, fieldAccess.getFieldName());
-    } else if (dataAccess.getKind() == ExprNode.Kind.METHOD_NODE) {
-      MethodNode method = (MethodNode) dataAccess;
-      return genCodeForMethod(method, base);
+    } else if (dataAccess.getKind() == ExprNode.Kind.METHOD_CALL_NODE) {
+      MethodCallNode methodCall = (MethodCallNode) dataAccess;
+      return genCodeForMethodCall(methodCall, base);
     } else {
       ItemAccessNode itemAccess = (ItemAccessNode) dataAccess;
       Kind baseKind = itemAccess.getBaseExprChild().getType().getKind();
@@ -698,7 +698,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return genCodeForLiteralKeyAccess(containerExpr, fieldName);
   }
 
-  private String genCodeForMethod(MethodNode node, PyExpr containerExpr) {
+  private String genCodeForMethodCall(MethodCallNode node, PyExpr containerExpr) {
     // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(node.isMethodResolved());

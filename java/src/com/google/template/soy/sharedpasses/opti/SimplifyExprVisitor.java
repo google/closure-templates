@@ -341,8 +341,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
             }
             return;
           }
-        case METHOD_NODE:
-          // Can't optimize away a method node.
+        case METHOD_CALL_NODE:
+          // Can't optimize away a method call node.
           return;
         default:
           throw new AssertionError(dataAccessChild.getKind());
@@ -357,8 +357,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return visitFieldAccessNode((FieldAccessNode) dataAccessChainBase, base);
       case ITEM_ACCESS_NODE:
         return visitItemAccessNode((ItemAccessNode) dataAccessChainBase, base);
-      case METHOD_NODE:
-        // Can't optimize away a method node.
+      case METHOD_CALL_NODE:
+        // Can't optimize away a method call node.
         return null;
       default:
         throw new AssertionError(dataAccessChainBase.getKind());

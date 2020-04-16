@@ -77,7 +77,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.Operator;
@@ -453,9 +453,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 // The key type may not match JsCompiler's type system (passing number as enum, or
                 // nullable proto field).  I could instead cast this to the map's key type.
                 visit(keyNode).castAs("?"), nullSafe, assertNonNull); // vanilla bracket access
-      case METHOD_NODE:
-        MethodNode method = (MethodNode) dataAccessNode;
-        return genCodeForMethodCall(accumulator, method, nullSafe, assertNonNull);
+      case METHOD_CALL_NODE:
+        MethodCallNode methodCall = (MethodCallNode) dataAccessNode;
+        return genCodeForMethodCall(accumulator, methodCall, nullSafe, assertNonNull);
       default:
         throw new AssertionError(dataAccessNode.getKind());
     }
@@ -509,19 +509,22 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * Generates the code for a method, e.g. {@code .getExtension(foo)}}.
    *
    * @param base The base expression of the method.
-   * @param methodNode The method node.
+   * @param methodCallNode The method call node.
    */
   private static NullSafeAccumulator genCodeForMethodCall(
-      NullSafeAccumulator base, MethodNode methodNode, boolean nullSafe, boolean assertNonNull) {
+      NullSafeAccumulator base,
+      MethodCallNode methodCallNode,
+      boolean nullSafe,
+      boolean assertNonNull) {
     // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
-    Preconditions.checkArgument(methodNode.isMethodResolved());
+    Preconditions.checkArgument(methodCallNode.isMethodResolved());
 
-    if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
-      SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
+    if (GetExtensionMethod.isGetExtensionMethodCall(methodCallNode)) {
+      SoyType baseType = SoyTypes.removeNull(methodCallNode.getBaseExprChild().getType());
 
       SoyProtoType protoType = (SoyProtoType) baseType;
-      String fieldName = GetExtensionMethod.getExtensionId(methodNode);
+      String fieldName = GetExtensionMethod.getExtensionId(methodCallNode);
       FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
       Preconditions.checkNotNull(
           desc,

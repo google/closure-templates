@@ -18,7 +18,7 @@ package com.google.template.soy.basicmethods;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
@@ -42,14 +42,16 @@ import com.google.template.soy.shared.restricted.SoyMethodSignature;
             returnType = "?"))
 public final class GetExtensionMethod implements SoySourceFunction {
 
-  /** Returns if the given {@link MethodNode} is a call to the {@code getExtension} method. */
-  public static boolean isGetExtensionMethod(MethodNode method) {
-    return method.isMethodResolved() && method.getSoyMethods().get(0) instanceof GetExtensionMethod;
+  /** Returns if the given {@link MethodCallNode} is a call to the {@code getExtension} method. */
+  public static boolean isGetExtensionMethodCall(MethodCallNode methodCall) {
+    return methodCall.isMethodResolved()
+        && methodCall.getSoyMethods().get(0) instanceof GetExtensionMethod;
   }
 
   /** Returns the extension ID of the given call to the {@code getExtension} method. */
-  public static String getExtensionId(MethodNode method) {
-    checkArgument(isGetExtensionMethod(method), "%s is not a getExtension method call", method);
-    return ((StringNode) method.getChild(1)).getValue();
+  public static String getExtensionId(MethodCallNode methodCall) {
+    checkArgument(
+        isGetExtensionMethodCall(methodCall), "%s is not a getExtension method call", methodCall);
+    return ((StringNode) methodCall.getChild(1)).getValue();
   }
 }

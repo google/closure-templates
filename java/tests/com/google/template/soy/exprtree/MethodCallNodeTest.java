@@ -27,15 +27,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class MethodNodeTest {
+public class MethodCallNodeTest {
 
   private static final SourceLocation LOCATION = SourceLocation.UNKNOWN;
 
   @Test
   public void testGetMethodName() {
     VarRefNode baseExpr = new VarRefNode("myVar", LOCATION, null);
-    MethodNode method =
-        new MethodNode(
+    MethodCallNode method =
+        new MethodCallNode(
             baseExpr,
             ImmutableList.of(),
             Identifier.create("myMethod", LOCATION),
@@ -48,8 +48,8 @@ public class MethodNodeTest {
   @Test
   public void testToSourceString() {
     VarRefNode baseExpr = new VarRefNode("myVar", LOCATION, null);
-    MethodNode method =
-        new MethodNode(
+    MethodCallNode method =
+        new MethodCallNode(
             baseExpr,
             ImmutableList.of(
                 new IntegerNode(2, LOCATION), new StringNode("str", QuoteStyle.SINGLE, LOCATION)),

@@ -64,7 +64,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
@@ -212,7 +212,7 @@ final class ProtoUtils {
    * @param node The method operation.
    */
   static SoyExpression accessExtensionField(
-      SoyProtoType protoType, SoyExpression baseExpr, MethodNode node) {
+      SoyProtoType protoType, SoyExpression baseExpr, MethodCallNode node) {
     String fieldName = GetExtensionMethod.getExtensionId(node);
     return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType()).generate();
   }

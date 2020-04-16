@@ -69,7 +69,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -347,8 +347,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       case ITEM_ACCESS_NODE:
         result = visitItemAccessNode((ItemAccessNode) node, base, nullSafe);
         break;
-      case METHOD_NODE:
-        result = visitMethodNode((MethodNode) node, base);
+      case METHOD_CALL_NODE:
+        result = visitMethodCallNode((MethodCallNode) node, base);
         break;
       default:
         throw new AssertionError(node.getKind());
@@ -550,15 +550,15 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
-  private static SoyValue visitMethodNode(MethodNode methodNode, SoyValue base) {
+  private static SoyValue visitMethodCallNode(MethodCallNode methodCallNode, SoyValue base) {
     // All null safe accesses should've already been converted to NullSafeAccessNodes.
-    checkArgument(!methodNode.isNullSafe());
+    checkArgument(!methodCallNode.isNullSafe());
     // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
     // from the base type during compile time and the node has multiple SoySourceFunctions.
-    checkArgument(methodNode.isMethodResolved());
+    checkArgument(methodCallNode.isMethodResolved());
 
-    if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
-      String fieldName = GetExtensionMethod.getExtensionId(methodNode);
+    if (GetExtensionMethod.isGetExtensionMethodCall(methodCallNode)) {
+      String fieldName = GetExtensionMethod.getExtensionId(methodCallNode);
       return ((SoyProtoValue) base).getProtoField(fieldName);
     }
 

@@ -28,7 +28,7 @@ import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import java.util.List;
 
 /** A node representing a method call. (e.g. {@code $myString.length()}) */
-public final class MethodNode extends DataAccessNode {
+public final class MethodCallNode extends DataAccessNode {
 
   private final Identifier methodName;
 
@@ -50,7 +50,7 @@ public final class MethodNode extends DataAccessNode {
    * @param isNullSafe If true, checks during evaluation whether the base expression is null and
    *     returns null instead of causing an invalid dereference.
    */
-  public MethodNode(
+  public MethodCallNode(
       ExprNode base,
       List<ExprNode> params,
       Identifier methodName,
@@ -63,7 +63,7 @@ public final class MethodNode extends DataAccessNode {
   }
 
   /** @param orig The node to copy */
-  private MethodNode(MethodNode orig, CopyState copyState) {
+  private MethodCallNode(MethodCallNode orig, CopyState copyState) {
     super(orig, copyState);
     this.methodName = orig.methodName;
     if (orig.methods != null) {
@@ -117,11 +117,11 @@ public final class MethodNode extends DataAccessNode {
 
   @Override
   public Kind getKind() {
-    return Kind.METHOD_NODE;
+    return Kind.METHOD_CALL_NODE;
   }
 
   @Override
   public ExprNode copy(CopyState copyState) {
-    return new MethodNode(this, copyState);
+    return new MethodCallNode(this, copyState);
   }
 }

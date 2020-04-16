@@ -74,7 +74,7 @@ import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.GroupNode;
@@ -3685,7 +3685,7 @@ private ExprNode PrecExpr9() :
         ]
         close = <RPAREN>
         {
-          expr = new MethodNode(
+          expr = new MethodCallNode(
               expr,
               params,
               Identifier.create(ident.image, createSrcLoc(ident)),

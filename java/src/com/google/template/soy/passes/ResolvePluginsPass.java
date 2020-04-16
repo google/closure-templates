@@ -24,7 +24,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
@@ -99,10 +99,12 @@ final class ResolvePluginsPass implements CompilerFilePass {
       }
     }
 
-    for (MethodNode methodNode : SoyTreeUtils.getAllNodesOfType(file, MethodNode.class)) {
-      methodNode.setSoyMethods(
+    for (MethodCallNode methodCallNode :
+        SoyTreeUtils.getAllNodesOfType(file, MethodCallNode.class)) {
+      methodCallNode.setSoyMethods(
           resolver.lookupSoyMethod(
-              methodNode.getMethodName().identifier(), methodNode.getAccessSourceLocation()));
+              methodCallNode.getMethodName().identifier(),
+              methodCallNode.getAccessSourceLocation()));
     }
   }
 

@@ -57,7 +57,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode.ComprehensionVarDefn;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -971,7 +971,7 @@ final class ExpressionCompiler {
       switch (node.getKind()) {
         case FIELD_ACCESS_NODE:
         case ITEM_ACCESS_NODE:
-        case METHOD_NODE:
+        case METHOD_CALL_NODE:
           SoyExpression baseExpr =
               visitDataAccessNodeRecurse(((DataAccessNode) node).getBaseExprChild());
           // Mark non nullable.
@@ -1008,8 +1008,9 @@ final class ExpressionCompiler {
                       case ITEM_ACCESS_NODE:
                         accessType = "element " + ((ItemAccessNode) node).getSourceStringSuffix();
                         break;
-                      case METHOD_NODE:
-                        accessType = "method " + ((MethodNode) node).getMethodName().identifier();
+                      case METHOD_CALL_NODE:
+                        accessType =
+                            "method " + ((MethodCallNode) node).getMethodName().identifier();
                         break;
                       default:
                         throw new AssertionError();
@@ -1040,9 +1041,10 @@ final class ExpressionCompiler {
               visitItemAccess(baseExpr, (ItemAccessNode) node)
                   .withSourceLocation(node.getSourceLocation());
           break;
-        case METHOD_NODE:
+        case METHOD_CALL_NODE:
           result =
-              visitMethod(baseExpr, (MethodNode) node).withSourceLocation(node.getSourceLocation());
+              visitMethodCall(baseExpr, (MethodCallNode) node)
+                  .withSourceLocation(node.getSourceLocation());
           break;
         default:
           throw new AssertionError();
@@ -1115,14 +1117,14 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(node.getType(), soyValue);
     }
 
-    private static SoyExpression visitMethod(SoyExpression baseExpr, MethodNode node) {
+    private static SoyExpression visitMethodCall(SoyExpression baseExpr, MethodCallNode node) {
       // All null safe accesses should've already been converted to NullSafeAccessNodes.
       checkArgument(!node.isNullSafe());
       // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
       // from the base type during compile time and the node has multiple SoySourceFunctions.
       checkArgument(node.isMethodResolved());
 
-      if (GetExtensionMethod.isGetExtensionMethod(node)) {
+      if (GetExtensionMethod.isGetExtensionMethodCall(node)) {
         SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
         return ProtoUtils.accessExtensionField(protoType, baseExpr, node);
       }

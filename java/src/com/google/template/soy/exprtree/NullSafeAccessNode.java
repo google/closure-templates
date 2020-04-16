@@ -143,16 +143,16 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
                 node.getAccessSourceLocation(),
                 /* isNullSafe= */ false);
         break;
-      case METHOD_NODE:
-        MethodNode childMethod =
-            new MethodNode(
+      case METHOD_CALL_NODE:
+        MethodCallNode childMethodCall =
+            new MethodCallNode(
                 basePlaceholder,
                 node.getChildren().subList(1, node.getChildren().size()),
-                ((MethodNode) node).getMethodName(),
+                ((MethodCallNode) node).getMethodName(),
                 node.getAccessSourceLocation(),
                 /* isNullSafe= */ false);
-        childMethod.setSoyMethods(((MethodNode) node).getSoyMethods());
-        child = childMethod;
+        childMethodCall.setSoyMethods(((MethodCallNode) node).getSoyMethods());
+        child = childMethodCall;
         break;
       default:
         throw new AssertionError(node.getKind());

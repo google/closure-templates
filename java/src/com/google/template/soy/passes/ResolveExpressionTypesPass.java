@@ -54,7 +54,7 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
@@ -905,8 +905,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case ITEM_ACCESS_NODE:
           finishItemAccessNode((ItemAccessNode) dataAccess, nullSafe);
           break;
-        case METHOD_NODE:
-          finishMethodNode((MethodNode) dataAccess, nullSafe);
+        case METHOD_CALL_NODE:
+          finishMethodCallNode((MethodCallNode) dataAccess, nullSafe);
           break;
         default:
           throw new AssertionError(dataAccess.getKind());
@@ -950,13 +950,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     @Override
-    protected void visitMethodNode(MethodNode node) {
+    protected void visitMethodCallNode(MethodCallNode node) {
       checkState(!node.isNullSafe());
       visit(node.getBaseExprChild());
-      finishMethodNode(node, /* nullSafe= */ false);
+      finishMethodCallNode(node, /* nullSafe= */ false);
     }
 
-    private void finishMethodNode(MethodNode node, boolean nullSafe) {
+    private void finishMethodCallNode(MethodCallNode node, boolean nullSafe) {
       for (ExprNode child : node.getChildren().subList(1, node.numChildren())) {
         visit(child);
       }
@@ -977,7 +977,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       // the getExtension method.
     }
 
-    private void visitGetExtensionMethod(MethodNode node) {
+    private void visitGetExtensionMethod(MethodCallNode node) {
       SoyType baseType = SoyTypes.tryRemoveNull(node.getBaseExprChild().getType());
 
       if (baseType.getKind() != SoyType.Kind.PROTO) {
@@ -1023,9 +1023,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Nullable
     private SoySourceFunction resolveMethodFromBaseType(
-        MethodNode node, SoyType baseType, List<SoySourceFunction> methods, boolean nullSafe) {
+        MethodCallNode node, SoyType baseType, List<SoySourceFunction> methods, boolean nullSafe) {
       // The methods list is empty when there are no methods with a name matching the one that the
-      // method node is called with, and an error is reported during the ResolvePluginsPass.
+      // method call node is called with, and an error is reported during the ResolvePluginsPass.
       if (methods.isEmpty()) {
         node.setType(ErrorType.getInstance());
         return null;

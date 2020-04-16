@@ -22,7 +22,7 @@ import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -37,7 +37,7 @@ final class GetExtensionRewriteParamPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (MethodNode node : SoyTreeUtils.getAllNodesOfType(file, MethodNode.class)) {
+    for (MethodCallNode node : SoyTreeUtils.getAllNodesOfType(file, MethodCallNode.class)) {
       if (node.isMethodResolved() && node.getSoyMethods().get(0) instanceof GetExtensionMethod) {
         // Rewrite the global parameter of getExtension methods.
         ExprNode child = node.getChild(1);

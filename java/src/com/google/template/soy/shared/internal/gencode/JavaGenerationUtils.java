@@ -26,7 +26,7 @@ import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.MethodNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -296,11 +296,12 @@ public final class JavaGenerationUtils {
         }
       }
     }
-    // Add extension references from getExtension method.
-    for (MethodNode methodNode : SoyTreeUtils.getAllNodesOfType(template, MethodNode.class)) {
-      if (GetExtensionMethod.isGetExtensionMethod(methodNode)) {
-        SoyType baseType = SoyTypes.removeNull(methodNode.getBaseExprChild().getType());
-        String fieldName = GetExtensionMethod.getExtensionId(methodNode);
+    // Add extension references from getExtension method call.
+    for (MethodCallNode methodCallNode :
+        SoyTreeUtils.getAllNodesOfType(template, MethodCallNode.class)) {
+      if (GetExtensionMethod.isGetExtensionMethodCall(methodCallNode)) {
+        SoyType baseType = SoyTypes.removeNull(methodCallNode.getBaseExprChild().getType());
+        String fieldName = GetExtensionMethod.getExtensionId(methodCallNode);
         FieldDescriptor desc = ((SoyProtoType) baseType).getFieldDescriptor(fieldName);
         protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
       }
