@@ -974,6 +974,32 @@ public final class ResolveExpressionTypesPassTest {
     assertThat(((MapType) type).getValueType()).isEqualTo(UnknownType.getInstance());
   }
 
+  @Test
+  public void testNonNullAssertion() {
+    SoyFileSetNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource(
+                    "{@param i: int|null}",
+                    "{@param n: int|null}",
+                    "{@param b: bool}",
+                    "{@param r: [a: null|[b: null|[c: null|string]]]}",
+                    "{assertType('int', $i!)}",
+                    "{assertType('int|null', isNonnull($i) ? $i! : null)}",
+                    "{assertType('string', $r.a.b.c!)}",
+                    "{assertType('[c: null|string]', $r.a.b!)}",
+                    "{assertType('int', $i ?: $n!)}",
+                    "{assertType('int', ($b ? $i : $n)!)}",
+                    "{assertType('int|null', $b ? $i : $n!)}",
+                    "{assertType('[c: null|string]|null', $r!.a?.b)}",
+                    "{assertType('[c: null|string]|null', $r?.a!.b)}",
+                    "{assertType('string', $r?.a.b.c!)}",
+                    "{assertType('null|string', $r!.a!.b!.c)}"))
+            .addSoyFunction(ASSERT_TYPE_FUNCTION)
+            .enableExperimentalFeatures(ImmutableList.of("enableNonNullAssertionOperator"))
+            .parse()
+            .fileSet();
+    assertTypes(soyTree);
+  }
 
   private SoyType parseSoyType(String type) {
     return parseSoyType(type, ErrorReporter.exploding());

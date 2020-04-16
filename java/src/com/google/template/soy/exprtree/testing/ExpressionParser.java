@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -33,6 +34,7 @@ import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +49,7 @@ public final class ExpressionParser {
   private final List<String> params;
   private final List<SoySourceFunction> functions;
   private final List<GenericDescriptor> protos;
+  private final List<String> experimentalFeatures;
 
   /** Constructs a new {@link ExpressionParser} to parse the given expression. */
   public ExpressionParser(String expression) {
@@ -55,6 +58,7 @@ public final class ExpressionParser {
     params = new ArrayList<>();
     functions = new ArrayList<>();
     protos = new ArrayList<>();
+    experimentalFeatures = new ArrayList<>();
   }
 
   /** Configures the expression to be parsed with a parameter with the given name and type. */
@@ -81,6 +85,11 @@ public final class ExpressionParser {
   /** Configures the expression to be parsed with the given proto. */
   public ExpressionParser withProto(GenericDescriptor proto) {
     protos.add(proto);
+    return this;
+  }
+
+  public ExpressionParser withExperimentalFeatures(String... experimentalFeatures) {
+    Collections.addAll(this.experimentalFeatures, experimentalFeatures);
     return this;
   }
 
@@ -119,6 +128,7 @@ public final class ExpressionParser {
             .runOptimizer(true)
             .addSoySourceFunctions(functions)
             .typeRegistry(typeRegistry)
+            .enableExperimentalFeatures(ImmutableList.copyOf(experimentalFeatures))
             .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
             .parse()
             .fileSet();

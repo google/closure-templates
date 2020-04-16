@@ -302,4 +302,44 @@ public class NullSafeAccessNodeTest {
                 "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
                 ""));
   }
+
+  @Test
+  public void testNonNullAssertionChain() {
+    ExprNode expr =
+        new ExpressionParser("$foo?.messageField!")
+            .withProto(Foo.getDescriptor())
+            .withParam("foo", "soy.test.Foo")
+            .withExperimentalFeatures("enableNonNullAssertionOperator")
+            .parse();
+    String exprString =
+        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    assertThat(exprString)
+        .isEqualTo(
+            NEWLINE.join(
+                "NULL_SAFE_ACCESS_NODE: $foo?.messageField!",
+                "  VAR_REF_NODE: $foo",
+                "  ASSERT_NON_NULL_OP_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField!",
+                "    FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.messageField",
+                "      GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                ""));
+
+    expr =
+        new ExpressionParser("$foo!.messageField?.foo")
+            .withProto(Foo.getDescriptor())
+            .withParam("foo", "soy.test.Foo")
+            .withExperimentalFeatures("enableNonNullAssertionOperator")
+            .parse();
+    exprString =
+        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    assertThat(exprString)
+        .isEqualTo(
+            NEWLINE.join(
+                "NULL_SAFE_ACCESS_NODE: $foo!.messageField?.foo",
+                "  FIELD_ACCESS_NODE: $foo!.messageField",
+                "    ASSERT_NON_NULL_OP_NODE: $foo!",
+                "      VAR_REF_NODE: $foo",
+                "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
+                "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
+                ""));
+  }
 }

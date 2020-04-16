@@ -22,6 +22,7 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -193,6 +194,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
         visitTemplateLiteralNode((TemplateLiteralNode) node);
         break;
 
+      case ASSERT_NON_NULL_OP_NODE:
+        visitAssertNonNullOpNode((AssertNonNullOpNode) node);
+        break;
+
       default:
         throw new UnsupportedOperationException();
     }
@@ -225,6 +230,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   // Implementations for misc nodes.
 
   protected void visitExprRootNode(ExprRootNode node) {
+    visitExprNode(node);
+  }
+
+  protected void visitAssertNonNullOpNode(AssertNonNullOpNode node) {
     visitExprNode(node);
   }
 

@@ -20,6 +20,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 
 /**
  * Represents a null safe access: {@code ?.} or {@code ?[]}.
@@ -38,7 +42,7 @@ import com.google.template.soy.basetree.CopyState;
  */
 public final class NullSafeAccessNode extends AbstractParentExprNode {
 
-  private NullSafeAccessNode(ExprNode base, DataAccessNode access) {
+  private NullSafeAccessNode(ExprNode base, AccessChainComponentNode access) {
     super(access.getSourceLocation());
     addChild(base);
     addChild(access);
@@ -59,19 +63,27 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
     ExprNode dataAccess = getDataAccess();
     while (dataAccess.getKind() == Kind.NULL_SAFE_ACCESS_NODE) {
       NullSafeAccessNode node = (NullSafeAccessNode) dataAccess;
-      accumulateDataAccess(sourceString, (DataAccessNode) node.getBase());
+      accumulateDataAccess(sourceString, (AccessChainComponentNode) node.getBase());
       dataAccess = node.getDataAccess();
     }
-    accumulateDataAccess(sourceString, (DataAccessNode) dataAccess);
+    accumulateDataAccess(sourceString, (AccessChainComponentNode) dataAccess);
     return sourceString.toString();
   }
 
   private static void accumulateDataAccess(
-      StringBuilder accumulator, DataAccessNode dataAccessNode) {
-    StringBuilder dataAccessChain = new StringBuilder(dataAccessNode.getSourceStringSuffix());
-    while (dataAccessNode.getBaseExprChild() instanceof DataAccessNode) {
-      dataAccessNode = (DataAccessNode) dataAccessNode.getBaseExprChild();
-      dataAccessChain.insert(0, dataAccessNode.getSourceStringSuffix());
+      StringBuilder accumulator, AccessChainComponentNode node) {
+    StringBuilder dataAccessChain = new StringBuilder();
+    ExprNode child = node;
+    while (child instanceof AccessChainComponentNode) {
+      if (child instanceof DataAccessNode) {
+        DataAccessNode dataAccessNode = (DataAccessNode) child;
+        dataAccessChain.insert(0, dataAccessNode.getSourceStringSuffix());
+        child = dataAccessNode.getBaseExprChild();
+      } else {
+        AssertNonNullOpNode assertNonNullOpNode = (AssertNonNullOpNode) child;
+        dataAccessChain.insert(0, assertNonNullOpNode.getOperator().getTokenString());
+        child = assertNonNullOpNode.getChild(0);
+      }
     }
     accumulator.append('?').append(dataAccessChain);
   }
@@ -104,7 +116,8 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
    * $p?.a?.b?.c}, this must first be called on the {@code .a} access, then {@code .b}, then {@code
    * .c}.
    */
-  public static void createAndInsert(DataAccessNode node, DataAccessNode accessChainRoot) {
+  public static void createAndInsert(
+      DataAccessNode node, AccessChainComponentNode accessChainRoot) {
     checkArgument(node.isNullSafe());
     ExprNode base = node.getBaseExprChild();
     // TODO(spishak): Find a better way to represent this placeholder node, likely by removing it

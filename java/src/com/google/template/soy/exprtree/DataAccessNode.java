@@ -19,6 +19,7 @@ package com.google.template.soy.exprtree;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 
 /**
  * Base class which represents access to a field or element of an aggregate value, such as an object
@@ -26,7 +27,8 @@ import com.google.template.soy.basetree.CopyState;
  * base[expression].
  *
  */
-public abstract class DataAccessNode extends AbstractParentExprNode {
+public abstract class DataAccessNode extends AbstractParentExprNode
+    implements AccessChainComponentNode {
 
   protected final boolean isNullSafe;
 

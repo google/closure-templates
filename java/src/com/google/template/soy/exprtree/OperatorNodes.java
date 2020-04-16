@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 
 /**
  * Container of nodes representing operators.
@@ -412,7 +413,8 @@ public class OperatorNodes {
   }
 
   /** Node representing the non-null assertion '!' operator. */
-  public static final class AssertNonNullOpNode extends AbstractOperatorNode {
+  public static final class AssertNonNullOpNode extends AbstractOperatorNode
+      implements AccessChainComponentNode {
 
     public AssertNonNullOpNode(SourceLocation sourceLocation) {
       super(Operator.ASSERT_NON_NULL, sourceLocation);

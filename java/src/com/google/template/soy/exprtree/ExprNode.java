@@ -126,4 +126,7 @@ public interface ExprNode extends Node {
     @Override
     PrimitiveNode copy(CopyState copyState);
   }
+
+  /** A marker interface for nodes that can be part of access chains, like {@code $r.a[b]!}. */
+  public static interface AccessChainComponentNode extends ParentExprNode {}
 }

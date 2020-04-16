@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.DataAccessNode;
+import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -33,20 +34,19 @@ class NullSafeAccessPass implements CompilerFilePass {
         SoyTreeUtils.getAllNodesOfType(file, DataAccessNode.class);
     for (DataAccessNode access : accesses.reverse()) {
       if (access.isNullSafe()) {
-        DataAccessNode accessChainRoot = findRoot(access);
+        AccessChainComponentNode accessChainRoot = findRoot(access);
         NullSafeAccessNode.createAndInsert(access, accessChainRoot);
       }
     }
   }
 
-  private static DataAccessNode findRoot(DataAccessNode access) {
-    DataAccessNode node = access;
-    while ((node.getParent().getKind() == Kind.ITEM_ACCESS_NODE
-            || node.getParent().getKind() == Kind.FIELD_ACCESS_NODE
-            || node.getParent().getKind() == Kind.METHOD_NODE)
-        // Make sure to only traverse base nodes up the tree.
-        && ((DataAccessNode) node.getParent()).getBaseExprChild() == node) {
-      node = (DataAccessNode) node.getParent();
+  private static AccessChainComponentNode findRoot(DataAccessNode access) {
+    AccessChainComponentNode node = access;
+    while ((node.getParent() instanceof DataAccessNode
+            // Make sure to only traverse base nodes up the tree.
+            && ((DataAccessNode) node.getParent()).getBaseExprChild() == node)
+        || node.getParent().getKind() == Kind.ASSERT_NON_NULL_OP_NODE) {
+      node = (AccessChainComponentNode) node.getParent();
     }
     return node;
   }
