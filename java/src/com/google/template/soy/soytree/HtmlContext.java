@@ -127,6 +127,11 @@ public enum HtmlContext {
   @Nullable private final EscapingMode escapingMode;
   @Nullable private final String errorMessage;
 
+  /** Whether a class contains information about HTML context */
+  public interface HtmlContextHolder {
+    HtmlContext getHtmlContext();
+  }
+
   /**
    * The escaping mode appropriate for dynamic content inserted at this state. Null if there is no
    * appropriate escaping convention to use as for comments or plain text which do not have escaping

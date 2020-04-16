@@ -41,7 +41,8 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class RawTextNode extends AbstractSoyNode implements StandaloneNode {
+public final class RawTextNode extends AbstractSoyNode
+    implements HtmlContext.HtmlContextHolder, StandaloneNode {
 
   /** Specifies how this text node was created. */
   public enum Provenance {
@@ -190,6 +191,7 @@ public final class RawTextNode extends AbstractSoyNode implements StandaloneNode
    * Gets the HTML source context (typically tag, attribute value, HTML PCDATA, or plain text) which
    * this node emits in. This is used for incremental DOM codegen.
    */
+  @Override
   public HtmlContext getHtmlContext() {
     return Preconditions.checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor");

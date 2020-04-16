@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNode>
     implements StandaloneNode,
         SplitLevelTopNode<PrintDirectiveNode>,
+        HtmlContext.HtmlContextHolder,
         StatementNode,
         ExprHolderNode,
         MsgPlaceholderInitialNode,
@@ -140,6 +141,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
    * HTML PCDATA, or plain text) which this node emits in. This affects how the node is escaped (for
    * traditional backends) or how it's passed to incremental DOM APIs.
    */
+  @Override
   public HtmlContext getHtmlContext() {
     return checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");

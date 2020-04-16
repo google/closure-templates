@@ -35,7 +35,10 @@ import javax.annotation.Nullable;
  *
  */
 public final class IfNode extends AbstractParentSoyNode<BlockNode>
-    implements StandaloneNode, SplitLevelTopNode<BlockNode>, StatementNode {
+    implements HtmlContext.HtmlContextHolder,
+        StandaloneNode,
+        SplitLevelTopNode<BlockNode>,
+        StatementNode {
 
   @Nullable private HtmlContext htmlContext;
 
@@ -54,6 +57,7 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
     this.htmlContext = orig.htmlContext;
   }
 
+  @Override
   public HtmlContext getHtmlContext() {
     return checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");

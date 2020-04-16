@@ -226,6 +226,7 @@ final class InferenceEngine {
     @Override
     protected void visitMsgFallbackGroupNode(MsgFallbackGroupNode node) {
       checkUriEnd();
+      node.setHtmlContext(context.state());
 
       // (1) Determine the escaping we should do on the node itself, and the context we should
       // parse the children in.

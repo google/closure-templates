@@ -49,6 +49,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     implements StandaloneNode,
         SplitLevelTopNode<CallParamNode>,
         StatementNode,
+        HtmlContext.HtmlContextHolder,
         ExprHolderNode,
         MsgPlaceholderInitialNode,
         CommandTagAttributesHolder {
@@ -174,6 +175,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
    * HTML PCDATA, or plain text) which this node emits in. This affects how the node is escaped (for
    * traditional backends) or how it's passed to incremental DOM APIs.
    */
+  @Override
   public HtmlContext getHtmlContext() {
     return checkNotNull(
         htmlContext, "Cannot access HtmlContext before HtmlContextVisitor or InferenceEngine.");
