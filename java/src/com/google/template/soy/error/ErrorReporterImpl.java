@@ -17,19 +17,14 @@
 package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 /**
  * Simple {@link com.google.template.soy.error.ErrorReporter} implementation.
@@ -41,6 +36,7 @@ final class ErrorReporterImpl extends ErrorReporter {
   private final List<RecordedError> reports = new ArrayList<>();
   private int errorCount;
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
+  private static final SourceSnippetPrinter snippetPrinter = new SourceSnippetPrinter();
 
   ErrorReporterImpl(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
     this.filePathsToSuppliers = filePathsToSuppliers;
@@ -113,105 +109,13 @@ final class ErrorReporterImpl extends ErrorReporter {
     }
 
     SoyError asSoyError(ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-      return SoyError.create(
-          location, kind, kind.format(args), getSnippet(filePathsToSuppliers), isWarning);
-    }
-
-    /**
-     * Returns a source line snippet highlighting the error location.
-     *
-     * <p>The snippet will diplay each line of source with its line number and then the range of
-     * text highlighted with {@code ~} characters. In the special cases where the range is only one
-     * character, use a caret {@code ^} to point to it.
-     */
-    private Optional<String> getSnippet(
-        ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-      if (!location.isKnown()) {
-        return Optional.empty();
-      }
-      // Try to find a snippet of source code associated with the exception and print it.
-      ImmutableList<String> snippetLines = getSourceLines(filePathsToSuppliers);
-      // Each line of source text will begin with the line number.
-      // format the number
-      ImmutableList<String> linePrefixes =
-          IntStream.rangeClosed(location.getBeginLine(), location.getEndLine())
-              .mapToObj(i -> String.format("%d: ", i))
-              .collect(toImmutableList());
-      // measure their lengths to find the max
-      int maxLength = linePrefixes.stream().mapToInt(p -> p.length()).max().getAsInt();
-      // left pad
-      linePrefixes =
-          linePrefixes.stream()
-              .map(p -> Strings.repeat(" ", maxLength - p.length()) + p)
-              .collect(toImmutableList());
-
-      String prefixPadding = Strings.repeat(" ", maxLength);
-      StringBuilder builder = new StringBuilder();
-      int curLine = location.getBeginLine();
-      int startColumn = location.getBeginColumn();
-      for (int i = 0; i < snippetLines.size(); i++) {
-        String prefix = linePrefixes.get(i);
-        String line = snippetLines.get(i);
-        builder.append(prefix).append(line).append('\n');
-        // add spaces to account for the prefix, and then char line up to the start column
-        builder.append(prefixPadding).append(Strings.repeat(" ", startColumn - 1));
-        int endColumn;
-        if (curLine == location.getEndLine()) {
-          endColumn = location.getEndColumn();
-        } else {
-          endColumn = line.length() + 1;
-        }
-        if (endColumn == startColumn && location.getBeginLine() == location.getEndLine()) {
-          // if it is just one character, use a caret
-          builder.append('^');
-        } else {
-          // otherwise 'underline' with tilda characters
-          // +1 because endColumn is inclusive
-          builder.append(Strings.repeat("~", endColumn - startColumn + 1));
-        }
-        builder.append('\n');
-        startColumn = 1;
-        curLine++;
-      }
-      String result = builder.toString();
-      return result.isEmpty() ? Optional.empty() : Optional.of(result);
-    }
-
-    /**
-     * Returns the text of all the lines of the location by reading them from the original source
-     * files.
-     *
-     * <p>Returns a snippet of source code surrounding the given {@link SourceLocation}, or {@link
-     * Optional#empty()} if source code is unavailable. (This happens, for example, when anyone uses
-     * {@link SourceLocation#UNKNOWN}, which is why no one should use it.)
-     */
-    ImmutableList<String> getSourceLines(
-        ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers) {
-      // Try to find a snippet of source code associated with the exception and print it.
-      SoyFileSupplier supplier = filePathsToSuppliers.get(location.getFilePath());
-      if (supplier == null) {
-        // sometimes we report errors against things like plugins, in which case we won't have a
-        // file
-        return ImmutableList.of();
-      }
-      ImmutableList.Builder<String> lines = ImmutableList.builder();
-      try (BufferedReader reader = new BufferedReader(supplier.open())) {
-        // Line numbers are 1-indexed and inclusive of end lines
-        for (int lineNum = 1; lineNum <= location.getEndLine(); ++lineNum) {
-          // Skip preceding lines
-          String line = reader.readLine();
-          if (line == null) {
-            // eof, warn if happens too early?
-            break;
-          }
-          if (lineNum >= location.getBeginLine()) {
-            lines.add(line);
-          }
-        }
-        return lines.build();
-      } catch (IOException ioe) {
-        return ImmutableList.of(); // TODO(lukes): log warning?
-      }
+      final Optional<String> snippet =
+          Optional
+              // Sometimes we report errors against things like plugins, in which case we won't have
+              // a file.
+              .ofNullable(filePathsToSuppliers.get(location.getFilePath()))
+              .flatMap(supplier -> snippetPrinter.getSnippet(supplier, location));
+      return SoyError.create(location, kind, kind.format(args), snippet, isWarning);
     }
   }
 }
