@@ -410,4 +410,26 @@ public class OperatorNodes {
       return new ConditionalOpNode(this, copyState);
     }
   }
+
+  /** Node representing the non-null assertion '!' operator. */
+  public static final class AssertNonNullOpNode extends AbstractOperatorNode {
+
+    public AssertNonNullOpNode(SourceLocation sourceLocation) {
+      super(Operator.ASSERT_NON_NULL, sourceLocation);
+    }
+
+    private AssertNonNullOpNode(AssertNonNullOpNode orig, CopyState copyState) {
+      super(orig, copyState);
+    }
+
+    @Override
+    public Kind getKind() {
+      return Kind.ASSERT_NON_NULL_OP_NODE;
+    }
+
+    @Override
+    public AssertNonNullOpNode copy(CopyState copyState) {
+      return new AssertNonNullOpNode(this, copyState);
+    }
+  }
 }

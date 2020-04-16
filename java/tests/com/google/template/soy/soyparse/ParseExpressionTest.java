@@ -37,12 +37,16 @@ import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.LessThanOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.MinusOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.NegativeOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
@@ -548,6 +552,48 @@ public final class ParseExpressionTest {
         .isEqualTo("((1 + (-2 * 3)) + (4 % 2)) ?: 3");
 
     assertThat(precedenceString("-$a.b > 0 ? $c.d : $c")).isEqualTo("((- $a.b) > 0) ? $c.d : $c");
+  }
+
+  @Test
+  public void testNonNullAssertion() {
+    ExprNode expr = assertThatExpression("1!").isValidExpression();
+    AssertNonNullOpNode nonNullOp = (AssertNonNullOpNode) expr;
+    assertThat(nonNullOp.getChild(0)).isInstanceOf(IntegerNode.class);
+
+    expr = assertThatExpression("record(a: 1)!.a").isValidExpression();
+    FieldAccessNode fieldAccess = (FieldAccessNode) expr;
+    assertThat(fieldAccess.getFieldName()).isEqualTo("a");
+    nonNullOp = (AssertNonNullOpNode) fieldAccess.getChild(0);
+    assertThat(nonNullOp.getChild(0)).isInstanceOf(RecordLiteralNode.class);
+
+    expr = assertThatExpression("my.Proto(a: 1)?.foo!.bar!.baz!").isValidExpression();
+    nonNullOp = (AssertNonNullOpNode) expr;
+    fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
+    assertThat(fieldAccess.getFieldName()).isEqualTo("baz");
+    assertThat(fieldAccess.isNullSafe()).isFalse();
+
+    nonNullOp = (AssertNonNullOpNode) fieldAccess.getBaseExprChild();
+    fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
+    assertThat(fieldAccess.getFieldName()).isEqualTo("bar");
+    assertThat(fieldAccess.isNullSafe()).isFalse();
+
+    nonNullOp = (AssertNonNullOpNode) fieldAccess.getBaseExprChild();
+    fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
+    assertThat(fieldAccess.getFieldName()).isEqualTo("foo");
+    assertThat(fieldAccess.isNullSafe()).isTrue();
+    assertThat(fieldAccess.getBaseExprChild()).isInstanceOf(ProtoInitNode.class);
+
+    expr = assertThatExpression("-$a! + $b * $c! < ($d or $e)!").isValidExpression();
+    LessThanOpNode lessThan = (LessThanOpNode) expr;
+
+    PlusOpNode plus = (PlusOpNode) lessThan.getChild(0);
+    NegativeOpNode negative = (NegativeOpNode) plus.getChild(0);
+    assertThat(negative.getChild(0)).isInstanceOf(AssertNonNullOpNode.class);
+
+    TimesOpNode times = (TimesOpNode) plus.getChild(1);
+    assertThat(times.getChild(1)).isInstanceOf(AssertNonNullOpNode.class);
+
+    assertThat(lessThan.getChild(1)).isInstanceOf(AssertNonNullOpNode.class);
   }
 
   // Parses the soy expression and then prints it with copious parens to indicate the associativity

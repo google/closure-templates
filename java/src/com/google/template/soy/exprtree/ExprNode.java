@@ -79,6 +79,7 @@ public interface ExprNode extends Node {
     OR_OP_NODE,
     NULL_COALESCING_OP_NODE,
     CONDITIONAL_OP_NODE,
+    ASSERT_NON_NULL_OP_NODE,
 
     FUNCTION_NODE,
     PROTO_INIT_NODE,

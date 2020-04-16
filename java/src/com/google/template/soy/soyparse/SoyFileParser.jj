@@ -469,6 +469,8 @@ public class SoyFileParser {
       SoyErrorKind.of("Empty record literal.");
   private static final SoyErrorKind EMPTY_RECORD_TYPE =
       SoyErrorKind.of("Empty record type.");
+  private static final SoyErrorKind LEGACY_NOT_ERROR =
+      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
 
   // Error message that mimics a ParseException
   private static final SoyErrorKind PARSER_ERROR =
@@ -1213,6 +1215,7 @@ TOKEN_MGR_DECLS: {
 | < VBAR: "|" >           // an operator for type unions
 | < EQ: "=" >             // For state assignments and attribute value pairs in EXPR
 | < FORWARD_ARROW: "=>" > // Part of template type syntax.
+| < ASSERT_NON_NULL: "!" >
 }
 
 
@@ -1231,7 +1234,6 @@ TOKEN_MGR_DECLS: {
 <EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> TOKEN: {
   < LEGACY_AND : "&&" >
 | < LEGACY_OR : "||" >
-| < LEGACY_NOT : "!" >
 }
 
 <TEMPLATE_DEFAULT> TOKEN: {
@@ -3621,6 +3623,14 @@ private ExprNode PrecExpr8() :
       op = <NOT>
     |
       op = <MINUS>
+    |
+      op = <ASSERT_NON_NULL>
+      {
+        errorReporter.report(createSrcLoc(op), LEGACY_NOT_ERROR);
+        // Compilation will fail because we reported an error, but keep going the best we can,
+        // treating "!$expr" as "not $expr"
+        op.image = "not";
+      }
     )
     expr = PrecExpr8()
 
@@ -3649,7 +3659,8 @@ private ExprNode PrecExpr8() :
 /**
  * Matches expressions with precedence level 9.
  *
- * <p>This level has our data access 'operators' and is currently our highest precedence level.
+ * <p>This level has our data access 'operators' and the nonnull assertion operator and is currently
+ * our highest precedence level.
  */
 private ExprNode PrecExpr9() :
 {
@@ -3661,50 +3672,57 @@ private ExprNode PrecExpr9() :
   expr = Primary()
   (
     (
-      op = <DOT>
+      (
+        op = <DOT>
+      |
+        op = <QDOT>
+      )
+      ident = <IDENT>
+      (
+        <LPAREN>
+        [
+          params = ExprList()
+        ]
+        close = <RPAREN>
+        {
+          expr = new MethodNode(
+              expr,
+              params,
+              Identifier.create(ident.image, createSrcLoc(ident)),
+              createSrcLoc(op, close),
+              op.kind == QDOT);
+          params = ImmutableList.of(); // Reset params after consuming.
+        }
+      |
+        {
+          expr =
+              new FieldAccessNode(
+                  expr,
+                  ident.image,
+                  createSrcLoc(op, ident),
+                  op.kind == QDOT);
+        }
+      )
     |
-      op = <QDOT>
-    )
-    ident = <IDENT>
-    (
-      <LPAREN>
-      [
-        params = ExprList()
-      ]
-      close = <RPAREN>
-      {
-        expr = new MethodNode(
-            expr,
-            params,
-            Identifier.create(ident.image, createSrcLoc(ident)),
-            createSrcLoc(op, close),
-            op.kind == QDOT);
-        params = ImmutableList.of(); // Reset params after consuming.
-      }
-    |
-      {
-        expr =
-            new FieldAccessNode(
+      (
+        open = <LBRACKET>
+      |
+        open = <QLBRACKET>
+      )
+      keyExpr = Expr()
+      close = <RBRACKET>
+      { expr =
+            new ItemAccessNode(
                 expr,
-                ident.image,
-                createSrcLoc(op, ident),
-                op.kind == QDOT);
+                keyExpr,
+                createSrcLoc(open, close),
+                open.kind == QLBRACKET);
       }
     )
   |
-    (
-      open = <LBRACKET>
-    |
-      open = <QLBRACKET>
-    )
-    keyExpr = Expr()
-    close = <RBRACKET>
-    { expr =
-          new ItemAccessNode(
-              expr,
-              keyExpr,
-              createSrcLoc(open, close),
-              open.kind == QLBRACKET);
+    op = <ASSERT_NON_NULL>
+    {
+      expr = createOperatorNode(createSrcLoc(op), op.image, 10, expr);
     }
   )*
 

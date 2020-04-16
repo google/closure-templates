@@ -22,6 +22,7 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -117,6 +118,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitNegativeOpNode((NegativeOpNode) node);
       case NOT_OP_NODE:
         return visitNotOpNode((NotOpNode) node);
+      case ASSERT_NON_NULL_OP_NODE:
+        return visitAssertNonNullOpNode((AssertNonNullOpNode) node);
       case TIMES_OP_NODE:
         return visitTimesOpNode((TimesOpNode) node);
       case DIVIDE_BY_OP_NODE:
@@ -268,6 +271,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitNotOpNode(NotOpNode node) {
+    return visitOperatorNode(node);
+  }
+
+  protected R visitAssertNonNullOpNode(AssertNonNullOpNode node) {
     return visitOperatorNode(node);
   }
 

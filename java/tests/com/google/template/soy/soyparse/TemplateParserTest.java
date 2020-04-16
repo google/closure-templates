@@ -104,19 +104,19 @@ public final class TemplateParserTest {
     TemplateSubject.assertThatTemplateContent("a {} b")
         .causesError(
             "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
-                + "identifier, or variable");
+                + "!, identifier, or variable");
     TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}a {} b{/msg}")
         .causesError(
             "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
-                + "identifier, or variable");
+                + "!, identifier, or variable");
     TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<a> {} </a>{/msg}")
         .causesError(
             "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
-                + "identifier, or variable");
+                + "!, identifier, or variable");
     TemplateSubject.assertThatTemplateContent("{msg desc=\"\"}<a href=\"{}\" />{/msg}")
         .causesError(
             "parse error at '}': expected null, true, false, number, string, -, not, [, (, "
-                + "identifier, or variable");
+                + "!, identifier, or variable");
 
     TemplateSubject.assertThatTemplateContent("{/blah}").causesError("Unexpected closing tag.");
 
@@ -126,7 +126,7 @@ public final class TemplateParserTest {
     TemplateSubject.assertThatTemplateContent("{@blah}")
         .causesError(
             "parse error at '@': expected null, true, false, number, string, -, not, "
-                + "[, (, identifier, or variable");
+                + "[, (, !, identifier, or variable");
     TemplateSubject.assertThatTemplateContent("{sp ace}")
         .causesError("parse error at '}': expected =");
     TemplateSubject.assertThatTemplateContent("{literal a=b}")
@@ -1242,7 +1242,7 @@ public final class TemplateParserTest {
     TemplateSubject.assertThatTemplateContent("{let $alpha: $boo.foo}{/let}")
         .causesError(
             "parse error at '}': expected /}, ?, '?:', or, and, ==, !=, <, >, <=, >=, +, -, *, /, "
-                + "%, ., ?., [, ?[, or (")
+                + "%, ., ?., [, ?[, (, or !")
         .at(1, 22);
   }
 

@@ -30,6 +30,7 @@ import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.DivideByOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
@@ -166,6 +167,13 @@ public enum Operator {
     @Override
     public OperatorNode createNode(SourceLocation location) {
       return new ConditionalOpNode(location);
+    }
+  },
+
+  ASSERT_NON_NULL(ImmutableList.of(OPERAND_0, new Token("!")), 10, LEFT) {
+    @Override
+    public OperatorNode createNode(SourceLocation location) {
+      return new AssertNonNullOpNode(location);
     }
   },
   ;

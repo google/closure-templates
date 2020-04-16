@@ -43,8 +43,6 @@ final class ParseErrors {
       SoyErrorKind.of("Found use of ''&&'' instead of the ''and'' operator.");
   private static final SoyErrorKind LEGACY_OR_ERROR =
       SoyErrorKind.of("Found use of ''||'' instead of the ''or'' operator.");
-  private static final SoyErrorKind LEGACY_NOT_ERROR =
-      SoyErrorKind.of("Found use of ''!'' instead of the ''not'' operator.");
   private static final SoyErrorKind UNEXPECTED_CLOSE_TAG =
       SoyErrorKind.of("Unexpected closing tag.");
   private static final SoyErrorKind UNEXPECTED_EOF =
@@ -124,9 +122,6 @@ final class ParseErrors {
         return;
       case SoyFileParserConstants.LEGACY_OR:
         reporter.report(location, LEGACY_OR_ERROR);
-        return;
-      case SoyFileParserConstants.LEGACY_NOT:
-        reporter.report(location, LEGACY_NOT_ERROR);
         return;
       case SoyFileParserConstants.UNEXPECTED_DOUBLE_BRACE:
         reporter.report(location, FOUND_DOUBLE_BRACE);
