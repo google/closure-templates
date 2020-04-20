@@ -46,11 +46,23 @@ public abstract class SoyTemplateParam<T> {
 
   public abstract String getName();
 
-  abstract boolean isRequired();
+  /**
+   * Returns whether the parameter is declared as required. All required, non-indirect parameters
+   * must be set for {@link SoyTemplate.Builder#build} to succeed.
+   *
+   * <p>If a parameter is indirect then {@link #isRequired} may return `true`. But missing indirect
+   * parameters never cause {@link SoyTemplate.Builder#build} to fail.
+   */
+  public abstract boolean isRequired();
 
-  abstract boolean isIndirect();
+  /**
+   * Returns whether the parameter is indirectly included from another template via a `{call
+   * data="all"}`.
+   */
+  public abstract boolean isIndirect();
 
-  abstract boolean isInjected();
+  /** Returns whether the parameter is an injected parameter declared with `@inject`. */
+  public abstract boolean isInjected();
 
   public abstract TypeToken<T> getType();
 
