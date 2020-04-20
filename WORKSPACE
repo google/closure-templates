@@ -125,7 +125,7 @@ java_import_external(
     name = "com_google_code_findbugs_jsr305",
     jar_sha256 = "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7",
     jar_urls = [
-        "http://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+        "https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
         "http://maven.ibiblio.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
     ],
 )
@@ -135,7 +135,7 @@ java_import_external(
     name = "com_google_code_gson",
     jar_sha256 = "2d43eb5ea9e133d2ee2405cc14f5ee08951b8361302fdd93494a3a997b508d32",
     jar_urls = [
-        "http://repo1.maven.org/maven2/com/google/code/gson/gson/2.7/gson-2.7.jar",
+        "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.7/gson-2.7.jar",
         "http://maven.ibiblio.org/maven2/com/google/code/gson/gson/2.7/gson-2.7.jar",
     ],
 )
@@ -146,7 +146,7 @@ java_import_external(
     jar_sha256 = "03d0329547c13da9e17c634d1049ea2ead093925e290567e1a364fd6b1fc7ff8",
     jar_urls = [
         "http://maven.ibiblio.org/maven2/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar",
-        "http://repo1.maven.org/maven2/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar",
+        "https://repo1.maven.org/maven2/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar",
     ],
 )
 
@@ -155,7 +155,7 @@ java_import_external(
     name = "com_google_guava_guava",
     jar_sha256 = "6db0c3a244c397429c2e362ea2837c3622d5b68bb95105d37c21c36e5bc70abf",
     jar_urls = [
-        "http://repo1.maven.org/maven2/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar",
+        "https://repo1.maven.org/maven2/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar",
         "http://maven.ibiblio.org/maven2/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar",
     ],
     deps = [
@@ -169,7 +169,7 @@ java_import_external(
     name = "com_google_code_gson",
     jar_sha256 = "2d43eb5ea9e133d2ee2405cc14f5ee08951b8361302fdd93494a3a997b508d32",
     jar_urls = [
-        "http://repo1.maven.org/maven2/com/google/code/gson/gson/2.7/gson-2.7.jar",
+        "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.7/gson-2.7.jar",
         "http://maven.ibiblio.org/maven2/com/google/code/gson/gson/2.7/gson-2.7.jar",
     ],
 )
