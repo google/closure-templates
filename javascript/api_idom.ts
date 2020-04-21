@@ -51,6 +51,7 @@ interface IdomRendererApi {
   getNewKey(key: string): string;
   popKey(oldKey: string): void;
   getCurrentKeyStack(): string;
+  elementClose(): void|Element;
   close(): void|Element;
   text(value: string): void|Text;
   attr(name: string, value: string): void;
@@ -202,6 +203,14 @@ export class IncrementalDomRenderer implements IdomRendererApi {
     return incrementaldom.close();
   }
 
+  elementClose(): Element|void {
+    const el = this.close();
+    if (el && el.__soy_patch_handler) {
+      el.__soy_patch_handler();
+    }
+    return el;
+  }
+
   text(value: string): Text|void {
     return incrementaldom.text(value);
   }
@@ -318,6 +327,7 @@ export class NullRenderer extends IncrementalDomRenderer {
   }
 
   close() {}
+  elementClose() {}
 
   text(value: string) {}
 
@@ -467,6 +477,10 @@ export class FalsinessRenderer implements IdomRendererApi {
   }
 
   close() {
+    this.rendered = true;
+  }
+
+  elementClose() {
     this.rendered = true;
   }
 

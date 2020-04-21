@@ -22,6 +22,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_LIB;
@@ -1190,6 +1191,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private Statement getAttributeAndCloseCalls(HtmlOpenTagNode node) {
     List<Statement> statements = new ArrayList<>();
     Optional<Expression> maybeApplyStatics = getApplyStaticAttributes(node);
+    Expression close = node.isElementRoot() ? INCREMENTAL_DOM_ELEMENT_CLOSE : INCREMENTAL_DOM_CLOSE;
     if (maybeApplyStatics.isPresent()) {
       statements.add(maybeApplyStatics.get().asStatement());
     }
@@ -1199,7 +1201,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // HtmlContextVisitor.  So we just need to output the close instructions if the node is self
     // closing or definitely void.
     if (node.isSelfClosing() || node.getTagName().isDefinitelyVoid()) {
-      statements.add(INCREMENTAL_DOM_CLOSE.call().asStatement());
+      statements.add(close.call().asStatement());
     }
     return Statement.of(statements);
   }
@@ -1231,8 +1233,14 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       }
     }
 
+    Expression close = INCREMENTAL_DOM_CLOSE;
+    if (node.getTaggedPairs().size() == 1
+        && ((HtmlOpenTagNode) node.getTaggedPairs().get(0)).isElementRoot()) {
+      close = INCREMENTAL_DOM_ELEMENT_CLOSE;
+    }
+
     if (!node.getTagName().isDefinitelyVoid()) {
-      getJsCodeBuilder().append(INCREMENTAL_DOM_CLOSE.call().asStatement());
+      getJsCodeBuilder().append(close.call().asStatement());
     }
   }
 

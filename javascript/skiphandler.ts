@@ -8,7 +8,10 @@
 
 declare global {
   interface Node {
+    // tslint:disable-next-line:enforce-name-casing
     __soy_skip_handler: (<T>(prev: T, next: T) => boolean)|undefined;
+    // tslint:disable-next-line:enforce-name-casing
+    __soy_patch_handler: (() => void)|undefined;
   }
 }
 
