@@ -63,6 +63,14 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     // render() is called, ignore the skip handler.
     const skipHandler = this.skipHandler;
     this.skipHandler = null;
+    if (this.patchHandler) {
+      const patchHandler =
+          (this as SoyElement<TData, TInterface>).patchHandler!;
+      this.node!.__soy_patch_handler = () => {
+        patchHandler(
+            this as unknown as TInterface, this as unknown as TInterface);
+      };
+    }
     patchOuter(this.node!, () => {
       // If there are parameters, they must already be specified.
       this.renderInternal(renderer, this.data!);
