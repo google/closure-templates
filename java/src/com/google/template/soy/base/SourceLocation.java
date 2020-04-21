@@ -24,6 +24,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ComparisonChain;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -180,7 +181,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   @Override
   public String toString() {
-    return begin.line() != -1 ? (filePath + ":" + begin.line() + ":" + begin.column()) : filePath;
+    return begin.line() != -1
+        ? String.format(
+            "%s:%s:%s-%s:%s", filePath, begin.line(), begin.column(), end.line(), end.column())
+        : filePath;
   }
 
   public SourceLocation offsetStartCol(int offset) {
@@ -290,6 +294,16 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     boolean rangeEndsAfterOrAtEndPoint = !this.end.isBefore(range.end);
 
     return rangeStartsAfterOrAtBeginPoint && rangeEndsAfterOrAtEndPoint;
+  }
+
+  public Optional<SourceLocation> getOverlapWith(SourceLocation other) {
+    Point lowerEndPoint = end.isBefore(other.getEndPoint()) ? end : other.getEndPoint();
+    Point higherBeginPoint = begin.isAfter(other.getBeginPoint()) ? begin : other.getBeginPoint();
+
+    if (!lowerEndPoint.isBefore(higherBeginPoint)) {
+      return Optional.of(new SourceLocation(filePath, higherBeginPoint, lowerEndPoint));
+    }
+    return Optional.empty();
   }
 
   /** Returns a new location that points to the last character of this location. */

@@ -18,6 +18,7 @@ package com.google.template.soy.soyparse;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.common.truth.Truth8.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
@@ -826,6 +827,42 @@ public final class SourceLocationTest {
             foo1.getSourceLocation().getFilePath(), Point.create(2, 4), Point.create(5, 7));
     assertTrue(outerRange.isAdjacentOrOverlappingWith(innerRange));
     assertTrue(innerRange.isAdjacentOrOverlappingWith(outerRange));
+  }
+
+  @Test
+  public void testOverlapWith() {
+    // Overlapping ranges.
+    SourceLocation overlappingLoc1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation overlappingLoc2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(5, 4), Point.create(10, 7));
+
+    assertThat(overlappingLoc1.getOverlapWith(overlappingLoc2).get())
+        .isEqualTo(new SourceLocation(FAKE_FILE_PATH, Point.create(5, 4), Point.create(8, 7)));
+    assertThat(overlappingLoc2.getOverlapWith(overlappingLoc1).get())
+        .isEqualTo(new SourceLocation(FAKE_FILE_PATH, Point.create(5, 4), Point.create(8, 7)));
+
+    // One is a subset of another.
+    SourceLocation outerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    SourceLocation innerRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(2, 4), Point.create(5, 7));
+    assertThat(outerRange.getOverlapWith(innerRange).get()).isEqualTo(innerRange);
+    assertThat(innerRange.getOverlapWith(outerRange).get()).isEqualTo(innerRange);
+
+    // Only overlaps by one point.
+    overlappingLoc1 = new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(8, 7));
+    overlappingLoc2 = new SourceLocation(FAKE_FILE_PATH, Point.create(8, 7), Point.create(10, 7));
+    assertThat(overlappingLoc1.getOverlapWith(overlappingLoc2).get())
+        .isEqualTo(new SourceLocation(FAKE_FILE_PATH, Point.create(8, 7), Point.create(8, 7)));
+
+    // Not overlapping.
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(2, 4), Point.create(5, 7));
+    assertThat(range1.getOverlapWith(range2)).isEmpty();
+    assertThat(range2.getOverlapWith(range1)).isEmpty();
   }
 
   @Test

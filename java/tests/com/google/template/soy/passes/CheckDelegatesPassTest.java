@@ -105,7 +105,7 @@ public final class CheckDelegatesPassTest {
   @Test
   public void testErrorReusedTemplateName() {
     assertInvalidSoyFiles(
-        "Found deltemplate ns1.boo with the same name as a template/element at no-path:4:1.",
+        "Found deltemplate ns1.boo with the same name as a template/element at no-path:4:1-6:11.",
         ""
             + "{namespace ns1}\n"
             + "\n"
@@ -129,7 +129,7 @@ public final class CheckDelegatesPassTest {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
             + "but different param declarations compared to the "
-            + "definition at no-path:9:1."
+            + "definition at no-path:9:1-11:14."
             + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"
@@ -154,7 +154,7 @@ public final class CheckDelegatesPassTest {
 
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' but different param "
-            + "declarations compared to the definition at no-path:8:1."
+            + "declarations compared to the definition at no-path:8:1-11:14."
             + "\n  Missing params: [foo: ? (optional)]"
             + "\n  Unexpected params: [foo: ?]",
         ""
@@ -183,7 +183,7 @@ public final class CheckDelegatesPassTest {
   public void testErrorParamsMismatchAcrossVariants() {
     assertInvalidSoyFiles(
         "Found delegate template with same name 'MagicButton' "
-            + "but different param declarations compared to the definition at no-path:4:1."
+            + "but different param declarations compared to the definition at no-path:4:1-6:14."
             + "\n  Unexpected params: [foo: ?]",
         ""
             + "{namespace ns1}\n"

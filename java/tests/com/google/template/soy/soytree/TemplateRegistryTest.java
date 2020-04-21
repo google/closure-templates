@@ -137,7 +137,7 @@ public final class TemplateRegistryTest {
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Template/element 'ns.foo' already defined at no-path:3:1.");
+        .isEqualTo("Template/element 'ns.foo' already defined at no-path:3:1-4:11.");
   }
 
   @Test
@@ -154,7 +154,8 @@ public final class TemplateRegistryTest {
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Delegate template 'foo.bar' already has a default defined at no-path:3:1.");
+        .isEqualTo(
+            "Delegate template 'foo.bar' already has a default defined at no-path:3:1-4:14.");
   }
 
   @Test
@@ -172,7 +173,8 @@ public final class TemplateRegistryTest {
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1");
+        .isEqualTo(
+            "Delegate template 'foo.bar' already defined in delpackage foo: no-path:4:1-5:14");
   }
 
   @Test
