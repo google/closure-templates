@@ -41,6 +41,11 @@ public interface SoyTemplate {
    */
   interface Builder<T extends SoyTemplate> {
 
+    /**
+     * Builds and returns an immutable `SoyTemplate` instance from the state of this builder.
+     *
+     * @throws IllegalStateException if any required, non-indirect parameter is unset.
+     */
     T build();
 
     /**
