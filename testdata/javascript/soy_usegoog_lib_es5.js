@@ -39,11 +39,12 @@ $jscomp.ASSUME_ES5 = !1;
 $jscomp.ASSUME_NO_NATIVE_MAP = !1;
 $jscomp.ASSUME_NO_NATIVE_SET = !1;
 $jscomp.SIMPLE_FROUND_POLYFILL = !1;
+$jscomp.ISOLATE_POLYFILLS = !1;
 $jscomp.defineProperty = $jscomp.ASSUME_ES5 || "function" == typeof Object.defineProperties ? Object.defineProperty : function(target, property, descriptor) {
   target != Array.prototype && target != Object.prototype && (target[property] = descriptor.value);
 };
 $jscomp.getGlobal = function(passedInThis) {
-  for (var possibleGlobals = ["object" == typeof globalThis && globalThis, "object" == typeof window && window, "object" == typeof self && self, "object" == typeof global && global, passedInThis], i = 0; i < possibleGlobals.length; ++i) {
+  for (var possibleGlobals = ["object" == typeof globalThis && globalThis, passedInThis, "object" == typeof window && window, "object" == typeof self && self, "object" == typeof global && global], i = 0; i < possibleGlobals.length; ++i) {
     var maybeGlobal = possibleGlobals[i];
     if (maybeGlobal && maybeGlobal.Math == Math) {
       return maybeGlobal;
@@ -52,16 +53,32 @@ $jscomp.getGlobal = function(passedInThis) {
   throw Error("Cannot find global object");
 };
 $jscomp.global = $jscomp.getGlobal(this);
-$jscomp.polyfill = function(target, polyfill) {
-  if (polyfill) {
-    for (var obj = $jscomp.global, split = target.split("."), i = 0; i < split.length - 1; i++) {
-      var key = split[i];
-      key in obj || (obj[key] = {});
-      obj = obj[key];
-    }
-    var property = split[split.length - 1], orig = obj[property], impl = polyfill(orig);
-    impl != orig && null != impl && $jscomp.defineProperty(obj, property, {configurable:!0, writable:!0, value:impl});
+$jscomp.polyfills = {};
+$jscomp.propertyToPolyfillSymbol = {};
+$jscomp.POLYFILL_PREFIX = "$jscp$";
+$jscomp.IS_SYMBOL_NATIVE = $jscomp.ISOLATE_POLYFILLS && "function" === typeof Symbol && "symbol" === typeof Symbol("x");
+$jscomp.polyfill = function(target, polyfill, fromLang, toLang) {
+  polyfill && ($jscomp.ISOLATE_POLYFILLS ? $jscomp.polyfillIsolated(target, polyfill, fromLang, toLang) : $jscomp.polyfillUnisolated(target, polyfill, fromLang, toLang));
+};
+$jscomp.polyfillUnisolated = function(target, polyfill) {
+  for (var obj = $jscomp.global, split = target.split("."), i = 0; i < split.length - 1; i++) {
+    var key = split[i];
+    key in obj || (obj[key] = {});
+    obj = obj[key];
   }
+  var property = split[split.length - 1], orig = obj[property], impl = polyfill(orig);
+  impl != orig && null != impl && $jscomp.defineProperty(obj, property, {configurable:!0, writable:!0, value:impl});
+};
+$jscomp.polyfillIsolated = function(target, polyfill, fromLang) {
+  var split = target.split("."), isNativeClass = 1 === split.length, root = split[0];
+  var obj = !isNativeClass && root in $jscomp.polyfills ? $jscomp.polyfills : $jscomp.global;
+  for (var i = 0; i < split.length - 1; i++) {
+    var key = split[i];
+    key in obj || (obj[key] = {});
+    obj = obj[key];
+  }
+  var property = split[split.length - 1], nativeImpl = $jscomp.IS_SYMBOL_NATIVE && "es6" === fromLang ? obj[property] : null, impl = polyfill(nativeImpl);
+  null != impl && (isNativeClass ? $jscomp.defineProperty($jscomp.polyfills, property, {configurable:!0, writable:!0, value:impl}) : impl !== nativeImpl && ($jscomp.propertyToPolyfillSymbol[property] = $jscomp.IS_SYMBOL_NATIVE ? $jscomp.global.Symbol(property) : $jscomp.POLYFILL_PREFIX + property, property = $jscomp.propertyToPolyfillSymbol[property], $jscomp.defineProperty(obj, property, {configurable:!0, writable:!0, value:impl})));
 };
 $jscomp.checkStringArgs = function(thisArg, arg, func) {
   if (null == thisArg) {
