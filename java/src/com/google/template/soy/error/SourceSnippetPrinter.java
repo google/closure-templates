@@ -16,8 +16,10 @@
 
 package com.google.template.soy.error;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.stream.Collectors.joining;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -25,67 +27,155 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 /** Class responsible for extracting code snippets from soy sources. */
 public final class SourceSnippetPrinter {
+  /** Represents an item that can be printed as part of a snippet. */
+  private static interface Printable {
+    /**
+     * Returns the string content of this Printable.
+     *
+     * <p>The output must include trailing new line characters.
+     *
+     * @param location The information regarding which portion of the Printable should be
+     *     highlighted in the output snippet.
+     */
+    String print(SourceLocation location);
+
+    /** Returns the maximum length of all line numbers in the given SourceLocation. */
+    default int lineNumberPadding(SourceLocation location) {
+      // Line numbers are positive integers in increasing order. The line number of the last line
+      // will have the maximum printed length.
+      return String.valueOf(location.getEndLine()).length();
+    }
+  }
+
+  /** A special Printable that is included in the snippet as a placeholder for omitted lines. */
+  public static final Printable ELLIPSIS =
+      new Printable() {
+        @Override
+        public String print(SourceLocation location) {
+          return Strings.repeat(" ", lineNumberPadding(location) + 2) + "[...]\n";
+        }
+      };
+
+  /** A portion of a snippet corresponding to a single line. */
+  @AutoValue
+  abstract static class SourceLine implements Printable {
+    static SourceLine create(int lineNumber, String line) {
+      return new AutoValue_SourceSnippetPrinter_SourceLine(lineNumber, line);
+    }
+
+    abstract int getLineNumber();
+
+    abstract String getLine();
+
+    @Override
+    public String print(SourceLocation location) {
+      // This number format aligns line numbers to the right.
+      String lineTemplate = "%" + lineNumberPadding(location) + "d: %s";
+      String codeLine = String.format(lineTemplate, getLineNumber(), getLine());
+      return codeLine + "\n" + getHighlightLine(location) + "\n";
+    }
+
+    /**
+     * Constructs an additional line that is aligned with the code line, highlighting the
+     * corresponding portion of the given SourceLocation.
+     */
+    private String getHighlightLine(SourceLocation location) {
+      if (getLineNumber() < location.getBeginLine() || getLineNumber() > location.getEndLine()) {
+        // The SourceLocation does not include this line, no highlighting necessary.
+        return "";
+      }
+      // This is 0-based (unlike SourceLocation, which is 1-based).
+      int highlightFrom =
+          getLineNumber() == location.getBeginLine() ? location.getBeginColumn() - 1 : 0;
+      String initialWhitespace =
+          Strings.repeat(" ", lineNumberPadding(location) + ": ".length() + highlightFrom);
+
+      boolean isSingleCharacter = location.getBeginPoint().equals(location.getEndPoint());
+      if (isSingleCharacter) {
+        // Use a single caret to point to a character.
+        return initialWhitespace + '^';
+      }
+      // This is 0-based and exclusive (unlike SourceLocation, which is 1-based and inclusive).
+      int highlightTo =
+          getLineNumber() == location.getEndLine()
+              ? location.getEndColumn()
+              // The snippet also highlights the \n character.
+              : getLine().length() + 1;
+      int highlightLength = highlightTo - highlightFrom;
+      // Underline with tilde characters.
+      return initialWhitespace + Strings.repeat("~", highlightLength);
+    }
+  }
+
+  /** The maximum number of lines that should be printed. */
+  private final Optional<Integer> maxLines;
+
+  public SourceSnippetPrinter() {
+    this.maxLines = Optional.empty();
+  }
+
+  /**
+   * @param maxLines The maximum number of lines that should be printed. If a snippet spans more
+   *     lines than this number, only the beginning and end portion of the snippet will be returned,
+   *     totaling to maxLines lines, with an ellipsis instead of the middle portion. The number must
+   *     be at least 2, allowing at least one line before and after the ellipsis.
+   */
+  public SourceSnippetPrinter(int maxLines) {
+    checkArgument(maxLines > 1, "maxLines must be at least 2");
+    this.maxLines = Optional.of(maxLines);
+  }
+
   /**
    * Returns a source line snippet highlighting the range of the source location.
    *
    * <p>The snippet will diplay each line of source with its line number and then the range of text
    * highlighted with {@code ~} characters. In the special cases where the range is only one
    * character, use a caret {@code ^} to point to it.
+   *
+   * <p>For example: <code>
+   *  98:    Text {if $a}
+   *              ~~~~~~~~
+   *  99:           {$a}
+   *      ~~~~~~~~~~~~~~~
+   * 100:         {/if} Text.
+   *      ~~~~~~~~~~~~~
+   * </code>
+   *
+   * <p>If {@link #maxLines} was passed to the constructor, and the number of lines in the snippet
+   * would exceed maxLines, only the beginning and end of the snippet, up to maxLines lines, is
+   * returned, with an ellipsis in between.
    */
   public Optional<String> getSnippet(SoyFileSupplier soyFileSupplier, SourceLocation location) {
     if (!location.isKnown()) {
       return Optional.empty();
     }
-    // Find a snippet of source code associated with the location and print it.
-    ImmutableList<String> snippetLines = getSourceLines(soyFileSupplier, location);
-    // Each line of source text will begin with the line number.
-    // format the number
-    ImmutableList<String> linePrefixes =
-        IntStream.rangeClosed(location.getBeginLine(), location.getEndLine())
-            .mapToObj(i -> String.format("%d: ", i))
-            .collect(toImmutableList());
-    // measure their lengths to find the max
-    int maxLength = linePrefixes.stream().mapToInt(p -> p.length()).max().getAsInt();
-    // left pad
-    linePrefixes =
-        linePrefixes.stream()
-            .map(p -> Strings.repeat(" ", maxLength - p.length()) + p)
-            .collect(toImmutableList());
 
-    String prefixPadding = Strings.repeat(" ", maxLength);
-    StringBuilder builder = new StringBuilder();
-    int curLine = location.getBeginLine();
-    int startColumn = location.getBeginColumn();
-    for (int i = 0; i < snippetLines.size(); i++) {
-      String prefix = linePrefixes.get(i);
-      String line = snippetLines.get(i);
-      builder.append(prefix).append(line).append('\n');
-      // add spaces to account for the prefix, and then char line up to the start column
-      builder.append(prefixPadding).append(Strings.repeat(" ", startColumn - 1));
-      int endColumn;
-      if (curLine == location.getEndLine()) {
-        endColumn = location.getEndColumn();
-      } else {
-        endColumn = line.length() + 1;
-      }
-      if (endColumn == startColumn && location.getBeginLine() == location.getEndLine()) {
-        // if it is just one character, use a caret
-        builder.append('^');
-      } else {
-        // otherwise 'underline' with tilda characters
-        // +1 because endColumn is inclusive
-        builder.append(Strings.repeat("~", endColumn - startColumn + 1));
-      }
-      builder.append('\n');
-      startColumn = 1;
-      curLine++;
+    // Find a snippet of source code associated with the location.
+    ImmutableList<Printable> snippetLines = getSourceLines(soyFileSupplier, location);
+    if (snippetLines.isEmpty()) {
+      return Optional.empty();
     }
-    String result = builder.toString();
-    return result.isEmpty() ? Optional.empty() : Optional.of(result);
+
+    if (this.maxLines.isPresent()) {
+      int locationLines = snippetLines.size();
+      if (locationLines > this.maxLines.get()) {
+        // If maxLines is an odd number, show the extra line before the ellipsis.
+        int linesAtTop = (this.maxLines.get() + 1) / 2;
+        int linesAtBottom = this.maxLines.get() - linesAtTop;
+        snippetLines =
+            ImmutableList.<Printable>builder()
+                .addAll(snippetLines.subList(0, linesAtTop))
+                .add(ELLIPSIS)
+                .addAll(snippetLines.subList(locationLines - linesAtBottom, locationLines))
+                .build();
+      }
+    }
+
+    return Optional.of(
+        snippetLines.stream().map(line -> line.print(location)).collect(joining("")));
   }
 
   /**
@@ -96,9 +186,9 @@ public final class SourceSnippetPrinter {
    * Optional#empty()} if source code is unavailable. (This happens, for example, when anyone uses
    * {@link SourceLocation#UNKNOWN}, which is why no one should use it.)
    */
-  private static ImmutableList<String> getSourceLines(
+  private static ImmutableList<Printable> getSourceLines(
       SoyFileSupplier supplier, SourceLocation location) {
-    ImmutableList.Builder<String> lines = ImmutableList.builder();
+    ImmutableList.Builder<Printable> lines = ImmutableList.builder();
     try (BufferedReader reader = new BufferedReader(supplier.open())) {
       // Line numbers are 1-indexed and inclusive of end lines
       for (int lineNum = 1; lineNum <= location.getEndLine(); ++lineNum) {
@@ -109,7 +199,7 @@ public final class SourceSnippetPrinter {
         }
         // Skip preceding lines
         if (lineNum >= location.getBeginLine()) {
-          lines.add(line);
+          lines.add(SourceLine.create(lineNum, line));
         }
       }
       return lines.build();
