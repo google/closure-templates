@@ -149,10 +149,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       SoyTypeRegistry typeRegistry) {
     DetachState detachState = new DetachState(variables, thisVar, fields);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(
-            detachState, parameterLookup, variables, fields, reporter, typeRegistry);
+        ExpressionCompiler.create(parameterLookup, variables, fields, reporter, typeRegistry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
-        ExpressionToSoyValueProviderCompiler.create(variables, expressionCompiler, parameterLookup);
+        ExpressionToSoyValueProviderCompiler.create(
+            variables, expressionCompiler, parameterLookup, detachState);
     return new SoyNodeCompiler(
         thisVar,
         registry,
@@ -278,7 +278,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     for (SoyNode child : node.getChildren()) {
       if (child instanceof IfCondNode) {
         IfCondNode icn = (IfCondNode) child;
-        SoyExpression cond = exprCompiler.compile(icn.getExpr()).coerceToBoolean();
+        SoyExpression cond = exprCompiler.compile(icn.getExpr(), detachState).coerceToBoolean();
         Statement block = visitChildrenInNewScope(icn);
         ifs.add(IfBlock.create(cond, block));
       } else {
@@ -305,7 +305,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
 
     // otherwise we need to evaluate the switch variable and generate dispatching logic.
-    SoyExpression switchVar = exprCompiler.compile(node.getExpr());
+    SoyExpression switchVar = exprCompiler.compile(node.getExpr(), detachState);
 
     Scope scope = variables.enterScope();
     Variable variable = scope.createSynthetic(SyntheticVarName.forSwitch(node), switchVar, STORE);
@@ -321,7 +321,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         List<Expression> comparisons = new ArrayList<>();
         for (ExprRootNode caseExpr : caseNode.getExprList()) {
           comparisons.add(
-              compareSoyEquals(switchVar, exprCompiler.compile(caseExpr, reattachPoint)));
+              compareSoyEquals(
+                  switchVar,
+                  exprCompiler.compile(
+                      caseExpr, detachState.createExpressionDetacher(reattachPoint))));
         }
         Expression condition = BytecodeUtils.logicalOr(comparisons).labelStart(reattachPoint);
         Statement block = visitChildrenInNewScope(caseNode);
@@ -382,7 +385,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               },
               DERIVED);
     } else {
-      SoyExpression expr = exprCompiler.compile(node.getExpr()).unboxAsList();
+      SoyExpression expr = exprCompiler.compile(node.getExpr(), detachState).unboxAsList();
       Variable listVar =
           scope.createSynthetic(SyntheticVarName.foreachLoopList(nonEmptyNode), expr, STORE);
       initializers.add(listVar.initializer());
@@ -518,7 +521,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Label startDetachPoint = new Label();
       // Note: If the value of rangeArgs.start() is above 32 bits, Ints.checkedCast() will fail at
       // runtime with IllegalArgumentException.
-      SoyExpression compiledExpression = exprCompiler.compile(expression.get(), startDetachPoint);
+      SoyExpression compiledExpression =
+          exprCompiler.compile(
+              expression.get(), detachState.createExpressionDetacher(startDetachPoint));
       Expression rangeValue;
       SoyRuntimeType type = compiledExpression.soyRuntimeType();
       if (!type.isKnownInt()) {
@@ -601,19 +606,20 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         .appendLoggingFunctionInvocation(
             functionSignature.name(),
             loggingFunction.getPlaceholder(),
-            exprCompiler.asBasicCompiler(reattachPoint).compileToList(fn.getChildren()),
+            exprCompiler
+                .asBasicCompiler(detachState.createExpressionDetacher(reattachPoint))
+                .compileToList(fn.getChildren()),
             printDirectives)
         .labelStart(reattachPoint)
         .toStatement();
   }
 
   private SoyExpression compilePrintNodeAsExpression(PrintNode node, Label reattachPoint) {
-    BasicExpressionCompiler basic = exprCompiler.asBasicCompiler(reattachPoint);
+    BasicExpressionCompiler basic =
+        exprCompiler.asBasicCompiler(detachState.createExpressionDetacher(reattachPoint));
     SoyExpression value = basic.compile(node.getExpr());
     // We may have print directives, that means we need to pass the render value through a bunch of
     // SoyJavaPrintDirective.apply methods.  This means lots and lots of boxing.
-    // TODO(b/18260376): tracks adding streaming print directives which would help with this,
-    // because instead of wrapping the soy value, we would just wrap the appendable.
     for (PrintDirectiveNode printDirective : node.getChildren()) {
       value =
           parameterLookup
@@ -687,7 +693,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           applyStreamingPrintDirectives(
               directives,
               appendable,
-              exprCompiler.asBasicCompiler(printDirectiveArgumentReattachPoint),
+              exprCompiler.asBasicCompiler(
+                  detachState.createExpressionDetacher(printDirectiveArgumentReattachPoint)),
               parameterLookup.getPluginContext(),
               variables);
       FieldRef currentAppendableField = fields.getCurrentAppendable();
@@ -845,7 +852,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       variantExpr = constant("");
     } else {
       variantExpr =
-          exprCompiler.compile(node.getDelCalleeVariantExpr(), reattachPoint).coerceToString();
+          exprCompiler
+              .compile(
+                  node.getDelCalleeVariantExpr(),
+                  detachState.createExpressionDetacher(reattachPoint))
+              .coerceToString();
     }
     Expression calleeExpression =
         parameterLookup
@@ -882,7 +893,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   @Override
   protected Statement visitVeLogNode(final VeLogNode node) {
     final Label restartPoint = new Label();
-    final Expression veData = exprCompiler.compile(node.getVeDataExpression(), restartPoint);
+    final Expression veData =
+        exprCompiler.compile(
+            node.getVeDataExpression(), detachState.createExpressionDetacher(restartPoint));
     final Expression hasLogger = parameterLookup.getRenderContext().hasLogger();
     final Statement exitStatement =
         ControlFlow.IfBlock.create(
@@ -890,7 +903,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .asStatement();
     if (node.getLogonlyExpression() != null) {
       final Expression logonlyExpression =
-          exprCompiler.compile(node.getLogonlyExpression(), restartPoint).unboxAsBoolean();
+          exprCompiler
+              .compile(
+                  node.getLogonlyExpression(), detachState.createExpressionDetacher(restartPoint))
+              .unboxAsBoolean();
       // needs to be called after evaluating the logonly expression so variables defined in the
       // block aren't part of the save restore state for the logonly expression.
       final Statement body = Statement.concat(visitChildrenInNewScope(node));
@@ -1128,7 +1144,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private Expression getDataRecordExpression(CallNode node, Label reattachPoint) {
     return exprCompiler
-        .compile(node.getDataExpr(), reattachPoint)
+        .compile(node.getDataExpr(), detachState.createExpressionDetacher(reattachPoint))
         .box()
         .checkedCast(SoyRecord.class);
   }
@@ -1186,12 +1202,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         new PlaceholderCompiler() {
           @Override
           public Expression compileToString(ExprRootNode node, Label reattachPoint) {
-            return exprCompiler.compile(node, reattachPoint).coerceToString();
+            return exprCompiler
+                .compile(node, detachState.createExpressionDetacher(reattachPoint))
+                .coerceToString();
           }
 
           @Override
           public Expression compileToNumber(ExprRootNode node, Label reattachPoint) {
-            return exprCompiler.compile(node, reattachPoint).box().checkedCast(NumberData.class);
+            return exprCompiler
+                .compile(node, detachState.createExpressionDetacher(reattachPoint))
+                .box()
+                .checkedCast(NumberData.class);
           }
 
           @Override
