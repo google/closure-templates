@@ -90,6 +90,34 @@ public class ExpressionCompilerTest {
   private final FieldManager fields = new FieldManager(null);
   private final ExpressionCompiler testExpressionCompiler =
       ExpressionCompiler.create(
+          new ExpressionDetacher.Factory() {
+            @Override
+            public ExpressionDetacher createExpressionDetacher(Label label) {
+              return new ExpressionDetacher() {
+                @Override
+                public Expression resolveSoyValueProvider(Expression soyValueProvider) {
+                  if (variables.containsValue(soyValueProvider)) {
+                    // This is hacky, but our variables are not SVPs, just SoyValues.  This is
+                    // inconsistent with reality but makes the tests easier to write.
+                    // A better solution may be to have the variables map just hold expressions for
+                    // SoyValueProviders, but that is annoying.
+                    return soyValueProvider;
+                  }
+                  return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
+                }
+
+                @Override
+                public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
+                  throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
+                  throw new UnsupportedOperationException();
+                }
+              };
+            }
+          },
           new TemplateParameterLookup() {
             @Override
             public Expression getParam(TemplateParam paramName) {
@@ -636,36 +664,7 @@ public class ExpressionCompilerTest {
                 .getChild(0)
                 .getChild(0)
                 .getChild(0);
-    return testExpressionCompiler.compile(
-        ((FunctionNode) code.getExpr().getChild(0)).getChild(0),
-        new ExpressionDetacher.Factory() {
-          @Override
-          public ExpressionDetacher createExpressionDetacher(Label label) {
-            return new ExpressionDetacher() {
-              @Override
-              public Expression resolveSoyValueProvider(Expression soyValueProvider) {
-                if (variables.containsValue(soyValueProvider)) {
-                  // This is hacky, but our variables are not SVPs, just SoyValues.  This is
-                  // inconsistent with reality but makes the tests easier to write.
-                  // A better solution may be to have the variables map just hold expressions for
-                  // SoyValueProviders, but that is annoying.
-                  return soyValueProvider;
-                }
-                return MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invoke(soyValueProvider);
-              }
-
-              @Override
-              public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
-                throw new UnsupportedOperationException();
-              }
-
-              @Override
-              public Expression resolveSoyValueProviderMap(Expression soyValueProviderMap) {
-                throw new UnsupportedOperationException();
-              }
-            };
-          }
-        });
+    return testExpressionCompiler.compile(((FunctionNode) code.getExpr().getChild(0)).getChild(0));
   }
 
   /**

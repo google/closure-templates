@@ -57,10 +57,6 @@ public abstract class BytecodeProducer {
     this(SourceLocation.UNKNOWN);
   }
 
-  public final SourceLocation location() {
-    return location;
-  }
-
   protected BytecodeProducer(SourceLocation location) {
     if (Flags.DEBUG && isGenerating.get()) {
       throw new IllegalStateException(

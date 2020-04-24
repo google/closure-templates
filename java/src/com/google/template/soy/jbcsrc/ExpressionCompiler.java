@@ -175,12 +175,14 @@ final class ExpressionCompiler {
    * ExpressionDetacher.Factory}
    */
   static ExpressionCompiler create(
+      ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
-    return new ExpressionCompiler(checkNotNull(parameters), varManager, fields, reporter, registry);
+    return new ExpressionCompiler(
+        detacherFactory, checkNotNull(parameters), varManager, fields, reporter, registry);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
@@ -264,15 +266,18 @@ final class ExpressionCompiler {
   private final TemplateParameterLookup parameters;
   private final LocalVariableManager varManager;
   private final FieldManager fields;
+  private final ExpressionDetacher.Factory detacherFactory;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry registry;
 
   private ExpressionCompiler(
+      ExpressionDetacher.Factory detacherFactory,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry) {
+    this.detacherFactory = detacherFactory;
     this.parameters = checkNotNull(parameters);
     this.varManager = checkNotNull(varManager);
     this.fields = checkNotNull(fields);
@@ -280,9 +285,15 @@ final class ExpressionCompiler {
     this.registry = registry;
   }
 
-  /** Compiles the given expression tree to a sequence of bytecode. */
-  SoyExpression compile(ExprNode node, ExpressionDetacher detacher) {
-    return asBasicCompiler(detacher).compile(node);
+  /**
+   * Compiles the given expression tree to a sequence of bytecode.
+   *
+   * <p>The reattachPoint should be {@link CodeBuilder#mark(Label) marked} by the caller at a
+   * location where the stack depth is 0 and will be used to 'reattach' execution if the compiled
+   * expression needs to perform a detach operation.
+   */
+  SoyExpression compile(ExprNode node, Label reattachPoint) {
+    return asBasicCompiler(reattachPoint).compile(node);
   }
 
   /**
@@ -292,10 +303,9 @@ final class ExpressionCompiler {
    * and it will generate code such that the stack contains a single SoyValue when it returns. The
    * SoyValue object will have a runtime type equal to {@code node.getType().javaType()}.
    */
-  SoyExpression compile(ExprNode node, ExpressionDetacher.Factory detacherFactory) {
+  SoyExpression compile(ExprNode node) {
     Label reattachPoint = new Label();
-    final SoyExpression exec =
-        compile(node, detacherFactory.createExpressionDetacher(reattachPoint));
+    final SoyExpression exec = compile(node, reattachPoint);
     return exec.withSource(exec.labelStart(reattachPoint));
   }
 
@@ -317,9 +327,15 @@ final class ExpressionCompiler {
    * Returns a {@link BasicExpressionCompiler} that can be used to compile multiple expressions all
    * with the same detach logic.
    */
-  BasicExpressionCompiler asBasicCompiler(ExpressionDetacher detacher) {
+  BasicExpressionCompiler asBasicCompiler(final Label reattachPoint) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(parameters, varManager, fields, detacher, reporter, registry));
+        new CompilerVisitor(
+            parameters,
+            varManager,
+            fields,
+            detacherFactory.createExpressionDetacher(reattachPoint),
+            reporter,
+            registry));
   }
 
   private static final class CompilerVisitor
