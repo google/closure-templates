@@ -20,7 +20,7 @@ Syntax (basic form):
 With all optional attributes:
 
 ```soy
-{msg meaning="<differentiator>" desc="<help_text_for_translators>"}
+{msg desc="<help_text_for_translators>" meaning="<differentiator>"}
   ...
 {/msg}
 ```
@@ -96,18 +96,20 @@ Example output (for `userName = 'Jess'` and `url = 'http://www.google.com/'`):
 
     <a href="http://www.google.com/">Zhere</a> zclick zplease. Jess zhello!
 
+### Meaning
+
 Use the `meaning` attribute when you have two messages that are exactly the same
 string in English, but might be translated to different strings in other
-languages. The `meaning` should then be a short string that distinguishes the
-two messages, and is used for generating different message ids. Translators do
-not see the `meaning` attribute, so you must still communicate all the details
-in the `desc`. For example:
+languages. The `meaning` should then be a **short** string that distinguishes
+the two messages, and is used for generating different message ids. Translators
+do **not** see the `meaning` attribute, so you must still communicate all the
+details in the `desc`. For example:
 
 ```soy
-{msg meaning="noun" desc="The word 'Archive' used as a noun, i.e. an information store."}
+{msg desc="The word 'Archive' used as a noun, i.e. an information store." meaning="noun"}
   Archive
 {/msg}
-{msg meaning="verb" desc="The word 'Archive' used as a verb, i.e. to store information."}
+{msg desc="The word 'Archive' used as a verb, i.e. to store information." meaning="verb"}
   Archive
 {/msg}
 ```
@@ -124,7 +126,7 @@ Syntax for a gender aware message in Soy is `{msg genders=...}`.
 The syntax for a message that doesn't vary in English is:
 
 ```soy
-{msg genders="$userGender, $targetGender" desc="..."}
+{msg desc="..." genders="$userGender, $targetGender"}
   Join {$targetName}'s community.
 {/msg}
 ```
@@ -193,7 +195,7 @@ written using a select statement, while `$userGender` is declared in the
 `genders` attribute.
 
 ```soy
-{msg genders="$userGender" desc="..."}
+{msg desc="..." genders="$userGender" }
   {select $targetGender}
     {case 'female'}Reply to her.
     {case 'male'}Reply to him.
@@ -228,8 +230,8 @@ There is a rarely used `offset` attribute that works in conjunction with a
 special `remainder` function:
 
 ```soy
-{msg genders="$attendees[0]?.gender, $attendees[1]?.gender"
-     desc="Says how many people are attending, listing up to 2 names."}
+{msg desc="Says how many people are attending, listing up to 2 names."
+     genders="$attendees[0]?.gender, $attendees[1]?.gender"}
   {plural length($attendees) offset="2"}
     // Note: length($attendees) is never 0.
     {case 1}{$attendees[0].name} is attending
@@ -246,8 +248,8 @@ above example could just as well be written without the use of `offset` and
 `remainder`. It would be:
 
 ```soy
-{msg genders="$attendees[0]?.gender, $attendees[1]?.gender"
-     desc="Says how many people are attending, listing up to 2 names."}
+{msg desc="Says how many people are attending, listing up to 2 names."
+     genders="$attendees[0]?.gender, $attendees[1]?.gender"}
   {plural length($attendees)}
     // Note: length($attendees) is never 0.
     {case 1}{$attendees[0].name} is attending
@@ -289,7 +291,7 @@ When changing a message, move the old message attributes and content to the
 For example, to fix a typo in this message:
 
 ```soy
-{msg meaning="verb" desc="button label"}
+{msg desc="button label" meaning="verb" }
   Arcive
 {/msg}
 ```
@@ -297,9 +299,9 @@ For example, to fix a typo in this message:
 replace it with the new message:
 
 ```soy
-{msg meaning="verb" desc="button label"}
+{msg desc="button label" meaning="verb" }
   Archive
-{fallbackmsg meaning="verb" desc="button label"}
+{fallbackmsg desc="button label" meaning="verb"}
   Arcive
 {/msg}
 ```
