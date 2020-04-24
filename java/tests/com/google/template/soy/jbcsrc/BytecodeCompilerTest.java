@@ -27,13 +27,18 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParser;
+import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.TemplateMetadataSerializer;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
@@ -53,6 +58,8 @@ import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.jbcsrc.api.SoySauce;
+import com.google.template.soy.jbcsrc.api.SoySauceBuilder;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
@@ -62,6 +69,7 @@ import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
@@ -1251,5 +1259,141 @@ public class BytecodeCompilerTest {
                 parser.typeRegistry())
             .get();
     return templates;
+  }
+
+  @Test
+  public void testRenderingWithMultipleCompilationSteps() {
+    SoyFileSetParser parser1 =
+        createParserForFileContents(
+            ImmutableList.of(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader1}",
+                        "{template .publicTemplate1}",
+                        "L1T1",
+                        "{sp}{call .privateTemplate_ /}",
+                        "{sp}{call .publicTemplate2 /}",
+                        "{/template}",
+                        "",
+                        "{template .privateTemplate_ visibility=\"private\"}",
+                        "PVT",
+                        "{/template}"),
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader1}",
+                        "{template .publicTemplate2}",
+                        "L1T2",
+                        "{/template}")));
+    ParseResult parseResult1 = parser1.parse();
+    CompilingClassLoader loader1 = createCompilingClassLoader(parser1, parseResult1);
+    CompilationUnitAndKind dependency1 =
+        CompilationUnitAndKind.create(
+            SoyFileKind.DEP,
+            "foo.soy",
+            TemplateMetadataSerializer.compilationUnitFromFileSet(
+                parseResult1.fileSet(), parseResult1.registry()));
+
+    SoyFileSetParser parser1Recompiled =
+        createParserForFileContents(
+            ImmutableList.of(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader1}",
+                        "{template .publicTemplate1}",
+                        "L1T1 RECOMPILED",
+                        "{/template}")));
+    ParseResult parseResult1Recompiled = parser1Recompiled.parse();
+    CompilingClassLoader loader1Recompiled =
+        createCompilingClassLoader(parser1Recompiled, parseResult1Recompiled);
+
+    SoyFileSetParser parser2 =
+        createParserForFileContentsWithDependencies(
+            ImmutableList.of(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader2}",
+                        "{template .publicTemplate}",
+                        "L2T",
+                        "{sp}{call loader1.publicTemplate1 /}",
+                        "{sp}{call loader1.publicTemplate1 /}",
+                        "{/template}")),
+            ImmutableList.of(dependency1));
+    ParseResult parseResult2 = parser2.parse();
+    CompilingClassLoader loader2 = createCompilingClassLoader(parser2, parseResult2);
+
+    DelegatingClassLoader delegatingClassLoader1 = new DelegatingClassLoader(loader1, loader2);
+    SoySauce sauce = new SoySauceBuilder().withClassLoader(delegatingClassLoader1).build();
+    assertThat(sauce.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
+        .isEqualTo("L2T L1T1 PVT L1T2 L1T1 PVT L1T2");
+
+    assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
+    assertThat(delegatingClassLoader1.loadedClasses().elementSet())
+        .containsExactly(
+            "com.google.template.soy.jbcsrc.gen.loader1.publicTemplate1",
+            "com.google.template.soy.jbcsrc.gen.loader2.publicTemplate");
+
+    DelegatingClassLoader delegatingClassLoader2 =
+        new DelegatingClassLoader(loader1Recompiled, loader2);
+    SoySauce sauceReloaded = new SoySauceBuilder().withClassLoader(delegatingClassLoader2).build();
+    assertThat(sauceReloaded.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
+        .isEqualTo("L2T L1T1 RECOMPILED L1T1 RECOMPILED");
+
+    assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
+    assertThat(delegatingClassLoader1.loadedClasses().elementSet())
+        .containsExactly(
+            "com.google.template.soy.jbcsrc.gen.loader1.publicTemplate1",
+            "com.google.template.soy.jbcsrc.gen.loader2.publicTemplate");
+  }
+
+  private static class DelegatingClassLoader extends ClassLoader {
+    private final CompilingClassLoader loader1;
+    private final CompilingClassLoader loader2;
+    private final HashMultiset<String> loadedClassesTracker;
+
+    DelegatingClassLoader(CompilingClassLoader loader1, CompilingClassLoader loader2) {
+      this.loader1 = loader1;
+      this.loader2 = loader2;
+      this.loadedClassesTracker = HashMultiset.create();
+    }
+
+    @Override
+    public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+      Class<?> clazz;
+      if (name.startsWith("com.google.template.soy.jbcsrc.gen.loader1.")) {
+        clazz = loader1.loadClass(name, resolve);
+      } else if (name.startsWith("com.google.template.soy.jbcsrc.gen.loader2.")) {
+        clazz = loader2.loadClass(name, resolve);
+      } else {
+        throw new ClassNotFoundException("Unexpected class to be loaded: " + name);
+      }
+
+      loadedClassesTracker.add(name);
+      return clazz;
+    }
+
+    HashMultiset<String> loadedClasses() {
+      return loadedClassesTracker;
+    }
+  }
+
+  private static SoyFileSetParser createParserForFileContents(Iterable<String> soyFileContents) {
+    return createParserForFileContentsWithDependencies(soyFileContents, ImmutableList.of());
+  }
+
+  private static SoyFileSetParser createParserForFileContentsWithDependencies(
+      Iterable<String> soyFileContents, Iterable<CompilationUnitAndKind> dependencies) {
+    return SoyFileSetParserBuilder.forFileContents(Iterables.toArray(soyFileContents, String.class))
+        .addCompilationUnits(dependencies)
+        .options(new SoyGeneralOptions().setAllowExternalCalls(false))
+        .build();
+  }
+
+  private static CompilingClassLoader createCompilingClassLoader(
+      SoyFileSetParser parser, ParseResult parseResult) {
+    return new CompilingClassLoader(
+        new CompiledTemplateRegistry(parseResult.registry()),
+        parseResult.fileSet(),
+        parser.soyFileSuppliers(),
+        parser.typeRegistry());
   }
 }

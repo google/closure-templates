@@ -166,6 +166,10 @@ public final class RenderContext {
     return logger;
   }
 
+  public CompiledTemplate getTemplate(String calleeName, SoyRecord params, SoyRecord ij) {
+    return templates.getTemplateFactory(calleeName).create(params, ij);
+  }
+
   public CompiledTemplate getDelTemplate(
       String calleeName, String variant, boolean allowEmpty, SoyRecord params, SoyRecord ij) {
     CompiledTemplate.Factory callee =

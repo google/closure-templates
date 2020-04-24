@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -860,13 +861,21 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitCallBasicNode(CallBasicNode node) {
-    // Basic nodes are basic! We can just call the node directly.
     CompiledTemplateMetadata callee = registry.getTemplateInfoByTemplateName(node.getCalleeName());
     Label reattachPoint = new Label();
+    Expression params = prepareParamsHelper(node, reattachPoint);
+    Expression ijRecord = parameterLookup.getIjRecord();
+
+    // If possible, use the constructor to instantiate the template, otherwise go through the
+    // classloader. We do this for templates that are declared as sources in the same fileset. These
+    // are guaranteed to be bundled in the same jar, thus loaded atomically with the same
+    // classloader.
     Expression calleeExpression =
-        callee
-            .constructor()
-            .construct(prepareParamsHelper(node, reattachPoint), parameterLookup.getIjRecord());
+        callee.filekind() == SoyFileKind.SRC
+            ? callee.constructor().construct(params, ijRecord)
+            : parameterLookup
+                .getRenderContext()
+                .getTemplate(node.getCalleeName(), params, ijRecord);
     return renderCallNode(reattachPoint, node, calleeExpression);
   }
 

@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
@@ -66,14 +67,15 @@ abstract class CompiledTemplateMetadata {
     }
   }
 
-  static CompiledTemplateMetadata create(String templateName) {
+  static CompiledTemplateMetadata create(String templateName, SoyFileKind kind) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
     TypeInfo type = TypeInfo.createClass(className);
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
         MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
-        type);
+        type,
+        kind);
   }
 
   /**
@@ -92,4 +94,7 @@ abstract class CompiledTemplateMetadata {
 
   /** The name of the compiled template. */
   abstract TypeInfo typeInfo();
+
+  /** The template file kind. */
+  abstract SoyFileKind filekind();
 }

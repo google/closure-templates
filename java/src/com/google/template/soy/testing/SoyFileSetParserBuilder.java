@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser;
+import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
@@ -64,6 +65,7 @@ public final class SoyFileSetParserBuilder {
   private ImmutableList<SoyPrintDirective> soyPrintDirectives;
   private ImmutableList<SoySourceFunction> sourceFunctions;
   private ImmutableList<SoySourceFunction> soyMethods;
+  private ImmutableList<CompilationUnitAndKind> compilationUnits;
   private SoyGeneralOptions options = new SoyGeneralOptions();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
@@ -130,6 +132,7 @@ public final class SoyFileSetParserBuilder {
     this.soyPrintDirectives = InternalPlugins.internalDirectives(scopedData);
     this.sourceFunctions = InternalPlugins.internalFunctions();
     this.soyMethods = InternalPlugins.internalMethods();
+    this.compilationUnits = ImmutableList.of();
   }
 
   /** Enable experiments. Returns this object, for chaining. */
@@ -195,6 +198,20 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder addMethod(SoySourceFunction method) {
     return addMethods(ImmutableList.of(method));
+  }
+
+  public SoyFileSetParserBuilder addCompilationUnits(
+      Iterable<CompilationUnitAndKind> newCompilationUnits) {
+    compilationUnits =
+        ImmutableList.<CompilationUnitAndKind>builder()
+            .addAll(compilationUnits)
+            .addAll(newCompilationUnits)
+            .build();
+    return this;
+  }
+
+  public SoyFileSetParserBuilder addCompilationUnit(CompilationUnitAndKind unit) {
+    return addCompilationUnits(ImmutableList.of(unit));
   }
 
   public SoyFileSetParserBuilder options(SoyGeneralOptions options) {
@@ -320,7 +337,7 @@ public final class SoyFileSetParserBuilder {
     return SoyFileSetParser.newBuilder()
         .setCache(astCache)
         .setSoyFileSuppliers(soyFileSuppliers)
-        .setCompilationUnits(ImmutableList.of())
+        .setCompilationUnits(compilationUnits)
         .setTypeRegistry(typeRegistry)
         .setPassManager(passManager.build())
         .setErrorReporter(errorReporter)
