@@ -120,19 +120,16 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
         this.constructor as
         {new (a: TData): SoyElement<TData, TInterface>})(data);
     if (maybeSkipHandler || this.patchHandler) {
-      const oldNode = new (
-          this.constructor as
-          {new (a: TData): SoyElement<TData, TInterface>})(this.data);
-
       // Users may configure a skip handler to avoid patching DOM in certain
       // cases.
+      const oldData = this.data;
       if (maybeSkipHandler) {
         assert(
             !this.skipHandler || !getSkipHandler(node),
             'Do not set skip handlers twice.');
         const skipHandler = maybeSkipHandler;
         if (skipHandler(
-                oldNode as unknown as TInterface,
+                this as unknown as TInterface,
                 newNode as unknown as TInterface)) {
           this.data = newNode.data;
           return true;
@@ -140,6 +137,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
       }
 
       if (this.patchHandler) {
+        const oldNode = new (
+            this.constructor as
+            {new (a: TData): SoyElement<TData, TInterface>})(oldData);
         const patchHandler = this.patchHandler;
         this.node.__soy_patch_handler = () => {
           patchHandler(
