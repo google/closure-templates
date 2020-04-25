@@ -19,7 +19,6 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.SourceLocation.Point;
 
 /** Helpers for dealing with {@link Token tokens} */
 final class Tokens {
@@ -46,14 +45,6 @@ final class Tokens {
       return new SourceLocation(filePath);
     }
     return new SourceLocation(filePath, beginLine, beginColumn, endLine, endColumn);
-  }
-
-  static Point getPreviousPointOrBeginOfLine(Token token) {
-    // TODO(tomnguyen) Change this to token.beginLine -1, EOL
-    if (token.beginColumn == 1) {
-      return Point.create(token.beginLine, token.beginColumn);
-    }
-    return Point.create(token.beginLine, token.beginColumn - 1);
   }
 
   private static boolean startsLaterThan(Token tok, int beginLine, int beginCol) {

@@ -48,11 +48,13 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.exprtree.Operator.createOperatorNode;
 
 import com.google.common.collect.ImmutableList;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -547,7 +549,7 @@ public class SoyFileParser {
       Reader input,
       String filePath,
       ErrorReporter errorReporter) {
-    this(input);
+    this(new SoyFileParserTokenManager(new SoySimpleCharStream(input)));
     this.nodeIdGen = checkNotNull(nodeIdGen);
     this.filePath = checkNotNull(filePath);
     this.errorReporter = checkNotNull(errorReporter);
@@ -561,7 +563,7 @@ public class SoyFileParser {
       ErrorReporter errorReporter) {
     // this starts the lexer in a particular state instead of DEFAULT
     this(new SoyFileParserTokenManager(
-        new SimpleCharStream(new StringReader(input), 1, 1), EXPR));
+        new SoySimpleCharStream(new StringReader(input), 1, 1), EXPR));
     this.filePath = filePath;
     this.errorReporter = checkNotNull(errorReporter);
     // Some part of the parser assume that header info is not null.
@@ -654,6 +656,15 @@ public class SoyFileParser {
         throw new AbortParsingError();
       }
     }
+  }
+
+  Point getPointJustBeforeNextToken() {
+    return ((SoySimpleCharStream) (token_source.input_stream)).getPointJustBeforeNextToken();
+  }
+
+  /** Creates a source location that starts at the token and ends at the given point. */
+  private SourceLocation createSrcLoc(Token t, Point p) {
+   return createSrcLoc(t).extend(p);
   }
 
   /** Create a SourceLocation spanning all given tokens. */
@@ -2749,8 +2760,6 @@ private IfNode IfStmt() :
   Token tagBeginEnd = null;
   ExprNode ifExpr;
   List<StandaloneNode> templateBlock;
-  IfCondNode lastIfCondNode = null;
-  IfElseNode ifElseNode = null;
 }
 {
   tagBegin = <CMD_BEGIN_IF>
@@ -2767,13 +2776,12 @@ private IfNode IfStmt() :
     List<BlockNode> condNodes = new ArrayList<BlockNode>();
     IfCondNode ifCondNode = new IfCondNode(
         nodeIdGen.genId(),
-        createSrcLoc(tagBegin, templateBlock),
+        createSrcLoc(tagBegin, getPointJustBeforeNextToken()),
         tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
         "if",
         ifExpr);
     condNodes.add(ifCondNode);
     ifCondNode.addChildren(templateBlock);
-    lastIfCondNode = ifCondNode;
   }
 
   (
@@ -2790,17 +2798,12 @@ private IfNode IfStmt() :
     {
       ifCondNode = new IfCondNode(
           nodeIdGen.genId(),
-          createSrcLoc(condTagBegin, templateBlock),
+          createSrcLoc(condTagBegin, getPointJustBeforeNextToken()),
           tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
           "elseif",
           ifExpr);
       condNodes.add(ifCondNode);
       ifCondNode.addChildren(templateBlock);
-      lastIfCondNode.setSourceLocation(
-          lastIfCondNode
-              .getSourceLocation()
-              .extend(Tokens.getPreviousPointOrBeginOfLine(condTagBegin)));
-      lastIfCondNode = ifCondNode;
     }
   )*
 
@@ -2808,12 +2811,10 @@ private IfNode IfStmt() :
     elseTag = <CMD_FULL_ELSE>
     templateBlock = TemplateBlock()
     {
-      ifElseNode =
-          new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag, templateBlock),
+      IfElseNode ifElseNode =
+          new IfElseNode(nodeIdGen.genId(), createSrcLoc(elseTag, getPointJustBeforeNextToken()),
               createSrcLoc(elseTag));
       condNodes.add(ifElseNode);
-      lastIfCondNode.setSourceLocation(lastIfCondNode.getSourceLocation().extend(
-                                           Tokens.getPreviousPointOrBeginOfLine(elseTag)));
       ifElseNode.addChildren(templateBlock);
     }
   ]
@@ -2821,13 +2822,6 @@ private IfNode IfStmt() :
   tagClose = <CMD_CLOSE_IF>
 
   {
-    if (ifElseNode != null) {
-      ifElseNode.setSourceLocation(ifElseNode.getSourceLocation().extend(
-                                       Tokens.getPreviousPointOrBeginOfLine(tagClose)));
-    } else {
-      lastIfCondNode.setSourceLocation(lastIfCondNode.getSourceLocation().extend(
-                                           Tokens.getPreviousPointOrBeginOfLine(tagClose)));
-    }
     IfNode ifNode = new IfNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose));
     ifNode.addChildren(condNodes);
     return ifNode;
@@ -2891,7 +2885,6 @@ private SwitchNode SwitchStmt() :
   ImmutableList<ExprNode> caseExprs;
   List<StandaloneNode> templateBlock;
   SwitchDefaultNode defaultNode = null;
-  SwitchCaseNode lastCaseNode = null;
 }
 {
   tagBegin = <CMD_BEGIN_SWITCH>
@@ -2919,35 +2912,25 @@ private SwitchNode SwitchStmt() :
       caseTagEnd = <CMD_END>
       templateBlock = TemplateBlock()
       {
-        if (lastCaseNode != null) {
-          lastCaseNode.setSourceLocation(
-              lastCaseNode
-                  .getSourceLocation()
-                  .extend(Tokens.getPreviousPointOrBeginOfLine(caseTag)));
-        }
         SwitchCaseNode caseNode = new SwitchCaseNode(
             nodeIdGen.genId(),
-            createSrcLoc(caseTag, templateBlock),
+            createSrcLoc(caseTag, getPointJustBeforeNextToken()),
             createSrcLoc(caseTag, caseTagEnd),
             caseExprs);
         caseNode.addChildren(templateBlock);
-        lastCaseNode = caseNode;
         cases.add(caseNode);
+
       }
+
     )+
 
     [
       defaultTag = <CMD_FULL_DEFAULT>
       templateBlock = TemplateBlock()
       {
-        if (lastCaseNode != null) {
-          lastCaseNode.setSourceLocation(
-              lastCaseNode
-                  .getSourceLocation()
-                  .extend(Tokens.getPreviousPointOrBeginOfLine(defaultTag)));
-        }
         defaultNode =
-            new SwitchDefaultNode(nodeIdGen.genId(), createSrcLoc(defaultTag, templateBlock),
+            new SwitchDefaultNode(nodeIdGen.genId(),
+                createSrcLoc(defaultTag, getPointJustBeforeNextToken()),
                 createSrcLoc(defaultTag));
         defaultNode.addChildren(templateBlock);
         cases.add(defaultNode);
@@ -2960,17 +2943,6 @@ private SwitchNode SwitchStmt() :
   }
 
   {
-    if (defaultNode != null) {
-      defaultNode.setSourceLocation(
-          defaultNode
-              .getSourceLocation()
-              .extend(Tokens.getPreviousPointOrBeginOfLine(tagClose)));
-    } else if (lastCaseNode != null) {
-      lastCaseNode.setSourceLocation(
-          lastCaseNode
-              .getSourceLocation()
-              .extend(Tokens.getPreviousPointOrBeginOfLine(tagClose)));
-    }
     SwitchNode switchNode =
         new SwitchNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose),
             tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
