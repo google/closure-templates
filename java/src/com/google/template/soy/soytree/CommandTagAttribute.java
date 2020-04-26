@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -100,26 +101,36 @@ public final class CommandTagAttribute {
   private final Identifier key;
   private final SourceLocation valueLocation;
   private final QuoteStyle quoteStyle;
+  private final SourceLocation sourceLocation;
   // either value or valueExprList must be set, but not both.
   @Nullable private final String value;
   @Nullable private final ImmutableList<ExprRootNode> valueExprList;
 
   public CommandTagAttribute(
-      Identifier key, QuoteStyle quoteStyle, String value, SourceLocation valueLocation) {
+      Identifier key,
+      QuoteStyle quoteStyle,
+      String value,
+      SourceLocation valueLocation,
+      SourceLocation wholeAttributeLocation) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     this.key = checkNotNull(key);
     this.quoteStyle = checkNotNull(quoteStyle);
+    this.sourceLocation = wholeAttributeLocation;
     this.valueLocation = checkNotNull(valueLocation);
     this.value = checkNotNull(value);
     this.valueExprList = null;
   }
 
   public CommandTagAttribute(
-      Identifier key, QuoteStyle quoteStyle, ImmutableList<ExprNode> valueExprList) {
+      Identifier key,
+      QuoteStyle quoteStyle,
+      ImmutableList<ExprNode> valueExprList,
+      SourceLocation sourceLocation) {
     checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     checkArgument(valueExprList.size() >= 1);
     this.key = checkNotNull(key);
     this.quoteStyle = checkNotNull(quoteStyle);
+    this.sourceLocation = sourceLocation;
     this.valueLocation =
         valueExprList
             .get(0)
@@ -136,9 +147,10 @@ public final class CommandTagAttribute {
           quoteStyle,
           valueExprList.stream()
               .map(expr -> expr.getRoot().copy(copyState))
-              .collect(ImmutableList.toImmutableList()));
+              .collect(toImmutableList()),
+          sourceLocation);
     }
-    return new CommandTagAttribute(key, quoteStyle, value, valueLocation);
+    return new CommandTagAttribute(key, quoteStyle, value, valueLocation, sourceLocation);
   }
 
   /** Returns the name. It is guaranteed to be a single identifier. */
@@ -149,6 +161,11 @@ public final class CommandTagAttribute {
   /** Returns true if the attribute name is equal to the given string. */
   public boolean hasName(String name) {
     return key.identifier().equals(name);
+  }
+
+  /** Gets the source location of the attribute. */
+  public SourceLocation getSourceLocation() {
+    return sourceLocation;
   }
 
   /** Returns the string value. Do not call on an expression attribute. */

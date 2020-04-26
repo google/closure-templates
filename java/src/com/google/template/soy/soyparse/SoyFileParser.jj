@@ -1524,7 +1524,7 @@ private CommandTagAttribute Attribute() :
       return new CommandTagAttribute(
           Identifier.create(name.identifier(), name.location()),
           quoteStyle,
-          exprList);
+          exprList, createSrcLoc(nameToken, qToken));
     }
   |
     // Non-expression attributes
@@ -1540,7 +1540,8 @@ private CommandTagAttribute Attribute() :
       { quoteStyle = QuoteStyle.SINGLE; }
     )
     {
-      return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(startValue, value));
+      return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(startValue, value),
+          createSrcLoc(nameToken, value));
     }
   )
 }
