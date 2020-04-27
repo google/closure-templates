@@ -3237,19 +3237,19 @@ private CallParamNode CallParam() :
  */
 private LogNode LogStmt() :
 {
-  Token open;
+  Token open, close;
   List<StandaloneNode> templateBlock;
 }
 {
   open = <CMD_OPEN_LOG>
-  { LogNode logNode = new LogNode(nodeIdGen.genId(), createSrcLoc(open)); }
-
   templateBlock = TemplateBlock()
-  { logNode.addChildren(templateBlock); }
+  close = <CMD_CLOSE_LOG>
 
-  <CMD_CLOSE_LOG>
-
-  { return logNode; }
+  {
+    LogNode logNode = new LogNode(nodeIdGen.genId(), createSrcLoc(open, close));
+    logNode.addChildren(templateBlock);
+    return logNode;
+  }
 }
 
 
