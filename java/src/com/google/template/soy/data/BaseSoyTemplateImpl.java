@@ -23,6 +23,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Streams.stream;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -95,6 +96,14 @@ public abstract class BaseSoyTemplateImpl implements SoyTemplate {
   @Override
   public int hashCode() {
     return Objects.hashCode(getClass(), data);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(getClass())
+        .add("name", getTemplateName())
+        .add("data", getParamsAsMap())
+        .toString();
   }
 
   /**
