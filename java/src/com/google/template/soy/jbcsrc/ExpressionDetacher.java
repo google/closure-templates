@@ -36,6 +36,10 @@ interface ExpressionDetacher {
     /**
      * Returns a new {@link ExpressionDetacher}. Any given soy expression requires at most one
      * detacher.
+     *
+     * <p>The reattachPoint should be {@link CodeBuilder#mark(Label) marked} by the caller at a
+     * location where the stack depth is 0 and will be used to 'reattach' execution if the compiled
+     * expression needs to perform a detach operation.
      */
     ExpressionDetacher createExpressionDetacher(Label reattachPoint);
   }

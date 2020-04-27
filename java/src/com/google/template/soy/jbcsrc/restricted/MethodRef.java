@@ -417,6 +417,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_PROVIDER_RESOLVE =
       create(JbcSrcRuntime.class, "resolveSoyValueProvider", SoyValueProvider.class);
 
+  public static final MethodRef SOY_VALUE_PROVIDER_OR_NULL =
+      create(JbcSrcRuntime.class, "soyValueProviderOrNull", SoyValueProvider.class);
+
   public static final MethodRef SOY_VALUE_PROVIDER_STATUS =
       create(SoyValueProvider.class, "status").asNonNullable();
 

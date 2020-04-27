@@ -161,6 +161,13 @@ public final class JbcSrcRuntime {
     return handleTofuNull(value);
   }
 
+  public static SoyValueProvider soyValueProviderOrNull(SoyValueProvider provider) {
+    if (provider == null || resolveSoyValueProvider(provider) == null) {
+      return null;
+    }
+    return provider;
+  }
+
   private static SoyValue handleTofuNull(SoyValue value) {
     if (value instanceof NullData | value instanceof UndefinedData) {
       return null;

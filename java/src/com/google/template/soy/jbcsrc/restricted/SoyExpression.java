@@ -230,7 +230,7 @@ public final class SoyExpression extends Expression {
         FieldRef.NULL_PROVIDER.accessStaticUnchecked(adapter);
         adapter.goTo(end);
         adapter.mark(nonNull);
-        doBox(adapter, soyRuntimeType);
+        doBox(adapter, soyRuntimeType.asNonNullable());
         adapter.mark(end);
       }
     };
