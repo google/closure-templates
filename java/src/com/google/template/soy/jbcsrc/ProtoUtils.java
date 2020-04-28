@@ -57,7 +57,6 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
-import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
@@ -199,7 +198,12 @@ final class ProtoUtils {
    */
   static SoyExpression accessField(
       SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
-    return new AccessorGenerator(protoType, baseExpr, node.getFieldName(), node.getType())
+    return new AccessorGenerator(
+            protoType,
+            baseExpr,
+            node.getFieldName(),
+            node.getType(),
+            /* useBrokenSemantics= */ true)
         .generate();
   }
 
@@ -207,14 +211,14 @@ final class ProtoUtils {
    * Returns a {@link SoyExpression} for accessing an extension field of a proto using the {@code
    * getExtension} method.
    *
-   * @param protoType The type of the proto being accessed.
    * @param baseExpr The proto being accessed.
    * @param node The method operation.
    */
   static SoyExpression accessExtensionField(
-      SoyProtoType protoType, SoyExpression baseExpr, MethodCallNode node) {
-    String fieldName = GetExtensionMethod.getExtensionId(node);
-    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType()).generate();
+      SoyExpression baseExpr, MethodCallNode node, String fieldName, boolean useBrokenSemantics) {
+    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), useBrokenSemantics)
+        .generate();
   }
 
   /**
@@ -230,14 +234,19 @@ final class ProtoUtils {
     final boolean shouldCheckForFieldPresence;
 
     AccessorGenerator(
-        SoyProtoType protoType, SoyExpression baseExpr, String fieldName, SoyType fieldType) {
+        SoyProtoType protoType,
+        SoyExpression baseExpr,
+        String fieldName,
+        SoyType fieldType,
+        boolean useBrokenSemantics) {
       this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
       this.baseExpr = baseExpr;
       this.fieldName = fieldName;
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
       this.shouldCheckForFieldPresence =
-          protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName);
+          useBrokenSemantics
+              && protoType.shouldCheckFieldPresenceToEmulateJspbNullability(fieldName);
     }
 
     SoyExpression generate() {
@@ -411,7 +420,7 @@ final class ProtoUtils {
       // stupid java generics work.
       FieldRef extensionField = getExtensionField(descriptor);
       final Expression extensionFieldAccessor = extensionField.accessor();
-      if (!descriptor.hasDefaultValue()) {
+      if (!descriptor.hasDefaultValue() && shouldCheckForFieldPresence) {
         final Label endLabel = new Label();
         SoyExpression interpretedField =
             interpretExtensionField(
@@ -450,7 +459,8 @@ final class ProtoUtils {
         // scope of the expression
         return interpretedField.labelEnd(endLabel).asNullable();
       } else {
-        // An extension with a default value is pretty rare, but we still need to support it.
+        // This branch handles extension with a default value, which are pretty rare, and non-
+        // broken semantics, where we can delegate to the Java API without checking presence.
         return interpretExtensionField(
             typedBaseExpr.invoke(EXTENDABLE_MESSAGE_GET_EXTENSION, extensionFieldAccessor));
       }

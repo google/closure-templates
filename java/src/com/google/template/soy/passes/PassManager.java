@@ -343,7 +343,7 @@ public final class PassManager {
         // accesses simpler.
         addPass(new NullSafeAccessPass(), singleFilePassesBuilder);
         addPass(
-            new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig),
+            new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig, pluginResolver),
             singleFilePassesBuilder);
         // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
         // types of non-null assertion operators.

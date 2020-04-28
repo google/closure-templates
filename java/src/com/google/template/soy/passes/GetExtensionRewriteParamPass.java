@@ -18,18 +18,19 @@ package com.google.template.soy.passes;
 
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
-import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /**
- * A compiler pass that rewrites the parameter of the {@link GetExtensionMethod} method into a
- * StringNode from a GlobalNode to prevent unbound global errors.
+ * A compiler pass that rewrites the parameter of the {@link BuiltinMethod#GET_EXTENSION} et al
+ * methods into a StringNode from a GlobalNode to prevent unbound global errors.
  */
 final class GetExtensionRewriteParamPass implements CompilerFilePass {
 
@@ -37,17 +38,27 @@ final class GetExtensionRewriteParamPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (MethodCallNode node : SoyTreeUtils.getAllNodesOfType(file, MethodCallNode.class)) {
-      if (node.isMethodResolved() && node.getSoyMethods().get(0) instanceof GetExtensionMethod) {
-        // Rewrite the global parameter of getExtension methods.
-        ExprNode child = node.getChild(1);
-        if (child.getKind() == Kind.GLOBAL_NODE) {
-          node.replaceChild(
-              1,
-              new StringNode(
-                  ((GlobalNode) child).getName(), QuoteStyle.DOUBLE, child.getSourceLocation()));
-        }
-      }
-    }
+    SoyTreeUtils.getAllNodesOfType(file, MethodCallNode.class).stream()
+        .filter(MethodCallNode::isMethodResolved)
+        .filter(
+            n -> {
+              SoyMethod method = n.getSoyMethod();
+              return method == BuiltinMethod.GET_EXTENSION;
+            })
+        .forEach(
+            node -> {
+              // Rewrite the global parameter of getExtension methods.
+              for (int i = 1; i < node.numChildren(); i++) {
+                ExprNode child = node.getChild(i);
+                if (child.getKind() == Kind.GLOBAL_NODE) {
+                  node.replaceChild(
+                      i,
+                      new StringNode(
+                          ((GlobalNode) child).getName(),
+                          QuoteStyle.DOUBLE,
+                          child.getSourceLocation()));
+                }
+              }
+            });
   }
 }

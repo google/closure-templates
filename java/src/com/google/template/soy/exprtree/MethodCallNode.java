@@ -16,15 +16,15 @@
 
 package com.google.template.soy.exprtree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.List;
 
 /** A node representing a method call. (e.g. {@code $myString.length()}) */
@@ -33,14 +33,12 @@ public final class MethodCallNode extends DataAccessNode {
   private final Identifier methodName;
 
   /**
-   * The SoySourceFunctions that correspond to this node. There could be multiple methods
-   * corresponding to the node when there are multiple method SoySourceFunctions defined with the
-   * same name but different base type. The method resolution occurs before we know the type of the
-   * base expression, so the different implementations are stored until the base type is determined.
-   * If the type of the base expression can be determined at compile time, the list will be left
-   * with one SoySourceFunction. Otherwise, the list will remain to have multiple methods.
+   * The resolved SoyMethod that corresponds to this node. Resolution occurs in
+   * ResolveExpressionTypesPass after the types of the method received and the method arguments are
+   * known. This will be null before that pass and set after that pass, as long as the method
+   * resolves to exactly one match.
    */
-  private List<SoySourceFunction> methods;
+  private SoyMethod method;
 
   /**
    * @param base The base expression that the method is called on.
@@ -66,9 +64,7 @@ public final class MethodCallNode extends DataAccessNode {
   private MethodCallNode(MethodCallNode orig, CopyState copyState) {
     super(orig, copyState);
     this.methodName = orig.methodName;
-    if (orig.methods != null) {
-      this.methods = Lists.newArrayList(orig.methods);
-    }
+    this.method = orig.method;
   }
 
   /** Returns the name of the method */
@@ -76,14 +72,25 @@ public final class MethodCallNode extends DataAccessNode {
     return methodName;
   }
 
-  public void setSoyMethods(List<SoySourceFunction> methods) {
-    checkNotNull(methods);
-    this.methods = methods;
+  public void setSoyMethod(SoyMethod method) {
+    this.method = method;
   }
 
-  public List<SoySourceFunction> getSoyMethods() {
-    checkState(this.methods != null, "setSoyMethods() hasn't been called yet");
-    return this.methods;
+  public SoyMethod getSoyMethod() {
+    checkState(method != null, "setSoyMethod() hasn't been called yet");
+    return method;
+  }
+
+  /**
+   * Returns the type of the base expression child, with |null removed if `nullSafe` is `true`.
+   * NullSafeAccessNode should probably handle this automatically.
+   */
+  public SoyType getBaseType(boolean nullSafe) {
+    SoyType type = getBaseExprChild().getType();
+    if (nullSafe) {
+      type = SoyTypes.tryRemoveNull(type);
+    }
+    return type;
   }
 
   /** Returns the method's parameters. */
@@ -91,9 +98,13 @@ public final class MethodCallNode extends DataAccessNode {
     return getChildren().subList(1, getChildren().size()); // First child is the method's base expr.
   }
 
+  public int numParams() {
+    return numChildren() - 1;
+  }
+
   /** Returns true if the methods have been resolved to exactly one SoySourceFunction. */
   public boolean isMethodResolved() {
-    return getSoyMethods().size() == 1;
+    return method != null;
   }
 
   /**

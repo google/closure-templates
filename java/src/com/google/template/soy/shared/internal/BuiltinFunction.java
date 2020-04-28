@@ -123,6 +123,7 @@ public enum BuiltinFunction implements SoyFunction {
    * com.google.template.soy.shared.restricted.SoyPureFunction} for the definition of a pure
    * function.
    */
+  @Override
   public boolean isPure() {
     switch (this) {
       case CHECK_NOT_NULL:

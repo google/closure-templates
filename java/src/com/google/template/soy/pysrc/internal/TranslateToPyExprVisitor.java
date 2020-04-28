@@ -65,9 +65,13 @@ import com.google.template.soy.pysrc.restricted.PyFunctionExprBuilder;
 import com.google.template.soy.pysrc.restricted.PyStringExpr;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -698,20 +702,38 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     return genCodeForLiteralKeyAccess(containerExpr, fieldName);
   }
 
-  private String genCodeForMethodCall(MethodCallNode node, PyExpr containerExpr) {
-    // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
-    // from the base type during compile time and the node has multiple SoySourceFunctions.
-    Preconditions.checkArgument(node.isMethodResolved());
-    SoySourceFunction method = node.getSoyMethods().get(0);
+  private String genCodeForMethodCall(MethodCallNode methodCallNode, PyExpr containerExpr) {
+    Preconditions.checkArgument(methodCallNode.isMethodResolved());
+    SoyMethod method = methodCallNode.getSoyMethod();
 
-    if (method instanceof SoyPythonSourceFunction) {
-      // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
-      return containerExpr.getText();
-    } else {
+    if (method instanceof BuiltinMethod) {
       errorReporter.report(
-          node.getAccessSourceLocation(), SOY_PY_SRC_METHOD_NOT_FOUND, node.getMethodName());
+          methodCallNode.getAccessSourceLocation(),
+          SOY_PY_SRC_METHOD_NOT_FOUND,
+          methodCallNode.getMethodName());
       return ".ERROR";
+    } else if (method instanceof SoySourceFunctionMethod) {
+      SoySourceFunction function = ((SoySourceFunctionMethod) method).getImpl();
+      if (function instanceof SoyPythonSourceFunction) {
+        List<PyExpr> args = new ArrayList<>();
+        args.add(containerExpr);
+        methodCallNode.getParams().forEach(n -> args.add(visit(n)));
+        return pluginValueFactory
+            .applyFunction(
+                methodCallNode.getSourceLocation(),
+                methodCallNode.getMethodName().identifier(),
+                (SoyPythonSourceFunction) function,
+                args)
+            .getText();
+      } else {
+        errorReporter.report(
+            methodCallNode.getAccessSourceLocation(),
+            SOY_PY_SRC_METHOD_NOT_FOUND,
+            methodCallNode.getMethodName());
+        return ".ERROR";
+      }
     }
+    throw new AssertionError();
   }
 
   /**

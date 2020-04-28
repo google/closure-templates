@@ -58,7 +58,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractReturningExprNodeVisitor;
@@ -108,6 +107,9 @@ import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -511,7 +513,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * @param base The base expression of the method.
    * @param methodCallNode The method call node.
    */
-  private static NullSafeAccumulator genCodeForMethodCall(
+  private NullSafeAccumulator genCodeForMethodCall(
       NullSafeAccumulator base,
       MethodCallNode methodCallNode,
       boolean nullSafe,
@@ -520,21 +522,39 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(methodCallNode.isMethodResolved());
 
-    if (GetExtensionMethod.isGetExtensionMethodCall(methodCallNode)) {
-      SoyType baseType = SoyTypes.removeNull(methodCallNode.getBaseExprChild().getType());
+    SoyMethod soyMethod = methodCallNode.getSoyMethod();
+    if (soyMethod instanceof BuiltinMethod) {
+      BuiltinMethod builtinMethod = (BuiltinMethod) soyMethod;
+      SoyProtoType baseType = (SoyProtoType) methodCallNode.getBaseType(nullSafe);
+      switch (builtinMethod) {
+        case GET_EXTENSION:
+          String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
+          return base.dotAccess(
+              ProtoCall.create(extName, baseType.getFieldDescriptor(extName)),
+              nullSafe,
+              assertNonNull);
+      }
+      throw new AssertionError(builtinMethod);
+    } else if (soyMethod instanceof SoySourceFunctionMethod) {
+      SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) soyMethod;
 
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      String fieldName = GetExtensionMethod.getExtensionId(methodCallNode);
-      FieldDescriptor desc = protoType.getFieldDescriptor(fieldName);
-      Preconditions.checkNotNull(
-          desc,
-          "Error in proto %s, field not found: %s",
-          protoType.getDescriptor().getFullName(),
-          fieldName);
-      return base.dotAccess(ProtoCall.create(fieldName, desc), nullSafe, assertNonNull);
+      return base.functionCall(
+          nullSafe,
+          assertNonNull,
+          baseExpr -> {
+            List<Expression> args = new ArrayList<>();
+            args.add(baseExpr);
+            methodCallNode.getParams().forEach(n -> args.add(visit(n)));
+            return javascriptValueFactory.applyFunction(
+                methodCallNode.getSourceLocation(),
+                methodCallNode.getMethodName().identifier(),
+                (SoyJavaScriptSourceFunction) sourceMethod.getImpl(),
+                args,
+                codeGenerator);
+          });
+    } else {
+      throw new AssertionError(soyMethod.getClass());
     }
-    // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
-    return base;
   }
 
   @Override

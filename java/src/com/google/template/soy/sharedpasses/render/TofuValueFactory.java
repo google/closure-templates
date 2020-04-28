@@ -34,8 +34,8 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
 import com.google.template.soy.plugin.java.restricted.MethodSignature;
@@ -49,10 +49,11 @@ import java.util.List;
 /** Adapts JavaValueFactory to work with Tofu, wrapping the JavaValues in TofuJavaValues. */
 // TODO(b/19252021): Add unit tests after things shape up.
 class TofuValueFactory extends JavaValueFactory {
-  private final FunctionNode fn;
+  private final JavaPluginExecContext fn;
   private final ImmutableMap<String, Supplier<Object>> pluginInstances;
 
-  TofuValueFactory(FunctionNode fn, ImmutableMap<String, Supplier<Object>> pluginInstances) {
+  TofuValueFactory(
+      JavaPluginExecContext fn, ImmutableMap<String, Supplier<Object>> pluginInstances) {
     this.fn = fn;
     this.pluginInstances = pluginInstances;
   }

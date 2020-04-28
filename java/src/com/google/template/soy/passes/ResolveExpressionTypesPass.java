@@ -17,10 +17,17 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
+import static java.util.Comparator.naturalOrder;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
@@ -31,7 +38,6 @@ import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
-import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -86,10 +92,14 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.internal.ResolvedSignature;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.shared.restricted.SoyMethod.Registry;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
@@ -136,6 +146,7 @@ import com.google.template.soy.types.VeType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -143,6 +154,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -252,9 +264,16 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
       SoyErrorKind.of("Argument to function ''{0}'' must be a string literal.");
   private static final SoyErrorKind INVALID_METHOD_BASE =
-      SoyErrorKind.of("Method ''{0}'' does not exist for base type ''{1}''.");
+      SoyErrorKind.of(
+          "Method ''{0}'' does not exist on type ''{1}''.{2}", StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind MULTIPLE_METHODS_MATCH =
+      SoyErrorKind.of(
+          "Method ''{0}'' with {1} arg(s) for type ''{2}'' matches multiple method"
+              + " implementations.");
   private static final SoyErrorKind METHOD_INVALID_PARAM_NUM =
-      SoyErrorKind.of("Method ''{0}'' called with {1} parameters (expected {2}).");
+      SoyErrorKind.of("Method ''{0}'' called with {1} parameter(s) but expected {2}.");
+  private static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
+      SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
   private static final SoyErrorKind GET_EXTENSION_GLOBAL_REQUIRED =
       SoyErrorKind.of(
           "The parameter of method ''getExtension'' must be a dotted identifier. Found ''{0}''");
@@ -278,11 +297,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private final SoyTypeRegistry typeRegistry;
 
   private final ValidatedLoggingConfig loggingConfig;
+  private final SoyMethod.Registry methodRegistry;
   private final TypeNodeConverter typeNodeConverter;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
-  /** Cached map of a method to the actual soy type of the base type. */
-  private final Map<SoyMethodSignature, SoyType> methodBaseTypeMap = new HashMap<>();
 
   /** Current set of type substitutions. */
   private TypeSubstitution substitutions;
@@ -292,10 +310,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   ResolveExpressionTypesPass(
       SoyTypeRegistry typeRegistry,
       ErrorReporter errorReporter,
-      ValidatedLoggingConfig loggingConfig) {
+      ValidatedLoggingConfig loggingConfig,
+      PluginResolver pluginResolver) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
     this.loggingConfig = loggingConfig;
+    this.methodRegistry =
+        new CompositeMethodRegistry(
+            ImmutableList.of(BuiltinMethod.REGISTRY, new PluginMethodRegistry(pluginResolver)));
     this.typeNodeConverter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
@@ -957,54 +979,53 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     private void finishMethodCallNode(MethodCallNode node, boolean nullSafe) {
-      for (ExprNode child : node.getChildren().subList(1, node.numChildren())) {
+      for (ExprNode child : node.getParams()) {
         visit(child);
       }
-      SoySourceFunction method =
-          resolveMethodFromBaseType(
-              node, node.getBaseExprChild().getType(), node.getSoyMethods(), nullSafe);
-      if (method != null) {
-        node.setSoyMethods(ImmutableList.of(method));
-      } else {
-        // Remove all existing soy methods if the method could not be resolved.
-        node.setSoyMethods(ImmutableList.of());
-      }
 
-      if (method instanceof GetExtensionMethod) {
-        visitGetExtensionMethod(node);
-      }
-      // TODO(b/147372851): Check parameter types and set the return type for methods that aren't
-      // the getExtension method.
-    }
+      SoyType baseType = node.getBaseType(nullSafe);
+      SoyMethod method = resolveMethodFromBaseType(node, baseType);
 
-    private void visitGetExtensionMethod(MethodCallNode node) {
-      SoyType baseType = SoyTypes.tryRemoveNull(node.getBaseExprChild().getType());
-
-      if (baseType.getKind() != SoyType.Kind.PROTO) {
-        errorReporter.report(
-            node.getBaseExprChild().getSourceLocation(),
-            INVALID_METHOD_BASE,
-            node.getMethodName(),
-            baseType);
-        node.setSoyMethods(ImmutableList.of());
+      if (method == null) {
         node.setType(ErrorType.getInstance());
         return;
       }
 
+      node.setSoyMethod(method);
+
+      if (method instanceof BuiltinMethod) {
+        BuiltinMethod builtinMethod = (BuiltinMethod) method;
+
+        switch (builtinMethod) {
+          case GET_EXTENSION:
+            if (checkHasExtension(node, baseType)) {
+              node.setType(builtinMethod.getReturnType(node));
+            } else {
+              node.setType(ErrorType.getInstance());
+            }
+            break;
+        }
+      } else if (method instanceof SoySourceFunctionMethod) {
+        node.setType(((SoySourceFunctionMethod) method).getReturnType());
+      } else {
+        throw new AssertionError();
+      }
+    }
+
+    private boolean checkHasExtension(MethodCallNode node, SoyType baseType) {
+      SoyProtoType protoType = (SoyProtoType) baseType;
       ExprNode child = node.getChild(1);
       // Fully qualified name parameter should initially be parsed as a global node.
       if (child.getKind() != ExprNode.Kind.GLOBAL_NODE) {
         errorReporter.report(
             child.getSourceLocation(), GET_EXTENSION_GLOBAL_REQUIRED, child.getType().toString());
-        node.setType(ErrorType.getInstance());
-        return;
+        return false;
       }
 
-      GlobalNode parameter = (GlobalNode) child;
-      SoyProtoType protoType = (SoyProtoType) baseType;
+      GlobalNode parameter = (GlobalNode) node.getChild(1);
       ImmutableSet<String> fields = protoType.getExtensionFieldNames();
-
       String fieldName = parameter.getName();
+
       if (!fields.contains(fieldName)) {
         String extraErrorMessage =
             SoyErrors.getDidYouMeanMessageForProtoFields(
@@ -1015,87 +1036,83 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             fieldName,
             protoType.getDescriptor().getFullName(),
             extraErrorMessage);
-        node.setType(ErrorType.getInstance());
-        return;
+        return false;
       }
-      node.setType(protoType.getFieldType(fieldName));
+      return true;
     }
 
     @Nullable
-    private SoySourceFunction resolveMethodFromBaseType(
-        MethodCallNode node, SoyType baseType, List<SoySourceFunction> methods, boolean nullSafe) {
-      // The methods list is empty when there are no methods with a name matching the one that the
-      // method call node is called with, and an error is reported during the ResolvePluginsPass.
-      if (methods.isEmpty()) {
-        node.setType(ErrorType.getInstance());
-        return null;
-      }
+    private SoyMethod resolveMethodFromBaseType(MethodCallNode node, SoyType baseType) {
 
       if (SoyTypes.isNullable(baseType)) {
-        if (!nullSafe) {
-          errorReporter.report(
-              node.getBaseExprChild().getSourceLocation(),
-              METHOD_BASE_TYPE_NULL_SAFE_REQUIRED,
-              baseType);
-          node.setType(ErrorType.getInstance());
-          return null;
-        }
-        baseType = SoyTypes.tryRemoveNull(baseType);
-      }
-
-      SoySourceFunction resolvedMethod = null;
-      for (SoySourceFunction method : methods) {
-        SoyMethodSignature methodSignature =
-            method.getClass().getAnnotation(SoyMethodSignature.class);
-        SoyType expectedBaseType = methodBaseTypeMap.get(methodSignature);
-
-        if (expectedBaseType == null) {
-          String baseTypeString = methodSignature.baseType();
-          TypeNode parsedBaseType =
-              SoyFileParser.parseType(
-                  baseTypeString, method.getClass().getCanonicalName(), errorReporter);
-          if (parsedBaseType != null) {
-            expectedBaseType = typeNodeConverter.getOrCreateType(parsedBaseType);
-            methodBaseTypeMap.put(methodSignature, expectedBaseType);
-          }
-        }
-
-        // TODO(b/147372851): Handle case where the base type is unknown at compile time, and the
-        // SoySourceFunction cannot be determined until runtime.
-        // TODO(b/147372851): Handle case where the base type is known at compile time, and multiple
-        // methods match the given base type.
-        if (expectedBaseType != null && expectedBaseType.isAssignableFrom(baseType)) {
-          resolvedMethod = method;
-        }
-      }
-
-      if (resolvedMethod == null) {
         errorReporter.report(
-            node.getSourceLocation(),
-            INVALID_METHOD_BASE,
-            node.getMethodName().identifier(),
+            node.getBaseExprChild().getSourceLocation(),
+            METHOD_BASE_TYPE_NULL_SAFE_REQUIRED,
             baseType);
-        node.setType(ErrorType.getInstance());
         return null;
       }
-      // Check that the number of parameters from the SoyMethodSignature matches the node's.
-      Set<Integer> validParamsSize =
-          PluginResolver.getValidArgsSizes(
-              resolvedMethod.getClass().getAnnotation(SoyMethodSignature.class).value());
-      // The first child of the node is the base expression. All children following the first are
-      // the parameters.
-      int numParameters = node.numChildren() - 1;
-      if (!validParamsSize.contains(numParameters)) {
-        errorReporter.report(
-            node.getAccessSourceLocation(),
-            METHOD_INVALID_PARAM_NUM,
-            node.getMethodName().identifier(),
-            numParameters,
-            Joiner.on(" or ").join(validParamsSize));
-        node.setType(ErrorType.getInstance());
+
+      int numParams = node.numChildren() - 1;
+      String methodName = node.getMethodName().identifier();
+      SourceLocation srcLoc = node.getAccessSourceLocation();
+      List<SoyType> argTypes = node.getParams().stream().map(ExprNode::getType).collect(toList());
+
+      // This contains all methods that match name and base type.
+      ImmutableList<? extends SoyMethod> matchNameAndType =
+          methodRegistry.matchForNameAndBase(methodName, baseType);
+
+      // Subset of previous that also matches arg count.
+      List<SoyMethod> andMatchArgCount =
+          matchNameAndType.stream().filter(m -> m.getNumArgs() == numParams).collect(toList());
+
+      if (!matchNameAndType.isEmpty() && andMatchArgCount.isEmpty()) {
+        // We matched the base type and method name but did not match on arity.
+        Set<Integer> allNumArgs =
+            matchNameAndType.stream()
+                .map(SoyMethod::getNumArgs)
+                .collect(toImmutableSortedSet(naturalOrder()));
+        String validSize = Joiner.on(" or ").join(allNumArgs);
+        errorReporter.report(srcLoc, METHOD_INVALID_PARAM_NUM, methodName, numParams, validSize);
         return null;
       }
-      return resolvedMethod;
+
+      // Subset of previous that also matches arg types.
+      List<SoyMethod> andMatchArgType =
+          andMatchArgCount.stream().filter(m -> m.appliesToArgs(argTypes)).collect(toList());
+
+      if (andMatchArgType.size() == 1) {
+        // Matched exactly one method. Success!
+        return andMatchArgCount.get(0);
+      }
+
+      if (!andMatchArgType.isEmpty()) {
+        // Unexpected. Matched multiple methods. Plug-in validation should mostly prevent this but
+        // methods applying to base type "any" could still cause this.
+        errorReporter.report(srcLoc, MULTIPLE_METHODS_MATCH, methodName, numParams, baseType);
+      } else if (!andMatchArgCount.isEmpty()) {
+        // We matched base type, method name, and arity but not argument types.
+        String expected =
+            Joiner.on(", ").join(((SoySourceFunctionMethod) andMatchArgCount.get(0)).getArgTypes());
+        String actual = Joiner.on(", ").join(argTypes);
+        errorReporter.report(srcLoc, METHOD_INVALID_PARAM_TYPES, methodName, actual, expected);
+      } else {
+        String didYouMean = "";
+        ImmutableList<? extends SoyMethod> matching =
+            methodRegistry.matchForBaseAndArgs(baseType, argTypes);
+        if (!matching.isEmpty()) {
+          didYouMean =
+              SoyErrors.getDidYouMeanMessage(
+                  matching.stream()
+                      .map(SoyMethod::getMethodName)
+                      .filter(s -> !s.isEmpty())
+                      .collect(Collectors.toSet()),
+                  methodName);
+        }
+        // We did not match base type and method name. No method found.
+        errorReporter.report(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
+      }
+
+      return null;
     }
 
     @Override
@@ -2418,6 +2435,94 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       this.parent = parent;
       this.expression = expression;
       this.type = type;
+    }
+  }
+
+  private static final class CompositeMethodRegistry implements SoyMethod.Registry {
+    private final List<SoyMethod.Registry> registries;
+
+    public CompositeMethodRegistry(List<Registry> registries) {
+      this.registries = registries;
+    }
+
+    @Override
+    public ImmutableList<? extends SoyMethod> matchForNameAndBase(
+        String methodName, SoyType baseType) {
+      return registries.stream()
+          .flatMap(r -> r.matchForNameAndBase(methodName, baseType).stream())
+          .collect(toImmutableList());
+    }
+
+    @Override
+    public ImmutableList<? extends SoyMethod> matchForBaseAndArgs(
+        SoyType baseType, List<SoyType> argTypes) {
+      return registries.stream()
+          .flatMap(r -> r.matchForBaseAndArgs(baseType, argTypes).stream())
+          .collect(toImmutableList());
+    }
+  }
+
+  private final class PluginMethodRegistry implements SoyMethod.Registry {
+
+    private final PluginResolver plugins;
+    private final LoadingCache<String, ImmutableList<SoySourceFunctionMethod>> methodCache =
+        CacheBuilder.newBuilder()
+            .build(
+                new CacheLoader<String, ImmutableList<SoySourceFunctionMethod>>() {
+                  @Override
+                  public ImmutableList<SoySourceFunctionMethod> load(String methodName) {
+                    ImmutableList.Builder<SoySourceFunctionMethod> methods =
+                        ImmutableList.builder();
+                    List<SoySourceFunction> functions = plugins.lookupSoyMethods(methodName);
+                    for (SoySourceFunction function : functions) {
+                      SoyMethodSignature methodSig =
+                          function.getClass().getAnnotation(SoyMethodSignature.class);
+                      SoyType baseType = parseType(methodSig.baseType(), function);
+
+                      for (Signature signature : methodSig.value()) {
+                        SoyType returnType = parseType(signature.returnType(), function);
+                        ImmutableList<SoyType> argTypes =
+                            Arrays.stream(signature.parameterTypes())
+                                .map(s -> parseType(s, function))
+                                .collect(toImmutableList());
+
+                        methods.add(
+                            new SoySourceFunctionMethod(
+                                function, baseType, returnType, argTypes, methodSig.name()));
+                      }
+                    }
+                    return methods.build();
+                  }
+
+                  private SoyType parseType(String t, SoySourceFunction fct) {
+                    TypeNode typeNode =
+                        SoyFileParser.parseType(t, fct.getClass().getName(), errorReporter);
+                    return typeNode != null
+                        ? typeNodeConverter.getOrCreateType(typeNode)
+                        : ErrorType.getInstance();
+                  }
+                });
+
+    PluginMethodRegistry(PluginResolver plugins) {
+      this.plugins = plugins;
+    }
+
+    @Override
+    public ImmutableList<SoySourceFunctionMethod> matchForNameAndBase(
+        String methodName, SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      return methodCache.getUnchecked(methodName).stream()
+          .filter(m -> m.appliesToBase(baseType))
+          .collect(toImmutableList());
+    }
+
+    @Override
+    public ImmutableList<? extends SoyMethod> matchForBaseAndArgs(
+        SoyType baseType, List<SoyType> argTypes) {
+      return plugins.getAllMethodNames().stream()
+          .flatMap(methodName -> methodCache.getUnchecked(methodName).stream())
+          .filter(m -> m.appliesToBase(baseType) && m.getNumArgs() == argTypes.size())
+          .collect(toImmutableList());
     }
   }
 }

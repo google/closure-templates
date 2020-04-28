@@ -26,7 +26,6 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
@@ -34,6 +33,7 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.JavaPluginValidator;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
@@ -62,7 +62,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
     Expression getPluginInstance(String pluginName);
   }
 
-  private final FunctionNode fnNode;
+  private final JavaPluginExecContext fnNode;
   private final JavaPluginContext context;
   private final PluginInstanceLookup pluginInstanceLookup;
   private final JavaPluginValidator pluginValidator;
@@ -70,7 +70,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   private final ErrorReporter errorReporter;
 
   JbcSrcValueFactory(
-      FunctionNode fnNode,
+      JavaPluginExecContext fnNode,
       final JbcSrcPluginContext jbcPluginContext,
       PluginInstanceLookup pluginInstanceLookup,
       ErrorReporter errorReporter,
@@ -103,23 +103,23 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   SoyExpression computeForJavaSource(List<SoyExpression> args) {
     ErrorReporter.Checkpoint checkpoint = errorReporter.checkpoint();
-    checkState(fnNode.getAllowedParamTypes() != null, "allowed param types must be set");
+    checkState(fnNode.getParamTypes() != null, "allowed param types must be set");
     checkState(
-        fnNode.getAllowedParamTypes().size() == args.size(),
+        fnNode.getParamTypes().size() == args.size(),
         "wrong # of allowed param types (%s), expected %s",
-        fnNode.getAllowedParamTypes(),
+        fnNode.getParamTypes(),
         args.size());
     pluginValidator.validate(
         fnNode.getFunctionName(),
-        (SoyJavaSourceFunction) fnNode.getSoyFunction(),
-        fnNode.getAllowedParamTypes(),
-        fnNode.getType(),
+        fnNode.getSourceFunction(),
+        fnNode.getParamTypes(),
+        fnNode.getReturnType(),
         fnNode.getSourceLocation(),
         /* includeTriggeredInTemplateMsg= */ true);
     if (errorReporter.errorsSince(checkpoint)) {
       return SoyExpression.NULL_BOXED;
     }
-    SoyJavaSourceFunction javaSrcFn = (SoyJavaSourceFunction) fnNode.getSoyFunction();
+    SoyJavaSourceFunction javaSrcFn = fnNode.getSourceFunction();
     return toSoyExpression(
         (JbcSrcJavaValue)
             javaSrcFn.applyForJavaSource(
@@ -349,7 +349,7 @@ final class JbcSrcValueFactory extends JavaValueFactory {
   }
 
   private SoyExpression toSoyExpression(JbcSrcJavaValue pluginReturnValue) {
-    SoyType expectedType = fnNode.getType();
+    SoyType expectedType = fnNode.getReturnType();
     Expression expr = pluginReturnValue.expr();
     SoyExpression soyExpr = null;
 

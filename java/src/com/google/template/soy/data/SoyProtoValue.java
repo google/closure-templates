@@ -169,12 +169,17 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
    *     semantics)
    */
   public SoyValue getProtoField(String name) {
+    return getProtoField(name, /* useBrokenProtoSemantics= */ true);
+  }
+
+  public SoyValue getProtoField(String name, boolean useBrokenProtoSemantics) {
     FieldWithInterpreter field = clazz().fields.get(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "Proto " + proto.getClass().getName() + " does not have a field of name " + name);
     }
-    if (field.shouldCheckFieldPresenceToEmulateJspbNullability()
+    if (useBrokenProtoSemantics
+        && field.shouldCheckFieldPresenceToEmulateJspbNullability()
         && !proto.hasField(field.getDescriptor())) {
       return NullData.INSTANCE;
     }

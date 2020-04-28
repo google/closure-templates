@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -142,7 +143,7 @@ public final class PluginResolver {
   private final Mode mode;
   private final ImmutableMap<String, SoyPrintDirective> printDirectives;
   private final ImmutableMap<String, Object> functions;
-  private final ImmutableMap<String, Map<String, SoySourceFunction>> methods;
+  private final ImmutableMap<String, ImmutableMap<String, SoySourceFunction>> methods;
   private final ErrorReporter reporter;
 
   public PluginResolver(
@@ -260,7 +261,9 @@ public final class PluginResolver {
       }
       methods.put(methodName, baseTypeToSourceFnMap);
     }
-    this.methods = ImmutableMap.copyOf(methods);
+    this.methods =
+        methods.entrySet().stream()
+            .collect(toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
   }
 
   /**
@@ -326,19 +329,16 @@ public final class PluginResolver {
     return soyFunction;
   }
 
-  /**
-   * Returns a list of SoySourceFunctions of methods with the given name.
-   *
-   * <p>An error will be reported according to the current {@link Mode} and a placeholder function
-   * will be returned if it cannot be found.
-   */
-  public List<SoySourceFunction> lookupSoyMethod(String name, SourceLocation location) {
-    Map<String, SoySourceFunction> methodBaseTypeToFunctionMap = methods.get(name);
+  public ImmutableList<SoySourceFunction> lookupSoyMethods(String methodName) {
+    ImmutableMap<String, SoySourceFunction> methodBaseTypeToFunctionMap = methods.get(methodName);
     if (methodBaseTypeToFunctionMap == null) {
-      reportMissing(location, "method", name, methods.keySet());
       return ImmutableList.of();
     }
     return ImmutableList.copyOf(methodBaseTypeToFunctionMap.values());
+  }
+
+  public ImmutableSet<String> getAllMethodNames() {
+    return methods.keySet();
   }
 
   private void reportMissing(

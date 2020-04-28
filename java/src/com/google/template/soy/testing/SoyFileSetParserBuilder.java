@@ -39,6 +39,8 @@ import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Arrays;
@@ -61,10 +63,10 @@ public final class SoyFileSetParserBuilder {
   // disable optimization by default
   private boolean runOptimizer = false;
   private final SoyScopedData scopedData;
-  private ImmutableList<SoyFunction> soyFunctions;
-  private ImmutableList<SoyPrintDirective> soyPrintDirectives;
-  private ImmutableList<SoySourceFunction> sourceFunctions;
-  private ImmutableList<SoySourceFunction> soyMethods;
+  private ImmutableList.Builder<SoyFunction> soyFunctions;
+  private ImmutableList.Builder<SoyPrintDirective> soyPrintDirectives;
+  private ImmutableList.Builder<SoySourceFunction> sourceFunctions;
+  private ImmutableList.Builder<SoySourceFunction> soyMethods;
   private ImmutableList<CompilationUnitAndKind> compilationUnits;
   private SoyGeneralOptions options = new SoyGeneralOptions();
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
@@ -128,10 +130,15 @@ public final class SoyFileSetParserBuilder {
     }
     this.soyFileSuppliers = builder.build();
     this.scopedData = new SoySimpleScope();
-    this.soyFunctions = InternalPlugins.internalLegacyFunctions();
-    this.soyPrintDirectives = InternalPlugins.internalDirectives(scopedData);
-    this.sourceFunctions = InternalPlugins.internalFunctions();
-    this.soyMethods = InternalPlugins.internalMethods();
+    this.soyFunctions =
+        ImmutableList.<SoyFunction>builder().addAll(InternalPlugins.internalLegacyFunctions());
+    this.soyPrintDirectives =
+        ImmutableList.<SoyPrintDirective>builder()
+            .addAll(InternalPlugins.internalDirectives(scopedData));
+    this.sourceFunctions =
+        ImmutableList.<SoySourceFunction>builder().addAll(InternalPlugins.internalFunctions());
+    this.soyMethods =
+        ImmutableList.<SoySourceFunction>builder().addAll(InternalPlugins.internalMethods());
     this.compilationUnits = ImmutableList.of();
   }
 
@@ -151,35 +158,33 @@ public final class SoyFileSetParserBuilder {
   }
 
   public SoyFileSetParserBuilder addSoyFunctions(Iterable<? extends SoyFunction> newSoyFunctions) {
-    this.soyFunctions =
-        ImmutableList.<SoyFunction>builder()
-            .addAll(this.soyFunctions)
-            .addAll(newSoyFunctions)
-            .build();
+    this.soyFunctions.addAll(newSoyFunctions);
     return this;
   }
 
   public SoyFileSetParserBuilder addSoySourceFunction(SoySourceFunction function) {
-    return addSoySourceFunctions(ImmutableList.of(function));
+    boolean method = false;
+    if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
+      soyMethods.add(function);
+      method = true;
+    }
+    if (!method || function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+      sourceFunctions.add(function);
+    }
+    return this;
   }
 
   public SoyFileSetParserBuilder addSoySourceFunctions(
       Iterable<? extends SoySourceFunction> newSourceFunctions) {
-    this.sourceFunctions =
-        ImmutableList.<SoySourceFunction>builder()
-            .addAll(this.sourceFunctions)
-            .addAll(newSourceFunctions)
-            .build();
+    for (SoySourceFunction function : newSourceFunctions) {
+      addSoySourceFunction(function);
+    }
     return this;
   }
 
   public SoyFileSetParserBuilder addPrintDirectives(
       Iterable<? extends SoyPrintDirective> newSoyPrintDirectives) {
-    this.soyPrintDirectives =
-        ImmutableList.<SoyPrintDirective>builder()
-            .addAll(this.soyPrintDirectives)
-            .addAll(newSoyPrintDirectives)
-            .build();
+    this.soyPrintDirectives.addAll(newSoyPrintDirectives);
     return this;
   }
 
@@ -188,11 +193,7 @@ public final class SoyFileSetParserBuilder {
   }
 
   public SoyFileSetParserBuilder addMethods(Iterable<? extends SoySourceFunction> newMethods) {
-    soyMethods =
-        ImmutableList.<SoySourceFunction>builder()
-            .addAll(this.soyMethods)
-            .addAll(newMethods)
-            .build();
+    this.soyMethods.addAll(newMethods);
     return this;
   }
 
@@ -310,7 +311,7 @@ public final class SoyFileSetParserBuilder {
   public SoyFileSetParser build() {
     // Add the remaining PassManager configuration bits.
     passManager
-        .setSoyPrintDirectives(soyPrintDirectives)
+        .setSoyPrintDirectives(soyPrintDirectives.build())
         .setErrorReporter(errorReporter)
         .setTypeRegistry(typeRegistry)
         .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
@@ -319,10 +320,10 @@ public final class SoyFileSetParserBuilder {
         .setPluginResolver(
             new PluginResolver(
                 PluginResolver.Mode.REQUIRE_DEFINITIONS,
-                soyPrintDirectives,
-                soyFunctions,
-                sourceFunctions,
-                soyMethods,
+                soyPrintDirectives.build(),
+                soyFunctions.build(),
+                sourceFunctions.build(),
+                soyMethods.build(),
                 errorReporter))
         .setAutoescaperEnabled(runAutoescaper)
         .optimize(runOptimizer)

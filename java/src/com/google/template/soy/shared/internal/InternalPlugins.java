@@ -16,14 +16,12 @@
 
 package com.google.template.soy.shared.internal;
 
-
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.basicdirectives.BasicDirectives;
 import com.google.template.soy.basicfunctions.BasicFunctions;
-import com.google.template.soy.basicmethods.BasicMethods;
 import com.google.template.soy.bididirectives.BidiDirectives;
 import com.google.template.soy.bidifunctions.BidiFunctions;
 import com.google.template.soy.coredirectives.CoreDirectives;
@@ -81,7 +79,7 @@ public final class InternalPlugins {
   }
 
   public static ImmutableList<SoySourceFunction> internalMethods() {
-    return ImmutableList.copyOf(BasicMethods.methods());
+    return ImmutableList.of();
   }
 
   /**

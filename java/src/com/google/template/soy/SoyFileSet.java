@@ -75,6 +75,8 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.shared.internal.SoySimpleScope;
 import com.google.template.soy.shared.internal.gencode.GeneratedFile;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -151,6 +153,7 @@ public final class SoyFileSet {
     private final ImmutableSet.Builder<SoyPrintDirective> soyPrintDirectives =
         ImmutableSet.builder();
     private final ImmutableSet.Builder<SoySourceFunction> sourceFunctions = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SoySourceFunction> sourceMethods = ImmutableSet.builder();
 
     private Builder(boolean ignored) {
       // we use an ignored parameter to prevent guice from creating implicit bindings for this
@@ -207,7 +210,10 @@ public final class SoyFileSet {
               .addAll(InternalPlugins.internalFunctions())
               .addAll(sourceFunctions.build())
               .build(),
-          ImmutableList.copyOf(InternalPlugins.internalMethods()),
+          ImmutableList.<SoySourceFunction>builder()
+              .addAll(InternalPlugins.internalMethods())
+              .addAll(sourceMethods.build())
+              .build(),
           filesBuilder.build(),
           compilationUnitsBuilder.build(),
           getGeneralOptions(),
@@ -222,13 +228,29 @@ public final class SoyFileSet {
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
     public Builder addSourceFunction(SoySourceFunction function) {
-      sourceFunctions.add(function);
+      boolean method = false;
+      if (function.getClass().isAnnotationPresent(SoyMethodSignature.class)) {
+        sourceMethods.add(function);
+        method = true;
+      }
+      if (!method || function.getClass().isAnnotationPresent(SoyFunctionSignature.class)) {
+        sourceFunctions.add(function);
+      }
       return this;
     }
 
     /** Adds many {@link SoySourceFunction}s to the functions used by this SoyFileSet. */
     public Builder addSourceFunctions(Iterable<? extends SoySourceFunction> function) {
-      sourceFunctions.addAll(function);
+      for (SoySourceFunction f : function) {
+        addSourceFunction(f);
+      }
+      return this;
+    }
+
+    public Builder addSourceMethod(SoySourceFunction function) {
+      Preconditions.checkArgument(
+          function.getClass().isAnnotationPresent(SoyMethodSignature.class));
+      sourceMethods.add(function);
       return this;
     }
 
@@ -927,11 +949,7 @@ public final class SoyFileSet {
       ServerCompilationPrimitives primitives, Map<String, Supplier<Object>> pluginInstances) {
     Optional<CompiledTemplates> templates =
         BytecodeCompiler.compile(
-            primitives.registry,
-            primitives.soyTree,
-            errorReporter,
-            soyFileSuppliers,
-            typeRegistry);
+            primitives.registry, primitives.soyTree, errorReporter, soyFileSuppliers, typeRegistry);
 
     throwIfErrorsPresent();
 

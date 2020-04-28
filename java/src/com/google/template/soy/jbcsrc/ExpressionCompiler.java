@@ -30,7 +30,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.basicmethods.GetExtensionMethod;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
@@ -97,8 +96,12 @@ import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.shared.restricted.SoyMethod;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -1117,19 +1120,33 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(node.getType(), soyValue);
     }
 
-    private static SoyExpression visitMethodCall(SoyExpression baseExpr, MethodCallNode node) {
+    private SoyExpression visitMethodCall(SoyExpression baseExpr, MethodCallNode node) {
       // All null safe accesses should've already been converted to NullSafeAccessNodes.
       checkArgument(!node.isNullSafe());
-      // TODO(b/147372851): Handle case when the implementation of the method cannot be determined
-      // from the base type during compile time and the node has multiple SoySourceFunctions.
       checkArgument(node.isMethodResolved());
 
-      if (GetExtensionMethod.isGetExtensionMethodCall(node)) {
-        SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-        return ProtoUtils.accessExtensionField(protoType, baseExpr, node);
+      SoyMethod function = node.getSoyMethod();
+      if (function instanceof BuiltinMethod) {
+        BuiltinMethod builtinMethod = (BuiltinMethod) function;
+        switch (builtinMethod) {
+          case GET_EXTENSION:
+            return ProtoUtils.accessExtensionField(
+                baseExpr,
+                node,
+                BuiltinMethod.getProtoExtensionIdFromMethodCall(node),
+                /* useBrokenSemantics= */ true);
+        }
+      } else if (function instanceof SoySourceFunctionMethod) {
+        // TODO(user): If baseExpr evaluates to null then this should fail rather than calling
+        // the function with a null first parameter.
+        SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
+        List<SoyExpression> args = new ArrayList<>(node.numParams() + 1);
+        args.add(baseExpr);
+        node.getParams().forEach(n -> args.add(visit(n)));
+        return visitSoyJavaSourceFunction(
+            JavaPluginExecContext.forMethodCallNode(node, sourceMethod), args);
       }
-      // TODO(b/147372851): Implement method calls for normal SoyMethodSignature methods.
-      return baseExpr;
+      throw new AssertionError(function.getClass());
     }
 
     @Override
@@ -1393,45 +1410,8 @@ final class ExpressionCompiler {
       Object fn = node.getSoyFunction();
       List<SoyExpression> args = visitChildren(node);
       if (fn instanceof SoyJavaSourceFunction) {
-        return new JbcSrcValueFactory(
-                node,
-                // parameters is null when we are in a constant context.
-                parameters == null
-                    ? new JbcSrcPluginContext() {
-                      private Expression error() {
-                        throw new UnsupportedOperationException(
-                            "Cannot access contextual data from a pure context");
-                      }
-
-                      @Override
-                      public Expression getBidiGlobalDir() {
-                        return error();
-                      }
-
-                      @Override
-                      public Expression getAllRequiredCssNamespaces(SoyExpression template) {
-                        return error();
-                      }
-
-                      @Override
-                      public Expression getULocale() {
-                        return error();
-                      }
-                    }
-                    : parameters.getPluginContext(),
-                new JbcSrcValueFactory.PluginInstanceLookup() {
-                  @Override
-                  public Expression getPluginInstance(String pluginName) {
-                    if (parameters == null) {
-                      throw new UnsupportedOperationException(
-                          "Pure functions cannot have instances");
-                    }
-                    return parameters.getRenderContext().getPluginInstance(pluginName);
-                  }
-                },
-                reporter,
-                registry)
-            .computeForJavaSource(args);
+        return visitSoyJavaSourceFunction(
+            JavaPluginExecContext.forFunctionNode(node, (SoyJavaSourceFunction) fn), args);
       }
 
       // Functions that are not a SoyJavaSourceFunction
@@ -1448,6 +1428,45 @@ final class ExpressionCompiler {
           MethodRef.RUNTIME_CALL_LEGACY_FUNCTION
               .invoke(legacyFunctionRuntimeExpr, list)
               .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+    }
+
+    SoyExpression visitSoyJavaSourceFunction(
+        JavaPluginExecContext context, List<SoyExpression> args) {
+      return new JbcSrcValueFactory(
+              context,
+              // parameters is null when we are in a constant context.
+              parameters == null
+                  ? new JbcSrcPluginContext() {
+                    private Expression error() {
+                      throw new UnsupportedOperationException(
+                          "Cannot access contextual data from a pure context");
+                    }
+
+                    @Override
+                    public Expression getBidiGlobalDir() {
+                      return error();
+                    }
+
+                    @Override
+                    public Expression getAllRequiredCssNamespaces(SoyExpression template) {
+                      return error();
+                    }
+
+                    @Override
+                    public Expression getULocale() {
+                      return error();
+                    }
+                  }
+                  : parameters.getPluginContext(),
+              pluginName -> {
+                if (parameters == null) {
+                  throw new UnsupportedOperationException("Pure functions cannot have instances");
+                }
+                return parameters.getRenderContext().getPluginInstance(pluginName);
+              },
+              reporter,
+              registry)
+          .computeForJavaSource(args);
     }
 
     // Proto initialization calls
