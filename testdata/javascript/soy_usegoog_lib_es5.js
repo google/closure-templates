@@ -789,22 +789,14 @@ goog.globalEval = function(script) {
     goog.global.execScript(script, "JavaScript");
   } else {
     if (goog.global.eval) {
-      if (null == goog.evalWorksForGlobals_) {
+      if (null == goog.evalWorks_) {
         try {
-          goog.global.eval("var _evalTest_ = 1;");
+          goog.global.eval(""), goog.evalWorks_ = !0;
         } catch (ignore) {
-        }
-        if ("undefined" != typeof goog.global._evalTest_) {
-          try {
-            delete goog.global._evalTest_;
-          } catch (ignore$3) {
-          }
-          goog.evalWorksForGlobals_ = !0;
-        } else {
-          goog.evalWorksForGlobals_ = !1;
+          goog.evalWorks_ = !1;
         }
       }
-      if (goog.evalWorksForGlobals_) {
+      if (goog.evalWorks_) {
         goog.global.eval(script);
       } else {
         var doc = goog.global.document, scriptElt = doc.createElement("script");
@@ -819,7 +811,7 @@ goog.globalEval = function(script) {
     }
   }
 };
-goog.evalWorksForGlobals_ = null;
+goog.evalWorks_ = null;
 goog.getCssName = function(className, opt_modifier) {
   if ("." == String(className).charAt(0)) {
     throw Error('className passed in goog.getCssName must not start with ".". You passed: ' + className);
@@ -928,7 +920,6 @@ goog.createTrustedTypesPolicy = function(name) {
   }
   return policy;
 };
-goog.TRUSTED_TYPES_POLICY_ = goog.TRUSTED_TYPES_POLICY_NAME ? goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + "#base") : null;
 goog.i18n = {};
 goog.i18n.bidi = {};
 goog.i18n.bidi.FORCE_RTL = !1;
@@ -1873,8 +1864,8 @@ goog.object.equals = function(a, b) {
       return !1;
     }
   }
-  for (var k$4 in b) {
-    if (!(k$4 in a)) {
+  for (var k$3 in b) {
+    if (!(k$3 in a)) {
       return !1;
     }
   }
@@ -5986,9 +5977,9 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
       for (;;) {
         f.call(opt_obj, iterable.next(), void 0, iterable);
       }
-    } catch (ex$5) {
-      if (ex$5 !== goog.iter.StopIteration) {
-        throw ex$5;
+    } catch (ex$4) {
+      if (ex$4 !== goog.iter.StopIteration) {
+        throw ex$4;
       }
     }
   }
@@ -7700,14 +7691,14 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
   return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-var JSCompiler_inline_result$jscomp$8;
+var JSCompiler_inline_result$jscomp$7;
 if (goog.global.document && goog.userAgent.IE) {
-  var documentMode$jscomp$inline_14 = goog.userAgent.getDocumentMode_();
-  JSCompiler_inline_result$jscomp$8 = documentMode$jscomp$inline_14 ? documentMode$jscomp$inline_14 : parseInt(goog.userAgent.VERSION, 10) || void 0;
+  var documentMode$jscomp$inline_13 = goog.userAgent.getDocumentMode_();
+  JSCompiler_inline_result$jscomp$7 = documentMode$jscomp$inline_13 ? documentMode$jscomp$inline_13 : parseInt(goog.userAgent.VERSION, 10) || void 0;
 } else {
-  JSCompiler_inline_result$jscomp$8 = void 0;
+  JSCompiler_inline_result$jscomp$7 = void 0;
 }
-goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$8;
+goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$7;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
@@ -7809,7 +7800,7 @@ goog.debug.normalizeErrorObject = function(err) {
   }
   try {
     var fileName = err.fileName || err.filename || err.sourceURL || goog.global.$googDebugFname || href;
-  } catch (e$6) {
+  } catch (e$5) {
     fileName = "Not available", threwError = !0;
   }
   if (!(!threwError && err.lineNumber && err.fileName && err.stack && err.message && err.name)) {
