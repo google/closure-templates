@@ -4997,15 +4997,13 @@ goog.dom.safe.setObjectData = function(object, url) {
 goog.dom.safe.setScriptSrc = function(script, url) {
   goog.dom.asserts.assertIsHTMLScriptElement(script);
   script.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
-  goog.dom.safe.setNonceForScriptElement_(script);
+  var nonce = goog.getScriptNonce();
+  nonce && script.setAttribute("nonce", nonce);
 };
 goog.dom.safe.setScriptContent = function(script, content) {
   goog.dom.asserts.assertIsHTMLScriptElement(script);
   script.text = goog.html.SafeScript.unwrapTrustedScript(content);
-  goog.dom.safe.setNonceForScriptElement_(script);
-};
-goog.dom.safe.setNonceForScriptElement_ = function(script) {
-  var nonce = goog.getScriptNonce(script.ownerDocument && script.ownerDocument.defaultView);
+  var nonce = goog.getScriptNonce();
   nonce && script.setAttribute("nonce", nonce);
 };
 goog.dom.safe.setLocationHref = function(loc, url) {
