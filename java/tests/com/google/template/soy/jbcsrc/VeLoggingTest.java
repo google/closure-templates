@@ -281,6 +281,23 @@ public final class VeLoggingTest {
     assertThat(sb.toString()).contains("depth_placeholder");
   }
 
+  @Test
+  public void testLogging_elvis() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        testLogger,
+        "{let $log kind='html'}",
+        "  {velog Foo}",
+        "    <div>hello</div>",
+        "  {/velog}",
+        "{/let}",
+        "{$log ?: ''}");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+    assertThat(sb.toString()).isEqualTo("<div>hello</div>");
+  }
+
   private void renderTemplate(
       OutputAppendable output, SoyLogger logger, String... templateBodyLines) throws IOException {
     renderTemplate(ImmutableMap.of(), output, logger, templateBodyLines);

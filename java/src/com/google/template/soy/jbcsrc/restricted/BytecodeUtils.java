@@ -658,7 +658,23 @@ public final class BytecodeUtils {
    * condition ? left : right}
    */
   public static Expression ternary(
-      final Expression condition, final Expression trueBranch, final Expression falseBranch) {
+      Expression condition, Expression trueBranch, Expression falseBranch) {
+    return ternary(condition, trueBranch, falseBranch, trueBranch.resultType());
+  }
+
+  /**
+   * Returns an expression that evaluates equivalently to a java ternary expression: {@code
+   * condition ? left : right}.
+   *
+   * <p>This allows the caller to specify the result type of the ternary expression. By default the
+   * ternary expression is typed with the type of the true branch, but the caller can specify the
+   * result type if they know more about the types of the branches.
+   */
+  public static Expression ternary(
+      final Expression condition,
+      final Expression trueBranch,
+      final Expression falseBranch,
+      Type resultType) {
     checkArgument(condition.resultType().equals(Type.BOOLEAN_TYPE));
     checkArgument(trueBranch.resultType().getSort() == falseBranch.resultType().getSort());
     Features features = Features.of();
@@ -668,7 +684,7 @@ public final class BytecodeUtils {
     if (trueBranch.isNonNullable() && falseBranch.isNonNullable()) {
       features = features.plus(Feature.NON_NULLABLE);
     }
-    return new Expression(trueBranch.resultType(), features) {
+    return new Expression(resultType, features) {
       @Override
       protected void doGen(CodeBuilder mv) {
         condition.gen(mv);
