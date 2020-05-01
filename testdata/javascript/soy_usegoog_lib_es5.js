@@ -877,20 +877,12 @@ goog.defineClass = function(superClass, def) {
   return cls;
 };
 goog.defineClass.SEAL_CLASS_INSTANCES = goog.DEBUG;
-goog.defineClass.createSealingConstructor_ = function(ctr, superClass) {
-  if (!goog.defineClass.SEAL_CLASS_INSTANCES) {
-    return ctr;
-  }
-  var superclassSealable = !goog.defineClass.isUnsealable_(superClass), wrappedCtr = function() {
+goog.defineClass.createSealingConstructor_ = function(ctr) {
+  return goog.defineClass.SEAL_CLASS_INSTANCES ? function() {
     var instance = ctr.apply(this, arguments) || this;
     instance[goog.UID_PROPERTY_] = instance[goog.UID_PROPERTY_];
-    this.constructor === wrappedCtr && superclassSealable && Object.seal instanceof Function && Object.seal(instance);
     return instance;
-  };
-  return wrappedCtr;
-};
-goog.defineClass.isUnsealable_ = function(ctr) {
-  return ctr && ctr.prototype && ctr.prototype[goog.UNSEALABLE_CONSTRUCTOR_PROPERTY_];
+  } : ctr;
 };
 goog.defineClass.OBJECT_PROTOTYPE_FIELDS_ = "constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf".split(" ");
 goog.defineClass.applyProperties_ = function(target, source) {
@@ -903,7 +895,6 @@ goog.defineClass.applyProperties_ = function(target, source) {
 };
 goog.tagUnsealableClass = function() {
 };
-goog.UNSEALABLE_CONSTRUCTOR_PROPERTY_ = "goog_defineClass_legacy_unsealable";
 goog.TRUSTED_TYPES_POLICY_NAME = "";
 goog.identity_ = function(s) {
   return s;
