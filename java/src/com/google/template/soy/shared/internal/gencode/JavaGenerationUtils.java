@@ -22,7 +22,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -321,14 +320,7 @@ public final class JavaGenerationUtils {
     // Add proto init
     for (ProtoInitNode protoInit : SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class)) {
       if (protoInit.getType().getKind() == Kind.PROTO) {
-        SoyProtoType proto = (SoyProtoType) protoInit.getType();
-        protoTypes.add(proto.getDescriptorExpression());
-        for (Identifier paramName : protoInit.getParamNames()) {
-          FieldDescriptor fieldDescriptor = proto.getFieldDescriptor(paramName.identifier());
-          if (fieldDescriptor.isExtension()) {
-            protoTypes.add(ProtoUtils.getQualifiedOuterClassname(fieldDescriptor));
-          }
-        }
+        protoTypes.add(((SoyProtoType) protoInit.getType()).getDescriptorExpression());
       }
     }
 

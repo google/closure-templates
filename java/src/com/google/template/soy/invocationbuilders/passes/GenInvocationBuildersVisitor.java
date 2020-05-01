@@ -246,6 +246,7 @@ public final class GenInvocationBuildersVisitor
             + "com.google.protobuf.Descriptors.FileDescriptor> "
             + PROTOS_FIELD
             + " = ");
+    // Omit injected params from the list of params passed to the builder.
     appendFunctionCallWithParamsOnNewLines(
         ilb, "com.google.common.collect.ImmutableList.of", protoTypes);
     ilb.appendLineEnd(";");
