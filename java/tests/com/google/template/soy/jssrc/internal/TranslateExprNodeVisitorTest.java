@@ -247,6 +247,7 @@ public final class TranslateExprNodeVisitorTest {
             + " */\n"
             + "ns.foo.Params;\n"
             + "if (goog.DEBUG) {\n"
+            + "  /** @type {string} */\n"
             + "  ns.foo.soyTemplateName = 'ns.foo';\n"
             + "}\n";
 
