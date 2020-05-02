@@ -305,7 +305,6 @@ public final class GenJsCodeVisitorTest {
             + " '', false)(null, opt_ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_.soyTemplateName ="
             + " 'boo.foo.__deltemplate_MySecretFeature_myDelegates_goo_';\n"
             + "}\n"
@@ -361,7 +360,6 @@ public final class GenJsCodeVisitorTest {
             + " 'moomoo', false)(null, opt_ijData));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  boo.foo.__deltemplate__myDelegates_goo_googoo.soyTemplateName ="
             + " 'boo.foo.__deltemplate__myDelegates_goo_googoo';\n"
             + "}\n"
@@ -1270,7 +1268,6 @@ public final class GenJsCodeVisitorTest {
             + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml('Blah');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  boo.foo.goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 
@@ -1328,7 +1325,6 @@ public final class GenJsCodeVisitorTest {
             + "};\n"
             + "exports.goo = $goo;\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  $goo.soyTemplateName = 'boo.foo.goo';\n"
             + "}\n";
 
@@ -1382,7 +1378,6 @@ public final class GenJsCodeVisitorTest {
             + " opt_ijData)));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  ns.callWithUnknownHTMLTemplate.soyTemplateName ="
             + " 'ns.callWithUnknownHTMLTemplate';\n"
             + "}\n";
@@ -1438,7 +1433,6 @@ public final class GenJsCodeVisitorTest {
             + "ns.fakeTemplate(null, opt_ijData)));\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  ns.callWithUnknownAttributeTemplate.soyTemplateName ="
             + " 'ns.callWithUnknownAttributeTemplate';\n"
             + "}\n";
@@ -1493,7 +1487,6 @@ public final class GenJsCodeVisitorTest {
             + " soy.$$filterHtmlAttributes(ns.fakeTemplate(null, opt_ijData)) + '></div>');\n"
             + "};\n"
             + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
             + "  ns.callWithUnknownAttributeTemplateInHTML.soyTemplateName ="
             + " 'ns.callWithUnknownAttributeTemplateInHTML';\n"
             + "}\n";
