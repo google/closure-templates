@@ -67,7 +67,7 @@ public final class SoyProtoType extends SoyType {
     }
 
     @Override
-    protected SoyType visitEnum(EnumDescriptor enumType) {
+    protected SoyType visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
       return registry.getType(enumType.getFullName());
     }
 

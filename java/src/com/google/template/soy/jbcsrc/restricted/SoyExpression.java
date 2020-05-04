@@ -81,6 +81,10 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(getUnboxedType(listType), delegate);
   }
 
+  public static SoyExpression forBoxedList(ListType listType, Expression delegate) {
+    return new SoyExpression(SoyRuntimeType.getBoxedType(listType), delegate);
+  }
+
   public static SoyExpression forLegacyObjectMap(LegacyObjectMapType mapType, Expression delegate) {
     return new SoyExpression(SoyRuntimeType.getBoxedType(mapType), delegate);
   }

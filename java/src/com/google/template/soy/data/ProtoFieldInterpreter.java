@@ -48,8 +48,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** A collaborator for {@link SoyProtoValue} that handles the interpretation of proto fields. */
-abstract class ProtoFieldInterpreter {
+/**
+ * A collaborator for {@link SoyProtoValue} that handles the interpretation of proto fields.
+ *
+ * <p>Do not use outside of Soy code.
+ */
+public abstract class ProtoFieldInterpreter {
   private static final FieldVisitor<ProtoFieldInterpreter> VISITOR =
       new FieldVisitor<ProtoFieldInterpreter>() {
         @Override
@@ -138,7 +142,8 @@ abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        protected ProtoFieldInterpreter visitEnum(EnumDescriptor enumType) {
+        protected ProtoFieldInterpreter visitEnum(
+            EnumDescriptor enumType, FieldDescriptor fieldType) {
           return enumTypeField(enumType);
         }
 
@@ -165,7 +170,6 @@ abstract class ProtoFieldInterpreter {
     return new ProtoFieldInterpreter() {
       @Override
       public SoyValue soyFromProto(Object field) {
-        @SuppressWarnings("unchecked")
         List<?> entries = (List<?>) field;
         ImmutableList.Builder<SoyValueProvider> builder = ImmutableList.builder();
         for (Object item : entries) {
@@ -196,7 +200,7 @@ abstract class ProtoFieldInterpreter {
     return new ProtoFieldInterpreter() {
 
       @Override
-      SoyValue soyFromProto(Object field) {
+      public SoyValue soyFromProto(Object field) {
         @SuppressWarnings("unchecked")
         List<Message> entries = (List<Message>) field;
         Map<SoyValue, SoyValueProvider> map = Maps.newHashMapWithExpectedSize(entries.size());
@@ -229,7 +233,7 @@ abstract class ProtoFieldInterpreter {
   }
 
   /** A {@link ProtoFieldInterpreter} for bytes typed fields. */
-  private static final ProtoFieldInterpreter BYTES =
+  public static final ProtoFieldInterpreter BYTES =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -244,7 +248,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for bool typed fields. */
-  private static final ProtoFieldInterpreter BOOL =
+  public static final ProtoFieldInterpreter BOOL =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -258,7 +262,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for int typed fields. */
-  private static final ProtoFieldInterpreter INT =
+  public static final ProtoFieldInterpreter INT =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -272,7 +276,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for int typed fields. */
-  private static final ProtoFieldInterpreter UNSIGNED_INT =
+  public static final ProtoFieldInterpreter UNSIGNED_INT =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -286,7 +290,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for int64 typed fields interpreted as soy ints. */
-  private static final ProtoFieldInterpreter LONG_AS_INT =
+  public static final ProtoFieldInterpreter LONG_AS_INT =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -300,7 +304,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for int64 typed fields interpreted as soy strings. */
-  private static final ProtoFieldInterpreter LONG_AS_STRING =
+  public static final ProtoFieldInterpreter LONG_AS_STRING =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -318,7 +322,7 @@ abstract class ProtoFieldInterpreter {
    *
    * <p>TODO(lukes): when soy fully switches to java8 use the methods on java.lang.Long
    */
-  private static final ProtoFieldInterpreter UNSIGNEDLONG_AS_STRING =
+  public static final ProtoFieldInterpreter UNSIGNEDLONG_AS_STRING =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -332,7 +336,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for float typed fields. */
-  private static final ProtoFieldInterpreter FLOAT =
+  public static final ProtoFieldInterpreter FLOAT =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -346,7 +350,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for double typed fields interpreted as soy floats. */
-  private static final ProtoFieldInterpreter DOUBLE_AS_FLOAT =
+  public static final ProtoFieldInterpreter DOUBLE_AS_FLOAT =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -360,7 +364,7 @@ abstract class ProtoFieldInterpreter {
       };
 
   /** A {@link ProtoFieldInterpreter} for string typed fields. */
-  private static final ProtoFieldInterpreter STRING =
+  public static final ProtoFieldInterpreter STRING =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -373,7 +377,7 @@ abstract class ProtoFieldInterpreter {
         }
       };
 
-  private static final ProtoFieldInterpreter SAFE_HTML_PROTO =
+  public static final ProtoFieldInterpreter SAFE_HTML_PROTO =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -386,7 +390,7 @@ abstract class ProtoFieldInterpreter {
         }
       };
 
-  private static final ProtoFieldInterpreter SAFE_SCRIPT_PROTO =
+  public static final ProtoFieldInterpreter SAFE_SCRIPT_PROTO =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -399,7 +403,7 @@ abstract class ProtoFieldInterpreter {
         }
       };
 
-  private static final ProtoFieldInterpreter SAFE_STYLE_PROTO =
+  public static final ProtoFieldInterpreter SAFE_STYLE_PROTO =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -412,7 +416,7 @@ abstract class ProtoFieldInterpreter {
         }
       };
 
-  private static final ProtoFieldInterpreter SAFE_STYLE_SHEET_PROTO =
+  public static final ProtoFieldInterpreter SAFE_STYLE_SHEET_PROTO =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -425,7 +429,7 @@ abstract class ProtoFieldInterpreter {
         }
       };
 
-  private static final ProtoFieldInterpreter SAFE_URL_PROTO =
+  public static final ProtoFieldInterpreter SAFE_URL_PROTO =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -437,7 +441,7 @@ abstract class ProtoFieldInterpreter {
           return ((SanitizedContent) field).toSafeUrlProto();
         }
       };
-  private static final ProtoFieldInterpreter TRUSTED_RESOURCE_URI_PROTO =
+  public static final ProtoFieldInterpreter TRUSTED_RESOURCE_URI_PROTO =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -449,6 +453,28 @@ abstract class ProtoFieldInterpreter {
           return ((SanitizedContent) field).toTrustedResourceUrlProto();
         }
       };
+
+  public static final ProtoFieldInterpreter ENUM_FROM_PROTO =
+      new ProtoFieldInterpreter() {
+        @Override
+        public SoyValue soyFromProto(Object field) {
+          int value;
+          if (field instanceof ProtocolMessageEnum) {
+            value = ((ProtocolMessageEnum) field).getNumber();
+          } else {
+            // The value will be an EnumValueDescriptor when fetched via reflection or a
+            // ProtocolMessageEnum otherwise.  Who knows why.
+            value = ((EnumValueDescriptor) field).getNumber();
+          }
+          return IntegerData.forValue(value);
+        }
+
+        @Override
+        Object protoFromSoy(SoyValue field) {
+          throw new UnsupportedOperationException("can't convert enum to proto");
+        }
+      };
+
   /**
    * Returns a {@link ProtoFieldInterpreter} that has the given type and delegates to the
    * SoyValueConverter for interpretation.
@@ -458,15 +484,7 @@ abstract class ProtoFieldInterpreter {
 
       @Override
       public SoyValue soyFromProto(Object field) {
-        int value;
-        if (field instanceof ProtocolMessageEnum) {
-          value = ((ProtocolMessageEnum) field).getNumber();
-        } else {
-          // The value will be an EnumValueDescriptor when fetched via reflection or a
-          // ProtocolMessageEnum otherwise.  Who knows why.
-          value = ((EnumValueDescriptor) field).getNumber();
-        }
-        return IntegerData.forValue(value);
+        return ENUM_FROM_PROTO.soyFromProto(field);
       }
 
       @Override
@@ -484,7 +502,7 @@ abstract class ProtoFieldInterpreter {
     };
   }
 
-  private static final ProtoFieldInterpreter PROTO_MESSAGE =
+  public static final ProtoFieldInterpreter PROTO_MESSAGE =
       new ProtoFieldInterpreter() {
         @Override
         public SoyValue soyFromProto(Object field) {
@@ -500,7 +518,7 @@ abstract class ProtoFieldInterpreter {
   private ProtoFieldInterpreter() {}
 
   /** Returns the SoyValue for the Tofu representation of the given field. */
-  abstract SoyValue soyFromProto(Object field);
+  public abstract SoyValue soyFromProto(Object field);
 
   /**
    * Returns an object that can be assigned to a proto field via the proto reflection APIs.

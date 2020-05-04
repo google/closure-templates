@@ -57,6 +57,7 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.GeneratedMessage.GeneratedExtension;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
+import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
@@ -65,6 +66,7 @@ import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
+import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -189,6 +191,9 @@ final class ProtoUtils {
               MethodRef.create(SanitizedContent.class, "toTrustedResourceUrlProto"))
           .build();
 
+  private static final RepeatedFieldInterpreter REPEATED_FIELD_INTERPRETER =
+      new RepeatedFieldInterpreter();
+
   /**
    * Returns a {@link SoyExpression} for accessing a field of a proto.
    *
@@ -250,7 +255,8 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      if (descriptor.isRepeated()) {
+      // TODO(b/154944123): handle maps and repeated extensions.
+      if (descriptor.isRepeated() && (descriptor.isExtension() || descriptor.isMapField())) {
         return handleRepeated();
       }
 
@@ -279,12 +285,20 @@ final class ProtoUtils {
 
     private SoyExpression handleNormalField(final SoyExpression typedBaseExpr) {
       // TODO(lukes): consider adding a cache for the method lookups.
+      final MethodRef getMethodRef = getGetterMethod(descriptor);
+
+      if (descriptor.isRepeated()) {
+        return SoyExpression.forBoxedList(
+            (ListType) fieldType,
+            MethodRef.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
+                typedBaseExpr.invoke(getMethodRef),
+                FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
+      }
+
       // To implement jspb semantics for proto nullability we need to call has<Field>() methods for
       // a subset of fields as specified in SoyProtoType. Though, we should probably actually be
       // testing against jspb semantics.  The best way forward is probably to first invest in
       // support for protos in our integration tests.
-      final MethodRef getMethodRef = getGetterMethod(descriptor);
-
       if (!shouldCheckForFieldPresence) {
         // Simple case, just call .get and interpret the result
         return interpretField(typedBaseExpr.invoke(getMethodRef));
@@ -1220,15 +1234,27 @@ final class ProtoUtils {
     Preconditions.checkArgument(
         !descriptor.isExtension(), "extensions do not have getter methods. %s", descriptor);
     TypeInfo message = messageRuntimeType(descriptor.getContainingType());
+    String repeatedType = "";
+    Type runtimeType;
     boolean isProto3Enum = isProto3EnumField(descriptor);
+    if (descriptor.isRepeated()) {
+      checkState(!descriptor.isMapField());
+      repeatedType = "List";
+      runtimeType = BytecodeUtils.LIST_TYPE;
+    } else if (isProto3Enum) {
+      runtimeType = Type.INT_TYPE;
+    } else {
+      runtimeType = getRuntimeType(descriptor);
+    }
     return MethodRef.createInstanceMethod(
             message,
             new Method(
                 "get"
                     + getFieldName(descriptor, true)
                     // For proto3 enums we access the Value field
-                    + (isProto3Enum ? "Value" : ""),
-                isProto3Enum ? Type.INT_TYPE : getRuntimeType(descriptor),
+                    + (isProto3Enum ? "Value" : "")
+                    + repeatedType,
+                runtimeType,
                 NO_METHOD_ARGS))
         // All protos are guaranteed to never return null
         .asNonNullable()
@@ -1350,5 +1376,174 @@ final class ProtoUtils {
             + JavaQualifiedNames.getOuterClassname(descriptor.getFile());
     return FieldRef.createPublicStaticField(
         TypeInfo.createClass(containingClass), extensionFieldName, EXTENSION_TYPE);
+  }
+
+  /**
+   * Determines which ProtoFieldInterpreter to use to box values of repeated fields.
+   *
+   * <p>Generates a field access expression to the appropriate ProtoFieldInterpreter.
+   */
+  private static class RepeatedFieldInterpreter extends FieldVisitor<Expression> {
+    private static final FieldRef LONG_AS_INT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "LONG_AS_INT");
+
+    private static final FieldRef UNSIGNED_INT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "UNSIGNED_INT");
+
+    private static final FieldRef UNSIGNEDLONG_AS_STRING =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "UNSIGNEDLONG_AS_STRING");
+
+    private static final FieldRef LONG_AS_STRING =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "LONG_AS_STRING");
+
+    private static final FieldRef BOOL =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "BOOL");
+
+    private static final FieldRef BYTES =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "BYTES");
+
+    private static final FieldRef STRING =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "STRING");
+
+    private static final FieldRef DOUBLE_AS_FLOAT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "DOUBLE_AS_FLOAT");
+
+    private static final FieldRef FLOAT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "FLOAT");
+
+    private static final FieldRef INT =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "INT");
+
+    private static final FieldRef SAFE_HTML_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_HTML_PROTO");
+
+    private static final FieldRef SAFE_SCRIPT_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_SCRIPT_PROTO");
+
+    private static final FieldRef SAFE_STYLE_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_STYLE_PROTO");
+
+    private static final FieldRef SAFE_STYLE_SHEET_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_STYLE_SHEET_PROTO");
+
+    private static final FieldRef SAFE_URL_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "SAFE_URL_PROTO");
+
+    private static final FieldRef TRUSTED_RESOURCE_URI_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "TRUSTED_RESOURCE_URI_PROTO");
+
+    private static final FieldRef PROTO_MESSAGE =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "PROTO_MESSAGE");
+
+    private static final FieldRef ENUM_FROM_PROTO =
+        FieldRef.staticFieldReference(ProtoFieldInterpreter.class, "ENUM_FROM_PROTO");
+
+    @Override
+    protected Expression visitMap(
+        FieldDescriptor mapField, Expression keyInterpreter, Expression valueInterpreter) {
+      throw new AssertionError("visit map key/value individually");
+    }
+
+    @Override
+    protected Expression visitRepeated(Expression valueInterpreter) {
+      return valueInterpreter;
+    }
+
+    @Override
+    protected Expression visitLongAsInt() {
+      return LONG_AS_INT.accessor();
+    }
+
+    @Override
+    protected Expression visitUnsignedInt() {
+      return UNSIGNED_INT.accessor();
+    }
+
+    @Override
+    protected Expression visitUnsignedLongAsString() {
+      return UNSIGNEDLONG_AS_STRING.accessor();
+    }
+
+    @Override
+    protected Expression visitLongAsString() {
+      return LONG_AS_STRING.accessor();
+    }
+
+    @Override
+    protected Expression visitBool() {
+      return BOOL.accessor();
+    }
+
+    @Override
+    protected Expression visitInt() {
+      return INT.accessor();
+    }
+
+    @Override
+    protected Expression visitBytes() {
+      return BYTES.accessor();
+    }
+
+    @Override
+    protected Expression visitString() {
+      return STRING.accessor();
+    }
+
+    @Override
+    protected Expression visitDoubleAsFloat() {
+      return DOUBLE_AS_FLOAT.accessor();
+    }
+
+    @Override
+    protected Expression visitFloat() {
+      return FLOAT.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeHtml() {
+      return SAFE_HTML_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeScript() {
+      return SAFE_SCRIPT_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeStyle() {
+      return SAFE_STYLE_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeStyleSheet() {
+      return SAFE_STYLE_SHEET_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitSafeUrl() {
+      return SAFE_URL_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitTrustedResourceUrl() {
+      return TRUSTED_RESOURCE_URI_PROTO.accessor();
+    }
+
+    @Override
+    protected Expression visitMessage(Descriptor message) {
+      return PROTO_MESSAGE.accessor();
+    }
+
+    @Override
+    protected Expression visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
+      // ENUM_FROM_PROTO converts a proto enum to an int, since Soy represents proto enums as ints
+      // internally. However, for a repeated enum field in a proto3 message we call
+      // getEnumNameValueList (which doesn't exist in proto2 messages and it is what allows proto3
+      // to retain unknown enum values), so the values are already ints.
+      if (fieldType.getFile().getSyntax() == Syntax.PROTO3) {
+        return INT.accessor();
+      }
+      return ENUM_FROM_PROTO.accessor();
+    }
   }
 }
