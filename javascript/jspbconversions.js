@@ -2,7 +2,6 @@
  * @fileoverview Functions to convert safe HTML types under `goog.html`
  * to/from their JSPB protocol message representation.
  *
- * @visibility {//visibility:public}
  */
 
 goog.provide('security.html.jspbconversions');
