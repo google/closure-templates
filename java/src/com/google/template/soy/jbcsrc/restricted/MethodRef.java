@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedInts;
 import com.google.common.primitives.UnsignedLongs;
+import com.google.protobuf.ExtensionLite;
+import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.protobuf.Message;
 import com.google.protobuf.ProtocolMessageEnum;
 import com.google.template.soy.data.Dir;
@@ -472,7 +474,17 @@ public abstract class MethodRef {
 
   public static final MethodRef LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST =
       MethodRef.create(
-          LazyProtoToSoyValueList.class, "forList", List.class, ProtoFieldInterpreter.class);
+              LazyProtoToSoyValueList.class, "forList", List.class, ProtoFieldInterpreter.class)
+          .asNonNullable();
+
+  public static final MethodRef GET_EXTENSION_LIST =
+      MethodRef.create(
+              JbcSrcRuntime.class,
+              "getExtensionList",
+              ExtendableMessage.class,
+              ExtensionLite.class,
+              ProtoFieldInterpreter.class)
+          .asNonNullable();
 
   public static MethodRef create(Class<?> clazz, String methodName, Class<?>... params) {
     java.lang.reflect.Method m;

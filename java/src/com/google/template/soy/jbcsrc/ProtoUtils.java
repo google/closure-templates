@@ -255,8 +255,8 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
-      // TODO(b/154944123): handle maps and repeated extensions.
-      if (descriptor.isRepeated() && (descriptor.isExtension() || descriptor.isMapField())) {
+      // TODO(b/154944123): handle maps.
+      if (descriptor.isMapField()) {
         return handleRepeated();
       }
 
@@ -434,6 +434,16 @@ final class ProtoUtils {
       // stupid java generics work.
       FieldRef extensionField = getExtensionField(descriptor);
       final Expression extensionFieldAccessor = extensionField.accessor();
+
+      if (descriptor.isRepeated()) {
+        return SoyExpression.forBoxedList(
+            (ListType) fieldType,
+            MethodRef.GET_EXTENSION_LIST.invoke(
+                typedBaseExpr,
+                extensionFieldAccessor,
+                FieldVisitor.visitField(descriptor, REPEATED_FIELD_INTERPRETER)));
+      }
+
       if (!descriptor.hasDefaultValue() && shouldCheckForFieldPresence) {
         final Label endLabel = new Label();
         SoyExpression interpretedField =

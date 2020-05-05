@@ -28,11 +28,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
+import com.google.protobuf.ExtensionLite;
+import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
+import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -44,6 +47,7 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
+import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
@@ -851,6 +855,19 @@ public final class JbcSrcRuntime {
     return javaMap.entrySet().stream()
         .collect(
             toImmutableMap(e -> e.getKey(), e -> SoyValueConverter.INSTANCE.convert(e.getValue())));
+  }
+
+  /** For repeated extensions, returns all of the extensions values as a list. */
+  public static <MessageT extends ExtendableMessage<MessageT>, T>
+      LazyProtoToSoyValueList<T> getExtensionList(
+          MessageT message,
+          ExtensionLite<MessageT, List<T>> extension,
+          ProtoFieldInterpreter protoFieldInterpreter) {
+    ImmutableList.Builder<T> list = ImmutableList.builder();
+    for (int i = 0; i < message.getExtensionCount(extension); i++) {
+      list.add(message.getExtension(extension, i));
+    }
+    return LazyProtoToSoyValueList.forList(list.build(), protoFieldInterpreter);
   }
 
   private JbcSrcRuntime() {}
