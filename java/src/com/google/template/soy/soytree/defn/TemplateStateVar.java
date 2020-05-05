@@ -103,6 +103,11 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   }
 
   @Override
+  public boolean isExplicitlyOptional() {
+    return false;
+  }
+
+  @Override
   public @Nullable String desc() {
     return desc;
   }

@@ -49,6 +49,8 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
   /** Whether the param is an injected param. */
   private final boolean isInjected;
 
+  private final boolean isExplicitlyOptional;
+
   @Nullable private final ExprRootNode defaultValue;
 
   public TemplateParam(
@@ -66,6 +68,7 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
     this.desc = desc;
     this.defaultValue = defaultValue == null ? null : new ExprRootNode(defaultValue);
     this.sourceLocation = sourceLocation;
+    this.isExplicitlyOptional = optional;
 
     boolean isNullable = false;
     if (typeNode instanceof UnionTypeNode) {
@@ -104,6 +107,7 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
     this.isInjected = param.isInjected;
     this.sourceLocation = param.sourceLocation;
     this.desc = param.desc;
+    this.isExplicitlyOptional = param.isExplicitlyOptional;
     this.defaultValue =
         param.defaultValue == null ? null : param.defaultValue.copy(new CopyState());
     this.originalTypeNode = param.originalTypeNode == null ? null : param.originalTypeNode.copy();
@@ -149,6 +153,11 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
   @Override
   public boolean isRequired() {
     return isRequired;
+  }
+
+  @Override
+  public boolean isExplicitlyOptional() {
+    return isExplicitlyOptional;
   }
 
   @Override
