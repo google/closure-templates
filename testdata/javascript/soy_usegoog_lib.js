@@ -3999,929 +3999,6 @@ goog.createTrustedTypesPolicy = function(name) {
 };
 
 
-//javascript/closure/i18n/bidi.js
-// Copyright 2007 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Utility functions for supporting Bidi issues.
- */
-
-
-/**
- * Namespace for bidi supporting functions.
- */
-goog.provide('goog.i18n.bidi');
-goog.provide('goog.i18n.bidi.Dir');
-goog.provide('goog.i18n.bidi.DirectionalString');
-goog.provide('goog.i18n.bidi.Format');
-
-
-/**
- * @define {boolean} FORCE_RTL forces the {@link goog.i18n.bidi.IS_RTL} constant
- * to say that the current locale is a RTL locale.  This should only be used
- * if you want to override the default behavior for deciding whether the
- * current locale is RTL or not.
- *
- * {@see goog.i18n.bidi.IS_RTL}
- */
-goog.i18n.bidi.FORCE_RTL = goog.define('goog.i18n.bidi.FORCE_RTL', false);
-
-
-/**
- * Constant that defines whether or not the current locale is a RTL locale.
- * If {@link goog.i18n.bidi.FORCE_RTL} is not true, this constant will default
- * to check that {@link goog.LOCALE} is one of a few major RTL locales.
- *
- * <p>This is designed to be a maximally efficient compile-time constant. For
- * example, for the default goog.LOCALE, compiling
- * "if (goog.i18n.bidi.IS_RTL) alert('rtl') else {}" should produce no code. It
- * is this design consideration that limits the implementation to only
- * supporting a few major RTL locales, as opposed to the broader repertoire of
- * something like goog.i18n.bidi.isRtlLanguage.
- *
- * <p>Since this constant refers to the directionality of the locale, it is up
- * to the caller to determine if this constant should also be used for the
- * direction of the UI.
- *
- * {@see goog.LOCALE}
- *
- * @type {boolean}
- *
- * TODO(user): write a test that checks that this is a compile-time constant.
- */
-// LINT.IfChange
-goog.i18n.bidi.IS_RTL =
-    goog.i18n.bidi.FORCE_RTL ||
-    ((goog.LOCALE.substring(0, 2).toLowerCase() == 'ar' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'fa' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'he' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'iw' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'ps' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'sd' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'ug' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'ur' ||
-      goog.LOCALE.substring(0, 2).toLowerCase() == 'yi') &&
-     (goog.LOCALE.length == 2 || goog.LOCALE.substring(2, 3) == '-' ||
-      goog.LOCALE.substring(2, 3) == '_')) ||
-    (  // Specific to CKB (Central Kurdish)
-        goog.LOCALE.length >= 3 &&
-        goog.LOCALE.substring(0, 3).toLowerCase() == 'ckb' &&
-        (goog.LOCALE.length == 3 || goog.LOCALE.substring(3, 4) == '-' ||
-         goog.LOCALE.substring(3, 4) == '_')) ||
-    (  // 2 letter language codes with RTL scripts
-        goog.LOCALE.length >= 7 &&
-        ((goog.LOCALE.substring(2, 3) == '-' ||
-          goog.LOCALE.substring(2, 3) == '_') &&
-         (goog.LOCALE.substring(3, 7).toLowerCase() == 'adlm' ||
-          goog.LOCALE.substring(3, 7).toLowerCase() == 'arab' ||
-          goog.LOCALE.substring(3, 7).toLowerCase() == 'hebr' ||
-          goog.LOCALE.substring(3, 7).toLowerCase() == 'nkoo' ||
-          goog.LOCALE.substring(3, 7).toLowerCase() == 'rohg' ||
-          goog.LOCALE.substring(3, 7).toLowerCase() == 'thaa'))) ||
-    (  // 3 letter languages codes with RTL scripts
-        goog.LOCALE.length >= 8 &&
-        ((goog.LOCALE.substring(3, 4) == '-' ||
-          goog.LOCALE.substring(3, 4) == '_') &&
-         (goog.LOCALE.substring(4, 8).toLowerCase() == 'adlm' ||
-          goog.LOCALE.substring(4, 8).toLowerCase() == 'arab' ||
-          goog.LOCALE.substring(4, 8).toLowerCase() == 'hebr' ||
-          goog.LOCALE.substring(4, 8).toLowerCase() == 'nkoo' ||
-          goog.LOCALE.substring(4, 8).toLowerCase() == 'rohg' ||
-          goog.LOCALE.substring(4, 8).toLowerCase() == 'thaa')));
-//    closure/RtlLocalesTest.java)
-
-// TODO(b/77919903): Add additional scripts and languages that are RTL,
-// e.g., mende, samaritan, etc.
-
-
-/**
- * Unicode formatting characters and directionality string constants.
- * @enum {string}
- */
-goog.i18n.bidi.Format = {
-  /** Unicode "Left-To-Right Embedding" (LRE) character. */
-  LRE: '\u202A',
-  /** Unicode "Right-To-Left Embedding" (RLE) character. */
-  RLE: '\u202B',
-  /** Unicode "Pop Directional Formatting" (PDF) character. */
-  PDF: '\u202C',
-  /** Unicode "Left-To-Right Mark" (LRM) character. */
-  LRM: '\u200E',
-  /** Unicode "Right-To-Left Mark" (RLM) character. */
-  RLM: '\u200F'
-};
-
-
-/**
- * Directionality enum.
- * @enum {number}
- */
-goog.i18n.bidi.Dir = {
-  /**
-   * Left-to-right.
-   */
-  LTR: 1,
-
-  /**
-   * Right-to-left.
-   */
-  RTL: -1,
-
-  /**
-   * Neither left-to-right nor right-to-left.
-   */
-  NEUTRAL: 0
-};
-
-
-/**
- * 'right' string constant.
- * @type {string}
- */
-goog.i18n.bidi.RIGHT = 'right';
-
-
-/**
- * 'left' string constant.
- * @type {string}
- */
-goog.i18n.bidi.LEFT = 'left';
-
-
-/**
- * 'left' if locale is RTL, 'right' if not.
- * @type {string}
- */
-goog.i18n.bidi.I18N_RIGHT =
-    goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.LEFT : goog.i18n.bidi.RIGHT;
-
-
-/**
- * 'right' if locale is RTL, 'left' if not.
- * @type {string}
- */
-goog.i18n.bidi.I18N_LEFT =
-    goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.RIGHT : goog.i18n.bidi.LEFT;
-
-
-/**
- * Convert a directionality given in various formats to a goog.i18n.bidi.Dir
- * constant. Useful for interaction with different standards of directionality
- * representation.
- *
- * @param {goog.i18n.bidi.Dir|number|boolean|null} givenDir Directionality given
- *     in one of the following formats:
- *     1. A goog.i18n.bidi.Dir constant.
- *     2. A number (positive = LTR, negative = RTL, 0 = neutral).
- *     3. A boolean (true = RTL, false = LTR).
- *     4. A null for unknown directionality.
- * @param {boolean=} opt_noNeutral Whether a givenDir of zero or
- *     goog.i18n.bidi.Dir.NEUTRAL should be treated as null, i.e. unknown, in
- *     order to preserve legacy behavior.
- * @return {?goog.i18n.bidi.Dir} A goog.i18n.bidi.Dir constant matching the
- *     given directionality. If given null, returns null (i.e. unknown).
- */
-goog.i18n.bidi.toDir = function(givenDir, opt_noNeutral) {
-  if (typeof givenDir == 'number') {
-    // This includes the non-null goog.i18n.bidi.Dir case.
-    return givenDir > 0 ?
-        goog.i18n.bidi.Dir.LTR :
-        givenDir < 0 ? goog.i18n.bidi.Dir.RTL :
-                       opt_noNeutral ? null : goog.i18n.bidi.Dir.NEUTRAL;
-  } else if (givenDir == null) {
-    return null;
-  } else {
-    // Must be typeof givenDir == 'boolean'.
-    return givenDir ? goog.i18n.bidi.Dir.RTL : goog.i18n.bidi.Dir.LTR;
-  }
-};
-
-
-/**
- * A practical pattern to identify strong LTR character in the BMP.
- * This pattern is not theoretically correct according to the Unicode
- * standard. It is simplified for performance and small code size.
- * It also partially supports LTR scripts beyond U+FFFF by including
- * UTF-16 high surrogate values corresponding to mostly L-class code
- * point ranges.
- * However, low surrogate values and private-use regions are not included
- * in this RegEx.
- * @type {string}
- * @private
- */
-goog.i18n.bidi.ltrChars_ =
-    'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0900-\u1FFF' +
-    '\u200E\u2C00-\uD801\uD804-\uD839\uD83C-\uDBFF' +
-    '\uF900-\uFB1C\uFE00-\uFE6F\uFEFD-\uFFFF';
-
-/**
- * A practical pattern to identify strong RTL character. This pattern is not
- * theoretically correct according to the Unicode standard. It is simplified
- * for performance and small code size.
- * It also partially supports RTL scripts beyond U+FFFF by including
- * UTF-16 high surrogate values corresponding to mostly R- or AL-class
- * code point ranges.
- * However, low surrogate values and private-use regions are not included
- * in this RegEx.
- * @type {string}
- * @private
- */
-goog.i18n.bidi.rtlChars_ =
-    '\u0591-\u06EF\u06FA-\u08FF\u200F\uD802-\uD803\uD83A-\uD83B' +
-    '\uFB1D-\uFDFF\uFE70-\uFEFC';
-
-/**
- * Simplified regular expression for an HTML tag (opening or closing) or an HTML
- * escape. We might want to skip over such expressions when estimating the text
- * directionality.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.htmlSkipReg_ = /<[^>]*>|&[^;]+;/g;
-
-
-/**
- * Returns the input text with spaces instead of HTML tags or HTML escapes, if
- * opt_isStripNeeded is true. Else returns the input as is.
- * Useful for text directionality estimation.
- * Note: the function should not be used in other contexts; it is not 100%
- * correct, but rather a good-enough implementation for directionality
- * estimation purposes.
- * @param {string} str The given string.
- * @param {boolean=} opt_isStripNeeded Whether to perform the stripping.
- *     Default: false (to retain consistency with calling functions).
- * @return {string} The given string cleaned of HTML tags / escapes.
- * @private
- */
-goog.i18n.bidi.stripHtmlIfNeeded_ = function(str, opt_isStripNeeded) {
-  return opt_isStripNeeded ? str.replace(goog.i18n.bidi.htmlSkipReg_, '') : str;
-};
-
-
-/**
- * Regular expression to check for RTL characters, BMP and high surrogate.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.rtlCharReg_ = new RegExp('[' + goog.i18n.bidi.rtlChars_ + ']');
-
-
-/**
- * Regular expression to check for LTR characters.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.ltrCharReg_ = new RegExp('[' + goog.i18n.bidi.ltrChars_ + ']');
-
-
-/**
- * Test whether the given string has any RTL characters in it.
- * @param {string} str The given string that need to be tested.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether the string contains RTL characters.
- */
-goog.i18n.bidi.hasAnyRtl = function(str, opt_isHtml) {
-  return goog.i18n.bidi.rtlCharReg_.test(
-      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
-};
-
-
-/**
- * Test whether the given string has any RTL characters in it.
- * @param {string} str The given string that need to be tested.
- * @return {boolean} Whether the string contains RTL characters.
- * @deprecated Use hasAnyRtl.
- */
-goog.i18n.bidi.hasRtlChar = goog.i18n.bidi.hasAnyRtl;
-
-
-/**
- * Test whether the given string has any LTR characters in it.
- * @param {string} str The given string that need to be tested.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether the string contains LTR characters.
- */
-goog.i18n.bidi.hasAnyLtr = function(str, opt_isHtml) {
-  return goog.i18n.bidi.ltrCharReg_.test(
-      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
-};
-
-
-/**
- * Regular expression pattern to check if the first character in the string
- * is LTR.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.ltrRe_ = new RegExp('^[' + goog.i18n.bidi.ltrChars_ + ']');
-
-
-/**
- * Regular expression pattern to check if the first character in the string
- * is RTL.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.rtlRe_ = new RegExp('^[' + goog.i18n.bidi.rtlChars_ + ']');
-
-
-/**
- * Check if the first character in the string is RTL or not.
- * @param {string} str The given string that need to be tested.
- * @return {boolean} Whether the first character in str is an RTL char.
- */
-goog.i18n.bidi.isRtlChar = function(str) {
-  return goog.i18n.bidi.rtlRe_.test(str);
-};
-
-
-/**
- * Check if the first character in the string is LTR or not.
- * @param {string} str The given string that need to be tested.
- * @return {boolean} Whether the first character in str is an LTR char.
- */
-goog.i18n.bidi.isLtrChar = function(str) {
-  return goog.i18n.bidi.ltrRe_.test(str);
-};
-
-
-/**
- * Check if the first character in the string is neutral or not.
- * @param {string} str The given string that need to be tested.
- * @return {boolean} Whether the first character in str is a neutral char.
- */
-goog.i18n.bidi.isNeutralChar = function(str) {
-  return !goog.i18n.bidi.isLtrChar(str) && !goog.i18n.bidi.isRtlChar(str);
-};
-
-
-/**
- * Regular expressions to check if a piece of text is of LTR directionality
- * on first character with strong directionality.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.ltrDirCheckRe_ = new RegExp(
-    '^[^' + goog.i18n.bidi.rtlChars_ + ']*[' + goog.i18n.bidi.ltrChars_ + ']');
-
-
-/**
- * Regular expressions to check if a piece of text is of RTL directionality
- * on first character with strong directionality.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.rtlDirCheckRe_ = new RegExp(
-    '^[^' + goog.i18n.bidi.ltrChars_ + ']*[' + goog.i18n.bidi.rtlChars_ + ']');
-
-
-/**
- * Check whether the first strongly directional character (if any) is RTL.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether RTL directionality is detected using the first
- *     strongly-directional character method.
- */
-goog.i18n.bidi.startsWithRtl = function(str, opt_isHtml) {
-  return goog.i18n.bidi.rtlDirCheckRe_.test(
-      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
-};
-
-
-/**
- * Check whether the first strongly directional character (if any) is RTL.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether RTL directionality is detected using the first
- *     strongly-directional character method.
- * @deprecated Use startsWithRtl.
- */
-goog.i18n.bidi.isRtlText = goog.i18n.bidi.startsWithRtl;
-
-
-/**
- * Check whether the first strongly directional character (if any) is LTR.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether LTR directionality is detected using the first
- *     strongly-directional character method.
- */
-goog.i18n.bidi.startsWithLtr = function(str, opt_isHtml) {
-  return goog.i18n.bidi.ltrDirCheckRe_.test(
-      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
-};
-
-
-/**
- * Check whether the first strongly directional character (if any) is LTR.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether LTR directionality is detected using the first
- *     strongly-directional character method.
- * @deprecated Use startsWithLtr.
- */
-goog.i18n.bidi.isLtrText = goog.i18n.bidi.startsWithLtr;
-
-
-/**
- * Regular expression to check if a string looks like something that must
- * always be LTR even in RTL text, e.g. a URL. When estimating the
- * directionality of text containing these, we treat these as weakly LTR,
- * like numbers.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.isRequiredLtrRe_ = /^http:\/\/.*/;
-
-
-/**
- * Check whether the input string either contains no strongly directional
- * characters or looks like a url.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether neutral directionality is detected.
- */
-goog.i18n.bidi.isNeutralText = function(str, opt_isHtml) {
-  str = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml);
-  return goog.i18n.bidi.isRequiredLtrRe_.test(str) ||
-      !goog.i18n.bidi.hasAnyLtr(str) && !goog.i18n.bidi.hasAnyRtl(str);
-};
-
-
-/**
- * Regular expressions to check if the last strongly-directional character in a
- * piece of text is LTR.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.ltrExitDirCheckRe_ = new RegExp(
-    '[' + goog.i18n.bidi.ltrChars_ + ']' +
-    '[^' + goog.i18n.bidi.rtlChars_ + ']*$');
-
-
-/**
- * Regular expressions to check if the last strongly-directional character in a
- * piece of text is RTL.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.rtlExitDirCheckRe_ = new RegExp(
-    '[' + goog.i18n.bidi.rtlChars_ + ']' +
-    '[^' + goog.i18n.bidi.ltrChars_ + ']*$');
-
-
-/**
- * Check if the exit directionality a piece of text is LTR, i.e. if the last
- * strongly-directional character in the string is LTR.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether LTR exit directionality was detected.
- */
-goog.i18n.bidi.endsWithLtr = function(str, opt_isHtml) {
-  return goog.i18n.bidi.ltrExitDirCheckRe_.test(
-      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
-};
-
-
-/**
- * Check if the exit directionality a piece of text is LTR, i.e. if the last
- * strongly-directional character in the string is LTR.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether LTR exit directionality was detected.
- * @deprecated Use endsWithLtr.
- */
-goog.i18n.bidi.isLtrExitText = goog.i18n.bidi.endsWithLtr;
-
-
-/**
- * Check if the exit directionality a piece of text is RTL, i.e. if the last
- * strongly-directional character in the string is RTL.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether RTL exit directionality was detected.
- */
-goog.i18n.bidi.endsWithRtl = function(str, opt_isHtml) {
-  return goog.i18n.bidi.rtlExitDirCheckRe_.test(
-      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
-};
-
-
-/**
- * Check if the exit directionality a piece of text is RTL, i.e. if the last
- * strongly-directional character in the string is RTL.
- * @param {string} str String being checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether RTL exit directionality was detected.
- * @deprecated Use endsWithRtl.
- */
-goog.i18n.bidi.isRtlExitText = goog.i18n.bidi.endsWithRtl;
-
-
-/**
- * A regular expression for matching right-to-left language codes.
- * See {@link #isRtlLanguage} for the design.
- * Note that not all RTL scripts are included.
- * @type {!RegExp}
- * @private
- */
-goog.i18n.bidi.rtlLocalesRe_ = new RegExp(
-    '^(ar|ckb|dv|he|iw|fa|nqo|ps|sd|ug|ur|yi|' +
-        '.*[-_](Adlm|Arab|Hebr|Nkoo|Rohg|Thaa))' +
-        '(?!.*[-_](Latn|Cyrl)($|-|_))($|-|_)',
-    'i');
-
-
-/**
- * Check if a BCP 47 / III language code indicates an RTL language, i.e. either:
- * - a language code explicitly specifying one of the right-to-left scripts,
- *   e.g. "az-Arab", or<p>
- * - a language code specifying one of the languages normally written in a
- *   right-to-left script, e.g. "fa" (Farsi), except ones explicitly specifying
- *   Latin or Cyrillic script (which are the usual LTR alternatives).<p>
- * The list of right-to-left scripts appears in the 100-199 range in
- * http://www.unicode.org/iso15924/iso15924-num.html, of which Arabic and
- * Hebrew are by far the most widely used. We also recognize Thaana, and N'Ko,
- * which also have significant modern usage. Adlam and Rohingya
- * scripts are now included since they can be expected to be used in the
- * future. The rest (Syriac, Samaritan, Mandaic, etc.) seem to have extremely
- * limited or no modern usage and are not recognized to save on code size. The
- * languages usually written in a right-to-left script are taken as those with
- * Suppress-Script: Hebr|Arab|Thaa|Nkoo|Adlm|Rohg in
- * http://www.iana.org/assignments/language-subtag-registry,
- * as well as Central (or Sorani) Kurdish (ckb), Sindhi (sd) and Uyghur (ug).
- * Other subtags of the language code, e.g. regions like EG (Egypt), are
- * ignored.
- * @param {string} lang BCP 47 (a.k.a III) language code.
- * @return {boolean} Whether the language code is an RTL language.
- */
-goog.i18n.bidi.isRtlLanguage = function(lang) {
-  return goog.i18n.bidi.rtlLocalesRe_.test(lang);
-};
-
-
-/**
- * Regular expression for bracket guard replacement in text.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.bracketGuardTextRe_ =
-    /(\(.*?\)+)|(\[.*?\]+)|(\{.*?\}+)|(<.*?>+)/g;
-
-
-/**
- * Apply bracket guard using LRM and RLM. This is to address the problem of
- * messy bracket display frequently happens in RTL layout.
- * This function works for plain text, not for HTML. In HTML, the opening
- * bracket might be in a different context than the closing bracket (such as
- * an attribute value).
- * @param {string} s The string that need to be processed.
- * @param {boolean=} opt_isRtlContext specifies default direction (usually
- *     direction of the UI).
- * @return {string} The processed string, with all bracket guarded.
- */
-goog.i18n.bidi.guardBracketInText = function(s, opt_isRtlContext) {
-  const useRtl = opt_isRtlContext === undefined ? goog.i18n.bidi.hasAnyRtl(s) :
-                                                  opt_isRtlContext;
-  const mark = useRtl ? goog.i18n.bidi.Format.RLM : goog.i18n.bidi.Format.LRM;
-  return s.replace(goog.i18n.bidi.bracketGuardTextRe_, mark + '$&' + mark);
-};
-
-
-/**
- * Enforce the html snippet in RTL directionality regardless of overall context.
- * If the html piece was enclosed by tag, dir will be applied to existing
- * tag, otherwise a span tag will be added as wrapper. For this reason, if
- * html snippet starts with a tag, this tag must enclose the whole piece. If
- * the tag already has a dir specified, this new one will override existing
- * one in behavior (tested on FF and IE).
- * @param {string} html The string that need to be processed.
- * @return {string} The processed string, with directionality enforced to RTL.
- */
-goog.i18n.bidi.enforceRtlInHtml = function(html) {
-  if (html.charAt(0) == '<') {
-    return html.replace(/<\w+/, '$& dir=rtl');
-  }
-  // '\n' is important for FF so that it won't incorrectly merge span groups
-  return '\n<span dir=rtl>' + html + '</span>';
-};
-
-
-/**
- * Enforce RTL on both end of the given text piece using unicode BiDi formatting
- * characters RLE and PDF.
- * @param {string} text The piece of text that need to be wrapped.
- * @return {string} The wrapped string after process.
- */
-goog.i18n.bidi.enforceRtlInText = function(text) {
-  return goog.i18n.bidi.Format.RLE + text + goog.i18n.bidi.Format.PDF;
-};
-
-
-/**
- * Enforce the html snippet in RTL directionality regardless or overall context.
- * If the html piece was enclosed by tag, dir will be applied to existing
- * tag, otherwise a span tag will be added as wrapper. For this reason, if
- * html snippet starts with a tag, this tag must enclose the whole piece. If
- * the tag already has a dir specified, this new one will override existing
- * one in behavior (tested on FF and IE).
- * @param {string} html The string that need to be processed.
- * @return {string} The processed string, with directionality enforced to RTL.
- */
-goog.i18n.bidi.enforceLtrInHtml = function(html) {
-  if (html.charAt(0) == '<') {
-    return html.replace(/<\w+/, '$& dir=ltr');
-  }
-  // '\n' is important for FF so that it won't incorrectly merge span groups
-  return '\n<span dir=ltr>' + html + '</span>';
-};
-
-
-/**
- * Enforce LTR on both end of the given text piece using unicode BiDi formatting
- * characters LRE and PDF.
- * @param {string} text The piece of text that need to be wrapped.
- * @return {string} The wrapped string after process.
- */
-goog.i18n.bidi.enforceLtrInText = function(text) {
-  return goog.i18n.bidi.Format.LRE + text + goog.i18n.bidi.Format.PDF;
-};
-
-
-/**
- * Regular expression to find dimensions such as "padding: .3 0.4ex 5px 6;"
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.dimensionsRe_ =
-    /:\s*([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)/g;
-
-
-/**
- * Regular expression for left.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.leftRe_ = /left/gi;
-
-
-/**
- * Regular expression for right.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.rightRe_ = /right/gi;
-
-
-/**
- * Placeholder regular expression for swapping.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.tempRe_ = /%%%%/g;
-
-
-/**
- * Swap location parameters and 'left'/'right' in CSS specification. The
- * processed string will be suited for RTL layout. Though this function can
- * cover most cases, there are always exceptions. It is suggested to put
- * those exceptions in separate group of CSS string.
- * @param {string} cssStr CSS spefication string.
- * @return {string} Processed CSS specification string.
- */
-goog.i18n.bidi.mirrorCSS = function(cssStr) {
-  return cssStr
-      .
-      // reverse dimensions
-      replace(goog.i18n.bidi.dimensionsRe_, ':$1 $4 $3 $2')
-      .replace(goog.i18n.bidi.leftRe_, '%%%%')
-      .  // swap left and right
-      replace(goog.i18n.bidi.rightRe_, goog.i18n.bidi.LEFT)
-      .replace(goog.i18n.bidi.tempRe_, goog.i18n.bidi.RIGHT);
-};
-
-
-/**
- * Regular expression for hebrew double quote substitution, finding quote
- * directly after hebrew characters.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.doubleQuoteSubstituteRe_ = /([\u0591-\u05f2])"/g;
-
-
-/**
- * Regular expression for hebrew single quote substitution, finding quote
- * directly after hebrew characters.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.singleQuoteSubstituteRe_ = /([\u0591-\u05f2])'/g;
-
-
-/**
- * Replace the double and single quote directly after a Hebrew character with
- * GERESH and GERSHAYIM. In such case, most likely that's user intention.
- * @param {string} str String that need to be processed.
- * @return {string} Processed string with double/single quote replaced.
- */
-goog.i18n.bidi.normalizeHebrewQuote = function(str) {
-  return str.replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, '$1\u05f4')
-      .replace(goog.i18n.bidi.singleQuoteSubstituteRe_, '$1\u05f3');
-};
-
-
-/**
- * Regular expression to split a string into "words" for directionality
- * estimation based on relative word counts.
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.wordSeparatorRe_ = /\s+/;
-
-
-/**
- * Regular expression to check if a string contains any numerals. Used to
- * differentiate between completely neutral strings and those containing
- * numbers, which are weakly LTR.
- *
- * Native Arabic digits (\u0660 - \u0669) are not included because although they
- * do flow left-to-right inside a number, this is the case even if the  overall
- * directionality is RTL, and a mathematical expression using these digits is
- * supposed to flow right-to-left overall, including unary plus and minus
- * appearing to the right of a number, and this does depend on the overall
- * directionality being RTL. The digits used in Farsi (\u06F0 - \u06F9), on the
- * other hand, are included, since Farsi math (including unary plus and minus)
- * does flow left-to-right.
- * TODO: Consider other systems of digits, e.g., Adlam.
- *
- * @type {RegExp}
- * @private
- */
-goog.i18n.bidi.hasNumeralsRe_ = /[\d\u06f0-\u06f9]/;
-
-
-/**
- * This constant controls threshold of RTL directionality.
- * @type {number}
- * @private
- */
-goog.i18n.bidi.rtlDetectionThreshold_ = 0.40;
-
-
-/**
- * Estimates the directionality of a string based on relative word counts.
- * If the number of RTL words is above a certain percentage of the total number
- * of strongly directional words, returns RTL.
- * Otherwise, if any words are strongly or weakly LTR, returns LTR.
- * Otherwise, returns UNKNOWN, which is used to mean "neutral".
- * Numbers are counted as weakly LTR.
- * @param {string} str The string to be checked.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
- */
-goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
-  let rtlCount = 0;
-  let totalCount = 0;
-  let hasWeaklyLtr = false;
-  const tokens = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-                     .split(goog.i18n.bidi.wordSeparatorRe_);
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    if (goog.i18n.bidi.startsWithRtl(token)) {
-      rtlCount++;
-      totalCount++;
-    } else if (goog.i18n.bidi.isRequiredLtrRe_.test(token)) {
-      hasWeaklyLtr = true;
-    } else if (goog.i18n.bidi.hasAnyLtr(token)) {
-      totalCount++;
-    } else if (goog.i18n.bidi.hasNumeralsRe_.test(token)) {
-      hasWeaklyLtr = true;
-    }
-  }
-
-  return totalCount == 0 ?
-      (hasWeaklyLtr ? goog.i18n.bidi.Dir.LTR : goog.i18n.bidi.Dir.NEUTRAL) :
-      (rtlCount / totalCount > goog.i18n.bidi.rtlDetectionThreshold_ ?
-           goog.i18n.bidi.Dir.RTL :
-           goog.i18n.bidi.Dir.LTR);
-};
-
-
-/**
- * Check the directionality of a piece of text, return true if the piece of
- * text should be laid out in RTL direction.
- * @param {string} str The piece of text that need to be detected.
- * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
- *     Default: false.
- * @return {boolean} Whether this piece of text should be laid out in RTL.
- */
-goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
-  return goog.i18n.bidi.estimateDirection(str, opt_isHtml) ==
-      goog.i18n.bidi.Dir.RTL;
-};
-
-
-/**
- * Sets text input element's directionality and text alignment based on a
- * given directionality. Does nothing if the given directionality is unknown or
- * neutral.
- * @param {Element} element Input field element to set directionality to.
- * @param {goog.i18n.bidi.Dir|number|boolean|null} dir Desired directionality,
- *     given in one of the following formats:
- *     1. A goog.i18n.bidi.Dir constant.
- *     2. A number (positive = LRT, negative = RTL, 0 = neutral).
- *     3. A boolean (true = RTL, false = LTR).
- *     4. A null for unknown directionality.
- */
-goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
-  if (element) {
-    const htmlElement = /** @type {!HTMLElement} */ (element);
-    dir = goog.i18n.bidi.toDir(dir);
-    if (dir) {
-      htmlElement.style.textAlign = dir == goog.i18n.bidi.Dir.RTL ?
-          goog.i18n.bidi.RIGHT :
-          goog.i18n.bidi.LEFT;
-      htmlElement.dir = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
-    }
-  }
-};
-
-
-/**
- * Sets element dir based on estimated directionality of the given text.
- * @param {!Element} element
- * @param {string} text
- */
-goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
-  const htmlElement = /** @type {!HTMLElement} */ (element);
-  switch (goog.i18n.bidi.estimateDirection(text)) {
-    case (goog.i18n.bidi.Dir.LTR):
-      htmlElement.dir = 'ltr';
-      break;
-    case (goog.i18n.bidi.Dir.RTL):
-      htmlElement.dir = 'rtl';
-      break;
-    default:
-      // Default for no direction, inherit from document.
-      htmlElement.removeAttribute('dir');
-  }
-};
-
-
-
-/**
- * Strings that have an (optional) known direction.
- *
- * Implementations of this interface are string-like objects that carry an
- * attached direction, if known.
- * @interface
- */
-goog.i18n.bidi.DirectionalString = function() {};
-
-
-/**
- * Interface marker of the DirectionalString interface.
- *
- * This property can be used to determine at runtime whether or not an object
- * implements this interface.  All implementations of this interface set this
- * property to `true`.
- * @type {boolean}
- */
-goog.i18n.bidi.DirectionalString.prototype
-    .implementsGoogI18nBidiDirectionalString;
-
-
-/**
- * Retrieves this object's known direction (if any).
- * @return {?goog.i18n.bidi.Dir} The known direction. Null if unknown.
- */
-goog.i18n.bidi.DirectionalString.prototype.getDirection;
-
 //third_party/javascript/closure/debug/error.js
 /**
  * @license
@@ -9282,6 +8359,921 @@ goog.fs.blob.getBlobWithProperties = function(parts, opt_type, opt_endings) {
   }
 };
 
+//third_party/javascript/closure/i18n/bidi.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utility functions for supporting Bidi issues.
+ */
+
+
+/**
+ * Namespace for bidi supporting functions.
+ */
+goog.provide('goog.i18n.bidi');
+goog.provide('goog.i18n.bidi.Dir');
+goog.provide('goog.i18n.bidi.DirectionalString');
+goog.provide('goog.i18n.bidi.Format');
+
+
+/**
+ * @define {boolean} FORCE_RTL forces the {@link goog.i18n.bidi.IS_RTL} constant
+ * to say that the current locale is a RTL locale.  This should only be used
+ * if you want to override the default behavior for deciding whether the
+ * current locale is RTL or not.
+ *
+ * {@see goog.i18n.bidi.IS_RTL}
+ */
+goog.i18n.bidi.FORCE_RTL = goog.define('goog.i18n.bidi.FORCE_RTL', false);
+
+
+/**
+ * Constant that defines whether or not the current locale is a RTL locale.
+ * If {@link goog.i18n.bidi.FORCE_RTL} is not true, this constant will default
+ * to check that {@link goog.LOCALE} is one of a few major RTL locales.
+ *
+ * <p>This is designed to be a maximally efficient compile-time constant. For
+ * example, for the default goog.LOCALE, compiling
+ * "if (goog.i18n.bidi.IS_RTL) alert('rtl') else {}" should produce no code. It
+ * is this design consideration that limits the implementation to only
+ * supporting a few major RTL locales, as opposed to the broader repertoire of
+ * something like goog.i18n.bidi.isRtlLanguage.
+ *
+ * <p>Since this constant refers to the directionality of the locale, it is up
+ * to the caller to determine if this constant should also be used for the
+ * direction of the UI.
+ *
+ * {@see goog.LOCALE}
+ *
+ * @type {boolean}
+ *
+ * TODO(user): write a test that checks that this is a compile-time constant.
+ */
+// LINT.IfChange
+goog.i18n.bidi.IS_RTL =
+    goog.i18n.bidi.FORCE_RTL ||
+    ((goog.LOCALE.substring(0, 2).toLowerCase() == 'ar' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'fa' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'he' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'iw' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'ps' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'sd' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'ug' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'ur' ||
+      goog.LOCALE.substring(0, 2).toLowerCase() == 'yi') &&
+     (goog.LOCALE.length == 2 || goog.LOCALE.substring(2, 3) == '-' ||
+      goog.LOCALE.substring(2, 3) == '_')) ||
+    (  // Specific to CKB (Central Kurdish)
+        goog.LOCALE.length >= 3 &&
+        goog.LOCALE.substring(0, 3).toLowerCase() == 'ckb' &&
+        (goog.LOCALE.length == 3 || goog.LOCALE.substring(3, 4) == '-' ||
+         goog.LOCALE.substring(3, 4) == '_')) ||
+    (  // 2 letter language codes with RTL scripts
+        goog.LOCALE.length >= 7 &&
+        ((goog.LOCALE.substring(2, 3) == '-' ||
+          goog.LOCALE.substring(2, 3) == '_') &&
+         (goog.LOCALE.substring(3, 7).toLowerCase() == 'adlm' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'arab' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'hebr' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'nkoo' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'rohg' ||
+          goog.LOCALE.substring(3, 7).toLowerCase() == 'thaa'))) ||
+    (  // 3 letter languages codes with RTL scripts
+        goog.LOCALE.length >= 8 &&
+        ((goog.LOCALE.substring(3, 4) == '-' ||
+          goog.LOCALE.substring(3, 4) == '_') &&
+         (goog.LOCALE.substring(4, 8).toLowerCase() == 'adlm' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'arab' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'hebr' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'nkoo' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'rohg' ||
+          goog.LOCALE.substring(4, 8).toLowerCase() == 'thaa')));
+//    closure/RtlLocalesTest.java)
+
+// TODO(b/77919903): Add additional scripts and languages that are RTL,
+// e.g., mende, samaritan, etc.
+
+
+/**
+ * Unicode formatting characters and directionality string constants.
+ * @enum {string}
+ */
+goog.i18n.bidi.Format = {
+  /** Unicode "Left-To-Right Embedding" (LRE) character. */
+  LRE: '\u202A',
+  /** Unicode "Right-To-Left Embedding" (RLE) character. */
+  RLE: '\u202B',
+  /** Unicode "Pop Directional Formatting" (PDF) character. */
+  PDF: '\u202C',
+  /** Unicode "Left-To-Right Mark" (LRM) character. */
+  LRM: '\u200E',
+  /** Unicode "Right-To-Left Mark" (RLM) character. */
+  RLM: '\u200F'
+};
+
+
+/**
+ * Directionality enum.
+ * @enum {number}
+ */
+goog.i18n.bidi.Dir = {
+  /**
+   * Left-to-right.
+   */
+  LTR: 1,
+
+  /**
+   * Right-to-left.
+   */
+  RTL: -1,
+
+  /**
+   * Neither left-to-right nor right-to-left.
+   */
+  NEUTRAL: 0
+};
+
+
+/**
+ * 'right' string constant.
+ * @type {string}
+ */
+goog.i18n.bidi.RIGHT = 'right';
+
+
+/**
+ * 'left' string constant.
+ * @type {string}
+ */
+goog.i18n.bidi.LEFT = 'left';
+
+
+/**
+ * 'left' if locale is RTL, 'right' if not.
+ * @type {string}
+ */
+goog.i18n.bidi.I18N_RIGHT =
+    goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.LEFT : goog.i18n.bidi.RIGHT;
+
+
+/**
+ * 'right' if locale is RTL, 'left' if not.
+ * @type {string}
+ */
+goog.i18n.bidi.I18N_LEFT =
+    goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.RIGHT : goog.i18n.bidi.LEFT;
+
+
+/**
+ * Convert a directionality given in various formats to a goog.i18n.bidi.Dir
+ * constant. Useful for interaction with different standards of directionality
+ * representation.
+ *
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} givenDir Directionality given
+ *     in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant.
+ *     2. A number (positive = LTR, negative = RTL, 0 = neutral).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ * @param {boolean=} opt_noNeutral Whether a givenDir of zero or
+ *     goog.i18n.bidi.Dir.NEUTRAL should be treated as null, i.e. unknown, in
+ *     order to preserve legacy behavior.
+ * @return {?goog.i18n.bidi.Dir} A goog.i18n.bidi.Dir constant matching the
+ *     given directionality. If given null, returns null (i.e. unknown).
+ */
+goog.i18n.bidi.toDir = function(givenDir, opt_noNeutral) {
+  if (typeof givenDir == 'number') {
+    // This includes the non-null goog.i18n.bidi.Dir case.
+    return givenDir > 0 ?
+        goog.i18n.bidi.Dir.LTR :
+        givenDir < 0 ? goog.i18n.bidi.Dir.RTL :
+                       opt_noNeutral ? null : goog.i18n.bidi.Dir.NEUTRAL;
+  } else if (givenDir == null) {
+    return null;
+  } else {
+    // Must be typeof givenDir == 'boolean'.
+    return givenDir ? goog.i18n.bidi.Dir.RTL : goog.i18n.bidi.Dir.LTR;
+  }
+};
+
+
+/**
+ * A practical pattern to identify strong LTR character in the BMP.
+ * This pattern is not theoretically correct according to the Unicode
+ * standard. It is simplified for performance and small code size.
+ * It also partially supports LTR scripts beyond U+FFFF by including
+ * UTF-16 high surrogate values corresponding to mostly L-class code
+ * point ranges.
+ * However, low surrogate values and private-use regions are not included
+ * in this RegEx.
+ * @type {string}
+ * @private
+ */
+goog.i18n.bidi.ltrChars_ =
+    'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0900-\u1FFF' +
+    '\u200E\u2C00-\uD801\uD804-\uD839\uD83C-\uDBFF' +
+    '\uF900-\uFB1C\uFE00-\uFE6F\uFEFD-\uFFFF';
+
+/**
+ * A practical pattern to identify strong RTL character. This pattern is not
+ * theoretically correct according to the Unicode standard. It is simplified
+ * for performance and small code size.
+ * It also partially supports RTL scripts beyond U+FFFF by including
+ * UTF-16 high surrogate values corresponding to mostly R- or AL-class
+ * code point ranges.
+ * However, low surrogate values and private-use regions are not included
+ * in this RegEx.
+ * @type {string}
+ * @private
+ */
+goog.i18n.bidi.rtlChars_ =
+    '\u0591-\u06EF\u06FA-\u08FF\u200F\uD802-\uD803\uD83A-\uD83B' +
+    '\uFB1D-\uFDFF\uFE70-\uFEFC';
+
+/**
+ * Simplified regular expression for an HTML tag (opening or closing) or an HTML
+ * escape. We might want to skip over such expressions when estimating the text
+ * directionality.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.htmlSkipReg_ = /<[^>]*>|&[^;]+;/g;
+
+
+/**
+ * Returns the input text with spaces instead of HTML tags or HTML escapes, if
+ * opt_isStripNeeded is true. Else returns the input as is.
+ * Useful for text directionality estimation.
+ * Note: the function should not be used in other contexts; it is not 100%
+ * correct, but rather a good-enough implementation for directionality
+ * estimation purposes.
+ * @param {string} str The given string.
+ * @param {boolean=} opt_isStripNeeded Whether to perform the stripping.
+ *     Default: false (to retain consistency with calling functions).
+ * @return {string} The given string cleaned of HTML tags / escapes.
+ * @private
+ */
+goog.i18n.bidi.stripHtmlIfNeeded_ = function(str, opt_isStripNeeded) {
+  return opt_isStripNeeded ? str.replace(goog.i18n.bidi.htmlSkipReg_, '') : str;
+};
+
+
+/**
+ * Regular expression to check for RTL characters, BMP and high surrogate.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlCharReg_ = new RegExp('[' + goog.i18n.bidi.rtlChars_ + ']');
+
+
+/**
+ * Regular expression to check for LTR characters.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrCharReg_ = new RegExp('[' + goog.i18n.bidi.ltrChars_ + ']');
+
+
+/**
+ * Test whether the given string has any RTL characters in it.
+ * @param {string} str The given string that need to be tested.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether the string contains RTL characters.
+ */
+goog.i18n.bidi.hasAnyRtl = function(str, opt_isHtml) {
+  return goog.i18n.bidi.rtlCharReg_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Test whether the given string has any RTL characters in it.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the string contains RTL characters.
+ * @deprecated Use hasAnyRtl.
+ */
+goog.i18n.bidi.hasRtlChar = goog.i18n.bidi.hasAnyRtl;
+
+
+/**
+ * Test whether the given string has any LTR characters in it.
+ * @param {string} str The given string that need to be tested.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether the string contains LTR characters.
+ */
+goog.i18n.bidi.hasAnyLtr = function(str, opt_isHtml) {
+  return goog.i18n.bidi.ltrCharReg_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Regular expression pattern to check if the first character in the string
+ * is LTR.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrRe_ = new RegExp('^[' + goog.i18n.bidi.ltrChars_ + ']');
+
+
+/**
+ * Regular expression pattern to check if the first character in the string
+ * is RTL.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlRe_ = new RegExp('^[' + goog.i18n.bidi.rtlChars_ + ']');
+
+
+/**
+ * Check if the first character in the string is RTL or not.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the first character in str is an RTL char.
+ */
+goog.i18n.bidi.isRtlChar = function(str) {
+  return goog.i18n.bidi.rtlRe_.test(str);
+};
+
+
+/**
+ * Check if the first character in the string is LTR or not.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the first character in str is an LTR char.
+ */
+goog.i18n.bidi.isLtrChar = function(str) {
+  return goog.i18n.bidi.ltrRe_.test(str);
+};
+
+
+/**
+ * Check if the first character in the string is neutral or not.
+ * @param {string} str The given string that need to be tested.
+ * @return {boolean} Whether the first character in str is a neutral char.
+ */
+goog.i18n.bidi.isNeutralChar = function(str) {
+  return !goog.i18n.bidi.isLtrChar(str) && !goog.i18n.bidi.isRtlChar(str);
+};
+
+
+/**
+ * Regular expressions to check if a piece of text is of LTR directionality
+ * on first character with strong directionality.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrDirCheckRe_ = new RegExp(
+    '^[^' + goog.i18n.bidi.rtlChars_ + ']*[' + goog.i18n.bidi.ltrChars_ + ']');
+
+
+/**
+ * Regular expressions to check if a piece of text is of RTL directionality
+ * on first character with strong directionality.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlDirCheckRe_ = new RegExp(
+    '^[^' + goog.i18n.bidi.ltrChars_ + ']*[' + goog.i18n.bidi.rtlChars_ + ']');
+
+
+/**
+ * Check whether the first strongly directional character (if any) is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL directionality is detected using the first
+ *     strongly-directional character method.
+ */
+goog.i18n.bidi.startsWithRtl = function(str, opt_isHtml) {
+  return goog.i18n.bidi.rtlDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check whether the first strongly directional character (if any) is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL directionality is detected using the first
+ *     strongly-directional character method.
+ * @deprecated Use startsWithRtl.
+ */
+goog.i18n.bidi.isRtlText = goog.i18n.bidi.startsWithRtl;
+
+
+/**
+ * Check whether the first strongly directional character (if any) is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR directionality is detected using the first
+ *     strongly-directional character method.
+ */
+goog.i18n.bidi.startsWithLtr = function(str, opt_isHtml) {
+  return goog.i18n.bidi.ltrDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check whether the first strongly directional character (if any) is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR directionality is detected using the first
+ *     strongly-directional character method.
+ * @deprecated Use startsWithLtr.
+ */
+goog.i18n.bidi.isLtrText = goog.i18n.bidi.startsWithLtr;
+
+
+/**
+ * Regular expression to check if a string looks like something that must
+ * always be LTR even in RTL text, e.g. a URL. When estimating the
+ * directionality of text containing these, we treat these as weakly LTR,
+ * like numbers.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.isRequiredLtrRe_ = /^http:\/\/.*/;
+
+
+/**
+ * Check whether the input string either contains no strongly directional
+ * characters or looks like a url.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether neutral directionality is detected.
+ */
+goog.i18n.bidi.isNeutralText = function(str, opt_isHtml) {
+  str = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml);
+  return goog.i18n.bidi.isRequiredLtrRe_.test(str) ||
+      !goog.i18n.bidi.hasAnyLtr(str) && !goog.i18n.bidi.hasAnyRtl(str);
+};
+
+
+/**
+ * Regular expressions to check if the last strongly-directional character in a
+ * piece of text is LTR.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.ltrExitDirCheckRe_ = new RegExp(
+    '[' + goog.i18n.bidi.ltrChars_ + ']' +
+    '[^' + goog.i18n.bidi.rtlChars_ + ']*$');
+
+
+/**
+ * Regular expressions to check if the last strongly-directional character in a
+ * piece of text is RTL.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlExitDirCheckRe_ = new RegExp(
+    '[' + goog.i18n.bidi.rtlChars_ + ']' +
+    '[^' + goog.i18n.bidi.ltrChars_ + ']*$');
+
+
+/**
+ * Check if the exit directionality a piece of text is LTR, i.e. if the last
+ * strongly-directional character in the string is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR exit directionality was detected.
+ */
+goog.i18n.bidi.endsWithLtr = function(str, opt_isHtml) {
+  return goog.i18n.bidi.ltrExitDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check if the exit directionality a piece of text is LTR, i.e. if the last
+ * strongly-directional character in the string is LTR.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether LTR exit directionality was detected.
+ * @deprecated Use endsWithLtr.
+ */
+goog.i18n.bidi.isLtrExitText = goog.i18n.bidi.endsWithLtr;
+
+
+/**
+ * Check if the exit directionality a piece of text is RTL, i.e. if the last
+ * strongly-directional character in the string is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL exit directionality was detected.
+ */
+goog.i18n.bidi.endsWithRtl = function(str, opt_isHtml) {
+  return goog.i18n.bidi.rtlExitDirCheckRe_.test(
+      goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
+};
+
+
+/**
+ * Check if the exit directionality a piece of text is RTL, i.e. if the last
+ * strongly-directional character in the string is RTL.
+ * @param {string} str String being checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether RTL exit directionality was detected.
+ * @deprecated Use endsWithRtl.
+ */
+goog.i18n.bidi.isRtlExitText = goog.i18n.bidi.endsWithRtl;
+
+
+/**
+ * A regular expression for matching right-to-left language codes.
+ * See {@link #isRtlLanguage} for the design.
+ * Note that not all RTL scripts are included.
+ * @type {!RegExp}
+ * @private
+ */
+goog.i18n.bidi.rtlLocalesRe_ = new RegExp(
+    '^(ar|ckb|dv|he|iw|fa|nqo|ps|sd|ug|ur|yi|' +
+        '.*[-_](Adlm|Arab|Hebr|Nkoo|Rohg|Thaa))' +
+        '(?!.*[-_](Latn|Cyrl)($|-|_))($|-|_)',
+    'i');
+
+
+/**
+ * Check if a BCP 47 / III language code indicates an RTL language, i.e. either:
+ * - a language code explicitly specifying one of the right-to-left scripts,
+ *   e.g. "az-Arab", or<p>
+ * - a language code specifying one of the languages normally written in a
+ *   right-to-left script, e.g. "fa" (Farsi), except ones explicitly specifying
+ *   Latin or Cyrillic script (which are the usual LTR alternatives).<p>
+ * The list of right-to-left scripts appears in the 100-199 range in
+ * http://www.unicode.org/iso15924/iso15924-num.html, of which Arabic and
+ * Hebrew are by far the most widely used. We also recognize Thaana, and N'Ko,
+ * which also have significant modern usage. Adlam and Rohingya
+ * scripts are now included since they can be expected to be used in the
+ * future. The rest (Syriac, Samaritan, Mandaic, etc.) seem to have extremely
+ * limited or no modern usage and are not recognized to save on code size. The
+ * languages usually written in a right-to-left script are taken as those with
+ * Suppress-Script: Hebr|Arab|Thaa|Nkoo|Adlm|Rohg in
+ * http://www.iana.org/assignments/language-subtag-registry,
+ * as well as Central (or Sorani) Kurdish (ckb), Sindhi (sd) and Uyghur (ug).
+ * Other subtags of the language code, e.g. regions like EG (Egypt), are
+ * ignored.
+ * @param {string} lang BCP 47 (a.k.a III) language code.
+ * @return {boolean} Whether the language code is an RTL language.
+ */
+goog.i18n.bidi.isRtlLanguage = function(lang) {
+  return goog.i18n.bidi.rtlLocalesRe_.test(lang);
+};
+
+
+/**
+ * Regular expression for bracket guard replacement in text.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.bracketGuardTextRe_ =
+    /(\(.*?\)+)|(\[.*?\]+)|(\{.*?\}+)|(<.*?>+)/g;
+
+
+/**
+ * Apply bracket guard using LRM and RLM. This is to address the problem of
+ * messy bracket display frequently happens in RTL layout.
+ * This function works for plain text, not for HTML. In HTML, the opening
+ * bracket might be in a different context than the closing bracket (such as
+ * an attribute value).
+ * @param {string} s The string that need to be processed.
+ * @param {boolean=} opt_isRtlContext specifies default direction (usually
+ *     direction of the UI).
+ * @return {string} The processed string, with all bracket guarded.
+ */
+goog.i18n.bidi.guardBracketInText = function(s, opt_isRtlContext) {
+  const useRtl = opt_isRtlContext === undefined ? goog.i18n.bidi.hasAnyRtl(s) :
+                                                  opt_isRtlContext;
+  const mark = useRtl ? goog.i18n.bidi.Format.RLM : goog.i18n.bidi.Format.LRM;
+  return s.replace(goog.i18n.bidi.bracketGuardTextRe_, mark + '$&' + mark);
+};
+
+
+/**
+ * Enforce the html snippet in RTL directionality regardless of overall context.
+ * If the html piece was enclosed by tag, dir will be applied to existing
+ * tag, otherwise a span tag will be added as wrapper. For this reason, if
+ * html snippet starts with a tag, this tag must enclose the whole piece. If
+ * the tag already has a dir specified, this new one will override existing
+ * one in behavior (tested on FF and IE).
+ * @param {string} html The string that need to be processed.
+ * @return {string} The processed string, with directionality enforced to RTL.
+ */
+goog.i18n.bidi.enforceRtlInHtml = function(html) {
+  if (html.charAt(0) == '<') {
+    return html.replace(/<\w+/, '$& dir=rtl');
+  }
+  // '\n' is important for FF so that it won't incorrectly merge span groups
+  return '\n<span dir=rtl>' + html + '</span>';
+};
+
+
+/**
+ * Enforce RTL on both end of the given text piece using unicode BiDi formatting
+ * characters RLE and PDF.
+ * @param {string} text The piece of text that need to be wrapped.
+ * @return {string} The wrapped string after process.
+ */
+goog.i18n.bidi.enforceRtlInText = function(text) {
+  return goog.i18n.bidi.Format.RLE + text + goog.i18n.bidi.Format.PDF;
+};
+
+
+/**
+ * Enforce the html snippet in RTL directionality regardless or overall context.
+ * If the html piece was enclosed by tag, dir will be applied to existing
+ * tag, otherwise a span tag will be added as wrapper. For this reason, if
+ * html snippet starts with a tag, this tag must enclose the whole piece. If
+ * the tag already has a dir specified, this new one will override existing
+ * one in behavior (tested on FF and IE).
+ * @param {string} html The string that need to be processed.
+ * @return {string} The processed string, with directionality enforced to RTL.
+ */
+goog.i18n.bidi.enforceLtrInHtml = function(html) {
+  if (html.charAt(0) == '<') {
+    return html.replace(/<\w+/, '$& dir=ltr');
+  }
+  // '\n' is important for FF so that it won't incorrectly merge span groups
+  return '\n<span dir=ltr>' + html + '</span>';
+};
+
+
+/**
+ * Enforce LTR on both end of the given text piece using unicode BiDi formatting
+ * characters LRE and PDF.
+ * @param {string} text The piece of text that need to be wrapped.
+ * @return {string} The wrapped string after process.
+ */
+goog.i18n.bidi.enforceLtrInText = function(text) {
+  return goog.i18n.bidi.Format.LRE + text + goog.i18n.bidi.Format.PDF;
+};
+
+
+/**
+ * Regular expression to find dimensions such as "padding: .3 0.4ex 5px 6;"
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.dimensionsRe_ =
+    /:\s*([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)/g;
+
+
+/**
+ * Regular expression for left.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.leftRe_ = /left/gi;
+
+
+/**
+ * Regular expression for right.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.rightRe_ = /right/gi;
+
+
+/**
+ * Placeholder regular expression for swapping.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.tempRe_ = /%%%%/g;
+
+
+/**
+ * Swap location parameters and 'left'/'right' in CSS specification. The
+ * processed string will be suited for RTL layout. Though this function can
+ * cover most cases, there are always exceptions. It is suggested to put
+ * those exceptions in separate group of CSS string.
+ * @param {string} cssStr CSS spefication string.
+ * @return {string} Processed CSS specification string.
+ */
+goog.i18n.bidi.mirrorCSS = function(cssStr) {
+  return cssStr
+      .
+      // reverse dimensions
+      replace(goog.i18n.bidi.dimensionsRe_, ':$1 $4 $3 $2')
+      .replace(goog.i18n.bidi.leftRe_, '%%%%')
+      .  // swap left and right
+      replace(goog.i18n.bidi.rightRe_, goog.i18n.bidi.LEFT)
+      .replace(goog.i18n.bidi.tempRe_, goog.i18n.bidi.RIGHT);
+};
+
+
+/**
+ * Regular expression for hebrew double quote substitution, finding quote
+ * directly after hebrew characters.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.doubleQuoteSubstituteRe_ = /([\u0591-\u05f2])"/g;
+
+
+/**
+ * Regular expression for hebrew single quote substitution, finding quote
+ * directly after hebrew characters.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.singleQuoteSubstituteRe_ = /([\u0591-\u05f2])'/g;
+
+
+/**
+ * Replace the double and single quote directly after a Hebrew character with
+ * GERESH and GERSHAYIM. In such case, most likely that's user intention.
+ * @param {string} str String that need to be processed.
+ * @return {string} Processed string with double/single quote replaced.
+ */
+goog.i18n.bidi.normalizeHebrewQuote = function(str) {
+  return str.replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, '$1\u05f4')
+      .replace(goog.i18n.bidi.singleQuoteSubstituteRe_, '$1\u05f3');
+};
+
+
+/**
+ * Regular expression to split a string into "words" for directionality
+ * estimation based on relative word counts.
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.wordSeparatorRe_ = /\s+/;
+
+
+/**
+ * Regular expression to check if a string contains any numerals. Used to
+ * differentiate between completely neutral strings and those containing
+ * numbers, which are weakly LTR.
+ *
+ * Native Arabic digits (\u0660 - \u0669) are not included because although they
+ * do flow left-to-right inside a number, this is the case even if the  overall
+ * directionality is RTL, and a mathematical expression using these digits is
+ * supposed to flow right-to-left overall, including unary plus and minus
+ * appearing to the right of a number, and this does depend on the overall
+ * directionality being RTL. The digits used in Farsi (\u06F0 - \u06F9), on the
+ * other hand, are included, since Farsi math (including unary plus and minus)
+ * does flow left-to-right.
+ * TODO: Consider other systems of digits, e.g., Adlam.
+ *
+ * @type {RegExp}
+ * @private
+ */
+goog.i18n.bidi.hasNumeralsRe_ = /[\d\u06f0-\u06f9]/;
+
+
+/**
+ * This constant controls threshold of RTL directionality.
+ * @type {number}
+ * @private
+ */
+goog.i18n.bidi.rtlDetectionThreshold_ = 0.40;
+
+
+/**
+ * Estimates the directionality of a string based on relative word counts.
+ * If the number of RTL words is above a certain percentage of the total number
+ * of strongly directional words, returns RTL.
+ * Otherwise, if any words are strongly or weakly LTR, returns LTR.
+ * Otherwise, returns UNKNOWN, which is used to mean "neutral".
+ * Numbers are counted as weakly LTR.
+ * @param {string} str The string to be checked.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
+ */
+goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
+  let rtlCount = 0;
+  let totalCount = 0;
+  let hasWeaklyLtr = false;
+  const tokens = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
+                     .split(goog.i18n.bidi.wordSeparatorRe_);
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (goog.i18n.bidi.startsWithRtl(token)) {
+      rtlCount++;
+      totalCount++;
+    } else if (goog.i18n.bidi.isRequiredLtrRe_.test(token)) {
+      hasWeaklyLtr = true;
+    } else if (goog.i18n.bidi.hasAnyLtr(token)) {
+      totalCount++;
+    } else if (goog.i18n.bidi.hasNumeralsRe_.test(token)) {
+      hasWeaklyLtr = true;
+    }
+  }
+
+  return totalCount == 0 ?
+      (hasWeaklyLtr ? goog.i18n.bidi.Dir.LTR : goog.i18n.bidi.Dir.NEUTRAL) :
+      (rtlCount / totalCount > goog.i18n.bidi.rtlDetectionThreshold_ ?
+           goog.i18n.bidi.Dir.RTL :
+           goog.i18n.bidi.Dir.LTR);
+};
+
+
+/**
+ * Check the directionality of a piece of text, return true if the piece of
+ * text should be laid out in RTL direction.
+ * @param {string} str The piece of text that need to be detected.
+ * @param {boolean=} opt_isHtml Whether str is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {boolean} Whether this piece of text should be laid out in RTL.
+ */
+goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
+  return goog.i18n.bidi.estimateDirection(str, opt_isHtml) ==
+      goog.i18n.bidi.Dir.RTL;
+};
+
+
+/**
+ * Sets text input element's directionality and text alignment based on a
+ * given directionality. Does nothing if the given directionality is unknown or
+ * neutral.
+ * @param {Element} element Input field element to set directionality to.
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} dir Desired directionality,
+ *     given in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant.
+ *     2. A number (positive = LRT, negative = RTL, 0 = neutral).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ */
+goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
+  if (element) {
+    const htmlElement = /** @type {!HTMLElement} */ (element);
+    dir = goog.i18n.bidi.toDir(dir);
+    if (dir) {
+      htmlElement.style.textAlign = dir == goog.i18n.bidi.Dir.RTL ?
+          goog.i18n.bidi.RIGHT :
+          goog.i18n.bidi.LEFT;
+      htmlElement.dir = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+    }
+  }
+};
+
+
+/**
+ * Sets element dir based on estimated directionality of the given text.
+ * @param {!Element} element
+ * @param {string} text
+ */
+goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
+  const htmlElement = /** @type {!HTMLElement} */ (element);
+  switch (goog.i18n.bidi.estimateDirection(text)) {
+    case (goog.i18n.bidi.Dir.LTR):
+      htmlElement.dir = 'ltr';
+      break;
+    case (goog.i18n.bidi.Dir.RTL):
+      htmlElement.dir = 'rtl';
+      break;
+    default:
+      // Default for no direction, inherit from document.
+      htmlElement.removeAttribute('dir');
+  }
+};
+
+
+
+/**
+ * Strings that have an (optional) known direction.
+ *
+ * Implementations of this interface are string-like objects that carry an
+ * attached direction, if known.
+ * @interface
+ */
+goog.i18n.bidi.DirectionalString = function() {};
+
+
+/**
+ * Interface marker of the DirectionalString interface.
+ *
+ * This property can be used to determine at runtime whether or not an object
+ * implements this interface.  All implementations of this interface set this
+ * property to `true`.
+ * @type {boolean}
+ */
+goog.i18n.bidi.DirectionalString.prototype
+    .implementsGoogI18nBidiDirectionalString;
+
+
+/**
+ * Retrieves this object's known direction (if any).
+ * @return {?goog.i18n.bidi.Dir} The known direction. Null if unknown.
+ */
+goog.i18n.bidi.DirectionalString.prototype.getDirection;
+
 //third_party/javascript/closure/html/trustedresourceurl.js
 /**
  * @license
@@ -13516,594 +13508,9131 @@ goog.html.SafeHtml.BR =
     goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<br>', goog.i18n.bidi.Dir.NEUTRAL);
 
-//javascript/closure/i18n/bidiformatter.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/html/uncheckedconversions.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
- * @fileoverview Utility for formatting text for display in a potentially
- * opposite-directionality context without garbling.
- * Mostly a port of http://go/formatter.cc.
+ * @fileoverview Unchecked conversions to create values of goog.html types from
+ * plain strings.  Use of these functions could potentially result in instances
+ * of goog.html types that violate their type contracts, and hence result in
+ * security vulnerabilties.
+ *
+ * Therefore, all uses of the methods herein must be carefully security
+ * reviewed.  Avoid use of the methods in this file whenever possible; instead
+ * prefer to create instances of goog.html types using inherently safe builders
+ * or template systems.
+ *
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
+ *
+ * MOE:begin_intracomment_strip
+ * MAINTAINERS: Use of these functions is detected with a Tricorder analyzer.
+ * If adding functions here also add them to analyzer's list at
+ * j/c/g/devtools/staticanalysis/pipeline/analyzers/shared/SafeHtmlAnalyzers.java.
+ * MOE:end_intracomment_strip
  */
 
 
-goog.provide('goog.i18n.BidiFormatter');
+goog.provide('goog.html.uncheckedconversions');
 
+goog.require('goog.asserts');
 goog.require('goog.html.SafeHtml');
-goog.require('goog.i18n.bidi');
-goog.require('goog.i18n.bidi.Dir');
-goog.require('goog.i18n.bidi.Format');
-
+goog.require('goog.html.SafeScript');
+goog.require('goog.html.SafeStyle');
+goog.require('goog.html.SafeStyleSheet');
+goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
+goog.require('goog.string.Const');
+goog.require('goog.string.internal');
 
 
 /**
- * Utility class for formatting text for display in a potentially
- * opposite-directionality context without garbling. Provides the following
- * functionality:
+ * Performs an "unchecked conversion" to SafeHtml from a plain string that is
+ * known to satisfy the SafeHtml type contract.
  *
- * 1. BiDi Wrapping
- * When text in one language is mixed into a document in another, opposite-
- * directionality language, e.g. when an English business name is embedded in a
- * Hebrew web page, both the inserted string and the text following it may be
- * displayed incorrectly unless the inserted string is explicitly separated
- * from the surrounding text in a "wrapper" that declares its directionality at
- * the start and then resets it back at the end. This wrapping can be done in
- * HTML mark-up (e.g. a 'span dir="rtl"' tag) or - only in contexts where
- * mark-up can not be used - in Unicode BiDi formatting codes (LRE|RLE and PDF).
- * Providing such wrapping services is the basic purpose of the BiDi formatter.
+ * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
+ * that the value of `html` satisfies the SafeHtml type contract in all
+ * possible program states.
  *
- * 2. Directionality estimation
- * How does one know whether a string about to be inserted into surrounding
- * text has the same directionality? Well, in many cases, one knows that this
- * must be the case when writing the code doing the insertion, e.g. when a
- * localized message is inserted into a localized page. In such cases there is
- * no need to involve the BiDi formatter at all. In the remaining cases, e.g.
- * when the string is user-entered or comes from a database, the language of
- * the string (and thus its directionality) is not known a priori, and must be
- * estimated at run-time. The BiDi formatter does this automatically.
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
  *
- * 3. Escaping
- * When wrapping plain text - i.e. text that is not already HTML or HTML-
- * escaped - in HTML mark-up, the text must first be HTML-escaped to prevent XSS
- * attacks and other nasty business. This of course is always true, but the
- * escaping can not be done after the string has already been wrapped in
- * mark-up, so the BiDi formatter also serves as a last chance and includes
- * escaping services.
- *
- * Thus, in a single call, the formatter will escape the input string as
- * specified, determine its directionality, and wrap it as necessary. It is
- * then up to the caller to insert the return value in the output.
- *
- * See http://wiki/Main/TemplatesAndBiDi for more information.
- *
- * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
- *     directionality, in one of the following formats:
- *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
- *        i.e. unknown, for backward compatibility with legacy calls.
- *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
- *     3. A boolean (true = RTL, false = LTR).
- *     4. A null for unknown directionality.
- * @param {boolean=} opt_alwaysSpan Whether {@link #spanWrap} should always
- *     use a 'span' tag, even when the input directionality is neutral or
- *     matches the context, so that the DOM structure of the output does not
- *     depend on the combination of directionalities. Default: false.
- * @constructor
- * @final
+ * @param {!goog.string.Const} justification A constant string explaining why
+ *     this use of this method is safe. May include a security review ticket
+ *     number.
+ * @param {string} html A string that is claimed to adhere to the SafeHtml
+ *     contract.
+ * @param {?goog.i18n.bidi.Dir=} opt_dir The optional directionality of the
+ *     SafeHtml to be constructed. A null or undefined value signifies an
+ *     unknown directionality.
+ * @return {!goog.html.SafeHtml} The value of html, wrapped in a SafeHtml
+ *     object.
  */
-goog.i18n.BidiFormatter = function(contextDir, opt_alwaysSpan) {
-  /**
-   * The overall directionality of the context in which the formatter is being
-   * used.
-   * @type {?goog.i18n.bidi.Dir}
-   * @private
-   */
-  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
-
-  /**
-   * Whether {@link #spanWrap} and similar methods should always use the same
-   * span structure, regardless of the combination of directionalities, for a
-   * stable DOM structure.
-   * @type {boolean}
-   * @private
-   */
-  this.alwaysSpan_ = !!opt_alwaysSpan;
+goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
+    function(justification, html, opt_dir) {
+  // unwrap() called inside an assert so that justification can be optimized
+  // away in production code.
+  goog.asserts.assertString(
+      goog.string.Const.unwrap(justification), 'must provide justification');
+  goog.asserts.assert(
+      !goog.string.internal.isEmptyOrWhitespace(
+          goog.string.Const.unwrap(justification)),
+      'must provide non-empty justification');
+  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
+      html, opt_dir || null);
 };
 
 
 /**
- * @return {?goog.i18n.bidi.Dir} The context directionality.
+ * Performs an "unchecked conversion" to SafeScript from a plain string that is
+ * known to satisfy the SafeScript type contract.
+ *
+ * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
+ * that the value of `script` satisfies the SafeScript type contract in
+ * all possible program states.
+ *
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
+ *
+ * @param {!goog.string.Const} justification A constant string explaining why
+ *     this use of this method is safe. May include a security review ticket
+ *     number.
+ * @param {string} script The string to wrap as a SafeScript.
+ * @return {!goog.html.SafeScript} The value of `script`, wrapped in a
+ *     SafeScript object.
  */
-goog.i18n.BidiFormatter.prototype.getContextDir = function() {
-  return this.contextDir_;
+goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
+    function(justification, script) {
+  // unwrap() called inside an assert so that justification can be optimized
+  // away in production code.
+  goog.asserts.assertString(
+      goog.string.Const.unwrap(justification), 'must provide justification');
+  goog.asserts.assert(
+      !goog.string.internal.isEmptyOrWhitespace(
+          goog.string.Const.unwrap(justification)),
+      'must provide non-empty justification');
+  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
+      script);
 };
 
 
 /**
- * @return {boolean} Whether alwaysSpan is set.
+ * Performs an "unchecked conversion" to SafeStyle from a plain string that is
+ * known to satisfy the SafeStyle type contract.
+ *
+ * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
+ * that the value of `style` satisfies the SafeStyle type contract in all
+ * possible program states.
+ *
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
+ *
+ * @param {!goog.string.Const} justification A constant string explaining why
+ *     this use of this method is safe. May include a security review ticket
+ *     number.
+ * @param {string} style The string to wrap as a SafeStyle.
+ * @return {!goog.html.SafeStyle} The value of `style`, wrapped in a
+ *     SafeStyle object.
  */
-goog.i18n.BidiFormatter.prototype.getAlwaysSpan = function() {
-  return this.alwaysSpan_;
+goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
+    function(justification, style) {
+  // unwrap() called inside an assert so that justification can be optimized
+  // away in production code.
+  goog.asserts.assertString(
+      goog.string.Const.unwrap(justification), 'must provide justification');
+  goog.asserts.assert(
+      !goog.string.internal.isEmptyOrWhitespace(
+          goog.string.Const.unwrap(justification)),
+      'must provide non-empty justification');
+  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
+      style);
 };
 
 
 /**
- * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
- *     directionality, in one of the following formats:
- *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
- *        i.e. unknown.
- *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
- *     3. A boolean (true = RTL, false = LTR).
- *     4. A null for unknown directionality.
+ * Performs an "unchecked conversion" to SafeStyleSheet from a plain string
+ * that is known to satisfy the SafeStyleSheet type contract.
+ *
+ * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
+ * that the value of `styleSheet` satisfies the SafeStyleSheet type
+ * contract in all possible program states.
+ *
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
+ *
+ * @param {!goog.string.Const} justification A constant string explaining why
+ *     this use of this method is safe. May include a security review ticket
+ *     number.
+ * @param {string} styleSheet The string to wrap as a SafeStyleSheet.
+ * @return {!goog.html.SafeStyleSheet} The value of `styleSheet`, wrapped
+ *     in a SafeStyleSheet object.
  */
-goog.i18n.BidiFormatter.prototype.setContextDir = function(contextDir) {
-  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
+goog.html.uncheckedconversions
+    .safeStyleSheetFromStringKnownToSatisfyTypeContract = function(
+    justification, styleSheet) {
+  // unwrap() called inside an assert so that justification can be optimized
+  // away in production code.
+  goog.asserts.assertString(
+      goog.string.Const.unwrap(justification), 'must provide justification');
+  goog.asserts.assert(
+      !goog.string.internal.isEmptyOrWhitespace(
+          goog.string.Const.unwrap(justification)),
+      'must provide non-empty justification');
+  return goog.html.SafeStyleSheet
+      .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet);
 };
 
 
 /**
- * @param {boolean} alwaysSpan Whether {@link #spanWrap} should always use a
- *     'span' tag, even when the input directionality is neutral or matches the
- *     context, so that the DOM structure of the output does not depend on the
- *     combination of directionalities.
+ * Performs an "unchecked conversion" to SafeUrl from a plain string that is
+ * known to satisfy the SafeUrl type contract.
+ *
+ * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
+ * that the value of `url` satisfies the SafeUrl type contract in all
+ * possible program states.
+ *
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
+ *
+ * @param {!goog.string.Const} justification A constant string explaining why
+ *     this use of this method is safe. May include a security review ticket
+ *     number.
+ * @param {string} url The string to wrap as a SafeUrl.
+ * @return {!goog.html.SafeUrl} The value of `url`, wrapped in a SafeUrl
+ *     object.
  */
-goog.i18n.BidiFormatter.prototype.setAlwaysSpan = function(alwaysSpan) {
-  this.alwaysSpan_ = alwaysSpan;
+goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
+    function(justification, url) {
+  // unwrap() called inside an assert so that justification can be optimized
+  // away in production code.
+  goog.asserts.assertString(
+      goog.string.Const.unwrap(justification), 'must provide justification');
+  goog.asserts.assert(
+      !goog.string.internal.isEmptyOrWhitespace(
+          goog.string.Const.unwrap(justification)),
+      'must provide non-empty justification');
+  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
 
 /**
- * Returns the directionality of input argument `str`.
- * Identical to {@link goog.i18n.bidi.estimateDirection}.
+ * Performs an "unchecked conversion" to TrustedResourceUrl from a plain string
+ * that is known to satisfy the TrustedResourceUrl type contract.
  *
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
- */
-goog.i18n.BidiFormatter.prototype.estimateDirection =
-    goog.i18n.bidi.estimateDirection;
-
-
-/**
- * Returns true if two given directionalities are opposite.
- * Note: the implementation is based on the numeric values of the Dir enum.
+ * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
+ * that the value of `url` satisfies the TrustedResourceUrl type contract
+ * in all possible program states.
  *
- * @param {?goog.i18n.bidi.Dir} dir1 1st directionality.
- * @param {?goog.i18n.bidi.Dir} dir2 2nd directionality.
- * @return {boolean} Whether the directionalities are opposite.
- * @private
+ * MOE:begin_intracomment_strip
+ * See http://go/safehtml-unchecked for guidelines on using these functions.
+ * MOE:end_intracomment_strip
+ *
+ * @param {!goog.string.Const} justification A constant string explaining why
+ *     this use of this method is safe. May include a security review ticket
+ *     number.
+ * @param {string} url The string to wrap as a TrustedResourceUrl.
+ * @return {!goog.html.TrustedResourceUrl} The value of `url`, wrapped in
+ *     a TrustedResourceUrl object.
  */
-goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
-    dir1, dir2) {
-  return Number(dir1) * Number(dir2) < 0;
+goog.html.uncheckedconversions
+    .trustedResourceUrlFromStringKnownToSatisfyTypeContract = function(
+    justification, url) {
+  // unwrap() called inside an assert so that justification can be optimized
+  // away in production code.
+  goog.asserts.assertString(
+      goog.string.Const.unwrap(justification), 'must provide justification');
+  goog.asserts.assert(
+      !goog.string.internal.isEmptyOrWhitespace(
+          goog.string.Const.unwrap(justification)),
+      'must provide non-empty justification');
+  return goog.html.TrustedResourceUrl
+      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
+//third_party/javascript/closure/dom/asserts.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+goog.provide('goog.dom.asserts');
+
+goog.require('goog.asserts');
 
 /**
- * Returns a unicode BiDi mark matching the context directionality (LRM or
- * RLM) if `opt_dirReset`, and if either the directionality or the exit
- * directionality of `str` is opposite to the context directionality.
- * Otherwise returns the empty string.
+ * @fileoverview Custom assertions to ensure that an element has the appropriate
+ * type.
  *
- * @param {string} str The input text.
- * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to perform the reset. Default: false.
- * @return {string} A unicode BiDi mark or the empty string.
- * @private
+ * Using a goog.dom.safe wrapper on an object on the incorrect type (via an
+ * incorrect static type cast) can result in security bugs: For instance,
+ * g.d.s.setAnchorHref ensures that the URL assigned to the .href attribute
+ * satisfies the SafeUrl contract, i.e., is safe to dereference as a hyperlink.
+ * However, the value assigned to a HTMLLinkElement's .href property requires
+ * the stronger TrustedResourceUrl contract, since it can refer to a stylesheet.
+ * Thus, using g.d.s.setAnchorHref on an (incorrectly statically typed) object
+ * of type HTMLLinkElement can result in a security vulnerability.
+ * Assertions of the correct run-time type help prevent such incorrect use.
+ *
+ * In some cases, code using the DOM API is tested using mock objects (e.g., a
+ * plain object such as {'href': url} instead of an actual Location object).
+ * To allow such mocking, the assertions permit objects of types that are not
+ * relevant DOM API objects at all (for instance, not Element or Location).
+ *
+ * Note that instanceof checks don't work straightforwardly in older versions of
+ * IE, or across frames (see,
+ * http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object,
+ * http://stackoverflow.com/questions/26248599/instanceof-htmlelement-in-iframe-is-not-element-or-object).
+ *
+ * Hence, these assertions may pass vacuously in such scenarios. The resulting
+ * risk of security bugs is limited by the following factors:
+ *  - A bug can only arise in scenarios involving incorrect static typing (the
+ *    wrapper methods are statically typed to demand objects of the appropriate,
+ *    precise type).
+ *  - Typically, code is tested and exercised in multiple browsers.
  */
-goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
-    str, dir, opt_isHtml, opt_dirReset) {
-  // endsWithRtl and endsWithLtr are called only if needed (short-circuit).
-  if (opt_dirReset &&
-      (this.areDirectionalitiesOpposite_(dir, this.contextDir_) ||
-       (this.contextDir_ == goog.i18n.bidi.Dir.LTR &&
-        goog.i18n.bidi.endsWithRtl(str, opt_isHtml)) ||
-       (this.contextDir_ == goog.i18n.bidi.Dir.RTL &&
-        goog.i18n.bidi.endsWithLtr(str, opt_isHtml)))) {
-    return this.contextDir_ == goog.i18n.bidi.Dir.LTR ?
-        goog.i18n.bidi.Format.LRM :
-        goog.i18n.bidi.Format.RLM;
-  } else {
-    return '';
-  }
-};
-
 
 /**
- * Returns "rtl" if `str`'s estimated directionality is RTL, and "ltr" if
- * it is LTR. In case it's NEUTRAL, returns "rtl" if the context directionality
- * is RTL, and "ltr" otherwise.
- * Needed for GXP, which can't handle dirAttr.
- * Example use case:
- * &lt;td expr:dir='bidiFormatter.dirAttrValue(foo)'&gt;
- *   &lt;gxp:eval expr='foo'&gt;
- * &lt;/td&gt;
+ * Asserts that a given object is a Location.
  *
- * @param {string} str Text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} "rtl" or "ltr", according to the logic described above.
+ * To permit this assertion to pass in the context of tests where DOM APIs might
+ * be mocked, also accepts any other type except for subtypes of {!Element}.
+ * This is to ensure that, for instance, HTMLLinkElement is not being used in
+ * place of a Location, since this could result in security bugs due to stronger
+ * contracts required for assignments to the href property of the latter.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!Location}
  */
-goog.i18n.BidiFormatter.prototype.dirAttrValue = function(str, opt_isHtml) {
-  return this.knownDirAttrValue(this.estimateDirection(str, opt_isHtml));
-};
-
-
-/**
- * Returns "rtl" if the given directionality is RTL, and "ltr" if it is LTR. In
- * case it's NEUTRAL, returns "rtl" if the context directionality is RTL, and
- * "ltr" otherwise.
- *
- * @param {goog.i18n.bidi.Dir} dir A directionality.
- * @return {string} "rtl" or "ltr", according to the logic described above.
- */
-goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
-  var resolvedDir = dir == goog.i18n.bidi.Dir.NEUTRAL ? this.contextDir_ : dir;
-  return resolvedDir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
-};
-
-
-/**
- * Returns 'dir="ltr"' or 'dir="rtl"', depending on `str`'s estimated
- * directionality, if it is not the same as the context directionality.
- * Otherwise, returns the empty string.
- *
- * @param {string} str Text whose directionality is to be estimated.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
- *     LTR text in non-LTR context; else, the empty string.
- */
-goog.i18n.BidiFormatter.prototype.dirAttr = function(str, opt_isHtml) {
-  return this.knownDirAttr(this.estimateDirection(str, opt_isHtml));
-};
-
-
-/**
- * Returns 'dir="ltr"' or 'dir="rtl"', depending on the given directionality, if
- * it is not the same as the context directionality. Otherwise, returns the
- * empty string.
- *
- * @param {goog.i18n.bidi.Dir} dir A directionality.
- * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
- *     LTR text in non-LTR context; else, the empty string.
- */
-goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
-  if (dir != this.contextDir_) {
-    return dir == goog.i18n.bidi.Dir.RTL ?
-        'dir="rtl"' :
-        dir == goog.i18n.bidi.Dir.LTR ? 'dir="ltr"' : '';
-  }
-  return '';
-};
-
-
-/**
- * Formats a string of unknown directionality for use in HTML output of the
- * context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * The algorithm: estimates the directionality of input argument `html`.
- * In case its directionality doesn't match the context directionality, wraps it
- * with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"' or
- * 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
- * with 'span', skipping just the dir attribute when it's not needed.
- *
- * If `opt_dirReset`, and if the overall directionality or the exit
- * directionality of `str` are opposite to the context directionality, a
- * trailing unicode BiDi mark matching the context directionality is appened
- * (LRM or RLM).
- *
- * @param {!goog.html.SafeHtml} html The input HTML.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `html`. Default: true.
- * @return {!goog.html.SafeHtml} Input text after applying the processing.
- */
-goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
-    html, opt_dirReset) {
-  return this.spanWrapSafeHtmlWithKnownDir(null, html, opt_dirReset);
-};
-
-
-/**
- * Formats a string of given directionality for use in HTML output of the
- * context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * The algorithm: If `dir` doesn't match the context directionality, wraps
- * `html` with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
- * or 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
- * with 'span', skipping just the dir attribute when it's not needed.
- *
- * If `opt_dirReset`, and if `dir` or the exit directionality of
- * `html` are opposite to the context directionality, a trailing unicode
- * BiDi mark matching the context directionality is appened (LRM or RLM).
- *
- * @param {?goog.i18n.bidi.Dir} dir `html`'s overall directionality, or
- *     null if unknown and needs to be estimated.
- * @param {!goog.html.SafeHtml} html The input HTML.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `html`. Default: true.
- * @return {!goog.html.SafeHtml} Input text after applying the processing.
- */
-goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
-    dir, html, opt_dirReset) {
-  if (dir == null) {
-    dir = this.estimateDirection(goog.html.SafeHtml.unwrap(html), true);
-  }
-  return this.spanWrapWithKnownDir_(dir, html, opt_dirReset);
-};
-
-
-/**
- * The internal implementation of spanWrapSafeHtmlWithKnownDir for non-null dir,
- * to help the compiler optimize.
- *
- * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
- * @param {!goog.html.SafeHtml} html The input HTML.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {!goog.html.SafeHtml} Input text after applying the above processing.
- * @private
- */
-goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
-    dir, html, opt_dirReset) {
-  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
-
-  var result;
-  // Whether to add the "dir" attribute.
-  var dirCondition =
-      dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_;
-  if (this.alwaysSpan_ || dirCondition) {  // Wrap is needed
-    var dirAttribute;
-    if (dirCondition) {
-      dirAttribute = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+goog.dom.asserts.assertIsLocation = function(o) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var win = goog.dom.asserts.getWindow_(o);
+    if (win) {
+      if (!o || (!(o instanceof win.Location) && o instanceof win.Element)) {
+        goog.asserts.fail(
+            'Argument is not a Location (or a non-Element mock); got: %s',
+            goog.dom.asserts.debugStringForType_(o));
+      }
     }
-    result = goog.html.SafeHtml.create('span', {'dir': dirAttribute}, html);
-  } else {
-    result = html;
   }
-  var str = goog.html.SafeHtml.unwrap(html);
-  result = goog.html.SafeHtml.concatWithDir(
-      goog.i18n.bidi.Dir.NEUTRAL, result,
-      this.dirResetIfNeeded_(str, dir, true, opt_dirReset));
+  return /** @type {!Location} */ (o);
+};
+
+
+/**
+ * Asserts that a given object is either the given subtype of Element
+ * or a non-Element, non-Location Mock.
+ *
+ * To permit this assertion to pass in the context of tests where DOM
+ * APIs might be mocked, also accepts any other type except for
+ * subtypes of {!Element}.  This is to ensure that, for instance,
+ * HTMLScriptElement is not being used in place of a HTMLImageElement,
+ * since this could result in security bugs due to stronger contracts
+ * required for assignments to the src property of the latter.
+ *
+ * The DOM type is looked up in the window the object belongs to.  In
+ * some contexts, this might not be possible (e.g. when running tests
+ * outside a browser, cross-domain lookup). In this case, the
+ * assertions are skipped.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @param {string} typename The name of the DOM type.
+ * @return {!Element} The object.
+ * @private
+ */
+// TODO(bangert): Make an analog of goog.dom.TagName to correctly handle casts?
+goog.dom.asserts.assertIsElementType_ = function(o, typename) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var win = goog.dom.asserts.getWindow_(o);
+    if (win && typeof win[typename] != 'undefined') {
+      if (!o ||
+          (!(o instanceof win[typename]) &&
+           (o instanceof win.Location || o instanceof win.Element))) {
+        goog.asserts.fail(
+            'Argument is not a %s (or a non-Element, non-Location mock); ' +
+                'got: %s',
+            typename, goog.dom.asserts.debugStringForType_(o));
+      }
+    }
+  }
+  return /** @type {!Element} */ (o);
+};
+
+/**
+ * Asserts that a given object is a HTMLAnchorElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not of type Location nor a subtype
+ * of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLAnchorElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlAnchorElement instead.
+ */
+goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
+  return /** @type {!HTMLAnchorElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLAnchorElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLButtonElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLButtonElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlButtonElement instead.
+ */
+goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
+  return /** @type {!HTMLButtonElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLButtonElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLLinkElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLLinkElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlLinkElement instead.
+ */
+goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
+  return /** @type {!HTMLLinkElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLLinkElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLImageElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLImageElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlImageElement instead.
+ */
+goog.dom.asserts.assertIsHTMLImageElement = function(o) {
+  return /** @type {!HTMLImageElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLImageElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLAudioElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLAudioElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlAudioElement instead.
+ */
+goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
+  return /** @type {!HTMLAudioElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLAudioElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLVideoElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLVideoElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlVideoElement instead.
+ */
+goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
+  return /** @type {!HTMLVideoElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLVideoElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLInputElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLInputElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlInputElement instead.
+ */
+goog.dom.asserts.assertIsHTMLInputElement = function(o) {
+  return /** @type {!HTMLInputElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLInputElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLTextAreaElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLTextAreaElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlTextAreaElement instead.
+ */
+goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
+  return /** @type {!HTMLTextAreaElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLTextAreaElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLCanvasElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLCanvasElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlCanvasElement instead.
+ */
+goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
+  return /** @type {!HTMLCanvasElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLCanvasElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLEmbedElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLEmbedElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlEmbedElement instead.
+ */
+goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
+  return /** @type {!HTMLEmbedElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLEmbedElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLFormElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLFormElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlFormElement instead.
+ */
+goog.dom.asserts.assertIsHTMLFormElement = function(o) {
+  return /** @type {!HTMLFormElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLFormElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLFrameElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLFrameElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlFrameElement instead.
+ */
+goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
+  return /** @type {!HTMLFrameElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLFrameElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLIFrameElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLIFrameElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlIFrameElement instead.
+ */
+goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
+  return /** @type {!HTMLIFrameElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLIFrameElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLObjectElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLObjectElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlObjectElement instead.
+ */
+goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
+  return /** @type {!HTMLObjectElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLObjectElement'));
+};
+
+/**
+ * Asserts that a given object is a HTMLScriptElement.
+ *
+ * To permit this assertion to pass in the context of tests where elements might
+ * be mocked, also accepts objects that are not a subtype of Element.
+ *
+ * @param {?Object} o The object whose type to assert.
+ * @return {!HTMLScriptElement}
+ * @deprecated Use goog.asserts.dom.assertIsHtmlScriptElement instead.
+ */
+goog.dom.asserts.assertIsHTMLScriptElement = function(o) {
+  return /** @type {!HTMLScriptElement} */ (
+      goog.dom.asserts.assertIsElementType_(o, 'HTMLScriptElement'));
+};
+
+/**
+ * Returns a string representation of a value's type.
+ *
+ * @param {*} value An object, or primitive.
+ * @return {string} The best display name for the value.
+ * @private
+ */
+goog.dom.asserts.debugStringForType_ = function(value) {
+  if (goog.isObject(value)) {
+    try {
+      return /** @type {string|undefined} */ (value.constructor.displayName) ||
+          value.constructor.name || Object.prototype.toString.call(value);
+    } catch (e) {
+      return '<object could not be stringified>';
+    }
+  } else {
+    return value === undefined ? 'undefined' :
+                                 value === null ? 'null' : typeof value;
+  }
+};
+
+/**
+ * Gets window of element.
+ * @param {?Object} o
+ * @return {?Window}
+ * @private
+ * @suppress {strictMissingProperties} ownerDocument not defined on Object
+ */
+goog.dom.asserts.getWindow_ = function(o) {
+  try {
+    var doc = o && o.ownerDocument;
+    // This can throw “Blocked a frame with origin "chrome-extension://..." from
+    // accessing a cross-origin frame” in Chrome extension.
+    var win =
+        doc && /** @type {?Window} */ (doc.defaultView || doc.parentWindow);
+    win = win || /** @type {!Window} */ (goog.global);
+    // This can throw “Permission denied to access property "Element" on
+    // cross-origin object”.
+    if (win.Element && win.Location) {
+      return win;
+    }
+  } catch (ex) {
+  }
+  return null;
+};
+
+//third_party/javascript/closure/functions/functions.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utilities for creating functions. Loosely inspired by these
+ * java classes from the Guava library:
+ * com.google.common.base.Functions
+ * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Functions.html
+ *
+ * com.google.common.base.Predicates
+ * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Predicates.html
+ *
+ * More about these can be found at
+ * https://github.com/google/guava/wiki/FunctionalExplained
+ */
+
+
+goog.provide('goog.functions');
+
+
+/**
+ * Creates a function that always returns the same value.
+ * @param {T} retValue The value to return.
+ * @return {function():T} The new function.
+ * @template T
+ */
+goog.functions.constant = function(retValue) {
+  return function() { return retValue; };
+};
+
+
+/**
+ * Always returns false.
+ * @type {function(...): boolean}
+ */
+goog.functions.FALSE = function() {
+  return false;
+};
+
+
+/**
+ * Always returns true.
+ * @type {function(...): boolean}
+ */
+goog.functions.TRUE = function() {
+  return true;
+};
+
+
+/**
+ * Always returns NULL.
+ * @type {function(...): null}
+ */
+goog.functions.NULL = function() {
+  return null;
+};
+
+
+/**
+ * A simple function that returns the first argument of whatever is passed
+ * into it.
+ * @param {T=} opt_returnValue The single value that will be returned.
+ * @param {...*} var_args Optional trailing arguments. These are ignored.
+ * @return {T} The first argument passed in, or undefined if nothing was passed.
+ * @template T
+ */
+goog.functions.identity = function(opt_returnValue, var_args) {
+  return opt_returnValue;
+};
+
+
+/**
+ * Creates a function that always throws an error with the given message.
+ * @param {string} message The error message.
+ * @return {!Function} The error-throwing function.
+ */
+goog.functions.error = function(message) {
+  return function() {
+    throw new Error(message);
+  };
+};
+
+
+/**
+ * Creates a function that throws the given object.
+ * @param {*} err An object to be thrown.
+ * @return {!Function} The error-throwing function.
+ */
+goog.functions.fail = function(err) {
+  return function() { throw err; };
+};
+
+
+/**
+ * Given a function, create a function that keeps opt_numArgs arguments and
+ * silently discards all additional arguments.
+ * @param {Function} f The original function.
+ * @param {number=} opt_numArgs The number of arguments to keep. Defaults to 0.
+ * @return {!Function} A version of f that only keeps the first opt_numArgs
+ *     arguments.
+ */
+goog.functions.lock = function(f, opt_numArgs) {
+  opt_numArgs = opt_numArgs || 0;
+  return function() {
+    const self = /** @type {*} */ (this);
+    return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
+  };
+};
+
+
+/**
+ * Creates a function that returns its nth argument.
+ * @param {number} n The position of the return argument.
+ * @return {!Function} A new function.
+ */
+goog.functions.nth = function(n) {
+  return function() { return arguments[n]; };
+};
+
+
+/**
+ * Like goog.partial(), except that arguments are added after arguments to the
+ * returned function.
+ *
+ * Usage:
+ * function f(arg1, arg2, arg3, arg4) { ... }
+ * var g = goog.functions.partialRight(f, arg3, arg4);
+ * g(arg1, arg2);
+ *
+ * @param {!Function} fn A function to partially apply.
+ * @param {...*} var_args Additional arguments that are partially applied to fn
+ *     at the end.
+ * @return {!Function} A partially-applied form of the function goog.partial()
+ *     was invoked as a method of.
+ */
+goog.functions.partialRight = function(fn, var_args) {
+  const rightArgs = Array.prototype.slice.call(arguments, 1);
+  return function() {
+    const self = /** @type {*} */ (this);
+    const newArgs = Array.prototype.slice.call(arguments);
+    newArgs.push.apply(newArgs, rightArgs);
+    return fn.apply(self, newArgs);
+  };
+};
+
+
+/**
+ * Given a function, create a new function that swallows its return value
+ * and replaces it with a new one.
+ * @param {Function} f A function.
+ * @param {T} retValue A new return value.
+ * @return {function(...?):T} A new function.
+ * @template T
+ */
+goog.functions.withReturnValue = function(f, retValue) {
+  return goog.functions.sequence(f, goog.functions.constant(retValue));
+};
+
+
+/**
+ * Creates a function that returns whether its argument equals the given value.
+ *
+ * Example:
+ * var key = goog.object.findKey(obj, goog.functions.equalTo('needle'));
+ *
+ * @param {*} value The value to compare to.
+ * @param {boolean=} opt_useLooseComparison Whether to use a loose (==)
+ *     comparison rather than a strict (===) one. Defaults to false.
+ * @return {function(*):boolean} The new function.
+ */
+goog.functions.equalTo = function(value, opt_useLooseComparison) {
+  return function(other) {
+    return opt_useLooseComparison ? (value == other) : (value === other);
+  };
+};
+
+
+/**
+ * Creates the composition of the functions passed in.
+ * For example, (goog.functions.compose(f, g))(a) is equivalent to f(g(a)).
+ * @param {function(...?):T} fn The final function.
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):T} The composition of all inputs.
+ * @template T
+ */
+goog.functions.compose = function(fn, var_args) {
+  const functions = arguments;
+  const length = functions.length;
+  return function() {
+    const self = /** @type {*} */ (this);
+    let result;
+    if (length) {
+      result = functions[length - 1].apply(self, arguments);
+    }
+
+    for (let i = length - 2; i >= 0; i--) {
+      result = functions[i].call(self, result);
+    }
+    return result;
+  };
+};
+
+
+/**
+ * Creates a function that calls the functions passed in in sequence, and
+ * returns the value of the last function. For example,
+ * (goog.functions.sequence(f, g))(x) is equivalent to f(x),g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {!Function} A function that calls all inputs in sequence.
+ */
+goog.functions.sequence = function(var_args) {
+  const functions = arguments;
+  const length = functions.length;
+  return function() {
+    const self = /** @type {*} */ (this);
+    let result;
+    for (let i = 0; i < length; i++) {
+      result = functions[i].apply(self, arguments);
+    }
+    return result;
+  };
+};
+
+
+/**
+ * Creates a function that returns true if each of its components evaluates
+ * to true. The components are evaluated in order, and the evaluation will be
+ * short-circuited as soon as a function returns false.
+ * For example, (goog.functions.and(f, g))(x) is equivalent to f(x) && g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):boolean} A function that ANDs its component
+ *      functions.
+ */
+goog.functions.and = function(var_args) {
+  const functions = arguments;
+  const length = functions.length;
+  return function() {
+    const self = /** @type {*} */ (this);
+    for (let i = 0; i < length; i++) {
+      if (!functions[i].apply(self, arguments)) {
+        return false;
+      }
+    }
+    return true;
+  };
+};
+
+
+/**
+ * Creates a function that returns true if any of its components evaluates
+ * to true. The components are evaluated in order, and the evaluation will be
+ * short-circuited as soon as a function returns true.
+ * For example, (goog.functions.or(f, g))(x) is equivalent to f(x) || g(x).
+ * @param {...Function} var_args A list of functions.
+ * @return {function(...?):boolean} A function that ORs its component
+ *    functions.
+ */
+goog.functions.or = function(var_args) {
+  const functions = arguments;
+  const length = functions.length;
+  return function() {
+    const self = /** @type {*} */ (this);
+    for (let i = 0; i < length; i++) {
+      if (functions[i].apply(self, arguments)) {
+        return true;
+      }
+    }
+    return false;
+  };
+};
+
+
+/**
+ * Creates a function that returns the Boolean opposite of a provided function.
+ * For example, (goog.functions.not(f))(x) is equivalent to !f(x).
+ * @param {!Function} f The original function.
+ * @return {function(...?):boolean} A function that delegates to f and returns
+ * opposite.
+ */
+goog.functions.not = function(f) {
+  return function() {
+    const self = /** @type {*} */ (this);
+    return !f.apply(self, arguments);
+  };
+};
+
+
+/**
+ * Generic factory function to construct an object given the constructor
+ * and the arguments. Intended to be bound to create object factories.
+ *
+ * Example:
+ *
+ * var factory = goog.partial(goog.functions.create, Class);
+ *
+ * @param {function(new:T, ...)} constructor The constructor for the Object.
+ * @param {...*} var_args The arguments to be passed to the constructor.
+ * @return {T} A new instance of the class given in `constructor`.
+ * @template T
+ * @deprecated This function does not work with ES6 class constructors. Use
+ *     arrow functions + spread args instead.
+ */
+goog.functions.create = function(constructor, var_args) {
+  /**
+   * @constructor
+   * @final
+   */
+  const temp = function() {};
+  temp.prototype = constructor.prototype;
+
+  // obj will have constructor's prototype in its chain and
+  // 'obj instanceof constructor' will be true.
+  const obj = new temp();
+
+  // obj is initialized by constructor.
+  // arguments is only array-like so lacks shift(), but can be used with
+  // the Array prototype function.
+  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
+  return obj;
+};
+
+
+/**
+ * @define {boolean} Whether the return value cache should be used.
+ *    This should only be used to disable caches when testing.
+ */
+goog.functions.CACHE_RETURN_VALUE =
+    goog.define('goog.functions.CACHE_RETURN_VALUE', true);
+
+
+/**
+ * Gives a wrapper function that caches the return value of a parameterless
+ * function when first called.
+ *
+ * When called for the first time, the given function is called and its
+ * return value is cached (thus this is only appropriate for idempotent
+ * functions).  Subsequent calls will return the cached return value. This
+ * allows the evaluation of expensive functions to be delayed until first used.
+ *
+ * To cache the return values of functions with parameters, see goog.memoize.
+ *
+ * @param {function():T} fn A function to lazily evaluate.
+ * @return {function():T} A wrapped version the function.
+ * @template T
+ */
+goog.functions.cacheReturnValue = function(fn) {
+  let called = false;
+  let value;
+
+  return function() {
+    if (!goog.functions.CACHE_RETURN_VALUE) {
+      return fn();
+    }
+
+    if (!called) {
+      value = fn();
+      called = true;
+    }
+
+    return value;
+  };
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once. All
+ * additional calls are no-ops.
+ *
+ * This is particularly useful for initialization functions
+ * that should be called, at most, once.
+ *
+ * @param {function():*} f Function to call.
+ * @return {function():undefined} Wrapped function.
+ */
+goog.functions.once = function(f) {
+  // Keep a reference to the function that we null out when we're done with
+  // it -- that way, the function can be GC'd when we're done with it.
+  let inner = f;
+  return function() {
+    if (inner) {
+      const tmp = inner;
+      inner = null;
+      tmp();
+    }
+  };
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times within
+ * that interval, only the Nth call will go through.
+ *
+ * This is particularly useful for batching up repeated actions where the
+ * last action should win. This can be used, for example, for refreshing an
+ * autocomplete pop-up every so often rather than updating with every keystroke,
+ * since the final text typed by the user is the one that should produce the
+ * final autocomplete results. For more stateful debouncing with support for
+ * pausing, resuming, and canceling debounced actions, use
+ * `goog.async.Debouncer`.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to debounce. The function will
+ *     only be called after the full interval has elapsed since the last call.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.debounce = function(f, interval, opt_scope) {
+  let timeout = 0;
+  return /** @type {function(...?)} */ (function(var_args) {
+    goog.global.clearTimeout(timeout);
+    const args = arguments;
+    timeout = goog.global.setTimeout(function() {
+      f.apply(opt_scope, args);
+    }, interval);
+  });
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times in
+ * that interval, both the 1st and the Nth calls will go through.
+ *
+ * This is particularly useful for limiting repeated user requests where the
+ * the last action should win, but you also don't want to wait until the end of
+ * the interval before sending a request out, as it leads to a perception of
+ * slowness for the user.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to throttle. The function can
+ *     only be called once per interval.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.throttle = function(f, interval, opt_scope) {
+  let timeout = 0;
+  let shouldFire = false;
+  let args = [];
+
+  const handleTimeout = function() {
+    timeout = 0;
+    if (shouldFire) {
+      shouldFire = false;
+      fire();
+    }
+  };
+
+  const fire = function() {
+    timeout = goog.global.setTimeout(handleTimeout, interval);
+    f.apply(opt_scope, args);
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    args = arguments;
+    if (!timeout) {
+      fire();
+    } else {
+      shouldFire = true;
+    }
+  });
+};
+
+
+/**
+ * Wraps a function to allow it to be called, at most, once per interval
+ * (specified in milliseconds). If the wrapper function is called N times within
+ * that interval, only the 1st call will go through.
+ *
+ * This is particularly useful for limiting repeated user requests where the
+ * first request is guaranteed to have all the data required to perform the
+ * final action, so there's no need to wait until the end of the interval before
+ * sending the request out.
+ *
+ * @param {function(this:SCOPE, ...?)} f Function to call.
+ * @param {number} interval Interval over which to rate-limit. The function will
+ *     only be called once per interval, and ignored for the remainer of the
+ *     interval.
+ * @param {SCOPE=} opt_scope Object in whose scope to call the function.
+ * @return {function(...?): undefined} Wrapped function.
+ * @template SCOPE
+ */
+goog.functions.rateLimit = function(f, interval, opt_scope) {
+  let timeout = 0;
+
+  const handleTimeout = function() {
+    timeout = 0;
+  };
+
+  return /** @type {function(...?)} */ (function(var_args) {
+    if (!timeout) {
+      timeout = goog.global.setTimeout(handleTimeout, interval);
+      f.apply(opt_scope, arguments);
+    }
+  });
+};
+
+//third_party/javascript/closure/dom/safe.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Type-safe wrappers for unsafe DOM APIs.
+ *
+ * This file provides type-safe wrappers for DOM APIs that can result in
+ * cross-site scripting (XSS) vulnerabilities, if the API is supplied with
+ * untrusted (attacker-controlled) input.  Instead of plain strings, the type
+ * safe wrappers consume values of types from the goog.html package whose
+ * contract promises that values are safe to use in the corresponding context.
+ *
+ * Hence, a program that exclusively uses the wrappers in this file (i.e., whose
+ * only reference to security-sensitive raw DOM APIs are in this file) is
+ * guaranteed to be free of XSS due to incorrect use of such DOM APIs (modulo
+ * correctness of code that produces values of the respective goog.html types,
+ * and absent code that violates type safety).
+ *
+ * For example, assigning to an element's .innerHTML property a string that is
+ * derived (even partially) from untrusted input typically results in an XSS
+ * vulnerability. The type-safe wrapper goog.dom.safe.setInnerHtml consumes a
+ * value of type goog.html.SafeHtml, whose contract states that using its values
+ * in a HTML context will not result in XSS. Hence a program that is free of
+ * direct assignments to any element's innerHTML property (with the exception of
+ * the assignment to .innerHTML in this file) is guaranteed to be free of XSS
+ * due to assignment of untrusted strings to the innerHTML property.
+ */
+
+goog.provide('goog.dom.safe');
+goog.provide('goog.dom.safe.InsertAdjacentHtmlPosition');
+
+goog.require('goog.asserts');
+goog.require('goog.dom.asserts');
+goog.require('goog.functions');
+goog.require('goog.html.SafeHtml');
+goog.require('goog.html.SafeScript');
+goog.require('goog.html.SafeStyle');
+goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
+goog.require('goog.html.uncheckedconversions');
+goog.require('goog.string.Const');
+goog.require('goog.string.internal');
+
+
+/** @enum {string} */
+goog.dom.safe.InsertAdjacentHtmlPosition = {
+  AFTERBEGIN: 'afterbegin',
+  AFTEREND: 'afterend',
+  BEFOREBEGIN: 'beforebegin',
+  BEFOREEND: 'beforeend'
+};
+
+
+/**
+ * Inserts known-safe HTML into a Node, at the specified position.
+ * @param {!Node} node The node on which to call insertAdjacentHTML.
+ * @param {!goog.dom.safe.InsertAdjacentHtmlPosition} position Position where
+ *     to insert the HTML.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to insert.
+ */
+goog.dom.safe.insertAdjacentHtml = function(node, position, html) {
+  node.insertAdjacentHTML(position, goog.html.SafeHtml.unwrapTrustedHTML(html));
+};
+
+
+/**
+ * Tags not allowed in goog.dom.safe.setInnerHtml.
+ * @private @const {!Object<string, boolean>}
+ */
+goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_ = {
+  'MATH': true,
+  'SCRIPT': true,
+  'STYLE': true,
+  'SVG': true,
+  'TEMPLATE': true
+};
+
+
+/**
+ * Whether assigning to innerHTML results in a non-spec-compliant clean-up. Used
+ * to define goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse.
+ *
+ * <p>As mentioned in https://stackoverflow.com/questions/28741528, re-rendering
+ * an element in IE by setting innerHTML causes IE to recursively disconnect all
+ * parent/children connections that were in the previous contents of the
+ * element. Unfortunately, this can unexpectedly result in confusing cases where
+ * a function is run (typically asynchronously) on element that has since
+ * disconnected from the DOM but assumes the presence of its children. A simple
+ * workaround is to remove all children first. Testing on IE11 via
+ * https://jsperf.com/innerhtml-vs-removechild/239, removeChild seems to be
+ * ~10x faster than innerHTML='' for a large number of children (perhaps due
+ * to the latter's recursive behavior), implying that this workaround would
+ * not hurt performance and might actually improve it.
+ * @return {boolean}
+ * @private
+ */
+goog.dom.safe.isInnerHtmlCleanupRecursive_ =
+    goog.functions.cacheReturnValue(function() {
+      // `document` missing in some test frameworks.
+      if (goog.DEBUG && typeof document === 'undefined') {
+        return false;
+      }
+      // Create 3 nested <div>s without using innerHTML.
+      // We're not chaining the appendChilds in one call,  as this breaks
+      // in a DocumentFragment.
+      var div = document.createElement('div');
+      var childDiv = document.createElement('div');
+      childDiv.appendChild(document.createElement('div'));
+      div.appendChild(childDiv);
+      // `firstChild` is null in Google Js Test.
+      if (goog.DEBUG && !div.firstChild) {
+        return false;
+      }
+      var innerChild = div.firstChild.firstChild;
+      div.innerHTML =
+          goog.html.SafeHtml.unwrapTrustedHTML(goog.html.SafeHtml.EMPTY);
+      return !innerChild.parentElement;
+    });
+
+
+/**
+ * Assigns HTML to an element's innerHTML property. Helper to use only here and
+ * in soy.js.
+ * @param {?Element} elem The element whose innerHTML is to be assigned to.
+ * @param {!goog.html.SafeHtml} html
+ */
+goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse = function(elem, html) {
+  // See comment above goog.dom.safe.isInnerHtmlCleanupRecursive_.
+  if (goog.dom.safe.isInnerHtmlCleanupRecursive_()) {
+    while (elem.lastChild) {
+      elem.removeChild(elem.lastChild);
+    }
+  }
+  elem.innerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
+};
+
+
+/**
+ * Assigns known-safe HTML to an element's innerHTML property.
+ * @param {!Element} elem The element whose innerHTML is to be assigned to.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
+ * @throws {Error} If called with one of these tags: math, script, style, svg,
+ *     template.
+ */
+goog.dom.safe.setInnerHtml = function(elem, html) {
+  if (goog.asserts.ENABLE_ASSERTS) {
+    var tagName = elem.tagName.toUpperCase();
+    if (goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_[tagName]) {
+      throw new Error(
+          'goog.dom.safe.setInnerHtml cannot be used to set content of ' +
+          elem.tagName + '.');
+    }
+  }
+
+  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(elem, html);
+};
+
+
+/**
+ * Assigns known-safe HTML to an element's outerHTML property.
+ * @param {!Element} elem The element whose outerHTML is to be assigned to.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
+ */
+goog.dom.safe.setOuterHtml = function(elem, html) {
+  elem.outerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
+};
+
+
+/**
+ * Safely assigns a URL a form element's action property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * form's action property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setFormElementAction(formEl, url);
+ * which is a safe alternative to
+ *   formEl.action = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Element} form The form element whose action property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setFormElementAction = function(form, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  goog.dom.asserts.assertIsHTMLFormElement(form).action =
+      goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to a button element's formaction property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * button's formaction property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setButtonFormAction(buttonEl, url);
+ * which is a safe alternative to
+ *   buttonEl.action = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Element} button The button element whose action property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setButtonFormAction = function(button, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  goog.dom.asserts.assertIsHTMLButtonElement(button).formAction =
+      goog.html.SafeUrl.unwrap(safeUrl);
+};
+/**
+ * Safely assigns a URL to an input element's formaction property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * input's formaction property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setInputFormAction(inputEl, url);
+ * which is a safe alternative to
+ *   inputEl.action = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Element} input The input element whose action property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setInputFormAction = function(input, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  goog.dom.asserts.assertIsHTMLInputElement(input).formAction =
+      goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+/**
+ * Sets the given element's style property to the contents of the provided
+ * SafeStyle object.
+ * @param {!Element} elem
+ * @param {!goog.html.SafeStyle} style
+ */
+goog.dom.safe.setStyle = function(elem, style) {
+  elem.style.cssText = goog.html.SafeStyle.unwrap(style);
+};
+
+
+/**
+ * Writes known-safe HTML to a document.
+ * @param {!Document} doc The document to be written to.
+ * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
+ */
+goog.dom.safe.documentWrite = function(doc, html) {
+  doc.write(goog.html.SafeHtml.unwrapTrustedHTML(html));
+};
+
+
+/**
+ * Safely assigns a URL to an anchor element's href property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * anchor's href property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setAnchorHref(anchorEl, url);
+ * which is a safe alternative to
+ *   anchorEl.href = url;
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!HTMLAnchorElement} anchor The anchor element whose href property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setAnchorHref = function(anchor, url) {
+  goog.dom.asserts.assertIsHTMLAnchorElement(anchor);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  anchor.href = goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+
+/**
+ * Safely assigns a URL to an image element's src property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * image's src property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * @param {!HTMLImageElement} imageElement The image element whose src property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setImageSrc = function(imageElement, url) {
+  goog.dom.asserts.assertIsHTMLImageElement(imageElement);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    var allowDataUrl = /^data:image\//i.test(url);
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
+  }
+  imageElement.src = goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to a audio element's src property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * audio's src property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * @param {!HTMLAudioElement} audioElement The audio element whose src property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setAudioSrc = function(audioElement, url) {
+  goog.dom.asserts.assertIsHTMLAudioElement(audioElement);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    var allowDataUrl = /^data:audio\//i.test(url);
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
+  }
+  audioElement.src = goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to a video element's src property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * video's src property.  If url is of type string however, it is first
+ * sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * @param {!HTMLVideoElement} videoElement The video element whose src property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setVideoSrc = function(videoElement, url) {
+  goog.dom.asserts.assertIsHTMLVideoElement(videoElement);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    var allowDataUrl = /^data:video\//i.test(url);
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
+  }
+  videoElement.src = goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+/**
+ * Safely assigns a URL to an embed element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setEmbedSrc(embedEl, url);
+ * which is a safe alternative to
+ *   embedEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLEmbedElement} embed The embed element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setEmbedSrc = function(embed, url) {
+  goog.dom.asserts.assertIsHTMLEmbedElement(embed);
+  embed.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
+};
+
+
+/**
+ * Safely assigns a URL to a frame element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setFrameSrc(frameEl, url);
+ * which is a safe alternative to
+ *   frameEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLFrameElement} frame The frame element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setFrameSrc = function(frame, url) {
+  goog.dom.asserts.assertIsHTMLFrameElement(frame);
+  frame.src = goog.html.TrustedResourceUrl.unwrap(url);
+};
+
+
+/**
+ * Safely assigns a URL to an iframe element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setIframeSrc(iframeEl, url);
+ * which is a safe alternative to
+ *   iframeEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLIFrameElement} iframe The iframe element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setIframeSrc = function(iframe, url) {
+  goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
+  iframe.src = goog.html.TrustedResourceUrl.unwrap(url);
+};
+
+
+/**
+ * Safely assigns HTML to an iframe element's srcdoc property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setIframeSrcdoc(iframeEl, safeHtml);
+ * which is a safe alternative to
+ *   iframeEl.srcdoc = html;
+ * The latter can result in loading untrusted code.
+ *
+ * @param {!HTMLIFrameElement} iframe The iframe element whose srcdoc property
+ *     is to be assigned to.
+ * @param {!goog.html.SafeHtml} html The HTML to assign.
+ */
+goog.dom.safe.setIframeSrcdoc = function(iframe, html) {
+  goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
+  iframe.srcdoc = goog.html.SafeHtml.unwrapTrustedHTML(html);
+};
+
+
+/**
+ * Safely sets a link element's href and rel properties. Whether or not
+ * the URL assigned to href has to be a goog.html.TrustedResourceUrl
+ * depends on the value of the rel property. If rel contains "stylesheet"
+ * then a TrustedResourceUrl is required.
+ *
+ * Example usage:
+ *   goog.dom.safe.setLinkHrefAndRel(linkEl, url, 'stylesheet');
+ * which is a safe alternative to
+ *   linkEl.rel = 'stylesheet';
+ *   linkEl.href = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLLinkElement} link The link element whose href property
+ *     is to be assigned to.
+ * @param {string|!goog.html.SafeUrl|!goog.html.TrustedResourceUrl} url The URL
+ *     to assign to the href property. Must be a TrustedResourceUrl if the
+ *     value assigned to rel contains "stylesheet". A string value is
+ *     sanitized with goog.html.SafeUrl.sanitize.
+ * @param {string} rel The value to assign to the rel property.
+ * @throws {Error} if rel contains "stylesheet" and url is not a
+ *     TrustedResourceUrl
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setLinkHrefAndRel = function(link, url, rel) {
+  goog.dom.asserts.assertIsHTMLLinkElement(link);
+  link.rel = rel;
+  if (goog.string.internal.caseInsensitiveContains(rel, 'stylesheet')) {
+    goog.asserts.assert(
+        url instanceof goog.html.TrustedResourceUrl,
+        'URL must be TrustedResourceUrl because "rel" contains "stylesheet"');
+    link.href = goog.html.TrustedResourceUrl.unwrap(url);
+  } else if (url instanceof goog.html.TrustedResourceUrl) {
+    link.href = goog.html.TrustedResourceUrl.unwrap(url);
+  } else if (url instanceof goog.html.SafeUrl) {
+    link.href = goog.html.SafeUrl.unwrap(url);
+  } else {  // string
+    // SafeUrl.sanitize must return legitimate SafeUrl when passed a string.
+    link.href = goog.html.SafeUrl.unwrap(
+        goog.html.SafeUrl.sanitizeAssertUnchanged(url));
+  }
+};
+
+
+/**
+ * Safely assigns a URL to an object element's data property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setObjectData(objectEl, url);
+ * which is a safe alternative to
+ *   objectEl.data = url;
+ * The latter can result in loading untrusted code unless setit is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLObjectElement} object The object element whose data property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setObjectData = function(object, url) {
+  goog.dom.asserts.assertIsHTMLObjectElement(object);
+  object.data = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
+};
+
+
+/**
+ * Safely assigns a URL to a script element's src property.
+ *
+ * Example usage:
+ *   goog.dom.safe.setScriptSrc(scriptEl, url);
+ * which is a safe alternative to
+ *   scriptEl.src = url;
+ * The latter can result in loading untrusted code unless it is ensured that
+ * the URL refers to a trustworthy resource.
+ *
+ * @param {!HTMLScriptElement} script The script element whose src property
+ *     is to be assigned to.
+ * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
+ */
+goog.dom.safe.setScriptSrc = function(script, url) {
+  goog.dom.asserts.assertIsHTMLScriptElement(script);
+  script.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
+  goog.dom.safe.setNonceForScriptElement_(script);
+};
+
+
+/**
+ * Safely assigns a value to a script element's content.
+ *
+ * Example usage:
+ *   goog.dom.safe.setScriptContent(scriptEl, content);
+ * which is a safe alternative to
+ *   scriptEl.text = content;
+ * The latter can result in executing untrusted code unless it is ensured that
+ * the code is loaded from a trustworthy resource.
+ *
+ * @param {!HTMLScriptElement} script The script element whose content is being
+ *     set.
+ * @param {!goog.html.SafeScript} content The content to assign.
+ */
+goog.dom.safe.setScriptContent = function(script, content) {
+  goog.dom.asserts.assertIsHTMLScriptElement(script);
+  script.text = goog.html.SafeScript.unwrapTrustedScript(content);
+  goog.dom.safe.setNonceForScriptElement_(script);
+};
+
+
+/**
+ * Set nonce-based CSPs to dynamically created scripts.
+ * @param {!HTMLScriptElement} script The script element whose nonce value
+ *     is to be calculated
+ * @private
+ */
+goog.dom.safe.setNonceForScriptElement_ = function(script) {
+  var win = script.ownerDocument && script.ownerDocument.defaultView;
+  var nonce = goog.getScriptNonce(win);
+  if (nonce) {
+    script.setAttribute('nonce', nonce);
+  }
+};
+
+
+/**
+ * Safely assigns a URL to a Location object's href property.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
+ * loc's href property.  If url is of type string however, it is first sanitized
+ * using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.setLocationHref(document.location, redirectUrl);
+ * which is a safe alternative to
+ *   document.location.href = redirectUrl;
+ * The latter can result in XSS vulnerabilities if redirectUrl is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Location} loc The Location object whose href property is to be
+ *     assigned to.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.setLocationHref = function(loc, url) {
+  goog.dom.asserts.assertIsLocation(loc);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  loc.href = goog.html.SafeUrl.unwrap(safeUrl);
+};
+
+/**
+ * Safely assigns the URL of a Location object.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and
+ * passed to Location#assign. If url is of type string however, it is
+ * first sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.assignLocation(document.location, newUrl);
+ * which is a safe alternative to
+ *   document.location.assign(newUrl);
+ * The latter can result in XSS vulnerabilities if newUrl is a
+ * user-/attacker-controlled value.
+ *
+ * This has the same behaviour as setLocationHref, however some test
+ * mock Location.assign instead of a property assignment.
+ *
+ * @param {!Location} loc The Location object which is to be assigned.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.assignLocation = function(loc, url) {
+  goog.dom.asserts.assertIsLocation(loc);
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  loc.assign(goog.html.SafeUrl.unwrap(safeUrl));
+};
+
+
+/**
+ * Safely replaces the URL of a Location object.
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and
+ * passed to Location#replace. If url is of type string however, it is
+ * first sanitized using goog.html.SafeUrl.sanitize.
+ *
+ * Example usage:
+ *   goog.dom.safe.replaceLocation(document.location, newUrl);
+ * which is a safe alternative to
+ *   document.location.replace(newUrl);
+ * The latter can result in XSS vulnerabilities if newUrl is a
+ * user-/attacker-controlled value.
+ *
+ * @param {!Location} loc The Location object which is to be replaced.
+ * @param {string|!goog.html.SafeUrl} url The URL to assign.
+ * @see goog.html.SafeUrl#sanitize
+ */
+goog.dom.safe.replaceLocation = function(loc, url) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  loc.replace(goog.html.SafeUrl.unwrap(safeUrl));
+};
+
+
+/**
+ * Safely opens a URL in a new window (via window.open).
+ *
+ * If url is of type goog.html.SafeUrl, its value is unwrapped and passed in to
+ * window.open.  If url is of type string however, it is first sanitized
+ * using goog.html.SafeUrl.sanitize.
+ *
+ * Note that this function does not prevent leakages via the referer that is
+ * sent by window.open. It is advised to only use this to open 1st party URLs.
+ *
+ * Example usage:
+ *   goog.dom.safe.openInWindow(url);
+ * which is a safe alternative to
+ *   window.open(url);
+ * The latter can result in XSS vulnerabilities if url is a
+ * user-/attacker-controlled value.
+ *
+ * @param {string|!goog.html.SafeUrl} url The URL to open.
+ * @param {Window=} opt_openerWin Window of which to call the .open() method.
+ *     Defaults to the global window.
+ * @param {!goog.string.Const|string=} opt_name Name of the window to open in.
+ *     Can be _top, etc as allowed by window.open(). This accepts string for
+ *     legacy reasons. Pass goog.string.Const if possible.
+ * @param {string=} opt_specs Comma-separated list of specifications, same as
+ *     in window.open().
+ * @param {boolean=} opt_replace Whether to replace the current entry in browser
+ *     history, same as in window.open().
+ * @return {Window} Window the url was opened in.
+ */
+goog.dom.safe.openInWindow = function(
+    url, opt_openerWin, opt_name, opt_specs, opt_replace) {
+  /** @type {!goog.html.SafeUrl} */
+  var safeUrl;
+  if (url instanceof goog.html.SafeUrl) {
+    safeUrl = url;
+  } else {
+    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  }
+  var win = opt_openerWin || goog.global;
+  // If opt_name is undefined, simply passing that in to open() causes IE to
+  // reuse the current window instead of opening a new one. Thus we pass '' in
+  // instead, which according to spec opens a new window. See
+  // https://html.spec.whatwg.org/multipage/browsers.html#dom-open .
+  var name = opt_name instanceof goog.string.Const ?
+      goog.string.Const.unwrap(opt_name) :
+      opt_name || '';
+  return win.open(
+      goog.html.SafeUrl.unwrap(safeUrl), name, opt_specs, opt_replace);
+};
+
+
+/**
+ * Parses the HTML as 'text/html'.
+ * @param {!DOMParser} parser
+ * @param {!goog.html.SafeHtml} html The HTML to be parsed.
+ * @return {?Document}
+ */
+goog.dom.safe.parseFromStringHtml = function(parser, html) {
+  return goog.dom.safe.parseFromString(parser, html, 'text/html');
+};
+
+
+/**
+ * Parses the string.
+ * @param {!DOMParser} parser
+ * @param {!goog.html.SafeHtml} content Note: We don't have a special type for
+ *     XML od SVG supported by this function so we use SafeHtml.
+ * @param {string} type
+ * @return {?Document}
+ */
+goog.dom.safe.parseFromString = function(parser, content, type) {
+  return parser.parseFromString(
+      goog.html.SafeHtml.unwrapTrustedHTML(content), type);
+};
+
+
+/**
+ * Safely creates an HTMLImageElement from a Blob.
+ *
+ * Example usage:
+ *     goog.dom.safe.createImageFromBlob(blob);
+ * which is a safe alternative to
+ *     image.src = createObjectUrl(blob)
+ * The latter can result in executing malicious same-origin scripts from a bad
+ * Blob.
+ * @param {!Blob} blob The blob to create the image from.
+ * @return {!HTMLImageElement} The image element created from the blob.
+ * @throws {!Error} If called with a Blob with a MIME type other than image/.*.
+ */
+goog.dom.safe.createImageFromBlob = function(blob) {
+  // Any image/* MIME type is accepted as safe.
+  if (!/^image\/.*/g.test(blob.type)) {
+    throw new Error(
+        'goog.dom.safe.createImageFromBlob only accepts MIME type image/.*.');
+  }
+  var objectUrl = goog.global.URL.createObjectURL(blob);
+  var image = new goog.global.Image();
+  image.onload = function() {
+    goog.global.URL.revokeObjectURL(objectUrl);
+  };
+  goog.dom.safe.setImageSrc(
+      image,
+      goog.html.uncheckedconversions
+          .safeUrlFromStringKnownToSatisfyTypeContract(
+              goog.string.Const.from('Image blob URL.'), objectUrl));
+  return image;
+};
+
+//third_party/javascript/closure/string/string.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utilities for string manipulation.
+ */
+
+
+/**
+ * Namespace for string utilities
+ */
+goog.provide('goog.string');
+goog.provide('goog.string.Unicode');
+
+goog.require('goog.dom.safe');
+goog.require('goog.html.uncheckedconversions');
+goog.require('goog.string.Const');
+goog.require('goog.string.internal');
+
+
+/**
+ * @define {boolean} Enables HTML escaping of lowercase letter "e" which helps
+ * with detection of double-escaping as this letter is frequently used.
+ */
+goog.string.DETECT_DOUBLE_ESCAPING =
+    goog.define('goog.string.DETECT_DOUBLE_ESCAPING', false);
+
+
+/**
+ * @define {boolean} Whether to force non-dom html unescaping.
+ */
+goog.string.FORCE_NON_DOM_HTML_UNESCAPING =
+    goog.define('goog.string.FORCE_NON_DOM_HTML_UNESCAPING', false);
+
+
+/**
+ * Common Unicode string characters.
+ * @enum {string}
+ */
+goog.string.Unicode = {
+  NBSP: '\xa0'
+};
+
+
+/**
+ * Fast prefix-checker.
+ * @param {string} str The string to check.
+ * @param {string} prefix A string to look for at the start of `str`.
+ * @return {boolean} True if `str` begins with `prefix`.
+ */
+goog.string.startsWith = goog.string.internal.startsWith;
+
+
+/**
+ * Fast suffix-checker.
+ * @param {string} str The string to check.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix`.
+ */
+goog.string.endsWith = goog.string.internal.endsWith;
+
+
+/**
+ * Case-insensitive prefix-checker.
+ * @param {string} str The string to check.
+ * @param {string} prefix  A string to look for at the end of `str`.
+ * @return {boolean} True if `str` begins with `prefix` (ignoring
+ *     case).
+ */
+goog.string.caseInsensitiveStartsWith =
+    goog.string.internal.caseInsensitiveStartsWith;
+
+
+/**
+ * Case-insensitive suffix-checker.
+ * @param {string} str The string to check.
+ * @param {string} suffix A string to look for at the end of `str`.
+ * @return {boolean} True if `str` ends with `suffix` (ignoring
+ *     case).
+ */
+goog.string.caseInsensitiveEndsWith =
+    goog.string.internal.caseInsensitiveEndsWith;
+
+
+/**
+ * Case-insensitive equality checker.
+ * @param {string} str1 First string to check.
+ * @param {string} str2 Second string to check.
+ * @return {boolean} True if `str1` and `str2` are the same string,
+ *     ignoring case.
+ */
+goog.string.caseInsensitiveEquals = goog.string.internal.caseInsensitiveEquals;
+
+
+/**
+ * Does simple python-style string substitution.
+ * subs("foo%s hot%s", "bar", "dog") becomes "foobar hotdog".
+ * @param {string} str The string containing the pattern.
+ * @param {...*} var_args The items to substitute into the pattern.
+ * @return {string} A copy of `str` in which each occurrence of
+ *     {@code %s} has been replaced an argument from `var_args`.
+ */
+goog.string.subs = function(str, var_args) {
+  var splitParts = str.split('%s');
+  var returnString = '';
+
+  var subsArguments = Array.prototype.slice.call(arguments, 1);
+  while (subsArguments.length &&
+         // Replace up to the last split part. We are inserting in the
+         // positions between split parts.
+         splitParts.length > 1) {
+    returnString += splitParts.shift() + subsArguments.shift();
+  }
+
+  return returnString + splitParts.join('%s');  // Join unused '%s'
+};
+
+
+/**
+ * Converts multiple whitespace chars (spaces, non-breaking-spaces, new lines
+ * and tabs) to a single space, and strips leading and trailing whitespace.
+ * @param {string} str Input string.
+ * @return {string} A copy of `str` with collapsed whitespace.
+ */
+goog.string.collapseWhitespace = function(str) {
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return str.replace(/[\s\xa0]+/g, ' ').replace(/^\s+|\s+$/g, '');
+};
+
+
+/**
+ * Checks if a string is empty or contains only whitespaces.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty or whitespace only.
+ */
+goog.string.isEmptyOrWhitespace = goog.string.internal.isEmptyOrWhitespace;
+
+
+/**
+ * Checks if a string is empty.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty.
+ */
+goog.string.isEmptyString = function(str) {
+  return str.length == 0;
+};
+
+
+/**
+ * Checks if a string is empty or contains only whitespaces.
+ *
+ * @param {string} str The string to check.
+ * @return {boolean} Whether `str` is empty or whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace instead.
+ */
+goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
+
+
+/**
+ * Checks if a string is null, undefined, empty or contains only whitespaces.
+ * @param {*} str The string to check.
+ * @return {boolean} Whether `str` is null, undefined, empty, or
+ *     whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str))
+ *     instead.
+ */
+goog.string.isEmptyOrWhitespaceSafe = function(str) {
+  return goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str));
+};
+
+
+/**
+ * Checks if a string is null, undefined, empty or contains only whitespaces.
+ *
+ * @param {*} str The string to check.
+ * @return {boolean} Whether `str` is null, undefined, empty, or
+ *     whitespace only.
+ * @deprecated Use goog.string.isEmptyOrWhitespace instead.
+ */
+goog.string.isEmptySafe = goog.string.isEmptyOrWhitespaceSafe;
+
+
+/**
+ * Checks if a string is all breaking whitespace.
+ * @param {string} str The string to check.
+ * @return {boolean} Whether the string is all breaking whitespace.
+ */
+goog.string.isBreakingWhitespace = function(str) {
+  return !/[^\t\n\r ]/.test(str);
+};
+
+
+/**
+ * Checks if a string contains all letters.
+ * @param {string} str string to check.
+ * @return {boolean} True if `str` consists entirely of letters.
+ */
+goog.string.isAlpha = function(str) {
+  return !/[^a-zA-Z]/.test(str);
+};
+
+
+/**
+ * Checks if a string contains only numbers.
+ * @param {*} str string to check. If not a string, it will be
+ *     casted to one.
+ * @return {boolean} True if `str` is numeric.
+ */
+goog.string.isNumeric = function(str) {
+  return !/[^0-9]/.test(str);
+};
+
+
+/**
+ * Checks if a string contains only numbers or letters.
+ * @param {string} str string to check.
+ * @return {boolean} True if `str` is alphanumeric.
+ */
+goog.string.isAlphaNumeric = function(str) {
+  return !/[^a-zA-Z0-9]/.test(str);
+};
+
+
+/**
+ * Checks if a character is a space character.
+ * @param {string} ch Character to check.
+ * @return {boolean} True if `ch` is a space.
+ */
+goog.string.isSpace = function(ch) {
+  return ch == ' ';
+};
+
+
+/**
+ * Checks if a character is a valid unicode character.
+ * @param {string} ch Character to check.
+ * @return {boolean} True if `ch` is a valid unicode character.
+ */
+goog.string.isUnicodeChar = function(ch) {
+  return ch.length == 1 && ch >= ' ' && ch <= '~' ||
+      ch >= '\u0080' && ch <= '\uFFFD';
+};
+
+
+/**
+ * Takes a string and replaces newlines with a space. Multiple lines are
+ * replaced with a single space.
+ * @param {string} str The string from which to strip newlines.
+ * @return {string} A copy of `str` stripped of newlines.
+ */
+goog.string.stripNewlines = function(str) {
+  return str.replace(/(\r\n|\r|\n)+/g, ' ');
+};
+
+
+/**
+ * Replaces Windows and Mac new lines with unix style: \r or \r\n with \n.
+ * @param {string} str The string to in which to canonicalize newlines.
+ * @return {string} `str` A copy of {@code} with canonicalized newlines.
+ */
+goog.string.canonicalizeNewlines = function(str) {
+  return str.replace(/(\r\n|\r|\n)/g, '\n');
+};
+
+
+/**
+ * Normalizes whitespace in a string, replacing all whitespace chars with
+ * a space.
+ * @param {string} str The string in which to normalize whitespace.
+ * @return {string} A copy of `str` with all whitespace normalized.
+ */
+goog.string.normalizeWhitespace = function(str) {
+  return str.replace(/\xa0|\s/g, ' ');
+};
+
+
+/**
+ * Normalizes spaces in a string, replacing all consecutive spaces and tabs
+ * with a single space. Replaces non-breaking space with a space.
+ * @param {string} str The string in which to normalize spaces.
+ * @return {string} A copy of `str` with all consecutive spaces and tabs
+ *    replaced with a single space.
+ */
+goog.string.normalizeSpaces = function(str) {
+  return str.replace(/\xa0|[ \t]+/g, ' ');
+};
+
+
+/**
+ * Removes the breaking spaces from the left and right of the string and
+ * collapses the sequences of breaking spaces in the middle into single spaces.
+ * The original and the result strings render the same way in HTML.
+ * @param {string} str A string in which to collapse spaces.
+ * @return {string} Copy of the string with normalized breaking spaces.
+ */
+goog.string.collapseBreakingSpaces = function(str) {
+  return str.replace(/[\t\r\n ]+/g, ' ')
+      .replace(/^[\t\r\n ]+|[\t\r\n ]+$/g, '');
+};
+
+
+/**
+ * Trims white spaces to the left and right of a string.
+ * @param {string} str The string to trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.trim = goog.string.internal.trim;
+
+
+/**
+ * Trims whitespaces at the left end of a string.
+ * @param {string} str The string to left trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.trimLeft = function(str) {
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return str.replace(/^[\s\xa0]+/, '');
+};
+
+
+/**
+ * Trims whitespaces at the right end of a string.
+ * @param {string} str The string to right trim.
+ * @return {string} A trimmed copy of `str`.
+ */
+goog.string.trimRight = function(str) {
+  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
+  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
+  // include it in the regexp to enforce consistent cross-browser behavior.
+  return str.replace(/[\s\xa0]+$/, '');
+};
+
+
+/**
+ * A string comparator that ignores case.
+ * -1 = str1 less than str2
+ *  0 = str1 equals str2
+ *  1 = str1 greater than str2
+ *
+ * @param {string} str1 The string to compare.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} The comparator result, as described above.
+ */
+goog.string.caseInsensitiveCompare =
+    goog.string.internal.caseInsensitiveCompare;
+
+
+/**
+ * Compares two strings interpreting their numeric substrings as numbers.
+ *
+ * @param {string} str1 First string.
+ * @param {string} str2 Second string.
+ * @param {!RegExp} tokenizerRegExp Splits a string into substrings of
+ *     non-negative integers, non-numeric characters and optionally fractional
+ *     numbers starting with a decimal point.
+ * @return {number} Negative if str1 < str2, 0 is str1 == str2, positive if
+ *     str1 > str2.
+ * @private
+ */
+goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
+  if (str1 == str2) {
+    return 0;
+  }
+  if (!str1) {
+    return -1;
+  }
+  if (!str2) {
+    return 1;
+  }
+
+  // Using match to split the entire string ahead of time turns out to be faster
+  // for most inputs than using RegExp.exec or iterating over each character.
+  var tokens1 = str1.toLowerCase().match(tokenizerRegExp);
+  var tokens2 = str2.toLowerCase().match(tokenizerRegExp);
+
+  var count = Math.min(tokens1.length, tokens2.length);
+
+  for (var i = 0; i < count; i++) {
+    var a = tokens1[i];
+    var b = tokens2[i];
+
+    // Compare pairs of tokens, returning if one token sorts before the other.
+    if (a != b) {
+      // Only if both tokens are integers is a special comparison required.
+      // Decimal numbers are sorted as strings (e.g., '.09' < '.1').
+      var num1 = parseInt(a, 10);
+      if (!isNaN(num1)) {
+        var num2 = parseInt(b, 10);
+        if (!isNaN(num2) && num1 - num2) {
+          return num1 - num2;
+        }
+      }
+      return a < b ? -1 : 1;
+    }
+  }
+
+  // If one string is a substring of the other, the shorter string sorts first.
+  if (tokens1.length != tokens2.length) {
+    return tokens1.length - tokens2.length;
+  }
+
+  // The two strings must be equivalent except for case (perfect equality is
+  // tested at the head of the function.) Revert to default ASCII string
+  // comparison to stabilize the sort.
+  return str1 < str2 ? -1 : 1;
+};
+
+
+/**
+ * String comparison function that handles non-negative integer numbers in a
+ * way humans might expect. Using this function, the string 'File 2.jpg' sorts
+ * before 'File 10.jpg', and 'Version 1.9' before 'Version 1.10'. The comparison
+ * is mostly case-insensitive, though strings that are identical except for case
+ * are sorted with the upper-case strings before lower-case.
+ *
+ * This comparison function is up to 50x slower than either the default or the
+ * case-insensitive compare. It should not be used in time-critical code, but
+ * should be fast enough to sort several hundred short strings (like filenames)
+ * with a reasonable delay.
+ *
+ * @param {string} str1 The string to compare in a numerically sensitive way.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
+ *     0 if str1 > str2.
+ */
+goog.string.intAwareCompare = function(str1, str2) {
+  return goog.string.numberAwareCompare_(str1, str2, /\d+|\D+/g);
+};
+
+
+/**
+ * String comparison function that handles non-negative integer and fractional
+ * numbers in a way humans might expect. Using this function, the string
+ * 'File 2.jpg' sorts before 'File 10.jpg', and '3.14' before '3.2'. Equivalent
+ * to {@link goog.string.intAwareCompare} apart from the way how it interprets
+ * dots.
+ *
+ * @param {string} str1 The string to compare in a numerically sensitive way.
+ * @param {string} str2 The string to compare `str1` to.
+ * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
+ *     0 if str1 > str2.
+ */
+goog.string.floatAwareCompare = function(str1, str2) {
+  return goog.string.numberAwareCompare_(str1, str2, /\d+|\.\d+|\D+/g);
+};
+
+
+/**
+ * Alias for {@link goog.string.floatAwareCompare}.
+ *
+ * @param {string} str1
+ * @param {string} str2
+ * @return {number}
+ */
+goog.string.numerateCompare = goog.string.floatAwareCompare;
+
+
+/**
+ * URL-encodes a string
+ * @param {*} str The string to url-encode.
+ * @return {string} An encoded copy of `str` that is safe for urls.
+ *     Note that '#', ':', and other characters used to delimit portions
+ *     of URLs *will* be encoded.
+ */
+goog.string.urlEncode = function(str) {
+  return encodeURIComponent(String(str));
+};
+
+
+/**
+ * URL-decodes the string. We need to specially handle '+'s because
+ * the javascript library doesn't convert them to spaces.
+ * @param {string} str The string to url decode.
+ * @return {string} The decoded `str`.
+ */
+goog.string.urlDecode = function(str) {
+  return decodeURIComponent(str.replace(/\+/g, ' '));
+};
+
+
+/**
+ * Converts \n to <br>s or <br />s.
+ * @param {string} str The string in which to convert newlines.
+ * @param {boolean=} opt_xml Whether to use XML compatible tags.
+ * @return {string} A copy of `str` with converted newlines.
+ */
+goog.string.newLineToBr = goog.string.internal.newLineToBr;
+
+
+/**
+ * Escapes double quote '"' and single quote '\'' characters in addition to
+ * '&', '<', and '>' so that a string can be included in an HTML tag attribute
+ * value within double or single quotes.
+ *
+ * It should be noted that > doesn't need to be escaped for the HTML or XML to
+ * be valid, but it has been decided to escape it for consistency with other
+ * implementations.
+ *
+ * With goog.string.DETECT_DOUBLE_ESCAPING, this function escapes also the
+ * lowercase letter "e".
+ *
+ * NOTE(user):
+ * HtmlEscape is often called during the generation of large blocks of HTML.
+ * Using statics for the regular expressions and strings is an optimization
+ * that can more than half the amount of time IE spends in this function for
+ * large apps, since strings and regexes both contribute to GC allocations.
+ *
+ * Testing for the presence of a character before escaping increases the number
+ * of function calls, but actually provides a speed increase for the average
+ * case -- since the average case often doesn't require the escaping of all 4
+ * characters and indexOf() is much cheaper than replace().
+ * The worst case does suffer slightly from the additional calls, therefore the
+ * opt_isLikelyToContainHtmlChars option has been included for situations
+ * where all 4 HTML entities are very likely to be present and need escaping.
+ *
+ * Some benchmarks (times tended to fluctuate +-0.05ms):
+ *                                     FireFox                     IE6
+ * (no chars / average (mix of cases) / all 4 chars)
+ * no checks                     0.13 / 0.22 / 0.22         0.23 / 0.53 / 0.80
+ * indexOf                       0.08 / 0.17 / 0.26         0.22 / 0.54 / 0.84
+ * indexOf + re test             0.07 / 0.17 / 0.28         0.19 / 0.50 / 0.85
+ *
+ * An additional advantage of checking if replace actually needs to be called
+ * is a reduction in the number of object allocations, so as the size of the
+ * application grows the difference between the various methods would increase.
+ *
+ * @param {string} str string to be escaped.
+ * @param {boolean=} opt_isLikelyToContainHtmlChars Don't perform a check to see
+ *     if the character needs replacing - use this option if you expect each of
+ *     the characters to appear often. Leave false if you expect few html
+ *     characters to occur in your strings, such as if you are escaping HTML.
+ * @return {string} An escaped copy of `str`.
+ */
+goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
+  str = goog.string.internal.htmlEscape(str, opt_isLikelyToContainHtmlChars);
+  if (goog.string.DETECT_DOUBLE_ESCAPING) {
+    str = str.replace(goog.string.E_RE_, '&#101;');
+  }
+  return str;
+};
+
+
+/**
+ * Regular expression that matches a lowercase letter "e", for use in escaping.
+ * @const {!RegExp}
+ * @private
+ */
+goog.string.E_RE_ = /e/g;
+
+
+/**
+ * Unescapes an HTML string.
+ *
+ * @param {string} str The string to unescape.
+ * @return {string} An unescaped copy of `str`.
+ */
+goog.string.unescapeEntities = function(str) {
+  if (goog.string.contains(str, '&')) {
+    // We are careful not to use a DOM if we do not have one or we explicitly
+    // requested non-DOM html unescaping.
+    if (!goog.string.FORCE_NON_DOM_HTML_UNESCAPING &&
+        'document' in goog.global) {
+      return goog.string.unescapeEntitiesUsingDom_(str);
+    } else {
+      // Fall back on pure XML entities
+      return goog.string.unescapePureXmlEntities_(str);
+    }
+  }
+  return str;
+};
+
+
+/**
+ * Unescapes a HTML string using the provided document.
+ *
+ * @param {string} str The string to unescape.
+ * @param {!Document} document A document to use in escaping the string.
+ * @return {string} An unescaped copy of `str`.
+ */
+goog.string.unescapeEntitiesWithDocument = function(str, document) {
+  if (goog.string.contains(str, '&')) {
+    return goog.string.unescapeEntitiesUsingDom_(str, document);
+  }
+  return str;
+};
+
+
+/**
+ * Unescapes an HTML string using a DOM to resolve non-XML, non-numeric
+ * entities. This function is XSS-safe and whitespace-preserving.
+ * @private
+ * @param {string} str The string to unescape.
+ * @param {Document=} opt_document An optional document to use for creating
+ *     elements. If this is not specified then the default window.document
+ *     will be used.
+ * @return {string} The unescaped `str` string.
+ */
+goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
+  /** @type {!Object<string, string>} */
+  var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
+  /** @type {!Element} */
+  var div;
+  if (opt_document) {
+    div = opt_document.createElement('div');
+  } else {
+    div = goog.global.document.createElement('div');
+  }
+  // Match as many valid entity characters as possible. If the actual entity
+  // happens to be shorter, it will still work as innerHTML will return the
+  // trailing characters unchanged. Since the entity characters do not include
+  // open angle bracket, there is no chance of XSS from the innerHTML use.
+  // Since no whitespace is passed to innerHTML, whitespace is preserved.
+  return str.replace(goog.string.HTML_ENTITY_PATTERN_, function(s, entity) {
+    // Check for cached entity.
+    var value = seen[s];
+    if (value) {
+      return value;
+    }
+    // Check for numeric entity.
+    if (entity.charAt(0) == '#') {
+      // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex numbers.
+      var n = Number('0' + entity.substr(1));
+      if (!isNaN(n)) {
+        value = String.fromCharCode(n);
+      }
+    }
+    // Fall back to innerHTML otherwise.
+    if (!value) {
+      // Append a non-entity character to avoid a bug in Webkit that parses
+      // an invalid entity at the end of innerHTML text as the empty string.
+      goog.dom.safe.setInnerHtml(
+          div,
+          goog.html.uncheckedconversions
+              .safeHtmlFromStringKnownToSatisfyTypeContract(
+                  goog.string.Const.from('Single HTML entity.'), s + ' '));
+      // Then remove the trailing character from the result.
+      value = div.firstChild.nodeValue.slice(0, -1);
+    }
+    // Cache and return.
+    return seen[s] = value;
+  });
+};
+
+
+/**
+ * Unescapes XML entities.
+ * @private
+ * @param {string} str The string to unescape.
+ * @return {string} An unescaped copy of `str`.
+ */
+goog.string.unescapePureXmlEntities_ = function(str) {
+  return str.replace(/&([^;]+);/g, function(s, entity) {
+    switch (entity) {
+      case 'amp':
+        return '&';
+      case 'lt':
+        return '<';
+      case 'gt':
+        return '>';
+      case 'quot':
+        return '"';
+      default:
+        if (entity.charAt(0) == '#') {
+          // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex.
+          var n = Number('0' + entity.substr(1));
+          if (!isNaN(n)) {
+            return String.fromCharCode(n);
+          }
+        }
+        // For invalid entities we just return the entity
+        return s;
+    }
+  });
+};
+
+
+/**
+ * Regular expression that matches an HTML entity.
+ * See also HTML5: Tokenization / Tokenizing character references.
+ * @private
+ * @type {!RegExp}
+ */
+goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
+
+
+/**
+ * Do escaping of whitespace to preserve spatial formatting. We use character
+ * entity #160 to make it safer for xml.
+ * @param {string} str The string in which to escape whitespace.
+ * @param {boolean=} opt_xml Whether to use XML compatible tags.
+ * @return {string} An escaped copy of `str`.
+ */
+goog.string.whitespaceEscape = function(str, opt_xml) {
+  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
+  return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml);
+};
+
+
+/**
+ * Preserve spaces that would be otherwise collapsed in HTML by replacing them
+ * with non-breaking space Unicode characters.
+ * @param {string} str The string in which to preserve whitespace.
+ * @return {string} A copy of `str` with preserved whitespace.
+ */
+goog.string.preserveSpaces = function(str) {
+  return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
+};
+
+
+/**
+ * Strip quote characters around a string.  The second argument is a string of
+ * characters to treat as quotes.  This can be a single character or a string of
+ * multiple character and in that case each of those are treated as possible
+ * quote characters. For example:
+ *
+ * <pre>
+ * goog.string.stripQuotes('"abc"', '"`') --> 'abc'
+ * goog.string.stripQuotes('`abc`', '"`') --> 'abc'
+ * </pre>
+ *
+ * @param {string} str The string to strip.
+ * @param {string} quoteChars The quote characters to strip.
+ * @return {string} A copy of `str` without the quotes.
+ */
+goog.string.stripQuotes = function(str, quoteChars) {
+  var length = quoteChars.length;
+  for (var i = 0; i < length; i++) {
+    var quoteChar = length == 1 ? quoteChars : quoteChars.charAt(i);
+    if (str.charAt(0) == quoteChar && str.charAt(str.length - 1) == quoteChar) {
+      return str.substring(1, str.length - 1);
+    }
+  }
+  return str;
+};
+
+
+/**
+ * Truncates a string to a certain length and adds '...' if necessary.  The
+ * length also accounts for the ellipsis, so a maximum length of 10 and a string
+ * 'Hello World!' produces 'Hello W...'.
+ * @param {string} str The string to truncate.
+ * @param {number} chars Max number of characters.
+ * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
+ *     characters from being cut off in the middle.
+ * @return {string} The truncated `str` string.
+ */
+goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.unescapeEntities(str);
+  }
+
+  if (str.length > chars) {
+    str = str.substring(0, chars - 3) + '...';
+  }
+
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.htmlEscape(str);
+  }
+
+  return str;
+};
+
+
+/**
+ * Truncate a string in the middle, adding "..." if necessary,
+ * and favoring the beginning of the string.
+ * @param {string} str The string to truncate the middle of.
+ * @param {number} chars Max number of characters.
+ * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
+ *     characters from being cutoff in the middle.
+ * @param {number=} opt_trailingChars Optional number of trailing characters to
+ *     leave at the end of the string, instead of truncating as close to the
+ *     middle as possible.
+ * @return {string} A truncated copy of `str`.
+ */
+goog.string.truncateMiddle = function(
+    str, chars, opt_protectEscapedCharacters, opt_trailingChars) {
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.unescapeEntities(str);
+  }
+
+  if (opt_trailingChars && str.length > chars) {
+    if (opt_trailingChars > chars) {
+      opt_trailingChars = chars;
+    }
+    var endPoint = str.length - opt_trailingChars;
+    var startPoint = chars - opt_trailingChars;
+    str = str.substring(0, startPoint) + '...' + str.substring(endPoint);
+  } else if (str.length > chars) {
+    // Favor the beginning of the string:
+    var half = Math.floor(chars / 2);
+    var endPos = str.length - half;
+    half += chars % 2;
+    str = str.substring(0, half) + '...' + str.substring(endPos);
+  }
+
+  if (opt_protectEscapedCharacters) {
+    str = goog.string.htmlEscape(str);
+  }
+
+  return str;
+};
+
+
+/**
+ * Special chars that need to be escaped for goog.string.quote.
+ * @private {!Object<string, string>}
+ */
+goog.string.specialEscapeChars_ = {
+  '\0': '\\0',
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
+  '\x0B': '\\x0B',  // '\v' is not supported in JScript
+  '"': '\\"',
+  '\\': '\\\\',
+  // To support the use case of embedding quoted strings inside of script
+  // tags, we have to make sure HTML comments and opening/closing script tags do
+  // not appear in the resulting string. The specific strings that must be
+  // escaped are documented at:
+  // https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+  '<': '\\u003C'  // NOTE: JSON.parse crashes on '\\x3c'.
+};
+
+
+/**
+ * Character mappings used internally for goog.string.escapeChar.
+ * @private {!Object<string, string>}
+ */
+goog.string.jsEscapeCache_ = {
+  '\'': '\\\''
+};
+
+
+/**
+ * Encloses a string in double quotes and escapes characters so that the
+ * string is a valid JS string. The resulting string is safe to embed in
+ * `<script>` tags as "<" is escaped.
+ * @param {string} s The string to quote.
+ * @return {string} A copy of `s` surrounded by double quotes.
+ */
+goog.string.quote = function(s) {
+  s = String(s);
+  var sb = ['"'];
+  for (var i = 0; i < s.length; i++) {
+    var ch = s.charAt(i);
+    var cc = ch.charCodeAt(0);
+    sb[i + 1] = goog.string.specialEscapeChars_[ch] ||
+        ((cc > 31 && cc < 127) ? ch : goog.string.escapeChar(ch));
+  }
+  sb.push('"');
+  return sb.join('');
+};
+
+
+/**
+ * Takes a string and returns the escaped string for that input string.
+ * @param {string} str The string to escape.
+ * @return {string} An escaped string representing `str`.
+ */
+goog.string.escapeString = function(str) {
+  var sb = [];
+  for (var i = 0; i < str.length; i++) {
+    sb[i] = goog.string.escapeChar(str.charAt(i));
+  }
+  return sb.join('');
+};
+
+
+/**
+ * Takes a character and returns the escaped string for that character. For
+ * example escapeChar(String.fromCharCode(15)) -> "\\x0E".
+ * @param {string} c The character to escape.
+ * @return {string} An escaped string representing `c`.
+ */
+goog.string.escapeChar = function(c) {
+  if (c in goog.string.jsEscapeCache_) {
+    return goog.string.jsEscapeCache_[c];
+  }
+
+  if (c in goog.string.specialEscapeChars_) {
+    return goog.string.jsEscapeCache_[c] = goog.string.specialEscapeChars_[c];
+  }
+
+  var rv = c;
+  var cc = c.charCodeAt(0);
+  if (cc > 31 && cc < 127) {
+    rv = c;
+  } else {
+    // tab is 9 but handled above
+    if (cc < 256) {
+      rv = '\\x';
+      if (cc < 16 || cc > 256) {
+        rv += '0';
+      }
+    } else {
+      rv = '\\u';
+      if (cc < 4096) {  // \u1000
+        rv += '0';
+      }
+    }
+    rv += cc.toString(16).toUpperCase();
+  }
+
+  return goog.string.jsEscapeCache_[c] = rv;
+};
+
+
+/**
+ * Determines whether a string contains a substring.
+ * @param {string} str The string to search.
+ * @param {string} subString The substring to search for.
+ * @return {boolean} Whether `str` contains `subString`.
+ */
+goog.string.contains = goog.string.internal.contains;
+
+
+/**
+ * Determines whether a string contains a substring, ignoring case.
+ * @param {string} str The string to search.
+ * @param {string} subString The substring to search for.
+ * @return {boolean} Whether `str` contains `subString`.
+ */
+goog.string.caseInsensitiveContains =
+    goog.string.internal.caseInsensitiveContains;
+
+
+/**
+ * Returns the non-overlapping occurrences of ss in s.
+ * If either s or ss evalutes to false, then returns zero.
+ * @param {string} s The string to look in.
+ * @param {string} ss The string to look for.
+ * @return {number} Number of occurrences of ss in s.
+ */
+goog.string.countOf = function(s, ss) {
+  return s && ss ? s.split(ss).length - 1 : 0;
+};
+
+
+/**
+ * Removes a substring of a specified length at a specific
+ * index in a string.
+ * @param {string} s The base string from which to remove.
+ * @param {number} index The index at which to remove the substring.
+ * @param {number} stringLength The length of the substring to remove.
+ * @return {string} A copy of `s` with the substring removed or the full
+ *     string if nothing is removed or the input is invalid.
+ */
+goog.string.removeAt = function(s, index, stringLength) {
+  var resultStr = s;
+  // If the index is greater or equal to 0 then remove substring
+  if (index >= 0 && index < s.length && stringLength > 0) {
+    resultStr = s.substr(0, index) +
+        s.substr(index + stringLength, s.length - index - stringLength);
+  }
+  return resultStr;
+};
+
+
+/**
+ * Removes the first occurrence of a substring from a string.
+ * @param {string} str The base string from which to remove.
+ * @param {string} substr The string to remove.
+ * @return {string} A copy of `str` with `substr` removed or the
+ *     full string if nothing is removed.
+ */
+goog.string.remove = function(str, substr) {
+  return str.replace(substr, '');
+};
+
+
+/**
+ *  Removes all occurrences of a substring from a string.
+ *  @param {string} s The base string from which to remove.
+ *  @param {string} ss The string to remove.
+ *  @return {string} A copy of `s` with `ss` removed or the full
+ *      string if nothing is removed.
+ */
+goog.string.removeAll = function(s, ss) {
+  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
+  return s.replace(re, '');
+};
+
+
+/**
+ *  Replaces all occurrences of a substring of a string with a new substring.
+ *  @param {string} s The base string from which to remove.
+ *  @param {string} ss The string to replace.
+ *  @param {string} replacement The replacement string.
+ *  @return {string} A copy of `s` with `ss` replaced by
+ *      `replacement` or the original string if nothing is replaced.
+ */
+goog.string.replaceAll = function(s, ss, replacement) {
+  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
+  return s.replace(re, replacement.replace(/\$/g, '$$$$'));
+};
+
+
+/**
+ * Escapes characters in the string that are not safe to use in a RegExp.
+ * @param {*} s The string to escape. If not a string, it will be casted
+ *     to one.
+ * @return {string} A RegExp safe, escaped copy of `s`.
+ */
+goog.string.regExpEscape = function(s) {
+  return String(s)
+      .replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1')
+      .replace(/\x08/g, '\\x08');
+};
+
+
+/**
+ * Repeats a string n times.
+ * @param {string} string The string to repeat.
+ * @param {number} length The number of times to repeat.
+ * @return {string} A string containing `length` repetitions of
+ *     `string`.
+ */
+goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
+  // The native method is over 100 times faster than the alternative.
+  return string.repeat(length);
+} : function(string, length) {
+  return new Array(length + 1).join(string);
+};
+
+
+/**
+ * Pads number to given length and optionally rounds it to a given precision.
+ * For example:
+ * <pre>padNumber(1.25, 2, 3) -> '01.250'
+ * padNumber(1.25, 2) -> '01.25'
+ * padNumber(1.25, 2, 1) -> '01.3'
+ * padNumber(1.25, 0) -> '1.25'</pre>
+ *
+ * @param {number} num The number to pad.
+ * @param {number} length The desired length.
+ * @param {number=} opt_precision The desired precision.
+ * @return {string} `num` as a string with the given options.
+ */
+goog.string.padNumber = function(num, length, opt_precision) {
+  var s =
+      (opt_precision !== undefined) ? num.toFixed(opt_precision) : String(num);
+  var index = s.indexOf('.');
+  if (index == -1) {
+    index = s.length;
+  }
+  return goog.string.repeat('0', Math.max(0, length - index)) + s;
+};
+
+
+/**
+ * Returns a string representation of the given object, with
+ * null and undefined being returned as the empty string.
+ *
+ * @param {*} obj The object to convert.
+ * @return {string} A string representation of the `obj`.
+ */
+goog.string.makeSafe = function(obj) {
+  return obj == null ? '' : String(obj);
+};
+
+
+/**
+ * Concatenates string expressions. This is useful
+ * since some browsers are very inefficient when it comes to using plus to
+ * concat strings. Be careful when using null and undefined here since
+ * these will not be included in the result. If you need to represent these
+ * be sure to cast the argument to a String first.
+ * For example:
+ * <pre>buildString('a', 'b', 'c', 'd') -> 'abcd'
+ * buildString(null, undefined) -> ''
+ * </pre>
+ * @param {...*} var_args A list of strings to concatenate. If not a string,
+ *     it will be casted to one.
+ * @return {string} The concatenation of `var_args`.
+ */
+goog.string.buildString = function(var_args) {
+  return Array.prototype.join.call(arguments, '');
+};
+
+
+/**
+ * Returns a string with at least 64-bits of randomness.
+ *
+ * Doesn't trust JavaScript's random function entirely. Uses a combination of
+ * random and current timestamp, and then encodes the string in base-36 to
+ * make it shorter.
+ *
+ * @return {string} A random string, e.g. sn1s7vb4gcic.
+ */
+goog.string.getRandomString = function() {
+  var x = 2147483648;
+  return Math.floor(Math.random() * x).toString(36) +
+      Math.abs(Math.floor(Math.random() * x) ^ goog.now()).toString(36);
+};
+
+
+/**
+ * Compares two version numbers.
+ *
+ * @param {string|number} version1 Version of first item.
+ * @param {string|number} version2 Version of second item.
+ *
+ * @return {number}  1 if `version1` is higher.
+ *                   0 if arguments are equal.
+ *                  -1 if `version2` is higher.
+ */
+goog.string.compareVersions = goog.string.internal.compareVersions;
+
+
+/**
+ * String hash function similar to java.lang.String.hashCode().
+ * The hash code for a string is computed as
+ * s[0] * 31 ^ (n - 1) + s[1] * 31 ^ (n - 2) + ... + s[n - 1],
+ * where s[i] is the ith character of the string and n is the length of
+ * the string. We mod the result to make it between 0 (inclusive) and 2^32
+ * (exclusive).
+ * @param {string} str A string.
+ * @return {number} Hash value for `str`, between 0 (inclusive) and 2^32
+ *  (exclusive). The empty string returns 0.
+ */
+goog.string.hashCode = function(str) {
+  var result = 0;
+  for (var i = 0; i < str.length; ++i) {
+    // Normalize to 4 byte range, 0 ... 2^32.
+    result = (31 * result + str.charCodeAt(i)) >>> 0;
+  }
   return result;
 };
 
 
 /**
- * Formats a string of unknown directionality for use in plain-text output of
- * the context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * As opposed to {@link #spanWrap}, this makes use of unicode BiDi formatting
- * characters. In HTML, its *only* valid use is inside of elements that do not
- * allow mark-up, e.g. an 'option' tag.
- * The algorithm: estimates the directionality of input argument `str`.
- * In case it doesn't match  the context directionality, wraps it with Unicode
- * BiDi formatting characters: RLE`str`PDF for RTL text, and
- * LRE`str`PDF for LTR text.
- *
- * If `opt_dirReset`, and if the overall directionality or the exit
- * directionality of `str` are opposite to the context directionality, a
- * trailing unicode BiDi mark matching the context directionality is appended
- * (LRM or RLM).
- *
- * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
- * The return value can be HTML-escaped as necessary.
- *
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {string} Input text after applying the above processing.
- */
-goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
-    str, opt_isHtml, opt_dirReset) {
-  return this.unicodeWrapWithKnownDir(null, str, opt_isHtml, opt_dirReset);
-};
-
-
-/**
- * Formats a string of given directionality for use in plain-text output of the
- * context directionality, so an opposite-directionality string is neither
- * garbled nor garbles what follows it.
- * As opposed to {@link #spanWrapWithKnownDir}, makes use of unicode BiDi
- * formatting characters. In HTML, its *only* valid use is inside of elements
- * that do not allow mark-up, e.g. an 'option' tag.
- * The algorithm: If `dir` doesn't match the context directionality, wraps
- * `str` with Unicode BiDi formatting characters: RLE`str`PDF for
- * RTL text, and LRE`str`PDF for LTR text.
- *
- * If `opt_dirReset`, and if the overall directionality or the exit
- * directionality of `str` are opposite to the context directionality, a
- * trailing unicode BiDi mark matching the context directionality is appended
- * (LRM or RLM).
- *
- * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
- * The return value can be HTML-escaped as necessary.
- *
- * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
- *     null if unknown and needs to be estimated.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {string} Input text after applying the above processing.
- */
-goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
-    dir, str, opt_isHtml, opt_dirReset) {
-  if (dir == null) {
-    dir = this.estimateDirection(str, opt_isHtml);
-  }
-  return this.unicodeWrapWithKnownDir_(dir, str, opt_isHtml, opt_dirReset);
-};
-
-
-/**
- * The internal implementation of unicodeWrapWithKnownDir for non-null dir, to
- * help the compiler optimize.
- *
- * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
- *     matching the context directionality, when needed, to prevent the possible
- *     garbling of whatever may follow `str`. Default: true.
- * @return {string} Input text after applying the above processing.
+ * The most recent unique ID. |0 is equivalent to Math.floor in this case.
+ * @type {number}
  * @private
  */
-goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
-    dir, str, opt_isHtml, opt_dirReset) {
-  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
+goog.string.uniqueStringCounter_ = Math.random() * 0x80000000 | 0;
+
+
+/**
+ * Generates and returns a string which is unique in the current document.
+ * This is useful, for example, to create unique IDs for DOM elements.
+ * @return {string} A unique id.
+ */
+goog.string.createUniqueString = function() {
+  return 'goog_' + goog.string.uniqueStringCounter_++;
+};
+
+
+/**
+ * Converts the supplied string to a number, which may be Infinity or NaN.
+ * This function strips whitespace: (toNumber(' 123') === 123)
+ * This function accepts scientific notation: (toNumber('1e1') === 10)
+ *
+ * This is better than JavaScript's built-in conversions because, sadly:
+ *     (Number(' ') === 0) and (parseFloat('123a') === 123)
+ *
+ * @param {string} str The string to convert.
+ * @return {number} The number the supplied string represents, or NaN.
+ */
+goog.string.toNumber = function(str) {
+  var num = Number(str);
+  if (num == 0 && goog.string.isEmptyOrWhitespace(str)) {
+    return NaN;
+  }
+  return num;
+};
+
+
+/**
+ * Returns whether the given string is lower camel case (e.g. "isFooBar").
+ *
+ * Note that this assumes the string is entirely letters.
+ * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
+ *
+ * @param {string} str String to test.
+ * @return {boolean} Whether the string is lower camel case.
+ */
+goog.string.isLowerCamelCase = function(str) {
+  return /^[a-z]+([A-Z][a-z]*)*$/.test(str);
+};
+
+
+/**
+ * Returns whether the given string is upper camel case (e.g. "FooBarBaz").
+ *
+ * Note that this assumes the string is entirely letters.
+ * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
+ *
+ * @param {string} str String to test.
+ * @return {boolean} Whether the string is upper camel case.
+ */
+goog.string.isUpperCamelCase = function(str) {
+  return /^([A-Z][a-z]*)+$/.test(str);
+};
+
+
+/**
+ * Converts a string from selector-case to camelCase (e.g. from
+ * "multi-part-string" to "multiPartString"), useful for converting
+ * CSS selectors and HTML dataset keys to their equivalent JS properties.
+ * @param {string} str The string in selector-case form.
+ * @return {string} The string in camelCase form.
+ */
+goog.string.toCamelCase = function(str) {
+  return String(str).replace(/\-([a-z])/g, function(all, match) {
+    return match.toUpperCase();
+  });
+};
+
+
+/**
+ * Converts a string from camelCase to selector-case (e.g. from
+ * "multiPartString" to "multi-part-string"), useful for converting JS
+ * style and dataset properties to equivalent CSS selectors and HTML keys.
+ * @param {string} str The string in camelCase form.
+ * @return {string} The string in selector-case form.
+ */
+goog.string.toSelectorCase = function(str) {
+  return String(str).replace(/([A-Z])/g, '-$1').toLowerCase();
+};
+
+
+/**
+ * Converts a string into TitleCase. First character of the string is always
+ * capitalized in addition to the first letter of every subsequent word.
+ * Words are delimited by one or more whitespaces by default. Custom delimiters
+ * can optionally be specified to replace the default, which doesn't preserve
+ * whitespace delimiters and instead must be explicitly included if needed.
+ *
+ * Default delimiter => " ":
+ *    goog.string.toTitleCase('oneTwoThree')    => 'OneTwoThree'
+ *    goog.string.toTitleCase('one two three')  => 'One Two Three'
+ *    goog.string.toTitleCase('  one   two   ') => '  One   Two   '
+ *    goog.string.toTitleCase('one_two_three')  => 'One_two_three'
+ *    goog.string.toTitleCase('one-two-three')  => 'One-two-three'
+ *
+ * Custom delimiter => "_-.":
+ *    goog.string.toTitleCase('oneTwoThree', '_-.')       => 'OneTwoThree'
+ *    goog.string.toTitleCase('one two three', '_-.')     => 'One two three'
+ *    goog.string.toTitleCase('  one   two   ', '_-.')    => '  one   two   '
+ *    goog.string.toTitleCase('one_two_three', '_-.')     => 'One_Two_Three'
+ *    goog.string.toTitleCase('one-two-three', '_-.')     => 'One-Two-Three'
+ *    goog.string.toTitleCase('one...two...three', '_-.') => 'One...Two...Three'
+ *    goog.string.toTitleCase('one. two. three', '_-.')   => 'One. two. three'
+ *    goog.string.toTitleCase('one-two.three', '_-.')     => 'One-Two.Three'
+ *
+ * @param {string} str String value in camelCase form.
+ * @param {string=} opt_delimiters Custom delimiter character set used to
+ *      distinguish words in the string value. Each character represents a
+ *      single delimiter. When provided, default whitespace delimiter is
+ *      overridden and must be explicitly included if needed.
+ * @return {string} String value in TitleCase form.
+ */
+goog.string.toTitleCase = function(str, opt_delimiters) {
+  var delimiters = (typeof opt_delimiters === 'string') ?
+      goog.string.regExpEscape(opt_delimiters) :
+      '\\s';
+
+  // For IE8, we need to prevent using an empty character set. Otherwise,
+  // incorrect matching will occur.
+  delimiters = delimiters ? '|[' + delimiters + ']+' : '';
+
+  var regexp = new RegExp('(^' + delimiters + ')([a-z])', 'g');
+  return str.replace(regexp, function(all, p1, p2) {
+    return p1 + p2.toUpperCase();
+  });
+};
+
+
+/**
+ * Capitalizes a string, i.e. converts the first letter to uppercase
+ * and all other letters to lowercase, e.g.:
+ *
+ * goog.string.capitalize('one')     => 'One'
+ * goog.string.capitalize('ONE')     => 'One'
+ * goog.string.capitalize('one two') => 'One two'
+ *
+ * Note that this function does not trim initial whitespace.
+ *
+ * @param {string} str String value to capitalize.
+ * @return {string} String value with first letter in uppercase.
+ */
+goog.string.capitalize = function(str) {
+  return String(str.charAt(0)).toUpperCase() +
+      String(str.substr(1)).toLowerCase();
+};
+
+
+/**
+ * Parse a string in decimal or hexidecimal ('0xFFFF') form.
+ *
+ * To parse a particular radix, please use parseInt(string, radix) directly. See
+ * https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/parseInt
+ *
+ * This is a wrapper for the built-in parseInt function that will only parse
+ * numbers as base 10 or base 16.  Some JS implementations assume strings
+ * starting with "0" are intended to be octal. ES3 allowed but discouraged
+ * this behavior. ES5 forbids it.  This function emulates the ES5 behavior.
+ *
+ * For more information, see Mozilla JS Reference: http://goo.gl/8RiFj
+ *
+ * @param {string|number|null|undefined} value The value to be parsed.
+ * @return {number} The number, parsed. If the string failed to parse, this
+ *     will be NaN.
+ */
+goog.string.parseInt = function(value) {
+  // Force finite numbers to strings.
+  if (isFinite(value)) {
+    value = String(value);
+  }
+
+  if (typeof value === 'string') {
+    // If the string starts with '0x' or '-0x', parse as hex.
+    return /^\s*-?0x/i.test(value) ? parseInt(value, 16) : parseInt(value, 10);
+  }
+
+  return NaN;
+};
+
+
+/**
+ * Splits a string on a separator a limited number of times.
+ *
+ * This implementation is more similar to Python or Java, where the limit
+ * parameter specifies the maximum number of splits rather than truncating
+ * the number of results.
+ *
+ * See http://docs.python.org/2/library/stdtypes.html#str.split
+ * See JavaDoc: http://goo.gl/F2AsY
+ * See Mozilla reference: http://goo.gl/dZdZs
+ *
+ * @param {string} str String to split.
+ * @param {string} separator The separator.
+ * @param {number} limit The limit to the number of splits. The resulting array
+ *     will have a maximum length of limit+1.  Negative numbers are the same
+ *     as zero.
+ * @return {!Array<string>} The string, split.
+ */
+goog.string.splitLimit = function(str, separator, limit) {
+  var parts = str.split(separator);
+  var returnVal = [];
+
+  // Only continue doing this while we haven't hit the limit and we have
+  // parts left.
+  while (limit > 0 && parts.length) {
+    returnVal.push(parts.shift());
+    limit--;
+  }
+
+  // If there are remaining parts, append them to the end.
+  if (parts.length) {
+    returnVal.push(parts.join(separator));
+  }
+
+  return returnVal;
+};
+
+
+/**
+ * Finds the characters to the right of the last instance of any separator
+ *
+ * This function is similar to goog.string.path.baseName, except it can take a
+ * list of characters to split the string on. It will return the rightmost
+ * grouping of characters to the right of any separator as a left-to-right
+ * oriented string.
+ *
+ * @see goog.string.path.baseName
+ * @param {string} str The string
+ * @param {string|!Array<string>} separators A list of separator characters
+ * @return {string} The last part of the string with respect to the separators
+ */
+goog.string.lastComponent = function(str, separators) {
+  if (!separators) {
+    return str;
+  } else if (typeof separators == 'string') {
+    separators = [separators];
+  }
+
+  var lastSeparatorIndex = -1;
+  for (var i = 0; i < separators.length; i++) {
+    if (separators[i] == '') {
+      continue;
+    }
+    var currentSeparatorIndex = str.lastIndexOf(separators[i]);
+    if (currentSeparatorIndex > lastSeparatorIndex) {
+      lastSeparatorIndex = currentSeparatorIndex;
+    }
+  }
+  if (lastSeparatorIndex == -1) {
+    return str;
+  }
+  return str.slice(lastSeparatorIndex + 1);
+};
+
+
+/**
+ * Computes the Levenshtein edit distance between two strings.
+ * @param {string} a
+ * @param {string} b
+ * @return {number} The edit distance between the two strings.
+ */
+goog.string.editDistance = function(a, b) {
+  var v0 = [];
+  var v1 = [];
+
+  if (a == b) {
+    return 0;
+  }
+
+  if (!a.length || !b.length) {
+    return Math.max(a.length, b.length);
+  }
+
+  for (var i = 0; i < b.length + 1; i++) {
+    v0[i] = i;
+  }
+
+  for (var i = 0; i < a.length; i++) {
+    v1[0] = i + 1;
+
+    for (var j = 0; j < b.length; j++) {
+      var cost = Number(a[i] != b[j]);
+      // Cost for the substring is the minimum of adding one character, removing
+      // one character, or a swap.
+      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+    }
+
+    for (var j = 0; j < v0.length; j++) {
+      v0[j] = v1[j];
+    }
+  }
+
+  return v1[b.length];
+};
+
+//third_party/javascript/closure/math/math.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Additional mathematical functions.
+ */
+
+goog.provide('goog.math');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+
+
+/**
+ * Returns a random integer greater than or equal to 0 and less than `a`.
+ * @param {number} a  The upper bound for the random integer (exclusive).
+ * @return {number} A random integer N such that 0 <= N < a.
+ */
+goog.math.randomInt = function(a) {
+  return Math.floor(Math.random() * a);
+};
+
+
+/**
+ * Returns a random number greater than or equal to `a` and less than
+ * `b`.
+ * @param {number} a  The lower bound for the random number (inclusive).
+ * @param {number} b  The upper bound for the random number (exclusive).
+ * @return {number} A random number N such that a <= N < b.
+ */
+goog.math.uniformRandom = function(a, b) {
+  return a + Math.random() * (b - a);
+};
+
+
+/**
+ * Takes a number and clamps it to within the provided bounds.
+ * @param {number} value The input number.
+ * @param {number} min The minimum value to return.
+ * @param {number} max The maximum value to return.
+ * @return {number} The input number if it is within bounds, or the nearest
+ *     number within the bounds.
+ */
+goog.math.clamp = function(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+};
+
+
+/**
+ * The % operator in JavaScript returns the remainder of a / b, but differs from
+ * some other languages in that the result will have the same sign as the
+ * dividend. For example, -1 % 8 == -1, whereas in some other languages
+ * (such as Python) the result would be 7. This function emulates the more
+ * correct modulo behavior, which is useful for certain applications such as
+ * calculating an offset index in a circular list.
+ *
+ * @param {number} a The dividend.
+ * @param {number} b The divisor.
+ * @return {number} a % b where the result is between 0 and b (either 0 <= x < b
+ *     or b < x <= 0, depending on the sign of b).
+ */
+goog.math.modulo = function(a, b) {
+  var r = a % b;
+  // If r and b differ in sign, add b to wrap the result to the correct sign.
+  return (r * b < 0) ? r + b : r;
+};
+
+
+/**
+ * Performs linear interpolation between values a and b. Returns the value
+ * between a and b proportional to x (when x is between 0 and 1. When x is
+ * outside this range, the return value is a linear extrapolation).
+ * @param {number} a A number.
+ * @param {number} b A number.
+ * @param {number} x The proportion between a and b.
+ * @return {number} The interpolated value between a and b.
+ */
+goog.math.lerp = function(a, b, x) {
+  return a + x * (b - a);
+};
+
+
+/**
+ * Tests whether the two values are equal to each other, within a certain
+ * tolerance to adjust for floating point errors.
+ * @param {number} a A number.
+ * @param {number} b A number.
+ * @param {number=} opt_tolerance Optional tolerance range. Defaults
+ *     to 0.000001. If specified, should be greater than 0.
+ * @return {boolean} Whether `a` and `b` are nearly equal.
+ */
+goog.math.nearlyEquals = function(a, b, opt_tolerance) {
+  return Math.abs(a - b) <= (opt_tolerance || 0.000001);
+};
+
+
+// TODO(user): Rename to normalizeAngle, retaining old name as deprecated
+// alias.
+/**
+ * Normalizes an angle to be in range [0-360). Angles outside this range will
+ * be normalized to be the equivalent angle with that range.
+ * @param {number} angle Angle in degrees.
+ * @return {number} Standardized angle.
+ */
+goog.math.standardAngle = function(angle) {
+  return goog.math.modulo(angle, 360);
+};
+
+
+/**
+ * Normalizes an angle to be in range [0-2*PI). Angles outside this range will
+ * be normalized to be the equivalent angle with that range.
+ * @param {number} angle Angle in radians.
+ * @return {number} Standardized angle.
+ */
+goog.math.standardAngleInRadians = function(angle) {
+  return goog.math.modulo(angle, 2 * Math.PI);
+};
+
+
+/**
+ * Converts degrees to radians.
+ * @param {number} angleDegrees Angle in degrees.
+ * @return {number} Angle in radians.
+ */
+goog.math.toRadians = function(angleDegrees) {
+  return angleDegrees * Math.PI / 180;
+};
+
+
+/**
+ * Converts radians to degrees.
+ * @param {number} angleRadians Angle in radians.
+ * @return {number} Angle in degrees.
+ */
+goog.math.toDegrees = function(angleRadians) {
+  return angleRadians * 180 / Math.PI;
+};
+
+
+/**
+ * For a given angle and radius, finds the X portion of the offset.
+ * @param {number} degrees Angle in degrees (zero points in +X direction).
+ * @param {number} radius Radius.
+ * @return {number} The x-distance for the angle and radius.
+ */
+goog.math.angleDx = function(degrees, radius) {
+  return radius * Math.cos(goog.math.toRadians(degrees));
+};
+
+
+/**
+ * For a given angle and radius, finds the Y portion of the offset.
+ * @param {number} degrees Angle in degrees (zero points in +X direction).
+ * @param {number} radius Radius.
+ * @return {number} The y-distance for the angle and radius.
+ */
+goog.math.angleDy = function(degrees, radius) {
+  return radius * Math.sin(goog.math.toRadians(degrees));
+};
+
+
+/**
+ * Computes the angle between two points (x1,y1) and (x2,y2).
+ * Angle zero points in the +X direction, 90 degrees points in the +Y
+ * direction (down) and from there we grow clockwise towards 360 degrees.
+ * @param {number} x1 x of first point.
+ * @param {number} y1 y of first point.
+ * @param {number} x2 x of second point.
+ * @param {number} y2 y of second point.
+ * @return {number} Standardized angle in degrees of the vector from
+ *     x1,y1 to x2,y2.
+ */
+goog.math.angle = function(x1, y1, x2, y2) {
+  return goog.math.standardAngle(
+      goog.math.toDegrees(Math.atan2(y2 - y1, x2 - x1)));
+};
+
+
+/**
+ * Computes the difference between startAngle and endAngle (angles in degrees).
+ * @param {number} startAngle  Start angle in degrees.
+ * @param {number} endAngle  End angle in degrees.
+ * @return {number} The number of degrees that when added to
+ *     startAngle will result in endAngle. Positive numbers mean that the
+ *     direction is clockwise. Negative numbers indicate a counter-clockwise
+ *     direction.
+ *     The shortest route (clockwise vs counter-clockwise) between the angles
+ *     is used.
+ *     When the difference is 180 degrees, the function returns 180 (not -180)
+ *     angleDifference(30, 40) is 10, and angleDifference(40, 30) is -10.
+ *     angleDifference(350, 10) is 20, and angleDifference(10, 350) is -20.
+ */
+goog.math.angleDifference = function(startAngle, endAngle) {
+  var d =
+      goog.math.standardAngle(endAngle) - goog.math.standardAngle(startAngle);
+  if (d > 180) {
+    d = d - 360;
+  } else if (d <= -180) {
+    d = 360 + d;
+  }
+  return d;
+};
+
+
+/**
+ * Returns the sign of a number as per the "sign" or "signum" function.
+ * @param {number} x The number to take the sign of.
+ * @return {number} -1 when negative, 1 when positive, 0 when 0. Preserves
+ *     signed zeros and NaN.
+ */
+goog.math.sign = function(x) {
+  if (x > 0) {
+    return 1;
+  }
+  if (x < 0) {
+    return -1;
+  }
+  return x;  // Preserves signed zeros and NaN.
+};
+
+
+/**
+ * JavaScript implementation of Longest Common Subsequence problem.
+ * http://en.wikipedia.org/wiki/Longest_common_subsequence
+ *
+ * Returns the longest possible array that is subarray of both of given arrays.
+ *
+ * @param {IArrayLike<S>} array1 First array of objects.
+ * @param {IArrayLike<T>} array2 Second array of objects.
+ * @param {Function=} opt_compareFn Function that acts as a custom comparator
+ *     for the array ojects. Function should return true if objects are equal,
+ *     otherwise false.
+ * @param {Function=} opt_collectorFn Function used to decide what to return
+ *     as a result subsequence. It accepts 2 arguments: index of common element
+ *     in the first array and index in the second. The default function returns
+ *     element from the first array.
+ * @return {!Array<S|T>} A list of objects that are common to both arrays
+ *     such that there is no common subsequence with size greater than the
+ *     length of the list.
+ * @template S,T
+ */
+goog.math.longestCommonSubsequence = function(
+    array1, array2, opt_compareFn, opt_collectorFn) {
+
+  var compare = opt_compareFn || function(a, b) { return a == b; };
+
+  var collect = opt_collectorFn || function(i1, i2) { return array1[i1]; };
+
+  var length1 = array1.length;
+  var length2 = array2.length;
+
+  var arr = [];
+  for (var i = 0; i < length1 + 1; i++) {
+    arr[i] = [];
+    arr[i][0] = 0;
+  }
+
+  for (var j = 0; j < length2 + 1; j++) {
+    arr[0][j] = 0;
+  }
+
+  for (i = 1; i <= length1; i++) {
+    for (j = 1; j <= length2; j++) {
+      if (compare(array1[i - 1], array2[j - 1])) {
+        arr[i][j] = arr[i - 1][j - 1] + 1;
+      } else {
+        arr[i][j] = Math.max(arr[i - 1][j], arr[i][j - 1]);
+      }
+    }
+  }
+
+  // Backtracking
   var result = [];
-  if (dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_) {
-    result.push(
-        dir == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.Format.RLE :
-                                        goog.i18n.bidi.Format.LRE);
-    result.push(str);
-    result.push(goog.i18n.bidi.Format.PDF);
+  var i = length1, j = length2;
+  while (i > 0 && j > 0) {
+    if (compare(array1[i - 1], array2[j - 1])) {
+      result.unshift(collect(i - 1, j - 1));
+      i--;
+      j--;
+    } else {
+      if (arr[i - 1][j] > arr[i][j - 1]) {
+        i--;
+      } else {
+        j--;
+      }
+    }
+  }
+
+  return result;
+};
+
+
+/**
+ * Returns the sum of the arguments.
+ * @param {...number} var_args Numbers to add.
+ * @return {number} The sum of the arguments (0 if no arguments were provided,
+ *     `NaN` if any of the arguments is not a valid number).
+ */
+goog.math.sum = function(var_args) {
+  return /** @type {number} */ (
+      goog.array.reduce(
+          arguments, function(sum, value) { return sum + value; }, 0));
+};
+
+
+/**
+ * Returns the arithmetic mean of the arguments.
+ * @param {...number} var_args Numbers to average.
+ * @return {number} The average of the arguments (`NaN` if no arguments
+ *     were provided or any of the arguments is not a valid number).
+ */
+goog.math.average = function(var_args) {
+  return goog.math.sum.apply(null, arguments) / arguments.length;
+};
+
+
+/**
+ * Returns the unbiased sample variance of the arguments. For a definition,
+ * see e.g. http://en.wikipedia.org/wiki/Variance
+ * @param {...number} var_args Number samples to analyze.
+ * @return {number} The unbiased sample variance of the arguments (0 if fewer
+ *     than two samples were provided, or `NaN` if any of the samples is
+ *     not a valid number).
+ */
+goog.math.sampleVariance = function(var_args) {
+  var sampleSize = arguments.length;
+  if (sampleSize < 2) {
+    return 0;
+  }
+
+  var mean = goog.math.average.apply(null, arguments);
+  var variance =
+      goog.math.sum.apply(null, goog.array.map(arguments, function(val) {
+        return Math.pow(val - mean, 2);
+      })) / (sampleSize - 1);
+
+  return variance;
+};
+
+
+/**
+ * Returns the sample standard deviation of the arguments.  For a definition of
+ * sample standard deviation, see e.g.
+ * http://en.wikipedia.org/wiki/Standard_deviation
+ * @param {...number} var_args Number samples to analyze.
+ * @return {number} The sample standard deviation of the arguments (0 if fewer
+ *     than two samples were provided, or `NaN` if any of the samples is
+ *     not a valid number).
+ */
+goog.math.standardDeviation = function(var_args) {
+  return Math.sqrt(goog.math.sampleVariance.apply(null, arguments));
+};
+
+
+/**
+ * Returns whether the supplied number represents an integer, i.e. that is has
+ * no fractional component.  No range-checking is performed on the number.
+ * @param {number} num The number to test.
+ * @return {boolean} Whether `num` is an integer.
+ */
+goog.math.isInt = function(num) {
+  return isFinite(num) && num % 1 == 0;
+};
+
+
+/**
+ * Returns whether the supplied number is finite and not NaN.
+ * @param {number} num The number to test.
+ * @return {boolean} Whether `num` is a finite number.
+ * @deprecated Use {@link isFinite} instead.
+ */
+goog.math.isFiniteNumber = function(num) {
+  return isFinite(num);
+};
+
+
+/**
+ * @param {number} num The number to test.
+ * @return {boolean} Whether it is negative zero.
+ */
+goog.math.isNegativeZero = function(num) {
+  return num == 0 && 1 / num < 0;
+};
+
+
+/**
+ * Returns the precise value of floor(log10(num)).
+ * Simpler implementations didn't work because of floating point rounding
+ * errors. For example
+ * <ul>
+ * <li>Math.floor(Math.log(num) / Math.LN10) is off by one for num == 1e+3.
+ * <li>Math.floor(Math.log(num) * Math.LOG10E) is off by one for num == 1e+15.
+ * <li>Math.floor(Math.log10(num)) is off by one for num == 1e+15 - 1.
+ * </ul>
+ * @param {number} num A floating point number.
+ * @return {number} Its logarithm to base 10 rounded down to the nearest
+ *     integer if num > 0. -Infinity if num == 0. NaN if num < 0.
+ */
+goog.math.log10Floor = function(num) {
+  if (num > 0) {
+    var x = Math.round(Math.log(num) * Math.LOG10E);
+    return x - (parseFloat('1e' + x) > num ? 1 : 0);
+  }
+  return num == 0 ? -Infinity : NaN;
+};
+
+
+/**
+ * A tweaked variant of `Math.floor` which tolerates if the passed number
+ * is infinitesimally smaller than the closest integer. It often happens with
+ * the results of floating point calculations because of the finite precision
+ * of the intermediate results. For example {@code Math.floor(Math.log(1000) /
+ * Math.LN10) == 2}, not 3 as one would expect.
+ * @param {number} num A number.
+ * @param {number=} opt_epsilon An infinitesimally small positive number, the
+ *     rounding error to tolerate.
+ * @return {number} The largest integer less than or equal to `num`.
+ */
+goog.math.safeFloor = function(num, opt_epsilon) {
+  goog.asserts.assert(opt_epsilon === undefined || opt_epsilon > 0);
+  return Math.floor(num + (opt_epsilon || 2e-15));
+};
+
+
+/**
+ * A tweaked variant of `Math.ceil`. See `goog.math.safeFloor` for
+ * details.
+ * @param {number} num A number.
+ * @param {number=} opt_epsilon An infinitesimally small positive number, the
+ *     rounding error to tolerate.
+ * @return {number} The smallest integer greater than or equal to `num`.
+ */
+goog.math.safeCeil = function(num, opt_epsilon) {
+  goog.asserts.assert(opt_epsilon === undefined || opt_epsilon > 0);
+  return Math.ceil(num - (opt_epsilon || 2e-15));
+};
+
+//third_party/javascript/closure/iter/iter.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Python style iteration utilities.
+ */
+
+
+goog.provide('goog.iter');
+goog.provide('goog.iter.Iterable');
+goog.provide('goog.iter.Iterator');
+goog.provide('goog.iter.StopIteration');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+goog.require('goog.functions');
+goog.require('goog.math');
+
+
+/**
+ * @typedef {{length:number}|{__iterator__}}
+ */
+goog.iter.Iterable;
+
+
+/**
+ * Singleton Error object that is used to terminate iterations.
+ * @const {!Error}
+ */
+goog.iter.StopIteration = ('StopIteration' in goog.global) ?
+    // For script engines that support legacy iterators.
+    goog.global['StopIteration'] :
+    {message: 'StopIteration', stack: ''};
+
+
+
+/**
+ * Class/interface for iterators.  An iterator needs to implement a `next`
+ * method and it needs to throw a `goog.iter.StopIteration` when the
+ * iteration passes beyond the end.  Iterators have no `hasNext` method.
+ * It is recommended to always use the helper functions to iterate over the
+ * iterator or in case you are only targeting JavaScript 1.7 for in loops.
+ * @constructor
+ * @template VALUE
+ */
+goog.iter.Iterator = function() {};
+
+
+/**
+ * Returns the next value of the iteration.  This will throw the object
+ * {@see goog.iter.StopIteration} when the iteration passes the end.
+ * @return {VALUE} Any object or value.
+ */
+goog.iter.Iterator.prototype.next = function() {
+  throw goog.iter.StopIteration;
+};
+
+
+/**
+ * Returns the `Iterator` object itself.  This is used to implement
+ * the iterator protocol in JavaScript 1.7
+ * @param {boolean=} opt_keys  Whether to return the keys or values. Default is
+ *     to only return the values.  This is being used by the for-in loop (true)
+ *     and the for-each-in loop (false).  Even though the param gives a hint
+ *     about what the iterator will return there is no guarantee that it will
+ *     return the keys when true is passed.
+ * @return {!goog.iter.Iterator<VALUE>} The object itself.
+ */
+goog.iter.Iterator.prototype.__iterator__ = function(opt_keys) {
+  return this;
+};
+
+
+/**
+ * Returns an iterator that knows how to iterate over the values in the object.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable  If the
+ *     object is an iterator it will be returned as is.  If the object has an
+ *     `__iterator__` method that will be called to get the value
+ *     iterator.  If the object is an array-like object we create an iterator
+ *     for that.
+ * @return {!goog.iter.Iterator<VALUE>} An iterator that knows how to iterate
+ *     over the values in `iterable`.
+ * @template VALUE
+ */
+goog.iter.toIterator = function(iterable) {
+  if (iterable instanceof goog.iter.Iterator) {
+    return iterable;
+  }
+  if (typeof iterable.__iterator__ == 'function') {
+    return /** @type {{__iterator__:function(this:?, boolean=)}} */ (iterable)
+        .__iterator__(false);
+  }
+  if (goog.isArrayLike(iterable)) {
+    var like = /** @type {!IArrayLike<number|string>} */ (iterable);
+    var i = 0;
+    var newIter = new goog.iter.Iterator;
+    newIter.next = function() {
+      while (true) {
+        if (i >= like.length) {
+          throw goog.iter.StopIteration;
+        }
+        // Don't include deleted elements.
+        if (!(i in like)) {
+          i++;
+          continue;
+        }
+        return like[i++];
+      }
+    };
+    return newIter;
+  }
+
+
+  // TODO(arv): Should we fall back on goog.structs.getValues()?
+  throw new Error('Not implemented');
+};
+
+
+/**
+ * Calls a function for each element in the iterator with the element of the
+ * iterator passed as argument.
+ *
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable  The iterator
+ *     to iterate over. If the iterable is an object `toIterator` will be
+ *     called on it.
+ * @param {function(this:THIS,VALUE,?,!goog.iter.Iterator<VALUE>)} f
+ *     The function to call for every element.  This function takes 3 arguments
+ *     (the element, undefined, and the iterator) and the return value is
+ *     irrelevant.  The reason for passing undefined as the second argument is
+ *     so that the same function can be used in {@see goog.array.forEach} as
+ *     well as others.  The third parameter is of type "number" for
+ *     arraylike objects, undefined, otherwise.
+ * @param {THIS=} opt_obj  The object to be used as the value of 'this' within
+ *     `f`.
+ * @template THIS, VALUE
+ */
+goog.iter.forEach = function(iterable, f, opt_obj) {
+  if (goog.isArrayLike(iterable)) {
+
+    try {
+      // NOTES: this passes the index number to the second parameter
+      // of the callback contrary to the documentation above.
+      goog.array.forEach(
+          /** @type {IArrayLike<?>} */ (iterable), f, opt_obj);
+    } catch (ex) {
+      if (ex !== goog.iter.StopIteration) {
+        throw ex;
+      }
+    }
   } else {
-    result.push(str);
-  }
+    iterable = goog.iter.toIterator(iterable);
 
-  result.push(this.dirResetIfNeeded_(str, dir, opt_isHtml, opt_dirReset));
-  return result.join('');
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
- * if the directionality or the exit directionality of `str` are opposite
- * to the context directionality. Otherwise returns the empty string.
- *
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} A Unicode bidi mark matching the global directionality or
- *     the empty string.
- */
-goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
-  return this.markAfterKnownDir(null, str, opt_isHtml);
-};
-
-
-/**
- * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
- * if the given directionality or the exit directionality of `str` are
- * opposite to the context directionality. Otherwise returns the empty string.
- *
- * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
- *     null if unknown and needs to be estimated.
- * @param {string} str The input text.
- * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
- *     Default: false.
- * @return {string} A Unicode bidi mark matching the global directionality or
- *     the empty string.
- */
-goog.i18n.BidiFormatter.prototype.markAfterKnownDir = function(
-    dir, str, opt_isHtml) {
-  if (dir == null) {
-    dir = this.estimateDirection(str, opt_isHtml);
-  }
-  return this.dirResetIfNeeded_(str, dir, opt_isHtml, true);
-};
-
-
-/**
- * Returns the Unicode BiDi mark matching the context directionality (LRM for
- * LTR context directionality, RLM for RTL context directionality), or the
- * empty string for neutral / unknown context directionality.
- *
- * @return {string} LRM for LTR context directionality and RLM for RTL context
- *     directionality.
- */
-goog.i18n.BidiFormatter.prototype.mark = function() {
-  switch (this.contextDir_) {
-    case (goog.i18n.bidi.Dir.LTR):
-      return goog.i18n.bidi.Format.LRM;
-    case (goog.i18n.bidi.Dir.RTL):
-      return goog.i18n.bidi.Format.RLM;
-    default:
-      return '';
+    try {
+      while (true) {
+        f.call(opt_obj, iterable.next(), undefined, iterable);
+      }
+    } catch (ex) {
+      if (ex !== goog.iter.StopIteration) {
+        throw ex;
+      }
+    }
   }
 };
 
 
 /**
- * Returns 'right' for RTL context directionality. Otherwise (LTR or neutral /
- * unknown context directionality) returns 'left'.
+ * Calls a function for every element in the iterator, and if the function
+ * returns true adds the element to a new iterator.
  *
- * @return {string} 'right' for RTL context directionality and 'left' for other
- *     context directionality.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     to iterate over.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
+ *     The function to call for every element. This function takes 3 arguments
+ *     (the element, undefined, and the iterator) and should return a boolean.
+ *     If the return value is true the element will be included in the returned
+ *     iterator.  If it is false the element is not included.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator in which only elements
+ *     that passed the test are present.
+ * @template THIS, VALUE
  */
-goog.i18n.BidiFormatter.prototype.startEdge = function() {
-  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.RIGHT :
-                                                      goog.i18n.bidi.LEFT;
+goog.iter.filter = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    while (true) {
+      var val = iterator.next();
+      if (f.call(opt_obj, val, undefined, iterator)) {
+        return val;
+      }
+    }
+  };
+  return newIter;
 };
 
 
 /**
- * Returns 'left' for RTL context directionality. Otherwise (LTR or neutral /
- * unknown context directionality) returns 'right'.
+ * Calls a function for every element in the iterator, and if the function
+ * returns false adds the element to a new iterator.
  *
- * @return {string} 'left' for RTL context directionality and 'right' for other
- *     context directionality.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     to iterate over.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
+ *     The function to call for every element. This function takes 3 arguments
+ *     (the element, undefined, and the iterator) and should return a boolean.
+ *     If the return value is false the element will be included in the returned
+ *     iterator.  If it is true the element is not included.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator in which only elements
+ *     that did not pass the test are present.
+ * @template THIS, VALUE
  */
-goog.i18n.BidiFormatter.prototype.endEdge = function() {
-  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.LEFT :
-                                                      goog.i18n.bidi.RIGHT;
+goog.iter.filterFalse = function(iterable, f, opt_obj) {
+  return goog.iter.filter(iterable, goog.functions.not(f), opt_obj);
 };
 
-//javascript/closure/i18n/compactnumberformatsymbols.js
-// Copyright 2013 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+
+/**
+ * Creates a new iterator that returns the values in a range.  This function
+ * can take 1, 2 or 3 arguments:
+ * <pre>
+ * range(5) same as range(0, 5, 1)
+ * range(2, 5) same as range(2, 5, 1)
+ * </pre>
+ *
+ * @param {number} startOrStop  The stop value if only one argument is provided.
+ *     The start value if 2 or more arguments are provided.  If only one
+ *     argument is used the start value is 0.
+ * @param {number=} opt_stop  The stop value.  If left out then the first
+ *     argument is used as the stop value.
+ * @param {number=} opt_step  The number to increment with between each call to
+ *     next.  This can be negative.
+ * @return {!goog.iter.Iterator<number>} A new iterator that returns the values
+ *     in the range.
+ */
+goog.iter.range = function(startOrStop, opt_stop, opt_step) {
+  var start = 0;
+  var stop = startOrStop;
+  var step = opt_step || 1;
+  if (arguments.length > 1) {
+    start = startOrStop;
+    stop = +opt_stop;
+  }
+  if (step == 0) {
+    throw new Error('Range step argument must not be zero');
+  }
+
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    if (step > 0 && start >= stop || step < 0 && start <= stop) {
+      throw goog.iter.StopIteration;
+    }
+    var rv = start;
+    start += step;
+    return rv;
+  };
+  return newIter;
+};
+
+
+/**
+ * Joins the values in a iterator with a delimiter.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     to get the values from.
+ * @param {string} deliminator  The text to put between the values.
+ * @return {string} The joined value string.
+ * @template VALUE
+ */
+goog.iter.join = function(iterable, deliminator) {
+  return goog.iter.toArray(iterable).join(deliminator);
+};
+
+
+/**
+ * For every element in the iterator call a function and return a new iterator
+ * with that value.
+ *
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterator to iterate over.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):RESULT} f
+ *     The function to call for every element.  This function takes 3 arguments
+ *     (the element, undefined, and the iterator) and should return a new value.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {!goog.iter.Iterator<RESULT>} A new iterator that returns the
+ *     results of applying the function to each element in the original
+ *     iterator.
+ * @template THIS, VALUE, RESULT
+ */
+goog.iter.map = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    var val = iterator.next();
+    return f.call(opt_obj, val, undefined, iterator);
+  };
+  return newIter;
+};
+
+
+/**
+ * Passes every element of an iterator into a function and accumulates the
+ * result.
+ *
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     to iterate over.
+ * @param {function(this:THIS,VALUE,VALUE):VALUE} f The function to call for
+ *     every element. This function takes 2 arguments (the function's previous
+ *     result or the initial value, and the value of the current element).
+ *     function(previousValue, currentElement) : newValue.
+ * @param {VALUE} val The initial value to pass into the function on the first
+ *     call.
+ * @param {THIS=} opt_obj  The object to be used as the value of 'this' within
+ *     f.
+ * @return {VALUE} Result of evaluating f repeatedly across the values of
+ *     the iterator.
+ * @template THIS, VALUE
+ */
+goog.iter.reduce = function(iterable, f, val, opt_obj) {
+  var rval = val;
+  goog.iter.forEach(
+      iterable, function(val) { rval = f.call(opt_obj, rval, val); });
+  return rval;
+};
+
+
+/**
+ * Goes through the values in the iterator. Calls f for each of these, and if
+ * any of them returns true, this returns true (without checking the rest). If
+ * all return false this will return false.
+ *
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     object.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
+ *     The function to call for every value. This function takes 3 arguments
+ *     (the value, undefined, and the iterator) and should return a boolean.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {boolean} true if any value passes the test.
+ * @template THIS, VALUE
+ */
+goog.iter.some = function(iterable, f, opt_obj) {
+  iterable = goog.iter.toIterator(iterable);
+
+  try {
+    while (true) {
+      if (f.call(opt_obj, iterable.next(), undefined, iterable)) {
+        return true;
+      }
+    }
+  } catch (ex) {
+    if (ex !== goog.iter.StopIteration) {
+      throw ex;
+    }
+  }
+  return false;
+};
+
+
+/**
+ * Goes through the values in the iterator. Calls f for each of these and if any
+ * of them returns false this returns false (without checking the rest). If all
+ * return true this will return true.
+ *
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     object.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
+ *     The function to call for every value. This function takes 3 arguments
+ *     (the value, undefined, and the iterator) and should return a boolean.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {boolean} true if every value passes the test.
+ * @template THIS, VALUE
+ */
+goog.iter.every = function(iterable, f, opt_obj) {
+  iterable = goog.iter.toIterator(iterable);
+
+  try {
+    while (true) {
+      if (!f.call(opt_obj, iterable.next(), undefined, iterable)) {
+        return false;
+      }
+    }
+  } catch (ex) {
+    if (ex !== goog.iter.StopIteration) {
+      throw ex;
+    }
+  }
+  return true;
+};
+
+
+/**
+ * Takes zero or more iterables and returns one iterator that will iterate over
+ * them in the order chained.
+ * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
+ *     number of iterable objects.
+ * @return {!goog.iter.Iterator<VALUE>} Returns a new iterator that will
+ *     iterate over all the given iterables' contents.
+ * @template VALUE
+ */
+goog.iter.chain = function(var_args) {
+  return goog.iter.chainFromIterable(arguments);
+};
+
+
+/**
+ * Takes a single iterable containing zero or more iterables and returns one
+ * iterator that will iterate over each one in the order given.
+ * @see https://goo.gl/5NRp5d
+ * @param {goog.iter.Iterator<?>|goog.iter.Iterable} iterable The iterable of
+ *     iterables to chain.
+ * @return {!goog.iter.Iterator<VALUE>} Returns a new iterator that will
+ *     iterate over all the contents of the iterables contained within
+ *     `iterable`.
+ * @template VALUE
+ */
+goog.iter.chainFromIterable = function(iterable) {
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator();
+  var current = null;
+
+  iter.next = function() {
+    while (true) {
+      if (current == null) {
+        var it = iterator.next();
+        current = goog.iter.toIterator(it);
+      }
+      try {
+        return current.next();
+      } catch (ex) {
+        if (ex !== goog.iter.StopIteration) {
+          throw ex;
+        }
+        current = null;
+      }
+    }
+  };
+
+  return iter;
+};
+
+
+/**
+ * Builds a new iterator that iterates over the original, but skips elements as
+ * long as a supplied function returns true.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     object.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
+ *     The function to call for every value. This function takes 3 arguments
+ *     (the value, undefined, and the iterator) and should return a boolean.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator that drops elements from
+ *     the original iterator as long as `f` is true.
+ * @template THIS, VALUE
+ */
+goog.iter.dropWhile = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var newIter = new goog.iter.Iterator;
+  var dropping = true;
+  newIter.next = function() {
+    while (true) {
+      var val = iterator.next();
+      if (dropping && f.call(opt_obj, val, undefined, iterator)) {
+        continue;
+      } else {
+        dropping = false;
+      }
+      return val;
+    }
+  };
+  return newIter;
+};
+
+
+/**
+ * Builds a new iterator that iterates over the original, but only as long as a
+ * supplied function returns true.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     object.
+ * @param {
+ *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
+ *     The function to call for every value. This function takes 3 arguments
+ *     (the value, undefined, and the iterator) and should return a boolean.
+ * @param {THIS=} opt_obj This is used as the 'this' object in f when called.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator that keeps elements in
+ *     the original iterator as long as the function is true.
+ * @template THIS, VALUE
+ */
+goog.iter.takeWhile = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator();
+  iter.next = function() {
+    var val = iterator.next();
+    if (f.call(opt_obj, val, undefined, iterator)) {
+      return val;
+    }
+    throw goog.iter.StopIteration;
+  };
+  return iter;
+};
+
+
+/**
+ * Converts the iterator to an array
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
+ *     to convert to an array.
+ * @return {!Array<VALUE>} An array of the elements the iterator iterates over.
+ * @template VALUE
+ */
+goog.iter.toArray = function(iterable) {
+  // Fast path for array-like.
+  if (goog.isArrayLike(iterable)) {
+    return goog.array.toArray(/** @type {!IArrayLike<?>} */ (iterable));
+  }
+  iterable = goog.iter.toIterator(iterable);
+  var array = [];
+  goog.iter.forEach(iterable, function(val) { array.push(val); });
+  return array;
+};
+
+
+/**
+ * Iterates over two iterables and returns true if they contain the same
+ * sequence of elements and have the same length.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable1 The first
+ *     iterable object.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable2 The second
+ *     iterable object.
+ * @param {function(VALUE,VALUE):boolean=} opt_equalsFn Optional comparison
+ *     function.
+ *     Should take two arguments to compare, and return true if the arguments
+ *     are equal. Defaults to {@link goog.array.defaultCompareEquality} which
+ *     compares the elements using the built-in '===' operator.
+ * @return {boolean} true if the iterables contain the same sequence of elements
+ *     and have the same length.
+ * @template VALUE
+ */
+goog.iter.equals = function(iterable1, iterable2, opt_equalsFn) {
+  var fillValue = {};
+  var pairs = goog.iter.zipLongest(fillValue, iterable1, iterable2);
+  var equalsFn = opt_equalsFn || goog.array.defaultCompareEquality;
+  return goog.iter.every(
+      pairs, function(pair) { return equalsFn(pair[0], pair[1]); });
+};
+
+
+/**
+ * Advances the iterator to the next position, returning the given default value
+ * instead of throwing an exception if the iterator has no more entries.
+ * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterable
+ *     object.
+ * @param {VALUE} defaultValue The value to return if the iterator is empty.
+ * @return {VALUE} The next item in the iteration, or defaultValue if the
+ *     iterator was empty.
+ * @template VALUE
+ */
+goog.iter.nextOrValue = function(iterable, defaultValue) {
+  try {
+    return goog.iter.toIterator(iterable).next();
+  } catch (e) {
+    if (e != goog.iter.StopIteration) {
+      throw e;
+    }
+    return defaultValue;
+  }
+};
+
+
+/**
+ * Cartesian product of zero or more sets.  Gives an iterator that gives every
+ * combination of one element chosen from each set.  For example,
+ * ([1, 2], [3, 4]) gives ([1, 3], [1, 4], [2, 3], [2, 4]).
+ * @see http://docs.python.org/library/itertools.html#itertools.product
+ * @param {...!IArrayLike<VALUE>} var_args Zero or more sets, as
+ *     arrays.
+ * @return {!goog.iter.Iterator<!Array<VALUE>>} An iterator that gives each
+ *     n-tuple (as an array).
+ * @template VALUE
+ */
+goog.iter.product = function(var_args) {
+  var someArrayEmpty =
+      goog.array.some(arguments, function(arr) { return !arr.length; });
+
+  // An empty set in a cartesian product gives an empty set.
+  if (someArrayEmpty || !arguments.length) {
+    return new goog.iter.Iterator();
+  }
+
+  var iter = new goog.iter.Iterator();
+  var arrays = arguments;
+
+  // The first indices are [0, 0, ...]
+  /** @type {?Array<number>} */
+  var indicies = goog.array.repeat(0, arrays.length);
+
+  iter.next = function() {
+
+    if (indicies) {
+      var retVal = goog.array.map(indicies, function(valueIndex, arrayIndex) {
+        return arrays[arrayIndex][valueIndex];
+      });
+
+      // Generate the next-largest indices for the next call.
+      // Increase the rightmost index. If it goes over, increase the next
+      // rightmost (like carry-over addition).
+      for (var i = indicies.length - 1; i >= 0; i--) {
+        // Assertion prevents compiler warning below.
+        goog.asserts.assert(indicies);
+        if (indicies[i] < arrays[i].length - 1) {
+          indicies[i]++;
+          break;
+        }
+
+        // We're at the last indices (the last element of every array), so
+        // the iteration is over on the next call.
+        if (i == 0) {
+          indicies = null;
+          break;
+        }
+        // Reset the index in this column and loop back to increment the
+        // next one.
+        indicies[i] = 0;
+      }
+      return retVal;
+    }
+
+    throw goog.iter.StopIteration;
+  };
+
+  return iter;
+};
+
+
+/**
+ * Create an iterator to cycle over the iterable's elements indefinitely.
+ * For example, ([1, 2, 3]) would return : 1, 2, 3, 1, 2, 3, ...
+ * @see: http://docs.python.org/library/itertools.html#itertools.cycle.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable object.
+ * @return {!goog.iter.Iterator<VALUE>} An iterator that iterates indefinitely
+ *     over the values in `iterable`.
+ * @template VALUE
+ */
+goog.iter.cycle = function(iterable) {
+  var baseIterator = goog.iter.toIterator(iterable);
+
+  // We maintain a cache to store the iterable elements as we iterate
+  // over them. The cache is used to return elements once we have
+  // iterated over the iterable once.
+  var cache = [];
+  var cacheIndex = 0;
+
+  var iter = new goog.iter.Iterator();
+
+  // This flag is set after the iterable is iterated over once
+  var useCache = false;
+
+  iter.next = function() {
+    var returnElement = null;
+
+    // Pull elements off the original iterator if not using cache
+    if (!useCache) {
+      try {
+        // Return the element from the iterable
+        returnElement = baseIterator.next();
+        cache.push(returnElement);
+        return returnElement;
+      } catch (e) {
+        // If an exception other than StopIteration is thrown
+        // or if there are no elements to iterate over (the iterable was empty)
+        // throw an exception
+        if (e != goog.iter.StopIteration || goog.array.isEmpty(cache)) {
+          throw e;
+        }
+        // set useCache to true after we know that a 'StopIteration' exception
+        // was thrown and the cache is not empty (to handle the 'empty iterable'
+        // use case)
+        useCache = true;
+      }
+    }
+
+    returnElement = cache[cacheIndex];
+    cacheIndex = (cacheIndex + 1) % cache.length;
+
+    return returnElement;
+  };
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that counts indefinitely from a starting value.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.count
+ * @param {number=} opt_start The starting value. Default is 0.
+ * @param {number=} opt_step The number to increment with between each call to
+ *     next. Negative and floating point numbers are allowed. Default is 1.
+ * @return {!goog.iter.Iterator<number>} A new iterator that returns the values
+ *     in the series.
+ */
+goog.iter.count = function(opt_start, opt_step) {
+  var counter = opt_start || 0;
+  var step = (opt_step !== undefined) ? opt_step : 1;
+  var iter = new goog.iter.Iterator();
+
+  iter.next = function() {
+    var returnValue = counter;
+    counter += step;
+    return returnValue;
+  };
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that returns the same object or value repeatedly.
+ * @param {VALUE} value Any object or value to repeat.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator that returns the
+ *     repeated value.
+ * @template VALUE
+ */
+goog.iter.repeat = function(value) {
+  var iter = new goog.iter.Iterator();
+
+  iter.next = goog.functions.constant(value);
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that returns running totals from the numbers in
+ * `iterable`. For example, the array {@code [1, 2, 3, 4, 5]} yields
+ * {@code 1 -> 3 -> 6 -> 10 -> 15}.
+ * @see http://docs.python.org/3.2/library/itertools.html#itertools.accumulate
+ * @param {!goog.iter.Iterator<number>|!goog.iter.Iterable} iterable The
+ *     iterable of numbers to accumulate.
+ * @return {!goog.iter.Iterator<number>} A new iterator that returns the
+ *     numbers in the series.
+ */
+goog.iter.accumulate = function(iterable) {
+  var iterator = goog.iter.toIterator(iterable);
+  var total = 0;
+  var iter = new goog.iter.Iterator();
+
+  iter.next = function() {
+    total += iterator.next();
+    return total;
+  };
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that returns arrays containing the ith elements from the
+ * provided iterables. The returned arrays will be the same size as the number
+ * of iterables given in `var_args`. Once the shortest iterable is
+ * exhausted, subsequent calls to `next()` will throw
+ * `goog.iter.StopIteration`.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.izip
+ * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
+ *     number of iterable objects.
+ * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator that returns
+ *     arrays of elements from the provided iterables.
+ * @template VALUE
+ */
+goog.iter.zip = function(var_args) {
+  var args = arguments;
+  var iter = new goog.iter.Iterator();
+
+  if (args.length > 0) {
+    var iterators = goog.array.map(args, goog.iter.toIterator);
+    iter.next = function() {
+      var arr = goog.array.map(iterators, function(it) { return it.next(); });
+      return arr;
+    };
+  }
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that returns arrays containing the ith elements from the
+ * provided iterables. The returned arrays will be the same size as the number
+ * of iterables given in `var_args`. Shorter iterables will be extended
+ * with `fillValue`. Once the longest iterable is exhausted, subsequent
+ * calls to `next()` will throw `goog.iter.StopIteration`.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.izip_longest
+ * @param {VALUE} fillValue The object or value used to fill shorter iterables.
+ * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
+ *     number of iterable objects.
+ * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator that returns
+ *     arrays of elements from the provided iterables.
+ * @template VALUE
+ */
+goog.iter.zipLongest = function(fillValue, var_args) {
+  var args = goog.array.slice(arguments, 1);
+  var iter = new goog.iter.Iterator();
+
+  if (args.length > 0) {
+    var iterators = goog.array.map(args, goog.iter.toIterator);
+
+    iter.next = function() {
+      var iteratorsHaveValues = false;  // false when all iterators are empty.
+      var arr = goog.array.map(iterators, function(it) {
+        var returnValue;
+        try {
+          returnValue = it.next();
+          // Iterator had a value, so we've not exhausted the iterators.
+          // Set flag accordingly.
+          iteratorsHaveValues = true;
+        } catch (ex) {
+          if (ex !== goog.iter.StopIteration) {
+            throw ex;
+          }
+          returnValue = fillValue;
+        }
+        return returnValue;
+      });
+
+      if (!iteratorsHaveValues) {
+        throw goog.iter.StopIteration;
+      }
+      return arr;
+    };
+  }
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that filters `iterable` based on a series of
+ * `selectors`. On each call to `next()`, one item is taken from
+ * both the `iterable` and `selectors` iterators. If the item from
+ * `selectors` evaluates to true, the item from `iterable` is given.
+ * Otherwise, it is skipped. Once either `iterable` or `selectors`
+ * is exhausted, subsequent calls to `next()` will throw
+ * `goog.iter.StopIteration`.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.compress
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to filter.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} selectors An
+ *     iterable of items to be evaluated in a boolean context to determine if
+ *     the corresponding element in `iterable` should be included in the
+ *     result.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator that returns the
+ *     filtered values.
+ * @template VALUE
+ */
+goog.iter.compress = function(iterable, selectors) {
+  var selectorIterator = goog.iter.toIterator(selectors);
+
+  return goog.iter.filter(
+      iterable, function() { return !!selectorIterator.next(); });
+};
+
+
+
+/**
+ * Implements the `goog.iter.groupBy` iterator.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to group.
+ * @param {function(VALUE): KEY=} opt_keyFunc  Optional function for
+ *     determining the key value for each group in the `iterable`. Default
+ *     is the identity function.
+ * @constructor
+ * @extends {goog.iter.Iterator<!Array<?>>}
+ * @template KEY, VALUE
+ * @private
+ */
+goog.iter.GroupByIterator_ = function(iterable, opt_keyFunc) {
+
+  /**
+   * The iterable to group, coerced to an iterator.
+   * @type {!goog.iter.Iterator}
+   */
+  this.iterator = goog.iter.toIterator(iterable);
+
+  /**
+   * A function for determining the key value for each element in the iterable.
+   * If no function is provided, the identity function is used and returns the
+   * element unchanged.
+   * @type {function(VALUE): KEY}
+   */
+  this.keyFunc = opt_keyFunc || goog.functions.identity;
+
+  /**
+   * The target key for determining the start of a group.
+   * @type {KEY}
+   */
+  this.targetKey;
+
+  /**
+   * The current key visited during iteration.
+   * @type {KEY}
+   */
+  this.currentKey;
+
+  /**
+   * The current value being added to the group.
+   * @type {VALUE}
+   */
+  this.currentValue;
+};
+goog.inherits(goog.iter.GroupByIterator_, goog.iter.Iterator);
+
+
+/** @override */
+goog.iter.GroupByIterator_.prototype.next = function() {
+  while (this.currentKey == this.targetKey) {
+    this.currentValue = this.iterator.next();  // Exits on StopIteration
+    this.currentKey = this.keyFunc(this.currentValue);
+  }
+  this.targetKey = this.currentKey;
+  return [this.currentKey, this.groupItems_(this.targetKey)];
+};
+
+
+/**
+ * Performs the grouping of objects using the given key.
+ * @param {KEY} targetKey  The target key object for the group.
+ * @return {!Array<VALUE>} An array of grouped objects.
+ * @private
+ */
+goog.iter.GroupByIterator_.prototype.groupItems_ = function(targetKey) {
+  var arr = [];
+  while (this.currentKey == targetKey) {
+    arr.push(this.currentValue);
+    try {
+      this.currentValue = this.iterator.next();
+    } catch (ex) {
+      if (ex !== goog.iter.StopIteration) {
+        throw ex;
+      }
+      break;
+    }
+    this.currentKey = this.keyFunc(this.currentValue);
+  }
+  return arr;
+};
+
+
+/**
+ * Creates an iterator that returns arrays containing elements from the
+ * `iterable` grouped by a key value. For iterables with repeated
+ * elements (i.e. sorted according to a particular key function), this function
+ * has a `uniq`-like effect. For example, grouping the array:
+ * {@code [A, B, B, C, C, A]} produces
+ * {@code [A, [A]], [B, [B, B]], [C, [C, C]], [A, [A]]}.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.groupby
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to group.
+ * @param {function(VALUE): KEY=} opt_keyFunc  Optional function for
+ *     determining the key value for each group in the `iterable`. Default
+ *     is the identity function.
+ * @return {!goog.iter.Iterator<!Array<?>>} A new iterator that returns
+ *     arrays of consecutive key and groups.
+ * @template KEY, VALUE
+ */
+goog.iter.groupBy = function(iterable, opt_keyFunc) {
+  return new goog.iter.GroupByIterator_(iterable, opt_keyFunc);
+};
+
+
+/**
+ * Gives an iterator that gives the result of calling the given function
+ * <code>f</code> with the arguments taken from the next element from
+ * <code>iterable</code> (the elements are expected to also be iterables).
+ *
+ * Similar to {@see goog.iter.map} but allows the function to accept multiple
+ * arguments from the iterable.
+ *
+ * @param {!goog.iter.Iterator<?>|!goog.iter.Iterable} iterable The iterable of
+ *     iterables to iterate over.
+ * @param {function(this:THIS,...*):RESULT} f The function to call for every
+ *     element.  This function takes N+2 arguments, where N represents the
+ *     number of items from the next element of the iterable. The two
+ *     additional arguments passed to the function are undefined and the
+ *     iterator itself. The function should return a new value.
+ * @param {THIS=} opt_obj The object to be used as the value of 'this' within
+ *     `f`.
+ * @return {!goog.iter.Iterator<RESULT>} A new iterator that returns the
+ *     results of applying the function to each element in the original
+ *     iterator.
+ * @template THIS, RESULT
+ */
+goog.iter.starMap = function(iterable, f, opt_obj) {
+  var iterator = goog.iter.toIterator(iterable);
+  var iter = new goog.iter.Iterator();
+
+  iter.next = function() {
+    var args = goog.iter.toArray(iterator.next());
+    return f.apply(opt_obj, goog.array.concat(args, undefined, iterator));
+  };
+
+  return iter;
+};
+
+
+/**
+ * Returns an array of iterators each of which can iterate over the values in
+ * `iterable` without advancing the others.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.tee
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to tee.
+ * @param {number=} opt_num  The number of iterators to create. Default is 2.
+ * @return {!Array<goog.iter.Iterator<VALUE>>} An array of iterators.
+ * @template VALUE
+ */
+goog.iter.tee = function(iterable, opt_num) {
+  var iterator = goog.iter.toIterator(iterable);
+  var num = (typeof opt_num === 'number') ? opt_num : 2;
+  var buffers =
+      goog.array.map(goog.array.range(num), function() { return []; });
+
+  var addNextIteratorValueToBuffers = function() {
+    var val = iterator.next();
+    goog.array.forEach(buffers, function(buffer) { buffer.push(val); });
+  };
+
+  var createIterator = function(buffer) {
+    // Each tee'd iterator has an associated buffer (initially empty). When a
+    // tee'd iterator's buffer is empty, it calls
+    // addNextIteratorValueToBuffers(), adding the next value to all tee'd
+    // iterators' buffers, and then returns that value. This allows each
+    // iterator to be advanced independently.
+    var iter = new goog.iter.Iterator();
+
+    iter.next = function() {
+      if (goog.array.isEmpty(buffer)) {
+        addNextIteratorValueToBuffers();
+      }
+      goog.asserts.assert(!goog.array.isEmpty(buffer));
+      return buffer.shift();
+    };
+
+    return iter;
+  };
+
+  return goog.array.map(buffers, createIterator);
+};
+
+
+/**
+ * Creates an iterator that returns arrays containing a count and an element
+ * obtained from the given `iterable`.
+ * @see http://docs.python.org/2/library/functions.html#enumerate
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to enumerate.
+ * @param {number=} opt_start  Optional starting value. Default is 0.
+ * @return {!goog.iter.Iterator<!Array<?>>} A new iterator containing
+ *     count/item pairs.
+ * @template VALUE
+ */
+goog.iter.enumerate = function(iterable, opt_start) {
+  return goog.iter.zip(goog.iter.count(opt_start), iterable);
+};
+
+
+/**
+ * Creates an iterator that returns the first `limitSize` elements from an
+ * iterable. If this number is greater than the number of elements in the
+ * iterable, all the elements are returned.
+ * @see http://goo.gl/V0sihp Inspired by the limit iterator in Guava.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to limit.
+ * @param {number} limitSize  The maximum number of elements to return.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator containing
+ *     `limitSize` elements.
+ * @template VALUE
+ */
+goog.iter.limit = function(iterable, limitSize) {
+  goog.asserts.assert(goog.math.isInt(limitSize) && limitSize >= 0);
+
+  var iterator = goog.iter.toIterator(iterable);
+
+  var iter = new goog.iter.Iterator();
+  var remaining = limitSize;
+
+  iter.next = function() {
+    if (remaining-- > 0) {
+      return iterator.next();
+    }
+    throw goog.iter.StopIteration;
+  };
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that is advanced `count` steps ahead. Consumed
+ * values are silently discarded. If `count` is greater than the number
+ * of elements in `iterable`, an empty iterator is returned. Subsequent
+ * calls to `next()` will throw `goog.iter.StopIteration`.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to consume.
+ * @param {number} count  The number of elements to consume from the iterator.
+ * @return {!goog.iter.Iterator<VALUE>} An iterator advanced zero or more steps
+ *     ahead.
+ * @template VALUE
+ */
+goog.iter.consume = function(iterable, count) {
+  goog.asserts.assert(goog.math.isInt(count) && count >= 0);
+
+  var iterator = goog.iter.toIterator(iterable);
+
+  while (count-- > 0) {
+    goog.iter.nextOrValue(iterator, null);
+  }
+
+  return iterator;
+};
+
+
+/**
+ * Creates an iterator that returns a range of elements from an iterable.
+ * Similar to {@see goog.array.slice} but does not support negative indexes.
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to slice.
+ * @param {number} start  The index of the first element to return.
+ * @param {number=} opt_end  The index after the last element to return. If
+ *     defined, must be greater than or equal to `start`.
+ * @return {!goog.iter.Iterator<VALUE>} A new iterator containing a slice of
+ *     the original.
+ * @template VALUE
+ */
+goog.iter.slice = function(iterable, start, opt_end) {
+  goog.asserts.assert(goog.math.isInt(start) && start >= 0);
+
+  var iterator = goog.iter.consume(iterable, start);
+
+  if (typeof opt_end === 'number') {
+    goog.asserts.assert(goog.math.isInt(opt_end) && opt_end >= start);
+    iterator = goog.iter.limit(iterator, opt_end - start /* limitSize */);
+  }
+
+  return iterator;
+};
+
+
+/**
+ * Checks an array for duplicate elements.
+ * @param {?IArrayLike<VALUE>} arr The array to check for
+ *     duplicates.
+ * @return {boolean} True, if the array contains duplicates, false otherwise.
+ * @private
+ * @template VALUE
+ */
+// TODO(user): Consider moving this into goog.array as a public function.
+goog.iter.hasDuplicates_ = function(arr) {
+  var deduped = [];
+  goog.array.removeDuplicates(arr, deduped);
+  return arr.length != deduped.length;
+};
+
+
+/**
+ * Creates an iterator that returns permutations of elements in
+ * `iterable`.
+ *
+ * Permutations are obtained by taking the Cartesian product of
+ * `opt_length` iterables and filtering out those with repeated
+ * elements. For example, the permutations of {@code [1,2,3]} are
+ * {@code [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]}.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.permutations
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable from which to generate permutations.
+ * @param {number=} opt_length Length of each permutation. If omitted, defaults
+ *     to the length of `iterable`.
+ * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing the
+ *     permutations of `iterable`.
+ * @template VALUE
+ */
+goog.iter.permutations = function(iterable, opt_length) {
+  var elements = goog.iter.toArray(iterable);
+  var length = (typeof opt_length === 'number') ? opt_length : elements.length;
+
+  var sets = goog.array.repeat(elements, length);
+  var product = goog.iter.product.apply(undefined, sets);
+
+  return goog.iter.filter(
+      product, function(arr) { return !goog.iter.hasDuplicates_(arr); });
+};
+
+
+/**
+ * Creates an iterator that returns combinations of elements from
+ * `iterable`.
+ *
+ * Combinations are obtained by taking the {@see goog.iter.permutations} of
+ * `iterable` and filtering those whose elements appear in the order they
+ * are encountered in `iterable`. For example, the 3-length combinations
+ * of {@code [0,1,2,3]} are {@code [[0,1,2], [0,1,3], [0,2,3], [1,2,3]]}.
+ * @see http://docs.python.org/2/library/itertools.html#itertools.combinations
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable from which to generate combinations.
+ * @param {number} length The length of each combination.
+ * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing
+ *     combinations from the `iterable`.
+ * @template VALUE
+ */
+goog.iter.combinations = function(iterable, length) {
+  var elements = goog.iter.toArray(iterable);
+  var indexes = goog.iter.range(elements.length);
+  var indexIterator = goog.iter.permutations(indexes, length);
+  // sortedIndexIterator will now give arrays of with the given length that
+  // indicate what indexes into "elements" should be returned on each iteration.
+  var sortedIndexIterator = goog.iter.filter(
+      indexIterator, function(arr) { return goog.array.isSorted(arr); });
+
+  var iter = new goog.iter.Iterator();
+
+  function getIndexFromElements(index) { return elements[index]; }
+
+  iter.next = function() {
+    return goog.array.map(sortedIndexIterator.next(), getIndexFromElements);
+  };
+
+  return iter;
+};
+
+
+/**
+ * Creates an iterator that returns combinations of elements from
+ * `iterable`, with repeated elements possible.
+ *
+ * Combinations are obtained by taking the Cartesian product of `length`
+ * iterables and filtering those whose elements appear in the order they are
+ * encountered in `iterable`. For example, the 2-length combinations of
+ * {@code [1,2,3]} are {@code [[1,1], [1,2], [1,3], [2,2], [2,3], [3,3]]}.
+ * @see https://goo.gl/C0yXe4
+ * @see https://goo.gl/djOCsk
+ * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
+ *     iterable to combine.
+ * @param {number} length The length of each combination.
+ * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing
+ *     combinations from the `iterable`.
+ * @template VALUE
+ */
+goog.iter.combinationsWithReplacement = function(iterable, length) {
+  var elements = goog.iter.toArray(iterable);
+  var indexes = goog.array.range(elements.length);
+  var sets = goog.array.repeat(indexes, length);
+  var indexIterator = goog.iter.product.apply(undefined, sets);
+  // sortedIndexIterator will now give arrays of with the given length that
+  // indicate what indexes into "elements" should be returned on each iteration.
+  var sortedIndexIterator = goog.iter.filter(
+      indexIterator, function(arr) { return goog.array.isSorted(arr); });
+
+  var iter = new goog.iter.Iterator();
+
+  function getIndexFromElements(index) { return elements[index]; }
+
+  iter.next = function() {
+    return goog.array.map(
+        /** @type {!Array<number>} */
+        (sortedIndexIterator.next()), getIndexFromElements);
+  };
+
+  return iter;
+};
+
+//third_party/javascript/closure/structs/map.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Datastructure: Hash Map.
+ *
+ *
+ * This file contains an implementation of a Map structure. It implements a lot
+ * of the methods used in goog.structs so those functions work on hashes. This
+ * is best suited for complex key types. For simple keys such as numbers and
+ * strings consider using the lighter-weight utilities in goog.object.
+ */
+
+
+goog.provide('goog.structs.Map');
+
+goog.require('goog.iter.Iterator');
+goog.require('goog.iter.StopIteration');
+
+
+
+/**
+ * Class for Hash Map datastructure.
+ * @param {*=} opt_map Map or Object to initialize the map with.
+ * @param {...*} var_args If 2 or more arguments are present then they
+ *     will be used as key-value pairs.
+ * @constructor
+ * @template K, V
+ * @deprecated This type is misleading: use ES6 Map instead.
+ */
+goog.structs.Map = function(opt_map, var_args) {
+
+  /**
+   * Underlying JS object used to implement the map.
+   * @private {!Object}
+   */
+  this.map_ = {};
+
+  /**
+   * An array of keys. This is necessary for two reasons:
+   *   1. Iterating the keys using for (var key in this.map_) allocates an
+   *      object for every key in IE which is really bad for IE6 GC perf.
+   *   2. Without a side data structure, we would need to escape all the keys
+   *      as that would be the only way we could tell during iteration if the
+   *      key was an internal key or a property of the object.
+   *
+   * This array can contain deleted keys so it's necessary to check the map
+   * as well to see if the key is still in the map (this doesn't require a
+   * memory allocation in IE).
+   * @private {!Array<string>}
+   */
+  this.keys_ = [];
+
+  /**
+   * The number of key value pairs in the map.
+   * @private {number}
+   */
+  this.count_ = 0;
+
+  /**
+   * Version used to detect changes while iterating.
+   * @private {number}
+   */
+  this.version_ = 0;
+
+  var argLength = arguments.length;
+
+  if (argLength > 1) {
+    if (argLength % 2) {
+      throw new Error('Uneven number of arguments');
+    }
+    for (var i = 0; i < argLength; i += 2) {
+      this.set(arguments[i], arguments[i + 1]);
+    }
+  } else if (opt_map) {
+    this.addAll(/** @type {!Object} */ (opt_map));
+  }
+};
+
+
+/**
+ * @return {number} The number of key-value pairs in the map.
+ */
+goog.structs.Map.prototype.getCount = function() {
+  return this.count_;
+};
+
+
+/**
+ * Returns the values of the map.
+ * @return {!Array<V>} The values in the map.
+ */
+goog.structs.Map.prototype.getValues = function() {
+  this.cleanupKeysArray_();
+
+  var rv = [];
+  for (var i = 0; i < this.keys_.length; i++) {
+    var key = this.keys_[i];
+    rv.push(this.map_[key]);
+  }
+  return rv;
+};
+
+
+/**
+ * Returns the keys of the map.
+ * @return {!Array<string>} Array of string values.
+ */
+goog.structs.Map.prototype.getKeys = function() {
+  this.cleanupKeysArray_();
+  return /** @type {!Array<string>} */ (this.keys_.concat());
+};
+
+
+/**
+ * Whether the map contains the given key.
+ * @param {*} key The key to check for.
+ * @return {boolean} Whether the map contains the key.
+ */
+goog.structs.Map.prototype.containsKey = function(key) {
+  return goog.structs.Map.hasKey_(this.map_, key);
+};
+
+
+/**
+ * Whether the map contains the given value. This is O(n).
+ * @param {V} val The value to check for.
+ * @return {boolean} Whether the map contains the value.
+ */
+goog.structs.Map.prototype.containsValue = function(val) {
+  for (var i = 0; i < this.keys_.length; i++) {
+    var key = this.keys_[i];
+    if (goog.structs.Map.hasKey_(this.map_, key) && this.map_[key] == val) {
+      return true;
+    }
+  }
+  return false;
+};
+
+
+/**
+ * Whether this map is equal to the argument map.
+ * @param {goog.structs.Map} otherMap The map against which to test equality.
+ * @param {function(V, V): boolean=} opt_equalityFn Optional equality function
+ *     to test equality of values. If not specified, this will test whether
+ *     the values contained in each map are identical objects.
+ * @return {boolean} Whether the maps are equal.
+ */
+goog.structs.Map.prototype.equals = function(otherMap, opt_equalityFn) {
+  if (this === otherMap) {
+    return true;
+  }
+
+  if (this.count_ != otherMap.getCount()) {
+    return false;
+  }
+
+  var equalityFn = opt_equalityFn || goog.structs.Map.defaultEquals;
+
+  this.cleanupKeysArray_();
+  for (var key, i = 0; key = this.keys_[i]; i++) {
+    if (!equalityFn(this.get(key), otherMap.get(key))) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+
+/**
+ * Default equality test for values.
+ * @param {*} a The first value.
+ * @param {*} b The second value.
+ * @return {boolean} Whether a and b reference the same object.
+ */
+goog.structs.Map.defaultEquals = function(a, b) {
+  return a === b;
+};
+
+
+/**
+ * @return {boolean} Whether the map is empty.
+ */
+goog.structs.Map.prototype.isEmpty = function() {
+  return this.count_ == 0;
+};
+
+
+/**
+ * Removes all key-value pairs from the map.
+ */
+goog.structs.Map.prototype.clear = function() {
+  this.map_ = {};
+  this.keys_.length = 0;
+  this.count_ = 0;
+  this.version_ = 0;
+};
+
+
+/**
+ * Removes a key-value pair based on the key. This is O(logN) amortized due to
+ * updating the keys array whenever the count becomes half the size of the keys
+ * in the keys array.
+ * @param {*} key  The key to remove.
+ * @return {boolean} Whether object was removed.
+ */
+goog.structs.Map.prototype.remove = function(key) {
+  if (goog.structs.Map.hasKey_(this.map_, key)) {
+    delete this.map_[key];
+    this.count_--;
+    this.version_++;
+
+    // clean up the keys array if the threshold is hit
+    if (this.keys_.length > 2 * this.count_) {
+      this.cleanupKeysArray_();
+    }
+
+    return true;
+  }
+  return false;
+};
+
+
+/**
+ * Cleans up the temp keys array by removing entries that are no longer in the
+ * map.
+ * @private
+ */
+goog.structs.Map.prototype.cleanupKeysArray_ = function() {
+  if (this.count_ != this.keys_.length) {
+    // First remove keys that are no longer in the map.
+    var srcIndex = 0;
+    var destIndex = 0;
+    while (srcIndex < this.keys_.length) {
+      var key = this.keys_[srcIndex];
+      if (goog.structs.Map.hasKey_(this.map_, key)) {
+        this.keys_[destIndex++] = key;
+      }
+      srcIndex++;
+    }
+    this.keys_.length = destIndex;
+  }
+
+  if (this.count_ != this.keys_.length) {
+    // If the count still isn't correct, that means we have duplicates. This can
+    // happen when the same key is added and removed multiple times. Now we have
+    // to allocate one extra Object to remove the duplicates. This could have
+    // been done in the first pass, but in the common case, we can avoid
+    // allocating an extra object by only doing this when necessary.
+    var seen = {};
+    var srcIndex = 0;
+    var destIndex = 0;
+    while (srcIndex < this.keys_.length) {
+      var key = this.keys_[srcIndex];
+      if (!(goog.structs.Map.hasKey_(seen, key))) {
+        this.keys_[destIndex++] = key;
+        seen[key] = 1;
+      }
+      srcIndex++;
+    }
+    this.keys_.length = destIndex;
+  }
+};
+
+
+/**
+ * Returns the value for the given key.  If the key is not found and the default
+ * value is not given this will return `undefined`.
+ * @param {*} key The key to get the value for.
+ * @param {DEFAULT=} opt_val The value to return if no item is found for the
+ *     given key, defaults to undefined.
+ * @return {V|DEFAULT} The value for the given key.
+ * @template DEFAULT
+ */
+goog.structs.Map.prototype.get = function(key, opt_val) {
+  if (goog.structs.Map.hasKey_(this.map_, key)) {
+    return this.map_[key];
+  }
+  return opt_val;
+};
+
+
+/**
+ * Adds a key-value pair to the map.
+ * @param {*} key The key.
+ * @param {V} value The value to add.
+ * @return {*} Some subclasses return a value.
+ */
+goog.structs.Map.prototype.set = function(key, value) {
+  if (!(goog.structs.Map.hasKey_(this.map_, key))) {
+    this.count_++;
+    // TODO(johnlenz): This class lies, it claims to return an array of string
+    // keys, but instead returns the original object used.
+    this.keys_.push(/** @type {?} */ (key));
+    // Only change the version if we add a new key.
+    this.version_++;
+  }
+  this.map_[key] = value;
+};
+
+
+/**
+ * Adds multiple key-value pairs from another goog.structs.Map or Object.
+ * @param {?Object} map Object containing the data to add.
+ */
+goog.structs.Map.prototype.addAll = function(map) {
+  if (map instanceof goog.structs.Map) {
+    var keys = map.getKeys();
+    for (var i = 0; i < keys.length; i++) {
+      this.set(keys[i], map.get(keys[i]));
+    }
+  } else {
+    for (var key in map) {
+      this.set(key, map[key]);
+    }
+  }
+};
+
+
+/**
+ * Calls the given function on each entry in the map.
+ * @param {function(this:T, V, K, goog.structs.Map<K,V>)} f
+ * @param {T=} opt_obj The value of "this" inside f.
+ * @template T
+ */
+goog.structs.Map.prototype.forEach = function(f, opt_obj) {
+  var keys = this.getKeys();
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var value = this.get(key);
+    f.call(opt_obj, value, key, this);
+  }
+};
+
+
+/**
+ * Clones a map and returns a new map.
+ * @return {!goog.structs.Map} A new map with the same key-value pairs.
+ */
+goog.structs.Map.prototype.clone = function() {
+  return new goog.structs.Map(this);
+};
+
+
+/**
+ * Returns a new map in which all the keys and values are interchanged
+ * (keys become values and values become keys). If multiple keys map to the
+ * same value, the chosen transposed value is implementation-dependent.
+ *
+ * It acts very similarly to {goog.object.transpose(Object)}.
+ *
+ * @return {!goog.structs.Map} The transposed map.
+ */
+goog.structs.Map.prototype.transpose = function() {
+  var transposed = new goog.structs.Map();
+  for (var i = 0; i < this.keys_.length; i++) {
+    var key = this.keys_[i];
+    var value = this.map_[key];
+    transposed.set(value, key);
+  }
+
+  return transposed;
+};
+
+
+/**
+ * @return {!Object} Object representation of the map.
+ */
+goog.structs.Map.prototype.toObject = function() {
+  this.cleanupKeysArray_();
+  var obj = {};
+  for (var i = 0; i < this.keys_.length; i++) {
+    var key = this.keys_[i];
+    obj[key] = this.map_[key];
+  }
+  return obj;
+};
+
+
+/**
+ * Returns an iterator that iterates over the keys in the map.  Removal of keys
+ * while iterating might have undesired side effects.
+ * @return {!goog.iter.Iterator} An iterator over the keys in the map.
+ */
+goog.structs.Map.prototype.getKeyIterator = function() {
+  return this.__iterator__(true);
+};
+
+
+/**
+ * Returns an iterator that iterates over the values in the map.  Removal of
+ * keys while iterating might have undesired side effects.
+ * @return {!goog.iter.Iterator} An iterator over the values in the map.
+ */
+goog.structs.Map.prototype.getValueIterator = function() {
+  return this.__iterator__(false);
+};
+
+
+/**
+ * Returns an iterator that iterates over the values or the keys in the map.
+ * This throws an exception if the map was mutated since the iterator was
+ * created.
+ * @param {boolean=} opt_keys True to iterate over the keys. False to iterate
+ *     over the values.  The default value is false.
+ * @return {!goog.iter.Iterator} An iterator over the values or keys in the map.
+ */
+goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
+  // Clean up keys to minimize the risk of iterating over dead keys.
+  this.cleanupKeysArray_();
+
+  var i = 0;
+  var version = this.version_;
+  var selfObj = this;
+
+  var newIter = new goog.iter.Iterator;
+  newIter.next = function() {
+    if (version != selfObj.version_) {
+      throw new Error('The map has changed since the iterator was created');
+    }
+    if (i >= selfObj.keys_.length) {
+      throw goog.iter.StopIteration;
+    }
+    var key = selfObj.keys_[i++];
+    return opt_keys ? key : selfObj.map_[key];
+  };
+  return newIter;
+};
+
+
+/**
+ * Safe way to test for hasOwnProperty.  It even allows testing for
+ * 'hasOwnProperty'.
+ * @param {!Object} obj The object to test for presence of the given key.
+ * @param {*} key The key to check for.
+ * @return {boolean} Whether the object has the key.
+ * @private
+ */
+goog.structs.Map.hasKey_ = function(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+};
+
+//third_party/javascript/closure/structs/structs.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Generics method for collection-like classes and objects.
+ *
+ *
+ * This file contains functions to work with collections. It supports using
+ * Map, Set, Array and Object and other classes that implement collection-like
+ * methods.
+ * @suppress {strictMissingProperties}
+ */
+
+
+goog.provide('goog.structs');
+
+goog.require('goog.array');
+goog.require('goog.object');
+
+
+// We treat an object as a dictionary if it has getKeys or it is an object that
+// isn't arrayLike.
+
+
+/**
+ * Returns the number of values in the collection-like object.
+ * @param {Object} col The collection-like object.
+ * @return {number} The number of values in the collection-like object.
+ */
+goog.structs.getCount = function(col) {
+  if (col.getCount && typeof col.getCount == 'function') {
+    return col.getCount();
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return col.length;
+  }
+  return goog.object.getCount(col);
+};
+
+
+/**
+ * Returns the values of the collection-like object.
+ * @param {Object} col The collection-like object.
+ * @return {!Array<?>} The values in the collection-like object.
+ */
+goog.structs.getValues = function(col) {
+  if (col.getValues && typeof col.getValues == 'function') {
+    return col.getValues();
+  }
+  if (typeof col === 'string') {
+    return col.split('');
+  }
+  if (goog.isArrayLike(col)) {
+    var rv = [];
+    var l = col.length;
+    for (var i = 0; i < l; i++) {
+      rv.push(col[i]);
+    }
+    return rv;
+  }
+  return goog.object.getValues(col);
+};
+
+
+/**
+ * Returns the keys of the collection. Some collections have no notion of
+ * keys/indexes and this function will return undefined in those cases.
+ * @param {Object} col The collection-like object.
+ * @return {!Array|undefined} The keys in the collection.
+ */
+goog.structs.getKeys = function(col) {
+  if (col.getKeys && typeof col.getKeys == 'function') {
+    return col.getKeys();
+  }
+  // if we have getValues but no getKeys we know this is a key-less collection
+  if (col.getValues && typeof col.getValues == 'function') {
+    return undefined;
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    var rv = [];
+    var l = col.length;
+    for (var i = 0; i < l; i++) {
+      rv.push(i);
+    }
+    return rv;
+  }
+
+  return goog.object.getKeys(col);
+};
+
+
+/**
+ * Whether the collection contains the given value. This is O(n) and uses
+ * equals (==) to test the existence.
+ * @param {Object} col The collection-like object.
+ * @param {*} val The value to check for.
+ * @return {boolean} True if the map contains the value.
+ */
+goog.structs.contains = function(col, val) {
+  if (col.contains && typeof col.contains == 'function') {
+    return col.contains(val);
+  }
+  if (col.containsValue && typeof col.containsValue == 'function') {
+    return col.containsValue(val);
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return goog.array.contains(/** @type {!Array<?>} */ (col), val);
+  }
+  return goog.object.containsValue(col, val);
+};
+
+
+/**
+ * Whether the collection is empty.
+ * @param {Object} col The collection-like object.
+ * @return {boolean} True if empty.
+ */
+goog.structs.isEmpty = function(col) {
+  if (col.isEmpty && typeof col.isEmpty == 'function') {
+    return col.isEmpty();
+  }
+
+  // We do not use goog.string.isEmptyOrWhitespace because here we treat the
+  // string as
+  // collection and as such even whitespace matters
+
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return goog.array.isEmpty(/** @type {!Array<?>} */ (col));
+  }
+  return goog.object.isEmpty(col);
+};
+
+
+/**
+ * Removes all the elements from the collection.
+ * @param {Object} col The collection-like object.
+ */
+goog.structs.clear = function(col) {
+  // NOTE(arv): This should not contain strings because strings are immutable
+  if (col.clear && typeof col.clear == 'function') {
+    col.clear();
+  } else if (goog.isArrayLike(col)) {
+    goog.array.clear(/** @type {IArrayLike<?>} */ (col));
+  } else {
+    goog.object.clear(col);
+  }
+};
+
+
+/**
+ * Calls a function for each value in a collection. The function takes
+ * three arguments; the value, the key and the collection.
+ *
+ * @param {S} col The collection-like object.
+ * @param {function(this:T,?,?,S):?} f The function to call for every value.
+ *     This function takes
+ *     3 arguments (the value, the key or undefined if the collection has no
+ *     notion of keys, and the collection) and the return value is irrelevant.
+ * @param {T=} opt_obj The object to be used as the value of 'this'
+ *     within `f`.
+ * @template T,S
+ * @deprecated Use a more specific method, e.g. goog.array.forEach,
+ *     goog.object.forEach, or for-of.
+ */
+goog.structs.forEach = function(col, f, opt_obj) {
+  if (col.forEach && typeof col.forEach == 'function') {
+    col.forEach(f, opt_obj);
+  } else if (goog.isArrayLike(col) || typeof col === 'string') {
+    goog.array.forEach(/** @type {!Array<?>} */ (col), f, opt_obj);
+  } else {
+    var keys = goog.structs.getKeys(col);
+    var values = goog.structs.getValues(col);
+    var l = values.length;
+    for (var i = 0; i < l; i++) {
+      f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col);
+    }
+  }
+};
+
+
+/**
+ * Calls a function for every value in the collection. When a call returns true,
+ * adds the value to a new collection (Array is returned by default).
+ *
+ * @param {S} col The collection-like object.
+ * @param {function(this:T,?,?,S):boolean} f The function to call for every
+ *     value. This function takes
+ *     3 arguments (the value, the key or undefined if the collection has no
+ *     notion of keys, and the collection) and should return a Boolean. If the
+ *     return value is true the value is added to the result collection. If it
+ *     is false the value is not included.
+ * @param {T=} opt_obj The object to be used as the value of 'this'
+ *     within `f`.
+ * @return {!Object|!Array<?>} A new collection where the passed values are
+ *     present. If col is a key-less collection an array is returned.  If col
+ *     has keys and values a plain old JS object is returned.
+ * @template T,S
+ */
+goog.structs.filter = function(col, f, opt_obj) {
+  if (typeof col.filter == 'function') {
+    return col.filter(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return goog.array.filter(/** @type {!Array<?>} */ (col), f, opt_obj);
+  }
+
+  var rv;
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  if (keys) {
+    rv = {};
+    for (var i = 0; i < l; i++) {
+      if (f.call(/** @type {?} */ (opt_obj), values[i], keys[i], col)) {
+        rv[keys[i]] = values[i];
+      }
+    }
+  } else {
+    // We should not use goog.array.filter here since we want to make sure that
+    // the index is undefined as well as make sure that col is passed to the
+    // function.
+    rv = [];
+    for (var i = 0; i < l; i++) {
+      if (f.call(opt_obj, values[i], undefined, col)) {
+        rv.push(values[i]);
+      }
+    }
+  }
+  return rv;
+};
+
+
+/**
+ * Calls a function for every value in the collection and adds the result into a
+ * new collection (defaults to creating a new Array).
+ *
+ * @param {S} col The collection-like object.
+ * @param {function(this:T,?,?,S):V} f The function to call for every value.
+ *     This function takes 3 arguments (the value, the key or undefined if the
+ *     collection has no notion of keys, and the collection) and should return
+ *     something. The result will be used as the value in the new collection.
+ * @param {T=} opt_obj  The object to be used as the value of 'this'
+ *     within `f`.
+ * @return {!Object<V>|!Array<V>} A new collection with the new values.  If
+ *     col is a key-less collection an array is returned.  If col has keys and
+ *     values a plain old JS object is returned.
+ * @template T,S,V
+ */
+goog.structs.map = function(col, f, opt_obj) {
+  if (typeof col.map == 'function') {
+    return col.map(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return goog.array.map(/** @type {!Array<?>} */ (col), f, opt_obj);
+  }
+
+  var rv;
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  if (keys) {
+    rv = {};
+    for (var i = 0; i < l; i++) {
+      rv[keys[i]] = f.call(/** @type {?} */ (opt_obj), values[i], keys[i], col);
+    }
+  } else {
+    // We should not use goog.array.map here since we want to make sure that
+    // the index is undefined as well as make sure that col is passed to the
+    // function.
+    rv = [];
+    for (var i = 0; i < l; i++) {
+      rv[i] = f.call(/** @type {?} */ (opt_obj), values[i], undefined, col);
+    }
+  }
+  return rv;
+};
+
+
+/**
+ * Calls f for each value in a collection. If any call returns true this returns
+ * true (without checking the rest). If all returns false this returns false.
+ *
+ * @param {S} col The collection-like object.
+ * @param {function(this:T,?,?,S):boolean} f The function to call for every
+ *     value. This function takes 3 arguments (the value, the key or undefined
+ *     if the collection has no notion of keys, and the collection) and should
+ *     return a boolean.
+ * @param {T=} opt_obj  The object to be used as the value of 'this'
+ *     within `f`.
+ * @return {boolean} True if any value passes the test.
+ * @template T,S
+ */
+goog.structs.some = function(col, f, opt_obj) {
+  if (typeof col.some == 'function') {
+    return col.some(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return goog.array.some(/** @type {!Array<?>} */ (col), f, opt_obj);
+  }
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  for (var i = 0; i < l; i++) {
+    if (f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+
+/**
+ * Calls f for each value in a collection. If all calls return true this return
+ * true this returns true. If any returns false this returns false at this point
+ *  and does not continue to check the remaining values.
+ *
+ * @param {S} col The collection-like object.
+ * @param {function(this:T,?,?,S):boolean} f The function to call for every
+ *     value. This function takes 3 arguments (the value, the key or
+ *     undefined if the collection has no notion of keys, and the collection)
+ *     and should return a boolean.
+ * @param {T=} opt_obj  The object to be used as the value of 'this'
+ *     within `f`.
+ * @return {boolean} True if all key-value pairs pass the test.
+ * @template T,S
+ */
+goog.structs.every = function(col, f, opt_obj) {
+  if (typeof col.every == 'function') {
+    return col.every(f, opt_obj);
+  }
+  if (goog.isArrayLike(col) || typeof col === 'string') {
+    return goog.array.every(/** @type {!Array<?>} */ (col), f, opt_obj);
+  }
+  var keys = goog.structs.getKeys(col);
+  var values = goog.structs.getValues(col);
+  var l = values.length;
+  for (var i = 0; i < l; i++) {
+    if (!f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+//third_party/javascript/closure/uri/utils.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Simple utilities for dealing with URI strings.
+ *
+ * This is intended to be a lightweight alternative to constructing goog.Uri
+ * objects.  Whereas goog.Uri adds several kilobytes to the binary regardless
+ * of how much of its functionality you use, this is designed to be a set of
+ * mostly-independent utilities so that the compiler includes only what is
+ * necessary for the task.  Estimated savings of porting is 5k pre-gzip and
+ * 1.5k post-gzip.  To ensure the savings remain, future developers should
+ * avoid adding new functionality to existing functions, but instead create
+ * new ones and factor out shared code.
+ *
+ * Many of these utilities have limited functionality, tailored to common
+ * cases.  The query parameter utilities assume that the parameter keys are
+ * already encoded, since most keys are compile-time alphanumeric strings.  The
+ * query parameter mutation utilities also do not tolerate fragment identifiers.
+ *
+ * By design, these functions can be slower than goog.Uri equivalents.
+ * Repeated calls to some of functions may be quadratic in behavior for IE,
+ * although the effect is somewhat limited given the 2kb limit.
+ *
+ * One advantage of the limited functionality here is that this approach is
+ * less sensitive to differences in URI encodings than goog.Uri, since these
+ * functions operate on strings directly, rather than decoding them and
+ * then re-encoding.
+ *
+ * Uses features of RFC 3986 for parsing/formatting URIs:
+ *   http://www.ietf.org/rfc/rfc3986.txt
+ */
+
+goog.provide('goog.uri.utils');
+goog.provide('goog.uri.utils.ComponentIndex');
+goog.provide('goog.uri.utils.QueryArray');
+goog.provide('goog.uri.utils.QueryValue');
+goog.provide('goog.uri.utils.StandardQueryParam');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+goog.require('goog.string');
+
+
+/**
+ * Character codes inlined to avoid object allocations due to charCode.
+ * @enum {number}
+ * @private
+ */
+goog.uri.utils.CharCode_ = {
+  AMPERSAND: 38,
+  EQUAL: 61,
+  HASH: 35,
+  QUESTION: 63
+};
+
+
+/**
+ * Builds a URI string from already-encoded parts.
+ *
+ * No encoding is performed.  Any component may be omitted as either null or
+ * undefined.
+ *
+ * @param {?string=} opt_scheme The scheme such as 'http'.
+ * @param {?string=} opt_userInfo The user name before the '@'.
+ * @param {?string=} opt_domain The domain such as 'www.google.com', already
+ *     URI-encoded.
+ * @param {(string|number|null)=} opt_port The port number.
+ * @param {?string=} opt_path The path, already URI-encoded.  If it is not
+ *     empty, it must begin with a slash.
+ * @param {?string=} opt_queryData The URI-encoded query data.
+ * @param {?string=} opt_fragment The URI-encoded fragment identifier.
+ * @return {string} The fully combined URI.
+ */
+goog.uri.utils.buildFromEncodedParts = function(
+    opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_queryData,
+    opt_fragment) {
+  var out = '';
+
+  if (opt_scheme) {
+    out += opt_scheme + ':';
+  }
+
+  if (opt_domain) {
+    out += '//';
+
+    if (opt_userInfo) {
+      out += opt_userInfo + '@';
+    }
+
+    out += opt_domain;
+
+    if (opt_port) {
+      out += ':' + opt_port;
+    }
+  }
+
+  if (opt_path) {
+    out += opt_path;
+  }
+
+  if (opt_queryData) {
+    out += '?' + opt_queryData;
+  }
+
+  if (opt_fragment) {
+    out += '#' + opt_fragment;
+  }
+
+  return out;
+};
+
+
+/**
+ * A regular expression for breaking a URI into its component parts.
+ *
+ * {@link http://www.ietf.org/rfc/rfc3986.txt} says in Appendix B
+ * As the "first-match-wins" algorithm is identical to the "greedy"
+ * disambiguation method used by POSIX regular expressions, it is natural and
+ * commonplace to use a regular expression for parsing the potential five
+ * components of a URI reference.
+ *
+ * The following line is the regular expression for breaking-down a
+ * well-formed URI reference into its components.
+ *
+ * <pre>
+ * ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?
+ *  12            3  4          5       6  7        8 9
+ * </pre>
+ *
+ * The numbers in the second line above are only to assist readability; they
+ * indicate the reference points for each subexpression (i.e., each paired
+ * parenthesis). We refer to the value matched for subexpression <n> as $<n>.
+ * For example, matching the above expression to
+ * <pre>
+ *     http://www.ics.uci.edu/pub/ietf/uri/#Related
+ * </pre>
+ * results in the following subexpression matches:
+ * <pre>
+ *    $1 = http:
+ *    $2 = http
+ *    $3 = //www.ics.uci.edu
+ *    $4 = www.ics.uci.edu
+ *    $5 = /pub/ietf/uri/
+ *    $6 = <undefined>
+ *    $7 = <undefined>
+ *    $8 = #Related
+ *    $9 = Related
+ * </pre>
+ * where <undefined> indicates that the component is not present, as is the
+ * case for the query component in the above example. Therefore, we can
+ * determine the value of the five components as
+ * <pre>
+ *    scheme    = $2
+ *    authority = $4
+ *    path      = $5
+ *    query     = $7
+ *    fragment  = $9
+ * </pre>
+ *
+ * The regular expression has been modified slightly to expose the
+ * userInfo, domain, and port separately from the authority.
+ * The modified version yields
+ * <pre>
+ *    $1 = http              scheme
+ *    $2 = <undefined>       userInfo -\
+ *    $3 = www.ics.uci.edu   domain     | authority
+ *    $4 = <undefined>       port     -/
+ *    $5 = /pub/ietf/uri/    path
+ *    $6 = <undefined>       query without ?
+ *    $7 = Related           fragment without #
+ * </pre>
+ *
+ * TODO(user): separate out the authority terminating characters once this
+ * file is moved to ES6.
+ * @type {!RegExp}
+ * @private
+ */
+goog.uri.utils.splitRe_ = new RegExp(
+    '^' +  // Anchor against the entire string.
+    '(?:' +
+    '([^:/?#.]+)' +  // scheme - ignore special characters
+                     // used by other URL parts such as :,
+                     // ?, /, #, and .
+    ':)?' +
+    '(?://' +
+    '(?:([^\\\\/?#]*)@)?' +  // userInfo
+    '([^\\\\/?#]*?)' +       // domain
+    '(?::([0-9]+))?' +       // port
+    '(?=[\\\\/?#]|$)' +      // authority-terminating character.
+    ')?' +
+    '([^?#]+)?' +          // path
+    '(?:\\?([^#]*))?' +    // query
+    '(?:#([\\s\\S]*))?' +  // fragment. Can't use '.*' with 's' flag as Firefox
+                           // doesn't support the flag, and can't use an
+                           // "everything set" ([^]) as IE10 doesn't match any
+                           // characters with it.
+    '$');
+
+
+/**
+ * The index of each URI component in the return value of goog.uri.utils.split.
+ * @enum {number}
+ */
+goog.uri.utils.ComponentIndex = {
+  SCHEME: 1,
+  USER_INFO: 2,
+  DOMAIN: 3,
+  PORT: 4,
+  PATH: 5,
+  QUERY_DATA: 6,
+  FRAGMENT: 7
+};
+
+
+/**
+ * Splits a URI into its component parts.
+ *
+ * Each component can be accessed via the component indices; for example:
+ * <pre>
+ * goog.uri.utils.split(someStr)[goog.uri.utils.ComponentIndex.QUERY_DATA];
+ * </pre>
+ *
+ * @param {string} uri The URI string to examine.
+ * @return {!Array<string|undefined>} Each component still URI-encoded.
+ *     Each component that is present will contain the encoded value, whereas
+ *     components that are not present will be undefined or empty, depending
+ *     on the browser's regular expression implementation.  Never null, since
+ *     arbitrary strings may still look like path names.
+ */
+goog.uri.utils.split = function(uri) {
+  // See @return comment -- never null.
+  return /** @type {!Array<string|undefined>} */ (
+      uri.match(goog.uri.utils.splitRe_));
+};
+
+
+/**
+ * @param {?string} uri A possibly null string.
+ * @param {boolean=} opt_preserveReserved If true, percent-encoding of RFC-3986
+ *     reserved characters will not be removed.
+ * @return {?string} The string URI-decoded, or null if uri is null.
+ * @private
+ */
+goog.uri.utils.decodeIfPossible_ = function(uri, opt_preserveReserved) {
+  if (!uri) {
+    return uri;
+  }
+
+  return opt_preserveReserved ? decodeURI(uri) : decodeURIComponent(uri);
+};
+
+
+/**
+ * Gets a URI component by index.
+ *
+ * It is preferred to use the getPathEncoded() variety of functions ahead,
+ * since they are more readable.
+ *
+ * @param {goog.uri.utils.ComponentIndex} componentIndex The component index.
+ * @param {string} uri The URI to examine.
+ * @return {?string} The still-encoded component, or null if the component
+ *     is not present.
+ * @private
+ */
+goog.uri.utils.getComponentByIndex_ = function(componentIndex, uri) {
+  // Convert undefined, null, and empty string into null.
+  return goog.uri.utils.split(uri)[componentIndex] || null;
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The protocol or scheme, or null if none.  Does not
+ *     include trailing colons or slashes.
+ */
+goog.uri.utils.getScheme = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(
+      goog.uri.utils.ComponentIndex.SCHEME, uri);
+};
+
+
+/**
+ * Gets the effective scheme for the URL.  If the URL is relative then the
+ * scheme is derived from the page's location.
+ * @param {string} uri The URI to examine.
+ * @return {string} The protocol or scheme, always lower case.
+ */
+goog.uri.utils.getEffectiveScheme = function(uri) {
+  var scheme = goog.uri.utils.getScheme(uri);
+  if (!scheme && goog.global.self && goog.global.self.location) {
+    var protocol = goog.global.self.location.protocol;
+    scheme = protocol.substr(0, protocol.length - 1);
+  }
+  // NOTE: When called from a web worker in Firefox 3.5, location may be null.
+  // All other browsers with web workers support self.location from the worker.
+  return scheme ? scheme.toLowerCase() : '';
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The user name still encoded, or null if none.
+ */
+goog.uri.utils.getUserInfoEncoded = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(
+      goog.uri.utils.ComponentIndex.USER_INFO, uri);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The decoded user info, or null if none.
+ */
+goog.uri.utils.getUserInfo = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(
+      goog.uri.utils.getUserInfoEncoded(uri));
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The domain name still encoded, or null if none.
+ */
+goog.uri.utils.getDomainEncoded = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(
+      goog.uri.utils.ComponentIndex.DOMAIN, uri);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The decoded domain, or null if none.
+ */
+goog.uri.utils.getDomain = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(
+      goog.uri.utils.getDomainEncoded(uri), true /* opt_preserveReserved */);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?number} The port number, or null if none.
+ */
+goog.uri.utils.getPort = function(uri) {
+  // Coerce to a number.  If the result of getComponentByIndex_ is null or
+  // non-numeric, the number coersion yields NaN.  This will then return
+  // null for all non-numeric cases (though also zero, which isn't a relevant
+  // port number).
+  return Number(
+             goog.uri.utils.getComponentByIndex_(
+                 goog.uri.utils.ComponentIndex.PORT, uri)) ||
+      null;
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The path still encoded, or null if none. Includes the
+ *     leading slash, if any.
+ */
+goog.uri.utils.getPathEncoded = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(
+      goog.uri.utils.ComponentIndex.PATH, uri);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The decoded path, or null if none.  Includes the leading
+ *     slash, if any.
+ */
+goog.uri.utils.getPath = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(
+      goog.uri.utils.getPathEncoded(uri), true /* opt_preserveReserved */);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The query data still encoded, or null if none.  Does not
+ *     include the question mark itself.
+ */
+goog.uri.utils.getQueryData = function(uri) {
+  return goog.uri.utils.getComponentByIndex_(
+      goog.uri.utils.ComponentIndex.QUERY_DATA, uri);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The fragment identifier, or null if none.  Does not
+ *     include the hash mark itself.
+ */
+goog.uri.utils.getFragmentEncoded = function(uri) {
+  // The hash mark may not appear in any other part of the URL.
+  var hashIndex = uri.indexOf('#');
+  return hashIndex < 0 ? null : uri.substr(hashIndex + 1);
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @param {?string} fragment The encoded fragment identifier, or null if none.
+ *     Does not include the hash mark itself.
+ * @return {string} The URI with the fragment set.
+ */
+goog.uri.utils.setFragmentEncoded = function(uri, fragment) {
+  return goog.uri.utils.removeFragment(uri) + (fragment ? '#' + fragment : '');
+};
+
+
+/**
+ * @param {string} uri The URI to examine.
+ * @return {?string} The decoded fragment identifier, or null if none.  Does
+ *     not include the hash mark.
+ */
+goog.uri.utils.getFragment = function(uri) {
+  return goog.uri.utils.decodeIfPossible_(
+      goog.uri.utils.getFragmentEncoded(uri));
+};
+
+
+/**
+ * Extracts everything up to the port of the URI.
+ * @param {string} uri The URI string.
+ * @return {string} Everything up to and including the port.
+ */
+goog.uri.utils.getHost = function(uri) {
+  var pieces = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(
+      pieces[goog.uri.utils.ComponentIndex.SCHEME],
+      pieces[goog.uri.utils.ComponentIndex.USER_INFO],
+      pieces[goog.uri.utils.ComponentIndex.DOMAIN],
+      pieces[goog.uri.utils.ComponentIndex.PORT]);
+};
+
+
+/**
+ * Returns the origin for a given URL.
+ * @param {string} uri The URI string.
+ * @return {string} Everything up to and including the port.
+ */
+goog.uri.utils.getOrigin = function(uri) {
+  var pieces = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(
+      pieces[goog.uri.utils.ComponentIndex.SCHEME], null /* opt_userInfo */,
+      pieces[goog.uri.utils.ComponentIndex.DOMAIN],
+      pieces[goog.uri.utils.ComponentIndex.PORT]);
+};
+
+
+/**
+ * Extracts the path of the URL and everything after.
+ * @param {string} uri The URI string.
+ * @return {string} The URI, starting at the path and including the query
+ *     parameters and fragment identifier.
+ */
+goog.uri.utils.getPathAndAfter = function(uri) {
+  var pieces = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(
+      null, null, null, null, pieces[goog.uri.utils.ComponentIndex.PATH],
+      pieces[goog.uri.utils.ComponentIndex.QUERY_DATA],
+      pieces[goog.uri.utils.ComponentIndex.FRAGMENT]);
+};
+
+
+/**
+ * Gets the URI with the fragment identifier removed.
+ * @param {string} uri The URI to examine.
+ * @return {string} Everything preceding the hash mark.
+ */
+goog.uri.utils.removeFragment = function(uri) {
+  // The hash mark may not appear in any other part of the URL.
+  var hashIndex = uri.indexOf('#');
+  return hashIndex < 0 ? uri : uri.substr(0, hashIndex);
+};
+
+
+/**
+ * Ensures that two URI's have the exact same domain, scheme, and port.
+ *
+ * Unlike the version in goog.Uri, this checks protocol, and therefore is
+ * suitable for checking against the browser's same-origin policy.
+ *
+ * @param {string} uri1 The first URI.
+ * @param {string} uri2 The second URI.
+ * @return {boolean} Whether they have the same scheme, domain and port.
+ */
+goog.uri.utils.haveSameDomain = function(uri1, uri2) {
+  var pieces1 = goog.uri.utils.split(uri1);
+  var pieces2 = goog.uri.utils.split(uri2);
+  return pieces1[goog.uri.utils.ComponentIndex.DOMAIN] ==
+      pieces2[goog.uri.utils.ComponentIndex.DOMAIN] &&
+      pieces1[goog.uri.utils.ComponentIndex.SCHEME] ==
+      pieces2[goog.uri.utils.ComponentIndex.SCHEME] &&
+      pieces1[goog.uri.utils.ComponentIndex.PORT] ==
+      pieces2[goog.uri.utils.ComponentIndex.PORT];
+};
+
+
+/**
+ * Asserts that there are no fragment or query identifiers, only in uncompiled
+ * mode.
+ * @param {string} uri The URI to examine.
+ * @private
+ */
+goog.uri.utils.assertNoFragmentsOrQueries_ = function(uri) {
+  goog.asserts.assert(
+      uri.indexOf('#') < 0 && uri.indexOf('?') < 0,
+      'goog.uri.utils: Fragment or query identifiers are not supported: [%s]',
+      uri);
+};
+
+
+/**
+ * Supported query parameter values by the parameter serializing utilities.
+ *
+ * If a value is null or undefined, the key-value pair is skipped, as an easy
+ * way to omit parameters conditionally.  Non-array parameters are converted
+ * to a string and URI encoded.  Array values are expanded into multiple
+ * &key=value pairs, with each element stringized and URI-encoded.
+ *
+ * @typedef {*}
+ */
+goog.uri.utils.QueryValue;
+
+
+/**
+ * An array representing a set of query parameters with alternating keys
+ * and values.
+ *
+ * Keys are assumed to be URI encoded already and live at even indices.  See
+ * goog.uri.utils.QueryValue for details on how parameter values are encoded.
+ *
+ * Example:
+ * <pre>
+ * var data = [
+ *   // Simple param: ?name=BobBarker
+ *   'name', 'BobBarker',
+ *   // Conditional param -- may be omitted entirely.
+ *   'specialDietaryNeeds', hasDietaryNeeds() ? getDietaryNeeds() : null,
+ *   // Multi-valued param: &house=LosAngeles&house=NewYork&house=null
+ *   'house', ['LosAngeles', 'NewYork', null]
+ * ];
+ * </pre>
+ *
+ * @typedef {!Array<string|goog.uri.utils.QueryValue>}
+ */
+goog.uri.utils.QueryArray;
+
+
+/**
+ * Parses encoded query parameters and calls callback function for every
+ * parameter found in the string.
+ *
+ * Missing value of parameter (e.g. “…&key&…”) is treated as if the value was an
+ * empty string.  Keys may be empty strings (e.g. “…&=value&…”) which also means
+ * that “…&=&…” and “…&&…” will result in an empty key and value.
+ *
+ * @param {string} encodedQuery Encoded query string excluding question mark at
+ *     the beginning.
+ * @param {function(string, string)} callback Function called for every
+ *     parameter found in query string.  The first argument (name) will not be
+ *     urldecoded (so the function is consistent with buildQueryData), but the
+ *     second will.  If the parameter has no value (i.e. “=” was not present)
+ *     the second argument (value) will be an empty string.
+ */
+goog.uri.utils.parseQueryData = function(encodedQuery, callback) {
+  if (!encodedQuery) {
+    return;
+  }
+  var pairs = encodedQuery.split('&');
+  for (var i = 0; i < pairs.length; i++) {
+    var indexOfEquals = pairs[i].indexOf('=');
+    var name = null;
+    var value = null;
+    if (indexOfEquals >= 0) {
+      name = pairs[i].substring(0, indexOfEquals);
+      value = pairs[i].substring(indexOfEquals + 1);
+    } else {
+      name = pairs[i];
+    }
+    callback(name, value ? goog.string.urlDecode(value) : '');
+  }
+};
+
+
+/**
+ * Split the URI into 3 parts where the [1] is the queryData without a leading
+ * '?'. For example, the URI http://foo.com/bar?a=b#abc returns
+ * ['http://foo.com/bar','a=b','#abc'].
+ * @param {string} uri The URI to parse.
+ * @return {!Array<string>} An array representation of uri of length 3 where the
+ *     middle value is the queryData without a leading '?'.
+ * @private
+ */
+goog.uri.utils.splitQueryData_ = function(uri) {
+  // Find the query data and hash.
+  var hashIndex = uri.indexOf('#');
+  if (hashIndex < 0) {
+    hashIndex = uri.length;
+  }
+  var questionIndex = uri.indexOf('?');
+  var queryData;
+  if (questionIndex < 0 || questionIndex > hashIndex) {
+    questionIndex = hashIndex;
+    queryData = '';
+  } else {
+    queryData = uri.substring(questionIndex + 1, hashIndex);
+  }
+  return [uri.substr(0, questionIndex), queryData, uri.substr(hashIndex)];
+};
+
+
+/**
+ * Join an array created by splitQueryData_ back into a URI.
+ * @param {!Array<string>} parts A URI in the form generated by splitQueryData_.
+ * @return {string} The joined URI.
+ * @private
+ */
+goog.uri.utils.joinQueryData_ = function(parts) {
+  return parts[0] + (parts[1] ? '?' + parts[1] : '') + parts[2];
+};
+
+
+/**
+ * @param {string} queryData
+ * @param {string} newData
+ * @return {string}
+ * @private
+ */
+goog.uri.utils.appendQueryData_ = function(queryData, newData) {
+  if (!newData) {
+    return queryData;
+  }
+  return queryData ? queryData + '&' + newData : newData;
+};
+
+
+/**
+ * @param {string} uri
+ * @param {string} queryData
+ * @return {string}
+ * @private
+ */
+goog.uri.utils.appendQueryDataToUri_ = function(uri, queryData) {
+  if (!queryData) {
+    return uri;
+  }
+  var parts = goog.uri.utils.splitQueryData_(uri);
+  parts[1] = goog.uri.utils.appendQueryData_(parts[1], queryData);
+  return goog.uri.utils.joinQueryData_(parts);
+};
+
+
+/**
+ * Appends key=value pairs to an array, supporting multi-valued objects.
+ * @param {*} key The key prefix.
+ * @param {goog.uri.utils.QueryValue} value The value to serialize.
+ * @param {!Array<string>} pairs The array to which the 'key=value' strings
+ *     should be appended.
+ * @private
+ */
+goog.uri.utils.appendKeyValuePairs_ = function(key, value, pairs) {
+  goog.asserts.assertString(key);
+  if (Array.isArray(value)) {
+    // Convince the compiler it's an array.
+    goog.asserts.assertArray(value);
+    for (var j = 0; j < value.length; j++) {
+      // Convert to string explicitly, to short circuit the null and array
+      // logic in this function -- this ensures that null and undefined get
+      // written as literal 'null' and 'undefined', and arrays don't get
+      // expanded out but instead encoded in the default way.
+      goog.uri.utils.appendKeyValuePairs_(key, String(value[j]), pairs);
+    }
+  } else if (value != null) {
+    // Skip a top-level null or undefined entirely.
+    pairs.push(
+        key +
+        // Check for empty string. Zero gets encoded into the url as literal
+        // strings.  For empty string, skip the equal sign, to be consistent
+        // with UriBuilder.java.
+        (value === '' ? '' : '=' + goog.string.urlEncode(value)));
+  }
+};
+
+
+/**
+ * Builds a query data string from a sequence of alternating keys and values.
+ * Currently generates "&key&" for empty args.
+ *
+ * @param {!IArrayLike<string|goog.uri.utils.QueryValue>} keysAndValues
+ *     Alternating keys and values. See the QueryArray typedef.
+ * @param {number=} opt_startIndex A start offset into the arary, defaults to 0.
+ * @return {string} The encoded query string, in the form 'a=1&b=2'.
+ */
+goog.uri.utils.buildQueryData = function(keysAndValues, opt_startIndex) {
+  goog.asserts.assert(
+      Math.max(keysAndValues.length - (opt_startIndex || 0), 0) % 2 == 0,
+      'goog.uri.utils: Key/value lists must be even in length.');
+
+  var params = [];
+  for (var i = opt_startIndex || 0; i < keysAndValues.length; i += 2) {
+    var key = /** @type {string} */ (keysAndValues[i]);
+    goog.uri.utils.appendKeyValuePairs_(key, keysAndValues[i + 1], params);
+  }
+  return params.join('&');
+};
+
+
+/**
+ * Builds a query data string from a map.
+ * Currently generates "&key&" for empty args.
+ *
+ * @param {!Object<string, goog.uri.utils.QueryValue>} map An object where keys
+ *     are URI-encoded parameter keys, and the values are arbitrary types
+ *     or arrays. Keys with a null value are dropped.
+ * @return {string} The encoded query string, in the form 'a=1&b=2'.
+ */
+goog.uri.utils.buildQueryDataFromMap = function(map) {
+  var params = [];
+  for (var key in map) {
+    goog.uri.utils.appendKeyValuePairs_(key, map[key], params);
+  }
+  return params.join('&');
+};
+
+
+/**
+ * Appends URI parameters to an existing URI.
+ *
+ * The variable arguments may contain alternating keys and values.  Keys are
+ * assumed to be already URI encoded.  The values should not be URI-encoded,
+ * and will instead be encoded by this function.
+ * <pre>
+ * appendParams('http://www.foo.com?existing=true',
+ *     'key1', 'value1',
+ *     'key2', 'value?willBeEncoded',
+ *     'key3', ['valueA', 'valueB', 'valueC'],
+ *     'key4', null);
+ * result: 'http://www.foo.com?existing=true&' +
+ *     'key1=value1&' +
+ *     'key2=value%3FwillBeEncoded&' +
+ *     'key3=valueA&key3=valueB&key3=valueC'
+ * </pre>
+ *
+ * A single call to this function will not exhibit quadratic behavior in IE,
+ * whereas multiple repeated calls may, although the effect is limited by
+ * fact that URL's generally can't exceed 2kb.
+ *
+ * @param {string} uri The original URI, which may already have query data.
+ * @param {...(goog.uri.utils.QueryArray|goog.uri.utils.QueryValue)}
+ * var_args
+ *     An array or argument list conforming to goog.uri.utils.QueryArray.
+ * @return {string} The URI with all query parameters added.
+ */
+goog.uri.utils.appendParams = function(uri, var_args) {
+  var queryData = arguments.length == 2 ?
+      goog.uri.utils.buildQueryData(arguments[1], 0) :
+      goog.uri.utils.buildQueryData(arguments, 1);
+  return goog.uri.utils.appendQueryDataToUri_(uri, queryData);
+};
+
+
+/**
+ * Appends query parameters from a map.
+ *
+ * @param {string} uri The original URI, which may already have query data.
+ * @param {!Object<goog.uri.utils.QueryValue>} map An object where keys are
+ *     URI-encoded parameter keys, and the values are arbitrary types or arrays.
+ *     Keys with a null value are dropped.
+ * @return {string} The new parameters.
+ */
+goog.uri.utils.appendParamsFromMap = function(uri, map) {
+  var queryData = goog.uri.utils.buildQueryDataFromMap(map);
+  return goog.uri.utils.appendQueryDataToUri_(uri, queryData);
+};
+
+
+/**
+ * Appends a single URI parameter.
+ *
+ * Repeated calls to this can exhibit quadratic behavior in IE6 due to the
+ * way string append works, though it should be limited given the 2kb limit.
+ *
+ * @param {string} uri The original URI, which may already have query data.
+ * @param {string} key The key, which must already be URI encoded.
+ * @param {*=} opt_value The value, which will be stringized and encoded
+ *     (assumed not already to be encoded).  If omitted, undefined, or null, the
+ *     key will be added as a valueless parameter.
+ * @return {string} The URI with the query parameter added.
+ */
+goog.uri.utils.appendParam = function(uri, key, opt_value) {
+  var value = (opt_value != null) ? '=' + goog.string.urlEncode(opt_value) : '';
+  return goog.uri.utils.appendQueryDataToUri_(uri, key + value);
+};
+
+
+/**
+ * Finds the next instance of a query parameter with the specified name.
+ *
+ * Does not instantiate any objects.
+ *
+ * @param {string} uri The URI to search.  May contain a fragment identifier
+ *     if opt_hashIndex is specified.
+ * @param {number} startIndex The index to begin searching for the key at.  A
+ *     match may be found even if this is one character after the ampersand.
+ * @param {string} keyEncoded The URI-encoded key.
+ * @param {number} hashOrEndIndex Index to stop looking at.  If a hash
+ *     mark is present, it should be its index, otherwise it should be the
+ *     length of the string.
+ * @return {number} The position of the first character in the key's name,
+ *     immediately after either a question mark or a dot.
+ * @private
+ */
+goog.uri.utils.findParam_ = function(
+    uri, startIndex, keyEncoded, hashOrEndIndex) {
+  var index = startIndex;
+  var keyLength = keyEncoded.length;
+
+  // Search for the key itself and post-filter for surronuding punctuation,
+  // rather than expensively building a regexp.
+  while ((index = uri.indexOf(keyEncoded, index)) >= 0 &&
+         index < hashOrEndIndex) {
+    var precedingChar = uri.charCodeAt(index - 1);
+    // Ensure that the preceding character is '&' or '?'.
+    if (precedingChar == goog.uri.utils.CharCode_.AMPERSAND ||
+        precedingChar == goog.uri.utils.CharCode_.QUESTION) {
+      // Ensure the following character is '&', '=', '#', or NaN
+      // (end of string).
+      var followingChar = uri.charCodeAt(index + keyLength);
+      if (!followingChar || followingChar == goog.uri.utils.CharCode_.EQUAL ||
+          followingChar == goog.uri.utils.CharCode_.AMPERSAND ||
+          followingChar == goog.uri.utils.CharCode_.HASH) {
+        return index;
+      }
+    }
+    index += keyLength + 1;
+  }
+
+  return -1;
+};
+
+
+/**
+ * Regular expression for finding a hash mark or end of string.
+ * @type {RegExp}
+ * @private
+ */
+goog.uri.utils.hashOrEndRe_ = /#|$/;
+
+
+/**
+ * Determines if the URI contains a specific key.
+ *
+ * Performs no object instantiations.
+ *
+ * @param {string} uri The URI to process.  May contain a fragment
+ *     identifier.
+ * @param {string} keyEncoded The URI-encoded key.  Case-sensitive.
+ * @return {boolean} Whether the key is present.
+ */
+goog.uri.utils.hasParam = function(uri, keyEncoded) {
+  return goog.uri.utils.findParam_(
+             uri, 0, keyEncoded, uri.search(goog.uri.utils.hashOrEndRe_)) >= 0;
+};
+
+
+/**
+ * Gets the first value of a query parameter.
+ * @param {string} uri The URI to process.  May contain a fragment.
+ * @param {string} keyEncoded The URI-encoded key.  Case-sensitive.
+ * @return {?string} The first value of the parameter (URI-decoded), or null
+ *     if the parameter is not found.
+ */
+goog.uri.utils.getParamValue = function(uri, keyEncoded) {
+  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
+  var foundIndex =
+      goog.uri.utils.findParam_(uri, 0, keyEncoded, hashOrEndIndex);
+
+  if (foundIndex < 0) {
+    return null;
+  } else {
+    var endPosition = uri.indexOf('&', foundIndex);
+    if (endPosition < 0 || endPosition > hashOrEndIndex) {
+      endPosition = hashOrEndIndex;
+    }
+    // Progress forth to the end of the "key=" or "key&" substring.
+    foundIndex += keyEncoded.length + 1;
+    // Use substr, because it (unlike substring) will return empty string
+    // if foundIndex > endPosition.
+    return goog.string.urlDecode(
+        uri.substr(foundIndex, endPosition - foundIndex));
+  }
+};
+
+
+/**
+ * Gets all values of a query parameter.
+ * @param {string} uri The URI to process.  May contain a fragment.
+ * @param {string} keyEncoded The URI-encoded key.  Case-sensitive.
+ * @return {!Array<string>} All URI-decoded values with the given key.
+ *     If the key is not found, this will have length 0, but never be null.
+ */
+goog.uri.utils.getParamValues = function(uri, keyEncoded) {
+  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
+  var position = 0;
+  var foundIndex;
+  var result = [];
+
+  while ((foundIndex = goog.uri.utils.findParam_(
+              uri, position, keyEncoded, hashOrEndIndex)) >= 0) {
+    // Find where this parameter ends, either the '&' or the end of the
+    // query parameters.
+    position = uri.indexOf('&', foundIndex);
+    if (position < 0 || position > hashOrEndIndex) {
+      position = hashOrEndIndex;
+    }
+
+    // Progress forth to the end of the "key=" or "key&" substring.
+    foundIndex += keyEncoded.length + 1;
+    // Use substr, because it (unlike substring) will return empty string
+    // if foundIndex > position.
+    result.push(
+        goog.string.urlDecode(uri.substr(foundIndex, position - foundIndex)));
+  }
+
+  return result;
+};
+
+
+/**
+ * Regexp to find trailing question marks and ampersands.
+ * @type {RegExp}
+ * @private
+ */
+goog.uri.utils.trailingQueryPunctuationRe_ = /[?&]($|#)/;
+
+
+/**
+ * Removes all instances of a query parameter.
+ * @param {string} uri The URI to process.  Must not contain a fragment.
+ * @param {string} keyEncoded The URI-encoded key.
+ * @return {string} The URI with all instances of the parameter removed.
+ */
+goog.uri.utils.removeParam = function(uri, keyEncoded) {
+  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
+  var position = 0;
+  var foundIndex;
+  var buffer = [];
+
+  // Look for a query parameter.
+  while ((foundIndex = goog.uri.utils.findParam_(
+              uri, position, keyEncoded, hashOrEndIndex)) >= 0) {
+    // Get the portion of the query string up to, but not including, the ?
+    // or & starting the parameter.
+    buffer.push(uri.substring(position, foundIndex));
+    // Progress to immediately after the '&'.  If not found, go to the end.
+    // Avoid including the hash mark.
+    position = Math.min(
+        (uri.indexOf('&', foundIndex) + 1) || hashOrEndIndex, hashOrEndIndex);
+  }
+
+  // Append everything that is remaining.
+  buffer.push(uri.substr(position));
+
+  // Join the buffer, and remove trailing punctuation that remains.
+  return buffer.join('').replace(
+      goog.uri.utils.trailingQueryPunctuationRe_, '$1');
+};
+
+
+/**
+ * Replaces all existing definitions of a parameter with a single definition.
+ *
+ * Repeated calls to this can exhibit quadratic behavior due to the need to
+ * find existing instances and reconstruct the string, though it should be
+ * limited given the 2kb limit.  Consider using appendParams or setParamsFromMap
+ * to update multiple parameters in bulk.
+ *
+ * @param {string} uri The original URI, which may already have query data.
+ * @param {string} keyEncoded The key, which must already be URI encoded.
+ * @param {*} value The value, which will be stringized and encoded (assumed
+ *     not already to be encoded).
+ * @return {string} The URI with the query parameter added.
+ */
+goog.uri.utils.setParam = function(uri, keyEncoded, value) {
+  return goog.uri.utils.appendParam(
+      goog.uri.utils.removeParam(uri, keyEncoded), keyEncoded, value);
+};
+
+
+/**
+ * Effeciently set or remove multiple query parameters in a URI. Order of
+ * unchanged parameters will not be modified, all updated parameters will be
+ * appended to the end of the query. Params with values of null or undefined are
+ * removed.
+ *
+ * @param {string} uri The URI to process.
+ * @param {!Object<string, goog.uri.utils.QueryValue>} params A list of
+ *     parameters to update. If null or undefined, the param will be removed.
+ * @return {string} An updated URI where the query data has been updated with
+ *     the params.
+ */
+goog.uri.utils.setParamsFromMap = function(uri, params) {
+  var parts = goog.uri.utils.splitQueryData_(uri);
+  var queryData = parts[1];
+  var buffer = [];
+  if (queryData) {
+    goog.array.forEach(queryData.split('&'), function(pair) {
+      var indexOfEquals = pair.indexOf('=');
+      var name = indexOfEquals >= 0 ? pair.substr(0, indexOfEquals) : pair;
+      if (!params.hasOwnProperty(name)) {
+        buffer.push(pair);
+      }
+    });
+  }
+  parts[1] = goog.uri.utils.appendQueryData_(
+      buffer.join('&'), goog.uri.utils.buildQueryDataFromMap(params));
+  return goog.uri.utils.joinQueryData_(parts);
+};
+
+
+/**
+ * Generates a URI path using a given URI and a path with checks to
+ * prevent consecutive "//". The baseUri passed in must not contain
+ * query or fragment identifiers. The path to append may not contain query or
+ * fragment identifiers.
+ *
+ * @param {string} baseUri URI to use as the base.
+ * @param {string} path Path to append.
+ * @return {string} Updated URI.
+ */
+goog.uri.utils.appendPath = function(baseUri, path) {
+  goog.uri.utils.assertNoFragmentsOrQueries_(baseUri);
+
+  // Remove any trailing '/'
+  if (goog.string.endsWith(baseUri, '/')) {
+    baseUri = baseUri.substr(0, baseUri.length - 1);
+  }
+  // Remove any leading '/'
+  if (goog.string.startsWith(path, '/')) {
+    path = path.substr(1);
+  }
+  return goog.string.buildString(baseUri, '/', path);
+};
+
+
+/**
+ * Replaces the path.
+ * @param {string} uri URI to use as the base.
+ * @param {string} path New path.
+ * @return {string} Updated URI.
+ */
+goog.uri.utils.setPath = function(uri, path) {
+  // Add any missing '/'.
+  if (!goog.string.startsWith(path, '/')) {
+    path = '/' + path;
+  }
+  var parts = goog.uri.utils.split(uri);
+  return goog.uri.utils.buildFromEncodedParts(
+      parts[goog.uri.utils.ComponentIndex.SCHEME],
+      parts[goog.uri.utils.ComponentIndex.USER_INFO],
+      parts[goog.uri.utils.ComponentIndex.DOMAIN],
+      parts[goog.uri.utils.ComponentIndex.PORT], path,
+      parts[goog.uri.utils.ComponentIndex.QUERY_DATA],
+      parts[goog.uri.utils.ComponentIndex.FRAGMENT]);
+};
+
+
+/**
+ * Standard supported query parameters.
+ * @enum {string}
+ */
+goog.uri.utils.StandardQueryParam = {
+
+  /** Unused parameter for unique-ifying. */
+  RANDOM: 'zx'
+};
+
+
+/**
+ * Sets the zx parameter of a URI to a random value.
+ * @param {string} uri Any URI.
+ * @return {string} That URI with the "zx" parameter added or replaced to
+ *     contain a random string.
+ */
+goog.uri.utils.makeUnique = function(uri) {
+  return goog.uri.utils.setParam(
+      uri, goog.uri.utils.StandardQueryParam.RANDOM,
+      goog.string.getRandomString());
+};
+
+//third_party/javascript/closure/uri/uri.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Class for parsing and formatting URIs.
+ *
+ * Use goog.Uri(string) to parse a URI string.  Use goog.Uri.create(...) to
+ * create a new instance of the goog.Uri object from Uri parts.
+ *
+ * e.g: <code>var myUri = new goog.Uri(window.location);</code>
+ *
+ * Implements RFC 3986 for parsing/formatting URIs.
+ * http://www.ietf.org/rfc/rfc3986.txt
+ *
+ * Some changes have been made to the interface (more like .NETs), though the
+ * internal representation is now of un-encoded parts, this will change the
+ * behavior slightly.
+ */
+
+goog.provide('goog.Uri');
+goog.provide('goog.Uri.QueryData');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+goog.require('goog.string');
+goog.require('goog.structs');
+goog.require('goog.structs.Map');
+goog.require('goog.uri.utils');
+goog.require('goog.uri.utils.ComponentIndex');
+goog.require('goog.uri.utils.StandardQueryParam');
+
+
+
+/**
+ * This class contains setters and getters for the parts of the URI.
+ * The <code>getXyz</code>/<code>setXyz</code> methods return the decoded part
+ * -- so<code>goog.Uri.parse('/foo%20bar').getPath()</code> will return the
+ * decoded path, <code>/foo bar</code>.
+ *
+ * Reserved characters (see RFC 3986 section 2.2) can be present in
+ * their percent-encoded form in scheme, domain, and path URI components and
+ * will not be auto-decoded. For example:
+ * <code>goog.Uri.parse('rel%61tive/path%2fto/resource').getPath()</code> will
+ * return <code>relative/path%2fto/resource</code>.
+ *
+ * The constructor accepts an optional unparsed, raw URI string.  The parser
+ * is relaxed, so special characters that aren't escaped but don't cause
+ * ambiguities will not cause parse failures.
+ *
+ * All setters return <code>this</code> and so may be chained, a la
+ * <code>goog.Uri.parse('/foo').setFragment('part').toString()</code>.
+ *
+ * @param {*=} opt_uri Optional string URI to parse
+ *        (use goog.Uri.create() to create a URI from parts), or if
+ *        a goog.Uri is passed, a clone is created.
+ * @param {boolean=} opt_ignoreCase If true, #getParameterValue will ignore
+ * the case of the parameter name.
+ *
+ * @throws URIError If opt_uri is provided and URI is malformed (that is,
+ *     if decodeURIComponent fails on any of the URI components).
+ * @constructor
+ * @struct
+ */
+goog.Uri = function(opt_uri, opt_ignoreCase) {
+  /**
+   * Scheme such as "http".
+   * @private {string}
+   */
+  this.scheme_ = '';
+
+  /**
+   * User credentials in the form "username:password".
+   * @private {string}
+   */
+  this.userInfo_ = '';
+
+  /**
+   * Domain part, e.g. "www.google.com".
+   * @private {string}
+   */
+  this.domain_ = '';
+
+  /**
+   * Port, e.g. 8080.
+   * @private {?number}
+   */
+  this.port_ = null;
+
+  /**
+   * Path, e.g. "/tests/img.png".
+   * @private {string}
+   */
+  this.path_ = '';
+
+  /**
+   * The fragment without the #.
+   * @private {string}
+   */
+  this.fragment_ = '';
+
+  /**
+   * Whether or not this Uri should be treated as Read Only.
+   * @private {boolean}
+   */
+  this.isReadOnly_ = false;
+
+  /**
+   * Whether or not to ignore case when comparing query params.
+   * @private {boolean}
+   */
+  this.ignoreCase_ = false;
+
+  /**
+   * Object representing query data.
+   * @private {!goog.Uri.QueryData}
+   */
+  this.queryData_;
+
+  // Parse in the uri string
+  var m;
+  if (opt_uri instanceof goog.Uri) {
+    this.ignoreCase_ = (opt_ignoreCase !== undefined) ? opt_ignoreCase :
+                                                        opt_uri.getIgnoreCase();
+    this.setScheme(opt_uri.getScheme());
+    this.setUserInfo(opt_uri.getUserInfo());
+    this.setDomain(opt_uri.getDomain());
+    this.setPort(opt_uri.getPort());
+    this.setPath(opt_uri.getPath());
+    this.setQueryData(opt_uri.getQueryData().clone());
+    this.setFragment(opt_uri.getFragment());
+  } else if (opt_uri && (m = goog.uri.utils.split(String(opt_uri)))) {
+    this.ignoreCase_ = !!opt_ignoreCase;
+
+    // Set the parts -- decoding as we do so.
+    // COMPATIBILITY NOTE - In IE, unmatched fields may be empty strings,
+    // whereas in other browsers they will be undefined.
+    this.setScheme(m[goog.uri.utils.ComponentIndex.SCHEME] || '', true);
+    this.setUserInfo(m[goog.uri.utils.ComponentIndex.USER_INFO] || '', true);
+    this.setDomain(m[goog.uri.utils.ComponentIndex.DOMAIN] || '', true);
+    this.setPort(m[goog.uri.utils.ComponentIndex.PORT]);
+    this.setPath(m[goog.uri.utils.ComponentIndex.PATH] || '', true);
+    this.setQueryData(m[goog.uri.utils.ComponentIndex.QUERY_DATA] || '', true);
+    this.setFragment(m[goog.uri.utils.ComponentIndex.FRAGMENT] || '', true);
+
+  } else {
+    this.ignoreCase_ = !!opt_ignoreCase;
+    this.queryData_ = new goog.Uri.QueryData(null, this.ignoreCase_);
+  }
+};
+
+
+/**
+ * Parameter name added to stop caching.
+ * @type {string}
+ */
+goog.Uri.RANDOM_PARAM = goog.uri.utils.StandardQueryParam.RANDOM;
+
+
+/**
+ * @return {string} The string form of the url.
+ * @override
+ */
+goog.Uri.prototype.toString = function() {
+  var out = [];
+
+  var scheme = this.getScheme();
+  if (scheme) {
+    out.push(
+        goog.Uri.encodeSpecialChars_(
+            scheme, goog.Uri.reDisallowedInSchemeOrUserInfo_, true),
+        ':');
+  }
+
+  var domain = this.getDomain();
+  if (domain || scheme == 'file') {
+    out.push('//');
+
+    var userInfo = this.getUserInfo();
+    if (userInfo) {
+      out.push(
+          goog.Uri.encodeSpecialChars_(
+              userInfo, goog.Uri.reDisallowedInSchemeOrUserInfo_, true),
+          '@');
+    }
+
+    out.push(goog.Uri.removeDoubleEncoding_(goog.string.urlEncode(domain)));
+
+    var port = this.getPort();
+    if (port != null) {
+      out.push(':', String(port));
+    }
+  }
+
+  var path = this.getPath();
+  if (path) {
+    if (this.hasDomain() && path.charAt(0) != '/') {
+      out.push('/');
+    }
+    out.push(goog.Uri.encodeSpecialChars_(
+        path,
+        path.charAt(0) == '/' ? goog.Uri.reDisallowedInAbsolutePath_ :
+                                goog.Uri.reDisallowedInRelativePath_,
+        true));
+  }
+
+  var query = this.getEncodedQuery();
+  if (query) {
+    out.push('?', query);
+  }
+
+  var fragment = this.getFragment();
+  if (fragment) {
+    out.push(
+        '#',
+        goog.Uri.encodeSpecialChars_(
+            fragment, goog.Uri.reDisallowedInFragment_));
+  }
+  return out.join('');
+};
+
+
+/**
+ * Resolves the given relative URI (a goog.Uri object), using the URI
+ * represented by this instance as the base URI.
+ *
+ * There are several kinds of relative URIs:<br>
+ * 1. foo - replaces the last part of the path, the whole query and fragment<br>
+ * 2. /foo - replaces the path, the query and fragment<br>
+ * 3. //foo - replaces everything from the domain on.  foo is a domain name<br>
+ * 4. ?foo - replace the query and fragment<br>
+ * 5. #foo - replace the fragment only
+ *
+ * Additionally, if relative URI has a non-empty path, all ".." and "."
+ * segments will be resolved, as described in RFC 3986.
+ *
+ * @param {!goog.Uri} relativeUri The relative URI to resolve.
+ * @return {!goog.Uri} The resolved URI.
+ */
+goog.Uri.prototype.resolve = function(relativeUri) {
+  var absoluteUri = this.clone();
+
+  // we satisfy these conditions by looking for the first part of relativeUri
+  // that is not blank and applying defaults to the rest
+
+  var overridden = relativeUri.hasScheme();
+
+  if (overridden) {
+    absoluteUri.setScheme(relativeUri.getScheme());
+  } else {
+    overridden = relativeUri.hasUserInfo();
+  }
+
+  if (overridden) {
+    absoluteUri.setUserInfo(relativeUri.getUserInfo());
+  } else {
+    overridden = relativeUri.hasDomain();
+  }
+
+  if (overridden) {
+    absoluteUri.setDomain(relativeUri.getDomain());
+  } else {
+    overridden = relativeUri.hasPort();
+  }
+
+  var path = relativeUri.getPath();
+  if (overridden) {
+    absoluteUri.setPort(relativeUri.getPort());
+  } else {
+    overridden = relativeUri.hasPath();
+    if (overridden) {
+      // resolve path properly
+      if (path.charAt(0) != '/') {
+        // path is relative
+        if (this.hasDomain() && !this.hasPath()) {
+          // RFC 3986, section 5.2.3, case 1
+          path = '/' + path;
+        } else {
+          // RFC 3986, section 5.2.3, case 2
+          var lastSlashIndex = absoluteUri.getPath().lastIndexOf('/');
+          if (lastSlashIndex != -1) {
+            path = absoluteUri.getPath().substr(0, lastSlashIndex + 1) + path;
+          }
+        }
+      }
+      path = goog.Uri.removeDotSegments(path);
+    }
+  }
+
+  if (overridden) {
+    absoluteUri.setPath(path);
+  } else {
+    overridden = relativeUri.hasQuery();
+  }
+
+  if (overridden) {
+    absoluteUri.setQueryData(relativeUri.getQueryData().clone());
+  } else {
+    overridden = relativeUri.hasFragment();
+  }
+
+  if (overridden) {
+    absoluteUri.setFragment(relativeUri.getFragment());
+  }
+
+  return absoluteUri;
+};
+
+
+/**
+ * Clones the URI instance.
+ * @return {!goog.Uri} New instance of the URI object.
+ */
+goog.Uri.prototype.clone = function() {
+  return new goog.Uri(this);
+};
+
+
+/**
+ * @return {string} The encoded scheme/protocol for the URI.
+ */
+goog.Uri.prototype.getScheme = function() {
+  return this.scheme_;
+};
+
+
+/**
+ * Sets the scheme/protocol.
+ * @throws URIError If opt_decode is true and newScheme is malformed (that is,
+ *     if decodeURIComponent fails).
+ * @param {string} newScheme New scheme value.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setScheme = function(newScheme, opt_decode) {
+  this.enforceReadOnly();
+  this.scheme_ =
+      opt_decode ? goog.Uri.decodeOrEmpty_(newScheme, true) : newScheme;
+
+  // remove an : at the end of the scheme so somebody can pass in
+  // window.location.protocol
+  if (this.scheme_) {
+    this.scheme_ = this.scheme_.replace(/:$/, '');
+  }
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the scheme has been set.
+ */
+goog.Uri.prototype.hasScheme = function() {
+  return !!this.scheme_;
+};
+
+
+/**
+ * @return {string} The decoded user info.
+ */
+goog.Uri.prototype.getUserInfo = function() {
+  return this.userInfo_;
+};
+
+
+/**
+ * Sets the userInfo.
+ * @throws URIError If opt_decode is true and newUserInfo is malformed (that is,
+ *     if decodeURIComponent fails).
+ * @param {string} newUserInfo New userInfo value.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setUserInfo = function(newUserInfo, opt_decode) {
+  this.enforceReadOnly();
+  this.userInfo_ =
+      opt_decode ? goog.Uri.decodeOrEmpty_(newUserInfo) : newUserInfo;
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the user info has been set.
+ */
+goog.Uri.prototype.hasUserInfo = function() {
+  return !!this.userInfo_;
+};
+
+
+/**
+ * @return {string} The decoded domain.
+ */
+goog.Uri.prototype.getDomain = function() {
+  return this.domain_;
+};
+
+
+/**
+ * Sets the domain.
+ * @throws URIError If opt_decode is true and newDomain is malformed (that is,
+ *     if decodeURIComponent fails).
+ * @param {string} newDomain New domain value.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setDomain = function(newDomain, opt_decode) {
+  this.enforceReadOnly();
+  this.domain_ =
+      opt_decode ? goog.Uri.decodeOrEmpty_(newDomain, true) : newDomain;
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the domain has been set.
+ */
+goog.Uri.prototype.hasDomain = function() {
+  return !!this.domain_;
+};
+
+
+/**
+ * @return {?number} The port number.
+ */
+goog.Uri.prototype.getPort = function() {
+  return this.port_;
+};
+
+
+/**
+ * Sets the port number.
+ * @param {*} newPort Port number. Will be explicitly casted to a number.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setPort = function(newPort) {
+  this.enforceReadOnly();
+
+  if (newPort) {
+    newPort = Number(newPort);
+    if (isNaN(newPort) || newPort < 0) {
+      throw new Error('Bad port number ' + newPort);
+    }
+    this.port_ = newPort;
+  } else {
+    this.port_ = null;
+  }
+
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the port has been set.
+ */
+goog.Uri.prototype.hasPort = function() {
+  return this.port_ != null;
+};
+
+
+/**
+ * @return {string} The decoded path.
+ */
+goog.Uri.prototype.getPath = function() {
+  return this.path_;
+};
+
+
+/**
+ * Sets the path.
+ * @throws URIError If opt_decode is true and newPath is malformed (that is,
+ *     if decodeURIComponent fails).
+ * @param {string} newPath New path value.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setPath = function(newPath, opt_decode) {
+  this.enforceReadOnly();
+  this.path_ = opt_decode ? goog.Uri.decodeOrEmpty_(newPath, true) : newPath;
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the path has been set.
+ */
+goog.Uri.prototype.hasPath = function() {
+  return !!this.path_;
+};
+
+
+/**
+ * @return {boolean} Whether the query string has been set.
+ */
+goog.Uri.prototype.hasQuery = function() {
+  return this.queryData_.toString() !== '';
+};
+
+
+/**
+ * Sets the query data.
+ * @param {goog.Uri.QueryData|string|undefined} queryData QueryData object.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ *     Applies only if queryData is a string.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setQueryData = function(queryData, opt_decode) {
+  this.enforceReadOnly();
+
+  if (queryData instanceof goog.Uri.QueryData) {
+    this.queryData_ = queryData;
+    this.queryData_.setIgnoreCase(this.ignoreCase_);
+  } else {
+    if (!opt_decode) {
+      // QueryData accepts encoded query string, so encode it if
+      // opt_decode flag is not true.
+      queryData = goog.Uri.encodeSpecialChars_(
+          queryData, goog.Uri.reDisallowedInQuery_);
+    }
+    this.queryData_ = new goog.Uri.QueryData(queryData, this.ignoreCase_);
+  }
+
+  return this;
+};
+
+
+/**
+ * Sets the URI query.
+ * @param {string} newQuery New query value.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setQuery = function(newQuery, opt_decode) {
+  return this.setQueryData(newQuery, opt_decode);
+};
+
+
+/**
+ * @return {string} The encoded URI query, not including the ?.
+ */
+goog.Uri.prototype.getEncodedQuery = function() {
+  return this.queryData_.toString();
+};
+
+
+/**
+ * @return {string} The decoded URI query, not including the ?.
+ */
+goog.Uri.prototype.getDecodedQuery = function() {
+  return this.queryData_.toDecodedString();
+};
+
+
+/**
+ * Returns the query data.
+ * @return {!goog.Uri.QueryData} QueryData object.
+ */
+goog.Uri.prototype.getQueryData = function() {
+  return this.queryData_;
+};
+
+
+/**
+ * @return {string} The encoded URI query, not including the ?.
+ *
+ * Warning: This method, unlike other getter methods, returns encoded
+ * value, instead of decoded one.
+ */
+goog.Uri.prototype.getQuery = function() {
+  return this.getEncodedQuery();
+};
+
+
+/**
+ * Sets the value of the named query parameters, clearing previous values for
+ * that key.
+ *
+ * @param {string} key The parameter to set.
+ * @param {*} value The new value. Value does not need to be encoded.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setParameterValue = function(key, value) {
+  this.enforceReadOnly();
+  this.queryData_.set(key, value);
+  return this;
+};
+
+
+/**
+ * Sets the values of the named query parameters, clearing previous values for
+ * that key.  Not new values will currently be moved to the end of the query
+ * string.
+ *
+ * So, <code>goog.Uri.parse('foo?a=b&c=d&e=f').setParameterValues('c', ['new'])
+ * </code> yields <tt>foo?a=b&e=f&c=new</tt>.</p>
+ *
+ * @param {string} key The parameter to set.
+ * @param {*} values The new values. If values is a single
+ *     string then it will be treated as the sole value. Values do not need to
+ *     be encoded.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setParameterValues = function(key, values) {
+  this.enforceReadOnly();
+
+  if (!Array.isArray(values)) {
+    values = [String(values)];
+  }
+
+  this.queryData_.setValues(key, values);
+
+  return this;
+};
+
+
+/**
+ * Returns the value<b>s</b> for a given cgi parameter as a list of decoded
+ * query parameter values.
+ * @param {string} name The parameter to get values for.
+ * @return {!Array<?>} The values for a given cgi parameter as a list of
+ *     decoded query parameter values.
+ */
+goog.Uri.prototype.getParameterValues = function(name) {
+  return this.queryData_.getValues(name);
+};
+
+
+/**
+ * Returns the first value for a given cgi parameter or undefined if the given
+ * parameter name does not appear in the query string.
+ * @param {string} paramName Unescaped parameter name.
+ * @return {string|undefined} The first value for a given cgi parameter or
+ *     undefined if the given parameter name does not appear in the query
+ *     string.
+ */
+goog.Uri.prototype.getParameterValue = function(paramName) {
+  return /** @type {string|undefined} */ (this.queryData_.get(paramName));
+};
+
+
+/**
+ * @return {string} The URI fragment, not including the #.
+ */
+goog.Uri.prototype.getFragment = function() {
+  return this.fragment_;
+};
+
+
+/**
+ * Sets the URI fragment.
+ * @throws URIError If opt_decode is true and newFragment is malformed (that is,
+ *     if decodeURIComponent fails).
+ * @param {string} newFragment New fragment value.
+ * @param {boolean=} opt_decode Optional param for whether to decode new value.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.setFragment = function(newFragment, opt_decode) {
+  this.enforceReadOnly();
+  this.fragment_ =
+      opt_decode ? goog.Uri.decodeOrEmpty_(newFragment) : newFragment;
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the URI has a fragment set.
+ */
+goog.Uri.prototype.hasFragment = function() {
+  return !!this.fragment_;
+};
+
+
+/**
+ * Returns true if this has the same domain as that of uri2.
+ * @param {!goog.Uri} uri2 The URI object to compare to.
+ * @return {boolean} true if same domain; false otherwise.
+ */
+goog.Uri.prototype.hasSameDomainAs = function(uri2) {
+  return ((!this.hasDomain() && !uri2.hasDomain()) ||
+          this.getDomain() == uri2.getDomain()) &&
+      ((!this.hasPort() && !uri2.hasPort()) ||
+       this.getPort() == uri2.getPort());
+};
+
+
+/**
+ * Adds a random parameter to the Uri.
+ * @return {!goog.Uri} Reference to this Uri object.
+ */
+goog.Uri.prototype.makeUnique = function() {
+  this.enforceReadOnly();
+  this.setParameterValue(goog.Uri.RANDOM_PARAM, goog.string.getRandomString());
+
+  return this;
+};
+
+
+/**
+ * Removes the named query parameter.
+ *
+ * @param {string} key The parameter to remove.
+ * @return {!goog.Uri} Reference to this URI object.
+ */
+goog.Uri.prototype.removeParameter = function(key) {
+  this.enforceReadOnly();
+  this.queryData_.remove(key);
+  return this;
+};
+
+
+/**
+ * Sets whether Uri is read only. If this goog.Uri is read-only,
+ * enforceReadOnly_ will be called at the start of any function that may modify
+ * this Uri.
+ * @param {boolean} isReadOnly whether this goog.Uri should be read only.
+ * @return {!goog.Uri} Reference to this Uri object.
+ */
+goog.Uri.prototype.setReadOnly = function(isReadOnly) {
+  this.isReadOnly_ = isReadOnly;
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether the URI is read only.
+ */
+goog.Uri.prototype.isReadOnly = function() {
+  return this.isReadOnly_;
+};
+
+
+/**
+ * Checks if this Uri has been marked as read only, and if so, throws an error.
+ * This should be called whenever any modifying function is called.
+ */
+goog.Uri.prototype.enforceReadOnly = function() {
+  if (this.isReadOnly_) {
+    throw new Error('Tried to modify a read-only Uri');
+  }
+};
+
+
+/**
+ * Sets whether to ignore case.
+ * NOTE: If there are already key/value pairs in the QueryData, and
+ * ignoreCase_ is set to false, the keys will all be lower-cased.
+ * @param {boolean} ignoreCase whether this goog.Uri should ignore case.
+ * @return {!goog.Uri} Reference to this Uri object.
+ */
+goog.Uri.prototype.setIgnoreCase = function(ignoreCase) {
+  this.ignoreCase_ = ignoreCase;
+  if (this.queryData_) {
+    this.queryData_.setIgnoreCase(ignoreCase);
+  }
+  return this;
+};
+
+
+/**
+ * @return {boolean} Whether to ignore case.
+ */
+goog.Uri.prototype.getIgnoreCase = function() {
+  return this.ignoreCase_;
+};
+
+
+//==============================================================================
+// Static members
+//==============================================================================
+
+
+/**
+ * Creates a uri from the string form.  Basically an alias of new goog.Uri().
+ * If a Uri object is passed to parse then it will return a clone of the object.
+ *
+ * @throws URIError If parsing the URI is malformed. The passed URI components
+ *     should all be parseable by decodeURIComponent.
+ * @param {*} uri Raw URI string or instance of Uri
+ *     object.
+ * @param {boolean=} opt_ignoreCase Whether to ignore the case of parameter
+ * names in #getParameterValue.
+ * @return {!goog.Uri} The new URI object.
+ */
+goog.Uri.parse = function(uri, opt_ignoreCase) {
+  return uri instanceof goog.Uri ? uri.clone() :
+                                   new goog.Uri(uri, opt_ignoreCase);
+};
+
+
+/**
+ * Creates a new goog.Uri object from unencoded parts.
+ *
+ * @param {?string=} opt_scheme Scheme/protocol or full URI to parse.
+ * @param {?string=} opt_userInfo username:password.
+ * @param {?string=} opt_domain www.google.com.
+ * @param {?number=} opt_port 9830.
+ * @param {?string=} opt_path /some/path/to/a/file.html.
+ * @param {string|goog.Uri.QueryData=} opt_query a=1&b=2.
+ * @param {?string=} opt_fragment The fragment without the #.
+ * @param {boolean=} opt_ignoreCase Whether to ignore parameter name case in
+ *     #getParameterValue.
+ *
+ * @return {!goog.Uri} The new URI object.
+ */
+goog.Uri.create = function(
+    opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_query,
+    opt_fragment, opt_ignoreCase) {
+  var uri = new goog.Uri(null, opt_ignoreCase);
+
+  // Only set the parts if they are defined and not empty strings.
+  opt_scheme && uri.setScheme(opt_scheme);
+  opt_userInfo && uri.setUserInfo(opt_userInfo);
+  opt_domain && uri.setDomain(opt_domain);
+  opt_port && uri.setPort(opt_port);
+  opt_path && uri.setPath(opt_path);
+  opt_query && uri.setQueryData(opt_query);
+  opt_fragment && uri.setFragment(opt_fragment);
+
+  return uri;
+};
+
+
+/**
+ * Resolves a relative Uri against a base Uri, accepting both strings and
+ * Uri objects.
+ *
+ * @param {*} base Base Uri.
+ * @param {*} rel Relative Uri.
+ * @return {!goog.Uri} Resolved uri.
+ */
+goog.Uri.resolve = function(base, rel) {
+  if (!(base instanceof goog.Uri)) {
+    base = goog.Uri.parse(base);
+  }
+
+  if (!(rel instanceof goog.Uri)) {
+    rel = goog.Uri.parse(rel);
+  }
+
+  return base.resolve(rel);
+};
+
+
+/**
+ * Removes dot segments in given path component, as described in
+ * RFC 3986, section 5.2.4.
+ *
+ * @param {string} path A non-empty path component.
+ * @return {string} Path component with removed dot segments.
+ */
+goog.Uri.removeDotSegments = function(path) {
+  if (path == '..' || path == '.') {
+    return '';
+
+  } else if (
+      !goog.string.contains(path, './') && !goog.string.contains(path, '/.')) {
+    // This optimization detects uris which do not contain dot-segments,
+    // and as a consequence do not require any processing.
+    return path;
+
+  } else {
+    var leadingSlash = goog.string.startsWith(path, '/');
+    var segments = path.split('/');
+    var out = [];
+
+    for (var pos = 0; pos < segments.length;) {
+      var segment = segments[pos++];
+
+      if (segment == '.') {
+        if (leadingSlash && pos == segments.length) {
+          out.push('');
+        }
+      } else if (segment == '..') {
+        if (out.length > 1 || out.length == 1 && out[0] != '') {
+          out.pop();
+        }
+        if (leadingSlash && pos == segments.length) {
+          out.push('');
+        }
+      } else {
+        out.push(segment);
+        leadingSlash = true;
+      }
+    }
+
+    return out.join('/');
+  }
+};
+
+
+/**
+ * Decodes a value or returns the empty string if it isn't defined or empty.
+ * @throws URIError If decodeURIComponent fails to decode val.
+ * @param {string|undefined} val Value to decode.
+ * @param {boolean=} opt_preserveReserved If true, restricted characters will
+ *     not be decoded.
+ * @return {string} Decoded value.
+ * @private
+ */
+goog.Uri.decodeOrEmpty_ = function(val, opt_preserveReserved) {
+  // Don't use UrlDecode() here because val is not a query parameter.
+  if (!val) {
+    return '';
+  }
+
+  // decodeURI has the same output for '%2f' and '%252f'. We double encode %25
+  // so that we can distinguish between the 2 inputs. This is later undone by
+  // removeDoubleEncoding_.
+  return opt_preserveReserved ? decodeURI(val.replace(/%25/g, '%2525')) :
+                                decodeURIComponent(val);
+};
+
+
+/**
+ * If unescapedPart is non null, then escapes any characters in it that aren't
+ * valid characters in a url and also escapes any special characters that
+ * appear in extra.
+ *
+ * @param {*} unescapedPart The string to encode.
+ * @param {RegExp} extra A character set of characters in [\01-\177].
+ * @param {boolean=} opt_removeDoubleEncoding If true, remove double percent
+ *     encoding.
+ * @return {?string} null iff unescapedPart == null.
+ * @private
+ */
+goog.Uri.encodeSpecialChars_ = function(
+    unescapedPart, extra, opt_removeDoubleEncoding) {
+  if (typeof unescapedPart === 'string') {
+    var encoded = encodeURI(unescapedPart).replace(extra, goog.Uri.encodeChar_);
+    if (opt_removeDoubleEncoding) {
+      // encodeURI double-escapes %XX sequences used to represent restricted
+      // characters in some URI components, remove the double escaping here.
+      encoded = goog.Uri.removeDoubleEncoding_(encoded);
+    }
+    return encoded;
+  }
+  return null;
+};
+
+
+/**
+ * Converts a character in [\01-\177] to its unicode character equivalent.
+ * @param {string} ch One character string.
+ * @return {string} Encoded string.
+ * @private
+ */
+goog.Uri.encodeChar_ = function(ch) {
+  var n = ch.charCodeAt(0);
+  return '%' + ((n >> 4) & 0xf).toString(16) + (n & 0xf).toString(16);
+};
+
+
+/**
+ * Removes double percent-encoding from a string.
+ * @param  {string} doubleEncodedString String
+ * @return {string} String with double encoding removed.
+ * @private
+ */
+goog.Uri.removeDoubleEncoding_ = function(doubleEncodedString) {
+  return doubleEncodedString.replace(/%25([0-9a-fA-F]{2})/g, '%$1');
+};
+
+
+/**
+ * Regular expression for characters that are disallowed in the scheme or
+ * userInfo part of the URI.
+ * @type {RegExp}
+ * @private
+ */
+goog.Uri.reDisallowedInSchemeOrUserInfo_ = /[#\/\?@]/g;
+
+
+/**
+ * Regular expression for characters that are disallowed in a relative path.
+ * Colon is included due to RFC 3986 3.3.
+ * @type {RegExp}
+ * @private
+ */
+goog.Uri.reDisallowedInRelativePath_ = /[\#\?:]/g;
+
+
+/**
+ * Regular expression for characters that are disallowed in an absolute path.
+ * @type {RegExp}
+ * @private
+ */
+goog.Uri.reDisallowedInAbsolutePath_ = /[\#\?]/g;
+
+
+/**
+ * Regular expression for characters that are disallowed in the query.
+ * @type {RegExp}
+ * @private
+ */
+goog.Uri.reDisallowedInQuery_ = /[\#\?@]/g;
+
+
+/**
+ * Regular expression for characters that are disallowed in the fragment.
+ * @type {RegExp}
+ * @private
+ */
+goog.Uri.reDisallowedInFragment_ = /#/g;
+
+
+/**
+ * Checks whether two URIs have the same domain.
+ * @param {string} uri1String First URI string.
+ * @param {string} uri2String Second URI string.
+ * @return {boolean} true if the two URIs have the same domain; false otherwise.
+ */
+goog.Uri.haveSameDomain = function(uri1String, uri2String) {
+  // Differs from goog.uri.utils.haveSameDomain, since this ignores scheme.
+  // TODO(gboyer): Have this just call goog.uri.util.haveSameDomain.
+  var pieces1 = goog.uri.utils.split(uri1String);
+  var pieces2 = goog.uri.utils.split(uri2String);
+  return pieces1[goog.uri.utils.ComponentIndex.DOMAIN] ==
+      pieces2[goog.uri.utils.ComponentIndex.DOMAIN] &&
+      pieces1[goog.uri.utils.ComponentIndex.PORT] ==
+      pieces2[goog.uri.utils.ComponentIndex.PORT];
+};
+
+
+
+/**
+ * Class used to represent URI query parameters.  It is essentially a hash of
+ * name-value pairs, though a name can be present more than once.
+ *
+ * Has the same interface as the collections in goog.structs.
+ *
+ * @param {?string=} opt_query Optional encoded query string to parse into
+ *     the object.
+ * @param {boolean=} opt_ignoreCase If true, ignore the case of the parameter
+ *     name in #get.
+ * @constructor
+ * @struct
+ * @final
+ */
+goog.Uri.QueryData = function(opt_query, opt_ignoreCase) {
+  /**
+   * The map containing name/value or name/array-of-values pairs.
+   * May be null if it requires parsing from the query string.
+   *
+   * We need to use a Map because we cannot guarantee that the key names will
+   * not be problematic for IE.
+   *
+   * @private {?goog.structs.Map<string, !Array<*>>}
+   */
+  this.keyMap_ = null;
+
+  /**
+   * The number of params, or null if it requires computing.
+   * @private {?number}
+   */
+  this.count_ = null;
+
+  /**
+   * Encoded query string, or null if it requires computing from the key map.
+   * @private {?string}
+   */
+  this.encodedQuery_ = opt_query || null;
+
+  /**
+   * If true, ignore the case of the parameter name in #get.
+   * @private {boolean}
+   */
+  this.ignoreCase_ = !!opt_ignoreCase;
+};
+
+
+/**
+ * If the underlying key map is not yet initialized, it parses the
+ * query string and fills the map with parsed data.
+ * @private
+ */
+goog.Uri.QueryData.prototype.ensureKeyMapInitialized_ = function() {
+  if (!this.keyMap_) {
+    this.keyMap_ = new goog.structs.Map();
+    this.count_ = 0;
+    if (this.encodedQuery_) {
+      var self = this;
+      goog.uri.utils.parseQueryData(this.encodedQuery_, function(name, value) {
+        self.add(goog.string.urlDecode(name), value);
+      });
+    }
+  }
+};
+
+
+/**
+ * Creates a new query data instance from a map of names and values.
+ *
+ * @param {!goog.structs.Map<string, ?>|!Object} map Map of string parameter
+ *     names to parameter value. If parameter value is an array, it is
+ *     treated as if the key maps to each individual value in the
+ *     array.
+ * @param {boolean=} opt_ignoreCase If true, ignore the case of the parameter
+ *     name in #get.
+ * @return {!goog.Uri.QueryData} The populated query data instance.
+ */
+goog.Uri.QueryData.createFromMap = function(map, opt_ignoreCase) {
+  var keys = goog.structs.getKeys(map);
+  if (typeof keys == 'undefined') {
+    throw new Error('Keys are undefined');
+  }
+
+  var queryData = new goog.Uri.QueryData(null, opt_ignoreCase);
+  var values = goog.structs.getValues(map);
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var value = values[i];
+    if (!Array.isArray(value)) {
+      queryData.add(key, value);
+    } else {
+      queryData.setValues(key, value);
+    }
+  }
+  return queryData;
+};
+
+
+/**
+ * Creates a new query data instance from parallel arrays of parameter names
+ * and values. Allows for duplicate parameter names. Throws an error if the
+ * lengths of the arrays differ.
+ *
+ * @param {!Array<string>} keys Parameter names.
+ * @param {!Array<?>} values Parameter values.
+ * @param {boolean=} opt_ignoreCase If true, ignore the case of the parameter
+ *     name in #get.
+ * @return {!goog.Uri.QueryData} The populated query data instance.
+ */
+goog.Uri.QueryData.createFromKeysValues = function(
+    keys, values, opt_ignoreCase) {
+  if (keys.length != values.length) {
+    throw new Error('Mismatched lengths for keys/values');
+  }
+  var queryData = new goog.Uri.QueryData(null, opt_ignoreCase);
+  for (var i = 0; i < keys.length; i++) {
+    queryData.add(keys[i], values[i]);
+  }
+  return queryData;
+};
+
+
+/**
+ * @return {?number} The number of parameters.
+ */
+goog.Uri.QueryData.prototype.getCount = function() {
+  this.ensureKeyMapInitialized_();
+  return this.count_;
+};
+
+
+/**
+ * Adds a key value pair.
+ * @param {string} key Name.
+ * @param {*} value Value.
+ * @return {!goog.Uri.QueryData} Instance of this object.
+ */
+goog.Uri.QueryData.prototype.add = function(key, value) {
+  this.ensureKeyMapInitialized_();
+  this.invalidateCache_();
+
+  key = this.getKeyName_(key);
+  var values = this.keyMap_.get(key);
+  if (!values) {
+    this.keyMap_.set(key, (values = []));
+  }
+  values.push(value);
+  this.count_ = goog.asserts.assertNumber(this.count_) + 1;
+  return this;
+};
+
+
+/**
+ * Removes all the params with the given key.
+ * @param {string} key Name.
+ * @return {boolean} Whether any parameter was removed.
+ */
+goog.Uri.QueryData.prototype.remove = function(key) {
+  this.ensureKeyMapInitialized_();
+
+  key = this.getKeyName_(key);
+  if (this.keyMap_.containsKey(key)) {
+    this.invalidateCache_();
+
+    // Decrement parameter count.
+    this.count_ =
+        goog.asserts.assertNumber(this.count_) - this.keyMap_.get(key).length;
+    return this.keyMap_.remove(key);
+  }
+  return false;
+};
+
+
+/**
+ * Clears the parameters.
+ */
+goog.Uri.QueryData.prototype.clear = function() {
+  this.invalidateCache_();
+  this.keyMap_ = null;
+  this.count_ = 0;
+};
+
+
+/**
+ * @return {boolean} Whether we have any parameters.
+ */
+goog.Uri.QueryData.prototype.isEmpty = function() {
+  this.ensureKeyMapInitialized_();
+  return this.count_ == 0;
+};
+
+
+/**
+ * Whether there is a parameter with the given name
+ * @param {string} key The parameter name to check for.
+ * @return {boolean} Whether there is a parameter with the given name.
+ */
+goog.Uri.QueryData.prototype.containsKey = function(key) {
+  this.ensureKeyMapInitialized_();
+  key = this.getKeyName_(key);
+  return this.keyMap_.containsKey(key);
+};
+
+
+/**
+ * Whether there is a parameter with the given value.
+ * @param {*} value The value to check for.
+ * @return {boolean} Whether there is a parameter with the given value.
+ */
+goog.Uri.QueryData.prototype.containsValue = function(value) {
+  // NOTE(arv): This solution goes through all the params even if it was the
+  // first param. We can get around this by not reusing code or by switching to
+  // iterators.
+  var vals = this.getValues();
+  return goog.array.contains(vals, value);
+};
+
+
+/**
+ * Runs a callback on every key-value pair in the map, including duplicate keys.
+ * This won't maintain original order when duplicate keys are interspersed (like
+ * getKeys() / getValues()).
+ * @param {function(this:SCOPE, ?, string, !goog.Uri.QueryData)} f
+ * @param {SCOPE=} opt_scope The value of "this" inside f.
+ * @template SCOPE
+ */
+goog.Uri.QueryData.prototype.forEach = function(f, opt_scope) {
+  this.ensureKeyMapInitialized_();
+  this.keyMap_.forEach(function(values, key) {
+    goog.array.forEach(values, function(value) {
+      f.call(opt_scope, value, key, this);
+    }, this);
+  }, this);
+};
+
+
+/**
+ * Returns all the keys of the parameters. If a key is used multiple times
+ * it will be included multiple times in the returned array
+ * @return {!Array<string>} All the keys of the parameters.
+ */
+goog.Uri.QueryData.prototype.getKeys = function() {
+  this.ensureKeyMapInitialized_();
+  // We need to get the values to know how many keys to add.
+  var vals = this.keyMap_.getValues();
+  var keys = this.keyMap_.getKeys();
+  var rv = [];
+  for (var i = 0; i < keys.length; i++) {
+    var val = vals[i];
+    for (var j = 0; j < val.length; j++) {
+      rv.push(keys[i]);
+    }
+  }
+  return rv;
+};
+
+
+/**
+ * Returns all the values of the parameters with the given name. If the query
+ * data has no such key this will return an empty array. If no key is given
+ * all values wil be returned.
+ * @param {string=} opt_key The name of the parameter to get the values for.
+ * @return {!Array<?>} All the values of the parameters with the given name.
+ */
+goog.Uri.QueryData.prototype.getValues = function(opt_key) {
+  this.ensureKeyMapInitialized_();
+  var rv = [];
+  if (typeof opt_key === 'string') {
+    if (this.containsKey(opt_key)) {
+      rv = goog.array.concat(rv, this.keyMap_.get(this.getKeyName_(opt_key)));
+    }
+  } else {
+    // Return all values.
+    var values = this.keyMap_.getValues();
+    for (var i = 0; i < values.length; i++) {
+      rv = goog.array.concat(rv, values[i]);
+    }
+  }
+  return rv;
+};
+
+
+/**
+ * Sets a key value pair and removes all other keys with the same value.
+ *
+ * @param {string} key Name.
+ * @param {*} value Value.
+ * @return {!goog.Uri.QueryData} Instance of this object.
+ */
+goog.Uri.QueryData.prototype.set = function(key, value) {
+  this.ensureKeyMapInitialized_();
+  this.invalidateCache_();
+
+  // TODO(chrishenry): This could be better written as
+  // this.remove(key), this.add(key, value), but that would reorder
+  // the key (since the key is first removed and then added at the
+  // end) and we would have to fix unit tests that depend on key
+  // ordering.
+  key = this.getKeyName_(key);
+  if (this.containsKey(key)) {
+    this.count_ =
+        goog.asserts.assertNumber(this.count_) - this.keyMap_.get(key).length;
+  }
+  this.keyMap_.set(key, [value]);
+  this.count_ = goog.asserts.assertNumber(this.count_) + 1;
+  return this;
+};
+
+
+/**
+ * Returns the first value associated with the key. If the query data has no
+ * such key this will return undefined or the optional default.
+ * @param {string} key The name of the parameter to get the value for.
+ * @param {*=} opt_default The default value to return if the query data
+ *     has no such key.
+ * @return {*} The first string value associated with the key, or opt_default
+ *     if there's no value.
+ */
+goog.Uri.QueryData.prototype.get = function(key, opt_default) {
+  if (!key) {
+    return opt_default;
+  }
+  var values = this.getValues(key);
+  return values.length > 0 ? String(values[0]) : opt_default;
+};
+
+
+/**
+ * Sets the values for a key. If the key already exists, this will
+ * override all of the existing values that correspond to the key.
+ * @param {string} key The key to set values for.
+ * @param {!Array<?>} values The values to set.
+ */
+goog.Uri.QueryData.prototype.setValues = function(key, values) {
+  this.remove(key);
+
+  if (values.length > 0) {
+    this.invalidateCache_();
+    this.keyMap_.set(this.getKeyName_(key), goog.array.clone(values));
+    this.count_ = goog.asserts.assertNumber(this.count_) + values.length;
+  }
+};
+
+
+/**
+ * @return {string} Encoded query string.
+ * @override
+ */
+goog.Uri.QueryData.prototype.toString = function() {
+  if (this.encodedQuery_) {
+    return this.encodedQuery_;
+  }
+
+  if (!this.keyMap_) {
+    return '';
+  }
+
+  var sb = [];
+
+  // In the past, we use this.getKeys() and this.getVals(), but that
+  // generates a lot of allocations as compared to simply iterating
+  // over the keys.
+  var keys = this.keyMap_.getKeys();
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var encodedKey = goog.string.urlEncode(key);
+    var val = this.getValues(key);
+    for (var j = 0; j < val.length; j++) {
+      var param = encodedKey;
+      // Ensure that null and undefined are encoded into the url as
+      // literal strings.
+      if (val[j] !== '') {
+        param += '=' + goog.string.urlEncode(val[j]);
+      }
+      sb.push(param);
+    }
+  }
+
+  return this.encodedQuery_ = sb.join('&');
+};
+
+
+/**
+ * @throws URIError If URI is malformed (that is, if decodeURIComponent fails on
+ *     any of the URI components).
+ * @return {string} Decoded query string.
+ */
+goog.Uri.QueryData.prototype.toDecodedString = function() {
+  return goog.Uri.decodeOrEmpty_(this.toString());
+};
+
+
+/**
+ * Invalidate the cache.
+ * @private
+ */
+goog.Uri.QueryData.prototype.invalidateCache_ = function() {
+  this.encodedQuery_ = null;
+};
+
+
+/**
+ * Removes all keys that are not in the provided list. (Modifies this object.)
+ * @param {Array<string>} keys The desired keys.
+ * @return {!goog.Uri.QueryData} a reference to this object.
+ */
+goog.Uri.QueryData.prototype.filterKeys = function(keys) {
+  this.ensureKeyMapInitialized_();
+  this.keyMap_.forEach(function(value, key) {
+    if (!goog.array.contains(keys, key)) {
+      this.remove(key);
+    }
+  }, this);
+  return this;
+};
+
+
+/**
+ * Clone the query data instance.
+ * @return {!goog.Uri.QueryData} New instance of the QueryData object.
+ */
+goog.Uri.QueryData.prototype.clone = function() {
+  var rv = new goog.Uri.QueryData();
+  rv.encodedQuery_ = this.encodedQuery_;
+  if (this.keyMap_) {
+    rv.keyMap_ = this.keyMap_.clone();
+    rv.count_ = this.count_;
+  }
+  return rv;
+};
+
+
+/**
+ * Helper function to get the key name from a JavaScript object. Converts
+ * the object to a string, and to lower case if necessary.
+ * @private
+ * @param {*} arg The object to get a key name from.
+ * @return {string} valid key name which can be looked up in #keyMap_.
+ */
+goog.Uri.QueryData.prototype.getKeyName_ = function(arg) {
+  var keyName = String(arg);
+  if (this.ignoreCase_) {
+    keyName = keyName.toLowerCase();
+  }
+  return keyName;
+};
+
+
+/**
+ * Ignore case in parameter names.
+ * NOTE: If there are already key/value pairs in the QueryData, and
+ * ignoreCase_ is set to false, the keys will all be lower-cased.
+ * @param {boolean} ignoreCase whether this goog.Uri should ignore case.
+ */
+goog.Uri.QueryData.prototype.setIgnoreCase = function(ignoreCase) {
+  var resetKeys = ignoreCase && !this.ignoreCase_;
+  if (resetKeys) {
+    this.ensureKeyMapInitialized_();
+    this.invalidateCache_();
+    this.keyMap_.forEach(function(value, key) {
+      var lowerCase = key.toLowerCase();
+      if (key != lowerCase) {
+        this.remove(key);
+        this.setValues(lowerCase, value);
+      }
+    }, this);
+  }
+  this.ignoreCase_ = ignoreCase;
+};
+
+
+/**
+ * Extends a query data object with another query data or map like object. This
+ * operates 'in-place', it does not create a new QueryData object.
+ *
+ * @param {...(?goog.Uri.QueryData|?goog.structs.Map<?, ?>|?Object)} var_args
+ *     The object from which key value pairs will be copied. Note: does not
+ *     accept null.
+ * @suppress {deprecated} Use deprecated goog.structs.forEach to allow different
+ * types of parameters.
+ */
+goog.Uri.QueryData.prototype.extend = function(var_args) {
+  for (var i = 0; i < arguments.length; i++) {
+    var data = arguments[i];
+    goog.structs.forEach(data, function(value, key) {
+      this.add(key, value);
+    }, this);
+  }
+};
+
+//third_party/javascript/closure/soy/data.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Soy data primitives.
+ *
+ * The goal is to encompass data types used by Soy, especially to mark content
+ * as known to be "safe".
+ */
+
+goog.provide('goog.soy.data.SanitizedContent');
+goog.provide('goog.soy.data.SanitizedContentKind');
+goog.provide('goog.soy.data.SanitizedCss');
+goog.provide('goog.soy.data.SanitizedHtml');
+goog.provide('goog.soy.data.SanitizedHtmlAttribute');
+goog.provide('goog.soy.data.SanitizedJs');
+goog.provide('goog.soy.data.SanitizedTrustedResourceUri');
+goog.provide('goog.soy.data.SanitizedUri');
+
+goog.require('goog.Uri');
+goog.require('goog.asserts');
+goog.require('goog.html.SafeHtml');
+goog.require('goog.html.SafeScript');
+goog.require('goog.html.SafeStyle');
+goog.require('goog.html.SafeStyleSheet');
+goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
+goog.require('goog.html.uncheckedconversions');
+goog.require('goog.i18n.bidi.Dir');
+goog.require('goog.string.Const');
+
+
+/**
+ * A type of textual content.
+ *
+ * This is an enum of type Object so that these values are unforgeable.
+ *
+ * @enum {!Object}
+ */
+goog.soy.data.SanitizedContentKind = {
+
+  /**
+   * A snippet of HTML that does not start or end inside a tag, comment, entity,
+   * or DOCTYPE; and that does not contain any executable code
+   * (JS, {@code <object>}s, etc.) from a different trust domain.
+   */
+  HTML: goog.DEBUG ? {sanitizedContentKindHtml: true} : {},
+
+  /**
+   * Executable JavaScript code or expression, safe for insertion in a
+   * script-tag or event handler context, known to be free of any
+   * attacker-controlled scripts. This can either be side-effect-free
+   * JavaScript (such as JSON) or JavaScript that's entirely under Google's
+   * control.
+   */
+  JS: goog.DEBUG ? {sanitizedContentJsChars: true} : {},
+
+  /** A properly encoded portion of a URI. */
+  URI: goog.DEBUG ? {sanitizedContentUri: true} : {},
+
+  /** A resource URI not under attacker control. */
+  TRUSTED_RESOURCE_URI:
+      goog.DEBUG ? {sanitizedContentTrustedResourceUri: true} : {},
+
+  /**
+   * Repeated attribute names and values. For example,
+   * {@code dir="ltr" foo="bar" onclick="trustedFunction()" checked}.
+   */
+  ATTRIBUTES: goog.DEBUG ? {sanitizedContentHtmlAttribute: true} : {},
+
+  // TODO: Consider separating rules, declarations, and values into
+  // separate types, but for simplicity, we'll treat explicitly blessed
+  // SanitizedContent as allowed in all of these contexts.
+  /**
+   * A CSS3 declaration, property, value or group of semicolon separated
+   * declarations.
+   */
+  STYLE: goog.DEBUG ? {sanitizedContentStyle: true} : {},
+
+  /** A CSS3 style sheet (list of rules). */
+  CSS: goog.DEBUG ? {sanitizedContentCss: true} : {}
+
+  // TEXT doesn't produce SanitizedContent anymore, use renderText.
+};
+
+
+
+/**
+ * A string-like object that carries a content-type and a content direction.
+ *
+ * IMPORTANT! Do not create these directly, nor instantiate the subclasses.
+ * Instead, use a trusted, centrally reviewed library as endorsed by your team
+ * to generate these objects. Otherwise, you risk accidentally creating
+ * SanitizedContent that is attacker-controlled and gets evaluated unescaped in
+ * templates.
+ *
+ * @constructor
+ */
+goog.soy.data.SanitizedContent = function() {
+  throw new Error('Do not instantiate directly');
+};
+
+
+/**
+ * The context in which this content is safe from XSS attacks.
+ * @type {goog.soy.data.SanitizedContentKind}
+ */
+goog.soy.data.SanitizedContent.prototype.contentKind;
+
+
+/**
+ * The content's direction; null if unknown and thus to be estimated when
+ * necessary.
+ * @type {?goog.i18n.bidi.Dir}
+ */
+goog.soy.data.SanitizedContent.prototype.contentDir = null;
+
+
+/**
+ * The already-safe content.
+ * @protected {string}
+ */
+goog.soy.data.SanitizedContent.prototype.content;
+
+
+/**
+ * Gets the already-safe content.
+ * @return {string}
+ */
+goog.soy.data.SanitizedContent.prototype.getContent = function() {
+  return this.content;
+};
+
+
+/** @override */
+goog.soy.data.SanitizedContent.prototype.toString = function() {
+  return this.content;
+};
+
+
+/**
+ * Converts sanitized content of kind HTML into SafeHtml
+ * @return {!goog.html.SafeHtml}
+ * @throws {!Error} when the content kind is not HTML.
+ */
+goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
+  if (this.contentKind !== goog.soy.data.SanitizedContentKind.HTML) {
+    throw new Error('Sanitized content was not of kind HTML.');
+  }
+  return goog.html.uncheckedconversions
+      .safeHtmlFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy SanitizedContent of kind HTML produces ' +
+              'SafeHtml-contract-compliant value.'),
+          this.toString(), this.contentDir);
+};
+
+
+/**
+ * Converts sanitized content of kind URI into SafeUrl without modification.
+ * @return {!goog.html.SafeUrl}
+ * @throws {Error} when the content kind is not URI.
+ */
+goog.soy.data.SanitizedContent.prototype.toSafeUrl = function() {
+  if (this.contentKind !== goog.soy.data.SanitizedContentKind.URI) {
+    throw new Error('Sanitized content was not of kind URI.');
+  }
+  return goog.html.uncheckedconversions
+      .safeUrlFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy SanitizedContent of kind URI produces ' +
+              'SafeHtml-contract-compliant value.'),
+          this.toString());
+};
+
+
+/**
+ * Content of type {@link goog.soy.data.SanitizedContentKind.HTML}.
+ *
+ * The content is a string of HTML that can safely be embedded in a PCDATA
+ * context in your app.  If you would be surprised to find that an HTML
+ * sanitizer produced `s` (e.g.  it runs code or fetches bad URLs) and
+ * you wouldn't write a template that produces `s` on security or privacy
+ * grounds, then don't pass `s` here. The default content direction is
+ * unknown, i.e. to be estimated when necessary.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedHtml = function() {
+  goog.soy.data.SanitizedHtml.base(this, 'constructor');
+};
+goog.inherits(goog.soy.data.SanitizedHtml, goog.soy.data.SanitizedContent);
+
+
+/** @override */
+goog.soy.data.SanitizedHtml.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.HTML;
+
+
+/**
+ * Checks if the value could be used as the Soy type {html}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
+  return typeof value === 'string' ||
+      value instanceof goog.soy.data.SanitizedHtml ||
+      value instanceof goog.html.SafeHtml;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {html}.
+ * Strict: disallows strings.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedHtml.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedHtml ||
+      value instanceof goog.html.SafeHtml;
+};
+
+
+/**
+ * Content of type {@link goog.soy.data.SanitizedContentKind.JS}.
+ *
+ * The content is JavaScript source that when evaluated does not execute any
+ * attacker-controlled scripts. The content direction is LTR.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedJs = function() {
+  goog.soy.data.SanitizedJs.base(this, 'constructor');
+};
+goog.inherits(goog.soy.data.SanitizedJs, goog.soy.data.SanitizedContent);
+
+
+/** @override */
+goog.soy.data.SanitizedJs.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.JS;
+
+
+/** @override */
+goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
+
+
+/**
+ * Checks if the value could be used as the Soy type {js}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
+  return typeof value === 'string' ||
+      value instanceof goog.soy.data.SanitizedJs ||
+      value instanceof goog.html.SafeScript;
+};
+
+/**
+ * Checks if the value could be used as the Soy type {js}.
+ * Strict: disallows strings.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedJs ||
+      value instanceof goog.html.SafeHtml;
+};
+
+
+/**
+ * Content of type {@link goog.soy.data.SanitizedContentKind.URI}.
+ *
+ * The content is a URI chunk that the caller knows is safe to emit in a
+ * template. The content direction is LTR.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedUri = function() {
+  goog.soy.data.SanitizedUri.base(this, 'constructor');
+};
+goog.inherits(goog.soy.data.SanitizedUri, goog.soy.data.SanitizedContent);
+
+/** @override */
+goog.soy.data.SanitizedUri.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.URI;
+
+
+/** @override */
+goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
+
+
+/**
+ * Checks if the value could be used as the Soy type {uri}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
+  return typeof value === 'string' ||
+      value instanceof goog.soy.data.SanitizedUri ||
+      value instanceof goog.html.SafeUrl ||
+      value instanceof goog.html.TrustedResourceUrl ||
+      value instanceof goog.Uri;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {uri}.
+ * Strict: disallows strings.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedUri.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedUri ||
+      value instanceof goog.html.SafeUrl ||
+      value instanceof goog.html.TrustedResourceUrl ||
+      value instanceof goog.Uri;
+};
+
+
+
+/**
+ * Content of type
+ * {@link goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI}.
+ *
+ * The content is a TrustedResourceUri chunk that is not under attacker control.
+ * The content direction is LTR.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedTrustedResourceUri = function() {
+  goog.soy.data.SanitizedTrustedResourceUri.base(this, 'constructor');
+};
+goog.inherits(
+    goog.soy.data.SanitizedTrustedResourceUri, goog.soy.data.SanitizedContent);
+
+
+/** @override */
+goog.soy.data.SanitizedTrustedResourceUri.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI;
+
+
+/** @override */
+goog.soy.data.SanitizedTrustedResourceUri.prototype.contentDir =
+    goog.i18n.bidi.Dir.LTR;
+
+
+/**
+ * Converts sanitized content into TrustedResourceUrl without modification.
+ * @return {!goog.html.TrustedResourceUrl}
+ */
+goog.soy.data.SanitizedTrustedResourceUri.prototype.toTrustedResourceUrl =
+    function() {
+  return goog.html.uncheckedconversions
+      .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy SanitizedContent of kind TRUSTED_RESOURCE_URI produces ' +
+              'TrustedResourceUrl-contract-compliant value.'),
+          this.toString());
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {trusted_resource_uri}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
+  return typeof value === 'string' ||
+      value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
+      value instanceof goog.html.TrustedResourceUrl;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {trusted_resource_uri}.
+ * Strict: disallows strings.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict = function(
+    value) {
+  return value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
+      value instanceof goog.html.TrustedResourceUrl;
+};
+
+
+
+/**
+ * Content of type {@link goog.soy.data.SanitizedContentKind.ATTRIBUTES}.
+ *
+ * The content should be safely embeddable within an open tag, such as a
+ * key="value" pair. The content direction is LTR.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedHtmlAttribute = function() {
+  goog.soy.data.SanitizedHtmlAttribute.base(this, 'constructor');
+};
+goog.inherits(
+    goog.soy.data.SanitizedHtmlAttribute, goog.soy.data.SanitizedContent);
+
+
+/** @override */
+goog.soy.data.SanitizedHtmlAttribute.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.ATTRIBUTES;
+
+
+/** @override */
+goog.soy.data.SanitizedHtmlAttribute.prototype.contentDir =
+    goog.i18n.bidi.Dir.LTR;
+
+
+/**
+ * Checks if the value could be used as the Soy type {attribute}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
+  return typeof value === 'string' ||
+      value instanceof goog.soy.data.SanitizedHtmlAttribute;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {attribute}.
+ * Strict: disallows strings.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedHtmlAttribute;
+};
+
+
+
+/**
+ * Content of type {@link goog.soy.data.SanitizedContentKind.CSS}.
+ *
+ * The content is non-attacker-exploitable CSS, such as {@code @import url(x)}.
+ * The content direction is LTR.
+ *
+ * @extends {goog.soy.data.SanitizedContent}
+ * @constructor
+ */
+goog.soy.data.SanitizedCss = function() {
+  goog.soy.data.SanitizedCss.base(this, 'constructor');
+};
+goog.inherits(goog.soy.data.SanitizedCss, goog.soy.data.SanitizedContent);
+
+
+/** @override */
+goog.soy.data.SanitizedCss.prototype.contentKind =
+    goog.soy.data.SanitizedContentKind.CSS;
+
+
+/** @override */
+goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
+
+
+/**
+ * Checks if the value could be used as the Soy type {css}.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
+  return typeof value === 'string' ||
+      value instanceof goog.soy.data.SanitizedCss ||
+      value instanceof goog.html.SafeStyle ||
+      value instanceof goog.html.SafeStyleSheet;
+};
+
+
+/**
+ * Checks if the value could be used as the Soy type {css}.
+ * Strict: disallows strings.
+ * @param {*} value
+ * @return {boolean}
+ */
+goog.soy.data.SanitizedCss.isCompatibleWithStrict = function(value) {
+  return value instanceof goog.soy.data.SanitizedCss ||
+      value instanceof goog.html.SafeStyle ||
+      value instanceof goog.html.SafeStyleSheet;
+};
+
+
+/**
+ * Converts SanitizedCss into SafeStyleSheet.
+ * Note: SanitizedCss in Soy represents both SafeStyle and SafeStyleSheet in
+ * Closure. It's about to be split so that SanitizedCss represents only
+ * SafeStyleSheet.
+ * @return {!goog.html.SafeStyleSheet}
+ */
+goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
+  var value = this.toString();
+  goog.asserts.assert(
+      /[@{]|^\s*$/.test(value),
+      'value doesn\'t look like style sheet: ' + value);
+  return goog.html.uncheckedconversions
+      .safeStyleSheetFromStringKnownToSatisfyTypeContract(
+          goog.string.Const.from(
+              'Soy SanitizedCss produces SafeStyleSheet-contract-compliant ' +
+              'value.'),
+          value);
+};
+
+//javascript/template/soy/checks.js
+/**
+ * @fileoverview Provides Soy runtime checks for safe types.
+ */
+
+goog.provide('soy.checks');
+
+goog.require('goog.asserts');
+goog.require('goog.soy.data.SanitizedContentKind');
+goog.require('goog.soy.data.SanitizedCss');
+goog.require('goog.soy.data.SanitizedHtml');
+goog.require('goog.soy.data.SanitizedHtmlAttribute');
+goog.require('goog.soy.data.SanitizedJs');
+goog.require('goog.soy.data.SanitizedTrustedResourceUri');
+goog.require('goog.soy.data.SanitizedUri');
+
+/**
+ * Checks whether a given value is of a given content kind.
+ *
+ * @param {?} value The value to be examined.
+ * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
+ *     kind.
+ * @param {!Object} constructor
+ * @return {boolean} Whether the given value is of the given kind.
+ * @private
+ */
+soy.checks.isContentKind_ = function(value, contentKind, constructor) {
+  var ret = value != null && value.contentKind === contentKind;
+  if (ret) {
+    goog.asserts.assert(value.constructor === constructor);
+  }
+  return ret;
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isHtml = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.HTML,
+      goog.soy.data.SanitizedHtml);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isCss = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.CSS,
+      goog.soy.data.SanitizedCss);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isAttribute = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.ATTRIBUTES,
+      goog.soy.data.SanitizedHtmlAttribute);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isJS = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.JS, goog.soy.data.SanitizedJs);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isTrustedResourceURI = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI,
+      goog.soy.data.SanitizedTrustedResourceUri);
+};
+
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.checks.isURI = function(value) {
+  return soy.checks.isContentKind_(
+      value, goog.soy.data.SanitizedContentKind.URI,
+      goog.soy.data.SanitizedUri);
+};
+
+//third_party/javascript/closure/i18n/compactnumberformatsymbols.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /**
  * @fileoverview Compact number formatting symbols.
  *
  * File generated from CLDR ver. 36
- * MOE:begin_intracomment_strip
- * This file is generated by
- *   //depot/google3/java/com/google/i18n/tools/generators/locale:locale
- * using the --for_closure flag.
- *
- * See {@link go/js-locale-data-update} for details.
- *
- * Before checking, this file could have been manually edited. This is
- * to incorporate changes before we could fix CLDR. All manual
- * modification must be documented in this section, and should be
- * removed after those changes land to CLDR.
- * MOE:end_intracomment_strip
  *
  * To reduce the file size (which may cause issues in some JS
  * developing environments), this file will only contain locales
@@ -22268,20 +30797,12 @@ switch (goog.LOCALE) {
     break;
 }
 
-//javascript/closure/i18n/currency.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//third_party/javascript/closure/i18n/currency.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 
 /**
@@ -22840,302 +31361,7 @@ goog.i18n.currency.CurrencyInfoTier2 = {
   'ZWD': [0, '$', 'Z$']
 };
 
-//javascript/closure/i18n/uchar.js
-// Copyright 2009 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Collection of utility functions for Unicode character.
- */
-
-goog.provide('goog.i18n.uChar');
-
-
-// Constants for handling Unicode supplementary characters (surrogate pairs).
-
-
-/**
- * The minimum value for Supplementary code points.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
-
-
-/**
- * The highest Unicode code point value (scalar value) according to the Unicode
- * Standard.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
-
-
-/**
- * Lead surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
-
-
-/**
- * Lead surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
-
-
-/**
- * Trail surrogate minimum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
-
-
-/**
- * Trail surrogate maximum value.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
-
-
-/**
- * The number of least significant bits of a supplementary code point that in
- * UTF-16 become the least significant bits of the trail surrogate. The rest of
- * the in-use bits of the supplementary code point become the least significant
- * bits of the lead surrogate.
- * @type {number}
- * @private
- */
-goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
-
-
-/**
- * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
- * @param {string} ch The given character.
- * @return {string} The U+ notation of the given character.
- */
-goog.i18n.uChar.toHexString = function(ch) {
-  const chCode = goog.i18n.uChar.toCharCode(ch);
-  const chCodeStr = 'U+' +
-      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
-
-  return chCodeStr;
-};
-
-
-/**
- * Gets a string padded with given character to get given size.
- * @param {string} str The given string to be padded.
- * @param {number} length The target size of the string.
- * @param {string} ch The character to be padded with.
- * @return {string} The padded string.
- * @private
- */
-goog.i18n.uChar.padString_ = function(str, length, ch) {
-  while (str.length < length) {
-    str = ch + str;
-  }
-  return str;
-};
-
-
-/**
- * Gets Unicode value of the given character.
- * @param {string} ch The given character, which in the case of a supplementary
- * character is actually a surrogate pair. The remainder of the string is
- * ignored.
- * @return {number} The Unicode value of the character.
- */
-goog.i18n.uChar.toCharCode = function(ch) {
-  return goog.i18n.uChar.getCodePointAround(ch, 0);
-};
-
-
-/**
- * Gets a character from the given Unicode value. If the given code point is not
- * a valid Unicode code point, null is returned.
- * @param {number} code The Unicode value of the character.
- * @return {?string} The character corresponding to the given Unicode value.
- */
-goog.i18n.uChar.fromCharCode = function(code) {
-  if (code == null ||
-      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
-    return null;
-  }
-  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
-    // First, we split the code point into the trail surrogate part (the
-    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
-    // part (the rest of the bits, shifted down; note that for now this includes
-    // the supplementary offset, also shifted down, to be subtracted off below).
-    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
-    const trailBits = code &
-        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
-        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
-        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
-
-    // Now we calculate the code point of each surrogate by adding each offset
-    // to the corresponding base code point.
-    const leadCodePoint = leadBits +
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
-         // Subtract off the supplementary offset, which had been shifted down
-         // with the rest of leadBits. We do this here instead of before the
-         // shift in order to save a separate subtraction step.
-         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
-          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
-    const trailCodePoint =
-        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
-
-    // Convert the code points into a 2-character long string.
-    return String.fromCharCode(leadCodePoint) +
-        String.fromCharCode(trailCodePoint);
-  }
-  return String.fromCharCode(code);
-};
-
-
-/**
- * Returns the Unicode code point at the specified index.
- *
- * If the char value specified at the given index is in the leading-surrogate
- * range, and the following index is less than the length of `string`, and
- * the char value at the following index is in the trailing-surrogate range,
- * then the supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * If the char value specified at the given index is in the trailing-surrogate
- * range, and the preceding index is not before the start of `string`, and
- * the char value at the preceding index is in the leading-surrogate range, then
- * the negated supplementary code point corresponding to this surrogate pair is
- * returned.
- *
- * The negation allows the caller to differentiate between the case where the
- * given index is at the leading surrogate and the one where it is at the
- * trailing surrogate, and thus deduce where the next character starts and
- * preceding character ends.
- *
- * Otherwise, the char value at the given index is returned. Thus, a leading
- * surrogate is returned when it is not followed by a trailing surrogate, and a
- * trailing surrogate is returned when it is not preceded by a leading
- * surrogate.
- *
- * @param {string} string The string.
- * @param {number} index The index from which the code point is to be retrieved.
- * @return {number} The code point at the given index. If the given index is
- * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
- * point encoded by the pair. If the given index is that of the end (i.e. trail
- * surrogate) of a surrogate pair, returns the negated code pointed encoded by
- * the pair.
- */
-goog.i18n.uChar.getCodePointAround = function(string, index) {
-  const charCode = string.charCodeAt(index);
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
-      index + 1 < string.length) {
-    const trail = string.charCodeAt(index + 1);
-    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-      // Part of a surrogate pair.
-      return /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
-    }
-  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
-    const lead = string.charCodeAt(index - 1);
-    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
-      // Part of a surrogate pair.
-      const codepoint = /** @type {number} */ (
-          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
-      return -codepoint;
-    }
-  }
-  return charCode;
-};
-
-
-/**
- * Determines the length of the string needed to represent the specified
- * Unicode code point.
- * @param {number} codePoint
- * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
- */
-goog.i18n.uChar.charCount = function(codePoint) {
-  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
-};
-
-
-/**
- * Determines whether the specified Unicode code point is in the supplementary
- * Unicode characters range.
- * @param {number} codePoint
- * @return {boolean} Whether then given code point is a supplementary character.
- */
-goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a leading surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a leading surrogate
- * character.
- */
-goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Gets whether the given code point is a trailing surrogate character.
- * @param {number} codePoint
- * @return {boolean} Whether the given code point is a trailing surrogate
- * character.
- */
-goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
-  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
-      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
-};
-
-
-/**
- * Composes a supplementary Unicode code point from the given UTF-16 surrogate
- * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
- * isn't a trailing surrogate code point, null is returned.
- * @param {number} lead The leading surrogate code point.
- * @param {number} trail The trailing surrogate code point.
- * @return {?number} The supplementary Unicode code point obtained by decoding
- * the given UTF-16 surrogate pair.
- */
-goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
-  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
-      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
-    const shiftedLeadOffset =
-        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
-        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
-         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
-    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
-        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
-    return shiftedLeadOffset + trailOffset;
-  }
-  return null;
-};
-
-//third_party/javascript/closure/structs/inversionmap.js
+//third_party/javascript/closure/i18n/numberformatsymbols.js
 /**
  * @license
  * Copyright The Closure Library Authors.
@@ -23143,628 +31369,9 @@ goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
  */
 
 /**
- * @fileoverview Provides inversion and inversion map functionality for storing
- * integer ranges and corresponding values.
- */
-
-goog.provide('goog.structs.InversionMap');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-
-
-
-/**
- * Maps ranges to values.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @constructor
- * @template T
- */
-goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
-  /**
-   * @protected {?Array<number>}
-   */
-  this.rangeArray = null;
-
-  goog.asserts.assert(
-      rangeArray.length == valueArray.length,
-      'rangeArray and valueArray must have the same length.');
-  this.storeInversion_(rangeArray, opt_delta);
-
-  /** @protected {Array<T>} */
-  this.values = valueArray;
-};
-
-
-/**
- * Stores the integers as ranges (half-open).
- * If delta is true, the integers are delta from the previous value and
- * will be restored to the absolute value.
- * When used as a set, even indices are IN, and odd are OUT.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- * @private
- */
-goog.structs.InversionMap.prototype.storeInversion_ = function(
-    rangeArray, opt_delta) {
-  this.rangeArray = rangeArray;
-
-  for (var i = 1; i < rangeArray.length; i++) {
-    if (rangeArray[i] == null) {
-      rangeArray[i] = rangeArray[i - 1] + 1;
-    } else if (opt_delta) {
-      rangeArray[i] += rangeArray[i - 1];
-    }
-  }
-};
-
-
-/**
- * Splices a range -> value map into this inversion map.
- * @param {Array<number>} rangeArray An array of monotonically
- *     increasing integer values, with at least one instance.
- * @param {Array<T>} valueArray An array of corresponding values.
- *     Length must be the same as rangeArray.
- * @param {boolean=} opt_delta If true, saves only delta from previous value.
- */
-goog.structs.InversionMap.prototype.spliceInversion = function(
-    rangeArray, valueArray, opt_delta) {
-  // By building another inversion map, we build the arrays that we need
-  // to splice in.
-  var otherMap =
-      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
-
-  // Figure out where to splice those arrays.
-  var startRange = otherMap.rangeArray[0];
-  var endRange =
-      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
-  var startSplice = this.getLeast(startRange);
-  var endSplice = this.getLeast(endRange);
-
-  // The inversion map works by storing the start points of ranges...
-  if (startRange != this.rangeArray[startSplice]) {
-    // ...if we're splicing in a start point that isn't already here,
-    // then we need to insert it after the insertion point.
-    startSplice++;
-  }  // otherwise we overwrite the insertion point.
-
-  this.rangeArray = this.rangeArray.slice(0, startSplice)
-                        .concat(otherMap.rangeArray)
-                        .concat(this.rangeArray.slice(endSplice + 1));
-  this.values = this.values.slice(0, startSplice)
-                    .concat(otherMap.values)
-                    .concat(this.values.slice(endSplice + 1));
-};
-
-
-/**
- * Gets the value corresponding to a number from the inversion map.
- * @param {number} intKey The number for which value needs to be retrieved
- *     from inversion map.
- * @return {T|null} Value retrieved from inversion map; null if not found.
- */
-goog.structs.InversionMap.prototype.at = function(intKey) {
-  var index = this.getLeast(intKey);
-  if (index < 0) {
-    return null;
-  }
-  return this.values[index];
-};
-
-
-/**
- * Gets the largest index such that rangeArray[index] <= intKey from the
- * inversion map.
- * @param {number} intKey The probe for which rangeArray is searched.
- * @return {number} Largest index such that rangeArray[index] <= intKey.
- * @protected
- */
-goog.structs.InversionMap.prototype.getLeast = function(intKey) {
-  var arr = this.rangeArray;
-  var low = 0;
-  var high = arr.length;
-  while (high - low > 8) {
-    var mid = (high + low) >> 1;
-    if (arr[mid] <= intKey) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-  for (; low < high; ++low) {
-    if (intKey < arr[low]) {
-      break;
-    }
-  }
-  return low - 1;
-};
-
-//javascript/closure/i18n/graphemebreak.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
- * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
- * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
- *
- * Reference: http://unicode.org/reports/tr29
- */
-
-goog.provide('goog.i18n.GraphemeBreak');
-
-goog.require('goog.asserts');
-goog.require('goog.i18n.uChar');
-goog.require('goog.structs.InversionMap');
-
-/**
- * Enum for all Grapheme Cluster Break properties.
- * These enums directly corresponds to Grapheme_Cluster_Break property values
- * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
- * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
- *
- * @protected @enum {number}
- */
-goog.i18n.GraphemeBreak.property = {
-  OTHER: 0,
-  CONTROL: 1,
-  EXTEND: 2,
-  PREPEND: 3,
-  SPACING_MARK: 4,
-  INDIC_LETTER: 5,
-  VIRAMA: 6,
-  L: 7,
-  V: 8,
-  T: 9,
-  LV: 10,
-  LVT: 11,
-  CR: 12,
-  LF: 13,
-  REGIONAL_INDICATOR: 14,
-  ZWJ: 15,
-  E_BASE: 16,
-  GLUE_AFTER_ZWJ: 17,
-  E_MODIFIER: 18,
-  E_BASE_GAZ: 19
-};
-
-
-/**
- * Grapheme Cluster Break property values for all codepoints as inversion map.
- * Constructed lazily.
- *
- * @private {?goog.structs.InversionMap}
- */
-goog.i18n.GraphemeBreak.inversions_ = null;
-
-
-/**
- * Indicates if a and b form a grapheme cluster.
- *
- * This implements the rules in:
- * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
- *
- * @param {number|string} a Code point or string with the first side of
- *     grapheme cluster.
- * @param {number|string} b Code point or string with the second side of
- *     grapheme cluster.
- * @param {boolean} extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster.
- * @return {boolean} True if a & b do not form a cluster; False otherwise.
- * @private
- */
-goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
-  var prop = goog.i18n.GraphemeBreak.property;
-
-  var aCode = (typeof a === 'string') ?
-      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
-      a;
-  var bCode =
-      (typeof b === 'string') ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
-
-  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
-  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
-
-  var isString = (typeof a === 'string');
-
-  // GB3.
-  if (aProp === prop.CR && bProp === prop.LF) {
-    return false;
-  }
-
-  // GB4.
-  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
-    return true;
-  }
-
-  // GB5.
-  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
-    return true;
-  }
-
-  // GB6.
-  if (aProp === prop.L &&
-      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
-       bProp === prop.LVT)) {
-    return false;
-  }
-
-  // GB7.
-  if ((aProp === prop.LV || aProp === prop.V) &&
-      (bProp === prop.V || bProp === prop.T)) {
-    return false;
-  }
-
-  // GB8.
-  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
-    return false;
-  }
-
-  // GB9.
-  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
-    return false;
-  }
-
-  // GB9a, GB9b.
-  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
-    return false;
-  }
-
-  // Tailorings for basic aksara support.
-  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
-    return false;
-  }
-
-  var aStr, index, codePoint, codePointProp;
-
-  // GB10.
-  if (isString) {
-    if (bProp === prop.E_MODIFIER) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.EXTEND) {
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing:
-    // (E_Base | EBG) × E_Modifier.
-    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
-        bProp === prop.E_MODIFIER) {
-      return false;
-    }
-  }
-
-  // GB11.
-  if (aProp === prop.ZWJ &&
-      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
-    return false;
-  }
-
-  // GB12, GB13.
-  if (isString) {
-    if (bProp === prop.REGIONAL_INDICATOR) {
-      // If using new API, consume the string's code points starting from the
-      // end and test the left side of these rules:
-      // - sot (RI RI)* RI × RI
-      // - [^RI] (RI RI)* RI × RI.
-      var numberOfRi = 0;
-      aStr = /** @type {string} */ (a);
-      index = aStr.length - 1;
-      codePoint = aCode;
-      codePointProp = aProp;
-      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-        index -= goog.i18n.uChar.charCount(codePoint);
-        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
-        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
-      }
-      if (codePointProp === prop.REGIONAL_INDICATOR) {
-        numberOfRi++;
-      }
-      if (numberOfRi % 2 === 1) {
-        return false;
-      }
-    }
-  } else {
-    // If using legacy API, return best effort by testing: RI × RI.
-    if (aProp === prop.REGIONAL_INDICATOR &&
-        bProp === prop.REGIONAL_INDICATOR) {
-      return false;
-    }
-  }
-
-  // GB999.
-  return true;
-};
-
-
-/**
- * Method to return property enum value of the code point. If it is Hangul LV or
- * LVT, then it is computed; for the rest it is picked from the inversion map.
- *
- * @param {number} codePoint The code point value of the character.
- * @return {number} Property enum value of code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
-  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
-    var prop = goog.i18n.GraphemeBreak.property;
-    if (codePoint % 0x1C === 0x10) {
-      return prop.LV;
-    }
-    return prop.LVT;
-  } else {
-    if (!goog.i18n.GraphemeBreak.inversions_) {
-      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
-          [
-            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
-            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
-            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
-            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
-            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
-            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
-            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
-            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
-            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
-            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
-            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
-            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
-            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
-            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
-            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
-            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
-            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
-            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
-            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
-            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
-            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
-            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
-            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
-            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
-            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
-            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
-            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
-            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
-            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
-            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
-            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
-            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
-            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
-            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
-            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
-            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
-            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
-            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
-            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
-            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
-            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
-            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
-            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
-            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
-            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
-            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
-            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
-            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
-            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
-            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
-            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
-            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
-            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
-            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
-            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
-            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
-            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
-            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
-            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
-            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
-            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
-            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
-            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
-            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
-            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
-            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
-            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
-            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
-            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
-            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
-            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
-            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
-            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
-            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
-            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
-            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
-            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
-            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
-            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
-            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
-            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
-            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
-            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
-            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
-            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
-            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
-            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
-            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
-            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
-            788162, 31
-          ],
-          [
-            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
-            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
-            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
-            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
-            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
-            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
-            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
-            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
-            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
-            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
-            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
-            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
-            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
-            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
-            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
-            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
-            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
-            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
-            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
-            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
-            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
-            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
-            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
-            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
-            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
-            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
-            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
-            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
-            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
-            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
-            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
-            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
-            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
-            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
-            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
-            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
-            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
-            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
-            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
-            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
-            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
-            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
-            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
-          ],
-          true);
-    }
-    return /** @type {number} */ (
-        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
-  }
-};
-
-/**
- * Extracts a code point from a string at the specified index.
- *
- * @param {string} str
- * @param {number} index
- * @return {number} Extracted code point.
- * @private
- */
-goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
-  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
-  return (codePoint < 0) ? -codePoint : codePoint;
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * Legacy function. Does not cover cases where a sequence of code points is
- * required in order to decide if there is a grapheme cluster boundary, such as
- * emoji modifier sequences and emoji flag sequences. To cover all cases please
- * use `hasGraphemeBreakStrings`.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {number} a The code point value of the first character.
- * @param {number} b The code point value of the second character.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-/**
- * Indicates if there is a grapheme cluster boundary between a and b.
- *
- * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
- * is to check for both using a boolean flag to switch between them. If no flag
- * is provided rules for the extended clusters will be used by default.
- *
- * @param {string} a String with the first sequence of characters.
- * @param {string} b String with the second sequence of characters.
- * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
- *     If false, indicates legacy cluster. Default value is true.
- * @return {boolean} True if there is a grapheme cluster boundary between
- *     a and b; False otherwise.
- */
-goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
-  goog.asserts.assert(a !== undefined, 'First string should be defined.');
-  goog.asserts.assert(b !== undefined, 'Second string should be defined.');
-
-  // Break if any of the strings is empty.
-  if (a.length === 0 || b.length === 0) {
-    return true;
-  }
-
-  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
-};
-
-//javascript/closure/i18n/numberformatsymbols.js
-// Copyright 2011 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-/**
  * @fileoverview Number formatting symbols.
  *
  * File generated from CLDR ver. 36
- * MOE:begin_intracomment_strip
- * This file is generated by
- *   //depot/google3/java/com/google/i18n/tools/generators/locale:locale
- * using the --for_closure flag.
- *
- * See {@link go/js-locale-data-update} for details.
- *
- * Before checking, this file could have been manually edited. This is
- * to incorporate changes before we could fix CLDR. All manual
- * modification must be documented in this section, and should be
- * removed after those changes land to CLDR.
- * MOE:end_intracomment_strip
  *
  * To reduce the file size (which may cause issues in some JS
  * developing environments), this file will only contain locales
@@ -26972,3813 +34579,12 @@ switch (goog.LOCALE) {
     break;
 }
 
-//third_party/javascript/closure/math/math.js
+//third_party/javascript/closure/i18n/numberformat.js
 /**
  * @license
  * Copyright The Closure Library Authors.
  * SPDX-License-Identifier: Apache-2.0
  */
-
-/**
- * @fileoverview Additional mathematical functions.
- */
-
-goog.provide('goog.math');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-
-
-/**
- * Returns a random integer greater than or equal to 0 and less than `a`.
- * @param {number} a  The upper bound for the random integer (exclusive).
- * @return {number} A random integer N such that 0 <= N < a.
- */
-goog.math.randomInt = function(a) {
-  return Math.floor(Math.random() * a);
-};
-
-
-/**
- * Returns a random number greater than or equal to `a` and less than
- * `b`.
- * @param {number} a  The lower bound for the random number (inclusive).
- * @param {number} b  The upper bound for the random number (exclusive).
- * @return {number} A random number N such that a <= N < b.
- */
-goog.math.uniformRandom = function(a, b) {
-  return a + Math.random() * (b - a);
-};
-
-
-/**
- * Takes a number and clamps it to within the provided bounds.
- * @param {number} value The input number.
- * @param {number} min The minimum value to return.
- * @param {number} max The maximum value to return.
- * @return {number} The input number if it is within bounds, or the nearest
- *     number within the bounds.
- */
-goog.math.clamp = function(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-};
-
-
-/**
- * The % operator in JavaScript returns the remainder of a / b, but differs from
- * some other languages in that the result will have the same sign as the
- * dividend. For example, -1 % 8 == -1, whereas in some other languages
- * (such as Python) the result would be 7. This function emulates the more
- * correct modulo behavior, which is useful for certain applications such as
- * calculating an offset index in a circular list.
- *
- * @param {number} a The dividend.
- * @param {number} b The divisor.
- * @return {number} a % b where the result is between 0 and b (either 0 <= x < b
- *     or b < x <= 0, depending on the sign of b).
- */
-goog.math.modulo = function(a, b) {
-  var r = a % b;
-  // If r and b differ in sign, add b to wrap the result to the correct sign.
-  return (r * b < 0) ? r + b : r;
-};
-
-
-/**
- * Performs linear interpolation between values a and b. Returns the value
- * between a and b proportional to x (when x is between 0 and 1. When x is
- * outside this range, the return value is a linear extrapolation).
- * @param {number} a A number.
- * @param {number} b A number.
- * @param {number} x The proportion between a and b.
- * @return {number} The interpolated value between a and b.
- */
-goog.math.lerp = function(a, b, x) {
-  return a + x * (b - a);
-};
-
-
-/**
- * Tests whether the two values are equal to each other, within a certain
- * tolerance to adjust for floating point errors.
- * @param {number} a A number.
- * @param {number} b A number.
- * @param {number=} opt_tolerance Optional tolerance range. Defaults
- *     to 0.000001. If specified, should be greater than 0.
- * @return {boolean} Whether `a` and `b` are nearly equal.
- */
-goog.math.nearlyEquals = function(a, b, opt_tolerance) {
-  return Math.abs(a - b) <= (opt_tolerance || 0.000001);
-};
-
-
-// TODO(jrajeshwar): Rename to normalizeAngle, retaining old name as deprecated
-// alias.
-/**
- * Normalizes an angle to be in range [0-360). Angles outside this range will
- * be normalized to be the equivalent angle with that range.
- * @param {number} angle Angle in degrees.
- * @return {number} Standardized angle.
- */
-goog.math.standardAngle = function(angle) {
-  return goog.math.modulo(angle, 360);
-};
-
-
-/**
- * Normalizes an angle to be in range [0-2*PI). Angles outside this range will
- * be normalized to be the equivalent angle with that range.
- * @param {number} angle Angle in radians.
- * @return {number} Standardized angle.
- */
-goog.math.standardAngleInRadians = function(angle) {
-  return goog.math.modulo(angle, 2 * Math.PI);
-};
-
-
-/**
- * Converts degrees to radians.
- * @param {number} angleDegrees Angle in degrees.
- * @return {number} Angle in radians.
- */
-goog.math.toRadians = function(angleDegrees) {
-  return angleDegrees * Math.PI / 180;
-};
-
-
-/**
- * Converts radians to degrees.
- * @param {number} angleRadians Angle in radians.
- * @return {number} Angle in degrees.
- */
-goog.math.toDegrees = function(angleRadians) {
-  return angleRadians * 180 / Math.PI;
-};
-
-
-/**
- * For a given angle and radius, finds the X portion of the offset.
- * @param {number} degrees Angle in degrees (zero points in +X direction).
- * @param {number} radius Radius.
- * @return {number} The x-distance for the angle and radius.
- */
-goog.math.angleDx = function(degrees, radius) {
-  return radius * Math.cos(goog.math.toRadians(degrees));
-};
-
-
-/**
- * For a given angle and radius, finds the Y portion of the offset.
- * @param {number} degrees Angle in degrees (zero points in +X direction).
- * @param {number} radius Radius.
- * @return {number} The y-distance for the angle and radius.
- */
-goog.math.angleDy = function(degrees, radius) {
-  return radius * Math.sin(goog.math.toRadians(degrees));
-};
-
-
-/**
- * Computes the angle between two points (x1,y1) and (x2,y2).
- * Angle zero points in the +X direction, 90 degrees points in the +Y
- * direction (down) and from there we grow clockwise towards 360 degrees.
- * @param {number} x1 x of first point.
- * @param {number} y1 y of first point.
- * @param {number} x2 x of second point.
- * @param {number} y2 y of second point.
- * @return {number} Standardized angle in degrees of the vector from
- *     x1,y1 to x2,y2.
- */
-goog.math.angle = function(x1, y1, x2, y2) {
-  return goog.math.standardAngle(
-      goog.math.toDegrees(Math.atan2(y2 - y1, x2 - x1)));
-};
-
-
-/**
- * Computes the difference between startAngle and endAngle (angles in degrees).
- * @param {number} startAngle  Start angle in degrees.
- * @param {number} endAngle  End angle in degrees.
- * @return {number} The number of degrees that when added to
- *     startAngle will result in endAngle. Positive numbers mean that the
- *     direction is clockwise. Negative numbers indicate a counter-clockwise
- *     direction.
- *     The shortest route (clockwise vs counter-clockwise) between the angles
- *     is used.
- *     When the difference is 180 degrees, the function returns 180 (not -180)
- *     angleDifference(30, 40) is 10, and angleDifference(40, 30) is -10.
- *     angleDifference(350, 10) is 20, and angleDifference(10, 350) is -20.
- */
-goog.math.angleDifference = function(startAngle, endAngle) {
-  var d =
-      goog.math.standardAngle(endAngle) - goog.math.standardAngle(startAngle);
-  if (d > 180) {
-    d = d - 360;
-  } else if (d <= -180) {
-    d = 360 + d;
-  }
-  return d;
-};
-
-
-/**
- * Returns the sign of a number as per the "sign" or "signum" function.
- * @param {number} x The number to take the sign of.
- * @return {number} -1 when negative, 1 when positive, 0 when 0. Preserves
- *     signed zeros and NaN.
- */
-goog.math.sign = function(x) {
-  if (x > 0) {
-    return 1;
-  }
-  if (x < 0) {
-    return -1;
-  }
-  return x;  // Preserves signed zeros and NaN.
-};
-
-
-/**
- * JavaScript implementation of Longest Common Subsequence problem.
- * http://en.wikipedia.org/wiki/Longest_common_subsequence
- *
- * Returns the longest possible array that is subarray of both of given arrays.
- *
- * @param {IArrayLike<S>} array1 First array of objects.
- * @param {IArrayLike<T>} array2 Second array of objects.
- * @param {Function=} opt_compareFn Function that acts as a custom comparator
- *     for the array ojects. Function should return true if objects are equal,
- *     otherwise false.
- * @param {Function=} opt_collectorFn Function used to decide what to return
- *     as a result subsequence. It accepts 2 arguments: index of common element
- *     in the first array and index in the second. The default function returns
- *     element from the first array.
- * @return {!Array<S|T>} A list of objects that are common to both arrays
- *     such that there is no common subsequence with size greater than the
- *     length of the list.
- * @template S,T
- */
-goog.math.longestCommonSubsequence = function(
-    array1, array2, opt_compareFn, opt_collectorFn) {
-
-  var compare = opt_compareFn || function(a, b) { return a == b; };
-
-  var collect = opt_collectorFn || function(i1, i2) { return array1[i1]; };
-
-  var length1 = array1.length;
-  var length2 = array2.length;
-
-  var arr = [];
-  for (var i = 0; i < length1 + 1; i++) {
-    arr[i] = [];
-    arr[i][0] = 0;
-  }
-
-  for (var j = 0; j < length2 + 1; j++) {
-    arr[0][j] = 0;
-  }
-
-  for (i = 1; i <= length1; i++) {
-    for (j = 1; j <= length2; j++) {
-      if (compare(array1[i - 1], array2[j - 1])) {
-        arr[i][j] = arr[i - 1][j - 1] + 1;
-      } else {
-        arr[i][j] = Math.max(arr[i - 1][j], arr[i][j - 1]);
-      }
-    }
-  }
-
-  // Backtracking
-  var result = [];
-  var i = length1, j = length2;
-  while (i > 0 && j > 0) {
-    if (compare(array1[i - 1], array2[j - 1])) {
-      result.unshift(collect(i - 1, j - 1));
-      i--;
-      j--;
-    } else {
-      if (arr[i - 1][j] > arr[i][j - 1]) {
-        i--;
-      } else {
-        j--;
-      }
-    }
-  }
-
-  return result;
-};
-
-
-/**
- * Returns the sum of the arguments.
- * @param {...number} var_args Numbers to add.
- * @return {number} The sum of the arguments (0 if no arguments were provided,
- *     `NaN` if any of the arguments is not a valid number).
- */
-goog.math.sum = function(var_args) {
-  return /** @type {number} */ (
-      goog.array.reduce(
-          arguments, function(sum, value) { return sum + value; }, 0));
-};
-
-
-/**
- * Returns the arithmetic mean of the arguments.
- * @param {...number} var_args Numbers to average.
- * @return {number} The average of the arguments (`NaN` if no arguments
- *     were provided or any of the arguments is not a valid number).
- */
-goog.math.average = function(var_args) {
-  return goog.math.sum.apply(null, arguments) / arguments.length;
-};
-
-
-/**
- * Returns the unbiased sample variance of the arguments. For a definition,
- * see e.g. http://en.wikipedia.org/wiki/Variance
- * @param {...number} var_args Number samples to analyze.
- * @return {number} The unbiased sample variance of the arguments (0 if fewer
- *     than two samples were provided, or `NaN` if any of the samples is
- *     not a valid number).
- */
-goog.math.sampleVariance = function(var_args) {
-  var sampleSize = arguments.length;
-  if (sampleSize < 2) {
-    return 0;
-  }
-
-  var mean = goog.math.average.apply(null, arguments);
-  var variance =
-      goog.math.sum.apply(null, goog.array.map(arguments, function(val) {
-        return Math.pow(val - mean, 2);
-      })) / (sampleSize - 1);
-
-  return variance;
-};
-
-
-/**
- * Returns the sample standard deviation of the arguments.  For a definition of
- * sample standard deviation, see e.g.
- * http://en.wikipedia.org/wiki/Standard_deviation
- * @param {...number} var_args Number samples to analyze.
- * @return {number} The sample standard deviation of the arguments (0 if fewer
- *     than two samples were provided, or `NaN` if any of the samples is
- *     not a valid number).
- */
-goog.math.standardDeviation = function(var_args) {
-  return Math.sqrt(goog.math.sampleVariance.apply(null, arguments));
-};
-
-
-/**
- * Returns whether the supplied number represents an integer, i.e. that is has
- * no fractional component.  No range-checking is performed on the number.
- * @param {number} num The number to test.
- * @return {boolean} Whether `num` is an integer.
- */
-goog.math.isInt = function(num) {
-  return isFinite(num) && num % 1 == 0;
-};
-
-
-/**
- * Returns whether the supplied number is finite and not NaN.
- * @param {number} num The number to test.
- * @return {boolean} Whether `num` is a finite number.
- * @deprecated Use {@link isFinite} instead.
- */
-goog.math.isFiniteNumber = function(num) {
-  return isFinite(num);
-};
-
-
-/**
- * @param {number} num The number to test.
- * @return {boolean} Whether it is negative zero.
- */
-goog.math.isNegativeZero = function(num) {
-  return num == 0 && 1 / num < 0;
-};
-
-
-/**
- * Returns the precise value of floor(log10(num)).
- * Simpler implementations didn't work because of floating point rounding
- * errors. For example
- * <ul>
- * <li>Math.floor(Math.log(num) / Math.LN10) is off by one for num == 1e+3.
- * <li>Math.floor(Math.log(num) * Math.LOG10E) is off by one for num == 1e+15.
- * <li>Math.floor(Math.log10(num)) is off by one for num == 1e+15 - 1.
- * </ul>
- * @param {number} num A floating point number.
- * @return {number} Its logarithm to base 10 rounded down to the nearest
- *     integer if num > 0. -Infinity if num == 0. NaN if num < 0.
- */
-goog.math.log10Floor = function(num) {
-  if (num > 0) {
-    var x = Math.round(Math.log(num) * Math.LOG10E);
-    return x - (parseFloat('1e' + x) > num ? 1 : 0);
-  }
-  return num == 0 ? -Infinity : NaN;
-};
-
-
-/**
- * A tweaked variant of `Math.floor` which tolerates if the passed number
- * is infinitesimally smaller than the closest integer. It often happens with
- * the results of floating point calculations because of the finite precision
- * of the intermediate results. For example {@code Math.floor(Math.log(1000) /
- * Math.LN10) == 2}, not 3 as one would expect.
- * @param {number} num A number.
- * @param {number=} opt_epsilon An infinitesimally small positive number, the
- *     rounding error to tolerate.
- * @return {number} The largest integer less than or equal to `num`.
- */
-goog.math.safeFloor = function(num, opt_epsilon) {
-  goog.asserts.assert(opt_epsilon === undefined || opt_epsilon > 0);
-  return Math.floor(num + (opt_epsilon || 2e-15));
-};
-
-
-/**
- * A tweaked variant of `Math.ceil`. See `goog.math.safeFloor` for
- * details.
- * @param {number} num A number.
- * @param {number=} opt_epsilon An infinitesimally small positive number, the
- *     rounding error to tolerate.
- * @return {number} The smallest integer greater than or equal to `num`.
- */
-goog.math.safeCeil = function(num, opt_epsilon) {
-  goog.asserts.assert(opt_epsilon === undefined || opt_epsilon > 0);
-  return Math.ceil(num - (opt_epsilon || 2e-15));
-};
-
-//third_party/javascript/closure/dom/asserts.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-goog.provide('goog.dom.asserts');
-
-goog.require('goog.asserts');
-
-/**
- * @fileoverview Custom assertions to ensure that an element has the appropriate
- * type.
- *
- * Using a goog.dom.safe wrapper on an object on the incorrect type (via an
- * incorrect static type cast) can result in security bugs: For instance,
- * g.d.s.setAnchorHref ensures that the URL assigned to the .href attribute
- * satisfies the SafeUrl contract, i.e., is safe to dereference as a hyperlink.
- * However, the value assigned to a HTMLLinkElement's .href property requires
- * the stronger TrustedResourceUrl contract, since it can refer to a stylesheet.
- * Thus, using g.d.s.setAnchorHref on an (incorrectly statically typed) object
- * of type HTMLLinkElement can result in a security vulnerability.
- * Assertions of the correct run-time type help prevent such incorrect use.
- *
- * In some cases, code using the DOM API is tested using mock objects (e.g., a
- * plain object such as {'href': url} instead of an actual Location object).
- * To allow such mocking, the assertions permit objects of types that are not
- * relevant DOM API objects at all (for instance, not Element or Location).
- *
- * Note that instanceof checks don't work straightforwardly in older versions of
- * IE, or across frames (see,
- * http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object,
- * http://stackoverflow.com/questions/26248599/instanceof-htmlelement-in-iframe-is-not-element-or-object).
- *
- * Hence, these assertions may pass vacuously in such scenarios. The resulting
- * risk of security bugs is limited by the following factors:
- *  - A bug can only arise in scenarios involving incorrect static typing (the
- *    wrapper methods are statically typed to demand objects of the appropriate,
- *    precise type).
- *  - Typically, code is tested and exercised in multiple browsers.
- */
-
-/**
- * Asserts that a given object is a Location.
- *
- * To permit this assertion to pass in the context of tests where DOM APIs might
- * be mocked, also accepts any other type except for subtypes of {!Element}.
- * This is to ensure that, for instance, HTMLLinkElement is not being used in
- * place of a Location, since this could result in security bugs due to stronger
- * contracts required for assignments to the href property of the latter.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!Location}
- */
-goog.dom.asserts.assertIsLocation = function(o) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var win = goog.dom.asserts.getWindow_(o);
-    if (win) {
-      if (!o || (!(o instanceof win.Location) && o instanceof win.Element)) {
-        goog.asserts.fail(
-            'Argument is not a Location (or a non-Element mock); got: %s',
-            goog.dom.asserts.debugStringForType_(o));
-      }
-    }
-  }
-  return /** @type {!Location} */ (o);
-};
-
-
-/**
- * Asserts that a given object is either the given subtype of Element
- * or a non-Element, non-Location Mock.
- *
- * To permit this assertion to pass in the context of tests where DOM
- * APIs might be mocked, also accepts any other type except for
- * subtypes of {!Element}.  This is to ensure that, for instance,
- * HTMLScriptElement is not being used in place of a HTMLImageElement,
- * since this could result in security bugs due to stronger contracts
- * required for assignments to the src property of the latter.
- *
- * The DOM type is looked up in the window the object belongs to.  In
- * some contexts, this might not be possible (e.g. when running tests
- * outside a browser, cross-domain lookup). In this case, the
- * assertions are skipped.
- *
- * @param {?Object} o The object whose type to assert.
- * @param {string} typename The name of the DOM type.
- * @return {!Element} The object.
- * @private
- */
-// TODO(bangert): Make an analog of goog.dom.TagName to correctly handle casts?
-goog.dom.asserts.assertIsElementType_ = function(o, typename) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var win = goog.dom.asserts.getWindow_(o);
-    if (win && typeof win[typename] != 'undefined') {
-      if (!o ||
-          (!(o instanceof win[typename]) &&
-           (o instanceof win.Location || o instanceof win.Element))) {
-        goog.asserts.fail(
-            'Argument is not a %s (or a non-Element, non-Location mock); ' +
-                'got: %s',
-            typename, goog.dom.asserts.debugStringForType_(o));
-      }
-    }
-  }
-  return /** @type {!Element} */ (o);
-};
-
-/**
- * Asserts that a given object is a HTMLAnchorElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not of type Location nor a subtype
- * of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLAnchorElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlAnchorElement instead.
- */
-goog.dom.asserts.assertIsHTMLAnchorElement = function(o) {
-  return /** @type {!HTMLAnchorElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLAnchorElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLButtonElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLButtonElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlButtonElement instead.
- */
-goog.dom.asserts.assertIsHTMLButtonElement = function(o) {
-  return /** @type {!HTMLButtonElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLButtonElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLLinkElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLLinkElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlLinkElement instead.
- */
-goog.dom.asserts.assertIsHTMLLinkElement = function(o) {
-  return /** @type {!HTMLLinkElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLLinkElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLImageElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLImageElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlImageElement instead.
- */
-goog.dom.asserts.assertIsHTMLImageElement = function(o) {
-  return /** @type {!HTMLImageElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLImageElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLAudioElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLAudioElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlAudioElement instead.
- */
-goog.dom.asserts.assertIsHTMLAudioElement = function(o) {
-  return /** @type {!HTMLAudioElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLAudioElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLVideoElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLVideoElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlVideoElement instead.
- */
-goog.dom.asserts.assertIsHTMLVideoElement = function(o) {
-  return /** @type {!HTMLVideoElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLVideoElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLInputElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLInputElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlInputElement instead.
- */
-goog.dom.asserts.assertIsHTMLInputElement = function(o) {
-  return /** @type {!HTMLInputElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLInputElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLTextAreaElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLTextAreaElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlTextAreaElement instead.
- */
-goog.dom.asserts.assertIsHTMLTextAreaElement = function(o) {
-  return /** @type {!HTMLTextAreaElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLTextAreaElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLCanvasElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLCanvasElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlCanvasElement instead.
- */
-goog.dom.asserts.assertIsHTMLCanvasElement = function(o) {
-  return /** @type {!HTMLCanvasElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLCanvasElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLEmbedElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLEmbedElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlEmbedElement instead.
- */
-goog.dom.asserts.assertIsHTMLEmbedElement = function(o) {
-  return /** @type {!HTMLEmbedElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLEmbedElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLFormElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLFormElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlFormElement instead.
- */
-goog.dom.asserts.assertIsHTMLFormElement = function(o) {
-  return /** @type {!HTMLFormElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLFormElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLFrameElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLFrameElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlFrameElement instead.
- */
-goog.dom.asserts.assertIsHTMLFrameElement = function(o) {
-  return /** @type {!HTMLFrameElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLFrameElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLIFrameElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLIFrameElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlIFrameElement instead.
- */
-goog.dom.asserts.assertIsHTMLIFrameElement = function(o) {
-  return /** @type {!HTMLIFrameElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLIFrameElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLObjectElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLObjectElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlObjectElement instead.
- */
-goog.dom.asserts.assertIsHTMLObjectElement = function(o) {
-  return /** @type {!HTMLObjectElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLObjectElement'));
-};
-
-/**
- * Asserts that a given object is a HTMLScriptElement.
- *
- * To permit this assertion to pass in the context of tests where elements might
- * be mocked, also accepts objects that are not a subtype of Element.
- *
- * @param {?Object} o The object whose type to assert.
- * @return {!HTMLScriptElement}
- * @deprecated Use goog.asserts.dom.assertIsHtmlScriptElement instead.
- */
-goog.dom.asserts.assertIsHTMLScriptElement = function(o) {
-  return /** @type {!HTMLScriptElement} */ (
-      goog.dom.asserts.assertIsElementType_(o, 'HTMLScriptElement'));
-};
-
-/**
- * Returns a string representation of a value's type.
- *
- * @param {*} value An object, or primitive.
- * @return {string} The best display name for the value.
- * @private
- */
-goog.dom.asserts.debugStringForType_ = function(value) {
-  if (goog.isObject(value)) {
-    try {
-      return /** @type {string|undefined} */ (value.constructor.displayName) ||
-          value.constructor.name || Object.prototype.toString.call(value);
-    } catch (e) {
-      return '<object could not be stringified>';
-    }
-  } else {
-    return value === undefined ? 'undefined' :
-                                 value === null ? 'null' : typeof value;
-  }
-};
-
-/**
- * Gets window of element.
- * @param {?Object} o
- * @return {?Window}
- * @private
- * @suppress {strictMissingProperties} ownerDocument not defined on Object
- */
-goog.dom.asserts.getWindow_ = function(o) {
-  try {
-    var doc = o && o.ownerDocument;
-    // This can throw “Blocked a frame with origin "chrome-extension://..." from
-    // accessing a cross-origin frame” in Chrome extension.
-    var win =
-        doc && /** @type {?Window} */ (doc.defaultView || doc.parentWindow);
-    win = win || /** @type {!Window} */ (goog.global);
-    // This can throw “Permission denied to access property "Element" on
-    // cross-origin object”.
-    if (win.Element && win.Location) {
-      return win;
-    }
-  } catch (ex) {
-  }
-  return null;
-};
-
-//third_party/javascript/closure/functions/functions.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Utilities for creating functions. Loosely inspired by these
- * java classes from the Guava library:
- * com.google.common.base.Functions
- * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Functions.html
- *
- * com.google.common.base.Predicates
- * https://google.github.io/guava/releases/snapshot-jre/api/docs/index.html?com/google/common/base/Predicates.html
- *
- * More about these can be found at
- * https://github.com/google/guava/wiki/FunctionalExplained
- */
-
-
-goog.provide('goog.functions');
-
-
-/**
- * Creates a function that always returns the same value.
- * @param {T} retValue The value to return.
- * @return {function():T} The new function.
- * @template T
- */
-goog.functions.constant = function(retValue) {
-  return function() { return retValue; };
-};
-
-
-/**
- * Always returns false.
- * @type {function(...): boolean}
- */
-goog.functions.FALSE = function() {
-  return false;
-};
-
-
-/**
- * Always returns true.
- * @type {function(...): boolean}
- */
-goog.functions.TRUE = function() {
-  return true;
-};
-
-
-/**
- * Always returns NULL.
- * @type {function(...): null}
- */
-goog.functions.NULL = function() {
-  return null;
-};
-
-
-/**
- * A simple function that returns the first argument of whatever is passed
- * into it.
- * @param {T=} opt_returnValue The single value that will be returned.
- * @param {...*} var_args Optional trailing arguments. These are ignored.
- * @return {T} The first argument passed in, or undefined if nothing was passed.
- * @template T
- */
-goog.functions.identity = function(opt_returnValue, var_args) {
-  return opt_returnValue;
-};
-
-
-/**
- * Creates a function that always throws an error with the given message.
- * @param {string} message The error message.
- * @return {!Function} The error-throwing function.
- */
-goog.functions.error = function(message) {
-  return function() {
-    throw new Error(message);
-  };
-};
-
-
-/**
- * Creates a function that throws the given object.
- * @param {*} err An object to be thrown.
- * @return {!Function} The error-throwing function.
- */
-goog.functions.fail = function(err) {
-  return function() { throw err; };
-};
-
-
-/**
- * Given a function, create a function that keeps opt_numArgs arguments and
- * silently discards all additional arguments.
- * @param {Function} f The original function.
- * @param {number=} opt_numArgs The number of arguments to keep. Defaults to 0.
- * @return {!Function} A version of f that only keeps the first opt_numArgs
- *     arguments.
- */
-goog.functions.lock = function(f, opt_numArgs) {
-  opt_numArgs = opt_numArgs || 0;
-  return function() {
-    const self = /** @type {*} */ (this);
-    return f.apply(self, Array.prototype.slice.call(arguments, 0, opt_numArgs));
-  };
-};
-
-
-/**
- * Creates a function that returns its nth argument.
- * @param {number} n The position of the return argument.
- * @return {!Function} A new function.
- */
-goog.functions.nth = function(n) {
-  return function() { return arguments[n]; };
-};
-
-
-/**
- * Like goog.partial(), except that arguments are added after arguments to the
- * returned function.
- *
- * Usage:
- * function f(arg1, arg2, arg3, arg4) { ... }
- * var g = goog.functions.partialRight(f, arg3, arg4);
- * g(arg1, arg2);
- *
- * @param {!Function} fn A function to partially apply.
- * @param {...*} var_args Additional arguments that are partially applied to fn
- *     at the end.
- * @return {!Function} A partially-applied form of the function goog.partial()
- *     was invoked as a method of.
- */
-goog.functions.partialRight = function(fn, var_args) {
-  const rightArgs = Array.prototype.slice.call(arguments, 1);
-  return function() {
-    const self = /** @type {*} */ (this);
-    const newArgs = Array.prototype.slice.call(arguments);
-    newArgs.push.apply(newArgs, rightArgs);
-    return fn.apply(self, newArgs);
-  };
-};
-
-
-/**
- * Given a function, create a new function that swallows its return value
- * and replaces it with a new one.
- * @param {Function} f A function.
- * @param {T} retValue A new return value.
- * @return {function(...?):T} A new function.
- * @template T
- */
-goog.functions.withReturnValue = function(f, retValue) {
-  return goog.functions.sequence(f, goog.functions.constant(retValue));
-};
-
-
-/**
- * Creates a function that returns whether its argument equals the given value.
- *
- * Example:
- * var key = goog.object.findKey(obj, goog.functions.equalTo('needle'));
- *
- * @param {*} value The value to compare to.
- * @param {boolean=} opt_useLooseComparison Whether to use a loose (==)
- *     comparison rather than a strict (===) one. Defaults to false.
- * @return {function(*):boolean} The new function.
- */
-goog.functions.equalTo = function(value, opt_useLooseComparison) {
-  return function(other) {
-    return opt_useLooseComparison ? (value == other) : (value === other);
-  };
-};
-
-
-/**
- * Creates the composition of the functions passed in.
- * For example, (goog.functions.compose(f, g))(a) is equivalent to f(g(a)).
- * @param {function(...?):T} fn The final function.
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):T} The composition of all inputs.
- * @template T
- */
-goog.functions.compose = function(fn, var_args) {
-  const functions = arguments;
-  const length = functions.length;
-  return function() {
-    const self = /** @type {*} */ (this);
-    let result;
-    if (length) {
-      result = functions[length - 1].apply(self, arguments);
-    }
-
-    for (let i = length - 2; i >= 0; i--) {
-      result = functions[i].call(self, result);
-    }
-    return result;
-  };
-};
-
-
-/**
- * Creates a function that calls the functions passed in in sequence, and
- * returns the value of the last function. For example,
- * (goog.functions.sequence(f, g))(x) is equivalent to f(x),g(x).
- * @param {...Function} var_args A list of functions.
- * @return {!Function} A function that calls all inputs in sequence.
- */
-goog.functions.sequence = function(var_args) {
-  const functions = arguments;
-  const length = functions.length;
-  return function() {
-    const self = /** @type {*} */ (this);
-    let result;
-    for (let i = 0; i < length; i++) {
-      result = functions[i].apply(self, arguments);
-    }
-    return result;
-  };
-};
-
-
-/**
- * Creates a function that returns true if each of its components evaluates
- * to true. The components are evaluated in order, and the evaluation will be
- * short-circuited as soon as a function returns false.
- * For example, (goog.functions.and(f, g))(x) is equivalent to f(x) && g(x).
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):boolean} A function that ANDs its component
- *      functions.
- */
-goog.functions.and = function(var_args) {
-  const functions = arguments;
-  const length = functions.length;
-  return function() {
-    const self = /** @type {*} */ (this);
-    for (let i = 0; i < length; i++) {
-      if (!functions[i].apply(self, arguments)) {
-        return false;
-      }
-    }
-    return true;
-  };
-};
-
-
-/**
- * Creates a function that returns true if any of its components evaluates
- * to true. The components are evaluated in order, and the evaluation will be
- * short-circuited as soon as a function returns true.
- * For example, (goog.functions.or(f, g))(x) is equivalent to f(x) || g(x).
- * @param {...Function} var_args A list of functions.
- * @return {function(...?):boolean} A function that ORs its component
- *    functions.
- */
-goog.functions.or = function(var_args) {
-  const functions = arguments;
-  const length = functions.length;
-  return function() {
-    const self = /** @type {*} */ (this);
-    for (let i = 0; i < length; i++) {
-      if (functions[i].apply(self, arguments)) {
-        return true;
-      }
-    }
-    return false;
-  };
-};
-
-
-/**
- * Creates a function that returns the Boolean opposite of a provided function.
- * For example, (goog.functions.not(f))(x) is equivalent to !f(x).
- * @param {!Function} f The original function.
- * @return {function(...?):boolean} A function that delegates to f and returns
- * opposite.
- */
-goog.functions.not = function(f) {
-  return function() {
-    const self = /** @type {*} */ (this);
-    return !f.apply(self, arguments);
-  };
-};
-
-
-/**
- * Generic factory function to construct an object given the constructor
- * and the arguments. Intended to be bound to create object factories.
- *
- * Example:
- *
- * var factory = goog.partial(goog.functions.create, Class);
- *
- * @param {function(new:T, ...)} constructor The constructor for the Object.
- * @param {...*} var_args The arguments to be passed to the constructor.
- * @return {T} A new instance of the class given in `constructor`.
- * @template T
- * @deprecated This function does not work with ES6 class constructors. Use
- *     arrow functions + spread args instead.
- */
-goog.functions.create = function(constructor, var_args) {
-  /**
-   * @constructor
-   * @final
-   */
-  const temp = function() {};
-  temp.prototype = constructor.prototype;
-
-  // obj will have constructor's prototype in its chain and
-  // 'obj instanceof constructor' will be true.
-  const obj = new temp();
-
-  // obj is initialized by constructor.
-  // arguments is only array-like so lacks shift(), but can be used with
-  // the Array prototype function.
-  constructor.apply(obj, Array.prototype.slice.call(arguments, 1));
-  return obj;
-};
-
-
-/**
- * @define {boolean} Whether the return value cache should be used.
- *    This should only be used to disable caches when testing.
- */
-goog.functions.CACHE_RETURN_VALUE =
-    goog.define('goog.functions.CACHE_RETURN_VALUE', true);
-
-
-/**
- * Gives a wrapper function that caches the return value of a parameterless
- * function when first called.
- *
- * When called for the first time, the given function is called and its
- * return value is cached (thus this is only appropriate for idempotent
- * functions).  Subsequent calls will return the cached return value. This
- * allows the evaluation of expensive functions to be delayed until first used.
- *
- * To cache the return values of functions with parameters, see goog.memoize.
- *
- * @param {function():T} fn A function to lazily evaluate.
- * @return {function():T} A wrapped version the function.
- * @template T
- */
-goog.functions.cacheReturnValue = function(fn) {
-  let called = false;
-  let value;
-
-  return function() {
-    if (!goog.functions.CACHE_RETURN_VALUE) {
-      return fn();
-    }
-
-    if (!called) {
-      value = fn();
-      called = true;
-    }
-
-    return value;
-  };
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once. All
- * additional calls are no-ops.
- *
- * This is particularly useful for initialization functions
- * that should be called, at most, once.
- *
- * @param {function():*} f Function to call.
- * @return {function():undefined} Wrapped function.
- */
-goog.functions.once = function(f) {
-  // Keep a reference to the function that we null out when we're done with
-  // it -- that way, the function can be GC'd when we're done with it.
-  let inner = f;
-  return function() {
-    if (inner) {
-      const tmp = inner;
-      inner = null;
-      tmp();
-    }
-  };
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times within
- * that interval, only the Nth call will go through.
- *
- * This is particularly useful for batching up repeated actions where the
- * last action should win. This can be used, for example, for refreshing an
- * autocomplete pop-up every so often rather than updating with every keystroke,
- * since the final text typed by the user is the one that should produce the
- * final autocomplete results. For more stateful debouncing with support for
- * pausing, resuming, and canceling debounced actions, use
- * `goog.async.Debouncer`.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to debounce. The function will
- *     only be called after the full interval has elapsed since the last call.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.debounce = function(f, interval, opt_scope) {
-  let timeout = 0;
-  return /** @type {function(...?)} */ (function(var_args) {
-    goog.global.clearTimeout(timeout);
-    const args = arguments;
-    timeout = goog.global.setTimeout(function() {
-      f.apply(opt_scope, args);
-    }, interval);
-  });
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times in
- * that interval, both the 1st and the Nth calls will go through.
- *
- * This is particularly useful for limiting repeated user requests where the
- * the last action should win, but you also don't want to wait until the end of
- * the interval before sending a request out, as it leads to a perception of
- * slowness for the user.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to throttle. The function can
- *     only be called once per interval.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.throttle = function(f, interval, opt_scope) {
-  let timeout = 0;
-  let shouldFire = false;
-  let args = [];
-
-  const handleTimeout = function() {
-    timeout = 0;
-    if (shouldFire) {
-      shouldFire = false;
-      fire();
-    }
-  };
-
-  const fire = function() {
-    timeout = goog.global.setTimeout(handleTimeout, interval);
-    f.apply(opt_scope, args);
-  };
-
-  return /** @type {function(...?)} */ (function(var_args) {
-    args = arguments;
-    if (!timeout) {
-      fire();
-    } else {
-      shouldFire = true;
-    }
-  });
-};
-
-
-/**
- * Wraps a function to allow it to be called, at most, once per interval
- * (specified in milliseconds). If the wrapper function is called N times within
- * that interval, only the 1st call will go through.
- *
- * This is particularly useful for limiting repeated user requests where the
- * first request is guaranteed to have all the data required to perform the
- * final action, so there's no need to wait until the end of the interval before
- * sending the request out.
- *
- * @param {function(this:SCOPE, ...?)} f Function to call.
- * @param {number} interval Interval over which to rate-limit. The function will
- *     only be called once per interval, and ignored for the remainer of the
- *     interval.
- * @param {SCOPE=} opt_scope Object in whose scope to call the function.
- * @return {function(...?): undefined} Wrapped function.
- * @template SCOPE
- */
-goog.functions.rateLimit = function(f, interval, opt_scope) {
-  let timeout = 0;
-
-  const handleTimeout = function() {
-    timeout = 0;
-  };
-
-  return /** @type {function(...?)} */ (function(var_args) {
-    if (!timeout) {
-      timeout = goog.global.setTimeout(handleTimeout, interval);
-      f.apply(opt_scope, arguments);
-    }
-  });
-};
-
-//third_party/javascript/closure/html/uncheckedconversions.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Unchecked conversions to create values of goog.html types from
- * plain strings.  Use of these functions could potentially result in instances
- * of goog.html types that violate their type contracts, and hence result in
- * security vulnerabilties.
- *
- * Therefore, all uses of the methods herein must be carefully security
- * reviewed.  Avoid use of the methods in this file whenever possible; instead
- * prefer to create instances of goog.html types using inherently safe builders
- * or template systems.
- *
- *
- */
-
-
-goog.provide('goog.html.uncheckedconversions');
-
-goog.require('goog.asserts');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeScript');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeStyleSheet');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.string.Const');
-goog.require('goog.string.internal');
-
-
-/**
- * Performs an "unchecked conversion" to SafeHtml from a plain string that is
- * known to satisfy the SafeHtml type contract.
- *
- * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of `html` satisfies the SafeHtml type contract in all
- * possible program states.
- *
- *
- * @param {!goog.string.Const} justification A constant string explaining why
- *     this use of this method is safe. May include a security review ticket
- *     number.
- * @param {string} html A string that is claimed to adhere to the SafeHtml
- *     contract.
- * @param {?goog.i18n.bidi.Dir=} opt_dir The optional directionality of the
- *     SafeHtml to be constructed. A null or undefined value signifies an
- *     unknown directionality.
- * @return {!goog.html.SafeHtml} The value of html, wrapped in a SafeHtml
- *     object.
- */
-goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
-    function(justification, html, opt_dir) {
-  // unwrap() called inside an assert so that justification can be optimized
-  // away in production code.
-  goog.asserts.assertString(
-      goog.string.Const.unwrap(justification), 'must provide justification');
-  goog.asserts.assert(
-      !goog.string.internal.isEmptyOrWhitespace(
-          goog.string.Const.unwrap(justification)),
-      'must provide non-empty justification');
-  return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-      html, opt_dir || null);
-};
-
-
-/**
- * Performs an "unchecked conversion" to SafeScript from a plain string that is
- * known to satisfy the SafeScript type contract.
- *
- * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of `script` satisfies the SafeScript type contract in
- * all possible program states.
- *
- *
- * @param {!goog.string.Const} justification A constant string explaining why
- *     this use of this method is safe. May include a security review ticket
- *     number.
- * @param {string} script The string to wrap as a SafeScript.
- * @return {!goog.html.SafeScript} The value of `script`, wrapped in a
- *     SafeScript object.
- */
-goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
-    function(justification, script) {
-  // unwrap() called inside an assert so that justification can be optimized
-  // away in production code.
-  goog.asserts.assertString(
-      goog.string.Const.unwrap(justification), 'must provide justification');
-  goog.asserts.assert(
-      !goog.string.internal.isEmptyOrWhitespace(
-          goog.string.Const.unwrap(justification)),
-      'must provide non-empty justification');
-  return goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
-      script);
-};
-
-
-/**
- * Performs an "unchecked conversion" to SafeStyle from a plain string that is
- * known to satisfy the SafeStyle type contract.
- *
- * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of `style` satisfies the SafeStyle type contract in all
- * possible program states.
- *
- *
- * @param {!goog.string.Const} justification A constant string explaining why
- *     this use of this method is safe. May include a security review ticket
- *     number.
- * @param {string} style The string to wrap as a SafeStyle.
- * @return {!goog.html.SafeStyle} The value of `style`, wrapped in a
- *     SafeStyle object.
- */
-goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
-    function(justification, style) {
-  // unwrap() called inside an assert so that justification can be optimized
-  // away in production code.
-  goog.asserts.assertString(
-      goog.string.Const.unwrap(justification), 'must provide justification');
-  goog.asserts.assert(
-      !goog.string.internal.isEmptyOrWhitespace(
-          goog.string.Const.unwrap(justification)),
-      'must provide non-empty justification');
-  return goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse(
-      style);
-};
-
-
-/**
- * Performs an "unchecked conversion" to SafeStyleSheet from a plain string
- * that is known to satisfy the SafeStyleSheet type contract.
- *
- * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of `styleSheet` satisfies the SafeStyleSheet type
- * contract in all possible program states.
- *
- *
- * @param {!goog.string.Const} justification A constant string explaining why
- *     this use of this method is safe. May include a security review ticket
- *     number.
- * @param {string} styleSheet The string to wrap as a SafeStyleSheet.
- * @return {!goog.html.SafeStyleSheet} The value of `styleSheet`, wrapped
- *     in a SafeStyleSheet object.
- */
-goog.html.uncheckedconversions
-    .safeStyleSheetFromStringKnownToSatisfyTypeContract = function(
-    justification, styleSheet) {
-  // unwrap() called inside an assert so that justification can be optimized
-  // away in production code.
-  goog.asserts.assertString(
-      goog.string.Const.unwrap(justification), 'must provide justification');
-  goog.asserts.assert(
-      !goog.string.internal.isEmptyOrWhitespace(
-          goog.string.Const.unwrap(justification)),
-      'must provide non-empty justification');
-  return goog.html.SafeStyleSheet
-      .createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet);
-};
-
-
-/**
- * Performs an "unchecked conversion" to SafeUrl from a plain string that is
- * known to satisfy the SafeUrl type contract.
- *
- * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of `url` satisfies the SafeUrl type contract in all
- * possible program states.
- *
- *
- * @param {!goog.string.Const} justification A constant string explaining why
- *     this use of this method is safe. May include a security review ticket
- *     number.
- * @param {string} url The string to wrap as a SafeUrl.
- * @return {!goog.html.SafeUrl} The value of `url`, wrapped in a SafeUrl
- *     object.
- */
-goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
-    function(justification, url) {
-  // unwrap() called inside an assert so that justification can be optimized
-  // away in production code.
-  goog.asserts.assertString(
-      goog.string.Const.unwrap(justification), 'must provide justification');
-  goog.asserts.assert(
-      !goog.string.internal.isEmptyOrWhitespace(
-          goog.string.Const.unwrap(justification)),
-      'must provide non-empty justification');
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
-};
-
-
-/**
- * Performs an "unchecked conversion" to TrustedResourceUrl from a plain string
- * that is known to satisfy the TrustedResourceUrl type contract.
- *
- * IMPORTANT: Uses of this method must be carefully security-reviewed to ensure
- * that the value of `url` satisfies the TrustedResourceUrl type contract
- * in all possible program states.
- *
- *
- * @param {!goog.string.Const} justification A constant string explaining why
- *     this use of this method is safe. May include a security review ticket
- *     number.
- * @param {string} url The string to wrap as a TrustedResourceUrl.
- * @return {!goog.html.TrustedResourceUrl} The value of `url`, wrapped in
- *     a TrustedResourceUrl object.
- */
-goog.html.uncheckedconversions
-    .trustedResourceUrlFromStringKnownToSatisfyTypeContract = function(
-    justification, url) {
-  // unwrap() called inside an assert so that justification can be optimized
-  // away in production code.
-  goog.asserts.assertString(
-      goog.string.Const.unwrap(justification), 'must provide justification');
-  goog.asserts.assert(
-      !goog.string.internal.isEmptyOrWhitespace(
-          goog.string.Const.unwrap(justification)),
-      'must provide non-empty justification');
-  return goog.html.TrustedResourceUrl
-      .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(url);
-};
-
-//third_party/javascript/closure/dom/safe.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Type-safe wrappers for unsafe DOM APIs.
- *
- * This file provides type-safe wrappers for DOM APIs that can result in
- * cross-site scripting (XSS) vulnerabilities, if the API is supplied with
- * untrusted (attacker-controlled) input.  Instead of plain strings, the type
- * safe wrappers consume values of types from the goog.html package whose
- * contract promises that values are safe to use in the corresponding context.
- *
- * Hence, a program that exclusively uses the wrappers in this file (i.e., whose
- * only reference to security-sensitive raw DOM APIs are in this file) is
- * guaranteed to be free of XSS due to incorrect use of such DOM APIs (modulo
- * correctness of code that produces values of the respective goog.html types,
- * and absent code that violates type safety).
- *
- * For example, assigning to an element's .innerHTML property a string that is
- * derived (even partially) from untrusted input typically results in an XSS
- * vulnerability. The type-safe wrapper goog.dom.safe.setInnerHtml consumes a
- * value of type goog.html.SafeHtml, whose contract states that using its values
- * in a HTML context will not result in XSS. Hence a program that is free of
- * direct assignments to any element's innerHTML property (with the exception of
- * the assignment to .innerHTML in this file) is guaranteed to be free of XSS
- * due to assignment of untrusted strings to the innerHTML property.
- */
-
-goog.provide('goog.dom.safe');
-goog.provide('goog.dom.safe.InsertAdjacentHtmlPosition');
-
-goog.require('goog.asserts');
-goog.require('goog.dom.asserts');
-goog.require('goog.functions');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeScript');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.html.uncheckedconversions');
-goog.require('goog.string.Const');
-goog.require('goog.string.internal');
-
-
-/** @enum {string} */
-goog.dom.safe.InsertAdjacentHtmlPosition = {
-  AFTERBEGIN: 'afterbegin',
-  AFTEREND: 'afterend',
-  BEFOREBEGIN: 'beforebegin',
-  BEFOREEND: 'beforeend'
-};
-
-
-/**
- * Inserts known-safe HTML into a Node, at the specified position.
- * @param {!Node} node The node on which to call insertAdjacentHTML.
- * @param {!goog.dom.safe.InsertAdjacentHtmlPosition} position Position where
- *     to insert the HTML.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to insert.
- */
-goog.dom.safe.insertAdjacentHtml = function(node, position, html) {
-  node.insertAdjacentHTML(position, goog.html.SafeHtml.unwrapTrustedHTML(html));
-};
-
-
-/**
- * Tags not allowed in goog.dom.safe.setInnerHtml.
- * @private @const {!Object<string, boolean>}
- */
-goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_ = {
-  'MATH': true,
-  'SCRIPT': true,
-  'STYLE': true,
-  'SVG': true,
-  'TEMPLATE': true
-};
-
-
-/**
- * Whether assigning to innerHTML results in a non-spec-compliant clean-up. Used
- * to define goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse.
- *
- * <p>As mentioned in https://stackoverflow.com/questions/28741528, re-rendering
- * an element in IE by setting innerHTML causes IE to recursively disconnect all
- * parent/children connections that were in the previous contents of the
- * element. Unfortunately, this can unexpectedly result in confusing cases where
- * a function is run (typically asynchronously) on element that has since
- * disconnected from the DOM but assumes the presence of its children. A simple
- * workaround is to remove all children first. Testing on IE11 via
- * https://jsperf.com/innerhtml-vs-removechild/239, removeChild seems to be
- * ~10x faster than innerHTML='' for a large number of children (perhaps due
- * to the latter's recursive behavior), implying that this workaround would
- * not hurt performance and might actually improve it.
- * @return {boolean}
- * @private
- */
-goog.dom.safe.isInnerHtmlCleanupRecursive_ =
-    goog.functions.cacheReturnValue(function() {
-      // `document` missing in some test frameworks.
-      if (goog.DEBUG && typeof document === 'undefined') {
-        return false;
-      }
-      // Create 3 nested <div>s without using innerHTML.
-      // We're not chaining the appendChilds in one call,  as this breaks
-      // in a DocumentFragment.
-      var div = document.createElement('div');
-      var childDiv = document.createElement('div');
-      childDiv.appendChild(document.createElement('div'));
-      div.appendChild(childDiv);
-      // `firstChild` is null in Google Js Test.
-      if (goog.DEBUG && !div.firstChild) {
-        return false;
-      }
-      var innerChild = div.firstChild.firstChild;
-      div.innerHTML =
-          goog.html.SafeHtml.unwrapTrustedHTML(goog.html.SafeHtml.EMPTY);
-      return !innerChild.parentElement;
-    });
-
-
-/**
- * Assigns HTML to an element's innerHTML property. Helper to use only here and
- * in soy.js.
- * @param {?Element} elem The element whose innerHTML is to be assigned to.
- * @param {!goog.html.SafeHtml} html
- */
-goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse = function(elem, html) {
-  // See comment above goog.dom.safe.isInnerHtmlCleanupRecursive_.
-  if (goog.dom.safe.isInnerHtmlCleanupRecursive_()) {
-    while (elem.lastChild) {
-      elem.removeChild(elem.lastChild);
-    }
-  }
-  elem.innerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
-};
-
-
-/**
- * Assigns known-safe HTML to an element's innerHTML property.
- * @param {!Element} elem The element whose innerHTML is to be assigned to.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
- * @throws {Error} If called with one of these tags: math, script, style, svg,
- *     template.
- */
-goog.dom.safe.setInnerHtml = function(elem, html) {
-  if (goog.asserts.ENABLE_ASSERTS) {
-    var tagName = elem.tagName.toUpperCase();
-    if (goog.dom.safe.SET_INNER_HTML_DISALLOWED_TAGS_[tagName]) {
-      throw new Error(
-          'goog.dom.safe.setInnerHtml cannot be used to set content of ' +
-          elem.tagName + '.');
-    }
-  }
-
-  goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(elem, html);
-};
-
-
-/**
- * Assigns known-safe HTML to an element's outerHTML property.
- * @param {!Element} elem The element whose outerHTML is to be assigned to.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
- */
-goog.dom.safe.setOuterHtml = function(elem, html) {
-  elem.outerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
-};
-
-
-/**
- * Safely assigns a URL a form element's action property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * form's action property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setFormElementAction(formEl, url);
- * which is a safe alternative to
- *   formEl.action = url;
- * The latter can result in XSS vulnerabilities if url is a
- * user-/attacker-controlled value.
- *
- * @param {!Element} form The form element whose action property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setFormElementAction = function(form, url) {
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  goog.dom.asserts.assertIsHTMLFormElement(form).action =
-      goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-/**
- * Safely assigns a URL to a button element's formaction property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * button's formaction property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setButtonFormAction(buttonEl, url);
- * which is a safe alternative to
- *   buttonEl.action = url;
- * The latter can result in XSS vulnerabilities if url is a
- * user-/attacker-controlled value.
- *
- * @param {!Element} button The button element whose action property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setButtonFormAction = function(button, url) {
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  goog.dom.asserts.assertIsHTMLButtonElement(button).formAction =
-      goog.html.SafeUrl.unwrap(safeUrl);
-};
-/**
- * Safely assigns a URL to an input element's formaction property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * input's formaction property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setInputFormAction(inputEl, url);
- * which is a safe alternative to
- *   inputEl.action = url;
- * The latter can result in XSS vulnerabilities if url is a
- * user-/attacker-controlled value.
- *
- * @param {!Element} input The input element whose action property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setInputFormAction = function(input, url) {
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  goog.dom.asserts.assertIsHTMLInputElement(input).formAction =
-      goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-/**
- * Sets the given element's style property to the contents of the provided
- * SafeStyle object.
- * @param {!Element} elem
- * @param {!goog.html.SafeStyle} style
- */
-goog.dom.safe.setStyle = function(elem, style) {
-  elem.style.cssText = goog.html.SafeStyle.unwrap(style);
-};
-
-
-/**
- * Writes known-safe HTML to a document.
- * @param {!Document} doc The document to be written to.
- * @param {!goog.html.SafeHtml} html The known-safe HTML to assign.
- */
-goog.dom.safe.documentWrite = function(doc, html) {
-  doc.write(goog.html.SafeHtml.unwrapTrustedHTML(html));
-};
-
-
-/**
- * Safely assigns a URL to an anchor element's href property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * anchor's href property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setAnchorHref(anchorEl, url);
- * which is a safe alternative to
- *   anchorEl.href = url;
- * The latter can result in XSS vulnerabilities if url is a
- * user-/attacker-controlled value.
- *
- * @param {!HTMLAnchorElement} anchor The anchor element whose href property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setAnchorHref = function(anchor, url) {
-  goog.dom.asserts.assertIsHTMLAnchorElement(anchor);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  anchor.href = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-
-/**
- * Safely assigns a URL to an image element's src property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * image's src property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * @param {!HTMLImageElement} imageElement The image element whose src property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setImageSrc = function(imageElement, url) {
-  goog.dom.asserts.assertIsHTMLImageElement(imageElement);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    var allowDataUrl = /^data:image\//i.test(url);
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
-  }
-  imageElement.src = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-/**
- * Safely assigns a URL to a audio element's src property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * audio's src property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * @param {!HTMLAudioElement} audioElement The audio element whose src property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setAudioSrc = function(audioElement, url) {
-  goog.dom.asserts.assertIsHTMLAudioElement(audioElement);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    var allowDataUrl = /^data:audio\//i.test(url);
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
-  }
-  audioElement.src = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-/**
- * Safely assigns a URL to a video element's src property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * video's src property.  If url is of type string however, it is first
- * sanitized using goog.html.SafeUrl.sanitize.
- *
- * @param {!HTMLVideoElement} videoElement The video element whose src property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setVideoSrc = function(videoElement, url) {
-  goog.dom.asserts.assertIsHTMLVideoElement(videoElement);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    var allowDataUrl = /^data:video\//i.test(url);
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url, allowDataUrl);
-  }
-  videoElement.src = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-/**
- * Safely assigns a URL to an embed element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setEmbedSrc(embedEl, url);
- * which is a safe alternative to
- *   embedEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLEmbedElement} embed The embed element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setEmbedSrc = function(embed, url) {
-  goog.dom.asserts.assertIsHTMLEmbedElement(embed);
-  embed.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
-};
-
-
-/**
- * Safely assigns a URL to a frame element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setFrameSrc(frameEl, url);
- * which is a safe alternative to
- *   frameEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLFrameElement} frame The frame element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setFrameSrc = function(frame, url) {
-  goog.dom.asserts.assertIsHTMLFrameElement(frame);
-  frame.src = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns a URL to an iframe element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setIframeSrc(iframeEl, url);
- * which is a safe alternative to
- *   iframeEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLIFrameElement} iframe The iframe element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setIframeSrc = function(iframe, url) {
-  goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
-  iframe.src = goog.html.TrustedResourceUrl.unwrap(url);
-};
-
-
-/**
- * Safely assigns HTML to an iframe element's srcdoc property.
- *
- * Example usage:
- *   goog.dom.safe.setIframeSrcdoc(iframeEl, safeHtml);
- * which is a safe alternative to
- *   iframeEl.srcdoc = html;
- * The latter can result in loading untrusted code.
- *
- * @param {!HTMLIFrameElement} iframe The iframe element whose srcdoc property
- *     is to be assigned to.
- * @param {!goog.html.SafeHtml} html The HTML to assign.
- */
-goog.dom.safe.setIframeSrcdoc = function(iframe, html) {
-  goog.dom.asserts.assertIsHTMLIFrameElement(iframe);
-  iframe.srcdoc = goog.html.SafeHtml.unwrapTrustedHTML(html);
-};
-
-
-/**
- * Safely sets a link element's href and rel properties. Whether or not
- * the URL assigned to href has to be a goog.html.TrustedResourceUrl
- * depends on the value of the rel property. If rel contains "stylesheet"
- * then a TrustedResourceUrl is required.
- *
- * Example usage:
- *   goog.dom.safe.setLinkHrefAndRel(linkEl, url, 'stylesheet');
- * which is a safe alternative to
- *   linkEl.rel = 'stylesheet';
- *   linkEl.href = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLLinkElement} link The link element whose href property
- *     is to be assigned to.
- * @param {string|!goog.html.SafeUrl|!goog.html.TrustedResourceUrl} url The URL
- *     to assign to the href property. Must be a TrustedResourceUrl if the
- *     value assigned to rel contains "stylesheet". A string value is
- *     sanitized with goog.html.SafeUrl.sanitize.
- * @param {string} rel The value to assign to the rel property.
- * @throws {Error} if rel contains "stylesheet" and url is not a
- *     TrustedResourceUrl
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setLinkHrefAndRel = function(link, url, rel) {
-  goog.dom.asserts.assertIsHTMLLinkElement(link);
-  link.rel = rel;
-  if (goog.string.internal.caseInsensitiveContains(rel, 'stylesheet')) {
-    goog.asserts.assert(
-        url instanceof goog.html.TrustedResourceUrl,
-        'URL must be TrustedResourceUrl because "rel" contains "stylesheet"');
-    link.href = goog.html.TrustedResourceUrl.unwrap(url);
-  } else if (url instanceof goog.html.TrustedResourceUrl) {
-    link.href = goog.html.TrustedResourceUrl.unwrap(url);
-  } else if (url instanceof goog.html.SafeUrl) {
-    link.href = goog.html.SafeUrl.unwrap(url);
-  } else {  // string
-    // SafeUrl.sanitize must return legitimate SafeUrl when passed a string.
-    link.href = goog.html.SafeUrl.unwrap(
-        goog.html.SafeUrl.sanitizeAssertUnchanged(url));
-  }
-};
-
-
-/**
- * Safely assigns a URL to an object element's data property.
- *
- * Example usage:
- *   goog.dom.safe.setObjectData(objectEl, url);
- * which is a safe alternative to
- *   objectEl.data = url;
- * The latter can result in loading untrusted code unless setit is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLObjectElement} object The object element whose data property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setObjectData = function(object, url) {
-  goog.dom.asserts.assertIsHTMLObjectElement(object);
-  object.data = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
-};
-
-
-/**
- * Safely assigns a URL to a script element's src property.
- *
- * Example usage:
- *   goog.dom.safe.setScriptSrc(scriptEl, url);
- * which is a safe alternative to
- *   scriptEl.src = url;
- * The latter can result in loading untrusted code unless it is ensured that
- * the URL refers to a trustworthy resource.
- *
- * @param {!HTMLScriptElement} script The script element whose src property
- *     is to be assigned to.
- * @param {!goog.html.TrustedResourceUrl} url The URL to assign.
- */
-goog.dom.safe.setScriptSrc = function(script, url) {
-  goog.dom.asserts.assertIsHTMLScriptElement(script);
-  script.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url);
-  goog.dom.safe.setNonceForScriptElement_(script);
-};
-
-
-/**
- * Safely assigns a value to a script element's content.
- *
- * Example usage:
- *   goog.dom.safe.setScriptContent(scriptEl, content);
- * which is a safe alternative to
- *   scriptEl.text = content;
- * The latter can result in executing untrusted code unless it is ensured that
- * the code is loaded from a trustworthy resource.
- *
- * @param {!HTMLScriptElement} script The script element whose content is being
- *     set.
- * @param {!goog.html.SafeScript} content The content to assign.
- */
-goog.dom.safe.setScriptContent = function(script, content) {
-  goog.dom.asserts.assertIsHTMLScriptElement(script);
-  script.text = goog.html.SafeScript.unwrapTrustedScript(content);
-  goog.dom.safe.setNonceForScriptElement_(script);
-};
-
-
-/**
- * Set nonce-based CSPs to dynamically created scripts.
- * @param {!HTMLScriptElement} script The script element whose nonce value
- *     is to be calculated
- * @private
- */
-goog.dom.safe.setNonceForScriptElement_ = function(script) {
-  var win = script.ownerDocument && script.ownerDocument.defaultView;
-  var nonce = goog.getScriptNonce(win);
-  if (nonce) {
-    script.setAttribute('nonce', nonce);
-  }
-};
-
-
-/**
- * Safely assigns a URL to a Location object's href property.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and assigned to
- * loc's href property.  If url is of type string however, it is first sanitized
- * using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.setLocationHref(document.location, redirectUrl);
- * which is a safe alternative to
- *   document.location.href = redirectUrl;
- * The latter can result in XSS vulnerabilities if redirectUrl is a
- * user-/attacker-controlled value.
- *
- * @param {!Location} loc The Location object whose href property is to be
- *     assigned to.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.setLocationHref = function(loc, url) {
-  goog.dom.asserts.assertIsLocation(loc);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  loc.href = goog.html.SafeUrl.unwrap(safeUrl);
-};
-
-/**
- * Safely assigns the URL of a Location object.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and
- * passed to Location#assign. If url is of type string however, it is
- * first sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.assignLocation(document.location, newUrl);
- * which is a safe alternative to
- *   document.location.assign(newUrl);
- * The latter can result in XSS vulnerabilities if newUrl is a
- * user-/attacker-controlled value.
- *
- * This has the same behaviour as setLocationHref, however some test
- * mock Location.assign instead of a property assignment.
- *
- * @param {!Location} loc The Location object which is to be assigned.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.assignLocation = function(loc, url) {
-  goog.dom.asserts.assertIsLocation(loc);
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  loc.assign(goog.html.SafeUrl.unwrap(safeUrl));
-};
-
-
-/**
- * Safely replaces the URL of a Location object.
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and
- * passed to Location#replace. If url is of type string however, it is
- * first sanitized using goog.html.SafeUrl.sanitize.
- *
- * Example usage:
- *   goog.dom.safe.replaceLocation(document.location, newUrl);
- * which is a safe alternative to
- *   document.location.replace(newUrl);
- * The latter can result in XSS vulnerabilities if newUrl is a
- * user-/attacker-controlled value.
- *
- * @param {!Location} loc The Location object which is to be replaced.
- * @param {string|!goog.html.SafeUrl} url The URL to assign.
- * @see goog.html.SafeUrl#sanitize
- */
-goog.dom.safe.replaceLocation = function(loc, url) {
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  loc.replace(goog.html.SafeUrl.unwrap(safeUrl));
-};
-
-
-/**
- * Safely opens a URL in a new window (via window.open).
- *
- * If url is of type goog.html.SafeUrl, its value is unwrapped and passed in to
- * window.open.  If url is of type string however, it is first sanitized
- * using goog.html.SafeUrl.sanitize.
- *
- * Note that this function does not prevent leakages via the referer that is
- * sent by window.open. It is advised to only use this to open 1st party URLs.
- *
- * Example usage:
- *   goog.dom.safe.openInWindow(url);
- * which is a safe alternative to
- *   window.open(url);
- * The latter can result in XSS vulnerabilities if url is a
- * user-/attacker-controlled value.
- *
- * @param {string|!goog.html.SafeUrl} url The URL to open.
- * @param {Window=} opt_openerWin Window of which to call the .open() method.
- *     Defaults to the global window.
- * @param {!goog.string.Const|string=} opt_name Name of the window to open in.
- *     Can be _top, etc as allowed by window.open(). This accepts string for
- *     legacy reasons. Pass goog.string.Const if possible.
- * @param {string=} opt_specs Comma-separated list of specifications, same as
- *     in window.open().
- * @param {boolean=} opt_replace Whether to replace the current entry in browser
- *     history, same as in window.open().
- * @return {Window} Window the url was opened in.
- */
-goog.dom.safe.openInWindow = function(
-    url, opt_openerWin, opt_name, opt_specs, opt_replace) {
-  /** @type {!goog.html.SafeUrl} */
-  var safeUrl;
-  if (url instanceof goog.html.SafeUrl) {
-    safeUrl = url;
-  } else {
-    safeUrl = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
-  }
-  var win = opt_openerWin || goog.global;
-  // If opt_name is undefined, simply passing that in to open() causes IE to
-  // reuse the current window instead of opening a new one. Thus we pass '' in
-  // instead, which according to spec opens a new window. See
-  // https://html.spec.whatwg.org/multipage/browsers.html#dom-open .
-  var name = opt_name instanceof goog.string.Const ?
-      goog.string.Const.unwrap(opt_name) :
-      opt_name || '';
-  return win.open(
-      goog.html.SafeUrl.unwrap(safeUrl), name, opt_specs, opt_replace);
-};
-
-
-/**
- * Parses the HTML as 'text/html'.
- * @param {!DOMParser} parser
- * @param {!goog.html.SafeHtml} html The HTML to be parsed.
- * @return {?Document}
- */
-goog.dom.safe.parseFromStringHtml = function(parser, html) {
-  return goog.dom.safe.parseFromString(parser, html, 'text/html');
-};
-
-
-/**
- * Parses the string.
- * @param {!DOMParser} parser
- * @param {!goog.html.SafeHtml} content Note: We don't have a special type for
- *     XML od SVG supported by this function so we use SafeHtml.
- * @param {string} type
- * @return {?Document}
- */
-goog.dom.safe.parseFromString = function(parser, content, type) {
-  return parser.parseFromString(
-      goog.html.SafeHtml.unwrapTrustedHTML(content), type);
-};
-
-
-/**
- * Safely creates an HTMLImageElement from a Blob.
- *
- * Example usage:
- *     goog.dom.safe.createImageFromBlob(blob);
- * which is a safe alternative to
- *     image.src = createObjectUrl(blob)
- * The latter can result in executing malicious same-origin scripts from a bad
- * Blob.
- * @param {!Blob} blob The blob to create the image from.
- * @return {!HTMLImageElement} The image element created from the blob.
- * @throws {!Error} If called with a Blob with a MIME type other than image/.*.
- */
-goog.dom.safe.createImageFromBlob = function(blob) {
-  // Any image/* MIME type is accepted as safe.
-  if (!/^image\/.*/g.test(blob.type)) {
-    throw new Error(
-        'goog.dom.safe.createImageFromBlob only accepts MIME type image/.*.');
-  }
-  var objectUrl = goog.global.URL.createObjectURL(blob);
-  var image = new goog.global.Image();
-  image.onload = function() {
-    goog.global.URL.revokeObjectURL(objectUrl);
-  };
-  goog.dom.safe.setImageSrc(
-      image,
-      goog.html.uncheckedconversions
-          .safeUrlFromStringKnownToSatisfyTypeContract(
-              goog.string.Const.from('Image blob URL.'), objectUrl));
-  return image;
-};
-
-//third_party/javascript/closure/string/string.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Utilities for string manipulation.
- */
-
-
-/**
- * Namespace for string utilities
- */
-goog.provide('goog.string');
-goog.provide('goog.string.Unicode');
-
-goog.require('goog.dom.safe');
-goog.require('goog.html.uncheckedconversions');
-goog.require('goog.string.Const');
-goog.require('goog.string.internal');
-
-
-/**
- * @define {boolean} Enables HTML escaping of lowercase letter "e" which helps
- * with detection of double-escaping as this letter is frequently used.
- */
-goog.string.DETECT_DOUBLE_ESCAPING =
-    goog.define('goog.string.DETECT_DOUBLE_ESCAPING', false);
-
-
-/**
- * @define {boolean} Whether to force non-dom html unescaping.
- */
-goog.string.FORCE_NON_DOM_HTML_UNESCAPING =
-    goog.define('goog.string.FORCE_NON_DOM_HTML_UNESCAPING', false);
-
-
-/**
- * Common Unicode string characters.
- * @enum {string}
- */
-goog.string.Unicode = {
-  NBSP: '\xa0'
-};
-
-
-/**
- * Fast prefix-checker.
- * @param {string} str The string to check.
- * @param {string} prefix A string to look for at the start of `str`.
- * @return {boolean} True if `str` begins with `prefix`.
- */
-goog.string.startsWith = goog.string.internal.startsWith;
-
-
-/**
- * Fast suffix-checker.
- * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of `str`.
- * @return {boolean} True if `str` ends with `suffix`.
- */
-goog.string.endsWith = goog.string.internal.endsWith;
-
-
-/**
- * Case-insensitive prefix-checker.
- * @param {string} str The string to check.
- * @param {string} prefix  A string to look for at the end of `str`.
- * @return {boolean} True if `str` begins with `prefix` (ignoring
- *     case).
- */
-goog.string.caseInsensitiveStartsWith =
-    goog.string.internal.caseInsensitiveStartsWith;
-
-
-/**
- * Case-insensitive suffix-checker.
- * @param {string} str The string to check.
- * @param {string} suffix A string to look for at the end of `str`.
- * @return {boolean} True if `str` ends with `suffix` (ignoring
- *     case).
- */
-goog.string.caseInsensitiveEndsWith =
-    goog.string.internal.caseInsensitiveEndsWith;
-
-
-/**
- * Case-insensitive equality checker.
- * @param {string} str1 First string to check.
- * @param {string} str2 Second string to check.
- * @return {boolean} True if `str1` and `str2` are the same string,
- *     ignoring case.
- */
-goog.string.caseInsensitiveEquals = goog.string.internal.caseInsensitiveEquals;
-
-
-/**
- * Does simple python-style string substitution.
- * subs("foo%s hot%s", "bar", "dog") becomes "foobar hotdog".
- * @param {string} str The string containing the pattern.
- * @param {...*} var_args The items to substitute into the pattern.
- * @return {string} A copy of `str` in which each occurrence of
- *     {@code %s} has been replaced an argument from `var_args`.
- */
-goog.string.subs = function(str, var_args) {
-  var splitParts = str.split('%s');
-  var returnString = '';
-
-  var subsArguments = Array.prototype.slice.call(arguments, 1);
-  while (subsArguments.length &&
-         // Replace up to the last split part. We are inserting in the
-         // positions between split parts.
-         splitParts.length > 1) {
-    returnString += splitParts.shift() + subsArguments.shift();
-  }
-
-  return returnString + splitParts.join('%s');  // Join unused '%s'
-};
-
-
-/**
- * Converts multiple whitespace chars (spaces, non-breaking-spaces, new lines
- * and tabs) to a single space, and strips leading and trailing whitespace.
- * @param {string} str Input string.
- * @return {string} A copy of `str` with collapsed whitespace.
- */
-goog.string.collapseWhitespace = function(str) {
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return str.replace(/[\s\xa0]+/g, ' ').replace(/^\s+|\s+$/g, '');
-};
-
-
-/**
- * Checks if a string is empty or contains only whitespaces.
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty or whitespace only.
- */
-goog.string.isEmptyOrWhitespace = goog.string.internal.isEmptyOrWhitespace;
-
-
-/**
- * Checks if a string is empty.
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty.
- */
-goog.string.isEmptyString = function(str) {
-  return str.length == 0;
-};
-
-
-/**
- * Checks if a string is empty or contains only whitespaces.
- *
- * @param {string} str The string to check.
- * @return {boolean} Whether `str` is empty or whitespace only.
- * @deprecated Use goog.string.isEmptyOrWhitespace instead.
- */
-goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
-
-
-/**
- * Checks if a string is null, undefined, empty or contains only whitespaces.
- * @param {*} str The string to check.
- * @return {boolean} Whether `str` is null, undefined, empty, or
- *     whitespace only.
- * @deprecated Use goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str))
- *     instead.
- */
-goog.string.isEmptyOrWhitespaceSafe = function(str) {
-  return goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str));
-};
-
-
-/**
- * Checks if a string is null, undefined, empty or contains only whitespaces.
- *
- * @param {*} str The string to check.
- * @return {boolean} Whether `str` is null, undefined, empty, or
- *     whitespace only.
- * @deprecated Use goog.string.isEmptyOrWhitespace instead.
- */
-goog.string.isEmptySafe = goog.string.isEmptyOrWhitespaceSafe;
-
-
-/**
- * Checks if a string is all breaking whitespace.
- * @param {string} str The string to check.
- * @return {boolean} Whether the string is all breaking whitespace.
- */
-goog.string.isBreakingWhitespace = function(str) {
-  return !/[^\t\n\r ]/.test(str);
-};
-
-
-/**
- * Checks if a string contains all letters.
- * @param {string} str string to check.
- * @return {boolean} True if `str` consists entirely of letters.
- */
-goog.string.isAlpha = function(str) {
-  return !/[^a-zA-Z]/.test(str);
-};
-
-
-/**
- * Checks if a string contains only numbers.
- * @param {*} str string to check. If not a string, it will be
- *     casted to one.
- * @return {boolean} True if `str` is numeric.
- */
-goog.string.isNumeric = function(str) {
-  return !/[^0-9]/.test(str);
-};
-
-
-/**
- * Checks if a string contains only numbers or letters.
- * @param {string} str string to check.
- * @return {boolean} True if `str` is alphanumeric.
- */
-goog.string.isAlphaNumeric = function(str) {
-  return !/[^a-zA-Z0-9]/.test(str);
-};
-
-
-/**
- * Checks if a character is a space character.
- * @param {string} ch Character to check.
- * @return {boolean} True if `ch` is a space.
- */
-goog.string.isSpace = function(ch) {
-  return ch == ' ';
-};
-
-
-/**
- * Checks if a character is a valid unicode character.
- * @param {string} ch Character to check.
- * @return {boolean} True if `ch` is a valid unicode character.
- */
-goog.string.isUnicodeChar = function(ch) {
-  return ch.length == 1 && ch >= ' ' && ch <= '~' ||
-      ch >= '\u0080' && ch <= '\uFFFD';
-};
-
-
-/**
- * Takes a string and replaces newlines with a space. Multiple lines are
- * replaced with a single space.
- * @param {string} str The string from which to strip newlines.
- * @return {string} A copy of `str` stripped of newlines.
- */
-goog.string.stripNewlines = function(str) {
-  return str.replace(/(\r\n|\r|\n)+/g, ' ');
-};
-
-
-/**
- * Replaces Windows and Mac new lines with unix style: \r or \r\n with \n.
- * @param {string} str The string to in which to canonicalize newlines.
- * @return {string} `str` A copy of {@code} with canonicalized newlines.
- */
-goog.string.canonicalizeNewlines = function(str) {
-  return str.replace(/(\r\n|\r|\n)/g, '\n');
-};
-
-
-/**
- * Normalizes whitespace in a string, replacing all whitespace chars with
- * a space.
- * @param {string} str The string in which to normalize whitespace.
- * @return {string} A copy of `str` with all whitespace normalized.
- */
-goog.string.normalizeWhitespace = function(str) {
-  return str.replace(/\xa0|\s/g, ' ');
-};
-
-
-/**
- * Normalizes spaces in a string, replacing all consecutive spaces and tabs
- * with a single space. Replaces non-breaking space with a space.
- * @param {string} str The string in which to normalize spaces.
- * @return {string} A copy of `str` with all consecutive spaces and tabs
- *    replaced with a single space.
- */
-goog.string.normalizeSpaces = function(str) {
-  return str.replace(/\xa0|[ \t]+/g, ' ');
-};
-
-
-/**
- * Removes the breaking spaces from the left and right of the string and
- * collapses the sequences of breaking spaces in the middle into single spaces.
- * The original and the result strings render the same way in HTML.
- * @param {string} str A string in which to collapse spaces.
- * @return {string} Copy of the string with normalized breaking spaces.
- */
-goog.string.collapseBreakingSpaces = function(str) {
-  return str.replace(/[\t\r\n ]+/g, ' ')
-      .replace(/^[\t\r\n ]+|[\t\r\n ]+$/g, '');
-};
-
-
-/**
- * Trims white spaces to the left and right of a string.
- * @param {string} str The string to trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.trim = goog.string.internal.trim;
-
-
-/**
- * Trims whitespaces at the left end of a string.
- * @param {string} str The string to left trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.trimLeft = function(str) {
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return str.replace(/^[\s\xa0]+/, '');
-};
-
-
-/**
- * Trims whitespaces at the right end of a string.
- * @param {string} str The string to right trim.
- * @return {string} A trimmed copy of `str`.
- */
-goog.string.trimRight = function(str) {
-  // Since IE doesn't include non-breaking-space (0xa0) in their \s character
-  // class (as required by section 7.2 of the ECMAScript spec), we explicitly
-  // include it in the regexp to enforce consistent cross-browser behavior.
-  return str.replace(/[\s\xa0]+$/, '');
-};
-
-
-/**
- * A string comparator that ignores case.
- * -1 = str1 less than str2
- *  0 = str1 equals str2
- *  1 = str1 greater than str2
- *
- * @param {string} str1 The string to compare.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} The comparator result, as described above.
- */
-goog.string.caseInsensitiveCompare =
-    goog.string.internal.caseInsensitiveCompare;
-
-
-/**
- * Compares two strings interpreting their numeric substrings as numbers.
- *
- * @param {string} str1 First string.
- * @param {string} str2 Second string.
- * @param {!RegExp} tokenizerRegExp Splits a string into substrings of
- *     non-negative integers, non-numeric characters and optionally fractional
- *     numbers starting with a decimal point.
- * @return {number} Negative if str1 < str2, 0 is str1 == str2, positive if
- *     str1 > str2.
- * @private
- */
-goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
-  if (str1 == str2) {
-    return 0;
-  }
-  if (!str1) {
-    return -1;
-  }
-  if (!str2) {
-    return 1;
-  }
-
-  // Using match to split the entire string ahead of time turns out to be faster
-  // for most inputs than using RegExp.exec or iterating over each character.
-  var tokens1 = str1.toLowerCase().match(tokenizerRegExp);
-  var tokens2 = str2.toLowerCase().match(tokenizerRegExp);
-
-  var count = Math.min(tokens1.length, tokens2.length);
-
-  for (var i = 0; i < count; i++) {
-    var a = tokens1[i];
-    var b = tokens2[i];
-
-    // Compare pairs of tokens, returning if one token sorts before the other.
-    if (a != b) {
-      // Only if both tokens are integers is a special comparison required.
-      // Decimal numbers are sorted as strings (e.g., '.09' < '.1').
-      var num1 = parseInt(a, 10);
-      if (!isNaN(num1)) {
-        var num2 = parseInt(b, 10);
-        if (!isNaN(num2) && num1 - num2) {
-          return num1 - num2;
-        }
-      }
-      return a < b ? -1 : 1;
-    }
-  }
-
-  // If one string is a substring of the other, the shorter string sorts first.
-  if (tokens1.length != tokens2.length) {
-    return tokens1.length - tokens2.length;
-  }
-
-  // The two strings must be equivalent except for case (perfect equality is
-  // tested at the head of the function.) Revert to default ASCII string
-  // comparison to stabilize the sort.
-  return str1 < str2 ? -1 : 1;
-};
-
-
-/**
- * String comparison function that handles non-negative integer numbers in a
- * way humans might expect. Using this function, the string 'File 2.jpg' sorts
- * before 'File 10.jpg', and 'Version 1.9' before 'Version 1.10'. The comparison
- * is mostly case-insensitive, though strings that are identical except for case
- * are sorted with the upper-case strings before lower-case.
- *
- * This comparison function is up to 50x slower than either the default or the
- * case-insensitive compare. It should not be used in time-critical code, but
- * should be fast enough to sort several hundred short strings (like filenames)
- * with a reasonable delay.
- *
- * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
- *     0 if str1 > str2.
- */
-goog.string.intAwareCompare = function(str1, str2) {
-  return goog.string.numberAwareCompare_(str1, str2, /\d+|\D+/g);
-};
-
-
-/**
- * String comparison function that handles non-negative integer and fractional
- * numbers in a way humans might expect. Using this function, the string
- * 'File 2.jpg' sorts before 'File 10.jpg', and '3.14' before '3.2'. Equivalent
- * to {@link goog.string.intAwareCompare} apart from the way how it interprets
- * dots.
- *
- * @param {string} str1 The string to compare in a numerically sensitive way.
- * @param {string} str2 The string to compare `str1` to.
- * @return {number} less than 0 if str1 < str2, 0 if str1 == str2, greater than
- *     0 if str1 > str2.
- */
-goog.string.floatAwareCompare = function(str1, str2) {
-  return goog.string.numberAwareCompare_(str1, str2, /\d+|\.\d+|\D+/g);
-};
-
-
-/**
- * Alias for {@link goog.string.floatAwareCompare}.
- *
- * @param {string} str1
- * @param {string} str2
- * @return {number}
- */
-goog.string.numerateCompare = goog.string.floatAwareCompare;
-
-
-/**
- * URL-encodes a string
- * @param {*} str The string to url-encode.
- * @return {string} An encoded copy of `str` that is safe for urls.
- *     Note that '#', ':', and other characters used to delimit portions
- *     of URLs *will* be encoded.
- */
-goog.string.urlEncode = function(str) {
-  return encodeURIComponent(String(str));
-};
-
-
-/**
- * URL-decodes the string. We need to specially handle '+'s because
- * the javascript library doesn't convert them to spaces.
- * @param {string} str The string to url decode.
- * @return {string} The decoded `str`.
- */
-goog.string.urlDecode = function(str) {
-  return decodeURIComponent(str.replace(/\+/g, ' '));
-};
-
-
-/**
- * Converts \n to <br>s or <br />s.
- * @param {string} str The string in which to convert newlines.
- * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} A copy of `str` with converted newlines.
- */
-goog.string.newLineToBr = goog.string.internal.newLineToBr;
-
-
-/**
- * Escapes double quote '"' and single quote '\'' characters in addition to
- * '&', '<', and '>' so that a string can be included in an HTML tag attribute
- * value within double or single quotes.
- *
- * It should be noted that > doesn't need to be escaped for the HTML or XML to
- * be valid, but it has been decided to escape it for consistency with other
- * implementations.
- *
- * With goog.string.DETECT_DOUBLE_ESCAPING, this function escapes also the
- * lowercase letter "e".
- *
- * NOTE(user):
- * HtmlEscape is often called during the generation of large blocks of HTML.
- * Using statics for the regular expressions and strings is an optimization
- * that can more than half the amount of time IE spends in this function for
- * large apps, since strings and regexes both contribute to GC allocations.
- *
- * Testing for the presence of a character before escaping increases the number
- * of function calls, but actually provides a speed increase for the average
- * case -- since the average case often doesn't require the escaping of all 4
- * characters and indexOf() is much cheaper than replace().
- * The worst case does suffer slightly from the additional calls, therefore the
- * opt_isLikelyToContainHtmlChars option has been included for situations
- * where all 4 HTML entities are very likely to be present and need escaping.
- *
- * Some benchmarks (times tended to fluctuate +-0.05ms):
- *                                     FireFox                     IE6
- * (no chars / average (mix of cases) / all 4 chars)
- * no checks                     0.13 / 0.22 / 0.22         0.23 / 0.53 / 0.80
- * indexOf                       0.08 / 0.17 / 0.26         0.22 / 0.54 / 0.84
- * indexOf + re test             0.07 / 0.17 / 0.28         0.19 / 0.50 / 0.85
- *
- * An additional advantage of checking if replace actually needs to be called
- * is a reduction in the number of object allocations, so as the size of the
- * application grows the difference between the various methods would increase.
- *
- * @param {string} str string to be escaped.
- * @param {boolean=} opt_isLikelyToContainHtmlChars Don't perform a check to see
- *     if the character needs replacing - use this option if you expect each of
- *     the characters to appear often. Leave false if you expect few html
- *     characters to occur in your strings, such as if you are escaping HTML.
- * @return {string} An escaped copy of `str`.
- */
-goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
-  str = goog.string.internal.htmlEscape(str, opt_isLikelyToContainHtmlChars);
-  if (goog.string.DETECT_DOUBLE_ESCAPING) {
-    str = str.replace(goog.string.E_RE_, '&#101;');
-  }
-  return str;
-};
-
-
-/**
- * Regular expression that matches a lowercase letter "e", for use in escaping.
- * @const {!RegExp}
- * @private
- */
-goog.string.E_RE_ = /e/g;
-
-
-/**
- * Unescapes an HTML string.
- *
- * @param {string} str The string to unescape.
- * @return {string} An unescaped copy of `str`.
- */
-goog.string.unescapeEntities = function(str) {
-  if (goog.string.contains(str, '&')) {
-    // We are careful not to use a DOM if we do not have one or we explicitly
-    // requested non-DOM html unescaping.
-    if (!goog.string.FORCE_NON_DOM_HTML_UNESCAPING &&
-        'document' in goog.global) {
-      return goog.string.unescapeEntitiesUsingDom_(str);
-    } else {
-      // Fall back on pure XML entities
-      return goog.string.unescapePureXmlEntities_(str);
-    }
-  }
-  return str;
-};
-
-
-/**
- * Unescapes a HTML string using the provided document.
- *
- * @param {string} str The string to unescape.
- * @param {!Document} document A document to use in escaping the string.
- * @return {string} An unescaped copy of `str`.
- */
-goog.string.unescapeEntitiesWithDocument = function(str, document) {
-  if (goog.string.contains(str, '&')) {
-    return goog.string.unescapeEntitiesUsingDom_(str, document);
-  }
-  return str;
-};
-
-
-/**
- * Unescapes an HTML string using a DOM to resolve non-XML, non-numeric
- * entities. This function is XSS-safe and whitespace-preserving.
- * @private
- * @param {string} str The string to unescape.
- * @param {Document=} opt_document An optional document to use for creating
- *     elements. If this is not specified then the default window.document
- *     will be used.
- * @return {string} The unescaped `str` string.
- */
-goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
-  /** @type {!Object<string, string>} */
-  var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
-  /** @type {!Element} */
-  var div;
-  if (opt_document) {
-    div = opt_document.createElement('div');
-  } else {
-    div = goog.global.document.createElement('div');
-  }
-  // Match as many valid entity characters as possible. If the actual entity
-  // happens to be shorter, it will still work as innerHTML will return the
-  // trailing characters unchanged. Since the entity characters do not include
-  // open angle bracket, there is no chance of XSS from the innerHTML use.
-  // Since no whitespace is passed to innerHTML, whitespace is preserved.
-  return str.replace(goog.string.HTML_ENTITY_PATTERN_, function(s, entity) {
-    // Check for cached entity.
-    var value = seen[s];
-    if (value) {
-      return value;
-    }
-    // Check for numeric entity.
-    if (entity.charAt(0) == '#') {
-      // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex numbers.
-      var n = Number('0' + entity.substr(1));
-      if (!isNaN(n)) {
-        value = String.fromCharCode(n);
-      }
-    }
-    // Fall back to innerHTML otherwise.
-    if (!value) {
-      // Append a non-entity character to avoid a bug in Webkit that parses
-      // an invalid entity at the end of innerHTML text as the empty string.
-      goog.dom.safe.setInnerHtml(
-          div,
-          goog.html.uncheckedconversions
-              .safeHtmlFromStringKnownToSatisfyTypeContract(
-                  goog.string.Const.from('Single HTML entity.'), s + ' '));
-      // Then remove the trailing character from the result.
-      value = div.firstChild.nodeValue.slice(0, -1);
-    }
-    // Cache and return.
-    return seen[s] = value;
-  });
-};
-
-
-/**
- * Unescapes XML entities.
- * @private
- * @param {string} str The string to unescape.
- * @return {string} An unescaped copy of `str`.
- */
-goog.string.unescapePureXmlEntities_ = function(str) {
-  return str.replace(/&([^;]+);/g, function(s, entity) {
-    switch (entity) {
-      case 'amp':
-        return '&';
-      case 'lt':
-        return '<';
-      case 'gt':
-        return '>';
-      case 'quot':
-        return '"';
-      default:
-        if (entity.charAt(0) == '#') {
-          // Prefix with 0 so that hex entities (e.g. &#x10) parse as hex.
-          var n = Number('0' + entity.substr(1));
-          if (!isNaN(n)) {
-            return String.fromCharCode(n);
-          }
-        }
-        // For invalid entities we just return the entity
-        return s;
-    }
-  });
-};
-
-
-/**
- * Regular expression that matches an HTML entity.
- * See also HTML5: Tokenization / Tokenizing character references.
- * @private
- * @type {!RegExp}
- */
-goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
-
-
-/**
- * Do escaping of whitespace to preserve spatial formatting. We use character
- * entity #160 to make it safer for xml.
- * @param {string} str The string in which to escape whitespace.
- * @param {boolean=} opt_xml Whether to use XML compatible tags.
- * @return {string} An escaped copy of `str`.
- */
-goog.string.whitespaceEscape = function(str, opt_xml) {
-  // This doesn't use goog.string.preserveSpaces for backwards compatibility.
-  return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml);
-};
-
-
-/**
- * Preserve spaces that would be otherwise collapsed in HTML by replacing them
- * with non-breaking space Unicode characters.
- * @param {string} str The string in which to preserve whitespace.
- * @return {string} A copy of `str` with preserved whitespace.
- */
-goog.string.preserveSpaces = function(str) {
-  return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
-};
-
-
-/**
- * Strip quote characters around a string.  The second argument is a string of
- * characters to treat as quotes.  This can be a single character or a string of
- * multiple character and in that case each of those are treated as possible
- * quote characters. For example:
- *
- * <pre>
- * goog.string.stripQuotes('"abc"', '"`') --> 'abc'
- * goog.string.stripQuotes('`abc`', '"`') --> 'abc'
- * </pre>
- *
- * @param {string} str The string to strip.
- * @param {string} quoteChars The quote characters to strip.
- * @return {string} A copy of `str` without the quotes.
- */
-goog.string.stripQuotes = function(str, quoteChars) {
-  var length = quoteChars.length;
-  for (var i = 0; i < length; i++) {
-    var quoteChar = length == 1 ? quoteChars : quoteChars.charAt(i);
-    if (str.charAt(0) == quoteChar && str.charAt(str.length - 1) == quoteChar) {
-      return str.substring(1, str.length - 1);
-    }
-  }
-  return str;
-};
-
-
-/**
- * Truncates a string to a certain length and adds '...' if necessary.  The
- * length also accounts for the ellipsis, so a maximum length of 10 and a string
- * 'Hello World!' produces 'Hello W...'.
- * @param {string} str The string to truncate.
- * @param {number} chars Max number of characters.
- * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
- *     characters from being cut off in the middle.
- * @return {string} The truncated `str` string.
- */
-goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.unescapeEntities(str);
-  }
-
-  if (str.length > chars) {
-    str = str.substring(0, chars - 3) + '...';
-  }
-
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.htmlEscape(str);
-  }
-
-  return str;
-};
-
-
-/**
- * Truncate a string in the middle, adding "..." if necessary,
- * and favoring the beginning of the string.
- * @param {string} str The string to truncate the middle of.
- * @param {number} chars Max number of characters.
- * @param {boolean=} opt_protectEscapedCharacters Whether to protect escaped
- *     characters from being cutoff in the middle.
- * @param {number=} opt_trailingChars Optional number of trailing characters to
- *     leave at the end of the string, instead of truncating as close to the
- *     middle as possible.
- * @return {string} A truncated copy of `str`.
- */
-goog.string.truncateMiddle = function(
-    str, chars, opt_protectEscapedCharacters, opt_trailingChars) {
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.unescapeEntities(str);
-  }
-
-  if (opt_trailingChars && str.length > chars) {
-    if (opt_trailingChars > chars) {
-      opt_trailingChars = chars;
-    }
-    var endPoint = str.length - opt_trailingChars;
-    var startPoint = chars - opt_trailingChars;
-    str = str.substring(0, startPoint) + '...' + str.substring(endPoint);
-  } else if (str.length > chars) {
-    // Favor the beginning of the string:
-    var half = Math.floor(chars / 2);
-    var endPos = str.length - half;
-    half += chars % 2;
-    str = str.substring(0, half) + '...' + str.substring(endPos);
-  }
-
-  if (opt_protectEscapedCharacters) {
-    str = goog.string.htmlEscape(str);
-  }
-
-  return str;
-};
-
-
-/**
- * Special chars that need to be escaped for goog.string.quote.
- * @private {!Object<string, string>}
- */
-goog.string.specialEscapeChars_ = {
-  '\0': '\\0',
-  '\b': '\\b',
-  '\f': '\\f',
-  '\n': '\\n',
-  '\r': '\\r',
-  '\t': '\\t',
-  '\x0B': '\\x0B',  // '\v' is not supported in JScript
-  '"': '\\"',
-  '\\': '\\\\',
-  // To support the use case of embedding quoted strings inside of script
-  // tags, we have to make sure HTML comments and opening/closing script tags do
-  // not appear in the resulting string. The specific strings that must be
-  // escaped are documented at:
-  // https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
-  '<': '\\u003C'  // NOTE: JSON.parse crashes on '\\x3c'.
-};
-
-
-/**
- * Character mappings used internally for goog.string.escapeChar.
- * @private {!Object<string, string>}
- */
-goog.string.jsEscapeCache_ = {
-  '\'': '\\\''
-};
-
-
-/**
- * Encloses a string in double quotes and escapes characters so that the
- * string is a valid JS string. The resulting string is safe to embed in
- * `<script>` tags as "<" is escaped.
- * @param {string} s The string to quote.
- * @return {string} A copy of `s` surrounded by double quotes.
- */
-goog.string.quote = function(s) {
-  s = String(s);
-  var sb = ['"'];
-  for (var i = 0; i < s.length; i++) {
-    var ch = s.charAt(i);
-    var cc = ch.charCodeAt(0);
-    sb[i + 1] = goog.string.specialEscapeChars_[ch] ||
-        ((cc > 31 && cc < 127) ? ch : goog.string.escapeChar(ch));
-  }
-  sb.push('"');
-  return sb.join('');
-};
-
-
-/**
- * Takes a string and returns the escaped string for that input string.
- * @param {string} str The string to escape.
- * @return {string} An escaped string representing `str`.
- */
-goog.string.escapeString = function(str) {
-  var sb = [];
-  for (var i = 0; i < str.length; i++) {
-    sb[i] = goog.string.escapeChar(str.charAt(i));
-  }
-  return sb.join('');
-};
-
-
-/**
- * Takes a character and returns the escaped string for that character. For
- * example escapeChar(String.fromCharCode(15)) -> "\\x0E".
- * @param {string} c The character to escape.
- * @return {string} An escaped string representing `c`.
- */
-goog.string.escapeChar = function(c) {
-  if (c in goog.string.jsEscapeCache_) {
-    return goog.string.jsEscapeCache_[c];
-  }
-
-  if (c in goog.string.specialEscapeChars_) {
-    return goog.string.jsEscapeCache_[c] = goog.string.specialEscapeChars_[c];
-  }
-
-  var rv = c;
-  var cc = c.charCodeAt(0);
-  if (cc > 31 && cc < 127) {
-    rv = c;
-  } else {
-    // tab is 9 but handled above
-    if (cc < 256) {
-      rv = '\\x';
-      if (cc < 16 || cc > 256) {
-        rv += '0';
-      }
-    } else {
-      rv = '\\u';
-      if (cc < 4096) {  // \u1000
-        rv += '0';
-      }
-    }
-    rv += cc.toString(16).toUpperCase();
-  }
-
-  return goog.string.jsEscapeCache_[c] = rv;
-};
-
-
-/**
- * Determines whether a string contains a substring.
- * @param {string} str The string to search.
- * @param {string} subString The substring to search for.
- * @return {boolean} Whether `str` contains `subString`.
- */
-goog.string.contains = goog.string.internal.contains;
-
-
-/**
- * Determines whether a string contains a substring, ignoring case.
- * @param {string} str The string to search.
- * @param {string} subString The substring to search for.
- * @return {boolean} Whether `str` contains `subString`.
- */
-goog.string.caseInsensitiveContains =
-    goog.string.internal.caseInsensitiveContains;
-
-
-/**
- * Returns the non-overlapping occurrences of ss in s.
- * If either s or ss evalutes to false, then returns zero.
- * @param {string} s The string to look in.
- * @param {string} ss The string to look for.
- * @return {number} Number of occurrences of ss in s.
- */
-goog.string.countOf = function(s, ss) {
-  return s && ss ? s.split(ss).length - 1 : 0;
-};
-
-
-/**
- * Removes a substring of a specified length at a specific
- * index in a string.
- * @param {string} s The base string from which to remove.
- * @param {number} index The index at which to remove the substring.
- * @param {number} stringLength The length of the substring to remove.
- * @return {string} A copy of `s` with the substring removed or the full
- *     string if nothing is removed or the input is invalid.
- */
-goog.string.removeAt = function(s, index, stringLength) {
-  var resultStr = s;
-  // If the index is greater or equal to 0 then remove substring
-  if (index >= 0 && index < s.length && stringLength > 0) {
-    resultStr = s.substr(0, index) +
-        s.substr(index + stringLength, s.length - index - stringLength);
-  }
-  return resultStr;
-};
-
-
-/**
- * Removes the first occurrence of a substring from a string.
- * @param {string} str The base string from which to remove.
- * @param {string} substr The string to remove.
- * @return {string} A copy of `str` with `substr` removed or the
- *     full string if nothing is removed.
- */
-goog.string.remove = function(str, substr) {
-  return str.replace(substr, '');
-};
-
-
-/**
- *  Removes all occurrences of a substring from a string.
- *  @param {string} s The base string from which to remove.
- *  @param {string} ss The string to remove.
- *  @return {string} A copy of `s` with `ss` removed or the full
- *      string if nothing is removed.
- */
-goog.string.removeAll = function(s, ss) {
-  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
-  return s.replace(re, '');
-};
-
-
-/**
- *  Replaces all occurrences of a substring of a string with a new substring.
- *  @param {string} s The base string from which to remove.
- *  @param {string} ss The string to replace.
- *  @param {string} replacement The replacement string.
- *  @return {string} A copy of `s` with `ss` replaced by
- *      `replacement` or the original string if nothing is replaced.
- */
-goog.string.replaceAll = function(s, ss, replacement) {
-  var re = new RegExp(goog.string.regExpEscape(ss), 'g');
-  return s.replace(re, replacement.replace(/\$/g, '$$$$'));
-};
-
-
-/**
- * Escapes characters in the string that are not safe to use in a RegExp.
- * @param {*} s The string to escape. If not a string, it will be casted
- *     to one.
- * @return {string} A RegExp safe, escaped copy of `s`.
- */
-goog.string.regExpEscape = function(s) {
-  return String(s)
-      .replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1')
-      .replace(/\x08/g, '\\x08');
-};
-
-
-/**
- * Repeats a string n times.
- * @param {string} string The string to repeat.
- * @param {number} length The number of times to repeat.
- * @return {string} A string containing `length` repetitions of
- *     `string`.
- */
-goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
-  // The native method is over 100 times faster than the alternative.
-  return string.repeat(length);
-} : function(string, length) {
-  return new Array(length + 1).join(string);
-};
-
-
-/**
- * Pads number to given length and optionally rounds it to a given precision.
- * For example:
- * <pre>padNumber(1.25, 2, 3) -> '01.250'
- * padNumber(1.25, 2) -> '01.25'
- * padNumber(1.25, 2, 1) -> '01.3'
- * padNumber(1.25, 0) -> '1.25'</pre>
- *
- * @param {number} num The number to pad.
- * @param {number} length The desired length.
- * @param {number=} opt_precision The desired precision.
- * @return {string} `num` as a string with the given options.
- */
-goog.string.padNumber = function(num, length, opt_precision) {
-  var s =
-      (opt_precision !== undefined) ? num.toFixed(opt_precision) : String(num);
-  var index = s.indexOf('.');
-  if (index == -1) {
-    index = s.length;
-  }
-  return goog.string.repeat('0', Math.max(0, length - index)) + s;
-};
-
-
-/**
- * Returns a string representation of the given object, with
- * null and undefined being returned as the empty string.
- *
- * @param {*} obj The object to convert.
- * @return {string} A string representation of the `obj`.
- */
-goog.string.makeSafe = function(obj) {
-  return obj == null ? '' : String(obj);
-};
-
-
-/**
- * Concatenates string expressions. This is useful
- * since some browsers are very inefficient when it comes to using plus to
- * concat strings. Be careful when using null and undefined here since
- * these will not be included in the result. If you need to represent these
- * be sure to cast the argument to a String first.
- * For example:
- * <pre>buildString('a', 'b', 'c', 'd') -> 'abcd'
- * buildString(null, undefined) -> ''
- * </pre>
- * @param {...*} var_args A list of strings to concatenate. If not a string,
- *     it will be casted to one.
- * @return {string} The concatenation of `var_args`.
- */
-goog.string.buildString = function(var_args) {
-  return Array.prototype.join.call(arguments, '');
-};
-
-
-/**
- * Returns a string with at least 64-bits of randomness.
- *
- * Doesn't trust JavaScript's random function entirely. Uses a combination of
- * random and current timestamp, and then encodes the string in base-36 to
- * make it shorter.
- *
- * @return {string} A random string, e.g. sn1s7vb4gcic.
- */
-goog.string.getRandomString = function() {
-  var x = 2147483648;
-  return Math.floor(Math.random() * x).toString(36) +
-      Math.abs(Math.floor(Math.random() * x) ^ goog.now()).toString(36);
-};
-
-
-/**
- * Compares two version numbers.
- *
- * @param {string|number} version1 Version of first item.
- * @param {string|number} version2 Version of second item.
- *
- * @return {number}  1 if `version1` is higher.
- *                   0 if arguments are equal.
- *                  -1 if `version2` is higher.
- */
-goog.string.compareVersions = goog.string.internal.compareVersions;
-
-
-/**
- * String hash function similar to java.lang.String.hashCode().
- * The hash code for a string is computed as
- * s[0] * 31 ^ (n - 1) + s[1] * 31 ^ (n - 2) + ... + s[n - 1],
- * where s[i] is the ith character of the string and n is the length of
- * the string. We mod the result to make it between 0 (inclusive) and 2^32
- * (exclusive).
- * @param {string} str A string.
- * @return {number} Hash value for `str`, between 0 (inclusive) and 2^32
- *  (exclusive). The empty string returns 0.
- */
-goog.string.hashCode = function(str) {
-  var result = 0;
-  for (var i = 0; i < str.length; ++i) {
-    // Normalize to 4 byte range, 0 ... 2^32.
-    result = (31 * result + str.charCodeAt(i)) >>> 0;
-  }
-  return result;
-};
-
-
-/**
- * The most recent unique ID. |0 is equivalent to Math.floor in this case.
- * @type {number}
- * @private
- */
-goog.string.uniqueStringCounter_ = Math.random() * 0x80000000 | 0;
-
-
-/**
- * Generates and returns a string which is unique in the current document.
- * This is useful, for example, to create unique IDs for DOM elements.
- * @return {string} A unique id.
- */
-goog.string.createUniqueString = function() {
-  return 'goog_' + goog.string.uniqueStringCounter_++;
-};
-
-
-/**
- * Converts the supplied string to a number, which may be Infinity or NaN.
- * This function strips whitespace: (toNumber(' 123') === 123)
- * This function accepts scientific notation: (toNumber('1e1') === 10)
- *
- * This is better than JavaScript's built-in conversions because, sadly:
- *     (Number(' ') === 0) and (parseFloat('123a') === 123)
- *
- * @param {string} str The string to convert.
- * @return {number} The number the supplied string represents, or NaN.
- */
-goog.string.toNumber = function(str) {
-  var num = Number(str);
-  if (num == 0 && goog.string.isEmptyOrWhitespace(str)) {
-    return NaN;
-  }
-  return num;
-};
-
-
-/**
- * Returns whether the given string is lower camel case (e.g. "isFooBar").
- *
- * Note that this assumes the string is entirely letters.
- * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
- *
- * @param {string} str String to test.
- * @return {boolean} Whether the string is lower camel case.
- */
-goog.string.isLowerCamelCase = function(str) {
-  return /^[a-z]+([A-Z][a-z]*)*$/.test(str);
-};
-
-
-/**
- * Returns whether the given string is upper camel case (e.g. "FooBarBaz").
- *
- * Note that this assumes the string is entirely letters.
- * @see http://en.wikipedia.org/wiki/CamelCase#Variations_and_synonyms
- *
- * @param {string} str String to test.
- * @return {boolean} Whether the string is upper camel case.
- */
-goog.string.isUpperCamelCase = function(str) {
-  return /^([A-Z][a-z]*)+$/.test(str);
-};
-
-
-/**
- * Converts a string from selector-case to camelCase (e.g. from
- * "multi-part-string" to "multiPartString"), useful for converting
- * CSS selectors and HTML dataset keys to their equivalent JS properties.
- * @param {string} str The string in selector-case form.
- * @return {string} The string in camelCase form.
- */
-goog.string.toCamelCase = function(str) {
-  return String(str).replace(/\-([a-z])/g, function(all, match) {
-    return match.toUpperCase();
-  });
-};
-
-
-/**
- * Converts a string from camelCase to selector-case (e.g. from
- * "multiPartString" to "multi-part-string"), useful for converting JS
- * style and dataset properties to equivalent CSS selectors and HTML keys.
- * @param {string} str The string in camelCase form.
- * @return {string} The string in selector-case form.
- */
-goog.string.toSelectorCase = function(str) {
-  return String(str).replace(/([A-Z])/g, '-$1').toLowerCase();
-};
-
-
-/**
- * Converts a string into TitleCase. First character of the string is always
- * capitalized in addition to the first letter of every subsequent word.
- * Words are delimited by one or more whitespaces by default. Custom delimiters
- * can optionally be specified to replace the default, which doesn't preserve
- * whitespace delimiters and instead must be explicitly included if needed.
- *
- * Default delimiter => " ":
- *    goog.string.toTitleCase('oneTwoThree')    => 'OneTwoThree'
- *    goog.string.toTitleCase('one two three')  => 'One Two Three'
- *    goog.string.toTitleCase('  one   two   ') => '  One   Two   '
- *    goog.string.toTitleCase('one_two_three')  => 'One_two_three'
- *    goog.string.toTitleCase('one-two-three')  => 'One-two-three'
- *
- * Custom delimiter => "_-.":
- *    goog.string.toTitleCase('oneTwoThree', '_-.')       => 'OneTwoThree'
- *    goog.string.toTitleCase('one two three', '_-.')     => 'One two three'
- *    goog.string.toTitleCase('  one   two   ', '_-.')    => '  one   two   '
- *    goog.string.toTitleCase('one_two_three', '_-.')     => 'One_Two_Three'
- *    goog.string.toTitleCase('one-two-three', '_-.')     => 'One-Two-Three'
- *    goog.string.toTitleCase('one...two...three', '_-.') => 'One...Two...Three'
- *    goog.string.toTitleCase('one. two. three', '_-.')   => 'One. two. three'
- *    goog.string.toTitleCase('one-two.three', '_-.')     => 'One-Two.Three'
- *
- * @param {string} str String value in camelCase form.
- * @param {string=} opt_delimiters Custom delimiter character set used to
- *      distinguish words in the string value. Each character represents a
- *      single delimiter. When provided, default whitespace delimiter is
- *      overridden and must be explicitly included if needed.
- * @return {string} String value in TitleCase form.
- */
-goog.string.toTitleCase = function(str, opt_delimiters) {
-  var delimiters = (typeof opt_delimiters === 'string') ?
-      goog.string.regExpEscape(opt_delimiters) :
-      '\\s';
-
-  // For IE8, we need to prevent using an empty character set. Otherwise,
-  // incorrect matching will occur.
-  delimiters = delimiters ? '|[' + delimiters + ']+' : '';
-
-  var regexp = new RegExp('(^' + delimiters + ')([a-z])', 'g');
-  return str.replace(regexp, function(all, p1, p2) {
-    return p1 + p2.toUpperCase();
-  });
-};
-
-
-/**
- * Capitalizes a string, i.e. converts the first letter to uppercase
- * and all other letters to lowercase, e.g.:
- *
- * goog.string.capitalize('one')     => 'One'
- * goog.string.capitalize('ONE')     => 'One'
- * goog.string.capitalize('one two') => 'One two'
- *
- * Note that this function does not trim initial whitespace.
- *
- * @param {string} str String value to capitalize.
- * @return {string} String value with first letter in uppercase.
- */
-goog.string.capitalize = function(str) {
-  return String(str.charAt(0)).toUpperCase() +
-      String(str.substr(1)).toLowerCase();
-};
-
-
-/**
- * Parse a string in decimal or hexidecimal ('0xFFFF') form.
- *
- * To parse a particular radix, please use parseInt(string, radix) directly. See
- * https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/parseInt
- *
- * This is a wrapper for the built-in parseInt function that will only parse
- * numbers as base 10 or base 16.  Some JS implementations assume strings
- * starting with "0" are intended to be octal. ES3 allowed but discouraged
- * this behavior. ES5 forbids it.  This function emulates the ES5 behavior.
- *
- * For more information, see Mozilla JS Reference: http://goo.gl/8RiFj
- *
- * @param {string|number|null|undefined} value The value to be parsed.
- * @return {number} The number, parsed. If the string failed to parse, this
- *     will be NaN.
- */
-goog.string.parseInt = function(value) {
-  // Force finite numbers to strings.
-  if (isFinite(value)) {
-    value = String(value);
-  }
-
-  if (typeof value === 'string') {
-    // If the string starts with '0x' or '-0x', parse as hex.
-    return /^\s*-?0x/i.test(value) ? parseInt(value, 16) : parseInt(value, 10);
-  }
-
-  return NaN;
-};
-
-
-/**
- * Splits a string on a separator a limited number of times.
- *
- * This implementation is more similar to Python or Java, where the limit
- * parameter specifies the maximum number of splits rather than truncating
- * the number of results.
- *
- * See http://docs.python.org/2/library/stdtypes.html#str.split
- * See JavaDoc: http://goo.gl/F2AsY
- * See Mozilla reference: http://goo.gl/dZdZs
- *
- * @param {string} str String to split.
- * @param {string} separator The separator.
- * @param {number} limit The limit to the number of splits. The resulting array
- *     will have a maximum length of limit+1.  Negative numbers are the same
- *     as zero.
- * @return {!Array<string>} The string, split.
- */
-goog.string.splitLimit = function(str, separator, limit) {
-  var parts = str.split(separator);
-  var returnVal = [];
-
-  // Only continue doing this while we haven't hit the limit and we have
-  // parts left.
-  while (limit > 0 && parts.length) {
-    returnVal.push(parts.shift());
-    limit--;
-  }
-
-  // If there are remaining parts, append them to the end.
-  if (parts.length) {
-    returnVal.push(parts.join(separator));
-  }
-
-  return returnVal;
-};
-
-
-/**
- * Finds the characters to the right of the last instance of any separator
- *
- * This function is similar to goog.string.path.baseName, except it can take a
- * list of characters to split the string on. It will return the rightmost
- * grouping of characters to the right of any separator as a left-to-right
- * oriented string.
- *
- * @see goog.string.path.baseName
- * @param {string} str The string
- * @param {string|!Array<string>} separators A list of separator characters
- * @return {string} The last part of the string with respect to the separators
- */
-goog.string.lastComponent = function(str, separators) {
-  if (!separators) {
-    return str;
-  } else if (typeof separators == 'string') {
-    separators = [separators];
-  }
-
-  var lastSeparatorIndex = -1;
-  for (var i = 0; i < separators.length; i++) {
-    if (separators[i] == '') {
-      continue;
-    }
-    var currentSeparatorIndex = str.lastIndexOf(separators[i]);
-    if (currentSeparatorIndex > lastSeparatorIndex) {
-      lastSeparatorIndex = currentSeparatorIndex;
-    }
-  }
-  if (lastSeparatorIndex == -1) {
-    return str;
-  }
-  return str.slice(lastSeparatorIndex + 1);
-};
-
-
-/**
- * Computes the Levenshtein edit distance between two strings.
- * @param {string} a
- * @param {string} b
- * @return {number} The edit distance between the two strings.
- */
-goog.string.editDistance = function(a, b) {
-  var v0 = [];
-  var v1 = [];
-
-  if (a == b) {
-    return 0;
-  }
-
-  if (!a.length || !b.length) {
-    return Math.max(a.length, b.length);
-  }
-
-  for (var i = 0; i < b.length + 1; i++) {
-    v0[i] = i;
-  }
-
-  for (var i = 0; i < a.length; i++) {
-    v1[0] = i + 1;
-
-    for (var j = 0; j < b.length; j++) {
-      var cost = Number(a[i] != b[j]);
-      // Cost for the substring is the minimum of adding one character, removing
-      // one character, or a swap.
-      v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
-    }
-
-    for (var j = 0; j < v0.length; j++) {
-      v0[j] = v1[j];
-    }
-  }
-
-  return v1[b.length];
-};
-
-//javascript/closure/i18n/numberformat.js
-// Copyright 2006 The Closure Library Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS-IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 /**
  * @fileoverview Number format/parse library with locale support.
@@ -32427,5301 +36233,6 @@ goog.i18n.NumberFormat.prototype.isCurrencyCodeBeforeValue = function() {
   // No need to test, it is guaranteed that both these symbols exist.
   // If not, we have bigger problems than this.
   return posCurrSymbol < posCurrValue;
-};
-
-//third_party/javascript/closure/iter/iter.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Python style iteration utilities.
- */
-
-
-goog.provide('goog.iter');
-goog.provide('goog.iter.Iterable');
-goog.provide('goog.iter.Iterator');
-goog.provide('goog.iter.StopIteration');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-goog.require('goog.functions');
-goog.require('goog.math');
-
-
-/**
- * @typedef {{length:number}|{__iterator__}}
- */
-goog.iter.Iterable;
-
-
-/**
- * Singleton Error object that is used to terminate iterations.
- * @const {!Error}
- */
-goog.iter.StopIteration = ('StopIteration' in goog.global) ?
-    // For script engines that support legacy iterators.
-    goog.global['StopIteration'] :
-    {message: 'StopIteration', stack: ''};
-
-
-
-/**
- * Class/interface for iterators.  An iterator needs to implement a `next`
- * method and it needs to throw a `goog.iter.StopIteration` when the
- * iteration passes beyond the end.  Iterators have no `hasNext` method.
- * It is recommended to always use the helper functions to iterate over the
- * iterator or in case you are only targeting JavaScript 1.7 for in loops.
- * @constructor
- * @template VALUE
- */
-goog.iter.Iterator = function() {};
-
-
-/**
- * Returns the next value of the iteration.  This will throw the object
- * {@see goog.iter.StopIteration} when the iteration passes the end.
- * @return {VALUE} Any object or value.
- */
-goog.iter.Iterator.prototype.next = function() {
-  throw goog.iter.StopIteration;
-};
-
-
-/**
- * Returns the `Iterator` object itself.  This is used to implement
- * the iterator protocol in JavaScript 1.7
- * @param {boolean=} opt_keys  Whether to return the keys or values. Default is
- *     to only return the values.  This is being used by the for-in loop (true)
- *     and the for-each-in loop (false).  Even though the param gives a hint
- *     about what the iterator will return there is no guarantee that it will
- *     return the keys when true is passed.
- * @return {!goog.iter.Iterator<VALUE>} The object itself.
- */
-goog.iter.Iterator.prototype.__iterator__ = function(opt_keys) {
-  return this;
-};
-
-
-/**
- * Returns an iterator that knows how to iterate over the values in the object.
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable  If the
- *     object is an iterator it will be returned as is.  If the object has an
- *     `__iterator__` method that will be called to get the value
- *     iterator.  If the object is an array-like object we create an iterator
- *     for that.
- * @return {!goog.iter.Iterator<VALUE>} An iterator that knows how to iterate
- *     over the values in `iterable`.
- * @template VALUE
- */
-goog.iter.toIterator = function(iterable) {
-  if (iterable instanceof goog.iter.Iterator) {
-    return iterable;
-  }
-  if (typeof iterable.__iterator__ == 'function') {
-    return /** @type {{__iterator__:function(this:?, boolean=)}} */ (iterable)
-        .__iterator__(false);
-  }
-  if (goog.isArrayLike(iterable)) {
-    var like = /** @type {!IArrayLike<number|string>} */ (iterable);
-    var i = 0;
-    var newIter = new goog.iter.Iterator;
-    newIter.next = function() {
-      while (true) {
-        if (i >= like.length) {
-          throw goog.iter.StopIteration;
-        }
-        // Don't include deleted elements.
-        if (!(i in like)) {
-          i++;
-          continue;
-        }
-        return like[i++];
-      }
-    };
-    return newIter;
-  }
-
-
-  // TODO(arv): Should we fall back on goog.structs.getValues()?
-  throw new Error('Not implemented');
-};
-
-
-/**
- * Calls a function for each element in the iterator with the element of the
- * iterator passed as argument.
- *
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable  The iterator
- *     to iterate over. If the iterable is an object `toIterator` will be
- *     called on it.
- * @param {function(this:THIS,VALUE,?,!goog.iter.Iterator<VALUE>)} f
- *     The function to call for every element.  This function takes 3 arguments
- *     (the element, undefined, and the iterator) and the return value is
- *     irrelevant.  The reason for passing undefined as the second argument is
- *     so that the same function can be used in {@see goog.array.forEach} as
- *     well as others.  The third parameter is of type "number" for
- *     arraylike objects, undefined, otherwise.
- * @param {THIS=} opt_obj  The object to be used as the value of 'this' within
- *     `f`.
- * @template THIS, VALUE
- */
-goog.iter.forEach = function(iterable, f, opt_obj) {
-  if (goog.isArrayLike(iterable)) {
-
-    try {
-      // NOTES: this passes the index number to the second parameter
-      // of the callback contrary to the documentation above.
-      goog.array.forEach(
-          /** @type {IArrayLike<?>} */ (iterable), f, opt_obj);
-    } catch (ex) {
-      if (ex !== goog.iter.StopIteration) {
-        throw ex;
-      }
-    }
-  } else {
-    iterable = goog.iter.toIterator(iterable);
-
-    try {
-      while (true) {
-        f.call(opt_obj, iterable.next(), undefined, iterable);
-      }
-    } catch (ex) {
-      if (ex !== goog.iter.StopIteration) {
-        throw ex;
-      }
-    }
-  }
-};
-
-
-/**
- * Calls a function for every element in the iterator, and if the function
- * returns true adds the element to a new iterator.
- *
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     to iterate over.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
- *     The function to call for every element. This function takes 3 arguments
- *     (the element, undefined, and the iterator) and should return a boolean.
- *     If the return value is true the element will be included in the returned
- *     iterator.  If it is false the element is not included.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator in which only elements
- *     that passed the test are present.
- * @template THIS, VALUE
- */
-goog.iter.filter = function(iterable, f, opt_obj) {
-  var iterator = goog.iter.toIterator(iterable);
-  var newIter = new goog.iter.Iterator;
-  newIter.next = function() {
-    while (true) {
-      var val = iterator.next();
-      if (f.call(opt_obj, val, undefined, iterator)) {
-        return val;
-      }
-    }
-  };
-  return newIter;
-};
-
-
-/**
- * Calls a function for every element in the iterator, and if the function
- * returns false adds the element to a new iterator.
- *
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     to iterate over.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
- *     The function to call for every element. This function takes 3 arguments
- *     (the element, undefined, and the iterator) and should return a boolean.
- *     If the return value is false the element will be included in the returned
- *     iterator.  If it is true the element is not included.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator in which only elements
- *     that did not pass the test are present.
- * @template THIS, VALUE
- */
-goog.iter.filterFalse = function(iterable, f, opt_obj) {
-  return goog.iter.filter(iterable, goog.functions.not(f), opt_obj);
-};
-
-
-/**
- * Creates a new iterator that returns the values in a range.  This function
- * can take 1, 2 or 3 arguments:
- * <pre>
- * range(5) same as range(0, 5, 1)
- * range(2, 5) same as range(2, 5, 1)
- * </pre>
- *
- * @param {number} startOrStop  The stop value if only one argument is provided.
- *     The start value if 2 or more arguments are provided.  If only one
- *     argument is used the start value is 0.
- * @param {number=} opt_stop  The stop value.  If left out then the first
- *     argument is used as the stop value.
- * @param {number=} opt_step  The number to increment with between each call to
- *     next.  This can be negative.
- * @return {!goog.iter.Iterator<number>} A new iterator that returns the values
- *     in the range.
- */
-goog.iter.range = function(startOrStop, opt_stop, opt_step) {
-  var start = 0;
-  var stop = startOrStop;
-  var step = opt_step || 1;
-  if (arguments.length > 1) {
-    start = startOrStop;
-    stop = +opt_stop;
-  }
-  if (step == 0) {
-    throw new Error('Range step argument must not be zero');
-  }
-
-  var newIter = new goog.iter.Iterator;
-  newIter.next = function() {
-    if (step > 0 && start >= stop || step < 0 && start <= stop) {
-      throw goog.iter.StopIteration;
-    }
-    var rv = start;
-    start += step;
-    return rv;
-  };
-  return newIter;
-};
-
-
-/**
- * Joins the values in a iterator with a delimiter.
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     to get the values from.
- * @param {string} deliminator  The text to put between the values.
- * @return {string} The joined value string.
- * @template VALUE
- */
-goog.iter.join = function(iterable, deliminator) {
-  return goog.iter.toArray(iterable).join(deliminator);
-};
-
-
-/**
- * For every element in the iterator call a function and return a new iterator
- * with that value.
- *
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterator to iterate over.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):RESULT} f
- *     The function to call for every element.  This function takes 3 arguments
- *     (the element, undefined, and the iterator) and should return a new value.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {!goog.iter.Iterator<RESULT>} A new iterator that returns the
- *     results of applying the function to each element in the original
- *     iterator.
- * @template THIS, VALUE, RESULT
- */
-goog.iter.map = function(iterable, f, opt_obj) {
-  var iterator = goog.iter.toIterator(iterable);
-  var newIter = new goog.iter.Iterator;
-  newIter.next = function() {
-    var val = iterator.next();
-    return f.call(opt_obj, val, undefined, iterator);
-  };
-  return newIter;
-};
-
-
-/**
- * Passes every element of an iterator into a function and accumulates the
- * result.
- *
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     to iterate over.
- * @param {function(this:THIS,VALUE,VALUE):VALUE} f The function to call for
- *     every element. This function takes 2 arguments (the function's previous
- *     result or the initial value, and the value of the current element).
- *     function(previousValue, currentElement) : newValue.
- * @param {VALUE} val The initial value to pass into the function on the first
- *     call.
- * @param {THIS=} opt_obj  The object to be used as the value of 'this' within
- *     f.
- * @return {VALUE} Result of evaluating f repeatedly across the values of
- *     the iterator.
- * @template THIS, VALUE
- */
-goog.iter.reduce = function(iterable, f, val, opt_obj) {
-  var rval = val;
-  goog.iter.forEach(
-      iterable, function(val) { rval = f.call(opt_obj, rval, val); });
-  return rval;
-};
-
-
-/**
- * Goes through the values in the iterator. Calls f for each of these, and if
- * any of them returns true, this returns true (without checking the rest). If
- * all return false this will return false.
- *
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     object.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
- *     The function to call for every value. This function takes 3 arguments
- *     (the value, undefined, and the iterator) and should return a boolean.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {boolean} true if any value passes the test.
- * @template THIS, VALUE
- */
-goog.iter.some = function(iterable, f, opt_obj) {
-  iterable = goog.iter.toIterator(iterable);
-
-  try {
-    while (true) {
-      if (f.call(opt_obj, iterable.next(), undefined, iterable)) {
-        return true;
-      }
-    }
-  } catch (ex) {
-    if (ex !== goog.iter.StopIteration) {
-      throw ex;
-    }
-  }
-  return false;
-};
-
-
-/**
- * Goes through the values in the iterator. Calls f for each of these and if any
- * of them returns false this returns false (without checking the rest). If all
- * return true this will return true.
- *
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     object.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
- *     The function to call for every value. This function takes 3 arguments
- *     (the value, undefined, and the iterator) and should return a boolean.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {boolean} true if every value passes the test.
- * @template THIS, VALUE
- */
-goog.iter.every = function(iterable, f, opt_obj) {
-  iterable = goog.iter.toIterator(iterable);
-
-  try {
-    while (true) {
-      if (!f.call(opt_obj, iterable.next(), undefined, iterable)) {
-        return false;
-      }
-    }
-  } catch (ex) {
-    if (ex !== goog.iter.StopIteration) {
-      throw ex;
-    }
-  }
-  return true;
-};
-
-
-/**
- * Takes zero or more iterables and returns one iterator that will iterate over
- * them in the order chained.
- * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
- *     number of iterable objects.
- * @return {!goog.iter.Iterator<VALUE>} Returns a new iterator that will
- *     iterate over all the given iterables' contents.
- * @template VALUE
- */
-goog.iter.chain = function(var_args) {
-  return goog.iter.chainFromIterable(arguments);
-};
-
-
-/**
- * Takes a single iterable containing zero or more iterables and returns one
- * iterator that will iterate over each one in the order given.
- * @see https://goo.gl/5NRp5d
- * @param {goog.iter.Iterator<?>|goog.iter.Iterable} iterable The iterable of
- *     iterables to chain.
- * @return {!goog.iter.Iterator<VALUE>} Returns a new iterator that will
- *     iterate over all the contents of the iterables contained within
- *     `iterable`.
- * @template VALUE
- */
-goog.iter.chainFromIterable = function(iterable) {
-  var iterator = goog.iter.toIterator(iterable);
-  var iter = new goog.iter.Iterator();
-  var current = null;
-
-  iter.next = function() {
-    while (true) {
-      if (current == null) {
-        var it = iterator.next();
-        current = goog.iter.toIterator(it);
-      }
-      try {
-        return current.next();
-      } catch (ex) {
-        if (ex !== goog.iter.StopIteration) {
-          throw ex;
-        }
-        current = null;
-      }
-    }
-  };
-
-  return iter;
-};
-
-
-/**
- * Builds a new iterator that iterates over the original, but skips elements as
- * long as a supplied function returns true.
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     object.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
- *     The function to call for every value. This function takes 3 arguments
- *     (the value, undefined, and the iterator) and should return a boolean.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator that drops elements from
- *     the original iterator as long as `f` is true.
- * @template THIS, VALUE
- */
-goog.iter.dropWhile = function(iterable, f, opt_obj) {
-  var iterator = goog.iter.toIterator(iterable);
-  var newIter = new goog.iter.Iterator;
-  var dropping = true;
-  newIter.next = function() {
-    while (true) {
-      var val = iterator.next();
-      if (dropping && f.call(opt_obj, val, undefined, iterator)) {
-        continue;
-      } else {
-        dropping = false;
-      }
-      return val;
-    }
-  };
-  return newIter;
-};
-
-
-/**
- * Builds a new iterator that iterates over the original, but only as long as a
- * supplied function returns true.
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     object.
- * @param {
- *     function(this:THIS,VALUE,undefined,!goog.iter.Iterator<VALUE>):boolean} f
- *     The function to call for every value. This function takes 3 arguments
- *     (the value, undefined, and the iterator) and should return a boolean.
- * @param {THIS=} opt_obj This is used as the 'this' object in f when called.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator that keeps elements in
- *     the original iterator as long as the function is true.
- * @template THIS, VALUE
- */
-goog.iter.takeWhile = function(iterable, f, opt_obj) {
-  var iterator = goog.iter.toIterator(iterable);
-  var iter = new goog.iter.Iterator();
-  iter.next = function() {
-    var val = iterator.next();
-    if (f.call(opt_obj, val, undefined, iterator)) {
-      return val;
-    }
-    throw goog.iter.StopIteration;
-  };
-  return iter;
-};
-
-
-/**
- * Converts the iterator to an array
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterator
- *     to convert to an array.
- * @return {!Array<VALUE>} An array of the elements the iterator iterates over.
- * @template VALUE
- */
-goog.iter.toArray = function(iterable) {
-  // Fast path for array-like.
-  if (goog.isArrayLike(iterable)) {
-    return goog.array.toArray(/** @type {!IArrayLike<?>} */ (iterable));
-  }
-  iterable = goog.iter.toIterator(iterable);
-  var array = [];
-  goog.iter.forEach(iterable, function(val) { array.push(val); });
-  return array;
-};
-
-
-/**
- * Iterates over two iterables and returns true if they contain the same
- * sequence of elements and have the same length.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable1 The first
- *     iterable object.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable2 The second
- *     iterable object.
- * @param {function(VALUE,VALUE):boolean=} opt_equalsFn Optional comparison
- *     function.
- *     Should take two arguments to compare, and return true if the arguments
- *     are equal. Defaults to {@link goog.array.defaultCompareEquality} which
- *     compares the elements using the built-in '===' operator.
- * @return {boolean} true if the iterables contain the same sequence of elements
- *     and have the same length.
- * @template VALUE
- */
-goog.iter.equals = function(iterable1, iterable2, opt_equalsFn) {
-  var fillValue = {};
-  var pairs = goog.iter.zipLongest(fillValue, iterable1, iterable2);
-  var equalsFn = opt_equalsFn || goog.array.defaultCompareEquality;
-  return goog.iter.every(
-      pairs, function(pair) { return equalsFn(pair[0], pair[1]); });
-};
-
-
-/**
- * Advances the iterator to the next position, returning the given default value
- * instead of throwing an exception if the iterator has no more entries.
- * @param {goog.iter.Iterator<VALUE>|goog.iter.Iterable} iterable The iterable
- *     object.
- * @param {VALUE} defaultValue The value to return if the iterator is empty.
- * @return {VALUE} The next item in the iteration, or defaultValue if the
- *     iterator was empty.
- * @template VALUE
- */
-goog.iter.nextOrValue = function(iterable, defaultValue) {
-  try {
-    return goog.iter.toIterator(iterable).next();
-  } catch (e) {
-    if (e != goog.iter.StopIteration) {
-      throw e;
-    }
-    return defaultValue;
-  }
-};
-
-
-/**
- * Cartesian product of zero or more sets.  Gives an iterator that gives every
- * combination of one element chosen from each set.  For example,
- * ([1, 2], [3, 4]) gives ([1, 3], [1, 4], [2, 3], [2, 4]).
- * @see http://docs.python.org/library/itertools.html#itertools.product
- * @param {...!IArrayLike<VALUE>} var_args Zero or more sets, as
- *     arrays.
- * @return {!goog.iter.Iterator<!Array<VALUE>>} An iterator that gives each
- *     n-tuple (as an array).
- * @template VALUE
- */
-goog.iter.product = function(var_args) {
-  var someArrayEmpty =
-      goog.array.some(arguments, function(arr) { return !arr.length; });
-
-  // An empty set in a cartesian product gives an empty set.
-  if (someArrayEmpty || !arguments.length) {
-    return new goog.iter.Iterator();
-  }
-
-  var iter = new goog.iter.Iterator();
-  var arrays = arguments;
-
-  // The first indices are [0, 0, ...]
-  /** @type {?Array<number>} */
-  var indicies = goog.array.repeat(0, arrays.length);
-
-  iter.next = function() {
-
-    if (indicies) {
-      var retVal = goog.array.map(indicies, function(valueIndex, arrayIndex) {
-        return arrays[arrayIndex][valueIndex];
-      });
-
-      // Generate the next-largest indices for the next call.
-      // Increase the rightmost index. If it goes over, increase the next
-      // rightmost (like carry-over addition).
-      for (var i = indicies.length - 1; i >= 0; i--) {
-        // Assertion prevents compiler warning below.
-        goog.asserts.assert(indicies);
-        if (indicies[i] < arrays[i].length - 1) {
-          indicies[i]++;
-          break;
-        }
-
-        // We're at the last indices (the last element of every array), so
-        // the iteration is over on the next call.
-        if (i == 0) {
-          indicies = null;
-          break;
-        }
-        // Reset the index in this column and loop back to increment the
-        // next one.
-        indicies[i] = 0;
-      }
-      return retVal;
-    }
-
-    throw goog.iter.StopIteration;
-  };
-
-  return iter;
-};
-
-
-/**
- * Create an iterator to cycle over the iterable's elements indefinitely.
- * For example, ([1, 2, 3]) would return : 1, 2, 3, 1, 2, 3, ...
- * @see: http://docs.python.org/library/itertools.html#itertools.cycle.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable object.
- * @return {!goog.iter.Iterator<VALUE>} An iterator that iterates indefinitely
- *     over the values in `iterable`.
- * @template VALUE
- */
-goog.iter.cycle = function(iterable) {
-  var baseIterator = goog.iter.toIterator(iterable);
-
-  // We maintain a cache to store the iterable elements as we iterate
-  // over them. The cache is used to return elements once we have
-  // iterated over the iterable once.
-  var cache = [];
-  var cacheIndex = 0;
-
-  var iter = new goog.iter.Iterator();
-
-  // This flag is set after the iterable is iterated over once
-  var useCache = false;
-
-  iter.next = function() {
-    var returnElement = null;
-
-    // Pull elements off the original iterator if not using cache
-    if (!useCache) {
-      try {
-        // Return the element from the iterable
-        returnElement = baseIterator.next();
-        cache.push(returnElement);
-        return returnElement;
-      } catch (e) {
-        // If an exception other than StopIteration is thrown
-        // or if there are no elements to iterate over (the iterable was empty)
-        // throw an exception
-        if (e != goog.iter.StopIteration || goog.array.isEmpty(cache)) {
-          throw e;
-        }
-        // set useCache to true after we know that a 'StopIteration' exception
-        // was thrown and the cache is not empty (to handle the 'empty iterable'
-        // use case)
-        useCache = true;
-      }
-    }
-
-    returnElement = cache[cacheIndex];
-    cacheIndex = (cacheIndex + 1) % cache.length;
-
-    return returnElement;
-  };
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that counts indefinitely from a starting value.
- * @see http://docs.python.org/2/library/itertools.html#itertools.count
- * @param {number=} opt_start The starting value. Default is 0.
- * @param {number=} opt_step The number to increment with between each call to
- *     next. Negative and floating point numbers are allowed. Default is 1.
- * @return {!goog.iter.Iterator<number>} A new iterator that returns the values
- *     in the series.
- */
-goog.iter.count = function(opt_start, opt_step) {
-  var counter = opt_start || 0;
-  var step = (opt_step !== undefined) ? opt_step : 1;
-  var iter = new goog.iter.Iterator();
-
-  iter.next = function() {
-    var returnValue = counter;
-    counter += step;
-    return returnValue;
-  };
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that returns the same object or value repeatedly.
- * @param {VALUE} value Any object or value to repeat.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator that returns the
- *     repeated value.
- * @template VALUE
- */
-goog.iter.repeat = function(value) {
-  var iter = new goog.iter.Iterator();
-
-  iter.next = goog.functions.constant(value);
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that returns running totals from the numbers in
- * `iterable`. For example, the array {@code [1, 2, 3, 4, 5]} yields
- * {@code 1 -> 3 -> 6 -> 10 -> 15}.
- * @see http://docs.python.org/3.2/library/itertools.html#itertools.accumulate
- * @param {!goog.iter.Iterator<number>|!goog.iter.Iterable} iterable The
- *     iterable of numbers to accumulate.
- * @return {!goog.iter.Iterator<number>} A new iterator that returns the
- *     numbers in the series.
- */
-goog.iter.accumulate = function(iterable) {
-  var iterator = goog.iter.toIterator(iterable);
-  var total = 0;
-  var iter = new goog.iter.Iterator();
-
-  iter.next = function() {
-    total += iterator.next();
-    return total;
-  };
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that returns arrays containing the ith elements from the
- * provided iterables. The returned arrays will be the same size as the number
- * of iterables given in `var_args`. Once the shortest iterable is
- * exhausted, subsequent calls to `next()` will throw
- * `goog.iter.StopIteration`.
- * @see http://docs.python.org/2/library/itertools.html#itertools.izip
- * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
- *     number of iterable objects.
- * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator that returns
- *     arrays of elements from the provided iterables.
- * @template VALUE
- */
-goog.iter.zip = function(var_args) {
-  var args = arguments;
-  var iter = new goog.iter.Iterator();
-
-  if (args.length > 0) {
-    var iterators = goog.array.map(args, goog.iter.toIterator);
-    iter.next = function() {
-      var arr = goog.array.map(iterators, function(it) { return it.next(); });
-      return arr;
-    };
-  }
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that returns arrays containing the ith elements from the
- * provided iterables. The returned arrays will be the same size as the number
- * of iterables given in `var_args`. Shorter iterables will be extended
- * with `fillValue`. Once the longest iterable is exhausted, subsequent
- * calls to `next()` will throw `goog.iter.StopIteration`.
- * @see http://docs.python.org/2/library/itertools.html#itertools.izip_longest
- * @param {VALUE} fillValue The object or value used to fill shorter iterables.
- * @param {...!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} var_args Any
- *     number of iterable objects.
- * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator that returns
- *     arrays of elements from the provided iterables.
- * @template VALUE
- */
-goog.iter.zipLongest = function(fillValue, var_args) {
-  var args = goog.array.slice(arguments, 1);
-  var iter = new goog.iter.Iterator();
-
-  if (args.length > 0) {
-    var iterators = goog.array.map(args, goog.iter.toIterator);
-
-    iter.next = function() {
-      var iteratorsHaveValues = false;  // false when all iterators are empty.
-      var arr = goog.array.map(iterators, function(it) {
-        var returnValue;
-        try {
-          returnValue = it.next();
-          // Iterator had a value, so we've not exhausted the iterators.
-          // Set flag accordingly.
-          iteratorsHaveValues = true;
-        } catch (ex) {
-          if (ex !== goog.iter.StopIteration) {
-            throw ex;
-          }
-          returnValue = fillValue;
-        }
-        return returnValue;
-      });
-
-      if (!iteratorsHaveValues) {
-        throw goog.iter.StopIteration;
-      }
-      return arr;
-    };
-  }
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that filters `iterable` based on a series of
- * `selectors`. On each call to `next()`, one item is taken from
- * both the `iterable` and `selectors` iterators. If the item from
- * `selectors` evaluates to true, the item from `iterable` is given.
- * Otherwise, it is skipped. Once either `iterable` or `selectors`
- * is exhausted, subsequent calls to `next()` will throw
- * `goog.iter.StopIteration`.
- * @see http://docs.python.org/2/library/itertools.html#itertools.compress
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to filter.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} selectors An
- *     iterable of items to be evaluated in a boolean context to determine if
- *     the corresponding element in `iterable` should be included in the
- *     result.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator that returns the
- *     filtered values.
- * @template VALUE
- */
-goog.iter.compress = function(iterable, selectors) {
-  var selectorIterator = goog.iter.toIterator(selectors);
-
-  return goog.iter.filter(
-      iterable, function() { return !!selectorIterator.next(); });
-};
-
-
-
-/**
- * Implements the `goog.iter.groupBy` iterator.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to group.
- * @param {function(VALUE): KEY=} opt_keyFunc  Optional function for
- *     determining the key value for each group in the `iterable`. Default
- *     is the identity function.
- * @constructor
- * @extends {goog.iter.Iterator<!Array<?>>}
- * @template KEY, VALUE
- * @private
- */
-goog.iter.GroupByIterator_ = function(iterable, opt_keyFunc) {
-
-  /**
-   * The iterable to group, coerced to an iterator.
-   * @type {!goog.iter.Iterator}
-   */
-  this.iterator = goog.iter.toIterator(iterable);
-
-  /**
-   * A function for determining the key value for each element in the iterable.
-   * If no function is provided, the identity function is used and returns the
-   * element unchanged.
-   * @type {function(VALUE): KEY}
-   */
-  this.keyFunc = opt_keyFunc || goog.functions.identity;
-
-  /**
-   * The target key for determining the start of a group.
-   * @type {KEY}
-   */
-  this.targetKey;
-
-  /**
-   * The current key visited during iteration.
-   * @type {KEY}
-   */
-  this.currentKey;
-
-  /**
-   * The current value being added to the group.
-   * @type {VALUE}
-   */
-  this.currentValue;
-};
-goog.inherits(goog.iter.GroupByIterator_, goog.iter.Iterator);
-
-
-/** @override */
-goog.iter.GroupByIterator_.prototype.next = function() {
-  while (this.currentKey == this.targetKey) {
-    this.currentValue = this.iterator.next();  // Exits on StopIteration
-    this.currentKey = this.keyFunc(this.currentValue);
-  }
-  this.targetKey = this.currentKey;
-  return [this.currentKey, this.groupItems_(this.targetKey)];
-};
-
-
-/**
- * Performs the grouping of objects using the given key.
- * @param {KEY} targetKey  The target key object for the group.
- * @return {!Array<VALUE>} An array of grouped objects.
- * @private
- */
-goog.iter.GroupByIterator_.prototype.groupItems_ = function(targetKey) {
-  var arr = [];
-  while (this.currentKey == targetKey) {
-    arr.push(this.currentValue);
-    try {
-      this.currentValue = this.iterator.next();
-    } catch (ex) {
-      if (ex !== goog.iter.StopIteration) {
-        throw ex;
-      }
-      break;
-    }
-    this.currentKey = this.keyFunc(this.currentValue);
-  }
-  return arr;
-};
-
-
-/**
- * Creates an iterator that returns arrays containing elements from the
- * `iterable` grouped by a key value. For iterables with repeated
- * elements (i.e. sorted according to a particular key function), this function
- * has a `uniq`-like effect. For example, grouping the array:
- * {@code [A, B, B, C, C, A]} produces
- * {@code [A, [A]], [B, [B, B]], [C, [C, C]], [A, [A]]}.
- * @see http://docs.python.org/2/library/itertools.html#itertools.groupby
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to group.
- * @param {function(VALUE): KEY=} opt_keyFunc  Optional function for
- *     determining the key value for each group in the `iterable`. Default
- *     is the identity function.
- * @return {!goog.iter.Iterator<!Array<?>>} A new iterator that returns
- *     arrays of consecutive key and groups.
- * @template KEY, VALUE
- */
-goog.iter.groupBy = function(iterable, opt_keyFunc) {
-  return new goog.iter.GroupByIterator_(iterable, opt_keyFunc);
-};
-
-
-/**
- * Gives an iterator that gives the result of calling the given function
- * <code>f</code> with the arguments taken from the next element from
- * <code>iterable</code> (the elements are expected to also be iterables).
- *
- * Similar to {@see goog.iter.map} but allows the function to accept multiple
- * arguments from the iterable.
- *
- * @param {!goog.iter.Iterator<?>|!goog.iter.Iterable} iterable The iterable of
- *     iterables to iterate over.
- * @param {function(this:THIS,...*):RESULT} f The function to call for every
- *     element.  This function takes N+2 arguments, where N represents the
- *     number of items from the next element of the iterable. The two
- *     additional arguments passed to the function are undefined and the
- *     iterator itself. The function should return a new value.
- * @param {THIS=} opt_obj The object to be used as the value of 'this' within
- *     `f`.
- * @return {!goog.iter.Iterator<RESULT>} A new iterator that returns the
- *     results of applying the function to each element in the original
- *     iterator.
- * @template THIS, RESULT
- */
-goog.iter.starMap = function(iterable, f, opt_obj) {
-  var iterator = goog.iter.toIterator(iterable);
-  var iter = new goog.iter.Iterator();
-
-  iter.next = function() {
-    var args = goog.iter.toArray(iterator.next());
-    return f.apply(opt_obj, goog.array.concat(args, undefined, iterator));
-  };
-
-  return iter;
-};
-
-
-/**
- * Returns an array of iterators each of which can iterate over the values in
- * `iterable` without advancing the others.
- * @see http://docs.python.org/2/library/itertools.html#itertools.tee
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to tee.
- * @param {number=} opt_num  The number of iterators to create. Default is 2.
- * @return {!Array<goog.iter.Iterator<VALUE>>} An array of iterators.
- * @template VALUE
- */
-goog.iter.tee = function(iterable, opt_num) {
-  var iterator = goog.iter.toIterator(iterable);
-  var num = (typeof opt_num === 'number') ? opt_num : 2;
-  var buffers =
-      goog.array.map(goog.array.range(num), function() { return []; });
-
-  var addNextIteratorValueToBuffers = function() {
-    var val = iterator.next();
-    goog.array.forEach(buffers, function(buffer) { buffer.push(val); });
-  };
-
-  var createIterator = function(buffer) {
-    // Each tee'd iterator has an associated buffer (initially empty). When a
-    // tee'd iterator's buffer is empty, it calls
-    // addNextIteratorValueToBuffers(), adding the next value to all tee'd
-    // iterators' buffers, and then returns that value. This allows each
-    // iterator to be advanced independently.
-    var iter = new goog.iter.Iterator();
-
-    iter.next = function() {
-      if (goog.array.isEmpty(buffer)) {
-        addNextIteratorValueToBuffers();
-      }
-      goog.asserts.assert(!goog.array.isEmpty(buffer));
-      return buffer.shift();
-    };
-
-    return iter;
-  };
-
-  return goog.array.map(buffers, createIterator);
-};
-
-
-/**
- * Creates an iterator that returns arrays containing a count and an element
- * obtained from the given `iterable`.
- * @see http://docs.python.org/2/library/functions.html#enumerate
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to enumerate.
- * @param {number=} opt_start  Optional starting value. Default is 0.
- * @return {!goog.iter.Iterator<!Array<?>>} A new iterator containing
- *     count/item pairs.
- * @template VALUE
- */
-goog.iter.enumerate = function(iterable, opt_start) {
-  return goog.iter.zip(goog.iter.count(opt_start), iterable);
-};
-
-
-/**
- * Creates an iterator that returns the first `limitSize` elements from an
- * iterable. If this number is greater than the number of elements in the
- * iterable, all the elements are returned.
- * @see http://goo.gl/V0sihp Inspired by the limit iterator in Guava.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to limit.
- * @param {number} limitSize  The maximum number of elements to return.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator containing
- *     `limitSize` elements.
- * @template VALUE
- */
-goog.iter.limit = function(iterable, limitSize) {
-  goog.asserts.assert(goog.math.isInt(limitSize) && limitSize >= 0);
-
-  var iterator = goog.iter.toIterator(iterable);
-
-  var iter = new goog.iter.Iterator();
-  var remaining = limitSize;
-
-  iter.next = function() {
-    if (remaining-- > 0) {
-      return iterator.next();
-    }
-    throw goog.iter.StopIteration;
-  };
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that is advanced `count` steps ahead. Consumed
- * values are silently discarded. If `count` is greater than the number
- * of elements in `iterable`, an empty iterator is returned. Subsequent
- * calls to `next()` will throw `goog.iter.StopIteration`.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to consume.
- * @param {number} count  The number of elements to consume from the iterator.
- * @return {!goog.iter.Iterator<VALUE>} An iterator advanced zero or more steps
- *     ahead.
- * @template VALUE
- */
-goog.iter.consume = function(iterable, count) {
-  goog.asserts.assert(goog.math.isInt(count) && count >= 0);
-
-  var iterator = goog.iter.toIterator(iterable);
-
-  while (count-- > 0) {
-    goog.iter.nextOrValue(iterator, null);
-  }
-
-  return iterator;
-};
-
-
-/**
- * Creates an iterator that returns a range of elements from an iterable.
- * Similar to {@see goog.array.slice} but does not support negative indexes.
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to slice.
- * @param {number} start  The index of the first element to return.
- * @param {number=} opt_end  The index after the last element to return. If
- *     defined, must be greater than or equal to `start`.
- * @return {!goog.iter.Iterator<VALUE>} A new iterator containing a slice of
- *     the original.
- * @template VALUE
- */
-goog.iter.slice = function(iterable, start, opt_end) {
-  goog.asserts.assert(goog.math.isInt(start) && start >= 0);
-
-  var iterator = goog.iter.consume(iterable, start);
-
-  if (typeof opt_end === 'number') {
-    goog.asserts.assert(goog.math.isInt(opt_end) && opt_end >= start);
-    iterator = goog.iter.limit(iterator, opt_end - start /* limitSize */);
-  }
-
-  return iterator;
-};
-
-
-/**
- * Checks an array for duplicate elements.
- * @param {?IArrayLike<VALUE>} arr The array to check for
- *     duplicates.
- * @return {boolean} True, if the array contains duplicates, false otherwise.
- * @private
- * @template VALUE
- */
-// TODO(user): Consider moving this into goog.array as a public function.
-goog.iter.hasDuplicates_ = function(arr) {
-  var deduped = [];
-  goog.array.removeDuplicates(arr, deduped);
-  return arr.length != deduped.length;
-};
-
-
-/**
- * Creates an iterator that returns permutations of elements in
- * `iterable`.
- *
- * Permutations are obtained by taking the Cartesian product of
- * `opt_length` iterables and filtering out those with repeated
- * elements. For example, the permutations of {@code [1,2,3]} are
- * {@code [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]}.
- * @see http://docs.python.org/2/library/itertools.html#itertools.permutations
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable from which to generate permutations.
- * @param {number=} opt_length Length of each permutation. If omitted, defaults
- *     to the length of `iterable`.
- * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing the
- *     permutations of `iterable`.
- * @template VALUE
- */
-goog.iter.permutations = function(iterable, opt_length) {
-  var elements = goog.iter.toArray(iterable);
-  var length = (typeof opt_length === 'number') ? opt_length : elements.length;
-
-  var sets = goog.array.repeat(elements, length);
-  var product = goog.iter.product.apply(undefined, sets);
-
-  return goog.iter.filter(
-      product, function(arr) { return !goog.iter.hasDuplicates_(arr); });
-};
-
-
-/**
- * Creates an iterator that returns combinations of elements from
- * `iterable`.
- *
- * Combinations are obtained by taking the {@see goog.iter.permutations} of
- * `iterable` and filtering those whose elements appear in the order they
- * are encountered in `iterable`. For example, the 3-length combinations
- * of {@code [0,1,2,3]} are {@code [[0,1,2], [0,1,3], [0,2,3], [1,2,3]]}.
- * @see http://docs.python.org/2/library/itertools.html#itertools.combinations
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable from which to generate combinations.
- * @param {number} length The length of each combination.
- * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing
- *     combinations from the `iterable`.
- * @template VALUE
- */
-goog.iter.combinations = function(iterable, length) {
-  var elements = goog.iter.toArray(iterable);
-  var indexes = goog.iter.range(elements.length);
-  var indexIterator = goog.iter.permutations(indexes, length);
-  // sortedIndexIterator will now give arrays of with the given length that
-  // indicate what indexes into "elements" should be returned on each iteration.
-  var sortedIndexIterator = goog.iter.filter(
-      indexIterator, function(arr) { return goog.array.isSorted(arr); });
-
-  var iter = new goog.iter.Iterator();
-
-  function getIndexFromElements(index) { return elements[index]; }
-
-  iter.next = function() {
-    return goog.array.map(sortedIndexIterator.next(), getIndexFromElements);
-  };
-
-  return iter;
-};
-
-
-/**
- * Creates an iterator that returns combinations of elements from
- * `iterable`, with repeated elements possible.
- *
- * Combinations are obtained by taking the Cartesian product of `length`
- * iterables and filtering those whose elements appear in the order they are
- * encountered in `iterable`. For example, the 2-length combinations of
- * {@code [1,2,3]} are {@code [[1,1], [1,2], [1,3], [2,2], [2,3], [3,3]]}.
- * @see https://goo.gl/C0yXe4
- * @see https://goo.gl/djOCsk
- * @param {!goog.iter.Iterator<VALUE>|!goog.iter.Iterable} iterable The
- *     iterable to combine.
- * @param {number} length The length of each combination.
- * @return {!goog.iter.Iterator<!Array<VALUE>>} A new iterator containing
- *     combinations from the `iterable`.
- * @template VALUE
- */
-goog.iter.combinationsWithReplacement = function(iterable, length) {
-  var elements = goog.iter.toArray(iterable);
-  var indexes = goog.array.range(elements.length);
-  var sets = goog.array.repeat(indexes, length);
-  var indexIterator = goog.iter.product.apply(undefined, sets);
-  // sortedIndexIterator will now give arrays of with the given length that
-  // indicate what indexes into "elements" should be returned on each iteration.
-  var sortedIndexIterator = goog.iter.filter(
-      indexIterator, function(arr) { return goog.array.isSorted(arr); });
-
-  var iter = new goog.iter.Iterator();
-
-  function getIndexFromElements(index) { return elements[index]; }
-
-  iter.next = function() {
-    return goog.array.map(
-        /** @type {!Array<number>} */
-        (sortedIndexIterator.next()), getIndexFromElements);
-  };
-
-  return iter;
-};
-
-//third_party/javascript/closure/structs/map.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Datastructure: Hash Map.
- *
- *
- * This file contains an implementation of a Map structure. It implements a lot
- * of the methods used in goog.structs so those functions work on hashes. This
- * is best suited for complex key types. For simple keys such as numbers and
- * strings consider using the lighter-weight utilities in goog.object.
- */
-
-
-goog.provide('goog.structs.Map');
-
-goog.require('goog.iter.Iterator');
-goog.require('goog.iter.StopIteration');
-
-
-
-/**
- * Class for Hash Map datastructure.
- * @param {*=} opt_map Map or Object to initialize the map with.
- * @param {...*} var_args If 2 or more arguments are present then they
- *     will be used as key-value pairs.
- * @constructor
- * @template K, V
- * @deprecated This type is misleading: use ES6 Map instead.
- */
-goog.structs.Map = function(opt_map, var_args) {
-
-  /**
-   * Underlying JS object used to implement the map.
-   * @private {!Object}
-   */
-  this.map_ = {};
-
-  /**
-   * An array of keys. This is necessary for two reasons:
-   *   1. Iterating the keys using for (var key in this.map_) allocates an
-   *      object for every key in IE which is really bad for IE6 GC perf.
-   *   2. Without a side data structure, we would need to escape all the keys
-   *      as that would be the only way we could tell during iteration if the
-   *      key was an internal key or a property of the object.
-   *
-   * This array can contain deleted keys so it's necessary to check the map
-   * as well to see if the key is still in the map (this doesn't require a
-   * memory allocation in IE).
-   * @private {!Array<string>}
-   */
-  this.keys_ = [];
-
-  /**
-   * The number of key value pairs in the map.
-   * @private {number}
-   */
-  this.count_ = 0;
-
-  /**
-   * Version used to detect changes while iterating.
-   * @private {number}
-   */
-  this.version_ = 0;
-
-  var argLength = arguments.length;
-
-  if (argLength > 1) {
-    if (argLength % 2) {
-      throw new Error('Uneven number of arguments');
-    }
-    for (var i = 0; i < argLength; i += 2) {
-      this.set(arguments[i], arguments[i + 1]);
-    }
-  } else if (opt_map) {
-    this.addAll(/** @type {!Object} */ (opt_map));
-  }
-};
-
-
-/**
- * @return {number} The number of key-value pairs in the map.
- */
-goog.structs.Map.prototype.getCount = function() {
-  return this.count_;
-};
-
-
-/**
- * Returns the values of the map.
- * @return {!Array<V>} The values in the map.
- */
-goog.structs.Map.prototype.getValues = function() {
-  this.cleanupKeysArray_();
-
-  var rv = [];
-  for (var i = 0; i < this.keys_.length; i++) {
-    var key = this.keys_[i];
-    rv.push(this.map_[key]);
-  }
-  return rv;
-};
-
-
-/**
- * Returns the keys of the map.
- * @return {!Array<string>} Array of string values.
- */
-goog.structs.Map.prototype.getKeys = function() {
-  this.cleanupKeysArray_();
-  return /** @type {!Array<string>} */ (this.keys_.concat());
-};
-
-
-/**
- * Whether the map contains the given key.
- * @param {*} key The key to check for.
- * @return {boolean} Whether the map contains the key.
- */
-goog.structs.Map.prototype.containsKey = function(key) {
-  return goog.structs.Map.hasKey_(this.map_, key);
-};
-
-
-/**
- * Whether the map contains the given value. This is O(n).
- * @param {V} val The value to check for.
- * @return {boolean} Whether the map contains the value.
- */
-goog.structs.Map.prototype.containsValue = function(val) {
-  for (var i = 0; i < this.keys_.length; i++) {
-    var key = this.keys_[i];
-    if (goog.structs.Map.hasKey_(this.map_, key) && this.map_[key] == val) {
-      return true;
-    }
-  }
-  return false;
-};
-
-
-/**
- * Whether this map is equal to the argument map.
- * @param {goog.structs.Map} otherMap The map against which to test equality.
- * @param {function(V, V): boolean=} opt_equalityFn Optional equality function
- *     to test equality of values. If not specified, this will test whether
- *     the values contained in each map are identical objects.
- * @return {boolean} Whether the maps are equal.
- */
-goog.structs.Map.prototype.equals = function(otherMap, opt_equalityFn) {
-  if (this === otherMap) {
-    return true;
-  }
-
-  if (this.count_ != otherMap.getCount()) {
-    return false;
-  }
-
-  var equalityFn = opt_equalityFn || goog.structs.Map.defaultEquals;
-
-  this.cleanupKeysArray_();
-  for (var key, i = 0; key = this.keys_[i]; i++) {
-    if (!equalityFn(this.get(key), otherMap.get(key))) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-
-/**
- * Default equality test for values.
- * @param {*} a The first value.
- * @param {*} b The second value.
- * @return {boolean} Whether a and b reference the same object.
- */
-goog.structs.Map.defaultEquals = function(a, b) {
-  return a === b;
-};
-
-
-/**
- * @return {boolean} Whether the map is empty.
- */
-goog.structs.Map.prototype.isEmpty = function() {
-  return this.count_ == 0;
-};
-
-
-/**
- * Removes all key-value pairs from the map.
- */
-goog.structs.Map.prototype.clear = function() {
-  this.map_ = {};
-  this.keys_.length = 0;
-  this.count_ = 0;
-  this.version_ = 0;
-};
-
-
-/**
- * Removes a key-value pair based on the key. This is O(logN) amortized due to
- * updating the keys array whenever the count becomes half the size of the keys
- * in the keys array.
- * @param {*} key  The key to remove.
- * @return {boolean} Whether object was removed.
- */
-goog.structs.Map.prototype.remove = function(key) {
-  if (goog.structs.Map.hasKey_(this.map_, key)) {
-    delete this.map_[key];
-    this.count_--;
-    this.version_++;
-
-    // clean up the keys array if the threshold is hit
-    if (this.keys_.length > 2 * this.count_) {
-      this.cleanupKeysArray_();
-    }
-
-    return true;
-  }
-  return false;
-};
-
-
-/**
- * Cleans up the temp keys array by removing entries that are no longer in the
- * map.
- * @private
- */
-goog.structs.Map.prototype.cleanupKeysArray_ = function() {
-  if (this.count_ != this.keys_.length) {
-    // First remove keys that are no longer in the map.
-    var srcIndex = 0;
-    var destIndex = 0;
-    while (srcIndex < this.keys_.length) {
-      var key = this.keys_[srcIndex];
-      if (goog.structs.Map.hasKey_(this.map_, key)) {
-        this.keys_[destIndex++] = key;
-      }
-      srcIndex++;
-    }
-    this.keys_.length = destIndex;
-  }
-
-  if (this.count_ != this.keys_.length) {
-    // If the count still isn't correct, that means we have duplicates. This can
-    // happen when the same key is added and removed multiple times. Now we have
-    // to allocate one extra Object to remove the duplicates. This could have
-    // been done in the first pass, but in the common case, we can avoid
-    // allocating an extra object by only doing this when necessary.
-    var seen = {};
-    var srcIndex = 0;
-    var destIndex = 0;
-    while (srcIndex < this.keys_.length) {
-      var key = this.keys_[srcIndex];
-      if (!(goog.structs.Map.hasKey_(seen, key))) {
-        this.keys_[destIndex++] = key;
-        seen[key] = 1;
-      }
-      srcIndex++;
-    }
-    this.keys_.length = destIndex;
-  }
-};
-
-
-/**
- * Returns the value for the given key.  If the key is not found and the default
- * value is not given this will return `undefined`.
- * @param {*} key The key to get the value for.
- * @param {DEFAULT=} opt_val The value to return if no item is found for the
- *     given key, defaults to undefined.
- * @return {V|DEFAULT} The value for the given key.
- * @template DEFAULT
- */
-goog.structs.Map.prototype.get = function(key, opt_val) {
-  if (goog.structs.Map.hasKey_(this.map_, key)) {
-    return this.map_[key];
-  }
-  return opt_val;
-};
-
-
-/**
- * Adds a key-value pair to the map.
- * @param {*} key The key.
- * @param {V} value The value to add.
- * @return {*} Some subclasses return a value.
- */
-goog.structs.Map.prototype.set = function(key, value) {
-  if (!(goog.structs.Map.hasKey_(this.map_, key))) {
-    this.count_++;
-    // TODO(johnlenz): This class lies, it claims to return an array of string
-    // keys, but instead returns the original object used.
-    this.keys_.push(/** @type {?} */ (key));
-    // Only change the version if we add a new key.
-    this.version_++;
-  }
-  this.map_[key] = value;
-};
-
-
-/**
- * Adds multiple key-value pairs from another goog.structs.Map or Object.
- * @param {?Object} map Object containing the data to add.
- */
-goog.structs.Map.prototype.addAll = function(map) {
-  if (map instanceof goog.structs.Map) {
-    var keys = map.getKeys();
-    for (var i = 0; i < keys.length; i++) {
-      this.set(keys[i], map.get(keys[i]));
-    }
-  } else {
-    for (var key in map) {
-      this.set(key, map[key]);
-    }
-  }
-};
-
-
-/**
- * Calls the given function on each entry in the map.
- * @param {function(this:T, V, K, goog.structs.Map<K,V>)} f
- * @param {T=} opt_obj The value of "this" inside f.
- * @template T
- */
-goog.structs.Map.prototype.forEach = function(f, opt_obj) {
-  var keys = this.getKeys();
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var value = this.get(key);
-    f.call(opt_obj, value, key, this);
-  }
-};
-
-
-/**
- * Clones a map and returns a new map.
- * @return {!goog.structs.Map} A new map with the same key-value pairs.
- */
-goog.structs.Map.prototype.clone = function() {
-  return new goog.structs.Map(this);
-};
-
-
-/**
- * Returns a new map in which all the keys and values are interchanged
- * (keys become values and values become keys). If multiple keys map to the
- * same value, the chosen transposed value is implementation-dependent.
- *
- * It acts very similarly to {goog.object.transpose(Object)}.
- *
- * @return {!goog.structs.Map} The transposed map.
- */
-goog.structs.Map.prototype.transpose = function() {
-  var transposed = new goog.structs.Map();
-  for (var i = 0; i < this.keys_.length; i++) {
-    var key = this.keys_[i];
-    var value = this.map_[key];
-    transposed.set(value, key);
-  }
-
-  return transposed;
-};
-
-
-/**
- * @return {!Object} Object representation of the map.
- */
-goog.structs.Map.prototype.toObject = function() {
-  this.cleanupKeysArray_();
-  var obj = {};
-  for (var i = 0; i < this.keys_.length; i++) {
-    var key = this.keys_[i];
-    obj[key] = this.map_[key];
-  }
-  return obj;
-};
-
-
-/**
- * Returns an iterator that iterates over the keys in the map.  Removal of keys
- * while iterating might have undesired side effects.
- * @return {!goog.iter.Iterator} An iterator over the keys in the map.
- */
-goog.structs.Map.prototype.getKeyIterator = function() {
-  return this.__iterator__(true);
-};
-
-
-/**
- * Returns an iterator that iterates over the values in the map.  Removal of
- * keys while iterating might have undesired side effects.
- * @return {!goog.iter.Iterator} An iterator over the values in the map.
- */
-goog.structs.Map.prototype.getValueIterator = function() {
-  return this.__iterator__(false);
-};
-
-
-/**
- * Returns an iterator that iterates over the values or the keys in the map.
- * This throws an exception if the map was mutated since the iterator was
- * created.
- * @param {boolean=} opt_keys True to iterate over the keys. False to iterate
- *     over the values.  The default value is false.
- * @return {!goog.iter.Iterator} An iterator over the values or keys in the map.
- */
-goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
-  // Clean up keys to minimize the risk of iterating over dead keys.
-  this.cleanupKeysArray_();
-
-  var i = 0;
-  var version = this.version_;
-  var selfObj = this;
-
-  var newIter = new goog.iter.Iterator;
-  newIter.next = function() {
-    if (version != selfObj.version_) {
-      throw new Error('The map has changed since the iterator was created');
-    }
-    if (i >= selfObj.keys_.length) {
-      throw goog.iter.StopIteration;
-    }
-    var key = selfObj.keys_[i++];
-    return opt_keys ? key : selfObj.map_[key];
-  };
-  return newIter;
-};
-
-
-/**
- * Safe way to test for hasOwnProperty.  It even allows testing for
- * 'hasOwnProperty'.
- * @param {!Object} obj The object to test for presence of the given key.
- * @param {*} key The key to check for.
- * @return {boolean} Whether the object has the key.
- * @private
- */
-goog.structs.Map.hasKey_ = function(obj, key) {
-  return Object.prototype.hasOwnProperty.call(obj, key);
-};
-
-//third_party/javascript/closure/structs/structs.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Generics method for collection-like classes and objects.
- *
- *
- * This file contains functions to work with collections. It supports using
- * Map, Set, Array and Object and other classes that implement collection-like
- * methods.
- * @suppress {strictMissingProperties}
- */
-
-
-goog.provide('goog.structs');
-
-goog.require('goog.array');
-goog.require('goog.object');
-
-
-// We treat an object as a dictionary if it has getKeys or it is an object that
-// isn't arrayLike.
-
-
-/**
- * Returns the number of values in the collection-like object.
- * @param {Object} col The collection-like object.
- * @return {number} The number of values in the collection-like object.
- */
-goog.structs.getCount = function(col) {
-  if (col.getCount && typeof col.getCount == 'function') {
-    return col.getCount();
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return col.length;
-  }
-  return goog.object.getCount(col);
-};
-
-
-/**
- * Returns the values of the collection-like object.
- * @param {Object} col The collection-like object.
- * @return {!Array<?>} The values in the collection-like object.
- */
-goog.structs.getValues = function(col) {
-  if (col.getValues && typeof col.getValues == 'function') {
-    return col.getValues();
-  }
-  if (typeof col === 'string') {
-    return col.split('');
-  }
-  if (goog.isArrayLike(col)) {
-    var rv = [];
-    var l = col.length;
-    for (var i = 0; i < l; i++) {
-      rv.push(col[i]);
-    }
-    return rv;
-  }
-  return goog.object.getValues(col);
-};
-
-
-/**
- * Returns the keys of the collection. Some collections have no notion of
- * keys/indexes and this function will return undefined in those cases.
- * @param {Object} col The collection-like object.
- * @return {!Array|undefined} The keys in the collection.
- */
-goog.structs.getKeys = function(col) {
-  if (col.getKeys && typeof col.getKeys == 'function') {
-    return col.getKeys();
-  }
-  // if we have getValues but no getKeys we know this is a key-less collection
-  if (col.getValues && typeof col.getValues == 'function') {
-    return undefined;
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    var rv = [];
-    var l = col.length;
-    for (var i = 0; i < l; i++) {
-      rv.push(i);
-    }
-    return rv;
-  }
-
-  return goog.object.getKeys(col);
-};
-
-
-/**
- * Whether the collection contains the given value. This is O(n) and uses
- * equals (==) to test the existence.
- * @param {Object} col The collection-like object.
- * @param {*} val The value to check for.
- * @return {boolean} True if the map contains the value.
- */
-goog.structs.contains = function(col, val) {
-  if (col.contains && typeof col.contains == 'function') {
-    return col.contains(val);
-  }
-  if (col.containsValue && typeof col.containsValue == 'function') {
-    return col.containsValue(val);
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return goog.array.contains(/** @type {!Array<?>} */ (col), val);
-  }
-  return goog.object.containsValue(col, val);
-};
-
-
-/**
- * Whether the collection is empty.
- * @param {Object} col The collection-like object.
- * @return {boolean} True if empty.
- */
-goog.structs.isEmpty = function(col) {
-  if (col.isEmpty && typeof col.isEmpty == 'function') {
-    return col.isEmpty();
-  }
-
-  // We do not use goog.string.isEmptyOrWhitespace because here we treat the
-  // string as
-  // collection and as such even whitespace matters
-
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return goog.array.isEmpty(/** @type {!Array<?>} */ (col));
-  }
-  return goog.object.isEmpty(col);
-};
-
-
-/**
- * Removes all the elements from the collection.
- * @param {Object} col The collection-like object.
- */
-goog.structs.clear = function(col) {
-  // NOTE(arv): This should not contain strings because strings are immutable
-  if (col.clear && typeof col.clear == 'function') {
-    col.clear();
-  } else if (goog.isArrayLike(col)) {
-    goog.array.clear(/** @type {IArrayLike<?>} */ (col));
-  } else {
-    goog.object.clear(col);
-  }
-};
-
-
-/**
- * Calls a function for each value in a collection. The function takes
- * three arguments; the value, the key and the collection.
- *
- * @param {S} col The collection-like object.
- * @param {function(this:T,?,?,S):?} f The function to call for every value.
- *     This function takes
- *     3 arguments (the value, the key or undefined if the collection has no
- *     notion of keys, and the collection) and the return value is irrelevant.
- * @param {T=} opt_obj The object to be used as the value of 'this'
- *     within `f`.
- * @template T,S
- * @deprecated Use a more specific method, e.g. goog.array.forEach,
- *     goog.object.forEach, or for-of.
- */
-goog.structs.forEach = function(col, f, opt_obj) {
-  if (col.forEach && typeof col.forEach == 'function') {
-    col.forEach(f, opt_obj);
-  } else if (goog.isArrayLike(col) || typeof col === 'string') {
-    goog.array.forEach(/** @type {!Array<?>} */ (col), f, opt_obj);
-  } else {
-    var keys = goog.structs.getKeys(col);
-    var values = goog.structs.getValues(col);
-    var l = values.length;
-    for (var i = 0; i < l; i++) {
-      f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col);
-    }
-  }
-};
-
-
-/**
- * Calls a function for every value in the collection. When a call returns true,
- * adds the value to a new collection (Array is returned by default).
- *
- * @param {S} col The collection-like object.
- * @param {function(this:T,?,?,S):boolean} f The function to call for every
- *     value. This function takes
- *     3 arguments (the value, the key or undefined if the collection has no
- *     notion of keys, and the collection) and should return a Boolean. If the
- *     return value is true the value is added to the result collection. If it
- *     is false the value is not included.
- * @param {T=} opt_obj The object to be used as the value of 'this'
- *     within `f`.
- * @return {!Object|!Array<?>} A new collection where the passed values are
- *     present. If col is a key-less collection an array is returned.  If col
- *     has keys and values a plain old JS object is returned.
- * @template T,S
- */
-goog.structs.filter = function(col, f, opt_obj) {
-  if (typeof col.filter == 'function') {
-    return col.filter(f, opt_obj);
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return goog.array.filter(/** @type {!Array<?>} */ (col), f, opt_obj);
-  }
-
-  var rv;
-  var keys = goog.structs.getKeys(col);
-  var values = goog.structs.getValues(col);
-  var l = values.length;
-  if (keys) {
-    rv = {};
-    for (var i = 0; i < l; i++) {
-      if (f.call(/** @type {?} */ (opt_obj), values[i], keys[i], col)) {
-        rv[keys[i]] = values[i];
-      }
-    }
-  } else {
-    // We should not use goog.array.filter here since we want to make sure that
-    // the index is undefined as well as make sure that col is passed to the
-    // function.
-    rv = [];
-    for (var i = 0; i < l; i++) {
-      if (f.call(opt_obj, values[i], undefined, col)) {
-        rv.push(values[i]);
-      }
-    }
-  }
-  return rv;
-};
-
-
-/**
- * Calls a function for every value in the collection and adds the result into a
- * new collection (defaults to creating a new Array).
- *
- * @param {S} col The collection-like object.
- * @param {function(this:T,?,?,S):V} f The function to call for every value.
- *     This function takes 3 arguments (the value, the key or undefined if the
- *     collection has no notion of keys, and the collection) and should return
- *     something. The result will be used as the value in the new collection.
- * @param {T=} opt_obj  The object to be used as the value of 'this'
- *     within `f`.
- * @return {!Object<V>|!Array<V>} A new collection with the new values.  If
- *     col is a key-less collection an array is returned.  If col has keys and
- *     values a plain old JS object is returned.
- * @template T,S,V
- */
-goog.structs.map = function(col, f, opt_obj) {
-  if (typeof col.map == 'function') {
-    return col.map(f, opt_obj);
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return goog.array.map(/** @type {!Array<?>} */ (col), f, opt_obj);
-  }
-
-  var rv;
-  var keys = goog.structs.getKeys(col);
-  var values = goog.structs.getValues(col);
-  var l = values.length;
-  if (keys) {
-    rv = {};
-    for (var i = 0; i < l; i++) {
-      rv[keys[i]] = f.call(/** @type {?} */ (opt_obj), values[i], keys[i], col);
-    }
-  } else {
-    // We should not use goog.array.map here since we want to make sure that
-    // the index is undefined as well as make sure that col is passed to the
-    // function.
-    rv = [];
-    for (var i = 0; i < l; i++) {
-      rv[i] = f.call(/** @type {?} */ (opt_obj), values[i], undefined, col);
-    }
-  }
-  return rv;
-};
-
-
-/**
- * Calls f for each value in a collection. If any call returns true this returns
- * true (without checking the rest). If all returns false this returns false.
- *
- * @param {S} col The collection-like object.
- * @param {function(this:T,?,?,S):boolean} f The function to call for every
- *     value. This function takes 3 arguments (the value, the key or undefined
- *     if the collection has no notion of keys, and the collection) and should
- *     return a boolean.
- * @param {T=} opt_obj  The object to be used as the value of 'this'
- *     within `f`.
- * @return {boolean} True if any value passes the test.
- * @template T,S
- */
-goog.structs.some = function(col, f, opt_obj) {
-  if (typeof col.some == 'function') {
-    return col.some(f, opt_obj);
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return goog.array.some(/** @type {!Array<?>} */ (col), f, opt_obj);
-  }
-  var keys = goog.structs.getKeys(col);
-  var values = goog.structs.getValues(col);
-  var l = values.length;
-  for (var i = 0; i < l; i++) {
-    if (f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col)) {
-      return true;
-    }
-  }
-  return false;
-};
-
-
-/**
- * Calls f for each value in a collection. If all calls return true this return
- * true this returns true. If any returns false this returns false at this point
- *  and does not continue to check the remaining values.
- *
- * @param {S} col The collection-like object.
- * @param {function(this:T,?,?,S):boolean} f The function to call for every
- *     value. This function takes 3 arguments (the value, the key or
- *     undefined if the collection has no notion of keys, and the collection)
- *     and should return a boolean.
- * @param {T=} opt_obj  The object to be used as the value of 'this'
- *     within `f`.
- * @return {boolean} True if all key-value pairs pass the test.
- * @template T,S
- */
-goog.structs.every = function(col, f, opt_obj) {
-  if (typeof col.every == 'function') {
-    return col.every(f, opt_obj);
-  }
-  if (goog.isArrayLike(col) || typeof col === 'string') {
-    return goog.array.every(/** @type {!Array<?>} */ (col), f, opt_obj);
-  }
-  var keys = goog.structs.getKeys(col);
-  var values = goog.structs.getValues(col);
-  var l = values.length;
-  for (var i = 0; i < l; i++) {
-    if (!f.call(/** @type {?} */ (opt_obj), values[i], keys && keys[i], col)) {
-      return false;
-    }
-  }
-  return true;
-};
-
-//third_party/javascript/closure/uri/utils.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Simple utilities for dealing with URI strings.
- *
- * This is intended to be a lightweight alternative to constructing goog.Uri
- * objects.  Whereas goog.Uri adds several kilobytes to the binary regardless
- * of how much of its functionality you use, this is designed to be a set of
- * mostly-independent utilities so that the compiler includes only what is
- * necessary for the task.  Estimated savings of porting is 5k pre-gzip and
- * 1.5k post-gzip.  To ensure the savings remain, future developers should
- * avoid adding new functionality to existing functions, but instead create
- * new ones and factor out shared code.
- *
- * Many of these utilities have limited functionality, tailored to common
- * cases.  The query parameter utilities assume that the parameter keys are
- * already encoded, since most keys are compile-time alphanumeric strings.  The
- * query parameter mutation utilities also do not tolerate fragment identifiers.
- *
- * By design, these functions can be slower than goog.Uri equivalents.
- * Repeated calls to some of functions may be quadratic in behavior for IE,
- * although the effect is somewhat limited given the 2kb limit.
- *
- * One advantage of the limited functionality here is that this approach is
- * less sensitive to differences in URI encodings than goog.Uri, since these
- * functions operate on strings directly, rather than decoding them and
- * then re-encoding.
- *
- * Uses features of RFC 3986 for parsing/formatting URIs:
- *   http://www.ietf.org/rfc/rfc3986.txt
- */
-
-goog.provide('goog.uri.utils');
-goog.provide('goog.uri.utils.ComponentIndex');
-goog.provide('goog.uri.utils.QueryArray');
-goog.provide('goog.uri.utils.QueryValue');
-goog.provide('goog.uri.utils.StandardQueryParam');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-goog.require('goog.string');
-
-
-/**
- * Character codes inlined to avoid object allocations due to charCode.
- * @enum {number}
- * @private
- */
-goog.uri.utils.CharCode_ = {
-  AMPERSAND: 38,
-  EQUAL: 61,
-  HASH: 35,
-  QUESTION: 63
-};
-
-
-/**
- * Builds a URI string from already-encoded parts.
- *
- * No encoding is performed.  Any component may be omitted as either null or
- * undefined.
- *
- * @param {?string=} opt_scheme The scheme such as 'http'.
- * @param {?string=} opt_userInfo The user name before the '@'.
- * @param {?string=} opt_domain The domain such as 'www.google.com', already
- *     URI-encoded.
- * @param {(string|number|null)=} opt_port The port number.
- * @param {?string=} opt_path The path, already URI-encoded.  If it is not
- *     empty, it must begin with a slash.
- * @param {?string=} opt_queryData The URI-encoded query data.
- * @param {?string=} opt_fragment The URI-encoded fragment identifier.
- * @return {string} The fully combined URI.
- */
-goog.uri.utils.buildFromEncodedParts = function(
-    opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_queryData,
-    opt_fragment) {
-  var out = '';
-
-  if (opt_scheme) {
-    out += opt_scheme + ':';
-  }
-
-  if (opt_domain) {
-    out += '//';
-
-    if (opt_userInfo) {
-      out += opt_userInfo + '@';
-    }
-
-    out += opt_domain;
-
-    if (opt_port) {
-      out += ':' + opt_port;
-    }
-  }
-
-  if (opt_path) {
-    out += opt_path;
-  }
-
-  if (opt_queryData) {
-    out += '?' + opt_queryData;
-  }
-
-  if (opt_fragment) {
-    out += '#' + opt_fragment;
-  }
-
-  return out;
-};
-
-
-/**
- * A regular expression for breaking a URI into its component parts.
- *
- * {@link http://www.ietf.org/rfc/rfc3986.txt} says in Appendix B
- * As the "first-match-wins" algorithm is identical to the "greedy"
- * disambiguation method used by POSIX regular expressions, it is natural and
- * commonplace to use a regular expression for parsing the potential five
- * components of a URI reference.
- *
- * The following line is the regular expression for breaking-down a
- * well-formed URI reference into its components.
- *
- * <pre>
- * ^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?
- *  12            3  4          5       6  7        8 9
- * </pre>
- *
- * The numbers in the second line above are only to assist readability; they
- * indicate the reference points for each subexpression (i.e., each paired
- * parenthesis). We refer to the value matched for subexpression <n> as $<n>.
- * For example, matching the above expression to
- * <pre>
- *     http://www.ics.uci.edu/pub/ietf/uri/#Related
- * </pre>
- * results in the following subexpression matches:
- * <pre>
- *    $1 = http:
- *    $2 = http
- *    $3 = //www.ics.uci.edu
- *    $4 = www.ics.uci.edu
- *    $5 = /pub/ietf/uri/
- *    $6 = <undefined>
- *    $7 = <undefined>
- *    $8 = #Related
- *    $9 = Related
- * </pre>
- * where <undefined> indicates that the component is not present, as is the
- * case for the query component in the above example. Therefore, we can
- * determine the value of the five components as
- * <pre>
- *    scheme    = $2
- *    authority = $4
- *    path      = $5
- *    query     = $7
- *    fragment  = $9
- * </pre>
- *
- * The regular expression has been modified slightly to expose the
- * userInfo, domain, and port separately from the authority.
- * The modified version yields
- * <pre>
- *    $1 = http              scheme
- *    $2 = <undefined>       userInfo -\
- *    $3 = www.ics.uci.edu   domain     | authority
- *    $4 = <undefined>       port     -/
- *    $5 = /pub/ietf/uri/    path
- *    $6 = <undefined>       query without ?
- *    $7 = Related           fragment without #
- * </pre>
- *
- * TODO(user): separate out the authority terminating characters once this
- * file is moved to ES6.
- * @type {!RegExp}
- * @private
- */
-goog.uri.utils.splitRe_ = new RegExp(
-    '^' +  // Anchor against the entire string.
-    '(?:' +
-    '([^:/?#.]+)' +  // scheme - ignore special characters
-                     // used by other URL parts such as :,
-                     // ?, /, #, and .
-    ':)?' +
-    '(?://' +
-    '(?:([^\\\\/?#]*)@)?' +  // userInfo
-    '([^\\\\/?#]*?)' +       // domain
-    '(?::([0-9]+))?' +       // port
-    '(?=[\\\\/?#]|$)' +      // authority-terminating character.
-    ')?' +
-    '([^?#]+)?' +          // path
-    '(?:\\?([^#]*))?' +    // query
-    '(?:#([\\s\\S]*))?' +  // fragment. Can't use '.*' with 's' flag as Firefox
-                           // doesn't support the flag, and can't use an
-                           // "everything set" ([^]) as IE10 doesn't match any
-                           // characters with it.
-    '$');
-
-
-/**
- * The index of each URI component in the return value of goog.uri.utils.split.
- * @enum {number}
- */
-goog.uri.utils.ComponentIndex = {
-  SCHEME: 1,
-  USER_INFO: 2,
-  DOMAIN: 3,
-  PORT: 4,
-  PATH: 5,
-  QUERY_DATA: 6,
-  FRAGMENT: 7
-};
-
-
-/**
- * Splits a URI into its component parts.
- *
- * Each component can be accessed via the component indices; for example:
- * <pre>
- * goog.uri.utils.split(someStr)[goog.uri.utils.ComponentIndex.QUERY_DATA];
- * </pre>
- *
- * @param {string} uri The URI string to examine.
- * @return {!Array<string|undefined>} Each component still URI-encoded.
- *     Each component that is present will contain the encoded value, whereas
- *     components that are not present will be undefined or empty, depending
- *     on the browser's regular expression implementation.  Never null, since
- *     arbitrary strings may still look like path names.
- */
-goog.uri.utils.split = function(uri) {
-  // See @return comment -- never null.
-  return /** @type {!Array<string|undefined>} */ (
-      uri.match(goog.uri.utils.splitRe_));
-};
-
-
-/**
- * @param {?string} uri A possibly null string.
- * @param {boolean=} opt_preserveReserved If true, percent-encoding of RFC-3986
- *     reserved characters will not be removed.
- * @return {?string} The string URI-decoded, or null if uri is null.
- * @private
- */
-goog.uri.utils.decodeIfPossible_ = function(uri, opt_preserveReserved) {
-  if (!uri) {
-    return uri;
-  }
-
-  return opt_preserveReserved ? decodeURI(uri) : decodeURIComponent(uri);
-};
-
-
-/**
- * Gets a URI component by index.
- *
- * It is preferred to use the getPathEncoded() variety of functions ahead,
- * since they are more readable.
- *
- * @param {goog.uri.utils.ComponentIndex} componentIndex The component index.
- * @param {string} uri The URI to examine.
- * @return {?string} The still-encoded component, or null if the component
- *     is not present.
- * @private
- */
-goog.uri.utils.getComponentByIndex_ = function(componentIndex, uri) {
-  // Convert undefined, null, and empty string into null.
-  return goog.uri.utils.split(uri)[componentIndex] || null;
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The protocol or scheme, or null if none.  Does not
- *     include trailing colons or slashes.
- */
-goog.uri.utils.getScheme = function(uri) {
-  return goog.uri.utils.getComponentByIndex_(
-      goog.uri.utils.ComponentIndex.SCHEME, uri);
-};
-
-
-/**
- * Gets the effective scheme for the URL.  If the URL is relative then the
- * scheme is derived from the page's location.
- * @param {string} uri The URI to examine.
- * @return {string} The protocol or scheme, always lower case.
- */
-goog.uri.utils.getEffectiveScheme = function(uri) {
-  var scheme = goog.uri.utils.getScheme(uri);
-  if (!scheme && goog.global.self && goog.global.self.location) {
-    var protocol = goog.global.self.location.protocol;
-    scheme = protocol.substr(0, protocol.length - 1);
-  }
-  // NOTE: When called from a web worker in Firefox 3.5, location may be null.
-  // All other browsers with web workers support self.location from the worker.
-  return scheme ? scheme.toLowerCase() : '';
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The user name still encoded, or null if none.
- */
-goog.uri.utils.getUserInfoEncoded = function(uri) {
-  return goog.uri.utils.getComponentByIndex_(
-      goog.uri.utils.ComponentIndex.USER_INFO, uri);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The decoded user info, or null if none.
- */
-goog.uri.utils.getUserInfo = function(uri) {
-  return goog.uri.utils.decodeIfPossible_(
-      goog.uri.utils.getUserInfoEncoded(uri));
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The domain name still encoded, or null if none.
- */
-goog.uri.utils.getDomainEncoded = function(uri) {
-  return goog.uri.utils.getComponentByIndex_(
-      goog.uri.utils.ComponentIndex.DOMAIN, uri);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The decoded domain, or null if none.
- */
-goog.uri.utils.getDomain = function(uri) {
-  return goog.uri.utils.decodeIfPossible_(
-      goog.uri.utils.getDomainEncoded(uri), true /* opt_preserveReserved */);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?number} The port number, or null if none.
- */
-goog.uri.utils.getPort = function(uri) {
-  // Coerce to a number.  If the result of getComponentByIndex_ is null or
-  // non-numeric, the number coersion yields NaN.  This will then return
-  // null for all non-numeric cases (though also zero, which isn't a relevant
-  // port number).
-  return Number(
-             goog.uri.utils.getComponentByIndex_(
-                 goog.uri.utils.ComponentIndex.PORT, uri)) ||
-      null;
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The path still encoded, or null if none. Includes the
- *     leading slash, if any.
- */
-goog.uri.utils.getPathEncoded = function(uri) {
-  return goog.uri.utils.getComponentByIndex_(
-      goog.uri.utils.ComponentIndex.PATH, uri);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The decoded path, or null if none.  Includes the leading
- *     slash, if any.
- */
-goog.uri.utils.getPath = function(uri) {
-  return goog.uri.utils.decodeIfPossible_(
-      goog.uri.utils.getPathEncoded(uri), true /* opt_preserveReserved */);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The query data still encoded, or null if none.  Does not
- *     include the question mark itself.
- */
-goog.uri.utils.getQueryData = function(uri) {
-  return goog.uri.utils.getComponentByIndex_(
-      goog.uri.utils.ComponentIndex.QUERY_DATA, uri);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The fragment identifier, or null if none.  Does not
- *     include the hash mark itself.
- */
-goog.uri.utils.getFragmentEncoded = function(uri) {
-  // The hash mark may not appear in any other part of the URL.
-  var hashIndex = uri.indexOf('#');
-  return hashIndex < 0 ? null : uri.substr(hashIndex + 1);
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @param {?string} fragment The encoded fragment identifier, or null if none.
- *     Does not include the hash mark itself.
- * @return {string} The URI with the fragment set.
- */
-goog.uri.utils.setFragmentEncoded = function(uri, fragment) {
-  return goog.uri.utils.removeFragment(uri) + (fragment ? '#' + fragment : '');
-};
-
-
-/**
- * @param {string} uri The URI to examine.
- * @return {?string} The decoded fragment identifier, or null if none.  Does
- *     not include the hash mark.
- */
-goog.uri.utils.getFragment = function(uri) {
-  return goog.uri.utils.decodeIfPossible_(
-      goog.uri.utils.getFragmentEncoded(uri));
-};
-
-
-/**
- * Extracts everything up to the port of the URI.
- * @param {string} uri The URI string.
- * @return {string} Everything up to and including the port.
- */
-goog.uri.utils.getHost = function(uri) {
-  var pieces = goog.uri.utils.split(uri);
-  return goog.uri.utils.buildFromEncodedParts(
-      pieces[goog.uri.utils.ComponentIndex.SCHEME],
-      pieces[goog.uri.utils.ComponentIndex.USER_INFO],
-      pieces[goog.uri.utils.ComponentIndex.DOMAIN],
-      pieces[goog.uri.utils.ComponentIndex.PORT]);
-};
-
-
-/**
- * Returns the origin for a given URL.
- * @param {string} uri The URI string.
- * @return {string} Everything up to and including the port.
- */
-goog.uri.utils.getOrigin = function(uri) {
-  var pieces = goog.uri.utils.split(uri);
-  return goog.uri.utils.buildFromEncodedParts(
-      pieces[goog.uri.utils.ComponentIndex.SCHEME], null /* opt_userInfo */,
-      pieces[goog.uri.utils.ComponentIndex.DOMAIN],
-      pieces[goog.uri.utils.ComponentIndex.PORT]);
-};
-
-
-/**
- * Extracts the path of the URL and everything after.
- * @param {string} uri The URI string.
- * @return {string} The URI, starting at the path and including the query
- *     parameters and fragment identifier.
- */
-goog.uri.utils.getPathAndAfter = function(uri) {
-  var pieces = goog.uri.utils.split(uri);
-  return goog.uri.utils.buildFromEncodedParts(
-      null, null, null, null, pieces[goog.uri.utils.ComponentIndex.PATH],
-      pieces[goog.uri.utils.ComponentIndex.QUERY_DATA],
-      pieces[goog.uri.utils.ComponentIndex.FRAGMENT]);
-};
-
-
-/**
- * Gets the URI with the fragment identifier removed.
- * @param {string} uri The URI to examine.
- * @return {string} Everything preceding the hash mark.
- */
-goog.uri.utils.removeFragment = function(uri) {
-  // The hash mark may not appear in any other part of the URL.
-  var hashIndex = uri.indexOf('#');
-  return hashIndex < 0 ? uri : uri.substr(0, hashIndex);
-};
-
-
-/**
- * Ensures that two URI's have the exact same domain, scheme, and port.
- *
- * Unlike the version in goog.Uri, this checks protocol, and therefore is
- * suitable for checking against the browser's same-origin policy.
- *
- * @param {string} uri1 The first URI.
- * @param {string} uri2 The second URI.
- * @return {boolean} Whether they have the same scheme, domain and port.
- */
-goog.uri.utils.haveSameDomain = function(uri1, uri2) {
-  var pieces1 = goog.uri.utils.split(uri1);
-  var pieces2 = goog.uri.utils.split(uri2);
-  return pieces1[goog.uri.utils.ComponentIndex.DOMAIN] ==
-      pieces2[goog.uri.utils.ComponentIndex.DOMAIN] &&
-      pieces1[goog.uri.utils.ComponentIndex.SCHEME] ==
-      pieces2[goog.uri.utils.ComponentIndex.SCHEME] &&
-      pieces1[goog.uri.utils.ComponentIndex.PORT] ==
-      pieces2[goog.uri.utils.ComponentIndex.PORT];
-};
-
-
-/**
- * Asserts that there are no fragment or query identifiers, only in uncompiled
- * mode.
- * @param {string} uri The URI to examine.
- * @private
- */
-goog.uri.utils.assertNoFragmentsOrQueries_ = function(uri) {
-  goog.asserts.assert(
-      uri.indexOf('#') < 0 && uri.indexOf('?') < 0,
-      'goog.uri.utils: Fragment or query identifiers are not supported: [%s]',
-      uri);
-};
-
-
-/**
- * Supported query parameter values by the parameter serializing utilities.
- *
- * If a value is null or undefined, the key-value pair is skipped, as an easy
- * way to omit parameters conditionally.  Non-array parameters are converted
- * to a string and URI encoded.  Array values are expanded into multiple
- * &key=value pairs, with each element stringized and URI-encoded.
- *
- * @typedef {*}
- */
-goog.uri.utils.QueryValue;
-
-
-/**
- * An array representing a set of query parameters with alternating keys
- * and values.
- *
- * Keys are assumed to be URI encoded already and live at even indices.  See
- * goog.uri.utils.QueryValue for details on how parameter values are encoded.
- *
- * Example:
- * <pre>
- * var data = [
- *   // Simple param: ?name=BobBarker
- *   'name', 'BobBarker',
- *   // Conditional param -- may be omitted entirely.
- *   'specialDietaryNeeds', hasDietaryNeeds() ? getDietaryNeeds() : null,
- *   // Multi-valued param: &house=LosAngeles&house=NewYork&house=null
- *   'house', ['LosAngeles', 'NewYork', null]
- * ];
- * </pre>
- *
- * @typedef {!Array<string|goog.uri.utils.QueryValue>}
- */
-goog.uri.utils.QueryArray;
-
-
-/**
- * Parses encoded query parameters and calls callback function for every
- * parameter found in the string.
- *
- * Missing value of parameter (e.g. “…&key&…”) is treated as if the value was an
- * empty string.  Keys may be empty strings (e.g. “…&=value&…”) which also means
- * that “…&=&…” and “…&&…” will result in an empty key and value.
- *
- * @param {string} encodedQuery Encoded query string excluding question mark at
- *     the beginning.
- * @param {function(string, string)} callback Function called for every
- *     parameter found in query string.  The first argument (name) will not be
- *     urldecoded (so the function is consistent with buildQueryData), but the
- *     second will.  If the parameter has no value (i.e. “=” was not present)
- *     the second argument (value) will be an empty string.
- */
-goog.uri.utils.parseQueryData = function(encodedQuery, callback) {
-  if (!encodedQuery) {
-    return;
-  }
-  var pairs = encodedQuery.split('&');
-  for (var i = 0; i < pairs.length; i++) {
-    var indexOfEquals = pairs[i].indexOf('=');
-    var name = null;
-    var value = null;
-    if (indexOfEquals >= 0) {
-      name = pairs[i].substring(0, indexOfEquals);
-      value = pairs[i].substring(indexOfEquals + 1);
-    } else {
-      name = pairs[i];
-    }
-    callback(name, value ? goog.string.urlDecode(value) : '');
-  }
-};
-
-
-/**
- * Split the URI into 3 parts where the [1] is the queryData without a leading
- * '?'. For example, the URI http://foo.com/bar?a=b#abc returns
- * ['http://foo.com/bar','a=b','#abc'].
- * @param {string} uri The URI to parse.
- * @return {!Array<string>} An array representation of uri of length 3 where the
- *     middle value is the queryData without a leading '?'.
- * @private
- */
-goog.uri.utils.splitQueryData_ = function(uri) {
-  // Find the query data and hash.
-  var hashIndex = uri.indexOf('#');
-  if (hashIndex < 0) {
-    hashIndex = uri.length;
-  }
-  var questionIndex = uri.indexOf('?');
-  var queryData;
-  if (questionIndex < 0 || questionIndex > hashIndex) {
-    questionIndex = hashIndex;
-    queryData = '';
-  } else {
-    queryData = uri.substring(questionIndex + 1, hashIndex);
-  }
-  return [uri.substr(0, questionIndex), queryData, uri.substr(hashIndex)];
-};
-
-
-/**
- * Join an array created by splitQueryData_ back into a URI.
- * @param {!Array<string>} parts A URI in the form generated by splitQueryData_.
- * @return {string} The joined URI.
- * @private
- */
-goog.uri.utils.joinQueryData_ = function(parts) {
-  return parts[0] + (parts[1] ? '?' + parts[1] : '') + parts[2];
-};
-
-
-/**
- * @param {string} queryData
- * @param {string} newData
- * @return {string}
- * @private
- */
-goog.uri.utils.appendQueryData_ = function(queryData, newData) {
-  if (!newData) {
-    return queryData;
-  }
-  return queryData ? queryData + '&' + newData : newData;
-};
-
-
-/**
- * @param {string} uri
- * @param {string} queryData
- * @return {string}
- * @private
- */
-goog.uri.utils.appendQueryDataToUri_ = function(uri, queryData) {
-  if (!queryData) {
-    return uri;
-  }
-  var parts = goog.uri.utils.splitQueryData_(uri);
-  parts[1] = goog.uri.utils.appendQueryData_(parts[1], queryData);
-  return goog.uri.utils.joinQueryData_(parts);
-};
-
-
-/**
- * Appends key=value pairs to an array, supporting multi-valued objects.
- * @param {*} key The key prefix.
- * @param {goog.uri.utils.QueryValue} value The value to serialize.
- * @param {!Array<string>} pairs The array to which the 'key=value' strings
- *     should be appended.
- * @private
- */
-goog.uri.utils.appendKeyValuePairs_ = function(key, value, pairs) {
-  goog.asserts.assertString(key);
-  if (Array.isArray(value)) {
-    // Convince the compiler it's an array.
-    goog.asserts.assertArray(value);
-    for (var j = 0; j < value.length; j++) {
-      // Convert to string explicitly, to short circuit the null and array
-      // logic in this function -- this ensures that null and undefined get
-      // written as literal 'null' and 'undefined', and arrays don't get
-      // expanded out but instead encoded in the default way.
-      goog.uri.utils.appendKeyValuePairs_(key, String(value[j]), pairs);
-    }
-  } else if (value != null) {
-    // Skip a top-level null or undefined entirely.
-    pairs.push(
-        key +
-        // Check for empty string. Zero gets encoded into the url as literal
-        // strings.  For empty string, skip the equal sign, to be consistent
-        // with UriBuilder.java.
-        (value === '' ? '' : '=' + goog.string.urlEncode(value)));
-  }
-};
-
-
-/**
- * Builds a query data string from a sequence of alternating keys and values.
- * Currently generates "&key&" for empty args.
- *
- * @param {!IArrayLike<string|goog.uri.utils.QueryValue>} keysAndValues
- *     Alternating keys and values. See the QueryArray typedef.
- * @param {number=} opt_startIndex A start offset into the arary, defaults to 0.
- * @return {string} The encoded query string, in the form 'a=1&b=2'.
- */
-goog.uri.utils.buildQueryData = function(keysAndValues, opt_startIndex) {
-  goog.asserts.assert(
-      Math.max(keysAndValues.length - (opt_startIndex || 0), 0) % 2 == 0,
-      'goog.uri.utils: Key/value lists must be even in length.');
-
-  var params = [];
-  for (var i = opt_startIndex || 0; i < keysAndValues.length; i += 2) {
-    var key = /** @type {string} */ (keysAndValues[i]);
-    goog.uri.utils.appendKeyValuePairs_(key, keysAndValues[i + 1], params);
-  }
-  return params.join('&');
-};
-
-
-/**
- * Builds a query data string from a map.
- * Currently generates "&key&" for empty args.
- *
- * @param {!Object<string, goog.uri.utils.QueryValue>} map An object where keys
- *     are URI-encoded parameter keys, and the values are arbitrary types
- *     or arrays. Keys with a null value are dropped.
- * @return {string} The encoded query string, in the form 'a=1&b=2'.
- */
-goog.uri.utils.buildQueryDataFromMap = function(map) {
-  var params = [];
-  for (var key in map) {
-    goog.uri.utils.appendKeyValuePairs_(key, map[key], params);
-  }
-  return params.join('&');
-};
-
-
-/**
- * Appends URI parameters to an existing URI.
- *
- * The variable arguments may contain alternating keys and values.  Keys are
- * assumed to be already URI encoded.  The values should not be URI-encoded,
- * and will instead be encoded by this function.
- * <pre>
- * appendParams('http://www.foo.com?existing=true',
- *     'key1', 'value1',
- *     'key2', 'value?willBeEncoded',
- *     'key3', ['valueA', 'valueB', 'valueC'],
- *     'key4', null);
- * result: 'http://www.foo.com?existing=true&' +
- *     'key1=value1&' +
- *     'key2=value%3FwillBeEncoded&' +
- *     'key3=valueA&key3=valueB&key3=valueC'
- * </pre>
- *
- * A single call to this function will not exhibit quadratic behavior in IE,
- * whereas multiple repeated calls may, although the effect is limited by
- * fact that URL's generally can't exceed 2kb.
- *
- * @param {string} uri The original URI, which may already have query data.
- * @param {...(goog.uri.utils.QueryArray|goog.uri.utils.QueryValue)}
- * var_args
- *     An array or argument list conforming to goog.uri.utils.QueryArray.
- * @return {string} The URI with all query parameters added.
- */
-goog.uri.utils.appendParams = function(uri, var_args) {
-  var queryData = arguments.length == 2 ?
-      goog.uri.utils.buildQueryData(arguments[1], 0) :
-      goog.uri.utils.buildQueryData(arguments, 1);
-  return goog.uri.utils.appendQueryDataToUri_(uri, queryData);
-};
-
-
-/**
- * Appends query parameters from a map.
- *
- * @param {string} uri The original URI, which may already have query data.
- * @param {!Object<goog.uri.utils.QueryValue>} map An object where keys are
- *     URI-encoded parameter keys, and the values are arbitrary types or arrays.
- *     Keys with a null value are dropped.
- * @return {string} The new parameters.
- */
-goog.uri.utils.appendParamsFromMap = function(uri, map) {
-  var queryData = goog.uri.utils.buildQueryDataFromMap(map);
-  return goog.uri.utils.appendQueryDataToUri_(uri, queryData);
-};
-
-
-/**
- * Appends a single URI parameter.
- *
- * Repeated calls to this can exhibit quadratic behavior in IE6 due to the
- * way string append works, though it should be limited given the 2kb limit.
- *
- * @param {string} uri The original URI, which may already have query data.
- * @param {string} key The key, which must already be URI encoded.
- * @param {*=} opt_value The value, which will be stringized and encoded
- *     (assumed not already to be encoded).  If omitted, undefined, or null, the
- *     key will be added as a valueless parameter.
- * @return {string} The URI with the query parameter added.
- */
-goog.uri.utils.appendParam = function(uri, key, opt_value) {
-  var value = (opt_value != null) ? '=' + goog.string.urlEncode(opt_value) : '';
-  return goog.uri.utils.appendQueryDataToUri_(uri, key + value);
-};
-
-
-/**
- * Finds the next instance of a query parameter with the specified name.
- *
- * Does not instantiate any objects.
- *
- * @param {string} uri The URI to search.  May contain a fragment identifier
- *     if opt_hashIndex is specified.
- * @param {number} startIndex The index to begin searching for the key at.  A
- *     match may be found even if this is one character after the ampersand.
- * @param {string} keyEncoded The URI-encoded key.
- * @param {number} hashOrEndIndex Index to stop looking at.  If a hash
- *     mark is present, it should be its index, otherwise it should be the
- *     length of the string.
- * @return {number} The position of the first character in the key's name,
- *     immediately after either a question mark or a dot.
- * @private
- */
-goog.uri.utils.findParam_ = function(
-    uri, startIndex, keyEncoded, hashOrEndIndex) {
-  var index = startIndex;
-  var keyLength = keyEncoded.length;
-
-  // Search for the key itself and post-filter for surronuding punctuation,
-  // rather than expensively building a regexp.
-  while ((index = uri.indexOf(keyEncoded, index)) >= 0 &&
-         index < hashOrEndIndex) {
-    var precedingChar = uri.charCodeAt(index - 1);
-    // Ensure that the preceding character is '&' or '?'.
-    if (precedingChar == goog.uri.utils.CharCode_.AMPERSAND ||
-        precedingChar == goog.uri.utils.CharCode_.QUESTION) {
-      // Ensure the following character is '&', '=', '#', or NaN
-      // (end of string).
-      var followingChar = uri.charCodeAt(index + keyLength);
-      if (!followingChar || followingChar == goog.uri.utils.CharCode_.EQUAL ||
-          followingChar == goog.uri.utils.CharCode_.AMPERSAND ||
-          followingChar == goog.uri.utils.CharCode_.HASH) {
-        return index;
-      }
-    }
-    index += keyLength + 1;
-  }
-
-  return -1;
-};
-
-
-/**
- * Regular expression for finding a hash mark or end of string.
- * @type {RegExp}
- * @private
- */
-goog.uri.utils.hashOrEndRe_ = /#|$/;
-
-
-/**
- * Determines if the URI contains a specific key.
- *
- * Performs no object instantiations.
- *
- * @param {string} uri The URI to process.  May contain a fragment
- *     identifier.
- * @param {string} keyEncoded The URI-encoded key.  Case-sensitive.
- * @return {boolean} Whether the key is present.
- */
-goog.uri.utils.hasParam = function(uri, keyEncoded) {
-  return goog.uri.utils.findParam_(
-             uri, 0, keyEncoded, uri.search(goog.uri.utils.hashOrEndRe_)) >= 0;
-};
-
-
-/**
- * Gets the first value of a query parameter.
- * @param {string} uri The URI to process.  May contain a fragment.
- * @param {string} keyEncoded The URI-encoded key.  Case-sensitive.
- * @return {?string} The first value of the parameter (URI-decoded), or null
- *     if the parameter is not found.
- */
-goog.uri.utils.getParamValue = function(uri, keyEncoded) {
-  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
-  var foundIndex =
-      goog.uri.utils.findParam_(uri, 0, keyEncoded, hashOrEndIndex);
-
-  if (foundIndex < 0) {
-    return null;
-  } else {
-    var endPosition = uri.indexOf('&', foundIndex);
-    if (endPosition < 0 || endPosition > hashOrEndIndex) {
-      endPosition = hashOrEndIndex;
-    }
-    // Progress forth to the end of the "key=" or "key&" substring.
-    foundIndex += keyEncoded.length + 1;
-    // Use substr, because it (unlike substring) will return empty string
-    // if foundIndex > endPosition.
-    return goog.string.urlDecode(
-        uri.substr(foundIndex, endPosition - foundIndex));
-  }
-};
-
-
-/**
- * Gets all values of a query parameter.
- * @param {string} uri The URI to process.  May contain a fragment.
- * @param {string} keyEncoded The URI-encoded key.  Case-sensitive.
- * @return {!Array<string>} All URI-decoded values with the given key.
- *     If the key is not found, this will have length 0, but never be null.
- */
-goog.uri.utils.getParamValues = function(uri, keyEncoded) {
-  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
-  var position = 0;
-  var foundIndex;
-  var result = [];
-
-  while ((foundIndex = goog.uri.utils.findParam_(
-              uri, position, keyEncoded, hashOrEndIndex)) >= 0) {
-    // Find where this parameter ends, either the '&' or the end of the
-    // query parameters.
-    position = uri.indexOf('&', foundIndex);
-    if (position < 0 || position > hashOrEndIndex) {
-      position = hashOrEndIndex;
-    }
-
-    // Progress forth to the end of the "key=" or "key&" substring.
-    foundIndex += keyEncoded.length + 1;
-    // Use substr, because it (unlike substring) will return empty string
-    // if foundIndex > position.
-    result.push(
-        goog.string.urlDecode(uri.substr(foundIndex, position - foundIndex)));
-  }
-
-  return result;
-};
-
-
-/**
- * Regexp to find trailing question marks and ampersands.
- * @type {RegExp}
- * @private
- */
-goog.uri.utils.trailingQueryPunctuationRe_ = /[?&]($|#)/;
-
-
-/**
- * Removes all instances of a query parameter.
- * @param {string} uri The URI to process.  Must not contain a fragment.
- * @param {string} keyEncoded The URI-encoded key.
- * @return {string} The URI with all instances of the parameter removed.
- */
-goog.uri.utils.removeParam = function(uri, keyEncoded) {
-  var hashOrEndIndex = uri.search(goog.uri.utils.hashOrEndRe_);
-  var position = 0;
-  var foundIndex;
-  var buffer = [];
-
-  // Look for a query parameter.
-  while ((foundIndex = goog.uri.utils.findParam_(
-              uri, position, keyEncoded, hashOrEndIndex)) >= 0) {
-    // Get the portion of the query string up to, but not including, the ?
-    // or & starting the parameter.
-    buffer.push(uri.substring(position, foundIndex));
-    // Progress to immediately after the '&'.  If not found, go to the end.
-    // Avoid including the hash mark.
-    position = Math.min(
-        (uri.indexOf('&', foundIndex) + 1) || hashOrEndIndex, hashOrEndIndex);
-  }
-
-  // Append everything that is remaining.
-  buffer.push(uri.substr(position));
-
-  // Join the buffer, and remove trailing punctuation that remains.
-  return buffer.join('').replace(
-      goog.uri.utils.trailingQueryPunctuationRe_, '$1');
-};
-
-
-/**
- * Replaces all existing definitions of a parameter with a single definition.
- *
- * Repeated calls to this can exhibit quadratic behavior due to the need to
- * find existing instances and reconstruct the string, though it should be
- * limited given the 2kb limit.  Consider using appendParams or setParamsFromMap
- * to update multiple parameters in bulk.
- *
- * @param {string} uri The original URI, which may already have query data.
- * @param {string} keyEncoded The key, which must already be URI encoded.
- * @param {*} value The value, which will be stringized and encoded (assumed
- *     not already to be encoded).
- * @return {string} The URI with the query parameter added.
- */
-goog.uri.utils.setParam = function(uri, keyEncoded, value) {
-  return goog.uri.utils.appendParam(
-      goog.uri.utils.removeParam(uri, keyEncoded), keyEncoded, value);
-};
-
-
-/**
- * Effeciently set or remove multiple query parameters in a URI. Order of
- * unchanged parameters will not be modified, all updated parameters will be
- * appended to the end of the query. Params with values of null or undefined are
- * removed.
- *
- * @param {string} uri The URI to process.
- * @param {!Object<string, goog.uri.utils.QueryValue>} params A list of
- *     parameters to update. If null or undefined, the param will be removed.
- * @return {string} An updated URI where the query data has been updated with
- *     the params.
- */
-goog.uri.utils.setParamsFromMap = function(uri, params) {
-  var parts = goog.uri.utils.splitQueryData_(uri);
-  var queryData = parts[1];
-  var buffer = [];
-  if (queryData) {
-    goog.array.forEach(queryData.split('&'), function(pair) {
-      var indexOfEquals = pair.indexOf('=');
-      var name = indexOfEquals >= 0 ? pair.substr(0, indexOfEquals) : pair;
-      if (!params.hasOwnProperty(name)) {
-        buffer.push(pair);
-      }
-    });
-  }
-  parts[1] = goog.uri.utils.appendQueryData_(
-      buffer.join('&'), goog.uri.utils.buildQueryDataFromMap(params));
-  return goog.uri.utils.joinQueryData_(parts);
-};
-
-
-/**
- * Generates a URI path using a given URI and a path with checks to
- * prevent consecutive "//". The baseUri passed in must not contain
- * query or fragment identifiers. The path to append may not contain query or
- * fragment identifiers.
- *
- * @param {string} baseUri URI to use as the base.
- * @param {string} path Path to append.
- * @return {string} Updated URI.
- */
-goog.uri.utils.appendPath = function(baseUri, path) {
-  goog.uri.utils.assertNoFragmentsOrQueries_(baseUri);
-
-  // Remove any trailing '/'
-  if (goog.string.endsWith(baseUri, '/')) {
-    baseUri = baseUri.substr(0, baseUri.length - 1);
-  }
-  // Remove any leading '/'
-  if (goog.string.startsWith(path, '/')) {
-    path = path.substr(1);
-  }
-  return goog.string.buildString(baseUri, '/', path);
-};
-
-
-/**
- * Replaces the path.
- * @param {string} uri URI to use as the base.
- * @param {string} path New path.
- * @return {string} Updated URI.
- */
-goog.uri.utils.setPath = function(uri, path) {
-  // Add any missing '/'.
-  if (!goog.string.startsWith(path, '/')) {
-    path = '/' + path;
-  }
-  var parts = goog.uri.utils.split(uri);
-  return goog.uri.utils.buildFromEncodedParts(
-      parts[goog.uri.utils.ComponentIndex.SCHEME],
-      parts[goog.uri.utils.ComponentIndex.USER_INFO],
-      parts[goog.uri.utils.ComponentIndex.DOMAIN],
-      parts[goog.uri.utils.ComponentIndex.PORT], path,
-      parts[goog.uri.utils.ComponentIndex.QUERY_DATA],
-      parts[goog.uri.utils.ComponentIndex.FRAGMENT]);
-};
-
-
-/**
- * Standard supported query parameters.
- * @enum {string}
- */
-goog.uri.utils.StandardQueryParam = {
-
-  /** Unused parameter for unique-ifying. */
-  RANDOM: 'zx'
-};
-
-
-/**
- * Sets the zx parameter of a URI to a random value.
- * @param {string} uri Any URI.
- * @return {string} That URI with the "zx" parameter added or replaced to
- *     contain a random string.
- */
-goog.uri.utils.makeUnique = function(uri) {
-  return goog.uri.utils.setParam(
-      uri, goog.uri.utils.StandardQueryParam.RANDOM,
-      goog.string.getRandomString());
-};
-
-//third_party/javascript/closure/uri/uri.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Class for parsing and formatting URIs.
- *
- * Use goog.Uri(string) to parse a URI string.  Use goog.Uri.create(...) to
- * create a new instance of the goog.Uri object from Uri parts.
- *
- * e.g: <code>var myUri = new goog.Uri(window.location);</code>
- *
- * Implements RFC 3986 for parsing/formatting URIs.
- * http://www.ietf.org/rfc/rfc3986.txt
- *
- * Some changes have been made to the interface (more like .NETs), though the
- * internal representation is now of un-encoded parts, this will change the
- * behavior slightly.
- */
-
-goog.provide('goog.Uri');
-goog.provide('goog.Uri.QueryData');
-
-goog.require('goog.array');
-goog.require('goog.asserts');
-goog.require('goog.string');
-goog.require('goog.structs');
-goog.require('goog.structs.Map');
-goog.require('goog.uri.utils');
-goog.require('goog.uri.utils.ComponentIndex');
-goog.require('goog.uri.utils.StandardQueryParam');
-
-
-
-/**
- * This class contains setters and getters for the parts of the URI.
- * The <code>getXyz</code>/<code>setXyz</code> methods return the decoded part
- * -- so<code>goog.Uri.parse('/foo%20bar').getPath()</code> will return the
- * decoded path, <code>/foo bar</code>.
- *
- * Reserved characters (see RFC 3986 section 2.2) can be present in
- * their percent-encoded form in scheme, domain, and path URI components and
- * will not be auto-decoded. For example:
- * <code>goog.Uri.parse('rel%61tive/path%2fto/resource').getPath()</code> will
- * return <code>relative/path%2fto/resource</code>.
- *
- * The constructor accepts an optional unparsed, raw URI string.  The parser
- * is relaxed, so special characters that aren't escaped but don't cause
- * ambiguities will not cause parse failures.
- *
- * All setters return <code>this</code> and so may be chained, a la
- * <code>goog.Uri.parse('/foo').setFragment('part').toString()</code>.
- *
- * @param {*=} opt_uri Optional string URI to parse
- *        (use goog.Uri.create() to create a URI from parts), or if
- *        a goog.Uri is passed, a clone is created.
- * @param {boolean=} opt_ignoreCase If true, #getParameterValue will ignore
- * the case of the parameter name.
- *
- * @throws URIError If opt_uri is provided and URI is malformed (that is,
- *     if decodeURIComponent fails on any of the URI components).
- * @constructor
- * @struct
- */
-goog.Uri = function(opt_uri, opt_ignoreCase) {
-  /**
-   * Scheme such as "http".
-   * @private {string}
-   */
-  this.scheme_ = '';
-
-  /**
-   * User credentials in the form "username:password".
-   * @private {string}
-   */
-  this.userInfo_ = '';
-
-  /**
-   * Domain part, e.g. "www.google.com".
-   * @private {string}
-   */
-  this.domain_ = '';
-
-  /**
-   * Port, e.g. 8080.
-   * @private {?number}
-   */
-  this.port_ = null;
-
-  /**
-   * Path, e.g. "/tests/img.png".
-   * @private {string}
-   */
-  this.path_ = '';
-
-  /**
-   * The fragment without the #.
-   * @private {string}
-   */
-  this.fragment_ = '';
-
-  /**
-   * Whether or not this Uri should be treated as Read Only.
-   * @private {boolean}
-   */
-  this.isReadOnly_ = false;
-
-  /**
-   * Whether or not to ignore case when comparing query params.
-   * @private {boolean}
-   */
-  this.ignoreCase_ = false;
-
-  /**
-   * Object representing query data.
-   * @private {!goog.Uri.QueryData}
-   */
-  this.queryData_;
-
-  // Parse in the uri string
-  var m;
-  if (opt_uri instanceof goog.Uri) {
-    this.ignoreCase_ = (opt_ignoreCase !== undefined) ? opt_ignoreCase :
-                                                        opt_uri.getIgnoreCase();
-    this.setScheme(opt_uri.getScheme());
-    this.setUserInfo(opt_uri.getUserInfo());
-    this.setDomain(opt_uri.getDomain());
-    this.setPort(opt_uri.getPort());
-    this.setPath(opt_uri.getPath());
-    this.setQueryData(opt_uri.getQueryData().clone());
-    this.setFragment(opt_uri.getFragment());
-  } else if (opt_uri && (m = goog.uri.utils.split(String(opt_uri)))) {
-    this.ignoreCase_ = !!opt_ignoreCase;
-
-    // Set the parts -- decoding as we do so.
-    // COMPATIBILITY NOTE - In IE, unmatched fields may be empty strings,
-    // whereas in other browsers they will be undefined.
-    this.setScheme(m[goog.uri.utils.ComponentIndex.SCHEME] || '', true);
-    this.setUserInfo(m[goog.uri.utils.ComponentIndex.USER_INFO] || '', true);
-    this.setDomain(m[goog.uri.utils.ComponentIndex.DOMAIN] || '', true);
-    this.setPort(m[goog.uri.utils.ComponentIndex.PORT]);
-    this.setPath(m[goog.uri.utils.ComponentIndex.PATH] || '', true);
-    this.setQueryData(m[goog.uri.utils.ComponentIndex.QUERY_DATA] || '', true);
-    this.setFragment(m[goog.uri.utils.ComponentIndex.FRAGMENT] || '', true);
-
-  } else {
-    this.ignoreCase_ = !!opt_ignoreCase;
-    this.queryData_ = new goog.Uri.QueryData(null, this.ignoreCase_);
-  }
-};
-
-
-/**
- * Parameter name added to stop caching.
- * @type {string}
- */
-goog.Uri.RANDOM_PARAM = goog.uri.utils.StandardQueryParam.RANDOM;
-
-
-/**
- * @return {string} The string form of the url.
- * @override
- */
-goog.Uri.prototype.toString = function() {
-  var out = [];
-
-  var scheme = this.getScheme();
-  if (scheme) {
-    out.push(
-        goog.Uri.encodeSpecialChars_(
-            scheme, goog.Uri.reDisallowedInSchemeOrUserInfo_, true),
-        ':');
-  }
-
-  var domain = this.getDomain();
-  if (domain || scheme == 'file') {
-    out.push('//');
-
-    var userInfo = this.getUserInfo();
-    if (userInfo) {
-      out.push(
-          goog.Uri.encodeSpecialChars_(
-              userInfo, goog.Uri.reDisallowedInSchemeOrUserInfo_, true),
-          '@');
-    }
-
-    out.push(goog.Uri.removeDoubleEncoding_(goog.string.urlEncode(domain)));
-
-    var port = this.getPort();
-    if (port != null) {
-      out.push(':', String(port));
-    }
-  }
-
-  var path = this.getPath();
-  if (path) {
-    if (this.hasDomain() && path.charAt(0) != '/') {
-      out.push('/');
-    }
-    out.push(goog.Uri.encodeSpecialChars_(
-        path,
-        path.charAt(0) == '/' ? goog.Uri.reDisallowedInAbsolutePath_ :
-                                goog.Uri.reDisallowedInRelativePath_,
-        true));
-  }
-
-  var query = this.getEncodedQuery();
-  if (query) {
-    out.push('?', query);
-  }
-
-  var fragment = this.getFragment();
-  if (fragment) {
-    out.push(
-        '#',
-        goog.Uri.encodeSpecialChars_(
-            fragment, goog.Uri.reDisallowedInFragment_));
-  }
-  return out.join('');
-};
-
-
-/**
- * Resolves the given relative URI (a goog.Uri object), using the URI
- * represented by this instance as the base URI.
- *
- * There are several kinds of relative URIs:<br>
- * 1. foo - replaces the last part of the path, the whole query and fragment<br>
- * 2. /foo - replaces the path, the query and fragment<br>
- * 3. //foo - replaces everything from the domain on.  foo is a domain name<br>
- * 4. ?foo - replace the query and fragment<br>
- * 5. #foo - replace the fragment only
- *
- * Additionally, if relative URI has a non-empty path, all ".." and "."
- * segments will be resolved, as described in RFC 3986.
- *
- * @param {!goog.Uri} relativeUri The relative URI to resolve.
- * @return {!goog.Uri} The resolved URI.
- */
-goog.Uri.prototype.resolve = function(relativeUri) {
-  var absoluteUri = this.clone();
-
-  // we satisfy these conditions by looking for the first part of relativeUri
-  // that is not blank and applying defaults to the rest
-
-  var overridden = relativeUri.hasScheme();
-
-  if (overridden) {
-    absoluteUri.setScheme(relativeUri.getScheme());
-  } else {
-    overridden = relativeUri.hasUserInfo();
-  }
-
-  if (overridden) {
-    absoluteUri.setUserInfo(relativeUri.getUserInfo());
-  } else {
-    overridden = relativeUri.hasDomain();
-  }
-
-  if (overridden) {
-    absoluteUri.setDomain(relativeUri.getDomain());
-  } else {
-    overridden = relativeUri.hasPort();
-  }
-
-  var path = relativeUri.getPath();
-  if (overridden) {
-    absoluteUri.setPort(relativeUri.getPort());
-  } else {
-    overridden = relativeUri.hasPath();
-    if (overridden) {
-      // resolve path properly
-      if (path.charAt(0) != '/') {
-        // path is relative
-        if (this.hasDomain() && !this.hasPath()) {
-          // RFC 3986, section 5.2.3, case 1
-          path = '/' + path;
-        } else {
-          // RFC 3986, section 5.2.3, case 2
-          var lastSlashIndex = absoluteUri.getPath().lastIndexOf('/');
-          if (lastSlashIndex != -1) {
-            path = absoluteUri.getPath().substr(0, lastSlashIndex + 1) + path;
-          }
-        }
-      }
-      path = goog.Uri.removeDotSegments(path);
-    }
-  }
-
-  if (overridden) {
-    absoluteUri.setPath(path);
-  } else {
-    overridden = relativeUri.hasQuery();
-  }
-
-  if (overridden) {
-    absoluteUri.setQueryData(relativeUri.getQueryData().clone());
-  } else {
-    overridden = relativeUri.hasFragment();
-  }
-
-  if (overridden) {
-    absoluteUri.setFragment(relativeUri.getFragment());
-  }
-
-  return absoluteUri;
-};
-
-
-/**
- * Clones the URI instance.
- * @return {!goog.Uri} New instance of the URI object.
- */
-goog.Uri.prototype.clone = function() {
-  return new goog.Uri(this);
-};
-
-
-/**
- * @return {string} The encoded scheme/protocol for the URI.
- */
-goog.Uri.prototype.getScheme = function() {
-  return this.scheme_;
-};
-
-
-/**
- * Sets the scheme/protocol.
- * @throws URIError If opt_decode is true and newScheme is malformed (that is,
- *     if decodeURIComponent fails).
- * @param {string} newScheme New scheme value.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setScheme = function(newScheme, opt_decode) {
-  this.enforceReadOnly();
-  this.scheme_ =
-      opt_decode ? goog.Uri.decodeOrEmpty_(newScheme, true) : newScheme;
-
-  // remove an : at the end of the scheme so somebody can pass in
-  // window.location.protocol
-  if (this.scheme_) {
-    this.scheme_ = this.scheme_.replace(/:$/, '');
-  }
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the scheme has been set.
- */
-goog.Uri.prototype.hasScheme = function() {
-  return !!this.scheme_;
-};
-
-
-/**
- * @return {string} The decoded user info.
- */
-goog.Uri.prototype.getUserInfo = function() {
-  return this.userInfo_;
-};
-
-
-/**
- * Sets the userInfo.
- * @throws URIError If opt_decode is true and newUserInfo is malformed (that is,
- *     if decodeURIComponent fails).
- * @param {string} newUserInfo New userInfo value.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setUserInfo = function(newUserInfo, opt_decode) {
-  this.enforceReadOnly();
-  this.userInfo_ =
-      opt_decode ? goog.Uri.decodeOrEmpty_(newUserInfo) : newUserInfo;
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the user info has been set.
- */
-goog.Uri.prototype.hasUserInfo = function() {
-  return !!this.userInfo_;
-};
-
-
-/**
- * @return {string} The decoded domain.
- */
-goog.Uri.prototype.getDomain = function() {
-  return this.domain_;
-};
-
-
-/**
- * Sets the domain.
- * @throws URIError If opt_decode is true and newDomain is malformed (that is,
- *     if decodeURIComponent fails).
- * @param {string} newDomain New domain value.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setDomain = function(newDomain, opt_decode) {
-  this.enforceReadOnly();
-  this.domain_ =
-      opt_decode ? goog.Uri.decodeOrEmpty_(newDomain, true) : newDomain;
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the domain has been set.
- */
-goog.Uri.prototype.hasDomain = function() {
-  return !!this.domain_;
-};
-
-
-/**
- * @return {?number} The port number.
- */
-goog.Uri.prototype.getPort = function() {
-  return this.port_;
-};
-
-
-/**
- * Sets the port number.
- * @param {*} newPort Port number. Will be explicitly casted to a number.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setPort = function(newPort) {
-  this.enforceReadOnly();
-
-  if (newPort) {
-    newPort = Number(newPort);
-    if (isNaN(newPort) || newPort < 0) {
-      throw new Error('Bad port number ' + newPort);
-    }
-    this.port_ = newPort;
-  } else {
-    this.port_ = null;
-  }
-
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the port has been set.
- */
-goog.Uri.prototype.hasPort = function() {
-  return this.port_ != null;
-};
-
-
-/**
- * @return {string} The decoded path.
- */
-goog.Uri.prototype.getPath = function() {
-  return this.path_;
-};
-
-
-/**
- * Sets the path.
- * @throws URIError If opt_decode is true and newPath is malformed (that is,
- *     if decodeURIComponent fails).
- * @param {string} newPath New path value.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setPath = function(newPath, opt_decode) {
-  this.enforceReadOnly();
-  this.path_ = opt_decode ? goog.Uri.decodeOrEmpty_(newPath, true) : newPath;
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the path has been set.
- */
-goog.Uri.prototype.hasPath = function() {
-  return !!this.path_;
-};
-
-
-/**
- * @return {boolean} Whether the query string has been set.
- */
-goog.Uri.prototype.hasQuery = function() {
-  return this.queryData_.toString() !== '';
-};
-
-
-/**
- * Sets the query data.
- * @param {goog.Uri.QueryData|string|undefined} queryData QueryData object.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- *     Applies only if queryData is a string.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setQueryData = function(queryData, opt_decode) {
-  this.enforceReadOnly();
-
-  if (queryData instanceof goog.Uri.QueryData) {
-    this.queryData_ = queryData;
-    this.queryData_.setIgnoreCase(this.ignoreCase_);
-  } else {
-    if (!opt_decode) {
-      // QueryData accepts encoded query string, so encode it if
-      // opt_decode flag is not true.
-      queryData = goog.Uri.encodeSpecialChars_(
-          queryData, goog.Uri.reDisallowedInQuery_);
-    }
-    this.queryData_ = new goog.Uri.QueryData(queryData, this.ignoreCase_);
-  }
-
-  return this;
-};
-
-
-/**
- * Sets the URI query.
- * @param {string} newQuery New query value.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setQuery = function(newQuery, opt_decode) {
-  return this.setQueryData(newQuery, opt_decode);
-};
-
-
-/**
- * @return {string} The encoded URI query, not including the ?.
- */
-goog.Uri.prototype.getEncodedQuery = function() {
-  return this.queryData_.toString();
-};
-
-
-/**
- * @return {string} The decoded URI query, not including the ?.
- */
-goog.Uri.prototype.getDecodedQuery = function() {
-  return this.queryData_.toDecodedString();
-};
-
-
-/**
- * Returns the query data.
- * @return {!goog.Uri.QueryData} QueryData object.
- */
-goog.Uri.prototype.getQueryData = function() {
-  return this.queryData_;
-};
-
-
-/**
- * @return {string} The encoded URI query, not including the ?.
- *
- * Warning: This method, unlike other getter methods, returns encoded
- * value, instead of decoded one.
- */
-goog.Uri.prototype.getQuery = function() {
-  return this.getEncodedQuery();
-};
-
-
-/**
- * Sets the value of the named query parameters, clearing previous values for
- * that key.
- *
- * @param {string} key The parameter to set.
- * @param {*} value The new value. Value does not need to be encoded.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setParameterValue = function(key, value) {
-  this.enforceReadOnly();
-  this.queryData_.set(key, value);
-  return this;
-};
-
-
-/**
- * Sets the values of the named query parameters, clearing previous values for
- * that key.  Not new values will currently be moved to the end of the query
- * string.
- *
- * So, <code>goog.Uri.parse('foo?a=b&c=d&e=f').setParameterValues('c', ['new'])
- * </code> yields <tt>foo?a=b&e=f&c=new</tt>.</p>
- *
- * @param {string} key The parameter to set.
- * @param {*} values The new values. If values is a single
- *     string then it will be treated as the sole value. Values do not need to
- *     be encoded.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setParameterValues = function(key, values) {
-  this.enforceReadOnly();
-
-  if (!Array.isArray(values)) {
-    values = [String(values)];
-  }
-
-  this.queryData_.setValues(key, values);
-
-  return this;
-};
-
-
-/**
- * Returns the value<b>s</b> for a given cgi parameter as a list of decoded
- * query parameter values.
- * @param {string} name The parameter to get values for.
- * @return {!Array<?>} The values for a given cgi parameter as a list of
- *     decoded query parameter values.
- */
-goog.Uri.prototype.getParameterValues = function(name) {
-  return this.queryData_.getValues(name);
-};
-
-
-/**
- * Returns the first value for a given cgi parameter or undefined if the given
- * parameter name does not appear in the query string.
- * @param {string} paramName Unescaped parameter name.
- * @return {string|undefined} The first value for a given cgi parameter or
- *     undefined if the given parameter name does not appear in the query
- *     string.
- */
-goog.Uri.prototype.getParameterValue = function(paramName) {
-  return /** @type {string|undefined} */ (this.queryData_.get(paramName));
-};
-
-
-/**
- * @return {string} The URI fragment, not including the #.
- */
-goog.Uri.prototype.getFragment = function() {
-  return this.fragment_;
-};
-
-
-/**
- * Sets the URI fragment.
- * @throws URIError If opt_decode is true and newFragment is malformed (that is,
- *     if decodeURIComponent fails).
- * @param {string} newFragment New fragment value.
- * @param {boolean=} opt_decode Optional param for whether to decode new value.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.setFragment = function(newFragment, opt_decode) {
-  this.enforceReadOnly();
-  this.fragment_ =
-      opt_decode ? goog.Uri.decodeOrEmpty_(newFragment) : newFragment;
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the URI has a fragment set.
- */
-goog.Uri.prototype.hasFragment = function() {
-  return !!this.fragment_;
-};
-
-
-/**
- * Returns true if this has the same domain as that of uri2.
- * @param {!goog.Uri} uri2 The URI object to compare to.
- * @return {boolean} true if same domain; false otherwise.
- */
-goog.Uri.prototype.hasSameDomainAs = function(uri2) {
-  return ((!this.hasDomain() && !uri2.hasDomain()) ||
-          this.getDomain() == uri2.getDomain()) &&
-      ((!this.hasPort() && !uri2.hasPort()) ||
-       this.getPort() == uri2.getPort());
-};
-
-
-/**
- * Adds a random parameter to the Uri.
- * @return {!goog.Uri} Reference to this Uri object.
- */
-goog.Uri.prototype.makeUnique = function() {
-  this.enforceReadOnly();
-  this.setParameterValue(goog.Uri.RANDOM_PARAM, goog.string.getRandomString());
-
-  return this;
-};
-
-
-/**
- * Removes the named query parameter.
- *
- * @param {string} key The parameter to remove.
- * @return {!goog.Uri} Reference to this URI object.
- */
-goog.Uri.prototype.removeParameter = function(key) {
-  this.enforceReadOnly();
-  this.queryData_.remove(key);
-  return this;
-};
-
-
-/**
- * Sets whether Uri is read only. If this goog.Uri is read-only,
- * enforceReadOnly_ will be called at the start of any function that may modify
- * this Uri.
- * @param {boolean} isReadOnly whether this goog.Uri should be read only.
- * @return {!goog.Uri} Reference to this Uri object.
- */
-goog.Uri.prototype.setReadOnly = function(isReadOnly) {
-  this.isReadOnly_ = isReadOnly;
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether the URI is read only.
- */
-goog.Uri.prototype.isReadOnly = function() {
-  return this.isReadOnly_;
-};
-
-
-/**
- * Checks if this Uri has been marked as read only, and if so, throws an error.
- * This should be called whenever any modifying function is called.
- */
-goog.Uri.prototype.enforceReadOnly = function() {
-  if (this.isReadOnly_) {
-    throw new Error('Tried to modify a read-only Uri');
-  }
-};
-
-
-/**
- * Sets whether to ignore case.
- * NOTE: If there are already key/value pairs in the QueryData, and
- * ignoreCase_ is set to false, the keys will all be lower-cased.
- * @param {boolean} ignoreCase whether this goog.Uri should ignore case.
- * @return {!goog.Uri} Reference to this Uri object.
- */
-goog.Uri.prototype.setIgnoreCase = function(ignoreCase) {
-  this.ignoreCase_ = ignoreCase;
-  if (this.queryData_) {
-    this.queryData_.setIgnoreCase(ignoreCase);
-  }
-  return this;
-};
-
-
-/**
- * @return {boolean} Whether to ignore case.
- */
-goog.Uri.prototype.getIgnoreCase = function() {
-  return this.ignoreCase_;
-};
-
-
-//==============================================================================
-// Static members
-//==============================================================================
-
-
-/**
- * Creates a uri from the string form.  Basically an alias of new goog.Uri().
- * If a Uri object is passed to parse then it will return a clone of the object.
- *
- * @throws URIError If parsing the URI is malformed. The passed URI components
- *     should all be parseable by decodeURIComponent.
- * @param {*} uri Raw URI string or instance of Uri
- *     object.
- * @param {boolean=} opt_ignoreCase Whether to ignore the case of parameter
- * names in #getParameterValue.
- * @return {!goog.Uri} The new URI object.
- */
-goog.Uri.parse = function(uri, opt_ignoreCase) {
-  return uri instanceof goog.Uri ? uri.clone() :
-                                   new goog.Uri(uri, opt_ignoreCase);
-};
-
-
-/**
- * Creates a new goog.Uri object from unencoded parts.
- *
- * @param {?string=} opt_scheme Scheme/protocol or full URI to parse.
- * @param {?string=} opt_userInfo username:password.
- * @param {?string=} opt_domain www.google.com.
- * @param {?number=} opt_port 9830.
- * @param {?string=} opt_path /some/path/to/a/file.html.
- * @param {string|goog.Uri.QueryData=} opt_query a=1&b=2.
- * @param {?string=} opt_fragment The fragment without the #.
- * @param {boolean=} opt_ignoreCase Whether to ignore parameter name case in
- *     #getParameterValue.
- *
- * @return {!goog.Uri} The new URI object.
- */
-goog.Uri.create = function(
-    opt_scheme, opt_userInfo, opt_domain, opt_port, opt_path, opt_query,
-    opt_fragment, opt_ignoreCase) {
-  var uri = new goog.Uri(null, opt_ignoreCase);
-
-  // Only set the parts if they are defined and not empty strings.
-  opt_scheme && uri.setScheme(opt_scheme);
-  opt_userInfo && uri.setUserInfo(opt_userInfo);
-  opt_domain && uri.setDomain(opt_domain);
-  opt_port && uri.setPort(opt_port);
-  opt_path && uri.setPath(opt_path);
-  opt_query && uri.setQueryData(opt_query);
-  opt_fragment && uri.setFragment(opt_fragment);
-
-  return uri;
-};
-
-
-/**
- * Resolves a relative Uri against a base Uri, accepting both strings and
- * Uri objects.
- *
- * @param {*} base Base Uri.
- * @param {*} rel Relative Uri.
- * @return {!goog.Uri} Resolved uri.
- */
-goog.Uri.resolve = function(base, rel) {
-  if (!(base instanceof goog.Uri)) {
-    base = goog.Uri.parse(base);
-  }
-
-  if (!(rel instanceof goog.Uri)) {
-    rel = goog.Uri.parse(rel);
-  }
-
-  return base.resolve(rel);
-};
-
-
-/**
- * Removes dot segments in given path component, as described in
- * RFC 3986, section 5.2.4.
- *
- * @param {string} path A non-empty path component.
- * @return {string} Path component with removed dot segments.
- */
-goog.Uri.removeDotSegments = function(path) {
-  if (path == '..' || path == '.') {
-    return '';
-
-  } else if (
-      !goog.string.contains(path, './') && !goog.string.contains(path, '/.')) {
-    // This optimization detects uris which do not contain dot-segments,
-    // and as a consequence do not require any processing.
-    return path;
-
-  } else {
-    var leadingSlash = goog.string.startsWith(path, '/');
-    var segments = path.split('/');
-    var out = [];
-
-    for (var pos = 0; pos < segments.length;) {
-      var segment = segments[pos++];
-
-      if (segment == '.') {
-        if (leadingSlash && pos == segments.length) {
-          out.push('');
-        }
-      } else if (segment == '..') {
-        if (out.length > 1 || out.length == 1 && out[0] != '') {
-          out.pop();
-        }
-        if (leadingSlash && pos == segments.length) {
-          out.push('');
-        }
-      } else {
-        out.push(segment);
-        leadingSlash = true;
-      }
-    }
-
-    return out.join('/');
-  }
-};
-
-
-/**
- * Decodes a value or returns the empty string if it isn't defined or empty.
- * @throws URIError If decodeURIComponent fails to decode val.
- * @param {string|undefined} val Value to decode.
- * @param {boolean=} opt_preserveReserved If true, restricted characters will
- *     not be decoded.
- * @return {string} Decoded value.
- * @private
- */
-goog.Uri.decodeOrEmpty_ = function(val, opt_preserveReserved) {
-  // Don't use UrlDecode() here because val is not a query parameter.
-  if (!val) {
-    return '';
-  }
-
-  // decodeURI has the same output for '%2f' and '%252f'. We double encode %25
-  // so that we can distinguish between the 2 inputs. This is later undone by
-  // removeDoubleEncoding_.
-  return opt_preserveReserved ? decodeURI(val.replace(/%25/g, '%2525')) :
-                                decodeURIComponent(val);
-};
-
-
-/**
- * If unescapedPart is non null, then escapes any characters in it that aren't
- * valid characters in a url and also escapes any special characters that
- * appear in extra.
- *
- * @param {*} unescapedPart The string to encode.
- * @param {RegExp} extra A character set of characters in [\01-\177].
- * @param {boolean=} opt_removeDoubleEncoding If true, remove double percent
- *     encoding.
- * @return {?string} null iff unescapedPart == null.
- * @private
- */
-goog.Uri.encodeSpecialChars_ = function(
-    unescapedPart, extra, opt_removeDoubleEncoding) {
-  if (typeof unescapedPart === 'string') {
-    var encoded = encodeURI(unescapedPart).replace(extra, goog.Uri.encodeChar_);
-    if (opt_removeDoubleEncoding) {
-      // encodeURI double-escapes %XX sequences used to represent restricted
-      // characters in some URI components, remove the double escaping here.
-      encoded = goog.Uri.removeDoubleEncoding_(encoded);
-    }
-    return encoded;
-  }
-  return null;
-};
-
-
-/**
- * Converts a character in [\01-\177] to its unicode character equivalent.
- * @param {string} ch One character string.
- * @return {string} Encoded string.
- * @private
- */
-goog.Uri.encodeChar_ = function(ch) {
-  var n = ch.charCodeAt(0);
-  return '%' + ((n >> 4) & 0xf).toString(16) + (n & 0xf).toString(16);
-};
-
-
-/**
- * Removes double percent-encoding from a string.
- * @param  {string} doubleEncodedString String
- * @return {string} String with double encoding removed.
- * @private
- */
-goog.Uri.removeDoubleEncoding_ = function(doubleEncodedString) {
-  return doubleEncodedString.replace(/%25([0-9a-fA-F]{2})/g, '%$1');
-};
-
-
-/**
- * Regular expression for characters that are disallowed in the scheme or
- * userInfo part of the URI.
- * @type {RegExp}
- * @private
- */
-goog.Uri.reDisallowedInSchemeOrUserInfo_ = /[#\/\?@]/g;
-
-
-/**
- * Regular expression for characters that are disallowed in a relative path.
- * Colon is included due to RFC 3986 3.3.
- * @type {RegExp}
- * @private
- */
-goog.Uri.reDisallowedInRelativePath_ = /[\#\?:]/g;
-
-
-/**
- * Regular expression for characters that are disallowed in an absolute path.
- * @type {RegExp}
- * @private
- */
-goog.Uri.reDisallowedInAbsolutePath_ = /[\#\?]/g;
-
-
-/**
- * Regular expression for characters that are disallowed in the query.
- * @type {RegExp}
- * @private
- */
-goog.Uri.reDisallowedInQuery_ = /[\#\?@]/g;
-
-
-/**
- * Regular expression for characters that are disallowed in the fragment.
- * @type {RegExp}
- * @private
- */
-goog.Uri.reDisallowedInFragment_ = /#/g;
-
-
-/**
- * Checks whether two URIs have the same domain.
- * @param {string} uri1String First URI string.
- * @param {string} uri2String Second URI string.
- * @return {boolean} true if the two URIs have the same domain; false otherwise.
- */
-goog.Uri.haveSameDomain = function(uri1String, uri2String) {
-  // Differs from goog.uri.utils.haveSameDomain, since this ignores scheme.
-  // TODO(gboyer): Have this just call goog.uri.util.haveSameDomain.
-  var pieces1 = goog.uri.utils.split(uri1String);
-  var pieces2 = goog.uri.utils.split(uri2String);
-  return pieces1[goog.uri.utils.ComponentIndex.DOMAIN] ==
-      pieces2[goog.uri.utils.ComponentIndex.DOMAIN] &&
-      pieces1[goog.uri.utils.ComponentIndex.PORT] ==
-      pieces2[goog.uri.utils.ComponentIndex.PORT];
-};
-
-
-
-/**
- * Class used to represent URI query parameters.  It is essentially a hash of
- * name-value pairs, though a name can be present more than once.
- *
- * Has the same interface as the collections in goog.structs.
- *
- * @param {?string=} opt_query Optional encoded query string to parse into
- *     the object.
- * @param {boolean=} opt_ignoreCase If true, ignore the case of the parameter
- *     name in #get.
- * @constructor
- * @struct
- * @final
- */
-goog.Uri.QueryData = function(opt_query, opt_ignoreCase) {
-  /**
-   * The map containing name/value or name/array-of-values pairs.
-   * May be null if it requires parsing from the query string.
-   *
-   * We need to use a Map because we cannot guarantee that the key names will
-   * not be problematic for IE.
-   *
-   * @private {?goog.structs.Map<string, !Array<*>>}
-   */
-  this.keyMap_ = null;
-
-  /**
-   * The number of params, or null if it requires computing.
-   * @private {?number}
-   */
-  this.count_ = null;
-
-  /**
-   * Encoded query string, or null if it requires computing from the key map.
-   * @private {?string}
-   */
-  this.encodedQuery_ = opt_query || null;
-
-  /**
-   * If true, ignore the case of the parameter name in #get.
-   * @private {boolean}
-   */
-  this.ignoreCase_ = !!opt_ignoreCase;
-};
-
-
-/**
- * If the underlying key map is not yet initialized, it parses the
- * query string and fills the map with parsed data.
- * @private
- */
-goog.Uri.QueryData.prototype.ensureKeyMapInitialized_ = function() {
-  if (!this.keyMap_) {
-    this.keyMap_ = new goog.structs.Map();
-    this.count_ = 0;
-    if (this.encodedQuery_) {
-      var self = this;
-      goog.uri.utils.parseQueryData(this.encodedQuery_, function(name, value) {
-        self.add(goog.string.urlDecode(name), value);
-      });
-    }
-  }
-};
-
-
-/**
- * Creates a new query data instance from a map of names and values.
- *
- * @param {!goog.structs.Map<string, ?>|!Object} map Map of string parameter
- *     names to parameter value. If parameter value is an array, it is
- *     treated as if the key maps to each individual value in the
- *     array.
- * @param {boolean=} opt_ignoreCase If true, ignore the case of the parameter
- *     name in #get.
- * @return {!goog.Uri.QueryData} The populated query data instance.
- */
-goog.Uri.QueryData.createFromMap = function(map, opt_ignoreCase) {
-  var keys = goog.structs.getKeys(map);
-  if (typeof keys == 'undefined') {
-    throw new Error('Keys are undefined');
-  }
-
-  var queryData = new goog.Uri.QueryData(null, opt_ignoreCase);
-  var values = goog.structs.getValues(map);
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var value = values[i];
-    if (!Array.isArray(value)) {
-      queryData.add(key, value);
-    } else {
-      queryData.setValues(key, value);
-    }
-  }
-  return queryData;
-};
-
-
-/**
- * Creates a new query data instance from parallel arrays of parameter names
- * and values. Allows for duplicate parameter names. Throws an error if the
- * lengths of the arrays differ.
- *
- * @param {!Array<string>} keys Parameter names.
- * @param {!Array<?>} values Parameter values.
- * @param {boolean=} opt_ignoreCase If true, ignore the case of the parameter
- *     name in #get.
- * @return {!goog.Uri.QueryData} The populated query data instance.
- */
-goog.Uri.QueryData.createFromKeysValues = function(
-    keys, values, opt_ignoreCase) {
-  if (keys.length != values.length) {
-    throw new Error('Mismatched lengths for keys/values');
-  }
-  var queryData = new goog.Uri.QueryData(null, opt_ignoreCase);
-  for (var i = 0; i < keys.length; i++) {
-    queryData.add(keys[i], values[i]);
-  }
-  return queryData;
-};
-
-
-/**
- * @return {?number} The number of parameters.
- */
-goog.Uri.QueryData.prototype.getCount = function() {
-  this.ensureKeyMapInitialized_();
-  return this.count_;
-};
-
-
-/**
- * Adds a key value pair.
- * @param {string} key Name.
- * @param {*} value Value.
- * @return {!goog.Uri.QueryData} Instance of this object.
- */
-goog.Uri.QueryData.prototype.add = function(key, value) {
-  this.ensureKeyMapInitialized_();
-  this.invalidateCache_();
-
-  key = this.getKeyName_(key);
-  var values = this.keyMap_.get(key);
-  if (!values) {
-    this.keyMap_.set(key, (values = []));
-  }
-  values.push(value);
-  this.count_ = goog.asserts.assertNumber(this.count_) + 1;
-  return this;
-};
-
-
-/**
- * Removes all the params with the given key.
- * @param {string} key Name.
- * @return {boolean} Whether any parameter was removed.
- */
-goog.Uri.QueryData.prototype.remove = function(key) {
-  this.ensureKeyMapInitialized_();
-
-  key = this.getKeyName_(key);
-  if (this.keyMap_.containsKey(key)) {
-    this.invalidateCache_();
-
-    // Decrement parameter count.
-    this.count_ =
-        goog.asserts.assertNumber(this.count_) - this.keyMap_.get(key).length;
-    return this.keyMap_.remove(key);
-  }
-  return false;
-};
-
-
-/**
- * Clears the parameters.
- */
-goog.Uri.QueryData.prototype.clear = function() {
-  this.invalidateCache_();
-  this.keyMap_ = null;
-  this.count_ = 0;
-};
-
-
-/**
- * @return {boolean} Whether we have any parameters.
- */
-goog.Uri.QueryData.prototype.isEmpty = function() {
-  this.ensureKeyMapInitialized_();
-  return this.count_ == 0;
-};
-
-
-/**
- * Whether there is a parameter with the given name
- * @param {string} key The parameter name to check for.
- * @return {boolean} Whether there is a parameter with the given name.
- */
-goog.Uri.QueryData.prototype.containsKey = function(key) {
-  this.ensureKeyMapInitialized_();
-  key = this.getKeyName_(key);
-  return this.keyMap_.containsKey(key);
-};
-
-
-/**
- * Whether there is a parameter with the given value.
- * @param {*} value The value to check for.
- * @return {boolean} Whether there is a parameter with the given value.
- */
-goog.Uri.QueryData.prototype.containsValue = function(value) {
-  // NOTE(arv): This solution goes through all the params even if it was the
-  // first param. We can get around this by not reusing code or by switching to
-  // iterators.
-  var vals = this.getValues();
-  return goog.array.contains(vals, value);
-};
-
-
-/**
- * Runs a callback on every key-value pair in the map, including duplicate keys.
- * This won't maintain original order when duplicate keys are interspersed (like
- * getKeys() / getValues()).
- * @param {function(this:SCOPE, ?, string, !goog.Uri.QueryData)} f
- * @param {SCOPE=} opt_scope The value of "this" inside f.
- * @template SCOPE
- */
-goog.Uri.QueryData.prototype.forEach = function(f, opt_scope) {
-  this.ensureKeyMapInitialized_();
-  this.keyMap_.forEach(function(values, key) {
-    goog.array.forEach(values, function(value) {
-      f.call(opt_scope, value, key, this);
-    }, this);
-  }, this);
-};
-
-
-/**
- * Returns all the keys of the parameters. If a key is used multiple times
- * it will be included multiple times in the returned array
- * @return {!Array<string>} All the keys of the parameters.
- */
-goog.Uri.QueryData.prototype.getKeys = function() {
-  this.ensureKeyMapInitialized_();
-  // We need to get the values to know how many keys to add.
-  var vals = this.keyMap_.getValues();
-  var keys = this.keyMap_.getKeys();
-  var rv = [];
-  for (var i = 0; i < keys.length; i++) {
-    var val = vals[i];
-    for (var j = 0; j < val.length; j++) {
-      rv.push(keys[i]);
-    }
-  }
-  return rv;
-};
-
-
-/**
- * Returns all the values of the parameters with the given name. If the query
- * data has no such key this will return an empty array. If no key is given
- * all values wil be returned.
- * @param {string=} opt_key The name of the parameter to get the values for.
- * @return {!Array<?>} All the values of the parameters with the given name.
- */
-goog.Uri.QueryData.prototype.getValues = function(opt_key) {
-  this.ensureKeyMapInitialized_();
-  var rv = [];
-  if (typeof opt_key === 'string') {
-    if (this.containsKey(opt_key)) {
-      rv = goog.array.concat(rv, this.keyMap_.get(this.getKeyName_(opt_key)));
-    }
-  } else {
-    // Return all values.
-    var values = this.keyMap_.getValues();
-    for (var i = 0; i < values.length; i++) {
-      rv = goog.array.concat(rv, values[i]);
-    }
-  }
-  return rv;
-};
-
-
-/**
- * Sets a key value pair and removes all other keys with the same value.
- *
- * @param {string} key Name.
- * @param {*} value Value.
- * @return {!goog.Uri.QueryData} Instance of this object.
- */
-goog.Uri.QueryData.prototype.set = function(key, value) {
-  this.ensureKeyMapInitialized_();
-  this.invalidateCache_();
-
-  // TODO(chrishenry): This could be better written as
-  // this.remove(key), this.add(key, value), but that would reorder
-  // the key (since the key is first removed and then added at the
-  // end) and we would have to fix unit tests that depend on key
-  // ordering.
-  key = this.getKeyName_(key);
-  if (this.containsKey(key)) {
-    this.count_ =
-        goog.asserts.assertNumber(this.count_) - this.keyMap_.get(key).length;
-  }
-  this.keyMap_.set(key, [value]);
-  this.count_ = goog.asserts.assertNumber(this.count_) + 1;
-  return this;
-};
-
-
-/**
- * Returns the first value associated with the key. If the query data has no
- * such key this will return undefined or the optional default.
- * @param {string} key The name of the parameter to get the value for.
- * @param {*=} opt_default The default value to return if the query data
- *     has no such key.
- * @return {*} The first string value associated with the key, or opt_default
- *     if there's no value.
- */
-goog.Uri.QueryData.prototype.get = function(key, opt_default) {
-  if (!key) {
-    return opt_default;
-  }
-  var values = this.getValues(key);
-  return values.length > 0 ? String(values[0]) : opt_default;
-};
-
-
-/**
- * Sets the values for a key. If the key already exists, this will
- * override all of the existing values that correspond to the key.
- * @param {string} key The key to set values for.
- * @param {!Array<?>} values The values to set.
- */
-goog.Uri.QueryData.prototype.setValues = function(key, values) {
-  this.remove(key);
-
-  if (values.length > 0) {
-    this.invalidateCache_();
-    this.keyMap_.set(this.getKeyName_(key), goog.array.clone(values));
-    this.count_ = goog.asserts.assertNumber(this.count_) + values.length;
-  }
-};
-
-
-/**
- * @return {string} Encoded query string.
- * @override
- */
-goog.Uri.QueryData.prototype.toString = function() {
-  if (this.encodedQuery_) {
-    return this.encodedQuery_;
-  }
-
-  if (!this.keyMap_) {
-    return '';
-  }
-
-  var sb = [];
-
-  // In the past, we use this.getKeys() and this.getVals(), but that
-  // generates a lot of allocations as compared to simply iterating
-  // over the keys.
-  var keys = this.keyMap_.getKeys();
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var encodedKey = goog.string.urlEncode(key);
-    var val = this.getValues(key);
-    for (var j = 0; j < val.length; j++) {
-      var param = encodedKey;
-      // Ensure that null and undefined are encoded into the url as
-      // literal strings.
-      if (val[j] !== '') {
-        param += '=' + goog.string.urlEncode(val[j]);
-      }
-      sb.push(param);
-    }
-  }
-
-  return this.encodedQuery_ = sb.join('&');
-};
-
-
-/**
- * @throws URIError If URI is malformed (that is, if decodeURIComponent fails on
- *     any of the URI components).
- * @return {string} Decoded query string.
- */
-goog.Uri.QueryData.prototype.toDecodedString = function() {
-  return goog.Uri.decodeOrEmpty_(this.toString());
-};
-
-
-/**
- * Invalidate the cache.
- * @private
- */
-goog.Uri.QueryData.prototype.invalidateCache_ = function() {
-  this.encodedQuery_ = null;
-};
-
-
-/**
- * Removes all keys that are not in the provided list. (Modifies this object.)
- * @param {Array<string>} keys The desired keys.
- * @return {!goog.Uri.QueryData} a reference to this object.
- */
-goog.Uri.QueryData.prototype.filterKeys = function(keys) {
-  this.ensureKeyMapInitialized_();
-  this.keyMap_.forEach(function(value, key) {
-    if (!goog.array.contains(keys, key)) {
-      this.remove(key);
-    }
-  }, this);
-  return this;
-};
-
-
-/**
- * Clone the query data instance.
- * @return {!goog.Uri.QueryData} New instance of the QueryData object.
- */
-goog.Uri.QueryData.prototype.clone = function() {
-  var rv = new goog.Uri.QueryData();
-  rv.encodedQuery_ = this.encodedQuery_;
-  if (this.keyMap_) {
-    rv.keyMap_ = this.keyMap_.clone();
-    rv.count_ = this.count_;
-  }
-  return rv;
-};
-
-
-/**
- * Helper function to get the key name from a JavaScript object. Converts
- * the object to a string, and to lower case if necessary.
- * @private
- * @param {*} arg The object to get a key name from.
- * @return {string} valid key name which can be looked up in #keyMap_.
- */
-goog.Uri.QueryData.prototype.getKeyName_ = function(arg) {
-  var keyName = String(arg);
-  if (this.ignoreCase_) {
-    keyName = keyName.toLowerCase();
-  }
-  return keyName;
-};
-
-
-/**
- * Ignore case in parameter names.
- * NOTE: If there are already key/value pairs in the QueryData, and
- * ignoreCase_ is set to false, the keys will all be lower-cased.
- * @param {boolean} ignoreCase whether this goog.Uri should ignore case.
- */
-goog.Uri.QueryData.prototype.setIgnoreCase = function(ignoreCase) {
-  var resetKeys = ignoreCase && !this.ignoreCase_;
-  if (resetKeys) {
-    this.ensureKeyMapInitialized_();
-    this.invalidateCache_();
-    this.keyMap_.forEach(function(value, key) {
-      var lowerCase = key.toLowerCase();
-      if (key != lowerCase) {
-        this.remove(key);
-        this.setValues(lowerCase, value);
-      }
-    }, this);
-  }
-  this.ignoreCase_ = ignoreCase;
-};
-
-
-/**
- * Extends a query data object with another query data or map like object. This
- * operates 'in-place', it does not create a new QueryData object.
- *
- * @param {...(?goog.Uri.QueryData|?goog.structs.Map<?, ?>|?Object)} var_args
- *     The object from which key value pairs will be copied. Note: does not
- *     accept null.
- * @suppress {deprecated} Use deprecated goog.structs.forEach to allow different
- * types of parameters.
- */
-goog.Uri.QueryData.prototype.extend = function(var_args) {
-  for (var i = 0; i < arguments.length; i++) {
-    var data = arguments[i];
-    goog.structs.forEach(data, function(value, key) {
-      this.add(key, value);
-    }, this);
-  }
-};
-
-//third_party/javascript/closure/soy/data.js
-/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/**
- * @fileoverview Soy data primitives.
- *
- * The goal is to encompass data types used by Soy, especially to mark content
- * as known to be "safe".
- */
-
-goog.provide('goog.soy.data.SanitizedContent');
-goog.provide('goog.soy.data.SanitizedContentKind');
-goog.provide('goog.soy.data.SanitizedCss');
-goog.provide('goog.soy.data.SanitizedHtml');
-goog.provide('goog.soy.data.SanitizedHtmlAttribute');
-goog.provide('goog.soy.data.SanitizedJs');
-goog.provide('goog.soy.data.SanitizedTrustedResourceUri');
-goog.provide('goog.soy.data.SanitizedUri');
-
-goog.require('goog.Uri');
-goog.require('goog.asserts');
-goog.require('goog.html.SafeHtml');
-goog.require('goog.html.SafeScript');
-goog.require('goog.html.SafeStyle');
-goog.require('goog.html.SafeStyleSheet');
-goog.require('goog.html.SafeUrl');
-goog.require('goog.html.TrustedResourceUrl');
-goog.require('goog.html.uncheckedconversions');
-goog.require('goog.i18n.bidi.Dir');
-goog.require('goog.string.Const');
-
-
-/**
- * A type of textual content.
- *
- * This is an enum of type Object so that these values are unforgeable.
- *
- * @enum {!Object}
- */
-goog.soy.data.SanitizedContentKind = {
-
-  /**
-   * A snippet of HTML that does not start or end inside a tag, comment, entity,
-   * or DOCTYPE; and that does not contain any executable code
-   * (JS, {@code <object>}s, etc.) from a different trust domain.
-   */
-  HTML: goog.DEBUG ? {sanitizedContentKindHtml: true} : {},
-
-  /**
-   * Executable JavaScript code or expression, safe for insertion in a
-   * script-tag or event handler context, known to be free of any
-   * attacker-controlled scripts. This can either be side-effect-free
-   * JavaScript (such as JSON) or JavaScript that's entirely under Google's
-   * control.
-   */
-  JS: goog.DEBUG ? {sanitizedContentJsChars: true} : {},
-
-  /** A properly encoded portion of a URI. */
-  URI: goog.DEBUG ? {sanitizedContentUri: true} : {},
-
-  /** A resource URI not under attacker control. */
-  TRUSTED_RESOURCE_URI:
-      goog.DEBUG ? {sanitizedContentTrustedResourceUri: true} : {},
-
-  /**
-   * Repeated attribute names and values. For example,
-   * {@code dir="ltr" foo="bar" onclick="trustedFunction()" checked}.
-   */
-  ATTRIBUTES: goog.DEBUG ? {sanitizedContentHtmlAttribute: true} : {},
-
-  // TODO: Consider separating rules, declarations, and values into
-  // separate types, but for simplicity, we'll treat explicitly blessed
-  // SanitizedContent as allowed in all of these contexts.
-  /**
-   * A CSS3 declaration, property, value or group of semicolon separated
-   * declarations.
-   */
-  STYLE: goog.DEBUG ? {sanitizedContentStyle: true} : {},
-
-  /** A CSS3 style sheet (list of rules). */
-  CSS: goog.DEBUG ? {sanitizedContentCss: true} : {}
-
-  // TEXT doesn't produce SanitizedContent anymore, use renderText.
-};
-
-
-
-/**
- * A string-like object that carries a content-type and a content direction.
- *
- * IMPORTANT! Do not create these directly, nor instantiate the subclasses.
- * Instead, use a trusted, centrally reviewed library as endorsed by your team
- * to generate these objects. Otherwise, you risk accidentally creating
- * SanitizedContent that is attacker-controlled and gets evaluated unescaped in
- * templates.
- *
- * @constructor
- */
-goog.soy.data.SanitizedContent = function() {
-  throw new Error('Do not instantiate directly');
-};
-
-
-/**
- * The context in which this content is safe from XSS attacks.
- * @type {goog.soy.data.SanitizedContentKind}
- */
-goog.soy.data.SanitizedContent.prototype.contentKind;
-
-
-/**
- * The content's direction; null if unknown and thus to be estimated when
- * necessary.
- * @type {?goog.i18n.bidi.Dir}
- */
-goog.soy.data.SanitizedContent.prototype.contentDir = null;
-
-
-/**
- * The already-safe content.
- * @protected {string}
- */
-goog.soy.data.SanitizedContent.prototype.content;
-
-
-/**
- * Gets the already-safe content.
- * @return {string}
- */
-goog.soy.data.SanitizedContent.prototype.getContent = function() {
-  return this.content;
-};
-
-
-/** @override */
-goog.soy.data.SanitizedContent.prototype.toString = function() {
-  return this.content;
-};
-
-
-/**
- * Converts sanitized content of kind HTML into SafeHtml
- * @return {!goog.html.SafeHtml}
- * @throws {!Error} when the content kind is not HTML.
- */
-goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
-  if (this.contentKind !== goog.soy.data.SanitizedContentKind.HTML) {
-    throw new Error('Sanitized content was not of kind HTML.');
-  }
-  return goog.html.uncheckedconversions
-      .safeHtmlFromStringKnownToSatisfyTypeContract(
-          goog.string.Const.from(
-              'Soy SanitizedContent of kind HTML produces ' +
-              'SafeHtml-contract-compliant value.'),
-          this.toString(), this.contentDir);
-};
-
-
-/**
- * Converts sanitized content of kind URI into SafeUrl without modification.
- * @return {!goog.html.SafeUrl}
- * @throws {Error} when the content kind is not URI.
- */
-goog.soy.data.SanitizedContent.prototype.toSafeUrl = function() {
-  if (this.contentKind !== goog.soy.data.SanitizedContentKind.URI) {
-    throw new Error('Sanitized content was not of kind URI.');
-  }
-  return goog.html.uncheckedconversions
-      .safeUrlFromStringKnownToSatisfyTypeContract(
-          goog.string.Const.from(
-              'Soy SanitizedContent of kind URI produces ' +
-              'SafeHtml-contract-compliant value.'),
-          this.toString());
-};
-
-
-/**
- * Content of type {@link goog.soy.data.SanitizedContentKind.HTML}.
- *
- * The content is a string of HTML that can safely be embedded in a PCDATA
- * context in your app.  If you would be surprised to find that an HTML
- * sanitizer produced `s` (e.g.  it runs code or fetches bad URLs) and
- * you wouldn't write a template that produces `s` on security or privacy
- * grounds, then don't pass `s` here. The default content direction is
- * unknown, i.e. to be estimated when necessary.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedHtml = function() {
-  goog.soy.data.SanitizedHtml.base(this, 'constructor');
-};
-goog.inherits(goog.soy.data.SanitizedHtml, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedHtml.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.HTML;
-
-
-/**
- * Checks if the value could be used as the Soy type {html}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
-  return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedHtml ||
-      value instanceof goog.html.SafeHtml;
-};
-
-
-/**
- * Checks if the value could be used as the Soy type {html}.
- * Strict: disallows strings.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedHtml.isCompatibleWithStrict = function(value) {
-  return value instanceof goog.soy.data.SanitizedHtml ||
-      value instanceof goog.html.SafeHtml;
-};
-
-
-/**
- * Content of type {@link goog.soy.data.SanitizedContentKind.JS}.
- *
- * The content is JavaScript source that when evaluated does not execute any
- * attacker-controlled scripts. The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedJs = function() {
-  goog.soy.data.SanitizedJs.base(this, 'constructor');
-};
-goog.inherits(goog.soy.data.SanitizedJs, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedJs.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.JS;
-
-
-/** @override */
-goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Checks if the value could be used as the Soy type {js}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
-  return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedJs ||
-      value instanceof goog.html.SafeScript;
-};
-
-/**
- * Checks if the value could be used as the Soy type {js}.
- * Strict: disallows strings.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
-  return value instanceof goog.soy.data.SanitizedJs ||
-      value instanceof goog.html.SafeHtml;
-};
-
-
-/**
- * Content of type {@link goog.soy.data.SanitizedContentKind.URI}.
- *
- * The content is a URI chunk that the caller knows is safe to emit in a
- * template. The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedUri = function() {
-  goog.soy.data.SanitizedUri.base(this, 'constructor');
-};
-goog.inherits(goog.soy.data.SanitizedUri, goog.soy.data.SanitizedContent);
-
-/** @override */
-goog.soy.data.SanitizedUri.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.URI;
-
-
-/** @override */
-goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Checks if the value could be used as the Soy type {uri}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
-  return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedUri ||
-      value instanceof goog.html.SafeUrl ||
-      value instanceof goog.html.TrustedResourceUrl ||
-      value instanceof goog.Uri;
-};
-
-
-/**
- * Checks if the value could be used as the Soy type {uri}.
- * Strict: disallows strings.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedUri.isCompatibleWithStrict = function(value) {
-  return value instanceof goog.soy.data.SanitizedUri ||
-      value instanceof goog.html.SafeUrl ||
-      value instanceof goog.html.TrustedResourceUrl ||
-      value instanceof goog.Uri;
-};
-
-
-
-/**
- * Content of type
- * {@link goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI}.
- *
- * The content is a TrustedResourceUri chunk that is not under attacker control.
- * The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedTrustedResourceUri = function() {
-  goog.soy.data.SanitizedTrustedResourceUri.base(this, 'constructor');
-};
-goog.inherits(
-    goog.soy.data.SanitizedTrustedResourceUri, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedTrustedResourceUri.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI;
-
-
-/** @override */
-goog.soy.data.SanitizedTrustedResourceUri.prototype.contentDir =
-    goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Converts sanitized content into TrustedResourceUrl without modification.
- * @return {!goog.html.TrustedResourceUrl}
- */
-goog.soy.data.SanitizedTrustedResourceUri.prototype.toTrustedResourceUrl =
-    function() {
-  return goog.html.uncheckedconversions
-      .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
-          goog.string.Const.from(
-              'Soy SanitizedContent of kind TRUSTED_RESOURCE_URI produces ' +
-              'TrustedResourceUrl-contract-compliant value.'),
-          this.toString());
-};
-
-
-/**
- * Checks if the value could be used as the Soy type {trusted_resource_uri}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
-  return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
-      value instanceof goog.html.TrustedResourceUrl;
-};
-
-
-/**
- * Checks if the value could be used as the Soy type {trusted_resource_uri}.
- * Strict: disallows strings.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict = function(
-    value) {
-  return value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
-      value instanceof goog.html.TrustedResourceUrl;
-};
-
-
-
-/**
- * Content of type {@link goog.soy.data.SanitizedContentKind.ATTRIBUTES}.
- *
- * The content should be safely embeddable within an open tag, such as a
- * key="value" pair. The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedHtmlAttribute = function() {
-  goog.soy.data.SanitizedHtmlAttribute.base(this, 'constructor');
-};
-goog.inherits(
-    goog.soy.data.SanitizedHtmlAttribute, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedHtmlAttribute.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.ATTRIBUTES;
-
-
-/** @override */
-goog.soy.data.SanitizedHtmlAttribute.prototype.contentDir =
-    goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Checks if the value could be used as the Soy type {attribute}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
-  return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedHtmlAttribute;
-};
-
-
-/**
- * Checks if the value could be used as the Soy type {attribute}.
- * Strict: disallows strings.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict = function(value) {
-  return value instanceof goog.soy.data.SanitizedHtmlAttribute;
-};
-
-
-
-/**
- * Content of type {@link goog.soy.data.SanitizedContentKind.CSS}.
- *
- * The content is non-attacker-exploitable CSS, such as {@code @import url(x)}.
- * The content direction is LTR.
- *
- * @extends {goog.soy.data.SanitizedContent}
- * @constructor
- */
-goog.soy.data.SanitizedCss = function() {
-  goog.soy.data.SanitizedCss.base(this, 'constructor');
-};
-goog.inherits(goog.soy.data.SanitizedCss, goog.soy.data.SanitizedContent);
-
-
-/** @override */
-goog.soy.data.SanitizedCss.prototype.contentKind =
-    goog.soy.data.SanitizedContentKind.CSS;
-
-
-/** @override */
-goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
-
-
-/**
- * Checks if the value could be used as the Soy type {css}.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
-  return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedCss ||
-      value instanceof goog.html.SafeStyle ||
-      value instanceof goog.html.SafeStyleSheet;
-};
-
-
-/**
- * Checks if the value could be used as the Soy type {css}.
- * Strict: disallows strings.
- * @param {*} value
- * @return {boolean}
- */
-goog.soy.data.SanitizedCss.isCompatibleWithStrict = function(value) {
-  return value instanceof goog.soy.data.SanitizedCss ||
-      value instanceof goog.html.SafeStyle ||
-      value instanceof goog.html.SafeStyleSheet;
-};
-
-
-/**
- * Converts SanitizedCss into SafeStyleSheet.
- * Note: SanitizedCss in Soy represents both SafeStyle and SafeStyleSheet in
- * Closure. It's about to be split so that SanitizedCss represents only
- * SafeStyleSheet.
- * @return {!goog.html.SafeStyleSheet}
- */
-goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
-  var value = this.toString();
-  goog.asserts.assert(
-      /[@{]|^\s*$/.test(value),
-      'value doesn\'t look like style sheet: ' + value);
-  return goog.html.uncheckedconversions
-      .safeStyleSheetFromStringKnownToSatisfyTypeContract(
-          goog.string.Const.from(
-              'Soy SanitizedCss produces SafeStyleSheet-contract-compliant ' +
-              'value.'),
-          value);
-};
-
-//javascript/template/soy/checks.js
-/**
- * @fileoverview Provides Soy runtime checks for safe types.
- */
-
-goog.provide('soy.checks');
-
-goog.require('goog.asserts');
-goog.require('goog.soy.data.SanitizedContentKind');
-goog.require('goog.soy.data.SanitizedCss');
-goog.require('goog.soy.data.SanitizedHtml');
-goog.require('goog.soy.data.SanitizedHtmlAttribute');
-goog.require('goog.soy.data.SanitizedJs');
-goog.require('goog.soy.data.SanitizedTrustedResourceUri');
-goog.require('goog.soy.data.SanitizedUri');
-
-/**
- * Checks whether a given value is of a given content kind.
- *
- * @param {?} value The value to be examined.
- * @param {!goog.soy.data.SanitizedContentKind} contentKind The desired content
- *     kind.
- * @param {!Object} constructor
- * @return {boolean} Whether the given value is of the given kind.
- * @private
- */
-soy.checks.isContentKind_ = function(value, contentKind, constructor) {
-  var ret = value != null && value.contentKind === contentKind;
-  if (ret) {
-    goog.asserts.assert(value.constructor === constructor);
-  }
-  return ret;
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isHtml = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.HTML,
-      goog.soy.data.SanitizedHtml);
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isCss = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.CSS,
-      goog.soy.data.SanitizedCss);
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isAttribute = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.ATTRIBUTES,
-      goog.soy.data.SanitizedHtmlAttribute);
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isJS = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.JS, goog.soy.data.SanitizedJs);
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isTrustedResourceURI = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI,
-      goog.soy.data.SanitizedTrustedResourceUri);
-};
-
-/**
- * @param {?} value
- * @return {boolean}
- */
-soy.checks.isURI = function(value) {
-  return soy.checks.isContentKind_(
-      value, goog.soy.data.SanitizedContentKind.URI,
-      goog.soy.data.SanitizedUri);
 };
 
 //javascript/template/soy/soyutils_i18n.js
@@ -39747,6 +38258,884 @@ goog.debug.freeze = function(arg) {
   }.valueOf();
 };
 
+//third_party/javascript/closure/i18n/uchar.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Collection of utility functions for Unicode character.
+ */
+
+goog.provide('goog.i18n.uChar');
+
+
+// Constants for handling Unicode supplementary characters (surrogate pairs).
+
+
+/**
+ * The minimum value for Supplementary code points.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ = 0x10000;
+
+
+/**
+ * The highest Unicode code point value (scalar value) according to the Unicode
+ * Standard.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.CODE_POINT_MAX_VALUE_ = 0x10FFFF;
+
+
+/**
+ * Lead surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ = 0xD800;
+
+
+/**
+ * Lead surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_ = 0xDBFF;
+
+
+/**
+ * Trail surrogate minimum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ = 0xDC00;
+
+
+/**
+ * Trail surrogate maximum value.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_ = 0xDFFF;
+
+
+/**
+ * The number of least significant bits of a supplementary code point that in
+ * UTF-16 become the least significant bits of the trail surrogate. The rest of
+ * the in-use bits of the supplementary code point become the least significant
+ * bits of the lead surrogate.
+ * @type {number}
+ * @private
+ */
+goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
+
+
+/**
+ * Gets the U+ notation string of a Unicode character. Ex: 'U+0041' for 'A'.
+ * @param {string} ch The given character.
+ * @return {string} The U+ notation of the given character.
+ */
+goog.i18n.uChar.toHexString = function(ch) {
+  const chCode = goog.i18n.uChar.toCharCode(ch);
+  const chCodeStr = 'U+' +
+      goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
+
+  return chCodeStr;
+};
+
+
+/**
+ * Gets a string padded with given character to get given size.
+ * @param {string} str The given string to be padded.
+ * @param {number} length The target size of the string.
+ * @param {string} ch The character to be padded with.
+ * @return {string} The padded string.
+ * @private
+ */
+goog.i18n.uChar.padString_ = function(str, length, ch) {
+  while (str.length < length) {
+    str = ch + str;
+  }
+  return str;
+};
+
+
+/**
+ * Gets Unicode value of the given character.
+ * @param {string} ch The given character, which in the case of a supplementary
+ * character is actually a surrogate pair. The remainder of the string is
+ * ignored.
+ * @return {number} The Unicode value of the character.
+ */
+goog.i18n.uChar.toCharCode = function(ch) {
+  return goog.i18n.uChar.getCodePointAround(ch, 0);
+};
+
+
+/**
+ * Gets a character from the given Unicode value. If the given code point is not
+ * a valid Unicode code point, null is returned.
+ * @param {number} code The Unicode value of the character.
+ * @return {?string} The character corresponding to the given Unicode value.
+ */
+goog.i18n.uChar.fromCharCode = function(code) {
+  if (code == null ||
+      !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
+    return null;
+  }
+  if (goog.i18n.uChar.isSupplementaryCodePoint(code)) {
+    // First, we split the code point into the trail surrogate part (the
+    // TRAIL_SURROGATE_BIT_COUNT_ least significant bits) and the lead surrogate
+    // part (the rest of the bits, shifted down; note that for now this includes
+    // the supplementary offset, also shifted down, to be subtracted off below).
+    const leadBits = code >> goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_;
+    const trailBits = code &
+        // A bit-mask to get the TRAIL_SURROGATE_BIT_COUNT_ (i.e. 10) least
+        // significant bits. 1 << 10 = 0x0400. 0x0400 - 1 = 0x03FF.
+        ((1 << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) - 1);
+
+    // Now we calculate the code point of each surrogate by adding each offset
+    // to the corresponding base code point.
+    const leadCodePoint = leadBits +
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ -
+         // Subtract off the supplementary offset, which had been shifted down
+         // with the rest of leadBits. We do this here instead of before the
+         // shift in order to save a separate subtraction step.
+         (goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ >>
+          goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_));
+    const trailCodePoint =
+        trailBits + goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_;
+
+    // Convert the code points into a 2-character long string.
+    return String.fromCharCode(leadCodePoint) +
+        String.fromCharCode(trailCodePoint);
+  }
+  return String.fromCharCode(code);
+};
+
+
+/**
+ * Returns the Unicode code point at the specified index.
+ *
+ * If the char value specified at the given index is in the leading-surrogate
+ * range, and the following index is less than the length of `string`, and
+ * the char value at the following index is in the trailing-surrogate range,
+ * then the supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * If the char value specified at the given index is in the trailing-surrogate
+ * range, and the preceding index is not before the start of `string`, and
+ * the char value at the preceding index is in the leading-surrogate range, then
+ * the negated supplementary code point corresponding to this surrogate pair is
+ * returned.
+ *
+ * The negation allows the caller to differentiate between the case where the
+ * given index is at the leading surrogate and the one where it is at the
+ * trailing surrogate, and thus deduce where the next character starts and
+ * preceding character ends.
+ *
+ * Otherwise, the char value at the given index is returned. Thus, a leading
+ * surrogate is returned when it is not followed by a trailing surrogate, and a
+ * trailing surrogate is returned when it is not preceded by a leading
+ * surrogate.
+ *
+ * @param {string} string The string.
+ * @param {number} index The index from which the code point is to be retrieved.
+ * @return {number} The code point at the given index. If the given index is
+ * that of the start (i.e. lead surrogate) of a surrogate pair, returns the code
+ * point encoded by the pair. If the given index is that of the end (i.e. trail
+ * surrogate) of a surrogate pair, returns the negated code pointed encoded by
+ * the pair.
+ */
+goog.i18n.uChar.getCodePointAround = function(string, index) {
+  const charCode = string.charCodeAt(index);
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
+      index + 1 < string.length) {
+    const trail = string.charCodeAt(index + 1);
+    if (goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+      // Part of a surrogate pair.
+      return /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(charCode, trail));
+    }
+  } else if (goog.i18n.uChar.isTrailSurrogateCodePoint(charCode) && index > 0) {
+    const lead = string.charCodeAt(index - 1);
+    if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead)) {
+      // Part of a surrogate pair.
+      const codepoint = /** @type {number} */ (
+          goog.i18n.uChar.buildSupplementaryCodePoint(lead, charCode));
+      return -codepoint;
+    }
+  }
+  return charCode;
+};
+
+
+/**
+ * Determines the length of the string needed to represent the specified
+ * Unicode code point.
+ * @param {number} codePoint
+ * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
+ */
+goog.i18n.uChar.charCount = function(codePoint) {
+  return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
+};
+
+
+/**
+ * Determines whether the specified Unicode code point is in the supplementary
+ * Unicode characters range.
+ * @param {number} codePoint
+ * @return {boolean} Whether then given code point is a supplementary character.
+ */
+goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a leading surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a leading surrogate
+ * character.
+ */
+goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Gets whether the given code point is a trailing surrogate character.
+ * @param {number} codePoint
+ * @return {boolean} Whether the given code point is a trailing surrogate
+ * character.
+ */
+goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
+  return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
+      codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
+};
+
+
+/**
+ * Composes a supplementary Unicode code point from the given UTF-16 surrogate
+ * pair. If leadSurrogate isn't a leading surrogate code point or trailSurrogate
+ * isn't a trailing surrogate code point, null is returned.
+ * @param {number} lead The leading surrogate code point.
+ * @param {number} trail The trailing surrogate code point.
+ * @return {?number} The supplementary Unicode code point obtained by decoding
+ * the given UTF-16 surrogate pair.
+ */
+goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
+  if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
+      goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
+    const shiftedLeadOffset =
+        (lead << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_) -
+        (goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_
+         << goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_);
+    const trailOffset = trail - goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ +
+        goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_;
+    return shiftedLeadOffset + trailOffset;
+  }
+  return null;
+};
+
+//third_party/javascript/closure/structs/inversionmap.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Provides inversion and inversion map functionality for storing
+ * integer ranges and corresponding values.
+ */
+
+goog.provide('goog.structs.InversionMap');
+
+goog.require('goog.array');
+goog.require('goog.asserts');
+
+
+
+/**
+ * Maps ranges to values.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @constructor
+ * @template T
+ */
+goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
+  /**
+   * @protected {?Array<number>}
+   */
+  this.rangeArray = null;
+
+  goog.asserts.assert(
+      rangeArray.length == valueArray.length,
+      'rangeArray and valueArray must have the same length.');
+  this.storeInversion_(rangeArray, opt_delta);
+
+  /** @protected {Array<T>} */
+  this.values = valueArray;
+};
+
+
+/**
+ * Stores the integers as ranges (half-open).
+ * If delta is true, the integers are delta from the previous value and
+ * will be restored to the absolute value.
+ * When used as a set, even indices are IN, and odd are OUT.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ * @private
+ */
+goog.structs.InversionMap.prototype.storeInversion_ = function(
+    rangeArray, opt_delta) {
+  this.rangeArray = rangeArray;
+
+  for (var i = 1; i < rangeArray.length; i++) {
+    if (rangeArray[i] == null) {
+      rangeArray[i] = rangeArray[i - 1] + 1;
+    } else if (opt_delta) {
+      rangeArray[i] += rangeArray[i - 1];
+    }
+  }
+};
+
+
+/**
+ * Splices a range -> value map into this inversion map.
+ * @param {Array<number>} rangeArray An array of monotonically
+ *     increasing integer values, with at least one instance.
+ * @param {Array<T>} valueArray An array of corresponding values.
+ *     Length must be the same as rangeArray.
+ * @param {boolean=} opt_delta If true, saves only delta from previous value.
+ */
+goog.structs.InversionMap.prototype.spliceInversion = function(
+    rangeArray, valueArray, opt_delta) {
+  // By building another inversion map, we build the arrays that we need
+  // to splice in.
+  var otherMap =
+      new goog.structs.InversionMap(rangeArray, valueArray, opt_delta);
+
+  // Figure out where to splice those arrays.
+  var startRange = otherMap.rangeArray[0];
+  var endRange =
+      /** @type {number} */ (goog.array.peek(otherMap.rangeArray));
+  var startSplice = this.getLeast(startRange);
+  var endSplice = this.getLeast(endRange);
+
+  // The inversion map works by storing the start points of ranges...
+  if (startRange != this.rangeArray[startSplice]) {
+    // ...if we're splicing in a start point that isn't already here,
+    // then we need to insert it after the insertion point.
+    startSplice++;
+  }  // otherwise we overwrite the insertion point.
+
+  this.rangeArray = this.rangeArray.slice(0, startSplice)
+                        .concat(otherMap.rangeArray)
+                        .concat(this.rangeArray.slice(endSplice + 1));
+  this.values = this.values.slice(0, startSplice)
+                    .concat(otherMap.values)
+                    .concat(this.values.slice(endSplice + 1));
+};
+
+
+/**
+ * Gets the value corresponding to a number from the inversion map.
+ * @param {number} intKey The number for which value needs to be retrieved
+ *     from inversion map.
+ * @return {T|null} Value retrieved from inversion map; null if not found.
+ */
+goog.structs.InversionMap.prototype.at = function(intKey) {
+  var index = this.getLeast(intKey);
+  if (index < 0) {
+    return null;
+  }
+  return this.values[index];
+};
+
+
+/**
+ * Gets the largest index such that rangeArray[index] <= intKey from the
+ * inversion map.
+ * @param {number} intKey The probe for which rangeArray is searched.
+ * @return {number} Largest index such that rangeArray[index] <= intKey.
+ * @protected
+ */
+goog.structs.InversionMap.prototype.getLeast = function(intKey) {
+  var arr = this.rangeArray;
+  var low = 0;
+  var high = arr.length;
+  while (high - low > 8) {
+    var mid = (high + low) >> 1;
+    if (arr[mid] <= intKey) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  for (; low < high; ++low) {
+    if (intKey < arr[low]) {
+      break;
+    }
+  }
+  return low - 1;
+};
+
+//third_party/javascript/closure/i18n/graphemebreak.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Detect Grapheme Cluster Break in a pair of codepoints. Follows
+ * Unicode 10 UAX#29. Tailoring for Virama × Indic Letters is used.
+ *
+ * Reference: http://unicode.org/reports/tr29
+ */
+
+goog.provide('goog.i18n.GraphemeBreak');
+
+goog.require('goog.asserts');
+goog.require('goog.i18n.uChar');
+goog.require('goog.structs.InversionMap');
+
+/**
+ * Enum for all Grapheme Cluster Break properties.
+ * These enums directly corresponds to Grapheme_Cluster_Break property values
+ * mentioned in http://unicode.org/reports/tr29 table 2. VIRAMA and
+ * INDIC_LETTER are for the Virama × Base tailoring mentioned in the notes.
+ *
+ * @protected @enum {number}
+ */
+goog.i18n.GraphemeBreak.property = {
+  OTHER: 0,
+  CONTROL: 1,
+  EXTEND: 2,
+  PREPEND: 3,
+  SPACING_MARK: 4,
+  INDIC_LETTER: 5,
+  VIRAMA: 6,
+  L: 7,
+  V: 8,
+  T: 9,
+  LV: 10,
+  LVT: 11,
+  CR: 12,
+  LF: 13,
+  REGIONAL_INDICATOR: 14,
+  ZWJ: 15,
+  E_BASE: 16,
+  GLUE_AFTER_ZWJ: 17,
+  E_MODIFIER: 18,
+  E_BASE_GAZ: 19
+};
+
+
+/**
+ * Grapheme Cluster Break property values for all codepoints as inversion map.
+ * Constructed lazily.
+ *
+ * @private {?goog.structs.InversionMap}
+ */
+goog.i18n.GraphemeBreak.inversions_ = null;
+
+
+/**
+ * Indicates if a and b form a grapheme cluster.
+ *
+ * This implements the rules in:
+ * http://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
+ *
+ * @param {number|string} a Code point or string with the first side of
+ *     grapheme cluster.
+ * @param {number|string} b Code point or string with the second side of
+ *     grapheme cluster.
+ * @param {boolean} extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster.
+ * @return {boolean} True if a & b do not form a cluster; False otherwise.
+ * @private
+ */
+goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
+  var prop = goog.i18n.GraphemeBreak.property;
+
+  var aCode = (typeof a === 'string') ?
+      goog.i18n.GraphemeBreak.getCodePoint_(a, a.length - 1) :
+      a;
+  var bCode =
+      (typeof b === 'string') ? goog.i18n.GraphemeBreak.getCodePoint_(b, 0) : b;
+
+  var aProp = goog.i18n.GraphemeBreak.getBreakProp_(aCode);
+  var bProp = goog.i18n.GraphemeBreak.getBreakProp_(bCode);
+
+  var isString = (typeof a === 'string');
+
+  // GB3.
+  if (aProp === prop.CR && bProp === prop.LF) {
+    return false;
+  }
+
+  // GB4.
+  if (aProp === prop.CONTROL || aProp === prop.CR || aProp === prop.LF) {
+    return true;
+  }
+
+  // GB5.
+  if (bProp === prop.CONTROL || bProp === prop.CR || bProp === prop.LF) {
+    return true;
+  }
+
+  // GB6.
+  if (aProp === prop.L &&
+      (bProp === prop.L || bProp === prop.V || bProp === prop.LV ||
+       bProp === prop.LVT)) {
+    return false;
+  }
+
+  // GB7.
+  if ((aProp === prop.LV || aProp === prop.V) &&
+      (bProp === prop.V || bProp === prop.T)) {
+    return false;
+  }
+
+  // GB8.
+  if ((aProp === prop.LVT || aProp === prop.T) && bProp === prop.T) {
+    return false;
+  }
+
+  // GB9.
+  if (bProp === prop.EXTEND || bProp === prop.ZWJ || bProp === prop.VIRAMA) {
+    return false;
+  }
+
+  // GB9a, GB9b.
+  if (extended && (aProp === prop.PREPEND || bProp === prop.SPACING_MARK)) {
+    return false;
+  }
+
+  // Tailorings for basic aksara support.
+  if (extended && aProp === prop.VIRAMA && bProp === prop.INDIC_LETTER) {
+    return false;
+  }
+
+  var aStr, index, codePoint, codePointProp;
+
+  // GB10.
+  if (isString) {
+    if (bProp === prop.E_MODIFIER) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of: (E_Base | EBG) Extend* × E_Modifier.
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.EXTEND) {
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.E_BASE || codePointProp === prop.E_BASE_GAZ) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing:
+    // (E_Base | EBG) × E_Modifier.
+    if ((aProp === prop.E_BASE || aProp === prop.E_BASE_GAZ) &&
+        bProp === prop.E_MODIFIER) {
+      return false;
+    }
+  }
+
+  // GB11.
+  if (aProp === prop.ZWJ &&
+      (bProp === prop.GLUE_AFTER_ZWJ || bProp === prop.E_BASE_GAZ)) {
+    return false;
+  }
+
+  // GB12, GB13.
+  if (isString) {
+    if (bProp === prop.REGIONAL_INDICATOR) {
+      // If using new API, consume the string's code points starting from the
+      // end and test the left side of these rules:
+      // - sot (RI RI)* RI × RI
+      // - [^RI] (RI RI)* RI × RI.
+      var numberOfRi = 0;
+      aStr = /** @type {string} */ (a);
+      index = aStr.length - 1;
+      codePoint = aCode;
+      codePointProp = aProp;
+      while (index > 0 && codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+        index -= goog.i18n.uChar.charCount(codePoint);
+        codePoint = goog.i18n.GraphemeBreak.getCodePoint_(aStr, index);
+        codePointProp = goog.i18n.GraphemeBreak.getBreakProp_(codePoint);
+      }
+      if (codePointProp === prop.REGIONAL_INDICATOR) {
+        numberOfRi++;
+      }
+      if (numberOfRi % 2 === 1) {
+        return false;
+      }
+    }
+  } else {
+    // If using legacy API, return best effort by testing: RI × RI.
+    if (aProp === prop.REGIONAL_INDICATOR &&
+        bProp === prop.REGIONAL_INDICATOR) {
+      return false;
+    }
+  }
+
+  // GB999.
+  return true;
+};
+
+
+/**
+ * Method to return property enum value of the code point. If it is Hangul LV or
+ * LVT, then it is computed; for the rest it is picked from the inversion map.
+ *
+ * @param {number} codePoint The code point value of the character.
+ * @return {number} Property enum value of code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
+  if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
+    var prop = goog.i18n.GraphemeBreak.property;
+    if (codePoint % 0x1C === 0x10) {
+      return prop.LV;
+    }
+    return prop.LVT;
+  } else {
+    if (!goog.i18n.GraphemeBreak.inversions_) {
+      goog.i18n.GraphemeBreak.inversions_ = new goog.structs.InversionMap(
+          [
+            0,      10,   1,     2,   1,    18,   95,    33,    13,  1,
+            594,    112,  275,   7,   263,  45,   1,     1,     1,   2,
+            1,      2,    1,     1,   56,   6,    10,    11,    1,   1,
+            46,     21,   16,    1,   101,  7,    1,     1,     6,   2,
+            2,      1,    4,     33,  1,    1,    1,     30,    27,  91,
+            11,     58,   9,     34,  4,    1,    9,     1,     3,   1,
+            5,      43,   3,     120, 14,   1,    32,    1,     17,  37,
+            1,      1,    1,     1,   3,    8,    4,     1,     2,   1,
+            7,      8,    2,     2,   21,   7,    1,     1,     2,   17,
+            39,     1,    1,     1,   2,    6,    6,     1,     9,   5,
+            4,      2,    2,     12,  2,    15,   2,     1,     17,  39,
+            2,      3,    12,    4,   8,    6,    17,    2,     3,   14,
+            1,      17,   39,    1,   1,    3,    8,     4,     1,   20,
+            2,      29,   1,     2,   17,   39,   1,     1,     2,   1,
+            6,      6,    9,     6,   4,    2,    2,     13,    1,   16,
+            1,      18,   41,    1,   1,    1,    12,    1,     9,   1,
+            40,     1,    3,     17,  31,   1,    5,     4,     3,   5,
+            7,      8,    3,     2,   8,    2,    29,    1,     2,   17,
+            39,     1,    1,     1,   1,    2,    1,     3,     1,   5,
+            1,      8,    9,     1,   3,    2,    29,    1,     2,   17,
+            38,     3,    1,     2,   5,    7,    1,     1,     8,   1,
+            10,     2,    30,    2,   22,   48,   5,     1,     2,   6,
+            7,      1,    18,    2,   13,   46,   2,     1,     1,   1,
+            6,      1,    12,    8,   50,   46,   2,     1,     1,   1,
+            9,      11,   6,     14,  2,    58,   2,     27,    1,   1,
+            1,      1,    1,     4,   2,    49,   14,    1,     4,   1,
+            1,      2,    5,     48,  9,    1,    57,    33,    12,  4,
+            1,      6,    1,     2,   2,    2,    1,     16,    2,   4,
+            2,      2,    4,     3,   1,    3,    2,     7,     3,   4,
+            13,     1,    1,     1,   2,    6,    1,     1,     14,  1,
+            98,     96,   72,    88,  349,  3,    931,   15,    2,   1,
+            14,     15,   2,     1,   14,   15,   2,     15,    15,  14,
+            35,     17,   2,     1,   7,    8,    1,     2,     9,   1,
+            1,      9,    1,     45,  3,    1,    118,   2,     34,  1,
+            87,     28,   3,     3,   4,    2,    9,     1,     6,   3,
+            20,     19,   29,    44,  84,   23,   2,     2,     1,   4,
+            45,     6,    2,     1,   1,    1,    8,     1,     1,   1,
+            2,      8,    6,     13,  48,   84,   1,     14,    33,  1,
+            1,      5,    1,     1,   5,    1,    1,     1,     7,   31,
+            9,      12,   2,     1,   7,    23,   1,     4,     2,   2,
+            2,      2,    2,     11,  3,    2,    36,    2,     1,   1,
+            2,      3,    1,     1,   3,    2,    12,    36,    8,   8,
+            2,      2,    21,    3,   128,  3,    1,     13,    1,   7,
+            4,      1,    4,     2,   1,    3,    2,     198,   64,  523,
+            1,      1,    1,     2,   24,   7,    49,    16,    96,  33,
+            1324,   1,    34,    1,   1,    1,    82,    2,     98,  1,
+            14,     1,    1,     4,   86,   1,    1418,  3,     141, 1,
+            96,     32,   554,   6,   105,  2,    30164, 4,     1,   10,
+            32,     2,    80,    2,   272,  1,    3,     1,     4,   1,
+            23,     2,    2,     1,   24,   30,   4,     4,     3,   8,
+            1,      1,    13,    2,   16,   34,   16,    1,     1,   26,
+            18,     24,   24,    4,   8,    2,    23,    11,    1,   1,
+            12,     32,   3,     1,   5,    3,    3,     36,    1,   2,
+            4,      2,    1,     3,   1,    36,   1,     32,    35,  6,
+            2,      2,    2,     2,   12,   1,    8,     1,     1,   18,
+            16,     1,    3,     6,   1,    1,    1,     3,     48,  1,
+            1,      3,    2,     2,   5,    2,    1,     1,     32,  9,
+            1,      2,    2,     5,   1,    1,    201,   14,    2,   1,
+            1,      9,    8,     2,   1,    2,    1,     2,     1,   1,
+            1,      18,   11184, 27,  49,   1028, 1024,  6942,  1,   737,
+            16,     16,   16,    207, 1,    158,  2,     89,    3,   513,
+            1,      226,  1,     149, 5,    1670, 15,    40,    7,   1,
+            165,    2,    1305,  1,   1,    1,    53,    14,    1,   56,
+            1,      2,    1,     45,  3,    4,    2,     1,     1,   2,
+            1,      66,   3,     36,  5,    1,    6,     2,     62,  1,
+            12,     2,    1,     48,  3,    9,    1,     1,     1,   2,
+            6,      3,    95,    3,   3,    2,    1,     1,     2,   6,
+            1,      160,  1,     3,   7,    1,    21,    2,     2,   56,
+            1,      1,    1,     1,   1,    12,   1,     9,     1,   10,
+            4,      15,   192,   3,   8,    2,    1,     2,     1,   1,
+            105,    1,    2,     6,   1,    1,    2,     1,     1,   2,
+            1,      1,    1,     235, 1,    2,    6,     4,     2,   1,
+            1,      1,    27,    2,   82,   3,    8,     2,     1,   1,
+            1,      1,    106,   1,   1,    1,    2,     6,     1,   1,
+            101,    3,    2,     4,   1,    4,    1,     1283,  1,   14,
+            1,      1,    82,    23,  1,    7,    1,     2,     1,   2,
+            20025,  5,    59,    7,   1050, 62,   4,     19722, 2,   1,
+            4,      5313, 1,     1,   3,    3,    1,     5,     8,   8,
+            2,      7,    30,    4,   148,  3,    1979,  55,    4,   50,
+            8,      1,    14,    1,   22,   1424, 2213,  7,     109, 7,
+            2203,   26,   264,   1,   53,   1,    52,    1,     17,  1,
+            13,     1,    16,    1,   3,    1,    25,    3,     2,   1,
+            2,      3,    30,    1,   1,    1,    13,    5,     66,  2,
+            2,      11,   21,    4,   4,    1,    1,     9,     3,   1,
+            4,      3,    1,     3,   3,    1,    30,    1,     16,  2,
+            106,    1,    4,     1,   71,   2,    4,     1,     21,  1,
+            4,      2,    81,    1,   92,   3,    3,     5,     48,  1,
+            17,     1,    16,    1,   16,   3,    9,     1,     11,  1,
+            587,    5,    1,     1,   7,    1,    9,     10,    3,   2,
+            788162, 31
+          ],
+          [
+            1,  13, 1,  12, 1,  0, 1,  0, 1,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 3,  0, 2,  0,  1,  0, 2,  0, 2,  0,  2,  3,
+            0,  2,  0,  2,  0,  2, 0,  3, 0,  2,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  2,  3,  2, 4,  0, 5,  2,  4,  2,
+            0,  4,  2,  4,  6,  4, 0,  2, 5,  0,  2,  0, 5,  0, 2,  4,  0,  5,
+            2,  0,  2,  4,  2,  4, 6,  0, 2,  5,  0,  2, 0,  5, 0,  2,  4,  0,
+            5,  2,  4,  2,  6,  2, 5,  0, 2,  0,  2,  4, 0,  5, 2,  0,  4,  2,
+            4,  6,  0,  2,  0,  2, 4,  0, 5,  2,  0,  2, 4,  2, 4,  6,  2,  5,
+            0,  2,  0,  5,  0,  2, 0,  5, 2,  4,  2,  4, 6,  0, 2,  0,  2,  4,
+            0,  5,  0,  5,  0,  2, 4,  2, 6,  2,  5,  0, 2,  0, 2,  4,  0,  5,
+            2,  0,  4,  2,  4,  2, 4,  2, 4,  2,  6,  2, 5,  0, 2,  0,  2,  4,
+            0,  5,  0,  2,  4,  2, 4,  6, 3,  0,  2,  0, 2,  0, 4,  0,  5,  6,
+            2,  4,  2,  4,  2,  0, 4,  0, 5,  0,  2,  0, 4,  2, 6,  0,  2,  0,
+            5,  0,  2,  0,  4,  2, 0,  2, 0,  5,  0,  2, 0,  2, 0,  2,  0,  2,
+            0,  4,  5,  2,  4,  2, 6,  0, 2,  0,  2,  0, 2,  0, 5,  0,  2,  4,
+            2,  0,  6,  4,  2,  5, 0,  5, 0,  4,  2,  5, 2,  5, 0,  5,  0,  5,
+            2,  5,  2,  0,  4,  2, 0,  2, 5,  0,  2,  0, 7,  8, 9,  0,  2,  0,
+            5,  2,  6,  0,  5,  2, 6,  0, 5,  2,  0,  5, 2,  5, 0,  2,  4,  2,
+            4,  2,  4,  2,  6,  2, 0,  2, 0,  2,  1,  0, 2,  0, 2,  0,  5,  0,
+            2,  4,  2,  4,  2,  4, 2,  0, 5,  0,  5,  0, 5,  2, 4,  2,  0,  5,
+            0,  5,  4,  2,  4,  2, 6,  0, 2,  0,  2,  4, 2,  0, 2,  4,  0,  5,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  5,  0,  2, 0,  2, 4,  0,  5,  4,
+            2,  4,  2,  6,  2,  5, 0,  5, 0,  5,  0,  2, 4,  2, 4,  2,  4,  2,
+            6,  0,  5,  4,  2,  4, 2,  0, 5,  0,  2,  0, 2,  4, 2,  0,  2,  0,
+            4,  2,  0,  2,  0,  2, 0,  1, 2,  15, 1,  0, 1,  0, 1,  0,  2,  0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  17, 0, 16, 0, 17, 0,  2,  0,
+            6,  0,  2,  0,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            6,  5,  2,  5,  4,  2, 4,  0, 5,  0,  5,  0, 5,  0, 5,  0,  4,  0,
+            5,  4,  6,  2,  0,  2, 0,  5, 0,  2,  0,  5, 2,  4, 6,  0,  7,  2,
+            4,  0,  5,  0,  5,  2, 4,  2, 4,  2,  4,  6, 0,  2, 0,  5,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  4, 0,  5,  0,  5, 0,  5, 0,  2,  0,  5,
+            2,  0,  2,  0,  2,  0, 2,  0, 2,  0,  5,  4, 2,  4, 0,  4,  6,  0,
+            5,  0,  5,  0,  5,  0, 4,  2, 4,  2,  4,  0, 4,  6, 0,  11, 8,  9,
+            0,  2,  0,  2,  0,  2, 0,  2, 0,  1,  0,  2, 0,  1, 0,  2,  0,  2,
+            0,  2,  0,  2,  0,  2, 6,  0, 2,  0,  4,  2, 4,  0, 2,  6,  0,  6,
+            2,  4,  0,  4,  2,  4, 6,  2, 0,  3,  0,  2, 0,  2, 4,  2,  6,  0,
+            2,  0,  2,  4,  0,  4, 2,  4, 6,  0,  3,  0, 2,  0, 4,  2,  4,  2,
+            6,  2,  0,  2,  0,  2, 4,  2, 6,  0,  2,  4, 0,  2, 0,  2,  4,  2,
+            4,  6,  0,  2,  0,  4, 2,  0, 4,  2,  4,  6, 2,  4, 2,  0,  2,  4,
+            2,  4,  2,  4,  2,  4, 2,  4, 6,  2,  0,  2, 4,  2, 4,  2,  4,  6,
+            2,  0,  2,  0,  4,  2, 4,  2, 4,  6,  2,  0, 2,  4, 2,  4,  2,  6,
+            2,  0,  2,  4,  2,  4, 2,  6, 0,  4,  2,  4, 6,  0, 2,  4,  2,  4,
+            2,  4,  2,  0,  2,  0, 2,  0, 4,  2,  0,  2, 0,  1, 0,  2,  4,  2,
+            0,  4,  2,  1,  2,  0, 2,  0, 2,  0,  2,  0, 2,  0, 2,  0,  2,  0,
+            2,  0,  2,  0,  2,  0, 2,  0, 14, 0,  17, 0, 17, 0, 17, 0,  16, 0,
+            17, 0,  17, 0,  17, 0, 16, 0, 16, 0,  16, 0, 17, 0, 17, 0,  18, 0,
+            16, 0,  16, 0,  19, 0, 16, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  17, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  17, 0,
+            16, 0,  16, 0,  17, 0, 17, 0, 16, 0,  16, 0, 16, 0, 16, 0,  16, 0,
+            16, 0,  16, 0,  16, 0, 16, 0, 1,  2
+          ],
+          true);
+    }
+    return /** @type {number} */ (
+        goog.i18n.GraphemeBreak.inversions_.at(codePoint));
+  }
+};
+
+/**
+ * Extracts a code point from a string at the specified index.
+ *
+ * @param {string} str
+ * @param {number} index
+ * @return {number} Extracted code point.
+ * @private
+ */
+goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
+  var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
+  return (codePoint < 0) ? -codePoint : codePoint;
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * Legacy function. Does not cover cases where a sequence of code points is
+ * required in order to decide if there is a grapheme cluster boundary, such as
+ * emoji modifier sequences and emoji flag sequences. To cover all cases please
+ * use `hasGraphemeBreakStrings`.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {number} a The code point value of the first character.
+ * @param {number} b The code point value of the second character.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
+/**
+ * Indicates if there is a grapheme cluster boundary between a and b.
+ *
+ * There are two kinds of grapheme clusters: 1) Legacy 2) Extended. This method
+ * is to check for both using a boolean flag to switch between them. If no flag
+ * is provided rules for the extended clusters will be used by default.
+ *
+ * @param {string} a String with the first sequence of characters.
+ * @param {string} b String with the second sequence of characters.
+ * @param {boolean=} opt_extended If true, indicates extended grapheme cluster;
+ *     If false, indicates legacy cluster. Default value is true.
+ * @return {boolean} True if there is a grapheme cluster boundary between
+ *     a and b; False otherwise.
+ */
+goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
+  goog.asserts.assert(a !== undefined, 'First string should be defined.');
+  goog.asserts.assert(b !== undefined, 'Second string should be defined.');
+
+  // Break if any of the strings is empty.
+  if (a.length === 0 || b.length === 0) {
+    return true;
+  }
+
+  return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
+};
+
 //third_party/javascript/closure/format/format.js
 /**
  * @license
@@ -40240,6 +39629,555 @@ goog.format.WbrToken_ = {
   AMP: 38,         // '&'.charCodeAt(0)
   SEMI_COLON: 59,  // ';'.charCodeAt(0)
   SPACE: 32        // ' '.charCodeAt(0)
+};
+
+//third_party/javascript/closure/i18n/bidiformatter.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Utility for formatting text for display in a potentially
+ * opposite-directionality context without garbling.
+ * Mostly a port of http://go/formatter.cc.
+ */
+
+
+goog.provide('goog.i18n.BidiFormatter');
+
+goog.require('goog.html.SafeHtml');
+goog.require('goog.i18n.bidi');
+goog.require('goog.i18n.bidi.Dir');
+goog.require('goog.i18n.bidi.Format');
+
+
+
+/**
+ * Utility class for formatting text for display in a potentially
+ * opposite-directionality context without garbling. Provides the following
+ * functionality:
+ *
+ * 1. BiDi Wrapping
+ * When text in one language is mixed into a document in another, opposite-
+ * directionality language, e.g. when an English business name is embedded in a
+ * Hebrew web page, both the inserted string and the text following it may be
+ * displayed incorrectly unless the inserted string is explicitly separated
+ * from the surrounding text in a "wrapper" that declares its directionality at
+ * the start and then resets it back at the end. This wrapping can be done in
+ * HTML mark-up (e.g. a 'span dir="rtl"' tag) or - only in contexts where
+ * mark-up can not be used - in Unicode BiDi formatting codes (LRE|RLE and PDF).
+ * Providing such wrapping services is the basic purpose of the BiDi formatter.
+ *
+ * 2. Directionality estimation
+ * How does one know whether a string about to be inserted into surrounding
+ * text has the same directionality? Well, in many cases, one knows that this
+ * must be the case when writing the code doing the insertion, e.g. when a
+ * localized message is inserted into a localized page. In such cases there is
+ * no need to involve the BiDi formatter at all. In the remaining cases, e.g.
+ * when the string is user-entered or comes from a database, the language of
+ * the string (and thus its directionality) is not known a priori, and must be
+ * estimated at run-time. The BiDi formatter does this automatically.
+ *
+ * 3. Escaping
+ * When wrapping plain text - i.e. text that is not already HTML or HTML-
+ * escaped - in HTML mark-up, the text must first be HTML-escaped to prevent XSS
+ * attacks and other nasty business. This of course is always true, but the
+ * escaping can not be done after the string has already been wrapped in
+ * mark-up, so the BiDi formatter also serves as a last chance and includes
+ * escaping services.
+ *
+ * Thus, in a single call, the formatter will escape the input string as
+ * specified, determine its directionality, and wrap it as necessary. It is
+ * then up to the caller to insert the return value in the output.
+ *
+ * See http://wiki/Main/TemplatesAndBiDi for more information.
+ *
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
+ *     directionality, in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
+ *        i.e. unknown, for backward compatibility with legacy calls.
+ *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ * @param {boolean=} opt_alwaysSpan Whether {@link #spanWrap} should always
+ *     use a 'span' tag, even when the input directionality is neutral or
+ *     matches the context, so that the DOM structure of the output does not
+ *     depend on the combination of directionalities. Default: false.
+ * @constructor
+ * @final
+ */
+goog.i18n.BidiFormatter = function(contextDir, opt_alwaysSpan) {
+  /**
+   * The overall directionality of the context in which the formatter is being
+   * used.
+   * @type {?goog.i18n.bidi.Dir}
+   * @private
+   */
+  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
+
+  /**
+   * Whether {@link #spanWrap} and similar methods should always use the same
+   * span structure, regardless of the combination of directionalities, for a
+   * stable DOM structure.
+   * @type {boolean}
+   * @private
+   */
+  this.alwaysSpan_ = !!opt_alwaysSpan;
+};
+
+
+/**
+ * @return {?goog.i18n.bidi.Dir} The context directionality.
+ */
+goog.i18n.BidiFormatter.prototype.getContextDir = function() {
+  return this.contextDir_;
+};
+
+
+/**
+ * @return {boolean} Whether alwaysSpan is set.
+ */
+goog.i18n.BidiFormatter.prototype.getAlwaysSpan = function() {
+  return this.alwaysSpan_;
+};
+
+
+/**
+ * @param {goog.i18n.bidi.Dir|number|boolean|null} contextDir The context
+ *     directionality, in one of the following formats:
+ *     1. A goog.i18n.bidi.Dir constant. NEUTRAL is treated the same as null,
+ *        i.e. unknown.
+ *     2. A number (positive = LTR, negative = RTL, 0 = unknown).
+ *     3. A boolean (true = RTL, false = LTR).
+ *     4. A null for unknown directionality.
+ */
+goog.i18n.BidiFormatter.prototype.setContextDir = function(contextDir) {
+  this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
+};
+
+
+/**
+ * @param {boolean} alwaysSpan Whether {@link #spanWrap} should always use a
+ *     'span' tag, even when the input directionality is neutral or matches the
+ *     context, so that the DOM structure of the output does not depend on the
+ *     combination of directionalities.
+ */
+goog.i18n.BidiFormatter.prototype.setAlwaysSpan = function(alwaysSpan) {
+  this.alwaysSpan_ = alwaysSpan;
+};
+
+
+/**
+ * Returns the directionality of input argument `str`.
+ * Identical to {@link goog.i18n.bidi.estimateDirection}.
+ *
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
+ */
+goog.i18n.BidiFormatter.prototype.estimateDirection =
+    goog.i18n.bidi.estimateDirection;
+
+
+/**
+ * Returns true if two given directionalities are opposite.
+ * Note: the implementation is based on the numeric values of the Dir enum.
+ *
+ * @param {?goog.i18n.bidi.Dir} dir1 1st directionality.
+ * @param {?goog.i18n.bidi.Dir} dir2 2nd directionality.
+ * @return {boolean} Whether the directionalities are opposite.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
+    dir1, dir2) {
+  return Number(dir1) * Number(dir2) < 0;
+};
+
+
+/**
+ * Returns a unicode BiDi mark matching the context directionality (LRM or
+ * RLM) if `opt_dirReset`, and if either the directionality or the exit
+ * directionality of `str` is opposite to the context directionality.
+ * Otherwise returns the empty string.
+ *
+ * @param {string} str The input text.
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to perform the reset. Default: false.
+ * @return {string} A unicode BiDi mark or the empty string.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
+    str, dir, opt_isHtml, opt_dirReset) {
+  // endsWithRtl and endsWithLtr are called only if needed (short-circuit).
+  if (opt_dirReset &&
+      (this.areDirectionalitiesOpposite_(dir, this.contextDir_) ||
+       (this.contextDir_ == goog.i18n.bidi.Dir.LTR &&
+        goog.i18n.bidi.endsWithRtl(str, opt_isHtml)) ||
+       (this.contextDir_ == goog.i18n.bidi.Dir.RTL &&
+        goog.i18n.bidi.endsWithLtr(str, opt_isHtml)))) {
+    return this.contextDir_ == goog.i18n.bidi.Dir.LTR ?
+        goog.i18n.bidi.Format.LRM :
+        goog.i18n.bidi.Format.RLM;
+  } else {
+    return '';
+  }
+};
+
+
+/**
+ * Returns "rtl" if `str`'s estimated directionality is RTL, and "ltr" if
+ * it is LTR. In case it's NEUTRAL, returns "rtl" if the context directionality
+ * is RTL, and "ltr" otherwise.
+ * Needed for GXP, which can't handle dirAttr.
+ * Example use case:
+ * &lt;td expr:dir='bidiFormatter.dirAttrValue(foo)'&gt;
+ *   &lt;gxp:eval expr='foo'&gt;
+ * &lt;/td&gt;
+ *
+ * @param {string} str Text whose directionality is to be estimated.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} "rtl" or "ltr", according to the logic described above.
+ */
+goog.i18n.BidiFormatter.prototype.dirAttrValue = function(str, opt_isHtml) {
+  return this.knownDirAttrValue(this.estimateDirection(str, opt_isHtml));
+};
+
+
+/**
+ * Returns "rtl" if the given directionality is RTL, and "ltr" if it is LTR. In
+ * case it's NEUTRAL, returns "rtl" if the context directionality is RTL, and
+ * "ltr" otherwise.
+ *
+ * @param {goog.i18n.bidi.Dir} dir A directionality.
+ * @return {string} "rtl" or "ltr", according to the logic described above.
+ */
+goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
+  var resolvedDir = dir == goog.i18n.bidi.Dir.NEUTRAL ? this.contextDir_ : dir;
+  return resolvedDir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+};
+
+
+/**
+ * Returns 'dir="ltr"' or 'dir="rtl"', depending on `str`'s estimated
+ * directionality, if it is not the same as the context directionality.
+ * Otherwise, returns the empty string.
+ *
+ * @param {string} str Text whose directionality is to be estimated.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
+ *     LTR text in non-LTR context; else, the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.dirAttr = function(str, opt_isHtml) {
+  return this.knownDirAttr(this.estimateDirection(str, opt_isHtml));
+};
+
+
+/**
+ * Returns 'dir="ltr"' or 'dir="rtl"', depending on the given directionality, if
+ * it is not the same as the context directionality. Otherwise, returns the
+ * empty string.
+ *
+ * @param {goog.i18n.bidi.Dir} dir A directionality.
+ * @return {string} 'dir="rtl"' for RTL text in non-RTL context; 'dir="ltr"' for
+ *     LTR text in non-LTR context; else, the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
+  if (dir != this.contextDir_) {
+    return dir == goog.i18n.bidi.Dir.RTL ?
+        'dir="rtl"' :
+        dir == goog.i18n.bidi.Dir.LTR ? 'dir="ltr"' : '';
+  }
+  return '';
+};
+
+
+/**
+ * Formats a string of unknown directionality for use in HTML output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * The algorithm: estimates the directionality of input argument `html`.
+ * In case its directionality doesn't match the context directionality, wraps it
+ * with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"' or
+ * 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
+ * with 'span', skipping just the dir attribute when it's not needed.
+ *
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
+ * trailing unicode BiDi mark matching the context directionality is appened
+ * (LRM or RLM).
+ *
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `html`. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
+    html, opt_dirReset) {
+  return this.spanWrapSafeHtmlWithKnownDir(null, html, opt_dirReset);
+};
+
+
+/**
+ * Formats a string of given directionality for use in HTML output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * The algorithm: If `dir` doesn't match the context directionality, wraps
+ * `html` with a 'span' tag and adds a "dir" attribute (either 'dir="rtl"'
+ * or 'dir="ltr"'). If setAlwaysSpan(true) was used, the input is always wrapped
+ * with 'span', skipping just the dir attribute when it's not needed.
+ *
+ * If `opt_dirReset`, and if `dir` or the exit directionality of
+ * `html` are opposite to the context directionality, a trailing unicode
+ * BiDi mark matching the context directionality is appened (LRM or RLM).
+ *
+ * @param {?goog.i18n.bidi.Dir} dir `html`'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `html`. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the processing.
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
+    dir, html, opt_dirReset) {
+  if (dir == null) {
+    dir = this.estimateDirection(goog.html.SafeHtml.unwrap(html), true);
+  }
+  return this.spanWrapWithKnownDir_(dir, html, opt_dirReset);
+};
+
+
+/**
+ * The internal implementation of spanWrapSafeHtmlWithKnownDir for non-null dir,
+ * to help the compiler optimize.
+ *
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {!goog.html.SafeHtml} html The input HTML.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {!goog.html.SafeHtml} Input text after applying the above processing.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
+    dir, html, opt_dirReset) {
+  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
+
+  var result;
+  // Whether to add the "dir" attribute.
+  var dirCondition =
+      dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_;
+  if (this.alwaysSpan_ || dirCondition) {  // Wrap is needed
+    var dirAttribute;
+    if (dirCondition) {
+      dirAttribute = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
+    }
+    result = goog.html.SafeHtml.create('span', {'dir': dirAttribute}, html);
+  } else {
+    result = html;
+  }
+  var str = goog.html.SafeHtml.unwrap(html);
+  result = goog.html.SafeHtml.concatWithDir(
+      goog.i18n.bidi.Dir.NEUTRAL, result,
+      this.dirResetIfNeeded_(str, dir, true, opt_dirReset));
+  return result;
+};
+
+
+/**
+ * Formats a string of unknown directionality for use in plain-text output of
+ * the context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * As opposed to {@link #spanWrap}, this makes use of unicode BiDi formatting
+ * characters. In HTML, its *only* valid use is inside of elements that do not
+ * allow mark-up, e.g. an 'option' tag.
+ * The algorithm: estimates the directionality of input argument `str`.
+ * In case it doesn't match  the context directionality, wraps it with Unicode
+ * BiDi formatting characters: RLE`str`PDF for RTL text, and
+ * LRE`str`PDF for LTR text.
+ *
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
+ * trailing unicode BiDi mark matching the context directionality is appended
+ * (LRM or RLM).
+ *
+ * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
+ * The return value can be HTML-escaped as necessary.
+ *
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {string} Input text after applying the above processing.
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
+    str, opt_isHtml, opt_dirReset) {
+  return this.unicodeWrapWithKnownDir(null, str, opt_isHtml, opt_dirReset);
+};
+
+
+/**
+ * Formats a string of given directionality for use in plain-text output of the
+ * context directionality, so an opposite-directionality string is neither
+ * garbled nor garbles what follows it.
+ * As opposed to {@link #spanWrapWithKnownDir}, makes use of unicode BiDi
+ * formatting characters. In HTML, its *only* valid use is inside of elements
+ * that do not allow mark-up, e.g. an 'option' tag.
+ * The algorithm: If `dir` doesn't match the context directionality, wraps
+ * `str` with Unicode BiDi formatting characters: RLE`str`PDF for
+ * RTL text, and LRE`str`PDF for LTR text.
+ *
+ * If `opt_dirReset`, and if the overall directionality or the exit
+ * directionality of `str` are opposite to the context directionality, a
+ * trailing unicode BiDi mark matching the context directionality is appended
+ * (LRM or RLM).
+ *
+ * Does *not* do HTML-escaping regardless of the value of `opt_isHtml`.
+ * The return value can be HTML-escaped as necessary.
+ *
+ * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {string} Input text after applying the above processing.
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
+    dir, str, opt_isHtml, opt_dirReset) {
+  if (dir == null) {
+    dir = this.estimateDirection(str, opt_isHtml);
+  }
+  return this.unicodeWrapWithKnownDir_(dir, str, opt_isHtml, opt_dirReset);
+};
+
+
+/**
+ * The internal implementation of unicodeWrapWithKnownDir for non-null dir, to
+ * help the compiler optimize.
+ *
+ * @param {goog.i18n.bidi.Dir} dir `str`'s overall directionality.
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @param {boolean=} opt_dirReset Whether to append a trailing unicode bidi mark
+ *     matching the context directionality, when needed, to prevent the possible
+ *     garbling of whatever may follow `str`. Default: true.
+ * @return {string} Input text after applying the above processing.
+ * @private
+ */
+goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
+    dir, str, opt_isHtml, opt_dirReset) {
+  opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
+  var result = [];
+  if (dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_) {
+    result.push(
+        dir == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.Format.RLE :
+                                        goog.i18n.bidi.Format.LRE);
+    result.push(str);
+    result.push(goog.i18n.bidi.Format.PDF);
+  } else {
+    result.push(str);
+  }
+
+  result.push(this.dirResetIfNeeded_(str, dir, opt_isHtml, opt_dirReset));
+  return result.join('');
+};
+
+
+/**
+ * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
+ * if the directionality or the exit directionality of `str` are opposite
+ * to the context directionality. Otherwise returns the empty string.
+ *
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching the global directionality or
+ *     the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
+  return this.markAfterKnownDir(null, str, opt_isHtml);
+};
+
+
+/**
+ * Returns a Unicode BiDi mark matching the context directionality (LRM or RLM)
+ * if the given directionality or the exit directionality of `str` are
+ * opposite to the context directionality. Otherwise returns the empty string.
+ *
+ * @param {?goog.i18n.bidi.Dir} dir `str`'s overall directionality, or
+ *     null if unknown and needs to be estimated.
+ * @param {string} str The input text.
+ * @param {boolean=} opt_isHtml Whether `str` is HTML / HTML-escaped.
+ *     Default: false.
+ * @return {string} A Unicode bidi mark matching the global directionality or
+ *     the empty string.
+ */
+goog.i18n.BidiFormatter.prototype.markAfterKnownDir = function(
+    dir, str, opt_isHtml) {
+  if (dir == null) {
+    dir = this.estimateDirection(str, opt_isHtml);
+  }
+  return this.dirResetIfNeeded_(str, dir, opt_isHtml, true);
+};
+
+
+/**
+ * Returns the Unicode BiDi mark matching the context directionality (LRM for
+ * LTR context directionality, RLM for RTL context directionality), or the
+ * empty string for neutral / unknown context directionality.
+ *
+ * @return {string} LRM for LTR context directionality and RLM for RTL context
+ *     directionality.
+ */
+goog.i18n.BidiFormatter.prototype.mark = function() {
+  switch (this.contextDir_) {
+    case (goog.i18n.bidi.Dir.LTR):
+      return goog.i18n.bidi.Format.LRM;
+    case (goog.i18n.bidi.Dir.RTL):
+      return goog.i18n.bidi.Format.RLM;
+    default:
+      return '';
+  }
+};
+
+
+/**
+ * Returns 'right' for RTL context directionality. Otherwise (LTR or neutral /
+ * unknown context directionality) returns 'left'.
+ *
+ * @return {string} 'right' for RTL context directionality and 'left' for other
+ *     context directionality.
+ */
+goog.i18n.BidiFormatter.prototype.startEdge = function() {
+  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.RIGHT :
+                                                      goog.i18n.bidi.LEFT;
+};
+
+
+/**
+ * Returns 'left' for RTL context directionality. Otherwise (LTR or neutral /
+ * unknown context directionality) returns 'right'.
+ *
+ * @return {string} 'left' for RTL context directionality and 'right' for other
+ *     context directionality.
+ */
+goog.i18n.BidiFormatter.prototype.endEdge = function() {
+  return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.LEFT :
+                                                      goog.i18n.bidi.RIGHT;
 };
 
 //javascript/template/soy/soyutils_usegoog.js
