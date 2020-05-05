@@ -55,7 +55,7 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode templateNode : file.getChildren()) {
+    for (TemplateNode templateNode : file.getTemplates()) {
       for (TemplateParam param : templateNode.getAllParams()) {
         TypeNode type = param.getTypeNode();
         // Skip this if it's a param with a default value and an inferred type. In the case of an

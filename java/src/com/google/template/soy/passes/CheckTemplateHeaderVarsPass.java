@@ -70,7 +70,7 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode fileNode : sourceFiles) {
-      for (TemplateNode templateNode : fileNode.getChildren()) {
+      for (TemplateNode templateNode : fileNode.getTemplates()) {
         checkTemplate(templateNode, registry);
       }
     }

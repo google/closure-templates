@@ -39,7 +39,7 @@ final class ValidateSkipNodesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       int id = 0;
       for (SkipNode skipNode : SoyTreeUtils.getAllNodesOfType(template, SkipNode.class)) {
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();

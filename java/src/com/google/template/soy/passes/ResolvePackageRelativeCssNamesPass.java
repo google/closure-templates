@@ -64,7 +64,7 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
     } else if (!file.getRequiredCssNamespaces().isEmpty()) {
       namespacePrefix = toCamelCase(file.getRequiredCssNamespaces().get(0));
     }
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       String packagePrefix = namespacePrefix;
       if (template.getCssBaseNamespace() != null) {
         packagePrefix = toCamelCase(template.getCssBaseNamespace());

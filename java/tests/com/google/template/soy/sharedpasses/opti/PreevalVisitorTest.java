@@ -27,6 +27,7 @@ import com.google.template.soy.sharedpasses.render.Environment;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.TestingEnvironment;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,8 +52,8 @@ public final class PreevalVisitorTest {
 
     // With functions.
     // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.
-    //assertEquals(8, preeval("max(4, 8)").integerValue());
-    //assertEquals(3, preeval("floor(7/2)").integerValue());
+    // assertEquals(8, preeval("max(4, 8)").integerValue());
+    // assertEquals(3, preeval("floor(7/2)").integerValue());
 
     // With impure function.
     try {
@@ -73,9 +74,9 @@ public final class PreevalVisitorTest {
 
     // With functions.
     // TODO SOON: Uncomment these tests when basic functions have been changed to SoyJavaFunction.
-    //assertEquals(8, preeval("max(4, $boo)").integerValue());
-    //assertEquals(2, preeval("floor($boo / 3)").integerValue());
-    //assertEquals(3, preeval("round($boo / 3)").integerValue());
+    // assertEquals(8, preeval("max(4, $boo)").integerValue());
+    // assertEquals(2, preeval("floor($boo / 3)").integerValue());
+    // assertEquals(3, preeval("round($boo / 3)").integerValue());
 
     // With undefined data.
     try {
@@ -102,11 +103,12 @@ public final class PreevalVisitorTest {
     }
     PrintNode code =
         (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents(header + "{" + expression + "}")
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0)
+            ((TemplateNode)
+                    SoyFileSetParserBuilder.forTemplateContents(header + "{" + expression + "}")
+                        .parse()
+                        .fileSet()
+                        .getChild(0)
+                        .getChild(0))
                 .getChild(0);
     ExprRootNode expr = code.getExpr();
     Environment env =

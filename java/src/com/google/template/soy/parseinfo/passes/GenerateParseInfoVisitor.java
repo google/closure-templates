@@ -251,7 +251,7 @@ public final class GenerateParseInfoVisitor
     LinkedHashMap<String, TemplateNode> publicBasicTemplateMap = Maps.newLinkedHashMap();
     Set<String> allParamKeys = Sets.newLinkedHashSet();
     SetMultimap<String, TemplateNode> paramKeyToTemplatesMultimap = LinkedHashMultimap.create();
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : node.getTemplates()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
         publicBasicTemplateMap.put(

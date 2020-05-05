@@ -100,7 +100,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     for (SoyFileNode file : sourceFiles) {
       // Create an intermediatary data structure for template name -> template node so that
       // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
-      for (TemplateNode template : file.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
         if (!(template instanceof TemplateDelegateNode)
             && template.getContentKind() == SanitizedContentKind.HTML) {
           templatesInLibrary.put(template.getTemplateName(), template);

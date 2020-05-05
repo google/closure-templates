@@ -1729,7 +1729,7 @@ public class RenderVisitorTest {
   static ImmutableMap<String, TemplateNode> getBasicTemplates(SoyFileSetNode fileSet) {
     ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(fileNode, TemplateNode.class)) {
         if (!(template instanceof TemplateDelegateNode)) {
           basicTemplates.put(template.getTemplateName(), template);
         }
@@ -1743,7 +1743,7 @@ public class RenderVisitorTest {
     DelTemplateSelector.Builder<TemplateDelegateNode> deltemplates =
         new DelTemplateSelector.Builder<>();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(fileNode, TemplateNode.class)) {
         if (template instanceof TemplateDelegateNode) {
           TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
           String delTemplateName = delegateNode.getDelTemplateName();

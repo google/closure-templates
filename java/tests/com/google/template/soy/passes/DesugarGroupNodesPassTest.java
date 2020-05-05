@@ -44,7 +44,7 @@ public final class DesugarGroupNodesPassTest {
   public void testDesugarGroupNodesFromTemplate_nestedVarRef() {
     SoyFileNode file = parseAsTemplate("{@param foo: bool}\n\n{((($foo)))}");
 
-    TemplateNode n = file.getChild(0);
+    TemplateNode n = (TemplateNode) file.getChild(0);
     PrintNode p = (PrintNode) n.getChild(0);
     ExprRootNode exprRoot = p.getExpr();
     assertThat(exprRoot.getChild(0)).isInstanceOf(GroupNode.class);
@@ -60,7 +60,7 @@ public final class DesugarGroupNodesPassTest {
   public void testDesugarGroupNodesFromTemplate_multipleSubExprs() {
     SoyFileNode file = parseAsTemplate("{(((1 + 5) * 6) / 2)}");
 
-    TemplateNode n = file.getChild(0);
+    TemplateNode n = (TemplateNode) file.getChild(0);
     PrintNode p = (PrintNode) n.getChild(0);
     ExprRootNode exprRoot = p.getExpr();
     assertThat(exprRoot.getChild(0)).isInstanceOf(GroupNode.class);

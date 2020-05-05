@@ -29,6 +29,7 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -229,7 +230,7 @@ public final class VeLogInstrumentationVisitorTest {
                 + "{@param foo: string}"
                 + "{$foo}={currentVed()}");
     StringBuilder sb = new StringBuilder();
-    node.getChild(0).getChild(0).appendSourceStringForChildren(sb);
+    ((TemplateNode) node.getChild(0).getChild(0)).appendSourceStringForChildren(sb);
     assertThat(sb.toString())
         .isEqualTo(
             "{velog ve_data(ve(Bar), null)}"
@@ -239,7 +240,7 @@ public final class VeLogInstrumentationVisitorTest {
                 + "</div>"
                 + "{/velog}");
     sb = new StringBuilder();
-    node.getChild(0).getChild(1).appendSourceStringForChildren(sb);
+    ((TemplateNode) node.getChild(0).getChild(1)).appendSourceStringForChildren(sb);
     assertThat(sb.toString())
         .isEqualTo(
             "{let $soy_logging_function_attribute_24 kind=\"text\"}{$foo}{/let}"
@@ -287,7 +288,7 @@ public final class VeLogInstrumentationVisitorTest {
 
   private static StringSubject assertThatSourceString(SoyFileSetNode node) {
     StringBuilder sb = new StringBuilder();
-    node.getChild(0).getChild(0).appendSourceStringForChildren(sb);
+    ((TemplateNode) node.getChild(0).getChild(0)).appendSourceStringForChildren(sb);
     return assertThat(sb.toString());
   }
 }

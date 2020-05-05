@@ -97,14 +97,14 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // first, make sure that the user hasn't specified any injected parameters called 'csp_nonce'
     // Search for injected params named 'csp_nonce'.
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
         if (param.isInjected() && param.name().equals(CSP_NONCE_VARIABLE_NAME)) {
           errorReporter.report(param.nameLocation(), IJ_CSP_NONCE_REFERENCE);
         }
       }
     }
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       TemplateParam defn = null;
       for (HtmlOpenTagNode openTag :
           SoyTreeUtils.getAllNodesOfType(template, HtmlOpenTagNode.class)) {

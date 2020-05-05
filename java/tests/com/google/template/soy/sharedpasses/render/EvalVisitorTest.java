@@ -40,6 +40,7 @@ import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -126,25 +127,27 @@ public class EvalVisitorTest {
   private SoyValue eval(String expression) throws Exception {
     PrintNode code =
         (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents(
-                    // wrap in a function so we don't run into the 'can't print bools' error message
-                    untypedTemplateBodyForExpression("fakeFunction(" + expression + ")"))
-                .addSoyFunction(
-                    new SoyFunction() {
-                      @Override
-                      public String getName() {
-                        return "fakeFunction";
-                      }
+            ((TemplateNode)
+                    SoyFileSetParserBuilder.forTemplateContents(
+                            // wrap in a function so we don't run into the 'can't print bools' error
+                            // message
+                            untypedTemplateBodyForExpression("fakeFunction(" + expression + ")"))
+                        .addSoyFunction(
+                            new SoyFunction() {
+                              @Override
+                              public String getName() {
+                                return "fakeFunction";
+                              }
 
-                      @Override
-                      public Set<Integer> getValidArgsSizes() {
-                        return ImmutableSet.of(1);
-                      }
-                    })
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0)
+                              @Override
+                              public Set<Integer> getValidArgsSizes() {
+                                return ImmutableSet.of(1);
+                              }
+                            })
+                        .parse()
+                        .fileSet()
+                        .getChild(0)
+                        .getChild(0))
                 .getChild(0);
     ExprNode expr = ((FunctionNode) code.getExpr().getChild(0)).getChild(0);
 

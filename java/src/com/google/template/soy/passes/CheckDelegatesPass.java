@@ -84,7 +84,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     checkTemplates(registry);
 
     for (SoyFileNode fileNode : sourceFiles) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : fileNode.getTemplates()) {
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
         String currDelPackageName = template.getDelPackageName();
         for (CallBasicNode callNode :

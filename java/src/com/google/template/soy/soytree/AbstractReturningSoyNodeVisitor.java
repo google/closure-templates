@@ -56,6 +56,8 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
         return visitSoyFileSetNode((SoyFileSetNode) node);
       case SOY_FILE_NODE:
         return visitSoyFileNode((SoyFileNode) node);
+      case IMPORT_NODE:
+        return visitImportNode((ImportNode) node);
       case TEMPLATE_ELEMENT_NODE:
         return visitTemplateElementNode((TemplateElementNode) node);
       case TEMPLATE_BASIC_NODE:
@@ -162,6 +164,10 @@ public abstract class AbstractReturningSoyNodeVisitor<R>
   }
 
   protected R visitSoyFileNode(SoyFileNode node) {
+    return visitSoyNode(node);
+  }
+
+  protected R visitImportNode(ImportNode node) {
     return visitSoyNode(node);
   }
 

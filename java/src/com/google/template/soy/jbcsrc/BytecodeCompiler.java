@@ -268,7 +268,7 @@ public final class BytecodeCompiler {
       SoyTypeRegistry typeRegistry,
       CompilerListener<T> listener) {
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (TemplateNode template : file.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
         CompiledTemplateMetadata classInfo =
             registry.getTemplateInfoByTemplateName(template.getTemplateName());
         try {

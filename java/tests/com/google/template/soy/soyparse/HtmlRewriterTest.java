@@ -770,7 +770,7 @@ public final class HtmlRewriterTest {
                 new IncrementingIdGenerator(), new StringReader(soyFile), "test.soy", errorReporter)
             .parseSoyFile();
     if (node != null) {
-      return node.getChild(0);
+      return (TemplateNode) node.getChild(0);
     }
     return null;
   }
@@ -779,7 +779,7 @@ public final class HtmlRewriterTest {
     SoyFileNode parent = node.getParent().copy(new CopyState());
     new DesugarHtmlNodesPass().run(parent, new IncrementingIdGenerator());
     StringBuilder sb = new StringBuilder();
-    parent.getChild(0).appendSourceStringForChildren(sb);
+    ((TemplateNode) parent.getChild(0)).appendSourceStringForChildren(sb);
     return assertThat(sb.toString());
   }
 
@@ -787,7 +787,8 @@ public final class HtmlRewriterTest {
     SoyFileNode parent = node.getParent().copy(new CopyState());
     new CombineConsecutiveRawTextNodesPass().run(parent);
     return assertThat(
-        SoyTreeUtils.buildAstString(parent.getChild(0), 0, new StringBuilder()).toString());
+        SoyTreeUtils.buildAstString((TemplateNode) parent.getChild(0), 0, new StringBuilder())
+            .toString());
   }
 
   private static StringSubject assertThatASTStringNoCombine(TemplateNode node) {

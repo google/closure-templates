@@ -307,7 +307,7 @@ final class GenPyCallExprVisitor extends AbstractReturningSoyNodeVisitor<PyExpr>
   @Nullable
   private TemplateNode getTemplateIfInSameFile(CallBasicNode callBasicNode) {
     SoyFileNode file = callBasicNode.getNearestAncestor(SoyFileNode.class);
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       if ((template instanceof TemplateBasicNode || template instanceof TemplateElementNode)
           && template.getTemplateName().equals(callBasicNode.getCalleeName())) {
         return template;

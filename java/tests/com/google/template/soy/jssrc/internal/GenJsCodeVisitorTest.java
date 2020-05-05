@@ -1513,7 +1513,7 @@ public final class GenJsCodeVisitorTest {
         SoyFileSetParserBuilder.forTemplateContents(soyCode)
             .allowUnboundGlobals(true)
             .parse();
-    TemplateNode templateNode = parseResult.fileSet().getChild(0).getChild(0);
+    TemplateNode templateNode = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
 
     // Setup the GenJsCodeVisitor's state before the node is visited.
     genJsCodeVisitor.jsCodeBuilder = new JsCodeBuilder();

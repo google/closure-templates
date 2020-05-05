@@ -91,7 +91,7 @@ public final class BaseTofu implements SoyTofu {
     DelTemplateSelector.Builder<TemplateDelegateNode> delTemplates =
         new DelTemplateSelector.Builder<>();
     for (SoyFileNode fileNode : fileSet.getChildren()) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : fileNode.getTemplates()) {
         if (template instanceof TemplateDelegateNode) {
           TemplateDelegateNode delegateNode = (TemplateDelegateNode) template;
           String delTemplateName = delegateNode.getDelTemplateName();

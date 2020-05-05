@@ -368,27 +368,28 @@ public final class TemplateAnalysisTest {
   }
 
   private static TemplateNode parseTemplate(String... lines) {
-    return SoyFileSetParserBuilder.forFileContents(
-            Joiner.on("\n")
-                .join(
-                    "{namespace test}",
-                    "{template .caller}",
-                    Joiner.on("\n").join(lines),
-                    "{/template}",
-                    "",
-                    // add an additional template as a callee.
-                    "{template .foo}",
-                    "  {@param? p1 : ?}",
-                    "  {@param? p2 : ?}",
-                    "  {$p1 + $p2}",
-                    "{/template}",
-                    ""))
-        .addSoyFunction(REFED_FUNCTION)
-        .addSoyFunction(NOT_REFED_FUNCTION)
-        .parse()
-        .fileSet()
-        .getChild(0)
-        .getChild(0);
+    return (TemplateNode)
+        SoyFileSetParserBuilder.forFileContents(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace test}",
+                        "{template .caller}",
+                        Joiner.on("\n").join(lines),
+                        "{/template}",
+                        "",
+                        // add an additional template as a callee.
+                        "{template .foo}",
+                        "  {@param? p1 : ?}",
+                        "  {@param? p2 : ?}",
+                        "  {$p1 + $p2}",
+                        "{/template}",
+                        ""))
+            .addSoyFunction(REFED_FUNCTION)
+            .addSoyFunction(NOT_REFED_FUNCTION)
+            .parse()
+            .fileSet()
+            .getChild(0)
+            .getChild(0);
   }
 
   private static final SoyFunction NOT_REFED_FUNCTION =

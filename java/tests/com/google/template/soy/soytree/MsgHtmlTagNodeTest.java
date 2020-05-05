@@ -126,7 +126,7 @@ public final class MsgHtmlTagNodeTest {
       return null;
     }
     MsgFallbackGroupNode child =
-        (MsgFallbackGroupNode) parse.fileSet().getChild(0).getChild(0).getChild(0);
+        (MsgFallbackGroupNode) ((TemplateNode) parse.fileSet().getChild(0).getChild(0)).getChild(0);
     return (MsgHtmlTagNode) ((MsgPlaceholderNode) child.getChild(0).getChild(0)).getChild(0);
   }
 }

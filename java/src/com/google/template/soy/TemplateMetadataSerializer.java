@@ -102,7 +102,7 @@ public final class TemplateMetadataSerializer {
               .setNamespace(file.getNamespace())
               .setDelpackage(Strings.nullToEmpty(file.getDelPackageName()))
               .setFilePath(file.getFilePath());
-      for (TemplateNode template : file.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
         TemplateMetadata meta = registry.getMetadata(template);
         fileBuilder.addTemplate(protoFromTemplate(meta, file));
       }

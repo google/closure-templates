@@ -275,7 +275,7 @@ public class TemplateNodeTest {
     if (node.numChildren() > 0) {
       SoyFileNode filenode = node.getChild(0);
       if (filenode.numChildren() > 0) {
-        return filenode.getChild(0);
+        return (TemplateNode) filenode.getChild(0);
       }
     }
     return null;

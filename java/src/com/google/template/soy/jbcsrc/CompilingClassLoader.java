@@ -56,7 +56,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     this.registry = registry;
     ImmutableMap.Builder<String, TemplateNode> classNameToTemplateNode = ImmutableMap.builder();
     for (SoyFileNode file : fileSet.getChildren()) {
-      for (TemplateNode template : file.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
         CompiledTemplateMetadata meta =
             registry.getTemplateInfoByTemplateName(template.getTemplateName());
         classNameToTemplateNode.put(meta.typeInfo().className(), template);

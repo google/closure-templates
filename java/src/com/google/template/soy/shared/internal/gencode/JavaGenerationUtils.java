@@ -270,7 +270,7 @@ public final class JavaGenerationUtils {
   }
 
   public static Set<String> getProtoTypes(SoyFileNode node, SoyTypeRegistry typeRegistry) {
-    return node.getChildren().stream()
+    return SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class).stream()
         .flatMap(template -> getProtoTypes(template, typeRegistry).stream())
         .collect(toSet());
   }

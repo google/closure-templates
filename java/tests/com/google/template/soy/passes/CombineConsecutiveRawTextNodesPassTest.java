@@ -125,7 +125,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
             .errorReporter(boom)
             .parse()
             .fileSet();
-    TemplateNode template = soyTree.getChild(0).getChild(0);
+    TemplateNode template = (TemplateNode) soyTree.getChild(0).getChild(0);
     // Things like this like this could happen in templates with a large number of html tags (e.g.
     // in a literal block). since this is how they would be desugared.
     final int numCopies = 100_000;
@@ -166,7 +166,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
             .errorReporter(boomForTest)
             .parse() // NOTE(b/145693330): this would fail.
             .fileSet();
-    TemplateNode template = soyFileSetNode.getChild(0).getChild(0);
+    TemplateNode template = (TemplateNode) soyFileSetNode.getChild(0).getChild(0);
     for (int i = 0; i < template.numChildren(); i++) {
       if (template.getChild(i) instanceof RawTextNode) {
         RawTextNode rtn = (RawTextNode) template.getChild(i);

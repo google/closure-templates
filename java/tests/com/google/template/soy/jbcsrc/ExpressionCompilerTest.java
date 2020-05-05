@@ -57,6 +57,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -617,24 +618,25 @@ public class ExpressionCompilerTest {
             "fakeFunction(" + soyExpr + ")", types.build());
     PrintNode code =
         (PrintNode)
-            SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
-                .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
-                .addSoyFunction(
-                    new SoyFunction() {
-                      @Override
-                      public String getName() {
-                        return "fakeFunction";
-                      }
+            ((TemplateNode)
+                    SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+                        .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
+                        .addSoyFunction(
+                            new SoyFunction() {
+                              @Override
+                              public String getName() {
+                                return "fakeFunction";
+                              }
 
-                      @Override
-                      public Set<Integer> getValidArgsSizes() {
-                        return ImmutableSet.of(1);
-                      }
-                    })
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0)
+                              @Override
+                              public Set<Integer> getValidArgsSizes() {
+                                return ImmutableSet.of(1);
+                              }
+                            })
+                        .parse()
+                        .fileSet()
+                        .getChild(0)
+                        .getChild(0))
                 .getChild(0);
     return testExpressionCompiler.compile(
         ((FunctionNode) code.getExpr().getChild(0)).getChild(0),

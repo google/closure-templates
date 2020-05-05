@@ -27,6 +27,7 @@ import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
@@ -63,7 +64,8 @@ public class SimplifyVisitorTest {
 
     MsgNode msgNode =
         ((MsgFallbackGroupNode)
-                simplifySoyFiles(soyFileContent).getChild(0).getChild(0).getChild(0))
+                ((TemplateNode) simplifySoyFiles(soyFileContent).getChild(0).getChild(0))
+                    .getChild(0))
             .getChild(0);
     assertThat(msgNode.numChildren()).isEqualTo(8);
     // The MsgPlaceholderNode children are not replaced.
@@ -270,7 +272,7 @@ public class SimplifyVisitorTest {
         .fileSet();
   }
 
-  private static String toString(TemplateNode node) {
+  private static String toString(SoyNode node) {
     String string = node.toSourceString();
     return string.replace("{template .t}\n", "").replace("\n{/template}", "").trim();
   }

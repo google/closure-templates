@@ -39,7 +39,7 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
         if (param.getTypeNode() != null) {
           param.setType(converter.getOrCreateType(param.getTypeNode()));

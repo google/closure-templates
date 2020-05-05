@@ -61,6 +61,6 @@ public final class HtmlAttributeNodeTest {
             .parse()
             .fileSet()
             .getChild(0);
-    return (HtmlOpenTagNode) node.getChild(0).getChild(0);
+    return (HtmlOpenTagNode) ((TemplateNode) node.getChild(0)).getChild(0);
   }
 }

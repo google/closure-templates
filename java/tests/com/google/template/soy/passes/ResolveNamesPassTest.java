@@ -59,7 +59,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getParams().get(0));
@@ -73,7 +73,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     VarRefNode varRef =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(varRef.getDefnDecl()).isSameInstanceAs(n.getInjectedParams().get(0));
@@ -86,7 +86,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetValueNode letNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, LetValueNode.class));
     VarRefNode varRef =
@@ -108,7 +108,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetNode la = (LetNode) n.getChild(0);
     ForNonemptyNode loop = (ForNonemptyNode) ((ForNode) n.getChild(1)).getChild(0);
 
@@ -128,7 +128,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetValueNode firstLet = (LetValueNode) n.getChild(0);
     LetValueNode secondLet = (LetValueNode) n.getChild(1);
     LetValueNode thirdLet = (LetValueNode) n.getChild(2);
@@ -195,7 +195,7 @@ public final class ResolveNamesPassTest {
             .parse()
             .fileSet();
     runPass(soyTree);
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     LetContentNode aLetNode = (LetContentNode) n.getChild(0);
     VarRefNode aVarRef = (VarRefNode) ((PrintNode) n.getChild(1)).getExpr().getRoot();
     assertThat(aVarRef.getDefnDecl()).isSameInstanceAs(aLetNode.getVar());
@@ -213,7 +213,7 @@ public final class ResolveNamesPassTest {
         SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $t: 1 /}<{$t}>"))
             .parse()
             .fileSet();
-    TemplateNode n = soyTree.getChild(0).getChild(0);
+    TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);
     VarRefNode node = Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(n, VarRefNode.class));
     assertThat(node.getDefnDecl().kind()).isEqualTo(VarDefn.Kind.LOCAL_VAR);
   }

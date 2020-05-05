@@ -131,7 +131,7 @@ public final class SimplifyVisitor {
       this.nodeIdGen = idGenerator;
       ImmutableMap.Builder<String, TemplateNode> basicTemplates = ImmutableMap.builder();
       for (SoyFileNode fileNode : sourceFiles) {
-        for (TemplateNode template : fileNode.getChildren()) {
+        for (TemplateNode template : fileNode.getTemplates()) {
           // we can't simplify deltemplates
           if (!(template instanceof TemplateDelegateNode)) {
             basicTemplates.put(template.getTemplateName(), template);

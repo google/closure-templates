@@ -81,7 +81,7 @@ public final class ContextualAutoescaper {
     Inferences inferences = new Inferences(registry);
 
     for (SoyFileNode file : sourceFiles) {
-      for (TemplateNode templateNode : file.getChildren()) {
+      for (TemplateNode templateNode : file.getTemplates()) {
         try {
           // The author specifies the kind of SanitizedContent to produce, and thus the context in
           // which to escape.

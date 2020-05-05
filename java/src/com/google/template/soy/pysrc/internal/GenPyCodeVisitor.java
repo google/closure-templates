@@ -254,7 +254,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       // Add code for each template.
-      for (TemplateNode template : node.getChildren()) {
+      for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class)) {
         pyCodeBuilder.appendLine().appendLine();
         visit(template);
       }

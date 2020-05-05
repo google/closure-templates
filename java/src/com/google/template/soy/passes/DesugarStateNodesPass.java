@@ -43,7 +43,7 @@ final class DesugarStateNodesPass implements CompilerFileSetPass {
   }
 
   private void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode template : file.getChildren()) {
+    for (TemplateNode template : file.getTemplates()) {
       if (!(template instanceof TemplateElementNode)) {
         continue;
       }

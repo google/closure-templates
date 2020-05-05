@@ -809,12 +809,13 @@ public class SoyTypesTest {
 
     private static SoyType parseType(String input) {
       TemplateNode template =
-          SoyFileSetParserBuilder.forTemplateContents(
-                  "{@param p : " + input + "|string}\n{$p ? 't' : 'f'}")
-              .parse()
-              .fileSet()
-              .getChild(0)
-              .getChild(0);
+          (TemplateNode)
+              SoyFileSetParserBuilder.forTemplateContents(
+                      "{@param p : " + input + "|string}\n{$p ? 't' : 'f'}")
+                  .parse()
+                  .fileSet()
+                  .getChild(0)
+                  .getChild(0);
       SoyType type = Iterables.getOnlyElement(template.getAllParams()).type();
       if (type.equals(StringType.getInstance())
           || type.equals(UnknownType.getInstance())

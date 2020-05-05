@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
+import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamStatus;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
@@ -283,7 +284,7 @@ public class SoyFileNodeTransformer {
     List<TemplateInfo> templates = new ArrayList<>();
 
     Set<String> uniqueTemplateClassNames = new HashSet<>();
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : node.getTemplates()) {
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
 

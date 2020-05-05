@@ -79,7 +79,7 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode fileNode : sourceFiles) {
-      for (TemplateNode template : fileNode.getChildren()) {
+      for (TemplateNode template : fileNode.getTemplates()) {
         for (CallNode node : getAllNodesOfType(template, CallNode.class)) {
           checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
           checkCallNode(node, registry, SanitizedContentKind.CSS, CALLS_CSS_FROM_NON_CSS);

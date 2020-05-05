@@ -78,7 +78,7 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (TemplateNode node : file.getChildren()) {
+    for (TemplateNode node : file.getTemplates()) {
       checkTemplateNode(node, nodeIdGen);
     }
   }

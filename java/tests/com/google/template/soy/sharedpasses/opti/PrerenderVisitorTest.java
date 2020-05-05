@@ -172,7 +172,7 @@ public class PrerenderVisitorTest {
                     : ImmutableList.copyOf(experimentalFeatures.value()))
             .parse();
 
-    TemplateNode template = result.fileSet().getChild(0).getChild(0);
+    TemplateNode template = (TemplateNode) result.fileSet().getChild(0).getChild(0);
     StringBuilder outputSb = new StringBuilder();
     PrerenderVisitor prerenderVisitor =
         new PrerenderVisitor(

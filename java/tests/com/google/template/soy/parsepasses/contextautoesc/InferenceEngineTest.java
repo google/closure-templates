@@ -315,7 +315,7 @@ public final class InferenceEngineTest {
             .desugarHtmlAndStateNodes(false)
             .parse();
     Inferences inferences = new Inferences(result.registry());
-    TemplateNode template = result.fileSet().getChild(0).getChild(0);
+    TemplateNode template = (TemplateNode) result.fileSet().getChild(0).getChild(0);
     InferenceEngine.inferTemplateEndContext(
         template,
         Context.getStartContextForContentKind(kind),

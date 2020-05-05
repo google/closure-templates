@@ -119,7 +119,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
-      for (TemplateNode template : file.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
         run(template);
       }
     }

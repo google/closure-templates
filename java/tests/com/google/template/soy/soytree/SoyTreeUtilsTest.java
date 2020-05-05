@@ -237,7 +237,7 @@ public final class SoyTreeUtilsTest {
             .fileSet()
             .getChild(0);
 
-    TemplateNode template = soyFile.getChild(0);
+    TemplateNode template = (TemplateNode) soyFile.getChild(0);
     int numChildren = template.numChildren();
 
     List<StandaloneNode> clones =
@@ -421,11 +421,12 @@ public final class SoyTreeUtilsTest {
                 "  {/if}",
                 "{/template}");
     TemplateNode template =
-        SoyFileSetParserBuilder.forFileContents(testFileContent)
-            .parse()
-            .fileSet()
-            .getChild(0)
-            .getChild(0);
+        (TemplateNode)
+            SoyFileSetParserBuilder.forFileContents(testFileContent)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
 
     IfNode ifNode =
         Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(template, IfNode.class));

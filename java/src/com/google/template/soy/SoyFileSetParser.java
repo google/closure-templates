@@ -216,7 +216,7 @@ public abstract class SoyFileSetParser {
         passManager().runTemplateReturnTypeInferencePasses(soyTree, builder.build());
       }
       for (SoyFileNode node : soyTree.getChildren()) {
-        for (TemplateNode template : node.getChildren()) {
+        for (TemplateNode template : node.getTemplates()) {
           builder.addTemplate(TemplateMetadata.fromTemplate(template));
         }
       }

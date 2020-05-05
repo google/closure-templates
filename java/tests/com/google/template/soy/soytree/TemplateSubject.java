@@ -100,7 +100,7 @@ public final class TemplateSubject extends Subject {
     isWellFormed();
     Preconditions.checkNotNull(fileNode);
     Preconditions.checkArgument(fileNode.numChildren() == 1);
-    return fileNode.getChild(0);
+    return (TemplateNode) fileNode.getChild(0);
   }
 
   public void isWellFormed() {

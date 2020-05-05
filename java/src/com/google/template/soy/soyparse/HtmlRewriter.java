@@ -55,6 +55,7 @@ import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.HtmlTagNode.TagExistence;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
@@ -1686,6 +1687,9 @@ final class HtmlRewriter {
     protected void visitSoyFileNode(SoyFileNode node) {
       visitChildren(node);
     }
+
+    @Override
+    protected void visitImportNode(ImportNode node) {}
 
     @Override
     protected void visitSoyNode(SoyNode node) {

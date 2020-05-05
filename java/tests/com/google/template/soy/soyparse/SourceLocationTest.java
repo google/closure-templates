@@ -711,7 +711,12 @@ public final class SourceLocationTest {
             "{$bar}",
             "{/template}");
     TemplateNode templateNode =
-        SoyFileSetParserBuilder.forFileContents(template).parse().fileSet().getChild(0).getChild(0);
+        (TemplateNode)
+            SoyFileSetParserBuilder.forFileContents(template)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
     List<PrintNode> nodes = SoyTreeUtils.getAllNodesOfType(templateNode, PrintNode.class);
     assertThat(nodes).hasSize(8);
 
@@ -746,7 +751,12 @@ public final class SourceLocationTest {
             "  {$bar}",
             "{/template}");
     TemplateNode templateNode =
-        SoyFileSetParserBuilder.forFileContents(template).parse().fileSet().getChild(0).getChild(0);
+        (TemplateNode)
+            SoyFileSetParserBuilder.forFileContents(template)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
     List<PrintNode> nodes = SoyTreeUtils.getAllNodesOfType(templateNode, PrintNode.class);
     assertThat(nodes).hasSize(6);
 
@@ -839,7 +849,12 @@ public final class SourceLocationTest {
             "  {$bar}",
             "{/template}");
     TemplateNode templateNode =
-        SoyFileSetParserBuilder.forFileContents(template).parse().fileSet().getChild(0).getChild(0);
+        (TemplateNode)
+            SoyFileSetParserBuilder.forFileContents(template)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
     List<PrintNode> nodes = SoyTreeUtils.getAllNodesOfType(templateNode, PrintNode.class);
     assertThat(nodes).hasSize(6);
 
@@ -1005,11 +1020,12 @@ public final class SourceLocationTest {
             "");
     RawTextNode rawText =
         (RawTextNode)
-            SoyFileSetParserBuilder.forFileContents(template)
-                .parse()
-                .fileSet()
-                .getChild(0)
-                .getChild(0)
+            ((TemplateNode)
+                    SoyFileSetParserBuilder.forFileContents(template)
+                        .parse()
+                        .fileSet()
+                        .getChild(0)
+                        .getChild(0))
                 .getChild(0);
     assertThat(rawText.getRawText()).isEqualTo("Hello, \n<span>Bob</span>! What's up?");
 
@@ -1099,7 +1115,7 @@ public final class SourceLocationTest {
 
     assertThat(soyFile.numChildren()).isGreaterThan(0);
     // Verify that the filename is correctly stored in the SourceLocation of each node.
-    for (TemplateNode templateNode : soyFile.getChildren()) {
+    for (TemplateNode templateNode : SoyTreeUtils.getAllNodesOfType(soyFile, TemplateNode.class)) {
       for (SoyNode node : SoyTreeUtils.getAllNodesOfType(templateNode, SoyNode.class)) {
         assertWithMessage("Wrong file path for node %s", node)
             .that(node.getSourceLocation().getFilePath())

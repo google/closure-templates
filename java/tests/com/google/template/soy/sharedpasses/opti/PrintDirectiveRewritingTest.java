@@ -26,6 +26,7 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Set;
 import org.junit.Test;
@@ -76,7 +77,7 @@ public class PrintDirectiveRewritingTest {
         SimplifyVisitor.create(
             fileSet.getNodeIdGenerator(), ImmutableList.copyOf(fileSet.getChildren()));
     simplifyVisitor.simplify(fileSet.getChild(0));
-    return fileSet.getChild(0).getChild(0).getChild(0).toSourceString();
+    return ((TemplateNode) fileSet.getChild(0).getChild(0)).getChild(0).toSourceString();
   }
 
   @SoyFunctionSignature(

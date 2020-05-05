@@ -133,7 +133,7 @@ public final class ExpressionParser {
             .parse()
             .fileSet();
 
-    TemplateNode template = fileSet.getChild(0).getChild(0);
+    TemplateNode template = (TemplateNode) fileSet.getChild(0).getChild(0);
     if (template.numChildren() == 0) {
       return Optional.empty();
     }

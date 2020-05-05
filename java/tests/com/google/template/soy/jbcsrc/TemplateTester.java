@@ -372,7 +372,7 @@ public final class TemplateTester {
         TemplateRegistry registry = parseResult.registry();
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
-        TemplateNode template = fileSet.getChild(0).getChild(0);
+        TemplateNode template = (TemplateNode) fileSet.getChild(0).getChild(0);
         String templateName = template.getTemplateName();
         classData =
             new TemplateCompiler(

@@ -1906,7 +1906,7 @@ public final class TemplateParserTest {
             .errorReporter(errorReporter)
             .parse()
             .fileSet();
-    return fileSet.numChildren() > 0 ? fileSet.getChild(0).getChild(0) : null;
+    return (TemplateNode) (fileSet.numChildren() > 0 ? fileSet.getChild(0).getChild(0) : null);
   }
 
   /**
@@ -1937,11 +1937,12 @@ public final class TemplateParserTest {
         .append("}\n")
         .append(input)
         .append("\n{/template}\n");
-    return SoyFileSetParserBuilder.forFileContents(soyFileContentBuilder.toString())
-        .parse()
-        .fileSet()
-        .getChild(0)
-        .getChild(0);
+    return (TemplateNode)
+        SoyFileSetParserBuilder.forFileContents(soyFileContentBuilder.toString())
+            .parse()
+            .fileSet()
+            .getChild(0)
+            .getChild(0);
   }
 
   private static void assertInvalidTemplate(String input) {

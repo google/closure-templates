@@ -47,6 +47,7 @@ public interface SoyNode extends Node {
   enum Kind {
     SOY_FILE_SET_NODE,
     SOY_FILE_NODE,
+    IMPORT_NODE,
 
     TEMPLATE_BASIC_NODE,
     TEMPLATE_DELEGATE_NODE,

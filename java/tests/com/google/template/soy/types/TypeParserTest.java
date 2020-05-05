@@ -89,12 +89,14 @@ public class TypeParserTest {
 
   private SoyType parseType(String input) {
     TemplateNode template =
-        SoyFileSetParserBuilder.forTemplateContents("{@param p : " + input + "}\n{$p ? 't' : 'f'}")
-            .typeRegistry(typeRegistry)
-            .parse()
-            .fileSet()
-            .getChild(0)
-            .getChild(0);
+        (TemplateNode)
+            SoyFileSetParserBuilder.forTemplateContents(
+                    "{@param p : " + input + "}\n{$p ? 't' : 'f'}")
+                .typeRegistry(typeRegistry)
+                .parse()
+                .fileSet()
+                .getChild(0)
+                .getChild(0);
     return Iterables.getOnlyElement(template.getAllParams()).type();
   }
 }

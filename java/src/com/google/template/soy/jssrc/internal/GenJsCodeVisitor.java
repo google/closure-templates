@@ -452,7 +452,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Add code for each template.
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : node.getTemplates()) {
       jsCodeBuilder.appendLine().appendLine();
       staticVarDeclarations = new ArrayList<>();
       visit(template);
@@ -468,7 +468,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   private Map<String, SoyType> getAllIjDataParams(SoyFileNode node) {
     Map<String, SoyType> params = new LinkedHashMap<>();
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : node.getTemplates()) {
       for (TemplateParam param : template.getInjectedParams()) {
         SoyType oldType = params.put(param.name(), param.type());
         if (oldType != null) {
@@ -491,7 +491,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     SortedSet<String> requiredCssNamespaces = new TreeSet<>();
     requiredCssNamespaces.addAll(soyFile.getRequiredCssNamespaces());
-    for (TemplateNode template : soyFile.getChildren()) {
+    for (TemplateNode template : soyFile.getTemplates()) {
       requiredCssNamespaces.addAll(template.getRequiredCssNamespaces());
     }
 
@@ -587,7 +587,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private void addJsDocToProvideDelTemplates(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> delTemplateNames = new TreeSet<>();
-    for (TemplateNode template : soyFile.getChildren()) {
+    for (TemplateNode template : soyFile.getTemplates()) {
       if (template instanceof TemplateDelegateNode) {
         delTemplateNames.add(delTemplateNamer.getDelegateName((TemplateDelegateNode) template));
       }

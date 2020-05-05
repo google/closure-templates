@@ -38,7 +38,7 @@ final class CallAnnotationPass implements CompilerFileSetPass {
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
-      for (TemplateNode template : file.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
         new KeyGenerator(template.getTemplateName()).exec(template);
       }
     }

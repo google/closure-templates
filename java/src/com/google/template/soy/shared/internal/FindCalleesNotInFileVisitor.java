@@ -22,6 +22,7 @@ import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -63,7 +64,7 @@ public final class FindCalleesNotInFileVisitor extends AbstractSoyNodeVisitor<Se
   @Override
   protected void visitSoyFileNode(SoyFileNode node) {
     templatesInFile = new LinkedHashSet<>();
-    for (TemplateNode template : node.getChildren()) {
+    for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class)) {
       templatesInFile.add(template.getTemplateName());
     }
 

@@ -130,7 +130,7 @@ public final class RawTextNodeTest {
                 ErrorReporter.exploding())
             .parseSoyFile();
     if (node != null) {
-      return node.getChild(0);
+      return (TemplateNode) node.getChild(0);
     }
     return null;
   }

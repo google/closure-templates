@@ -1730,7 +1730,7 @@ public final class ContextualAutoescaperTest {
             + "foo()"
             + "\n{/template}";
 
-    TemplateNode mainTemplate = rewrite(source).getChild(0);
+    TemplateNode mainTemplate = (TemplateNode) rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(3);
@@ -1760,7 +1760,7 @@ public final class ContextualAutoescaperTest {
             + "Hello World"
             + "\n{/deltemplate}";
 
-    TemplateNode mainTemplate = rewrite(source).getChild(0);
+    TemplateNode mainTemplate = (TemplateNode) rewrite(source).getChild(0);
     assertWithMessage("Sanity check").that(mainTemplate.getTemplateName()).isEqualTo("ns.main");
     final List<CallNode> callNodes = SoyTreeUtils.getAllNodesOfType(mainTemplate, CallNode.class);
     assertThat(callNodes).hasSize(2);
