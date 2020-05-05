@@ -655,6 +655,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *   ...
    * };
    * if (goog.DEBUG) {
+   *   /** @type {string} * /
    *   my.namespace.func.soyTemplateName = 'my.namespace.func';
    * }
    * </pre>
@@ -726,7 +727,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     declarations.add(
         ifStatement(
                 GOOG_DEBUG,
-                assign(aliasExp.dotAccess("soyTemplateName"), stringLiteral(templateName)))
+                assign(
+                    aliasExp.dotAccess("soyTemplateName"),
+                    stringLiteral(templateName),
+                    JsDoc.builder().addParameterizedAnnotation("type", "string").build()))
             .build());
 
     // ------ If delegate template, generate a statement to register it. ------
