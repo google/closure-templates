@@ -4645,8 +4645,14 @@ goog.uri.utils.buildFromEncodedParts = function(opt_scheme, opt_userInfo, opt_do
 };
 goog.uri.utils.splitRe_ = /^(?:([^:/?#.]+):)?(?:\/\/(?:([^\\/?#]*)@)?([^\\/?#]*?)(?::([0-9]+))?(?=[\\/?#]|$))?([^?#]+)?(?:\?([^#]*))?(?:#([\s\S]*))?$/;
 goog.uri.utils.ComponentIndex = {SCHEME:1, USER_INFO:2, DOMAIN:3, PORT:4, PATH:5, QUERY_DATA:6, FRAGMENT:7};
+goog.uri.utils.urlPackageSupportLoggingHandler_ = null;
+goog.uri.utils.setUrlPackageSupportLoggingHandler = function(handler) {
+  goog.uri.utils.urlPackageSupportLoggingHandler_ = handler;
+};
 goog.uri.utils.split = function(uri) {
-  return uri.match(goog.uri.utils.splitRe_);
+  var result = uri.match(goog.uri.utils.splitRe_);
+  goog.uri.utils.urlPackageSupportLoggingHandler_ && 0 <= ["http", "https", "ws", "wss", "ftp"].indexOf(result[goog.uri.utils.ComponentIndex.SCHEME]) && goog.uri.utils.urlPackageSupportLoggingHandler_(uri);
+  return result;
 };
 goog.uri.utils.decodeIfPossible_ = function(uri, opt_preserveReserved) {
   return uri ? opt_preserveReserved ? decodeURI(uri) : decodeURIComponent(uri) : uri;
