@@ -6,7 +6,7 @@
  */
 goog.module('google3.javascript.template.soy.api_idom');
 var module = module || { id: 'javascript/template/soy/api_idom.js' };
-var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib_closure');
+var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib');
 var tsickle_module_1_ = goog.require('soy.velog'); // from //javascript/template/soy:soyutils_velog
 var goog_soy_velog_1 = tsickle_module_1_; // from //javascript/template/soy:soyutils_velog
 var incrementaldom = goog.require('google3.third_party.javascript.incremental_dom.index'); // from //third_party/javascript/incremental_dom:incrementaldom

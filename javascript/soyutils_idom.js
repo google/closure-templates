@@ -17,7 +17,7 @@
 /** @fileoverview @suppress {lintChecks} */
 goog.module('google3.javascript.template.soy.soyutils_idom');
 var module = module || { id: 'javascript/template/soy/soyutils_idom.js' };
-var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib_closure');
+var tslib_1 = goog.require('google3.third_party.javascript.tslib.tslib');
 var googSoy = goog.require('goog.soy'); // from //javascript/closure/soy
 var goog_goog_soy_data_SanitizedContent_1 = goog.require('goog.soy.data.SanitizedContent');  // from //javascript/closure/soy:data
 var goog_goog_soy_data_SanitizedContentKind_1 = goog.require('goog.soy.data.SanitizedContentKind'); // from //javascript/closure/soy:data
