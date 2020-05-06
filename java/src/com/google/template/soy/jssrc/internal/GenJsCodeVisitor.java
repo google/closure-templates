@@ -102,6 +102,7 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -1478,7 +1479,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // is not in the current compilation file set.
     IndirectParamsInfo ipi =
         new IndirectParamsCalculator(templateRegistry)
-            .calculateIndirectParams(templateRegistry.getMetadata(node));
+            .calculateIndirectParams(
+                TemplateSignature.fromTemplateMetadata(templateRegistry.getMetadata(node)));
     // If there are any calls outside of the file set, then we can't know
     // the complete types of any indirect params. In such a case, we can simply
     // omit the indirect params from the function type signature, since record

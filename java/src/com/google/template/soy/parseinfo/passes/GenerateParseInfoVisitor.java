@@ -59,6 +59,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -483,7 +484,8 @@ public final class GenerateParseInfoVisitor
     TemplateMetadata nodeMetadata = templateRegistry.getMetadata(node);
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
-        new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(nodeMetadata);
+        new IndirectParamsCalculator(templateRegistry)
+            .calculateIndirectParams(TemplateSignature.fromTemplateMetadata(nodeMetadata));
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
     String upperUnderscoreName =

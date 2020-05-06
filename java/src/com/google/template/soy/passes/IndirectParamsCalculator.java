@@ -26,9 +26,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.DataAllCallSituation;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.types.SoyType;
 import java.util.HashSet;
 import java.util.Map;
@@ -183,7 +183,7 @@ public final class IndirectParamsCalculator {
     this.templateRegistry = checkNotNull(templateRegistry);
   }
 
-  public IndirectParamsInfo calculateIndirectParams(TemplateMetadata template) {
+  public IndirectParamsInfo calculateIndirectParams(TemplateSignature template) {
 
     visitedCallSituations = Sets.newHashSet();
     indirectParams = Maps.newHashMap();
@@ -202,11 +202,11 @@ public final class IndirectParamsCalculator {
   }
 
   private void visit(
-      TemplateMetadata template, Set<String> allCallParamKeys, Set<TemplateMetadata> allCallers) {
+      TemplateSignature template, Set<String> allCallParamKeys, Set<TemplateSignature> allCallers) {
     if (!allCallers.add(template)) {
       return;
     }
-    for (DataAllCallSituation call : template.getDataAllCallSituations()) {
+    for (TemplateSignature.DataAllCallSituation call : template.getDataAllCallSituations()) {
       // only construct a new set if we are adding more parameters.
       // ideally we would use some kind of persistent datastructure, but this is probably fine since
       // the sets are small.
@@ -242,11 +242,12 @@ public final class IndirectParamsCalculator {
   }
 
   private void processCall(
-      TemplateMetadata caller,
+      TemplateSignature caller,
       TemplateMetadata callee,
       Set<String> allCallParamKeys,
-      Set<TemplateMetadata> allCallers) {
-    if (caller.equals(callee) || allCallers.contains(callee)) {
+      Set<TemplateSignature> allCallers) {
+    TemplateSignature calleeSignature = TemplateSignature.fromTemplateMetadata(callee);
+    if (caller.equals(calleeSignature) || allCallers.contains(calleeSignature)) {
       // We never recursive calls to bring in an indirect param.
       return;
     }
@@ -264,6 +265,6 @@ public final class IndirectParamsCalculator {
     if (!visitedCallSituations.add(transitiveCallSituation)) {
       return;
     }
-    visit(callee, allCallParamKeys, allCallers);
+    visit(calleeSignature, allCallParamKeys, allCallers);
   }
 }

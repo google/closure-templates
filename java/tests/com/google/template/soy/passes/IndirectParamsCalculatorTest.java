@@ -22,6 +22,7 @@ import com.google.common.collect.Multimap;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Map;
 import org.junit.Test;
@@ -138,7 +139,9 @@ public final class IndirectParamsCalculatorTest {
     TemplateMetadata b3 = registry.getBasicTemplateOrElement("beta.three");
     TemplateMetadata b4 = registry.getBasicTemplateOrElement("beta.four");
 
-    IndirectParamsInfo ipi = new IndirectParamsCalculator(registry).calculateIndirectParams(a0);
+    IndirectParamsInfo ipi =
+        new IndirectParamsCalculator(registry)
+            .calculateIndirectParams(TemplateSignature.fromTemplateMetadata(a0));
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 

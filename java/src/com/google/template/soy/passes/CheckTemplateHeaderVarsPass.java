@@ -35,6 +35,7 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import java.util.ArrayList;
@@ -109,7 +110,8 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
 
     IndirectParamsInfo ipi =
         new IndirectParamsCalculator(templateRegistry)
-            .calculateIndirectParams(templateRegistry.getMetadata(node));
+            .calculateIndirectParams(
+                TemplateSignature.fromTemplateMetadata(templateRegistry.getMetadata(node)));
 
     // Check for naming collisions between @inject in this template and @param in a data=all callee
     for (TemplateHeaderVarDefn param : node.getInjectedParams()) {
