@@ -7621,6 +7621,114 @@ goog.dom.tags.isVoidTag = function(tagName) {
   return goog.dom.tags.VOID_TAGS_[tagName] === true;
 };
 
+//third_party/javascript/closure/memoize/memoize.js
+/**
+ * @license
+ * Copyright The Closure Library Authors.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Tool for caching the result of expensive deterministic
+ * functions.
+ *
+ * @see http://en.wikipedia.org/wiki/Memoization
+ */
+
+goog.provide('goog.memoize');
+
+
+/**
+ * Decorator around functions that caches the inner function's return values.
+ *
+ * To cache parameterless functions, see goog.functions.cacheReturnValue.
+ *
+ * @param {Function} f The function to wrap. Its return value may only depend
+ *     on its arguments and 'this' context. There may be further restrictions
+ *     on the arguments depending on the capabilities of the serializer used.
+ * @param {function(number, Object): string=} opt_serializer A function to
+ *     serialize f's arguments. It must have the same signature as
+ *     goog.memoize.simpleSerializer. It defaults to that function.
+ * @return {!Function} The wrapped function.
+ */
+goog.memoize = function(f, opt_serializer) {
+  const serializer = opt_serializer || goog.memoize.simpleSerializer;
+
+  return (/**
+           * @this {Object} The object whose function is being wrapped.
+           * @return {?} the return value of the original function.
+           */
+          function() {
+            if (goog.memoize.ENABLE_MEMOIZE) {
+              // In the strict mode, when this function is called as a global
+              // function, the value of 'this' is undefined instead of a global
+              // object. See:
+              // https://developer.mozilla.org/en/JavaScript/Strict_mode
+              // Otherwise, if memoize wraps a method of an object, `this` will
+              // be the context object, causing memoize to cache its values on
+              // the object instance, instead of on the global object.
+              // This (ha!) is a very surprising API, but retained for backwards
+              // compatibility.
+              const thisOrGlobal = this || goog.global;
+              // Maps the serialized list of args to the corresponding return
+              // value.
+              const cache = thisOrGlobal[goog.memoize.CACHE_PROPERTY_] ||
+                  (thisOrGlobal[goog.memoize.CACHE_PROPERTY_] = {});
+              const key = serializer(goog.getUid(f), arguments);
+              return cache.hasOwnProperty(key) ?
+                  cache[key] :
+                  (cache[key] = f.apply(this, arguments));
+            } else {
+              return f.apply(this, arguments);
+            }
+          });
+};
+
+
+/**
+ * @define {boolean} Flag to disable memoization in unit tests.
+ */
+goog.memoize.ENABLE_MEMOIZE = goog.define('goog.memoize.ENABLE_MEMOIZE', true);
+
+
+/**
+ * Clears the memoization cache on the given object.
+ * @param {Object} cacheOwner The owner of the cache. This is the `this`
+ *     context of the memoized function.
+ */
+goog.memoize.clearCache = function(cacheOwner) {
+  cacheOwner[goog.memoize.CACHE_PROPERTY_] = {};
+};
+
+
+/**
+ * Name of the property used by goog.memoize as cache.
+ * @type {string}
+ * @private
+ */
+goog.memoize.CACHE_PROPERTY_ = 'closure_memoize_cache_';
+
+
+/**
+ * Simple and fast argument serializer function for goog.memoize.
+ * Supports string, number, boolean, null and undefined arguments. Doesn't
+ * support \x0B characters in the strings.
+ * @param {number} functionUid Unique identifier of the function whose result
+ *     is cached.
+ * @param {?{length:number}} args The arguments that the function to memoize is
+ *     called with. Note: it is an array-like object, because it supports
+ *     indexing and has the length property.
+ * @return {string} The list of arguments with type information concatenated
+ *     with the functionUid argument, serialized as \x0B-separated string.
+ */
+goog.memoize.simpleSerializer = function(functionUid, args) {
+  const context = [functionUid];
+  for (let i = args.length - 1; i >= 0; --i) {
+    context.push(typeof args[i], args[i]);
+  }
+  return context.join('\x0B');
+};
+
 //third_party/javascript/closure/html/trustedtypes.js
 /**
  * @license
@@ -7638,12 +7746,22 @@ goog.dom.tags.isVoidTag = function(tagName) {
  */
 
 goog.provide('goog.html.trustedtypes');
+goog.require('goog.memoize');
 
-/** @package @const {?TrustedTypePolicy} */
-goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY =
-    goog.TRUSTED_TYPES_POLICY_NAME ?
-    goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + '#html') :
-    null;
+
+/**
+ * Creates a (singleton) Trusted Type Policy for Safe HTML Types.
+ * @return {?TrustedTypePolicy}
+ * @package
+ */
+goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse = function() {
+  if (!goog.TRUSTED_TYPES_POLICY_NAME) {
+    // Binary not configured for Trusted Types.
+    return null;
+  }
+  return goog.memoize(goog.createTrustedTypesPolicy)(
+      goog.TRUSTED_TYPES_POLICY_NAME + '#html');
+};
 
 //third_party/javascript/closure/string/typedstring.js
 /**
@@ -8153,11 +8271,9 @@ goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse =
  */
 goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
     script) {
+  const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
   this.privateDoNotAccessOrElseSafeScriptWrappedValue_ =
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createScript(
-          script) :
-      script;
+      policy ? policy.createScript(script) : script;
   return this;
 };
 
@@ -8166,8 +8282,15 @@ goog.html.SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
  * A SafeScript instance corresponding to the empty string.
  * @const {!goog.html.SafeScript}
  */
-goog.html.SafeScript.EMPTY =
-    goog.html.SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse('');
+goog.html.SafeScript.EMPTY = /** @type {!goog.html.SafeScript} */ ({
+  // NOTE: this compiles to nothing, but hides the possible side effect of
+  // SafeScript creation (due to calling trustedTypes.createPolicy) from the
+  // compiler so that the entire call can be removed if the result is not used.
+  valueOf: function() {
+    return goog.html.SafeScript
+        .createSafeScriptSecurityPrivateDoNotAccessOrElse('');
+  },
+}.valueOf());
 
 //third_party/javascript/closure/fs/url.js
 /**
@@ -9736,10 +9859,8 @@ goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
  */
 goog.html.TrustedResourceUrl
     .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
-  var value = goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY
-          .createScriptURL(url) :
-      url;
+  const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
+  var value = policy ? policy.createScriptURL(url) : url;
   return new goog.html.TrustedResourceUrl(
       goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_, value);
 };
@@ -13333,6 +13454,22 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
       html, dir);
 };
 
+/**
+ * Package-internal utility method to create SafeHtml instances, skipping
+ * Trusted Type policy. This method exists only so that the compiler can
+ * dead code eliminate static fields (like EMPTY) when they're not accessed.
+ * @param {!TrustedHTML|string} trustedHtml
+ * @return {!goog.html.SafeHtml} The initialized SafeHtml object.
+ * @package
+ */
+goog.html.SafeHtml
+    .createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse = function(
+    trustedHtml) {
+  return new goog.html.SafeHtml()
+      .initSecurityFromTrustedHtmlPrivateDoNotAccessOrElse_(
+          trustedHtml, goog.i18n.bidi.Dir.NEUTRAL);
+};
+
 
 /**
  * Called from createSafeHtmlSecurityPrivateDoNotAccessOrElse(). This
@@ -13345,11 +13482,27 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
  */
 goog.html.SafeHtml.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
     html, dir) {
+  const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
   this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ =
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY ?
-      goog.html.trustedtypes.PRIVATE_DO_NOT_ACCESS_OR_ELSE_POLICY.createHTML(
-          html) :
-      html;
+      policy ? policy.createHTML(html) : html;
+  this.dir_ = dir;
+  return this;
+};
+
+
+/**
+ * Called from createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse().
+ * This method exists only so that the compiler can dead code eliminate static
+ * fields (like EMPTY) when they're not accessed.
+ * @param {!TrustedHTML|string} trustedHtml
+ * @param {?goog.i18n.bidi.Dir} dir
+ * @return {!goog.html.SafeHtml}
+ * @private
+ */
+goog.html.SafeHtml.prototype
+    .initSecurityFromTrustedHtmlPrivateDoNotAccessOrElse_ = function(
+    trustedHtml, dir) {
+  this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = trustedHtml;
   this.dir_ = dir;
   return this;
 };
@@ -13486,27 +13639,54 @@ goog.html.SafeHtml.combineAttributes = function(
  * A SafeHtml instance corresponding to the HTML doctype: "<!DOCTYPE html>".
  * @const {!goog.html.SafeHtml}
  */
-goog.html.SafeHtml.DOCTYPE_HTML =
-    goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
+goog.html.SafeHtml.DOCTYPE_HTML = /** @type {!goog.html.SafeHtml} */ ({
+  // NOTE: this compiles to nothing, but hides the possible side effect of
+  // SafeHtml creation (due to calling trustedTypes.createPolicy) from the
+  // compiler so that the entire call can be removed if the result is not used.
+  // MOE:begin_strip
+  // TODO(b/155299094): Refactor after adding compiler support.
+  // MOE:end_strip
+  valueOf: function() {
+    return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<!DOCTYPE html>', goog.i18n.bidi.Dir.NEUTRAL);
-
+  },
+}.valueOf());
 
 /**
  * A SafeHtml instance corresponding to the empty string.
  * @const {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.EMPTY =
-    goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-        '', goog.i18n.bidi.Dir.NEUTRAL);
+    goog.html.SafeHtml
+        .createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse(
+            // NOTE: This constant uses a different builder function, that
+            // accepts TrustedHTML to avoid creating a Trusted Types policy.
+            // Using trustedTypes.emptyHTML if available, and an empty string if
+            // not. This typecast is safe - if trustedTypes are not available,
+            // policy creation would not happen anyway, and DOM sinks accept
+            // string values.
+            // MOE:begin_strip
+            // TODO(b/155299094): Refactor after adding compiler support.
+            // MOE:end_strip
+            goog.global.trustedTypes ? goog.global.trustedTypes.emptyHTML : '');
 
 
 /**
  * A SafeHtml instance corresponding to the <br> tag.
  * @const {!goog.html.SafeHtml}
  */
-goog.html.SafeHtml.BR =
-    goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
+goog.html.SafeHtml.BR = /** @type {!goog.html.SafeHtml} */ ({
+  // NOTE: this compiles to nothing, but hides the possible side effect of
+  // SafeHtml creation (due to calling trustedTypes.createPolicy) from the
+  // compiler so that the entire call can be removed if the result is not used.
+  // MOE:begin_strip
+  // TODO(b/155299094): Refactor after adding compiler support.
+  // MOE:end_strip
+  valueOf: function() {
+    return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<br>', goog.i18n.bidi.Dir.NEUTRAL);
+  },
+}.valueOf());
 
 //third_party/javascript/closure/html/uncheckedconversions.js
 /**
