@@ -25,6 +25,7 @@ message Proto3Message {
   }
   AnEnum an_enum = 6;
   repeated AnEnum an_enums = 7;
+  map<string, AnEnum> map_enums = 8;
 }
 
 message Proto3ImplicitDefaults {

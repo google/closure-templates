@@ -331,9 +331,12 @@ public final class ProtoSupportTest {
     // in proto2 this is a non-issue since unknown enum values automatically get mapped to 0 when
     // being parsed.
     assertThatTemplateBody(
-            "{@param msg: soy.test.Proto3Message}", "{$msg.anEnum} {$msg.anEnumsList}")
+            "{@param msg: soy.test.Proto3Message}",
+            "{$msg.anEnum} {$msg.anEnumsList}"
+            )
         .rendersAs(
-            "11 [12, 13]",
+            "11 [12, 13]"
+                + "",
             ImmutableMap.of(
                 "msg",
                 Proto3Message.newBuilder()
