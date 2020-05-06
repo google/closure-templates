@@ -360,6 +360,12 @@ class Logger {
    * @return {string} The evaluated return value that will be shown in the DOM.
    */
   evalLoggingFunction(name, args) {}
+
+  /**
+   * Resets the logger so that subsequent logging calls will use the provided
+   * builder (if set), or a new, separate VE tree builder.
+   */
+  resetBuilder() {}
 }
 
 /** The ID of the UndefinedVe. */
