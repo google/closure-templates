@@ -212,6 +212,11 @@ final class ProtoUtils {
         .generate();
   }
 
+  static SoyExpression hasserField(SoyExpression baseExpr, String fieldName) {
+    SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
+    return new HasserGenerator(protoType, baseExpr, fieldName).generate();
+  }
+
   /**
    * Returns a {@link SoyExpression} for accessing an extension field of a proto using the {@code
    * getExtension} method.
@@ -226,13 +231,38 @@ final class ProtoUtils {
         .generate();
   }
 
+  private abstract static class BaseGenerator {
+
+    final SoyRuntimeType unboxedRuntimeType;
+    final SoyExpression baseExpr;
+
+    public BaseGenerator(SoyRuntimeType unboxedRuntimeType, SoyExpression baseExpr) {
+      this.unboxedRuntimeType = unboxedRuntimeType;
+      this.baseExpr = baseExpr;
+    }
+
+    SoyExpression getTypedBaseExpression() {
+      if (baseExpr.isBoxed()) {
+        return SoyExpression.forProto(
+            unboxedRuntimeType,
+            baseExpr
+                .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
+                // this cast is required because getProto() is generic, so it basically returns
+                // 'Message'
+                .checkedCast(unboxedRuntimeType.runtimeType()));
+      } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
+        return baseExpr;
+      } else {
+        throw new AssertionError("should be impossible");
+      }
+    }
+  }
+
   /**
    * A simple class to encapsulate all the parameters shared between our different accessor
    * generation strategies
    */
-  private static final class AccessorGenerator {
-    final SoyRuntimeType unboxedRuntimeType;
-    final SoyExpression baseExpr;
+  private static final class AccessorGenerator extends BaseGenerator {
     final SoyType fieldType;
     final String fieldName;
     final FieldDescriptor descriptor;
@@ -244,8 +274,7 @@ final class ProtoUtils {
         String fieldName,
         SoyType fieldType,
         boolean useBrokenSemantics) {
-      this.unboxedRuntimeType = SoyRuntimeType.getUnboxedType(protoType).get();
-      this.baseExpr = baseExpr;
+      super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
       this.fieldName = fieldName;
       this.fieldType = fieldType;
       this.descriptor = protoType.getFieldDescriptor(fieldName);
@@ -260,22 +289,7 @@ final class ProtoUtils {
         return handleRepeated();
       }
 
-      SoyExpression typedBaseExpr;
-      if (baseExpr.isBoxed()) {
-        typedBaseExpr =
-            SoyExpression.forProto(
-                unboxedRuntimeType,
-                baseExpr
-                    .invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO)
-                    // this cast is required because getProto() is generic, so it basically returns
-                    // 'Message'
-                    .checkedCast(unboxedRuntimeType.runtimeType()));
-      } else if (baseExpr.soyRuntimeType().equals(unboxedRuntimeType)) {
-        typedBaseExpr = baseExpr;
-      } else {
-        throw new AssertionError("should be impossible");
-      }
-
+      SoyExpression typedBaseExpr = getTypedBaseExpression();
       if (descriptor.isExtension()) {
         return handleExtension(typedBaseExpr);
       } else {
@@ -595,11 +609,39 @@ final class ProtoUtils {
     }
   }
 
+  private static final class HasserGenerator extends BaseGenerator {
+
+    final String fieldName;
+    final FieldDescriptor descriptor;
+
+    HasserGenerator(SoyProtoType protoType, SoyExpression baseExpr, String fieldName) {
+      super(SoyRuntimeType.getUnboxedType(protoType).get(), baseExpr);
+      this.fieldName = fieldName;
+      this.descriptor = protoType.getFieldDescriptor(fieldName);
+    }
+
+    SoyExpression generate() {
+      SoyExpression typedBaseExpr = getTypedBaseExpression();
+
+      if (descriptor.isExtension()) {
+        throw new AssertionError("extensions don't have hassers: " + descriptor);
+      } else if (descriptor.isRepeated()) {
+        throw new AssertionError("repeated fields don't have hassers: " + descriptor);
+      } else {
+        return handleNormalField(typedBaseExpr);
+      }
+    }
+
+    private SoyExpression handleNormalField(SoyExpression typedBaseExpr) {
+      MethodRef hasMethodRef = getHasserMethod(descriptor);
+      return SoyExpression.forBool(typedBaseExpr.invoke(hasMethodRef));
+    }
+  }
+
   /**
    * Returns a {@link SoyExpression} for initializing a new proto.
    *
    * @param node The proto initialization node
-   * @param args Args for the proto initialization call
    * @param varManager Local variables manager
    */
   static SoyExpression createProto(

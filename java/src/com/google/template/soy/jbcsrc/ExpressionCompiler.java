@@ -1119,6 +1119,9 @@ final class ExpressionCompiler {
                 node,
                 BuiltinMethod.getProtoExtensionIdFromMethodCall(node),
                 /* useBrokenSemantics= */ true);
+          case HAS_PROTO_FIELD:
+            return ProtoUtils.hasserField(
+                baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node));
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         // TODO(user): If baseExpr evaluates to null then this should fail rather than calling

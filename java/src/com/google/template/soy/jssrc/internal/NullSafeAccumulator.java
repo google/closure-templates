@@ -285,13 +285,22 @@ final class NullSafeAccumulator {
     }
   }
 
-  private static final class ProtoDotCall extends DotCall {
+  private static final class ProtoDotCall extends ChainAccess {
 
     private final ProtoCall protoCall;
 
-    public ProtoDotCall(boolean nullSafe, boolean assertNonNull, ProtoCall protoCall) {
-      super(protoCall.getter(), protoCall.getterArg(), nullSafe, assertNonNull);
+    ProtoDotCall(boolean nullSafe, boolean assertNonNull, ProtoCall protoCall) {
+      super(nullSafe, assertNonNull);
       this.protoCall = protoCall;
+    }
+
+    @Override
+    Expression extend(Expression prevTip) {
+      Expression arg = protoCall.getterArg();
+      String getter = protoCall.getter();
+      Expression result =
+          arg == null ? prevTip.dotAccess(getter).call() : prevTip.dotAccess(getter).call(arg);
+      return result;
     }
 
     @Override
@@ -333,7 +342,7 @@ final class NullSafeAccumulator {
     }
 
     static FieldAccess protoCall(String fieldName, FieldDescriptor desc) {
-      return ProtoCall.create(fieldName, desc);
+      return ProtoCall.getField(fieldName, desc);
     }
   }
 
@@ -363,6 +372,21 @@ final class NullSafeAccumulator {
   @AutoValue
   abstract static class ProtoCall extends FieldAccess {
 
+    private enum Type {
+      GET("get"),
+      HAS("has");
+
+      private final String prefix;
+
+      Type(String prefix) {
+        this.prefix = prefix;
+      }
+
+      public String getPrefix() {
+        return prefix;
+      }
+    }
+
     abstract String getter();
 
     @Nullable
@@ -388,18 +412,36 @@ final class NullSafeAccumulator {
     @Nullable
     abstract Expression unpackFunction();
 
-    static ProtoCall create(String fieldName, FieldDescriptor desc) {
+    static ProtoCall getField(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.GET);
+    }
+
+    static ProtoCall hasField(String fieldName, FieldDescriptor desc) {
+      return accessor(fieldName, desc, Type.HAS);
+    }
+
+    private static ProtoCall accessor(String fieldName, FieldDescriptor desc, Type prefix) {
       String getter;
       Expression arg;
-      if (desc.isExtension()) {
-        getter = "getExtension";
-        arg = extensionField(desc);
-      } else {
-        getter = "get" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
-        arg = null;
+      Expression unpackFunction = null;
+
+      if (desc.isExtension() && Type.HAS == prefix) {
+        // JSPB doesn't have hasExtension().
+        throw new IllegalArgumentException("hasExtension() not implemented");
+      } else if (Type.HAS == prefix && desc.getType() == FieldDescriptor.Type.MESSAGE) {
+        // JSPB doesn't have hassers for submessages.
+        throw new IllegalArgumentException("Submessage hasser not implemented");
+      } else if (Type.GET == prefix) {
+        unpackFunction = getUnpackFunction(desc);
       }
 
-      Expression unpackFunction = getUnpackFunction(desc);
+      if (desc.isExtension()) {
+        getter = prefix.getPrefix() + "Extension";
+        arg = extensionField(desc);
+      } else {
+        getter = prefix.getPrefix() + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
+        arg = null;
+      }
 
       return new AutoValue_NullSafeAccumulator_ProtoCall(
           getter, arg, unpackFunction == null ? null : AccessType.get(desc), unpackFunction);

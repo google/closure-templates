@@ -29,6 +29,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -97,7 +99,6 @@ import com.google.template.soy.shared.internal.ResolvedSignature;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethod;
-import com.google.template.soy.shared.restricted.SoyMethod.Registry;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
@@ -154,7 +155,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /**
@@ -1004,6 +1004,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               node.setType(ErrorType.getInstance());
             }
             break;
+          default:
+            node.setType(builtinMethod.getReturnType(node));
         }
       } else if (method instanceof SoySourceFunctionMethod) {
         node.setType(((SoySourceFunctionMethod) method).getReturnType());
@@ -1038,6 +1040,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             extraErrorMessage);
         return false;
       }
+
       return true;
     }
 
@@ -1097,16 +1100,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         errorReporter.report(srcLoc, METHOD_INVALID_PARAM_TYPES, methodName, actual, expected);
       } else {
         String didYouMean = "";
-        ImmutableList<? extends SoyMethod> matching =
-            methodRegistry.matchForBaseAndArgs(baseType, argTypes);
+        Set<String> matching =
+            new HashSet<>(methodRegistry.matchForBaseAndArgs(baseType, argTypes).values());
         if (!matching.isEmpty()) {
-          didYouMean =
-              SoyErrors.getDidYouMeanMessage(
-                  matching.stream()
-                      .map(SoyMethod::getMethodName)
-                      .filter(s -> !s.isEmpty())
-                      .collect(Collectors.toSet()),
-                  methodName);
+          didYouMean = SoyErrors.getDidYouMeanMessage(matching, methodName);
         }
         // We did not match base type and method name. No method found.
         errorReporter.report(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
@@ -2441,7 +2438,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final class CompositeMethodRegistry implements SoyMethod.Registry {
     private final List<SoyMethod.Registry> registries;
 
-    public CompositeMethodRegistry(List<Registry> registries) {
+    public CompositeMethodRegistry(List<SoyMethod.Registry> registries) {
       this.registries = registries;
     }
 
@@ -2454,11 +2451,11 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     @Override
-    public ImmutableList<? extends SoyMethod> matchForBaseAndArgs(
+    public ImmutableMultimap<SoyMethod, String> matchForBaseAndArgs(
         SoyType baseType, List<SoyType> argTypes) {
-      return registries.stream()
-          .flatMap(r -> r.matchForBaseAndArgs(baseType, argTypes).stream())
-          .collect(toImmutableList());
+      ImmutableListMultimap.Builder<SoyMethod, String> combined = ImmutableListMultimap.builder();
+      registries.forEach(r -> combined.putAll(r.matchForBaseAndArgs(baseType, argTypes)));
+      return combined.build();
     }
   }
 
@@ -2517,12 +2514,20 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     @Override
-    public ImmutableList<? extends SoyMethod> matchForBaseAndArgs(
+    public ImmutableMultimap<SoyMethod, String> matchForBaseAndArgs(
         SoyType baseType, List<SoyType> argTypes) {
-      return plugins.getAllMethodNames().stream()
-          .flatMap(methodName -> methodCache.getUnchecked(methodName).stream())
-          .filter(m -> m.appliesToBase(baseType) && m.getNumArgs() == argTypes.size())
-          .collect(toImmutableList());
+      ImmutableListMultimap.Builder<SoyMethod, String> builder = ImmutableListMultimap.builder();
+      plugins
+          .getAllMethodNames()
+          .forEach(
+              methodName -> {
+                for (SoySourceFunctionMethod m : methodCache.getUnchecked(methodName)) {
+                  if (m.appliesToBase(baseType) && m.getNumArgs() == argTypes.size()) {
+                    builder.put(m, methodName);
+                  }
+                }
+              });
+      return builder.build();
     }
   }
 }

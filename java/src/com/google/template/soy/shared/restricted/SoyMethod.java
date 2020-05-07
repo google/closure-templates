@@ -17,6 +17,7 @@
 package com.google.template.soy.shared.restricted;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
 
@@ -36,15 +37,22 @@ public interface SoyMethod {
   /** Returns whether this method can be passed args of type {@code argTypes}. */
   boolean appliesToArgs(List<SoyType> argTypes);
 
-  /** May return empty string if the method has no one exact name. */
-  String getMethodName();
-
   /** A queryable registry of soy methods. */
   interface Registry {
 
     ImmutableList<? extends SoyMethod> matchForNameAndBase(String methodName, SoyType baseType);
 
-    ImmutableList<? extends SoyMethod> matchForBaseAndArgs(
+    /**
+     * Returns a set of all {method, name} tuples that match the base type and arg types. This is
+     * exclusively used for "did you mean" compiler error hints. The method (multimap key) is the
+     * SoyMethod that implements the matching method while the name (multimap value) is the
+     * identifier by which the method would be called.
+     *
+     * <p>Note that a single {@link SoyMethod} may be known by multiple (or an infinite number of)
+     * names, and that these names may be constrained by the base and arg types, which is why the
+     * return value is a multimap.
+     */
+    ImmutableMultimap<SoyMethod, String> matchForBaseAndArgs(
         SoyType baseType, List<SoyType> argTypes);
   }
 }

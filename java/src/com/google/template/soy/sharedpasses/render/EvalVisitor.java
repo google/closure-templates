@@ -570,6 +570,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
               .getProtoField(
                   BuiltinMethod.getProtoExtensionIdFromMethodCall(methodNode),
                   /* useBrokenProtoSemantics= */ true);
+        case HAS_PROTO_FIELD:
+          return BooleanData.forValue(
+              ((SoyProtoValue) base)
+                  .hasProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode)));
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;

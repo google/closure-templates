@@ -530,7 +530,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         case GET_EXTENSION:
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
           return base.dotAccess(
-              ProtoCall.create(extName, baseType.getFieldDescriptor(extName)),
+              ProtoCall.getField(extName, baseType.getFieldDescriptor(extName)),
+              nullSafe,
+              assertNonNull);
+        case HAS_PROTO_FIELD:
+          String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
+          return base.dotAccess(
+              ProtoCall.hasField(fieldName, baseType.getFieldDescriptor(fieldName)),
               nullSafe,
               assertNonNull);
       }
