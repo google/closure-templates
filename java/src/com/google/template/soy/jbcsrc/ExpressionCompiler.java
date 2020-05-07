@@ -1504,6 +1504,7 @@ final class ExpressionCompiler {
         case STATE:
           return false;
         case UNDECLARED:
+        case IMPORT_VAR:
           break;
       }
       throw new AssertionError();

@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -139,6 +140,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return this.getChildren().stream()
         .filter(c -> c instanceof TemplateNode)
         .map(c -> (TemplateNode) c)
+        .collect(ImmutableList.toImmutableList());
+  }
+
+  public ImmutableList<ImportNode> getImports() {
+    // No need to look recursively since we know these are all top level.
+    return this.getChildren().stream()
+        .filter(c -> c instanceof ImportNode)
+        .map(c -> (ImportNode) c)
         .collect(ImmutableList.toImmutableList());
   }
 

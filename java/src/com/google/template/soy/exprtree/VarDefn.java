@@ -38,6 +38,9 @@ public interface VarDefn {
     // Local variable
     LOCAL_VAR,
 
+    // imported symbol
+    IMPORT_VAR,
+
     // List/map comprehension var.
     COMPREHENSION_VAR,
 

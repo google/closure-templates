@@ -220,7 +220,6 @@ final class ParseErrors {
         return "{key";
       case SoyFileParserConstants.CMD_BEGIN_VELOG:
         return "{velog";
-
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.IDENT:
         return "identifier";

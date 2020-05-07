@@ -16,16 +16,12 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import java.util.List;
 
@@ -35,10 +31,10 @@ import java.util.List;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class ImportNode extends AbstractSoyNode implements ExprHolderNode {
+public final class ImportNode extends AbstractSoyNode {
 
   /** The value expression that the variable is set to. */
-  private final List<ExprRootNode> identifiers;
+  private final List<VarDefn> identifiers;
 
   private final StringNode path;
 
@@ -47,9 +43,9 @@ public final class ImportNode extends AbstractSoyNode implements ExprHolderNode 
     CSS
   }
 
-  public ImportNode(int id, SourceLocation location, StringNode path, List<GlobalNode> exprs) {
+  public ImportNode(int id, SourceLocation location, StringNode path, List<VarDefn> defns) {
     super(id, location);
-    this.identifiers = exprs.stream().map(ExprRootNode::new).collect(toImmutableList());
+    this.identifiers = defns;
     this.path = path;
   }
 
@@ -60,8 +56,7 @@ public final class ImportNode extends AbstractSoyNode implements ExprHolderNode 
    */
   private ImportNode(ImportNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.identifiers =
-        orig.identifiers.stream().map(o -> o.copy(copyState)).collect(toImmutableList());
+    this.identifiers = orig.identifiers;
     this.path = orig.path.copy(copyState);
   }
 
@@ -71,17 +66,12 @@ public final class ImportNode extends AbstractSoyNode implements ExprHolderNode 
   }
 
   @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    return ImmutableList.copyOf(this.identifiers);
-  }
-
-  @Override
   public ImportNode copy(CopyState copyState) {
     return new ImportNode(this, copyState);
   }
 
   public boolean isSideEffectImport() {
-    return getExprList().isEmpty();
+    return identifiers.isEmpty();
   }
 
   private ImportType getImportType() {
@@ -108,8 +98,7 @@ public final class ImportNode extends AbstractSoyNode implements ExprHolderNode 
     if (!identifiers.isEmpty()) {
       exprs =
           String.format(
-              "{%s} from ",
-              identifiers.stream().map(ExprRootNode::toSourceString).collect(joining(",")));
+              "{%s} from ", identifiers.stream().map(VarDefn::name).collect(joining(",")));
     }
     return String.format("import %s'%s'", exprs, path.getValue());
   }

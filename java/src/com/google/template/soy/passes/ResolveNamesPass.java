@@ -218,6 +218,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
     switch (varDefn.kind()) {
       case PARAM:
       case STATE:
+      case IMPORT_VAR:
         return Optional.of(varDefn.nameLocation());
       case LOCAL_VAR:
         return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());

@@ -67,6 +67,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         throw new AssertionError("state should have been desugared");
       case COMPREHENSION_VAR:
         return visitListComprehensionVar(node, (ComprehensionVarDefn) defn);
+      case IMPORT_VAR:
+        throw new IllegalStateException("import vars are not implemented yet");
       case UNDECLARED:
         throw new RuntimeException("undeclared params are not supported by jbcsrc");
     }
