@@ -6868,12 +6868,10 @@ goog.i18n.NumberFormat.prototype.format = function(number) {
   }
   var parts = [], unit = this.getUnitAfterRounding_(null === this.baseFormattingNumber_ ? number : this.baseFormattingNumber_, number);
   number = goog.i18n.NumberFormat.decimalShift_(number, -unit.divisorBase);
-  parts.push(unit.prefix);
   var isNegative = 0.0 > number || 0.0 == number && 0.0 > 1 / number;
-  parts.push(isNegative ? this.negativePrefix_ : this.positivePrefix_);
+  isNegative ? unit.negative_prefix ? parts.push(unit.negative_prefix) : (parts.push(unit.prefix), parts.push(this.negativePrefix_)) : (parts.push(unit.prefix), parts.push(this.positivePrefix_));
   isFinite(number) ? (number = number * (isNegative ? -1 : 1) * this.multiplier_, this.useExponentialNotation_ ? this.subformatExponential_(number, parts) : this.subformatFixed_(number, this.minimumIntegerDigits_, parts)) : parts.push(this.getNumberFormatSymbols_().INFINITY);
-  parts.push(isNegative ? this.negativeSuffix_ : this.positiveSuffix_);
-  parts.push(unit.suffix);
+  isNegative ? unit.negative_suffix ? parts.push(unit.negative_suffix) : (parts.push(unit.suffix), parts.push(this.negativeSuffix_)) : (parts.push(unit.suffix), parts.push(this.positiveSuffix_));
   return parts.join("");
 };
 goog.i18n.NumberFormat.prototype.roundNumber_ = function(number) {
@@ -7124,7 +7122,7 @@ goog.i18n.NumberFormat.prototype.parseTrunk_ = function(pattern, pos) {
   this.groupingArray_.push(Math.max(0, groupingCount));
   this.decimalSeparatorAlwaysShown_ = 0 == decimalPos || decimalPos == totalDigits;
 };
-goog.i18n.NumberFormat.NULL_UNIT_ = {prefix:"", suffix:"", divisorBase:0};
+goog.i18n.NumberFormat.NULL_UNIT_ = {divisorBase:0, negative_prefix:"", negative_suffix:"", prefix:"", suffix:""};
 goog.i18n.NumberFormat.prototype.getUnitFor_ = function(base, plurality) {
   var table = this.compactStyle_ == goog.i18n.NumberFormat.CompactStyle.SHORT ? goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_SHORT_PATTERN : goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_LONG_PATTERN;
   null == table && (table = goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_SHORT_PATTERN);
@@ -7139,12 +7137,17 @@ goog.i18n.NumberFormat.prototype.getUnitFor_ = function(base, plurality) {
   if (!patterns) {
     return goog.i18n.NumberFormat.NULL_UNIT_;
   }
-  var pattern = patterns[plurality];
+  var pattern = patterns[plurality], neg_prefix = "", neg_suffix = "", index_of_neg_part = pattern.indexOf(";"), neg_pattern;
+  if (0 <= index_of_neg_part && (pattern = pattern.substring(0, index_of_neg_part), neg_pattern = pattern.substring(index_of_neg_part + 1))) {
+    var neg_parts = /([^0]*)(0+)(.*)/.exec(neg_pattern);
+    neg_prefix = neg_parts[1];
+    neg_suffix = neg_parts[3];
+  }
   if (!pattern || "0" == pattern) {
     return goog.i18n.NumberFormat.NULL_UNIT_;
   }
   var parts = /([^0]*)(0+)(.*)/.exec(pattern);
-  return parts ? {prefix:parts[1], suffix:parts[3], divisorBase:previousNonNullBase + 1 - (parts[2].length - 1)} : goog.i18n.NumberFormat.NULL_UNIT_;
+  return parts ? {divisorBase:previousNonNullBase + 1 - (parts[2].length - 1), negative_prefix:neg_prefix, negative_suffix:neg_suffix, prefix:parts[1], suffix:parts[3]} : goog.i18n.NumberFormat.NULL_UNIT_;
 };
 goog.i18n.NumberFormat.prototype.getUnitAfterRounding_ = function(formattingNumber, pluralityNumber) {
   if (this.compactStyle_ == goog.i18n.NumberFormat.CompactStyle.NONE) {

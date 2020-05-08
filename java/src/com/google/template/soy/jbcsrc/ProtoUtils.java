@@ -284,6 +284,11 @@ final class ProtoUtils {
     }
 
     SoyExpression generate() {
+      // TODO(b/154944123): handle maps.
+      if (descriptor.isMapField()) {
+        return handleRepeated();
+      }
+
       SoyExpression typedBaseExpr = getTypedBaseExpression();
       if (descriptor.isExtension()) {
         return handleExtension(typedBaseExpr);
@@ -296,9 +301,7 @@ final class ProtoUtils {
       // TODO(lukes): consider adding a cache for the method lookups.
       final MethodRef getMethodRef = getGetterMethod(descriptor);
 
-      if (descriptor.isMapField()) {
-        return handleMapField(typedBaseExpr, getMethodRef);
-      } else if (descriptor.isRepeated()) {
+      if (descriptor.isRepeated()) {
         return SoyExpression.forBoxedList(
             (ListType) fieldType,
             MethodRef.LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST.invoke(
@@ -386,34 +389,6 @@ final class ProtoUtils {
         // TODO(b/22389927): This is another place where the soy type system lies to us, so make
         // sure to mark the type as nullable.
         return interpretedField.labelEnd(endLabel).asNullable();
-      }
-    }
-
-    private SoyExpression handleMapField(SoyExpression typedBaseExpr, MethodRef getMethodRef) {
-      List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
-      FieldDescriptor keyDescriptor = mapFields.get(0);
-      FieldDescriptor valueDescriptor = mapFields.get(1);
-      return SoyExpression.forMap(
-          (MapType) fieldType,
-          MethodRef.LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP.invoke(
-              typedBaseExpr.invoke(getMethodRef),
-              FieldVisitor.visitField(keyDescriptor, REPEATED_FIELD_INTERPRETER),
-              FieldVisitor.visitField(valueDescriptor, REPEATED_FIELD_INTERPRETER),
-              BytecodeUtils.constant(getKeyType(keyDescriptor))));
-    }
-
-    private static final Type getKeyType(FieldDescriptor keyDescriptor) {
-      switch (keyDescriptor.getJavaType()) {
-        case INT:
-          return BytecodeUtils.INTEGER_TYPE;
-        case LONG:
-          return BytecodeUtils.BOXED_LONG_TYPE;
-        case BOOLEAN:
-          return BytecodeUtils.BOXED_BOOLEAN_TYPE;
-        case STRING:
-          return STRING_TYPE;
-        default:
-          throw new AssertionError("Invalid proto map key type: " + keyDescriptor);
       }
     }
 
@@ -610,6 +585,27 @@ final class ProtoUtils {
         MethodRef fromProtoMethod = SAFE_PROTO_TO_SANITIZED_CONTENT.get(messageType.getFullName());
         return SoyExpression.forSoyValue(fieldType, fromProtoMethod.invoke(field));
       }
+    }
+
+    private SoyExpression handleRepeated() {
+      // For repeated fields we delegate to the tofu implementation.  This is because the proto
+      // will return a List<Integer> which we will need to turn into a List<IntegerData> and so on.
+      // we could handle this by
+      // 1. generating Runtime.java helpers to do this kind of collection boxing conversion
+      // 2. enhancing SoyExpression to be able to understand a 'partially unboxed collection'
+      // 3. fallback to tofu (which already supports this)
+      // 4. Add new SoyList implementations that can do this kind of lazy resolving transparently
+      //    (I think SoyEasyList is supposed to support this)
+      // For now we will do #3.  #2 would be ideal (least overhead) but would be very complex. #1 or
+      // #4 would both be reasonable compromises.
+      SoyRuntimeType boxedType = SoyRuntimeType.getBoxedType(fieldType);
+      return SoyExpression.forSoyValue(
+          fieldType,
+          // NOTE: in theory this method can return NullData for missing fields, but since this
+          // field is repeated, we know that that will not happen.
+          MethodRef.SOY_PROTO_VALUE_GET_PROTO_FIELD
+              .invoke(baseExpr.box(), constant(fieldName))
+              .checkedCast(boxedType.runtimeType()));
     }
   }
 
@@ -1293,11 +1289,8 @@ final class ProtoUtils {
     String repeatedType = "";
     Type runtimeType;
     boolean isProto3Enum = isProto3EnumField(descriptor);
-    if (descriptor.isMapField()) {
-      repeatedType = "Map";
-      runtimeType = BytecodeUtils.MAP_TYPE;
-      isProto3Enum = mapValueIsProto3Enum(descriptor);
-    } else if (descriptor.isRepeated()) {
+    if (descriptor.isRepeated()) {
+      checkState(!descriptor.isMapField());
       repeatedType = "List";
       runtimeType = BytecodeUtils.LIST_TYPE;
     } else if (isProto3Enum) {
@@ -1318,11 +1311,6 @@ final class ProtoUtils {
         // All protos are guaranteed to never return null
         .asNonNullable()
         .asCheap();
-  }
-
-  private static boolean mapValueIsProto3Enum(FieldDescriptor descriptor) {
-    FieldDescriptor valueDescriptor = descriptor.getMessageType().getFields().get(1);
-    return isProto3EnumField(valueDescriptor);
   }
 
   /**

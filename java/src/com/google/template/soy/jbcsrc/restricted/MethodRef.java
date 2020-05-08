@@ -46,7 +46,6 @@ import com.google.template.soy.data.SoyVisualElementFactory;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
-import com.google.template.soy.data.internal.LazyProtoToSoyValueMap;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
@@ -378,6 +377,9 @@ public abstract class MethodRef {
   public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
+  public static final MethodRef SOY_PROTO_VALUE_GET_PROTO_FIELD =
+      create(SoyProtoValue.class, "getProtoField", String.class).asCheap().asNonNullable();
+
   public static final MethodRef RUNTIME_GET_PROTO_FIELD =
       create(JbcSrcRuntime.class, "getProtoField", SoyProtoValue.class, String.class).asCheap();
 
@@ -473,16 +475,6 @@ public abstract class MethodRef {
   public static final MethodRef LAZY_PROTO_TO_SOY_VALUE_LIST_FOR_LIST =
       MethodRef.create(
               LazyProtoToSoyValueList.class, "forList", List.class, ProtoFieldInterpreter.class)
-          .asNonNullable();
-
-  public static final MethodRef LAZY_PROTO_TO_SOY_VALUE_MAP_FOR_MAP =
-      MethodRef.create(
-              LazyProtoToSoyValueMap.class,
-              "forMap",
-              Map.class,
-              ProtoFieldInterpreter.class,
-              ProtoFieldInterpreter.class,
-              Class.class)
           .asNonNullable();
 
   public static final MethodRef GET_EXTENSION_LIST =
