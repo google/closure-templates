@@ -179,7 +179,7 @@ public abstract class ProtoFieldInterpreter {
       }
 
       @Override
-      Object protoFromSoy(SoyValue field) {
+      public Object protoFromSoy(SoyValue field) {
         SoyList list = (SoyList) field;
         List<Object> uninterpretedValues = new ArrayList<>();
         for (SoyValue item : list.asResolvedJavaList()) {
@@ -212,7 +212,7 @@ public abstract class ProtoFieldInterpreter {
       }
 
       @Override
-      Object protoFromSoy(SoyValue field) {
+      public Object protoFromSoy(SoyValue field) {
         SoyMap map = (SoyMap) field;
         // Proto map fields use a non-standard API. A protobuf map is actually a repeated list of
         // MapEntry quasi-messages, which one cannot mutate in-place inside a map.
@@ -242,7 +242,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ByteString.copyFrom(BaseEncoding.base64().decode(field.stringValue()));
         }
       };
@@ -256,7 +256,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return field.booleanValue();
         }
       };
@@ -270,7 +270,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return Ints.saturatedCast(field.longValue());
         }
       };
@@ -284,7 +284,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return UnsignedInts.saturatedCast(field.longValue());
         }
       };
@@ -298,7 +298,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return field.longValue();
         }
       };
@@ -312,7 +312,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return Long.parseLong(field.stringValue());
         }
       };
@@ -330,7 +330,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return UnsignedLongs.parseUnsignedLong(field.stringValue());
         }
       };
@@ -344,7 +344,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return (float) field.floatValue();
         }
       };
@@ -358,7 +358,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return field.floatValue();
         }
       };
@@ -372,7 +372,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return field.stringValue();
         }
       };
@@ -385,7 +385,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toSafeHtmlProto();
         }
       };
@@ -398,7 +398,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toSafeScriptProto();
         }
       };
@@ -411,7 +411,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toSafeStyleProto();
         }
       };
@@ -424,7 +424,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toSafeStyleSheetProto();
         }
       };
@@ -437,7 +437,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toSafeUrlProto();
         }
       };
@@ -449,7 +449,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SanitizedContent) field).toTrustedResourceUrlProto();
         }
       };
@@ -470,7 +470,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           throw new UnsupportedOperationException("can't convert enum to proto");
         }
       };
@@ -488,7 +488,7 @@ public abstract class ProtoFieldInterpreter {
       }
 
       @Override
-      Object protoFromSoy(SoyValue field) {
+      public Object protoFromSoy(SoyValue field) {
         // The proto reflection api wants the EnumValueDescriptor, not the actual enum instance
         int value = field.integerValue();
         // in proto3 we preserve unknown enum values (for consistency with jbcsrc), but for proto2
@@ -510,7 +510,7 @@ public abstract class ProtoFieldInterpreter {
         }
 
         @Override
-        Object protoFromSoy(SoyValue field) {
+        public Object protoFromSoy(SoyValue field) {
           return ((SoyProtoValue) field).getProto();
         }
       };
@@ -525,5 +525,5 @@ public abstract class ProtoFieldInterpreter {
    *
    * <p>Generally this is the inverse operation of {@link #soyFromProto}.
    */
-  abstract Object protoFromSoy(SoyValue field);
+  public abstract Object protoFromSoy(SoyValue field);
 }
