@@ -882,8 +882,6 @@ goog.defineClass.applyProperties_ = function(target, source) {
     key = goog.defineClass.OBJECT_PROTOTYPE_FIELDS_[i], Object.prototype.hasOwnProperty.call(source, key) && (target[key] = source[key]);
   }
 };
-goog.tagUnsealableClass = function() {
-};
 goog.TRUSTED_TYPES_POLICY_NAME = "";
 goog.identity_ = function(s) {
   return s;
