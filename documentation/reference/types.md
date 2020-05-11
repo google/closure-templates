@@ -230,10 +230,10 @@ Additionally, all backends have support for coercing
 
 Backend    | type in host language
 ---------- | ---------------------------------------------------------
-JavaScript | `goog.soy.data.SanitizedAttributes`
+JavaScript | `goog.soy.data.SanitizedHtmlAttribute`
 SoySauce   | `string`, `com.google.template.soy.data.SanitizedContent`
 Tofu       | `com.google.template.soy.data.SanitizedContent`
-Python     | `sanitize.SanitizedAttributes`
+Python     | `sanitize.SanitizedHtmlAttribute`
 
 Unlike the other safe string types there is no equivalent for attributes.
 
