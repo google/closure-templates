@@ -15,7 +15,7 @@ $jscomp.createTemplateTagFirstArgWithRaw = function(arrayStrings, rawArrayString
 $jscomp.arrayIteratorImpl = function(array) {
   var index = 0;
   return function() {
-    return index < array.length ? {done:!1, value:array[index++]} : {done:!0};
+    return index < array.length ? {done:!1, value:array[index++], } : {done:!0};
   };
 };
 $jscomp.arrayIterator = function(array) {
@@ -48,7 +48,7 @@ $jscomp.defineProperty = $jscomp.ASSUME_ES5 || "function" == typeof Object.defin
   return target;
 };
 $jscomp.getGlobal = function(passedInThis) {
-  for (var possibleGlobals = ["object" == typeof globalThis && globalThis, passedInThis, "object" == typeof window && window, "object" == typeof self && self, "object" == typeof global && global], i = 0; i < possibleGlobals.length; ++i) {
+  for (var possibleGlobals = ["object" == typeof globalThis && globalThis, passedInThis, "object" == typeof window && window, "object" == typeof self && self, "object" == typeof global && global, ], i = 0; i < possibleGlobals.length; ++i) {
     var maybeGlobal = possibleGlobals[i];
     if (maybeGlobal && maybeGlobal.Math == Math) {
       return maybeGlobal;
@@ -93,50 +93,45 @@ $jscomp.checkStringArgs = function(thisArg, arg, func) {
   }
   return thisArg + "";
 };
-$jscomp.SYMBOL_PREFIX = "jscomp_symbol_";
 $jscomp.initSymbol = function() {
-  $jscomp.initSymbol = function() {
+};
+$jscomp.polyfill("Symbol", function(orig) {
+  if (orig) {
+    return orig;
+  }
+  var SymbolClass = function(id, opt_description) {
+    this.$jscomp$symbol$id_ = id;
+    $jscomp.defineProperty(this, "description", {configurable:!0, writable:!0, value:opt_description});
   };
-  $jscomp.global.Symbol || ($jscomp.global.Symbol = $jscomp.Symbol);
-};
-$jscomp.SymbolClass = function(id, opt_description) {
-  this.$jscomp$symbol$id_ = id;
-  $jscomp.defineProperty(this, "description", {configurable:!0, writable:!0, value:opt_description});
-};
-$jscomp.SymbolClass.prototype.toString = function() {
-  return this.$jscomp$symbol$id_;
-};
-$jscomp.Symbol = function() {
-  function Symbol(opt_description) {
-    if (this instanceof Symbol) {
+  SymbolClass.prototype.toString = function() {
+    return this.$jscomp$symbol$id_;
+  };
+  var counter = 0, symbolPolyfill = function(opt_description) {
+    if (this instanceof symbolPolyfill) {
       throw new TypeError("Symbol is not a constructor");
     }
-    return new $jscomp.SymbolClass($jscomp.SYMBOL_PREFIX + (opt_description || "") + "_" + counter++, opt_description);
-  }
-  var counter = 0;
-  return Symbol;
-}();
+    return new SymbolClass("jscomp_symbol_" + (opt_description || "") + "_" + counter++, opt_description);
+  };
+  return symbolPolyfill;
+}, "es6", "es3");
 $jscomp.initSymbolIterator = function() {
-  $jscomp.initSymbol();
-  var symbolIterator = $jscomp.global.Symbol.iterator;
-  symbolIterator || (symbolIterator = $jscomp.global.Symbol.iterator = $jscomp.global.Symbol("Symbol.iterator"));
+  $jscomp.initSymbolIterator = function() {
+  };
+  var symbolIterator = Symbol.iterator;
+  symbolIterator || (symbolIterator = Symbol.iterator = Symbol("Symbol.iterator"));
   "function" != typeof Array.prototype[symbolIterator] && $jscomp.defineProperty(Array.prototype, symbolIterator, {configurable:!0, writable:!0, value:function() {
     return $jscomp.iteratorPrototype($jscomp.arrayIteratorImpl(this));
   }});
-  $jscomp.initSymbolIterator = function() {
-  };
 };
 $jscomp.initSymbolAsyncIterator = function() {
-  $jscomp.initSymbol();
-  var symbolAsyncIterator = $jscomp.global.Symbol.asyncIterator;
-  symbolAsyncIterator || (symbolAsyncIterator = $jscomp.global.Symbol.asyncIterator = $jscomp.global.Symbol("Symbol.asyncIterator"));
   $jscomp.initSymbolAsyncIterator = function() {
   };
+  Symbol.asyncIterator || (Symbol.asyncIterator = Symbol("Symbol.asyncIterator"));
 };
 $jscomp.iteratorPrototype = function(next) {
   $jscomp.initSymbolIterator();
   var iterator = {next:next};
-  iterator[$jscomp.global.Symbol.iterator] = function() {
+  iterator[Symbol.iterator] = function() {
     return this;
   };
   return iterator;
@@ -337,7 +332,7 @@ $jscomp.polyfill("Map", function(NativeMap) {
     key = 0 === key ? 0 : key;
     var r = maybeGetEntry(this, key);
     r.list || (r.list = this.data_[r.id] = []);
-    r.entry ? r.entry.value = value : (r.entry = {next:this.head_, previous:this.head_.previous, head:this.head_, key:key, value:value}, r.list.push(r.entry), this.head_.previous.next = r.entry, this.head_.previous = r.entry, this.size++);
+    r.entry ? r.entry.value = value : (r.entry = {next:this.head_, previous:this.head_.previous, head:this.head_, key:key, value:value, }, r.list.push(r.entry), this.head_.previous.next = r.entry, this.head_.previous = r.entry, this.size++);
     return this;
   };
   PolyfillMap.prototype.delete = function(key) {
@@ -5588,8 +5583,8 @@ goog.i18n.CompactNumberFormatSymbols_sr_Latn = {COMPACT_DECIMAL_SHORT_PATTERN:{1
 1E5:{other:"000 hiljada"}, 1E6:{other:"0 miliona"}, 1E7:{other:"00 miliona"}, 1E8:{other:"000 miliona"}, 1E9:{other:"0 milijardi"}, 1E10:{other:"00 milijardi"}, 1E11:{other:"000 milijardi"}, 1E12:{other:"0 biliona"}, 1E13:{other:"00 biliona"}, 1E14:{other:"000 biliona"}}};
 goog.i18n.CompactNumberFormatSymbols_sv = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u00a0tn"}, 1E4:{other:"00\u00a0tn"}, 1E5:{other:"000\u00a0tn"}, 1E6:{other:"0\u00a0mn"}, 1E7:{other:"00\u00a0mn"}, 1E8:{other:"000\u00a0mn"}, 1E9:{other:"0\u00a0md"}, 1E10:{other:"00\u00a0md"}, 1E11:{other:"000\u00a0md"}, 1E12:{other:"0\u00a0bn"}, 1E13:{other:"00\u00a0bn"}, 1E14:{other:"000\u00a0bn"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 tusen"}, 1E4:{other:"00 tusen"}, 1E5:{other:"000 tusen"}, 1E6:{other:"0 miljoner"}, 
 1E7:{other:"00 miljoner"}, 1E8:{other:"000 miljoner"}, 1E9:{other:"0 miljarder"}, 1E10:{other:"00 miljarder"}, 1E11:{other:"000 miljarder"}, 1E12:{other:"0 biljoner"}, 1E13:{other:"00 biljoner"}, 1E14:{other:"000 biljoner"}}};
-goog.i18n.CompactNumberFormatSymbols_sw = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"elfu\u00a00"}, 1E4:{other:"elfu\u00a000"}, 1E5:{other:"elfu\u00a0000"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B"}, 1E10:{other:"00B"}, 1E11:{other:"000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"elfu 0"}, 1E4:{other:"elfu 00"}, 1E5:{other:"elfu 000"}, 1E6:{other:"milioni 0"}, 1E7:{other:"milioni 00"}, 1E8:{other:"milioni 000"}, 
-1E9:{other:"bilioni 0"}, 1E10:{other:"bilioni 00"}, 1E11:{other:"bilioni 000"}, 1E12:{other:"trilioni 0"}, 1E13:{other:"trilioni 00"}, 1E14:{other:"trilioni 000"}}};
+goog.i18n.CompactNumberFormatSymbols_sw = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"elfu\u00a00;elfu\u00a0-0"}, 1E4:{other:"elfu\u00a000;elfu\u00a0-00"}, 1E5:{other:"elfu\u00a0000;elfu\u00a0-000"}, 1E6:{other:"0M"}, 1E7:{other:"00M"}, 1E8:{other:"000M"}, 1E9:{other:"0B;-0B"}, 1E10:{other:"00B;-00B"}, 1E11:{other:"000B;-000B"}, 1E12:{other:"0T"}, 1E13:{other:"00T"}, 1E14:{other:"000T"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"elfu 0;elfu -0"}, 1E4:{other:"elfu 00;elfu -00"}, 1E5:{other:"elfu 000;elfu -000"}, 
+1E6:{other:"milioni 0;milioni -0"}, 1E7:{other:"milioni 00;milioni -00"}, 1E8:{other:"milioni 000;milioni -000"}, 1E9:{other:"bilioni 0;bilioni -0"}, 1E10:{other:"bilioni 00;bilioni -00"}, 1E11:{other:"bilioni 000;bilioni -000"}, 1E12:{other:"trilioni 0;trilioni -0"}, 1E13:{other:"trilioni 00;trilioni -00"}, 1E14:{other:"trilioni 000;trilioni -000"}}};
 goog.i18n.CompactNumberFormatSymbols_ta = {COMPACT_DECIMAL_SHORT_PATTERN:{1E3:{other:"0\u0b86"}, 1E4:{other:"00\u0b86"}, 1E5:{other:"000\u0b86"}, 1E6:{other:"0\u0bae\u0bbf"}, 1E7:{other:"00\u0bae\u0bbf"}, 1E8:{other:"000\u0bae\u0bbf"}, 1E9:{other:"0\u0baa\u0bbf"}, 1E10:{other:"00\u0baa\u0bbf"}, 1E11:{other:"000\u0baa\u0bbf"}, 1E12:{other:"0\u0b9f\u0bbf"}, 1E13:{other:"00\u0b9f\u0bbf"}, 1E14:{other:"000\u0b9f\u0bbf"}}, COMPACT_DECIMAL_LONG_PATTERN:{1E3:{other:"0 \u0b86\u0baf\u0bbf\u0bb0\u0bae\u0bcd"}, 
 1E4:{other:"00 \u0b86\u0baf\u0bbf\u0bb0\u0bae\u0bcd"}, 1E5:{other:"000 \u0b86\u0baf\u0bbf\u0bb0\u0bae\u0bcd"}, 1E6:{other:"0 \u0bae\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E7:{other:"00 \u0bae\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E8:{other:"000 \u0bae\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E9:{other:"0 \u0baa\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E10:{other:"00 \u0baa\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E11:{other:"000 \u0baa\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 
 1E12:{other:"0 \u0b9f\u0bbf\u0bb0\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E13:{other:"00 \u0b9f\u0bbf\u0bb0\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}, 1E14:{other:"000 \u0b9f\u0bbf\u0bb0\u0bbf\u0bb2\u0bcd\u0bb2\u0bbf\u0baf\u0ba9\u0bcd"}}};
@@ -8077,7 +8072,7 @@ goog.inherits(soydata.SanitizedHtml, goog.soy.data.SanitizedHtml);
 soydata.SanitizedHtml.from = function(value) {
   return soy.checks.isHtml(value) ? value : value instanceof goog.html.SafeHtml ? soydata.VERY_UNSAFE.ordainSanitizedHtml(goog.html.SafeHtml.unwrap(value), value.getDirection()) : soydata.VERY_UNSAFE.ordainSanitizedHtml(soy.esc.$$escapeHtmlHelper(String(value)), soydata.getContentDir(value));
 };
-soydata.$$EMPTY_STRING_ = {VALUE:""};
+soydata.$$EMPTY_STRING_ = {VALUE:"", };
 soydata.$$makeSanitizedContentFactory_ = function(ctor) {
   function InstantiableCtor(content) {
     this.content = content;
@@ -8533,22 +8528,22 @@ soy.esc.$$escapeHtmlHelper = function(v) {
 soy.esc.$$escapeUriHelper = function(v) {
   return goog.string.urlEncode(String(v));
 };
-soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {"\x00":"&#0;", "\t":"&#9;", "\n":"&#10;", "\x0B":"&#11;", "\f":"&#12;", "\r":"&#13;", " ":"&#32;", '"':"&quot;", "&":"&amp;", "'":"&#39;", "-":"&#45;", "/":"&#47;", "<":"&lt;", "=":"&#61;", ">":"&gt;", "`":"&#96;", "\u0085":"&#133;", "\u00a0":"&#160;", "\u2028":"&#8232;", "\u2029":"&#8233;"};
+soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = {"\x00":"&#0;", "\t":"&#9;", "\n":"&#10;", "\x0B":"&#11;", "\f":"&#12;", "\r":"&#13;", " ":"&#32;", '"':"&quot;", "&":"&amp;", "'":"&#39;", "-":"&#45;", "/":"&#47;", "<":"&lt;", "=":"&#61;", ">":"&gt;", "`":"&#96;", "\u0085":"&#133;", "\u00a0":"&#160;", "\u2028":"&#8232;", "\u2029":"&#8233;", };
 soy.esc.$$REPLACER_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_ = function(ch) {
   return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_HTML__AND__ESCAPE_HTML_NOSPACE__AND__NORMALIZE_HTML_NOSPACE_[ch];
 };
 soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = {"\x00":"\\x00", "\b":"\\x08", "\t":"\\t", "\n":"\\n", "\x0B":"\\x0b", "\f":"\\f", "\r":"\\r", '"':"\\x22", $:"\\x24", "&":"\\x26", "'":"\\x27", "(":"\\x28", ")":"\\x29", "*":"\\x2a", "+":"\\x2b", ",":"\\x2c", "-":"\\x2d", ".":"\\x2e", "/":"\\/", ":":"\\x3a", "<":"\\x3c", "=":"\\x3d", ">":"\\x3e", "?":"\\x3f", "[":"\\x5b", "\\":"\\\\", "]":"\\x5d", "^":"\\x5e", "{":"\\x7b", "|":"\\x7c", "}":"\\x7d", "\u0085":"\\x85", "\u2028":"\\u2028", 
-"\u2029":"\\u2029"};
+"\u2029":"\\u2029", };
 soy.esc.$$REPLACER_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_ = function(ch) {
   return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_JS_STRING__AND__ESCAPE_JS_REGEX_[ch];
 };
-soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {"\x00":"\\0 ", "\b":"\\8 ", "\t":"\\9 ", "\n":"\\a ", "\x0B":"\\b ", "\f":"\\c ", "\r":"\\d ", '"':"\\22 ", "&":"\\26 ", "'":"\\27 ", "(":"\\28 ", ")":"\\29 ", "*":"\\2a ", "/":"\\2f ", ":":"\\3a ", ";":"\\3b ", "<":"\\3c ", "=":"\\3d ", ">":"\\3e ", "@":"\\40 ", "\\":"\\5c ", "{":"\\7b ", "}":"\\7d ", "\u0085":"\\85 ", "\u00a0":"\\a0 ", "\u2028":"\\2028 ", "\u2029":"\\2029 "};
+soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_ = {"\x00":"\\0 ", "\b":"\\8 ", "\t":"\\9 ", "\n":"\\a ", "\x0B":"\\b ", "\f":"\\c ", "\r":"\\d ", '"':"\\22 ", "&":"\\26 ", "'":"\\27 ", "(":"\\28 ", ")":"\\29 ", "*":"\\2a ", "/":"\\2f ", ":":"\\3a ", ";":"\\3b ", "<":"\\3c ", "=":"\\3d ", ">":"\\3e ", "@":"\\40 ", "\\":"\\5c ", "{":"\\7b ", "}":"\\7d ", "\u0085":"\\85 ", "\u00a0":"\\a0 ", "\u2028":"\\2028 ", "\u2029":"\\2029 ", };
 soy.esc.$$REPLACER_FOR_ESCAPE_CSS_STRING_ = function(ch) {
   return soy.esc.$$ESCAPE_MAP_FOR_ESCAPE_CSS_STRING_[ch];
 };
 soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = {"\x00":"%00", "\u0001":"%01", "\u0002":"%02", "\u0003":"%03", "\u0004":"%04", "\u0005":"%05", "\u0006":"%06", "\u0007":"%07", "\b":"%08", "\t":"%09", "\n":"%0A", "\x0B":"%0B", "\f":"%0C", "\r":"%0D", "\u000e":"%0E", "\u000f":"%0F", "\u0010":"%10", "\u0011":"%11", "\u0012":"%12", "\u0013":"%13", "\u0014":"%14", "\u0015":"%15", "\u0016":"%16", "\u0017":"%17", "\u0018":"%18", "\u0019":"%19", "\u001a":"%1A", 
 "\u001b":"%1B", "\u001c":"%1C", "\u001d":"%1D", "\u001e":"%1E", "\u001f":"%1F", " ":"%20", '"':"%22", "'":"%27", "(":"%28", ")":"%29", "<":"%3C", ">":"%3E", "\\":"%5C", "{":"%7B", "}":"%7D", "\u007f":"%7F", "\u0085":"%C2%85", "\u00a0":"%C2%A0", "\u2028":"%E2%80%A8", "\u2029":"%E2%80%A9", "\uff01":"%EF%BC%81", "\uff03":"%EF%BC%83", "\uff04":"%EF%BC%84", "\uff06":"%EF%BC%86", "\uff07":"%EF%BC%87", "\uff08":"%EF%BC%88", "\uff09":"%EF%BC%89", "\uff0a":"%EF%BC%8A", "\uff0b":"%EF%BC%8B", "\uff0c":"%EF%BC%8C", 
-"\uff0f":"%EF%BC%8F", "\uff1a":"%EF%BC%9A", "\uff1b":"%EF%BC%9B", "\uff1d":"%EF%BC%9D", "\uff1f":"%EF%BC%9F", "\uff20":"%EF%BC%A0", "\uff3b":"%EF%BC%BB", "\uff3d":"%EF%BC%BD"};
+"\uff0f":"%EF%BC%8F", "\uff1a":"%EF%BC%9A", "\uff1b":"%EF%BC%9B", "\uff1d":"%EF%BC%9D", "\uff1f":"%EF%BC%9F", "\uff20":"%EF%BC%A0", "\uff3b":"%EF%BC%BB", "\uff3d":"%EF%BC%BD", };
 soy.esc.$$REPLACER_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_ = function(ch) {
   return soy.esc.$$ESCAPE_MAP_FOR_NORMALIZE_URI__AND__FILTER_NORMALIZE_URI__AND__FILTER_NORMALIZE_MEDIA_URI_[ch];
 };

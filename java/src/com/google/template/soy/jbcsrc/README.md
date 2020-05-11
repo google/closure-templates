@@ -694,7 +694,7 @@ Optimizations and future work:
 ### MSG\_NODE, MSG\_FALLBACK\_GROUP\_NODE
 
 Soy has direct support for translations. In `jssrc`, this is mostly delegated to
-`goog.getMessage`, but in SoySauce we don't have such a good option, instead we
+`goog.getMsg`, but in SoySauce we don't have such a good option, instead we
 handle rendering and placeholder substitution ourselves. `{msg ..}` rendering
 breaks into 2 cases
 

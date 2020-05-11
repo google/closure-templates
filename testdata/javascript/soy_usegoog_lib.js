@@ -7725,10 +7725,6 @@ goog.memoize.simpleSerializer = function(functionUid, args) {
 /**
  * @fileoverview Policy to convert strings to Trusted Types. See
  * https://github.com/WICG/trusted-types for details.
- *
- * @visibility {//javascript/closure:__pkg__}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
- * @visibility {//javascript/closure/dom:__pkg__}
  */
 
 goog.provide('goog.html.trustedtypes');
@@ -9924,11 +9920,6 @@ goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
  * @fileoverview String functions called from Closure packages that couldn't
  * depend on each other. Outside Closure, use goog.string function which
  * delegate to these.
- * @visibility {//javascript/closure:__pkg__}
- * @visibility {//javascript/closure/bin/sizetests:__pkg__}
- * @visibility {//javascript/closure/dom:__pkg__}
- * @visibility {//javascript/closure/html:__pkg__}
- * @visibility {//javascript/closure/labs/useragent:__pkg__}
  */
 
 
@@ -12020,13 +12011,6 @@ goog.html.SafeStyleSheet.EMPTY =
  * @fileoverview Utilities used by goog.labs.userAgent tools. These functions
  * should not be used outside of goog.labs.userAgent.*.
  *
- * @visibility {//javascript/abc/libs/objects3d:__subpackages__}
- * @visibility {//javascript/closure/dom:__subpackages__}
- * @visibility {//javascript/closure/style:__pkg__}
- * @visibility {//javascript/closure/testing:__pkg__}
- * @visibility {//javascript/closure/useragent:__subpackages__}
- * @visibility {//testing/puppet/modules:__pkg__}
- * @visibility {:util_legacy_users}
  */
 
 goog.provide('goog.labs.userAgent.util');
@@ -22829,7 +22813,6 @@ soy.checks.isURI = function(value) {
  * Copyright The Closure Library Authors.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 /**
  * @fileoverview Compact number formatting symbols.
  *
@@ -29469,15 +29452,13 @@ goog.i18n.CompactNumberFormatSymbols_sv = {
 goog.i18n.CompactNumberFormatSymbols_sw = {
   COMPACT_DECIMAL_SHORT_PATTERN: {
     '1000': {
-      // Patching items with negative options until compact formatting is fixed.
-      // b/143315130
-      'other': 'elfu 0' //;elfu -0'
+      'other': 'elfu 0;elfu -0'
     },
     '10000': {
-      'other': 'elfu 00'  //;elfu -00'
+      'other': 'elfu 00;elfu -00'
     },
     '100000': {
-      'other': 'elfu 000'  //;elfu -000'
+      'other': 'elfu 000;elfu -000'
     },
     '1000000': {
       'other': '0M'
@@ -29489,13 +29470,13 @@ goog.i18n.CompactNumberFormatSymbols_sw = {
       'other': '000M'
     },
     '1000000000': {
-      'other': '0B'  //;-0B'
+      'other': '0B;-0B'
     },
     '10000000000': {
-      'other': '00B'  //;-00B'
+      'other': '00B;-00B'
     },
     '100000000000': {
-      'other': '000B'  //;-000B'
+      'other': '000B;-000B'
     },
     '1000000000000': {
       'other': '0T'
@@ -29509,40 +29490,40 @@ goog.i18n.CompactNumberFormatSymbols_sw = {
   },
   COMPACT_DECIMAL_LONG_PATTERN: {
     '1000': {
-      'other': 'elfu 0'  //;elfu -0'
+      'other': 'elfu 0;elfu -0'
     },
     '10000': {
-      'other': 'elfu 00'  //;elfu -00'
+      'other': 'elfu 00;elfu -00'
     },
     '100000': {
-      'other': 'elfu 000' //;elfu -000'
+      'other': 'elfu 000;elfu -000'
     },
     '1000000': {
-      'other': 'milioni 0' //;milioni -0'
+      'other': 'milioni 0;milioni -0'
     },
     '10000000': {
-      'other': 'milioni 00'  //;milioni -00'
+      'other': 'milioni 00;milioni -00'
     },
     '100000000': {
-      'other': 'milioni 000'  //;milioni -000'
+      'other': 'milioni 000;milioni -000'
     },
     '1000000000': {
-      'other': 'bilioni 0'//;bilioni -0'
+      'other': 'bilioni 0;bilioni -0'
     },
     '10000000000': {
-      'other': 'bilioni 00'  //;bilioni -00'
+      'other': 'bilioni 00;bilioni -00'
     },
     '100000000000': {
-      'other': 'bilioni 000'  //;bilioni -000'
+      'other': 'bilioni 000;bilioni -000'
     },
     '1000000000000': {
-      'other': 'trilioni 0'  //;trilioni -0'
+      'other': 'trilioni 0;trilioni -0'
     },
     '10000000000000': {
-      'other': 'trilioni 00'  //;trilioni -00'
+      'other': 'trilioni 00;trilioni -00'
     },
     '100000000000000': {
-      'other': 'trilioni 000'  //;trilioni -000'
+      'other': 'trilioni 000;trilioni -000'
     }
   }
 };
@@ -31568,7 +31549,6 @@ goog.i18n.currency.CurrencyInfoTier2 = {
  * Copyright The Closure Library Authors.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 /**
  * @fileoverview Number formatting symbols.
  *
