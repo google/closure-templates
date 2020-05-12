@@ -51,6 +51,12 @@ public final class HtmlAttributeNodeTest {
     assertThat(tag.getDirectAttributeNamed("rel").getStaticContent()).isEqualTo(null);
   }
 
+  @Test
+  public void tetGetStaticValue_ifChild() {
+    HtmlOpenTagNode tag = parseTag("<link rel={if 1}'foo'{else}'bar'{/if}>");
+    assertThat(tag.getDirectAttributeNamed("rel").getStaticContent()).isEqualTo(null);
+  }
+
   private HtmlOpenTagNode parseTag(String input) {
     String soyFile =
         Joiner.on('\n')

@@ -57,7 +57,11 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
     if (!hasValue()) {
       return null;
     }
-    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) getChild(1);
+    SoyNode value = getChild(1);
+    if (!(value instanceof HtmlAttributeValueNode)) {
+      return null;
+    }
+    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
     if (attrValue.numChildren() == 0) {
       return "";
     }
