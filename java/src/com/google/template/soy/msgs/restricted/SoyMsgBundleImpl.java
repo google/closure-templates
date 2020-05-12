@@ -79,8 +79,8 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
 
       } else { // duplicate message id
         SoyMsg.Builder mergedMessage =
-            existingMsg
-                .toBuilder()
+            existingMsg.toBuilder()
+                .setHasFallback(existingMsg.hasFallback() && msg.hasFallback())
                 .setDesc(existingMsg.getDesc() + extractAttributes(msg))
                 .addAllSourceLocations(msg.getSourceLocations());
         tempMsgMap.put(msgId, mergedMessage.build());

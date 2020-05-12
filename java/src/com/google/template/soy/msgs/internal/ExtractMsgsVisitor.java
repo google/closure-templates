@@ -82,6 +82,10 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
             .addSourceLocation(node.getSourceLocation())
             .setIsPlrselMsg(node.isPlrselMsg())
             .setParts(msgPartsAndIds.parts)
+            .setHasFallback(
+                // we have a fallback if our parent has 2 children (the msg and the fallbackmsg) and
+                // we are the msg
+                node.getParent().numChildren() == 2 && node.getParent().getChildIndex(node) == 0)
             .build();
     msgs.add(msg);
   }

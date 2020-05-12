@@ -58,6 +58,7 @@ public abstract class SoyMsg {
     private final ImmutableSet.Builder<SourceLocation> sourceLocations = ImmutableSet.builder();
     private boolean isPlrselMsg;
     private ImmutableList<SoyMsgPart> parts;
+    private boolean hasFallback;
 
     private Builder() {}
 
@@ -147,6 +148,12 @@ public abstract class SoyMsg {
       return this;
     }
 
+    /** Marks this message as being the primary message in a fallback group. */
+    public Builder setHasFallback(boolean hasFallback) {
+      this.hasFallback = hasFallback;
+      return this;
+    }
+
     public SoyMsg build() {
       return new AutoValue_SoyMsg(
           localeString,
@@ -158,7 +165,8 @@ public abstract class SoyMsg {
           contentType,
           isPlrselMsg,
           parts,
-          sourceLocations.build());
+          sourceLocations.build(),
+          hasFallback);
     }
   }
 
@@ -174,7 +182,8 @@ public abstract class SoyMsg {
             .setIsHidden(isHidden())
             .setParts(getParts())
             .addAllSourceLocations(getSourceLocations())
-            .setIsPlrselMsg(isPlrselMsg());
+            .setIsPlrselMsg(isPlrselMsg())
+            .setHasFallback(hasFallback());
     if (getLocaleString() != null) {
       builder.setLocaleString(getLocaleString());
     }
@@ -226,4 +235,7 @@ public abstract class SoyMsg {
 
   /** Returns the location(s) of the source file(s) that this message comes from. */
   public abstract ImmutableSet<SourceLocation> getSourceLocations();
+
+  /** Returns {@code true} if this message has a fallback. */
+  public abstract boolean hasFallback();
 }
