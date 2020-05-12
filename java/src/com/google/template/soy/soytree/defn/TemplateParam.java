@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 public final class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final TypeNode typeNode;
   private final TypeNode originalTypeNode;
-  private final String desc;
+  private String desc;
   private final SourceLocation sourceLocation;
 
   /** Whether the param is required. */
@@ -163,6 +163,11 @@ public final class TemplateParam extends AbstractVarDefn implements TemplateHead
   @Override
   public @Nullable String desc() {
     return desc;
+  }
+
+  @Override
+  public void setDesc(String desc) {
+    this.desc = desc;
   }
 
   @Override

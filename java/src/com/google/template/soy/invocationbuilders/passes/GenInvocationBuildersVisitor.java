@@ -466,6 +466,13 @@ public final class GenInvocationBuildersVisitor
         factory = INDIRECT_P;
       }
 
+      String paramDescription = param.param().getDescription();
+      if (paramDescription == null) {
+        paramDescription = "";
+      } else {
+        paramDescription += " ";
+      }
+
       String typeToken =
           "?".equals(genericType)
               // TODO(user): this should probably be a wildcard type
@@ -474,7 +481,9 @@ public final class GenInvocationBuildersVisitor
                   ? "com.google.common.reflect.TypeToken.of(" + genericType + ".class" + ")"
                   : "new com.google.common.reflect.TypeToken<" + genericType + ">() {}");
       ilb.appendLine(
-          String.format("/** {@%s %s} */", param.injected() ? "inject" : "param", param.name()));
+          String.format(
+              "/** {@%s %s} %s*/",
+              param.injected() ? "inject" : "param", param.name(), paramDescription));
       ilb.appendLine(
           String.format(
               "%s static final com.google.template.soy.data.SoyTemplateParam<%s>",

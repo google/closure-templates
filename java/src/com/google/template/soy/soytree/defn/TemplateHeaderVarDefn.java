@@ -56,5 +56,7 @@ public interface TemplateHeaderVarDefn extends VarDefn {
   @Nullable
   String desc();
 
+  void setDesc(String desc);
+
   TemplateHeaderVarDefn copy(CopyState copyState);
 }

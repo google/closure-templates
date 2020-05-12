@@ -1925,9 +1925,9 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
 {
   Token tok;
   TemplateHeaderVarDefn param;
+  TemplateHeaderVarDefn docSinkParam = null;
   List<TemplateHeaderVarDefn> params = ImmutableList.of();
   RawTextNode whitespace = null;
-  Token soyDocToken = null;
   String soyDoc = null;
 
 }
@@ -1941,8 +1941,16 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
       ( LOOKAHEAD(1)  // prefer staying in the loop
         tok = <TOKEN_WS>
         { if (tok.specialToken != null && tok.specialToken.kind == SOYDOC) {
-            soyDocToken = tok.specialToken;
-            soyDoc = soyDocToken.image;
+            if (docSinkParam != null) {
+              String desc = tok.specialToken.image;
+              desc = desc.substring(3, desc.length() - 2).trim();
+              docSinkParam.setDesc(desc);
+              docSinkParam = null;
+            } else {
+              soyDoc = tok.specialToken.image;
+            }
+          } else if (tok.image.contains("\n") || tok.image.contains("\r")) {
+            docSinkParam = null;
           }
           builder.addBasic(tok);
         }
@@ -1953,6 +1961,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
       (
         param = ParamDecl(soyDoc)
         {
+          docSinkParam = param;
           switch (param.kind()) {
           case PARAM:
             // we just parsed a param, preceding whitespace/doc comments are not important

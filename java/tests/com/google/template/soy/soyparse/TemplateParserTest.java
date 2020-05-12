@@ -889,13 +889,16 @@ public final class TemplateParserTest {
     String templateHeaderAndBody =
         ""
             + "  {@param boo: string}  // Something scary. (Not doc comment.)\n"
+            + "  /** This loses to trailing. */\n"
             + "  {@param foo: list<int>}  /** Something random. */\n"
             + "  {@param goo: string}/** Something\n"
             + "      slimy. */\n"
-            + "  /* Something strong. (Not doc comment.) */"
+            + "  /** Says the cow. */\n"
+            + "  /* Something strong. (Not doc comment.) */\n"
             + "  // {@param commentedOut: string}\n"
             + "  {@param moo: string}{@param too: string}\n"
             + "  {@param? woo: string}  /** Something exciting. */  {@param hoo: string}\n"
+            + "/** New line means no doc. */\n"
             + "  {$boo + $goo + $moo + $too + $woo + $hoo}{$foo}\n"; // use all the params
 
     TemplateNode result = parseTemplateContent(templateHeaderAndBody, FAIL);
@@ -903,21 +906,32 @@ public final class TemplateParserTest {
     assertEquals(
         "{$boo + $goo + $moo + $too + $woo + $hoo}", result.getChildren().get(0).toSourceString());
 
-    List<TemplateParam> declInfos = ImmutableList.copyOf(result.getAllParams());
-    assertFalse(declInfos.get(0).isInjected());
-    assertEquals("boo", declInfos.get(0).name());
-    assertEquals("string", declInfos.get(0).type().toString());
-    assertEquals(null, declInfos.get(0).desc());
-    assertEquals("foo", declInfos.get(1).name());
-    assertEquals("list<int>", declInfos.get(1).type().toString());
-    assertEquals(null, declInfos.get(1).desc());
-    assertEquals("Something random.", declInfos.get(2).desc());
-    assertEquals("Something\n      slimy.", declInfos.get(3).desc());
-    assertEquals("too", declInfos.get(4).name());
-    assertEquals(null, declInfos.get(4).desc());
-    assertEquals("woo", declInfos.get(5).name());
-    assertEquals(null, declInfos.get(5).desc());
-    assertEquals("Something exciting.", declInfos.get(6).desc());
+    List<TemplateParam> params = ImmutableList.copyOf(result.getAllParams());
+    assertThat(params).hasSize(7);
+
+    assertThat(params.get(0).isInjected()).isFalse();
+    assertThat(params.get(0).name()).isEqualTo("boo");
+    assertEquals("string", params.get(0).type().toString());
+    assertThat(params.get(0).desc()).isNull();
+
+    assertThat(params.get(1).name()).isEqualTo("foo");
+    assertEquals("list<int>", params.get(1).type().toString());
+    assertThat(params.get(1).desc()).isEqualTo("Something random.");
+
+    assertThat(params.get(2).name()).isEqualTo("goo");
+    assertThat(params.get(2).desc()).isEqualTo("Something\n      slimy.");
+
+    assertThat(params.get(3).name()).isEqualTo("moo");
+    assertThat(params.get(3).desc()).isEqualTo("Says the cow.");
+
+    assertThat(params.get(4).name()).isEqualTo("too");
+    assertThat(params.get(4).desc()).isNull();
+
+    assertThat(params.get(5).name()).isEqualTo("woo");
+    assertThat(params.get(5).desc()).isEqualTo("Something exciting.");
+
+    assertThat(params.get(6).name()).isEqualTo("hoo");
+    assertThat(params.get(6).desc()).isNull();
   }
 
   @Test
