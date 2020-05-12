@@ -27,8 +27,10 @@ import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcFunction;
 import com.google.template.soy.pysrc.restricted.SoyPySrcPrintDirective;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,6 +60,7 @@ public final class InternalPluginsTest {
   @Test
   public void testFunctionsSupportAllBackends() {
     for (SoySourceFunction function : InternalPlugins.internalFunctions()) {
+      assertThat(function.getClass().isAnnotationPresent(SoyFunctionSignature.class)).isTrue();
       assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
       assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
       assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
@@ -65,6 +68,16 @@ public final class InternalPluginsTest {
       assertThat(function).isNotInstanceOf(SoyJsSrcFunction.class);
       assertThat(function).isNotInstanceOf(SoyJavaFunction.class);
       assertThat(function).isNotInstanceOf(SoyPySrcFunction.class);
+    }
+  }
+
+  @Test
+  public void testMethodsSupportAllBackends() {
+    for (SoySourceFunction function : InternalPlugins.internalMethods()) {
+      assertThat(function.getClass().isAnnotationPresent(SoyMethodSignature.class)).isTrue();
+      assertThat(function).isInstanceOf(SoyJavaScriptSourceFunction.class);
+      assertThat(function).isInstanceOf(SoyJavaSourceFunction.class);
+      assertThat(function).isInstanceOf(SoyPythonSourceFunction.class);
     }
   }
 

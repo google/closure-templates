@@ -38,6 +38,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
+import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
 import com.google.template.soy.error.ErrorReporter;
@@ -1008,7 +1009,16 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             node.setType(builtinMethod.getReturnType(node));
         }
       } else if (method instanceof SoySourceFunctionMethod) {
-        node.setType(((SoySourceFunctionMethod) method).getReturnType());
+        SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
+        SoySourceFunction sourceFunction = sourceMethod.getImpl();
+        if (sourceFunction instanceof ConcatListsFunction) {
+          node.setType(getGenericListType(node.getChildren()));
+        } else if (sourceFunction instanceof ListSliceMethod) {
+          // list<T>.slice(...) returns list<T>
+          node.setType(node.getBaseExprChild().getType());
+        } else {
+          node.setType(sourceMethod.getReturnType());
+        }
       } else {
         throw new AssertionError();
       }
@@ -2085,30 +2095,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           node.setType(UnknownType.getInstance());
         }
       } else if (fn instanceof ConcatListsFunction) {
-        boolean allTypesValid = true;
-        ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
-        for (ExprNode childNode : node.getChildren()) {
-          allTypesValid =
-              checkArgType(childNode, ListType.ANY_LIST, node, UnknownPolicy.DISALLOWED);
-          if (!allTypesValid) {
-            break;
-          }
-          SoyType elementType = ((ListType) childNode.getType()).getElementType();
-          if (elementType != null) { // Empty lists have no element type
-            elementTypesBuilder.add(elementType);
-          }
-        }
-
-        if (allTypesValid) {
-          ImmutableSet<SoyType> elementTypes = elementTypesBuilder.build();
-          node.setType(
-              elementTypes.isEmpty()
-                  ? ListType.EMPTY_LIST
-                  : typeRegistry.getOrCreateListType(
-                      typeRegistry.getOrCreateUnionType(elementTypes)));
-        } else {
-          node.setType(UnknownType.getInstance());
-        }
+        node.setType(getGenericListType(node.getChildren()));
       } else if (fn instanceof LoggingFunction) {
         // LoggingFunctions always return string.
         node.setType(StringType.getInstance());
@@ -2120,6 +2107,21 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         // TODO(b/70946095): Maybe we should set to ErrorType if checkArgType failed.
         node.setType(UnknownType.getInstance());
       }
+    }
+
+    private SoyType getGenericListType(Iterable<ExprNode> intersectionOf) {
+      ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
+      for (ExprNode childNode : intersectionOf) {
+        SoyType elementType = ((ListType) childNode.getType()).getElementType();
+        if (elementType != null) { // Empty lists have no element type
+          elementTypesBuilder.add(elementType);
+        }
+      }
+
+      ImmutableSet<SoyType> elementTypes = elementTypesBuilder.build();
+      return elementTypes.isEmpty()
+          ? ListType.EMPTY_LIST
+          : typeRegistry.getOrCreateListType(typeRegistry.getOrCreateUnionType(elementTypes));
     }
 
     /** @param fn The function that must take a loop variable. */

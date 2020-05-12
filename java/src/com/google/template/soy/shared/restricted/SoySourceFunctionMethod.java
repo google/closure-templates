@@ -79,4 +79,8 @@ public final class SoySourceFunctionMethod implements SoyMethod {
   public boolean appliesToBase(SoyType baseType) {
     return this.baseType.isAssignableFrom(baseType);
   }
+
+  public String getMethodName() {
+    return methodName;
+  }
 }

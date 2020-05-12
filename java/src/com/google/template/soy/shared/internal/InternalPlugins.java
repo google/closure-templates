@@ -16,10 +16,13 @@
 
 package com.google.template.soy.shared.internal;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.google.template.soy.basicdirectives.BasicDirectives;
 import com.google.template.soy.basicfunctions.BasicFunctions;
 import com.google.template.soy.bididirectives.BidiDirectives;
@@ -30,6 +33,7 @@ import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,9 +50,12 @@ public final class InternalPlugins {
   /** Returns a map (whose key is the name of the function) of the functions shipped with Soy. */
   public static ImmutableList<SoySourceFunction> internalFunctions() {
     // TODO(b/19252021): Include BuiltInFunctions
-    return ImmutableList.copyOf(
-        Iterables.concat(
-            BasicFunctions.functions(), BidiFunctions.functions(), I18nFunctions.functions()));
+    return Streams.concat(
+            BasicFunctions.functions().stream(),
+            BidiFunctions.functions().stream(),
+            I18nFunctions.functions().stream())
+        .filter(f -> f.getClass().isAnnotationPresent(SoyFunctionSignature.class))
+        .collect(toImmutableList());
   }
 
   /**
@@ -79,7 +86,12 @@ public final class InternalPlugins {
   }
 
   public static ImmutableList<SoySourceFunction> internalMethods() {
-    return ImmutableList.of();
+    return Streams.concat(
+            BasicFunctions.functions().stream(),
+            BidiFunctions.functions().stream(),
+            I18nFunctions.functions().stream())
+        .filter(f -> f.getClass().isAnnotationPresent(SoyMethodSignature.class))
+        .collect(toImmutableList());
   }
 
   /**

@@ -384,6 +384,11 @@ def list_indexof(l, item):
   return -1
 
 
+def list_slice(l, start, stop):
+  """Equivalent of JavaScript Array.prototype.slice."""
+  return l[slice(start, stop)]
+
+
 def type_safe_eq(first, second):
   """An equality function that does type coercion for various scenarios.
 

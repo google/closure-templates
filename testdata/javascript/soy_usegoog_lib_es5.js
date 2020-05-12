@@ -8458,6 +8458,9 @@ soy.$$listIndexOf = function(list, val) {
     return soy.$$equals(val, el);
   });
 };
+soy.$$listSlice = function(list, from, to) {
+  return null == to ? goog.array.slice(list, from) : goog.array.slice(list, from, to);
+};
 soy.$$strToAsciiLowerCase = function(s) {
   return goog.array.map(s, soy.$$charToAsciiLowerCase_).join("");
 };

@@ -38,6 +38,7 @@ public class BasicFunctions {
         new LengthFunction(),
         new ListContainsFunction(),
         new ListIndexOfFunction(),
+        new ListSliceMethod(),
         new MapKeysFunction(),
         new MaxFunction(),
         new MinFunction(),

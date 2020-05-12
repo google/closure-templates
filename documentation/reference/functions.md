@@ -69,23 +69,29 @@ reference.
 The `remainder` function is used in the context of plural messages. See the
 [reference on plurals](messages.md#offset-and-remainder) for more information.
 
-## `length(list)` {#length}
+## `length(list)` or `list.length()` {#length}
 
 Returns the length of a list.
 
-## `concatLists(list, list...)` {#concatLists}
+## `concatLists(list, list...)` or `list.concat(list)` {#concatLists}
 
 Joins two or more lists together.
 
-## `listContains(list, value)` {#listContains}
+## `listContains(list, value)` or `list.contains(value)` {#listContains}
 
 Checks if the given value is inside the list.
 
-## `listIndexOf(list, value)` {#listIndexOf}
+## `listIndexOf(list, value)` or `list.indexOf(value)` {#listIndexOf}
 
 Return the index of the value in list, or -1.
 
-## `join(list, separator)` {#join}
+## `list.slice(from[, to])` {#listSlice}
+
+Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
+Negative indices are supported and match the
+[JavaScript spec](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/slice).
+
+## `join(list, separator)` or `list.join(separator)` {#join}
 
 Joins a list of strings or integers with a string separator.
 

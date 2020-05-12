@@ -38,7 +38,7 @@ public interface SoyList extends SoyLegacyObjectMap {
    *
    * @return The length.
    */
-  public int length();
+  int length();
 
   /**
    * Gets a Java list of all value providers in this SoyList. Note that value providers are often
@@ -47,7 +47,7 @@ public interface SoyList extends SoyLegacyObjectMap {
    * @return A Java list of all value providers.
    */
   @Nonnull
-  public List<? extends SoyValueProvider> asJavaList();
+  List<? extends SoyValueProvider> asJavaList();
 
   /**
    * Gets a Java list all values in this SoyList. All value providers will be eagerly resolved.
@@ -55,7 +55,7 @@ public interface SoyList extends SoyLegacyObjectMap {
    * @return A Java list of all resolved values.
    */
   @Nonnull
-  public List<? extends SoyValue> asResolvedJavaList();
+  List<? extends SoyValue> asResolvedJavaList();
 
   /**
    * Gets a value of this SoyList.
@@ -63,7 +63,7 @@ public interface SoyList extends SoyLegacyObjectMap {
    * @param index The index to get.
    * @return The value for the given index, or null if no such index.
    */
-  public SoyValue get(int index);
+  SoyValue get(int index);
 
   /**
    * Gets a provider of a value of this SoyList.
@@ -71,5 +71,5 @@ public interface SoyList extends SoyLegacyObjectMap {
    * @param index The index to get.
    * @return A provider of the value for the given index, or null if no such index.
    */
-  public SoyValueProvider getProvider(int index);
+  SoyValueProvider getProvider(int index);
 }
