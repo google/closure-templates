@@ -107,6 +107,10 @@ public final class BytecodeUtils {
   public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);
   public static final Type SOY_VISUAL_ELEMENT_TYPE = Type.getType(SoyVisualElement.class);
   public static final Type SOY_VISUAL_ELEMENT_DATA_TYPE = Type.getType(SoyVisualElementData.class);
+  public static final Type CLASS_TYPE = Type.getType(Class.class);
+  public static final Type INTEGER_TYPE = Type.getType(Integer.class);
+  public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
+  public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");
@@ -391,6 +395,15 @@ public final class BytecodeUtils {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.visitInsn(Opcodes.ACONST_NULL);
+      }
+    };
+  }
+
+  public static Expression constant(Type type) {
+    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+      @Override
+      protected void doGen(CodeBuilder mv) {
+        mv.pushType(type);
       }
     };
   }
