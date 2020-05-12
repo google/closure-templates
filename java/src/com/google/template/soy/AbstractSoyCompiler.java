@@ -108,12 +108,11 @@ public abstract class AbstractSoyCompiler {
   private List<File> globalsFiles = new ArrayList<>();
 
   @Option(
-    name = "--pluginModules",
-    usage =
-        "Specifies the full class names of Guice modules for function plugins and"
-            + " print directive plugins (comma-delimited list).",
-    handler = SoyCmdLineParser.ModuleListOptionHandler.class
-  )
+      name = "--pluginModules",
+      usage =
+          "Specifies the full class names of Guice modules for function plugins and"
+              + " print directive plugins (comma-delimited list).",
+      handler = SoyCmdLineParser.ModuleListOptionHandler.class)
   private List<Module> pluginModules = new ArrayList<>();
 
   @Option(
@@ -131,13 +130,19 @@ public abstract class AbstractSoyCompiler {
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> protoFileDescriptors = new ArrayList<>();
 
-
   @Option(
       name = "--loggingConfig",
       aliases = "--loggingConfigs",
       usage = "Location of logging config protos in binary proto format. Optional.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> loggingConfigs = new ArrayList<>();
+
+  @Option(
+      name = "--cssSummaries",
+      aliases = "--cssSummaries",
+      usage = "List of css summary files used to check strict deps against css dependencies",
+      handler = SoyCmdLineParser.FileListOptionHandler.class)
+  private List<File> cssSummaries = new ArrayList<>();
 
   @Option(
       name = "--enableExperimentalFeatures",
@@ -150,12 +155,11 @@ public abstract class AbstractSoyCompiler {
   private List<String> experimentalFeatures = new ArrayList<>();
 
   @Option(
-    name = "--disableOptimizerForTestingUseOnly",
-    usage =
-        "Disable optimizer in Soy compiler. Optimzer tries to simplify the Soy AST and improves "
-            + "the performance in general. "
-            + "This flag should only be set in integration test environment."
-  )
+      name = "--disableOptimizerForTestingUseOnly",
+      usage =
+          "Disable optimizer in Soy compiler. Optimzer tries to simplify the Soy AST and improves "
+              + "the performance in general. "
+              + "This flag should only be set in integration test environment.")
   private boolean disableOptimizer = false;
 
   /** The remaining arguments after parsing command-line flags. */
@@ -437,7 +441,6 @@ public abstract class AbstractSoyCompiler {
     }
     return globals;
   }
-
 
   /**
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.

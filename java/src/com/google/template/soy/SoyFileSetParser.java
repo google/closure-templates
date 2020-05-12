@@ -37,6 +37,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -128,6 +129,9 @@ public abstract class SoyFileSetParser {
 
   public abstract SoyTypeRegistry typeRegistry();
 
+  @Nullable
+  public abstract ImmutableList<File> cssSummaries();
+
   /** Builder for {@link SoyFileSetParser}. */
   @AutoValue.Builder
   public abstract static class Builder {
@@ -144,6 +148,8 @@ public abstract class SoyFileSetParser {
     public abstract Builder setErrorReporter(ErrorReporter errorReporter);
 
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
+
+    public abstract Builder setCssSummaries(List<File> cssSummaries);
 
     public abstract SoyFileSetParser build();
   }

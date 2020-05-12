@@ -145,6 +145,8 @@ public final class SoyFileSet {
 
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
+    private ImmutableList<File> cssSummaries = ImmutableList.of();
+
     private boolean skipPluginValidation = false;
 
     private boolean optimize = true;
@@ -223,7 +225,8 @@ public final class SoyFileSet {
           warningSink,
           pluginRuntimeJars,
           skipPluginValidation,
-          optimize);
+          optimize,
+          cssSummaries);
     }
 
     /** Adds one {@link SoySourceFunction} to the functions used by this SoyFileSet. */
@@ -565,6 +568,11 @@ public final class SoyFileSet {
       return this;
     }
 
+    Builder setCssSummaries(List<File> cssSummaries) {
+      this.cssSummaries = ImmutableList.copyOf(cssSummaries);
+      return this;
+    }
+
     /**
      * Sets whether or not to skip plugin validation. Defaults to false. This should usually not be
      * set unless you're doing something real funky.
@@ -589,6 +597,7 @@ public final class SoyFileSet {
   private final ValidatedConformanceConfig conformanceConfig;
   private final ValidatedLoggingConfig loggingConfig;
   private final ImmutableList<File> pluginRuntimeJars;
+  private final ImmutableList<File> cssSummaries;
 
   private final ImmutableList<SoyFunction> soyFunctions;
   private final ImmutableList<SoyPrintDirective> printDirectives;
@@ -620,7 +629,8 @@ public final class SoyFileSet {
       @Nullable Appendable warningSink,
       ImmutableList<File> pluginRuntimeJars,
       boolean skipPluginValidation,
-      boolean optimize) {
+      boolean optimize,
+      ImmutableList<File> cssSummaries) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
@@ -637,6 +647,7 @@ public final class SoyFileSet {
     this.pluginRuntimeJars = pluginRuntimeJars;
     this.skipPluginValidation = skipPluginValidation;
     this.optimize = optimize;
+    this.cssSummaries = cssSummaries;
   }
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
@@ -747,7 +758,7 @@ public final class SoyFileSet {
           // avoid this filtering...
           ImmutableSet<Class<?>> internalFunctionNames =
               InternalPlugins.internalFunctions().stream()
-                  .map(f -> f.getClass())
+                  .map(Object::getClass)
                   .collect(toImmutableSet());
           new PluginValidator(errorReporter, typeRegistry, pluginRuntimeJars)
               .validate(
@@ -1157,6 +1168,7 @@ public final class SoyFileSet {
         .setCache(cache)
         .setSoyFileSuppliers(soyFileSuppliers)
         .setCompilationUnits(compilationUnits)
+        .setCssSummaries(cssSummaries)
         .setTypeRegistry(typeRegistry)
         .setPassManager(builder.setTypeRegistry(typeRegistry).build())
         .setErrorReporter(errorReporter)
