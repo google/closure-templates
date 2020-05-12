@@ -1410,7 +1410,7 @@ goog.typeOf = function(value) {
  * @deprecated Use Array.isArray instead.
  */
 goog.isArray = function(val) {
-  return goog.typeOf(val) == 'array';
+  return Array.isArray(val);
 };
 
 

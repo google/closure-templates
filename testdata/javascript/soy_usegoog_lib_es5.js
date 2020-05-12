@@ -682,7 +682,7 @@ goog.typeOf = function(value) {
   return s;
 };
 goog.isArray = function(val) {
-  return "array" == goog.typeOf(val);
+  return Array.isArray(val);
 };
 goog.isArrayLike = function(val) {
   var type = goog.typeOf(val);
