@@ -16,8 +16,9 @@
 
 package com.google.template.soy.passes.htmlmatcher;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.SetMultimap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -100,8 +101,8 @@ public final class HtmlTagMatchingPass {
    * Record of nodes and their related tag nodes. This is used to "save" a record of actions to be
    * taken. At the end of the graph traversal, if there are no errors, "commit" the changes.
    */
-  private final HashMultimap<HtmlTagNode, Optional<HtmlTagNode>> annotationMap =
-      HashMultimap.create();
+  private final SetMultimap<HtmlTagNode, Optional<HtmlTagNode>> annotationMap =
+      LinkedHashMultimap.create();
 
   private final ExprEquivalence exprEquivalence = new ExprEquivalence();
 
