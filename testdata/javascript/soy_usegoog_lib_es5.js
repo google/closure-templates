@@ -3014,7 +3014,7 @@ goog.html.SafeHtml.combineAttributes = function(fixedAttributes, defaultAttribut
   return combinedAttributes;
 };
 goog.html.SafeHtml.DOCTYPE_HTML = goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse("<!DOCTYPE html>", goog.i18n.bidi.Dir.NEUTRAL);
-goog.html.SafeHtml.EMPTY = goog.html.SafeHtml.createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse(goog.global.trustedTypes ? goog.global.trustedTypes.emptyHTML : "");
+goog.html.SafeHtml.EMPTY = goog.html.SafeHtml.createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse(goog.global.trustedTypes && goog.global.trustedTypes.emptyHTML ? goog.global.trustedTypes.emptyHTML : "");
 goog.html.SafeHtml.BR = goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse("<br>", goog.i18n.bidi.Dir.NEUTRAL);
 goog.html.uncheckedconversions = {};
 goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract = function(justification, html, opt_dir) {

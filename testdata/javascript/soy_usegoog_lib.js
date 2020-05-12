@@ -13652,8 +13652,12 @@ goog.html.SafeHtml.EMPTY =
             // string values.
             // MOE:begin_strip
             // TODO(b/155299094): Refactor after adding compiler support.
+            // Check emptyHTML existence to workaround
+            // https://crbug.com/1081632.
             // MOE:end_strip
-            goog.global.trustedTypes ? goog.global.trustedTypes.emptyHTML : '');
+            goog.global.trustedTypes && goog.global.trustedTypes.emptyHTML ?
+                goog.global.trustedTypes.emptyHTML :
+                '');
 
 
 /**
