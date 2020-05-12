@@ -40,22 +40,22 @@ import java.util.Queue;
 import javax.annotation.Nullable;
 
 /**
- * Pass for checking the balance of open tag nodes with possible close tags.
- * Because Soy contains control flow, it is possible for a open tag node to possible map to
- * different close tags. For example, consider the following:
+ * Pass for checking the balance of open tag nodes with possible close tags. Because Soy contains
+ * control flow, it is possible for a open tag node to possible map to different close tags. For
+ * example, consider the following:
  *
  * <pre>
- * @code {
+ * {@code} {
  *   <div>
  *   {if $foo}</div><div>{/if}
  *   </div>
  * }
  * </pre>
  *
- * Because of this, we need to consider all possible paths statically inferable from the template
- * at hand (calls are not considered). In this example, we need to check if $foo==true
- * and $foo == false generate correct DOM. This visitor verifies that all possible paths are
- * legitimate and then annotates open tags and close tags with their possible pairs.
+ * Because of this, we need to consider all possible paths statically inferable from the template at
+ * hand (calls are not considered). In this example, we need to check if $foo==true and $foo ==
+ * false generate correct DOM. This visitor verifies that all possible paths are legitimate and then
+ * annotates open tags and close tags with their possible pairs.
  */
 public final class HtmlTagMatchingPass {
   private static final SoyErrorKind INVALID_CLOSE_TAG =
