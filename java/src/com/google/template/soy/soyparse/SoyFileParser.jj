@@ -155,6 +155,8 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -528,7 +530,7 @@ public class SoyFileParser {
   private IdGenerator nodeIdGen;
 
   /** Path of source being parsed. This is descriptive, not a means to refetch source. */
-  private String filePath;
+  public String filePath;
 
   /** Controls how to handle whitespaces (e.g. whether to join lines or preserve whitespace). */
   private WhitespaceMode whitespaceMode = WhitespaceMode.JOIN;
@@ -777,16 +779,55 @@ TOKEN_MGR_DECLS: {
     prevState = -1;
   }
 
-  void addBlankLines(Token blankLinesToken) {
-    SourceLocation tokenLocation = parser.createSrcLoc(blankLinesToken);
-    // SourceLocation for the blank line token starts at the end of the previous line.
-    // Manually setting it at the beginning of the first blank line.
+
+  /**
+   * If the matched whitespace token contains a blank line, stores the blank line as a "comment" for
+   * the formatter. This should not be called on a token that contains non-whitespace.
+   */
+  void maybeAddBlankLines(Token whitespaceToken) {
+     SourceLocation tokenLocation = parser.createSrcLoc(whitespaceToken);
+    maybeAddBlankLines(tokenLocation.getBeginPoint(), tokenLocation.getEndPoint(),
+        whitespaceToken.image);
+  }
+
+  /**
+   * If a stretch of whitespace contains a blank line (e.g. "\n\n"), stores the blank line for the
+   * formatter.
+   */
+  void maybeAddBlankLines(Point wsBegin, Point wsEnd, String whitespaceStr) {
+    // Since whitespace is consumed in quite a few different ways/places by the parser, regexing the
+    // whitespace tokens and/or special tokens here is a little easier than splitting out separate
+    // blank line tokens and handling them everywhere we handle whitespace (e.g. RawTextBuilder
+    // relies on WS tokens to construct text offsets).
+    Matcher blankLineMatcher = Pattern.compile("\n(\\s*\n)+").matcher(whitespaceStr);
+    // If the whitespace didn't contain any blank lines, early exit.
+    if (!blankLineMatcher.find()) {
+      return;
+    }
+
+
+    // If there was a blank line, construct a source location that starts at the first blank line
+    // and ends at the last blank line.
+
+    // The matched whitespace will always start at the "\n" at the end of the previous line. The
+    // blank line starts at the beginning of the next line.
+    SourceLocation.Point blankLineBegin =
+        SourceLocation.Point.create(wsBegin.line() + 1, 1);
+
+    // If the whitespace ends on a new line, the end point's line is blank. Otherwise, the stretch
+    // of blank lines ended on the previous line.
+    SourceLocation.Point blankLineEnd =
+        whitespaceStr.charAt(whitespaceStr.length() - 1) == '\n'
+        ? SourceLocation.Point.create(wsEnd.line(), 1)
+        : SourceLocation.Point.create(wsEnd.line() - 1, 1);
+
     SourceLocation loc =
         new SourceLocation(
-            tokenLocation.getFilePath(),
-            SourceLocation.Point.create(tokenLocation.getBeginLine() + 1, 1),
-            tokenLocation.getEndPoint());
-    comments.add(Comment.create(Comment.Type.BLANK_LINES, blankLinesToken.image, loc));
+            parser.filePath,
+            blankLineBegin,
+            blankLineEnd);
+
+    comments.add(Comment.create(Comment.Type.BLANK_LINES, whitespaceStr, loc));
   }
 
   void addLineComment(Token commentToken) {
@@ -831,15 +872,13 @@ TOKEN_MGR_DECLS: {
 // -------------------------------------------------------------------------------------------------
 // Whitespace and comments.
 
-// This only matches blank lines that are not swallowed by SkipWhitespace.
-// TODO(b/151747854): Preserve blank lines in other locations.
-// TODO(b/151747854): Add TEMPLATE_DEFAULT.
-<DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SPECIAL_TOKEN: {
-  < <BLANK_LINES> > { addBlankLines(matchedToken); }
-}
-
 <DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SKIP: {
-  < <WS> >
+  < ( <WS> )+> {
+     maybeAddBlankLines(
+         Point.create(input_stream.getBeginLine(),input_stream.getBeginColumn()),
+         Point.create(input_stream.getEndLine(),input_stream.getEndColumn()),
+         image.toString());
+  }
 }
 
 <DEFAULT, IN_CMD_TAG, EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE> SPECIAL_TOKEN: {
@@ -855,8 +894,21 @@ TOKEN_MGR_DECLS: {
   // preceeding whitespace. This is necessary to make this unambiguous with the TOKEN_WS definition.
   < (<WS>)+ <LINE_COMMENT> >
   {
-    int i = matchedToken.image.indexOf('/');
-    trimTokenBegin(matchedToken, i);
+    int startOfLineComment = matchedToken.image.indexOf('/');
+
+    // If the leading whitespace contained a blank line, we need to add it as a "comment" for the
+    // formatter.
+    if (startOfLineComment > 0) {
+      String whitespaceStr = matchedToken.image.substring(0, startOfLineComment);
+      Point wsBeginPoint = Point.create(matchedToken.beginLine, matchedToken.beginColumn);
+      trimTokenBegin(matchedToken, startOfLineComment - 1);
+      Point wsEndPoint =  Point.create(matchedToken.beginLine, matchedToken.beginColumn);
+
+      maybeAddBlankLines(wsBeginPoint, wsEndPoint, whitespaceStr);
+    }
+
+   // Now we can add the line comment.
+    trimTokenBegin(matchedToken, startOfLineComment == 0 ? 0 : 1);
     addLineComment(matchedToken);
   }
 }
@@ -1137,7 +1189,7 @@ TOKEN_MGR_DECLS: {
 
 // Tokens for supporting raw text and whitespace matching
 <TEMPLATE_DEFAULT> TOKEN: {
-  < TOKEN_WS: ( <WS> )+ >
+  < TOKEN_WS: ( <WS> )+ > { maybeAddBlankLines(matchedToken);}
   // This complex token is any sequence of non whitespace non '/' non "{" or a single '/' character
   // This ensures that it isn't ambiguous with other tokens in TEMPLATE_DEFAULT like comments,
   // TOKEN_WS or any of the command tokens.
@@ -1268,7 +1320,6 @@ TOKEN_MGR_DECLS: {
 
 <*> TOKEN: {
   < #WS: [" ", "\t", "\n", "\r"] | "\r\n" >
-| < #BLANK_LINES: ( (" ")* ("\r")? "\n" ){2,} > // One or more consecutive blank lines.
 | < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 | < #DEC_DIGITS: ( ["0"-"9"] )+ >
 | < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
