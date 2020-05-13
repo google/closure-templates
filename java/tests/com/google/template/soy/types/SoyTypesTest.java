@@ -439,6 +439,8 @@ public class SoyTypesTest {
     // Any string types should be resolved to string
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(INT_TYPE, STRING_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
+    assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, BOOL_TYPE, plusOp))
+        .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, FLOAT_TYPE, plusOp))
         .isEqualTo(STRING_TYPE);
     assertThat(SoyTypes.getSoyTypeForBinaryOperator(STRING_TYPE, NUMBER_TYPE, plusOp))
