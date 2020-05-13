@@ -571,6 +571,45 @@ public class SoyConformanceTest {
   }
 
   @Test
+  public void testBanFragmentNavigation() {
+    assertViolation(
+        "requirement: {\n"
+            + "  custom: {\n"
+            + "    java_class: 'com.google.template.soy.conformance.BanFragmentNavigation'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "<a href='#foo'></a>" + "{/template}");
+    assertNoViolation(
+        "requirement: {\n"
+            + "  custom: {\n"
+            + "    java_class: 'com.google.template.soy.conformance.BanFragmentNavigation'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "<a href='./#foo'></a>" + "{/template}");
+    assertNoViolation(
+        "requirement: {\n"
+            + "  custom: {\n"
+            + "    java_class: 'com.google.template.soy.conformance.BanFragmentNavigation'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n" + "{template .foo}\n" + "<a href='#'></a>" + "{/template}");
+    assertNoViolation(
+        "requirement: {\n"
+            + "  custom: {\n"
+            + "    java_class: 'com.google.template.soy.conformance.BanFragmentNavigation'\n"
+            + "  }\n"
+            + "  error_message: 'foo'"
+            + "}",
+        "{namespace ns}\n"
+            + "{template .foo}\n"
+            + "<some-custom-tag href='#'></some-custom-tag>"
+            + "{/template}");
+  }
+
+  @Test
   public void testBannedCssSelector() {
     assertViolation(
         "requirement: {\n"
