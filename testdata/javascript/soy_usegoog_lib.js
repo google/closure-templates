@@ -22820,7 +22820,7 @@ soy.checks.isURI = function(value) {
 /**
  * @fileoverview Compact number formatting symbols.
  *
- * File generated from CLDR ver. 36
+ * File generated from CLDR ver. 37
  *
  * To reduce the file size (which may cause issues in some JS
  * developing environments), this file will only contain locales
@@ -31556,7 +31556,7 @@ goog.i18n.currency.CurrencyInfoTier2 = {
 /**
  * @fileoverview Number formatting symbols.
  *
- * File generated from CLDR ver. 36
+ * File generated from CLDR ver. 37
  *
  * To reduce the file size (which may cause issues in some JS
  * developing environments), this file will only contain locales
@@ -33538,10 +33538,10 @@ goog.i18n.NumberFormatSymbols_ne = {
   PERMILL: '‰',
   INFINITY: '∞',
   NAN: 'NaN',
-  DECIMAL_PATTERN: '#,##0.###',
+  DECIMAL_PATTERN: '#,##,##0.###',
   SCIENTIFIC_PATTERN: '#E0',
-  PERCENT_PATTERN: '#,##0%',
-  CURRENCY_PATTERN: '¤ #,##0.00',
+  PERCENT_PATTERN: '#,##,##0%',
+  CURRENCY_PATTERN: '¤ #,##,##0.00',
   DEF_CURRENCY_CODE: 'NPR'
 };
 
@@ -33561,10 +33561,10 @@ goog.i18n.NumberFormatSymbols_ne_u_nu_latn = {
   PERMILL: '‰',
   INFINITY: '∞',
   NAN: 'NaN',
-  DECIMAL_PATTERN: '#,##0.###',
+  DECIMAL_PATTERN: '#,##,##0.###',
   SCIENTIFIC_PATTERN: '#E0',
-  PERCENT_PATTERN: '#,##0%',
-  CURRENCY_PATTERN: '¤ #,##0.00',
+  PERCENT_PATTERN: '#,##,##0%',
+  CURRENCY_PATTERN: '¤ #,##,##0.00',
   DEF_CURRENCY_CODE: 'NPR'
 };
 
