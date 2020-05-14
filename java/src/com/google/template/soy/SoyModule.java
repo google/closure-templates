@@ -26,7 +26,10 @@ import java.util.Set;
 /**
  * Guice module for Soy's programmatic interface.
  *
+ * @deprecated switch to using APIs like SoySauceBuilder, or use the command line interface for soy
+ *     compilation
  */
+@Deprecated
 public final class SoyModule extends AbstractModule {
 
   @Override

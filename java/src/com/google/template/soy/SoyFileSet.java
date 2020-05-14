@@ -109,7 +109,11 @@ public final class SoyFileSet {
    *
    * <p>If you need additional directives, functions, or types, create the Builder instance and then
    * call {@link Builder#addSourceFunction(SoySourceFunction)}.
+   *
+   * @deprecated Use the command line compilers to generate code instead of this interface. SoySauce
+   *     users can get an SoySauce instance via SoySauceBuilder.
    */
+  @Deprecated
   public static Builder builder() {
     return new Builder(/* ignored= */ true);
   }
@@ -157,7 +161,7 @@ public final class SoyFileSet {
     private final ImmutableSet.Builder<SoySourceFunction> sourceFunctions = ImmutableSet.builder();
     private final ImmutableSet.Builder<SoySourceFunction> sourceMethods = ImmutableSet.builder();
 
-    private Builder(boolean ignored) {
+    Builder(boolean ignored) {
       // we use an ignored parameter to prevent guice from creating implicit bindings for this
       // object.
     }

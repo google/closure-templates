@@ -25,6 +25,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
@@ -35,6 +36,8 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -46,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckReturnValue;
@@ -246,13 +250,13 @@ public abstract class AbstractSoyCompiler {
       exitWithError("Must provide list of source Soy files (--srcs).");
     }
 
-    SoyFileSet.Builder sfsBuilder;
+    SoyFileSet.Builder sfsBuilder = new SoyFileSet.Builder(/*ignored=*/ true);
+
     if (!pluginModules.isEmpty()) {
       guiceTimer.start();
       // Only create the Builder through an Injector if the user passed pluginModules.
       // Otherwise, we don't need to go through Guice at all.
       List<Module> modules = new ArrayList<>();
-      modules.add(new SoyModule());
       modules.addAll(pluginModules);
       Injector injector;
       try {
@@ -263,10 +267,12 @@ public abstract class AbstractSoyCompiler {
                 + "--pluginModules?",
             t);
       }
-      sfsBuilder = injector.getInstance(SoyFileSet.Builder.class);
+      Optional.ofNullable(injector.getExistingBinding(new Key<Set<SoyFunction>>() {}))
+          .ifPresent(b -> sfsBuilder.addSoyFunctions(b.getProvider().get()));
+
+      Optional.ofNullable(injector.getExistingBinding(new Key<Set<SoyPrintDirective>>() {}))
+          .ifPresent(b -> sfsBuilder.addSoyPrintDirectives(b.getProvider().get()));
       guiceTimer.stop();
-    } else {
-      sfsBuilder = SoyFileSet.builder();
     }
     sfsBuilder
         .addSourceFunctions(sourceFunctions)
