@@ -264,6 +264,22 @@ NOTE: In the example above, the `attendees` subkeys are accessed using null-safe
 accesses (e.g. `$attendees[1]?.gender` instead of `$attendees[1].gender`) see
 the [pitfalls section](#placholder_error) for more information about this.
 
+### Hidden
+
+If you need to hide your messages from volunteer translators outside of Google
+(if you're concerned that confidential information might be leaked about a new
+product/feature), you can set the `hidden` attribute on the message to ensure
+that your message is only translated by non-volunteers.
+
+```soy
+{msg desc="Description of the message" hidden="true"}
+    Message for a super secret new feature.
+  {/msg}
+```
+
+Once your product/feature has been released, you should remove the hidden
+attribute to restore access for all translators.
+
 ## fallbackmsg {#fallbackmsg}
 
 Syntax:
