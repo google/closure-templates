@@ -40,6 +40,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -274,8 +275,12 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     ExprNode filterExpr = node.getFilterExpr();
     ComprehensionVarDefn itemName = node.getListIterVar();
     ImmutableList.Builder<SoyValueProvider> mappedValues = ImmutableList.builder();
-    for (SoyValueProvider soyValue : ((SoyList) listValue).asJavaList()) {
-      env.bind(itemName, soyValue);
+    List<? extends SoyValueProvider> list = ((SoyList) listValue).asJavaList();
+    for (int i = 0; i < list.size(); i++) {
+      env.bind(itemName, list.get(i));
+      if (node.getIndexVar() != null) {
+        env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
+      }
       if (filterExpr != null) {
         if (!visit(filterExpr).booleanValue()) {
           continue;
