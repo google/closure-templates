@@ -121,6 +121,7 @@ public final class ExprEquivalence {
         protected Integer visitListComprehensionNode(ListComprehensionNode node) {
           return Objects.hash(
               node.getListIterVar(),
+              node.getIndexVar(),
               node.getListExpr(),
               node.getListItemTransformExpr(),
               node.getFilterExpr());

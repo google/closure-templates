@@ -23,6 +23,7 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -44,6 +45,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind IMPORTS_NOT_ALLOWED =
       SoyErrorKind.of("Soy imports are not available for general use.");
 
+  private static final SoyErrorKind INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED =
+      SoyErrorKind.of("Soy indices for list comprehensions are not available for general use.");
+
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
 
@@ -64,6 +68,16 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
     if (!features.contains("enableImports")) {
       for (ImportNode child : file.getImports()) {
         reporter.report(child.getSourceLocation(), IMPORTS_NOT_ALLOWED);
+      }
+    }
+    if (!features.contains("indices_for_list_comprehension")) {
+      for (ListComprehensionNode listComprehensionNode :
+          SoyTreeUtils.getAllNodesOfType(file, ListComprehensionNode.class)) {
+        if (listComprehensionNode.getIndexVar() != null) {
+          reporter.report(
+              listComprehensionNode.getIndexVar().nameLocation(),
+              INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED);
+        }
       }
     }
   }

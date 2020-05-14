@@ -104,11 +104,14 @@ public final class ResolveNamesPass implements CompilerFilePass {
       // Search for the name to see if it is being redefined.
       VarDefn preexisting = lookup(defn.name());
       if (preexisting != null) {
-        Optional<SourceLocation> sourceLocation = forVarDefn(preexisting);
+        Optional<SourceLocation> preexistingSourceLocation = forVarDefn(preexisting);
+        SourceLocation defnSourceLocation =
+            defn.nameLocation() == null ? definingNode.getSourceLocation() : defn.nameLocation();
         String location =
-            sourceLocation.isPresent() ? " at line " + sourceLocation.get().getBeginLine() : "";
-        errorReporter.report(
-            definingNode.getSourceLocation(), VARIABLE_ALREADY_DEFINED, defn.name(), location);
+            preexistingSourceLocation.isPresent()
+                ? " at line " + preexistingSourceLocation.get().getBeginLine()
+                : "";
+        errorReporter.report(defnSourceLocation, VARIABLE_ALREADY_DEFINED, defn.name(), location);
         return false;
       }
       currentScope.peek().put(defn.name(), defn);
@@ -269,6 +272,11 @@ public final class ResolveNamesPass implements CompilerFilePass {
       // Define the list item variable.
       localVariables.enterScope();
       localVariables.define(node.getListIterVar(), node);
+
+      // Define the optional index variable.
+      if (node.getIndexVar() != null) {
+        localVariables.define(node.getIndexVar(), node);
+      }
 
       // Now we can visit the list item map and filter expressions.
       if (node.getFilterExpr() != null) {

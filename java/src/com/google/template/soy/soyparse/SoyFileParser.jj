@@ -4138,24 +4138,29 @@ private ExprNode List() :
 }
 
 /**
- * Parses list comprehensions. ListComprehension -> "[" Expr for $var in Expr [ if Expr ] "]". The
- * opening "[ Expr" has already been parsed by {@link #List()}.
+ * Parses list comprehensions. ListComprehension -> "[" Expr for $var [ , $i ] in Expr [ if Expr ] "]".
+ * The opening "[ Expr" has already been parsed by {@link #List()}.
  *
  * @param begin token for the opening left bracket ("[").
- * @param itemExpr expr to perform on each item in the list (e.g. "$a+1" in [$a+1 for $a in $foo]).
+ * @param itemExpr expr to perform on each item in the list (e.g. "$a+$i" in [$a+$i for $a, $i in $foo]).
  */
 private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
 {
   Token end, listIterVar = null;
+  Token indexVar = null;
   ExprNode listExpr = null;
   ExprNode filterExpr = null;
   SourceLocation listIterVarIdentLocation = null;
 }
 {
-  // "[Expr" has already been matched. Now try to match " for $var in Expr]".
+  // "[Expr" has already been matched. Now try to match " for $var, $index in Expr]".
   <FOR>
   try {
     listIterVar = <DOLLAR_IDENT>
+    [
+      <COMMA>
+      indexVar = <DOLLAR_IDENT>
+    ]
     <IN>
     listExpr = Expr()
     [
@@ -4168,13 +4173,17 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
         reportTemplateBodyErrorAndSkipTo(
             e,
             "\nList comprehensions should be formatted as:"
-               + " \"[$foo.bar for $foo in <listExpression>]\".",
+               + " \"[$foo.bar for $foo in <listExpression>]\" or \"[$foo.bar for $foo, $i in <listExpression>]\".",
             RBRACKET);
-    return new ListComprehensionNode(errorExpr(begin), "$error", createSrcLoc(begin),
-        errorExpr(begin), errorExpr(begin), createSrcLoc(begin, end),  nodeIdGen.genId());
+    return new ListComprehensionNode(errorExpr(begin), "$error", createSrcLoc(begin), "$error",
+        createSrcLoc(begin), errorExpr(begin), errorExpr(begin), createSrcLoc(begin, end),
+        nodeIdGen.genId());
   }
-  { return new ListComprehensionNode(listExpr, listIterVar.image, createSrcLoc(listIterVar),
-       itemExpr, filterExpr, createSrcLoc(begin, end),  nodeIdGen.genId()); }
+  { String indexVarName = indexVar == null ? null : indexVar.image;
+    SourceLocation indexVarNameLocation = indexVar == null ? null : createSrcLoc(indexVar);
+    return new ListComprehensionNode(listExpr, listIterVar.image, createSrcLoc(listIterVar),
+      indexVarName, indexVarNameLocation, itemExpr, filterExpr, createSrcLoc(begin, end),
+      nodeIdGen.genId()); }
 }
 
 /**

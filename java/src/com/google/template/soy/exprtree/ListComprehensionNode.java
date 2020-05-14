@@ -24,12 +24,13 @@ import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 
 /**
- * A node representing a list comprehension expr (e.g. "$a+1 for $a in $myList if $a >= 0").
+ * A node representing a list comprehension expr (e.g. "$a+$i for $a, $i in $myList if $a >= 0").
  *
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class ListComprehensionNode extends AbstractParentExprNode {
   private final ComprehensionVarDefn listIterVar;
+  @Nullable private final ComprehensionVarDefn indexVar;
   private final boolean hasFilter;
   private int nodeId;
 
@@ -37,12 +38,18 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
       ExprNode listExpr,
       String listIterVarName,
       SourceLocation listIterVarNameLocation,
+      String indexVarName,
+      SourceLocation indexVarNameLocation,
       ExprNode itemMapExpr,
       ExprNode filterExpr,
       SourceLocation sourceLocation,
       int nodeId) {
     super(sourceLocation);
     this.listIterVar = new ComprehensionVarDefn(listIterVarName, listIterVarNameLocation, this);
+    this.indexVar =
+        indexVarName == null
+            ? null
+            : new ComprehensionVarDefn(indexVarName, indexVarNameLocation, this);
     this.nodeId = nodeId;
 
     addChild(listExpr);
@@ -64,9 +71,13 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
   private ListComprehensionNode(ListComprehensionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.listIterVar = new ComprehensionVarDefn(orig.listIterVar, this);
+    this.indexVar = orig.indexVar == null ? null : new ComprehensionVarDefn(orig.indexVar, this);
     this.hasFilter = orig.hasFilter;
     this.nodeId = orig.nodeId;
     copyState.updateRefs(orig.listIterVar, this.listIterVar);
+    if (orig.indexVar != null) {
+      copyState.updateRefs(orig.indexVar, this.indexVar);
+    }
   }
 
   @Override
@@ -76,6 +87,11 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
 
   public ComprehensionVarDefn getListIterVar() {
     return listIterVar;
+  }
+
+  @Nullable
+  public ComprehensionVarDefn getIndexVar() {
+    return indexVar;
   }
 
   /** Gets the listExpr in "[itemMapExpr for $var in listExpr]". */
@@ -107,6 +123,23 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
 
   @Override
   public String toSourceString() {
+    if (indexVar != null) {
+      if (hasFilter) {
+        return String.format(
+            "[%s for %s, %s in %s if %s]",
+            getListItemTransformExpr().toSourceString(),
+            listIterVar.name(),
+            indexVar.name(),
+            getListExpr().toSourceString(),
+            getFilterExpr().toSourceString());
+      }
+      return String.format(
+          "[%s for %s, %s in %s]",
+          getListItemTransformExpr().toSourceString(),
+          listIterVar.name(),
+          indexVar.name(),
+          getListExpr().toSourceString());
+    }
     if (hasFilter) {
       return String.format(
           "[%s for %s in %s if %s]",
