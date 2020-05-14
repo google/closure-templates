@@ -435,6 +435,18 @@ final class ExpressionCompiler {
           itemVar.store(
               listVar.invoke(MethodRef.LIST_GET, indexVar).checkedCast(SOY_VALUE_PROVIDER_TYPE),
               itemVar.start());
+      LocalVariable userIndexVar =
+          node.getIndexVar() == null
+              ? null
+              : scope.createNamedLocal(node.getIndexVar().name(), SOY_VALUE_PROVIDER_TYPE);
+      Statement userIndexVarInitializer =
+          userIndexVar == null
+              ? null
+              : userIndexVar.store(
+                  SoyExpression.forInt(BytecodeUtils.numericConversion(indexVar, Type.LONG_TYPE))
+                      .boxAsSoyValueProvider()
+                      .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+                  userIndexVar.start());
 
       SoyExpression visitedMap = visit(mapExpr).box();
       SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr).coerceToBoolean() : null;
@@ -450,10 +462,13 @@ final class ExpressionCompiler {
       int a_length = a_list.size();
       for (int a_i = 0; a_i < a_length; a_i++) {
         Object a = a_list.get(a_i);
-        if (filterPredicate != null && !filterPredicate.test(a)) {
+        if (userIndexVar != null) {
+          int i = a_i;
+        }
+        if (filterPredicate != null && !filterPredicate.test(a,i)) {
           continue;
         }
-        a_result.add(mapFunction.apply(a));
+        a_result.add(mapFunction.apply(a,i));
       }
       return a_result;
 
@@ -480,14 +495,19 @@ final class ExpressionCompiler {
 
                   itemVarInitializer.gen(adapter); // Object a = a_list.get(a_i);
 
+                  if (userIndexVar != null) {
+                    userIndexVarInitializer.gen(adapter); // int i = a_i;
+                  }
+
                   if (visitedFilter != null) {
                     visitedFilter.gen(adapter);
-                    adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a)) continue;
+                    adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a,i)) continue;
                   }
 
                   resultVar.gen(adapter);
                   visitedMap.gen(adapter);
-                  MethodRef.ARRAY_LIST_ADD.invokeUnchecked(adapter); // a_result.add(map.apply(a));
+                  MethodRef.ARRAY_LIST_ADD.invokeUnchecked(
+                      adapter); // a_result.add(map.apply(a,i));
                   adapter.pop(); // pop boolean return value of List.add()
 
                   adapter.mark(loopContinue);

@@ -739,7 +739,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     @Override
     protected void visitListComprehensionNode(ListComprehensionNode node) {
 
-      // Resolve the listExpr in "[itemMapExpr for $var in listExpr if filterExpr]".
+      // Resolve the listExpr in "[itemMapExpr for $var, $index in listExpr if filterExpr]".
       visit(node.getListExpr());
 
       // Report an error if listExpr did not actually evaluate to a list.
@@ -754,6 +754,11 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         // Otherwise, use the list element type to set the type of the iterator ($var in this
         // example).
         node.getListIterVar().setType(((ListType) node.getListExpr().getType()).getElementType());
+      }
+
+      if (node.getIndexVar() != null) {
+        // Set the type of the optional index to integer ($index in this example).
+        node.getIndexVar().setType(IntType.getInstance());
       }
 
       if (node.getFilterExpr() != null) {
