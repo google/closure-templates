@@ -518,8 +518,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       MethodCallNode methodCallNode,
       boolean nullSafe,
       boolean assertNonNull) {
-    // TODO(b/123417146): Handle case when the implementation of the method cannot be determined
-    // from the base type during compile time and the node has multiple SoySourceFunctions.
     Preconditions.checkArgument(methodCallNode.isMethodResolved());
 
     SoyMethod soyMethod = methodCallNode.getSoyMethod();
@@ -539,6 +537,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               ProtoCall.hasField(fieldName, baseType.getFieldDescriptor(fieldName)),
               nullSafe,
               assertNonNull);
+          // When adding new built-in methods it may be necessary to assert that the base expression
+          // is not null in order to prevent a method call on a null instance from ever succeeding.
       }
       throw new AssertionError(builtinMethod);
     } else if (soyMethod instanceof SoySourceFunctionMethod) {

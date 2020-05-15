@@ -718,6 +718,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     Preconditions.checkArgument(methodCallNode.isMethodResolved());
     SoyMethod method = methodCallNode.getSoyMethod();
 
+    // Never allow a null method receiver.
+    containerExpr = assertNotNull(containerExpr);
+
     if (method instanceof BuiltinMethod) {
       errorReporter.report(
           methodCallNode.getAccessSourceLocation(),

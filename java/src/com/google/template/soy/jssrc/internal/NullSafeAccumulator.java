@@ -88,7 +88,12 @@ final class NullSafeAccumulator {
     return this;
   }
 
-  /** Extends the access chain with an arbitrary transformation of the previous tip. */
+  /**
+   * Extends the access chain with an arbitrary transformation of the previous tip.
+   *
+   * <p>If the previous tip is null, execution with throw an error before {@code extender} is
+   * invoked.
+   */
   NullSafeAccumulator functionCall(
       boolean nullSafe, boolean assertNonNull, Function<Expression, Expression> extender) {
     chain.add(new FunctionCall(nullSafe, assertNonNull, extender));
@@ -186,7 +191,13 @@ final class NullSafeAccumulator {
    */
   private abstract static class ChainAccess {
 
-    /** How to extend the tip of the chain. */
+    /**
+     * How to extend the tip of the chain.
+     *
+     * <p>No implementation of this class should allow this method to succeed if {@code prevTip} is
+     * null. This can be guaranteed by calling a method like {@link Expression#dotAccess} on {@code
+     * prevTip} or by adding an explicit check with {@link JsRuntime#SOY_CHECK_NOT_NULL}.
+     */
     abstract Expression extend(Expression prevTip);
 
     final boolean nullSafe;
@@ -226,6 +237,8 @@ final class NullSafeAccumulator {
 
     @Override
     Expression extend(Expression prevTip) {
+      // Never allow a null method receiver.
+      prevTip = SOY_CHECK_NOT_NULL.call(prevTip);
       return funct.apply(prevTip);
     }
 

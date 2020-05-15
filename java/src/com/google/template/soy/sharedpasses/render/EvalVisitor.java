@@ -566,6 +566,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // from the base type during compile time and the node has multiple SoySourceFunctions.
     checkArgument(methodNode.isMethodResolved());
 
+    // Never allow a null method receiver.
+    base = assertNotNull(base, methodNode.getBaseExprChild());
+
     SoyMethod method = methodNode.getSoyMethod();
     if (method instanceof BuiltinMethod) {
       BuiltinMethod builtinMethod = (BuiltinMethod) method;

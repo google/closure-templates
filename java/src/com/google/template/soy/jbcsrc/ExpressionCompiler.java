@@ -1129,6 +1129,11 @@ final class ExpressionCompiler {
       checkArgument(!node.isNullSafe());
       checkArgument(node.isMethodResolved());
 
+      // Never allow a null method receiver.
+      if (!BytecodeUtils.isPrimitive(baseExpr.resultType())) {
+        baseExpr = assertNonNull(baseExpr, node.getBaseExprChild());
+      }
+
       SoyMethod function = node.getSoyMethod();
       if (function instanceof BuiltinMethod) {
         BuiltinMethod builtinMethod = (BuiltinMethod) function;
@@ -1144,8 +1149,6 @@ final class ExpressionCompiler {
                 baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node));
         }
       } else if (function instanceof SoySourceFunctionMethod) {
-        // TODO(user): If baseExpr evaluates to null then this should fail rather than calling
-        // the function with a null first parameter.
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
         List<SoyExpression> args = new ArrayList<>(node.numParams() + 1);
         args.add(baseExpr);
