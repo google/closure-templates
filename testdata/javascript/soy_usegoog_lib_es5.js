@@ -8473,6 +8473,18 @@ soy.$$strToAsciiUpperCase = function(s) {
     return "a" <= c && "z" >= c ? c.toUpperCase() : c;
   }).join("");
 };
+soy.$$strTrim = function(s) {
+  return s.trim();
+};
+soy.$$strStartsWith = function(s, val) {
+  return s.length >= val.length && s.substring(0, val.length) === val;
+};
+soy.$$strEndsWith = function(s, val) {
+  return s.length >= val.length && s.substring(s.length - val.length) === val;
+};
+soy.$$strSplit = function(s, sep) {
+  return s.split(sep);
+};
 soy.$$bidiFormatterCache_ = {};
 soy.$$getBidiFormatterInstance_ = function(bidiGlobalDir) {
   return soy.$$bidiFormatterCache_[bidiGlobalDir] || (soy.$$bidiFormatterCache_[bidiGlobalDir] = new goog.i18n.BidiFormatter(bidiGlobalDir));

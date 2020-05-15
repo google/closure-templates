@@ -31,6 +31,7 @@ import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
+import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -57,6 +58,15 @@ import java.util.List;
       @Signature(
           returnType = "string",
           parameterTypes = {"string", "int", "int"}),
+    })
+@SoyMethodSignature(
+    name = "substring",
+    baseType = "string",
+    value = {
+      @Signature(parameterTypes = "int", returnType = "string"),
+      @Signature(
+          parameterTypes = {"int", "int"},
+          returnType = "string"),
     })
 @SoyPureFunction
 final class StrSubFunction

@@ -1,7 +1,8 @@
-# Functions
+# Methods and Functions
 
 
-Soy functions are called from within Soy [expressions](expressions.md).
+Soy methods and functions are called from within Soy
+[expressions](expressions.md).
 
 The table below lists basic Soy functions that are available by default. For Soy
 functions related to bidirectional text, see
@@ -10,31 +11,17 @@ custom Soy functions, see [Plugins](../dev/plugins.md#function_plugins).
 
 [TOC]
 
+## Basic Functions
 
-## `isFirst($var)` {#isFirst}
-
-Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
-Commands chapter. This does not work for list comprehensions.
-
-## `isLast($var)` {#isLast}
-
-Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
-Commands chapter. This does not work for list comprehensions.
-
-## `index($var)` {#index}
-
-Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
-Commands chapter. This does not work for list comprehensions.
-
-## `isNonnull(value)` {#isNonnull}
+### `isNonnull(value)` {#isNonnull}
 
 Returns `true` if the given value is not `null`.
 
-## `isNull(value)` {#isNull}
+### `isNull(value)` {#isNull}
 
 Returns `true` if the given value is `null`.
 
-## `checkNotNull(value)` {#checkNotNull}
+### `checkNotNull(value)` {#checkNotNull}
 
 Throws a runtime exception if the given value is `null` and returns the value
 otherwise.
@@ -44,67 +31,16 @@ nullable value, the return value of `checkNotNull` will no longer be nullable.
 This can be useful when passing values to templates that expect non nullable
 values.
 
-## `v1Expression(stringLiteral)` {#v1Expression}
-
-The `v1Expression` function is part of the support for deprecated V1 syntax.
-This function can only be used by the JavaScript backend in legacy whitelisted
-files. When used the function must take a
-[string literal](expressions.md#string-literal) that contains some pseudo Soy
-code. The JavaScript backend will perform some simple textual replacements to
-make variable references work, but otherwise emit it as is in the generated
-JavaScript.
-
-## `unknownJsGlobal(stringLiteral)` {#unknownJsGlobal}
-
-The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
-access JavaScript global values outside of the normal support for globals.
-
-This function can only be used by the JavaScript backend in whitelisted files.
-When used the function must take a
-[string literal](expressions.md#string-literal) that contains some JS identifier
-reference.
-
-## `remainder(length)` {#remainder}
-
-The `remainder` function is used in the context of plural messages. See the
-[reference on plurals](messages.md#offset-and-remainder) for more information.
-
-## `length(list)` or `list.length()` {#length}
-
-Returns the length of a list.
-
-## `concatLists(list, list...)` or `list.concat(list)` {#concatLists}
-
-Joins two or more lists together.
-
-## `listContains(list, value)` or `list.contains(value)` {#listContains}
-
-Checks if the given value is inside the list.
-
-## `listIndexOf(list, value)` or `list.indexOf(value)` {#listIndexOf}
-
-Return the index of the value in list, or -1.
-
-## `list.slice(from[, to])` {#listSlice}
-
-Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
-Negative indices are supported and match the
-[JavaScript spec](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/slice).
-
-## `join(list, separator)` or `list.join(separator)` {#join}
-
-Joins a list of strings or integers with a string separator.
-
-## `keys(legacyObjectMap)` {#keys}
+### `keys(legacyObjectMap)` {#keys}
 
 The keys of a [legacy object map](types.md#legacy_object_map) as a list. There
 is no guarantee on order.
 
-## `mapKeys(map)` {#mapKeys}
+### `mapKeys(map)` {#mapKeys}
 
 The keys of a [map](types.md#map) as a list. There is no guarantee on order.
 
-## `mapToLegacyObjectMap(map)` {#mapToLegacyObjectMap}
+### `mapToLegacyObjectMap(map)` {#mapToLegacyObjectMap}
 
 Converts a [map](types.md#map) to an equivalent
 [legacy_object_map](types.md#legacy_object_map).
@@ -112,12 +48,42 @@ Converts a [map](types.md#map) to an equivalent
 Because legacy object maps do not support non-string keys, all of the keys are
 coerced to strings in the returned legacy object map.
 
-## `legacyObjectMapToMap(legacyObjectMap)` {#legacyObjectMapToMap}
+### `legacyObjectMapToMap(legacyObjectMap)` {#legacyObjectMapToMap}
 
 Converts a [legacy object map](types.md#legacy_object_map) to an equivalent
 [map](types.md#map).
 
-## `round(number)`, `round(number, numDigitsAfterDecimalPoint)` {#round}
+### `range([start,] end[, step])` {#range}
+
+Use this to create lists containing arithmetic progressions. It is most often
+used in [indexed for loops](control-flow.md#for-indexed). If the `step` argument
+is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
+0. The full form returns a list of plain integers `[start, start + step, start +
+2 * step, ...]`.
+
+This function behaves identically to the Python `range` builtin function, or the
+Closure `goog.array.range` function.
+
+## For Loop Context Functions
+
+### `isFirst($var)` {#isFirst}
+
+Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
+Commands chapter. This does not work for list comprehensions.
+
+### `isLast($var)` {#isLast}
+
+Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
+Commands chapter. This does not work for list comprehensions.
+
+### `index($var)` {#index}
+
+Use this in `for` loops. See the [`for` section](control-flow.md#for) of the
+Commands chapter. This does not work for list comprehensions.
+
+## Math Functions
+
+### `round(number[, numDigitsAfterDecimalPoint])` {#round}
 
 Rounds the given number to an integer.
 
@@ -128,72 +94,117 @@ that many 0s at the end.
 BEST PRACTICE: Don't use this function to format numbers for display. Prefer
 things like [`formatNum`](#formatNum) which are i18n friendly.
 
-## `floor(number)` {#floor}
+### `floor(number)` {#floor}
 
 The floor of the number.
 
-## `ceiling(number)` {#ceiling}
+### `ceiling(number)` {#ceiling}
 
 The ceiling of the number.
 
-## `min(number, number)` {#min}
+### `min(number, number)` {#min}
 
 The min of the two numbers.
 
-## `max(number, number)` {#max}
+### `max(number, number)` {#max}
 
 The max of the two numbers.
 
-## `parseInt(str)` {#parseInt}
+### `parseInt(str)` {#parseInt}
 
 Parses the string argument as a signed base 10 integer. Returns `null` if the
 string cannot be parsed.
 
-## `parseFloat(str)` {#parseFloat}
+### `parseFloat(str)` {#parseFloat}
 
 Parses the string argument as a floating point number. Returns `null` if the
 string cannot be parsed.
 
-## `randomInt(rangeArg)` {#randomInt}
+### `randomInt(rangeArg)` {#randomInt}
 
 A random integer in the range `[0, rangeArg - 1]` (where `rangeArg` must be a
 positive integer).
 
-## `sqrt(number)` {#sqrt}
+### `sqrt(number)` {#sqrt}
 
 Returns the square root of the number.
 
-## `strContains(str, subStr)` {#strContains}
+## List Methods
+
+### `list.length()` {#length}
+
+Returns the length of a list.
+
+Also callable by function syntax: `length(list)`
+
+### `list.concat(list)` {#concatLists}
+
+Joins two or more lists together.
+
+Also callable by function syntax: `concatLists(list, list...)`
+
+### `list.contains(value)` {#listContains}
+
+Checks if the given value is inside the list.
+
+Also callable by function syntax: `listContains(list, value)`
+
+### `list.indexOf(value)` {#listIndexOf}
+
+Return the index of the value in list, or -1.
+
+Also callable by function syntax: `listIndexOf(list, value)`
+
+### `list.slice(from[, to])` {#listSlice}
+
+Returns a sublist of a list from index `from` inclusive to index `to` exclusive.
+Negative indices are supported and match the
+[JavaScript spec](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/slice).
+
+### `list.join(separator)` {#join}
+
+Joins a list of strings or integers with a string separator.
+
+Also callable by function syntax: `join(list, separator)`
+
+## String Methods
+
+### `str.contains(subStr)` {#strContains}
 
 Checks whether a string contains a particular substring.
 
-## `strIndexOf(str, subStr)` {#strIndexOf}
+Also callable by function syntax: `strContains(str, subStr)`
+
+### `str.endsWith(subStr)` {#strEndsWith}
+
+Checks whether a string ends with a particular substring.
+
+### `str.indexOf(subStr)` {#strIndexOf}
 
 Returns the index of the first occurrence of `substr` within `str`, or `-1`.
 Case-sensitive, 0-based index.
 
-## `strLen(str)` {#strLen}
+Also callable by function syntax: `strIndexOf(str, subStr)`
+
+### `str.length()` {#strLen}
 
 Returns the length of a string in characters.
 
-## `strSmsUriToUri(string)` {#strSmsUriToUri}
+Also callable by function syntax: `strLen(str)`
 
-Returns a sanitized uri given an SMS uri string.
+### `str.split(sep)` {#strSplit}
 
-The RFC for sms: https://tools.ietf.org/html/rfc5724
+Returns a list of tokens generated by splitting a string on a separator. If
+`sep` is the empty string then returns a list with each character of the string.
 
-## `strSub(str, start)` {#strSub}
+### `str.startsWith(subStr)` {#strStartsWith}
 
-Returns the substring of `str` beginning at index `start`.
+Checks whether a string starts with a particular substring.
 
-WARNING: The index is based on characters, not unicode codepoints or more useful
-concepts like graphemes. It is almost never valid to use this to break text
-meant for users into parts since it will be very easy to break the string (e.g.
-split an emoji in half).
+### `str.substring(start[, end])` {#strSub}
 
-## `strSub(str, start, end)` {#strSub}
-
-Returns the substring of `str` beginning at index `start`, and ending at `end -
+Returns the substring of `str` beginning at index `start`. If `end` is provided
+returns the substring of `str` beginning at index `start`, and ending at `end -
 1`.
 
 WARNING: The index is based on characters, not unicode codepoints or more useful
@@ -201,7 +212,9 @@ concepts like graphemes. It is almost never valid to use this to break text
 meant for users into parts since it will be very easy to break the string (e.g.
 split an emoji in half).
 
-## `strToAsciiLowerCase(str)` {#strToAsciiLowerCase}
+Also callable by function syntax: `strSub(str, start[, end])`
+
+### `str.toAsciiLowerCase()` {#strToAsciiLowerCase}
 
 Returns the lowercase representation of the given string.
 
@@ -209,7 +222,9 @@ NOTE: This function doesn't consider locales when tranforming the string and it
 only transforms ASCII characters `A-Z`. Do not use it to lowercase string that
 are localized and/or UNICODE.
 
-## `strToAsciiUpperCase(str)` {#strToAsciiUpperCase}
+Also callable by function syntax: `strToAsciiLowerCase(str)`
+
+### `str.toAsciiUpperCase()` {#strToAsciiUpperCase}
 
 Returns the uppercase representation of the given string.
 
@@ -217,7 +232,42 @@ NOTE: This function doesn't consider locales when tranforming the string and it
 only transforms ASCII characters `a-z`. Do not use it to uppercase string that
 are localized and/or UNICODE.
 
-## `css([baseClass,] selector)` {#css}
+Also callable by function syntax: `strToAsciiUpperCase(str)`
+
+### `strSmsUriToUri(string)` {#strSmsUriToUri}
+
+Returns a sanitized uri given an SMS uri string.
+
+The RFC for sms: https://tools.ietf.org/html/rfc5724
+
+### `str.trim()` {#strTrim}
+
+Returns a copy of a string with leading and trailing whitespace removed.
+
+## Other Functions
+
+
+### `v1Expression(stringLiteral)` {#v1Expression}
+
+The `v1Expression` function is part of the support for deprecated V1 syntax.
+This function can only be used by the JavaScript backend in legacy whitelisted
+files. When used the function must take a
+[string literal](expressions.md#string-literal) that contains some pseudo Soy
+code. The JavaScript backend will perform some simple textual replacements to
+make variable references work, but otherwise emit it as is in the generated
+JavaScript.
+
+### `unknownJsGlobal(stringLiteral)` {#unknownJsGlobal}
+
+The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
+access JavaScript global values outside of the normal support for globals.
+
+This function can only be used by the JavaScript backend in whitelisted files.
+When used the function must take a
+[string literal](expressions.md#string-literal) that contains some JS identifier
+reference.
+
+### `css([baseClass,] selector)` {#css}
 
 Acts as a layer of indirection to avoid hard-coding CSS class names in template
 files. In JavaScript, this becomes a call to the Closure Library function
@@ -261,7 +311,7 @@ complex expressions, pass it as text:
 
 Avoid passing it as other content kinds.
 
-## `xid(str), xid(id)` {#xid}
+### `xid(str), xid(id)` {#xid}
 
 Returns the minified and obfuscated version of a string. The argument can either
 be a `string` literal or a dotted identifier. The implementation of this
@@ -293,18 +343,7 @@ complex expressions, pass it as text:
 
 Avoid passing it as other content kinds.
 
-## `range([start,] end[, step])` {#range}
-
-Use this to create lists containing arithmetic progressions. It is most often
-used in [indexed for loops](control-flow.md#for-indexed). If the `step` argument
-is omitted, it defaults to 1. If the `start` argument is omitted, it defaults to
-0. The full form returns a list of plain integers `[start, start + step, start +
-2 * step, ...]`.
-
-This function behaves identically to the Python `range` builtin function, or the
-Closure `goog.array.range` function.
-
-## `htmlToText(html)` {#htmlToText}
+### `htmlToText(html)` {#htmlToText}
 
 Converts HTML to plain text by removing tags, normalizing whitespace and
 converting entities.
@@ -327,7 +366,18 @@ JavaScript but all common HTML entities are supported.
 This function expects `kind="html"` values. If passed a string, it returns it
 unmodified.
 
-## `formatNum(value, opt_formatType, opt_numbersKeyword, opt_minDigits, opt_maxDigits)` {#formatNum}
+### `ve_data(ve, data)` {#ve_data}
+
+See the documentation for the [ve_data literal](expressions.md#ve_data).
+
+## Localization (l10n) Functions
+
+### `remainder(length)` {#remainder}
+
+The `remainder` function is used in the context of plural messages. See the
+[reference on plurals](messages.md#offset-and-remainder) for more information.
+
+### `formatNum(value, opt_formatType, opt_numbersKeyword, opt_minDigits, opt_maxDigits)` {#formatNum}
 
 Formats a number using the current locale.
 
@@ -362,7 +412,7 @@ For example:
 *   `{formatNum($value, 'decimal', 'native', 2)}`
 *   `{formatNum($value, 'decimal', 'native', 0, 3)}`
 
-## `bidiDirAttr(text, opt_isHtml)` {#bidiDirAttr}
+### `bidiDirAttr(text, opt_isHtml)` {#bidiDirAttr}
 
 If the overall directionality of text is different from the global
 directionality, then this function generates the attribute `dir=ltr` or
@@ -372,18 +422,18 @@ this function returns the empty string. Set the optional second parameter to
 `true` if text contains or can contain HTML tags or HTML escape sequences
 (default `false`).
 
-## `bidiEndEdge()` {#bidiEndEdge}
+### `bidiEndEdge()` {#bidiEndEdge}
 
 Generates the string `'right'` or the string `'left'`, if the global
 directionality is LTR or RTL, respectively.
 
-## `bidiGlobalDir()` {#bidiGlobalDir}
+### `bidiGlobalDir()` {#bidiGlobalDir}
 
 Provides a way to check the current global directionality. Returns `1` for `LTR`
 or `-1` for `RTL`. The global directionality is inferred from the current
 locale.
 
-## `bidiMarkAfter(text, opt_isHtml)` {#bidiMarkAfter}
+### `bidiMarkAfter(text, opt_isHtml)` {#bidiMarkAfter}
 
 If the exit (not overall) directionality of text is different from the global
 directionality, then this function generates either the `LRM` or `RLM` character
@@ -395,25 +445,25 @@ this function for an inline section of text that might be opposite
 directionality from the global directionality. Also, set text to the text that
 precedes this function.
 
-## `bidiMark()` {#bidiMark}
+### `bidiMark()` {#bidiMark}
 
 Generates the bidi mark formatting character (LRM or RLM) that corresponds to
 the global directionality. Note that if you don't want to insert this mark
 unconditionally, you should use bidiMarkAfter(text) instead.
 
-## `bidiStartEdge()` {#bidiStartEdge}
+### `bidiStartEdge()` {#bidiStartEdge}
 
 Generates the string `'left'` or the string `right`, if the global
 directionality is LTR or RTL, respectively.
 
-## `bidiTextDir(text, opt_isHtml)` {#bidiTextDir}
+### `bidiTextDir(text, opt_isHtml)` {#bidiTextDir}
 
 Checks the provided text for its overall (i.e. dominant) directionality. Returns
 `1` for LTR, `-1` for RTL, or `0` for neutral (neither LTR nor RTL). Set the
 optional second parameter to `true` if text contains or can contain HTML tags or
 HTML escape sequences (default `false`).
 
-## `msgWithId(var)` {#msgWithId}
+### `msgWithId(var)` {#msgWithId}
 
 The `msgWithId` function can be used to access the Id of a `{msg...}{/msg}` at
 runtime. Msg ids are usually just used as an implementation detail of the
@@ -461,7 +511,3 @@ Typically this will be `string` or `html`.
 
 IMPORTANT: In order to use this function, you *must* associate the message with
 a `let` variable and it *must* be the only child of that `let` variable.
-
-## `ve_data(ve, data)` {#ve_data}
-
-See the documentation for the [ve_data literal](expressions.md#ve_data).

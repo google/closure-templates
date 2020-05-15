@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2020 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.google.template.soy.basicfunctions;
 
-import com.google.common.base.Ascii;
 import com.google.template.soy.plugin.java.restricted.JavaPluginContext;
 import com.google.template.soy.plugin.java.restricted.JavaValue;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -30,49 +29,42 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/** A function that changes strings to lower case. */
-@SoyFunctionSignature(
-    name = "strToAsciiLowerCase",
-    value =
-        @Signature(
-            parameterTypes = {"string"},
-            returnType = "string"))
+/** Implements {@code str.startsWith(str)}. */
 @SoyMethodSignature(
-    name = "toAsciiLowerCase",
+    name = "startsWith",
     baseType = "string",
-    value = @Signature(returnType = "string"))
+    value = @Signature(parameterTypes = "string", returnType = "bool"))
 @SoyPureFunction
-public final class StrToAsciiLowerCaseFunction
+final class StrStartsWithMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction(
-        "soy", "soy.$$strToAsciiLowerCase", args.get(0).coerceToString());
+    return factory.callNamespaceFunction("soy", "soy.$$strStartsWith", args.get(0), args.get(1));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory.global("runtime.str_to_ascii_lower_case").call(args.get(0).coerceToString());
+    return factory.global("runtime.str_starts_with").call(args.get(0), args.get(1));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method ASCII_TO_LOWER_CASE_FN =
-        JavaValueFactory.createMethod(Ascii.class, "toLowerCase", String.class);
+    static final Method STR_STARTS_WITH =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "strStartsWith", String.class, String.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.ASCII_TO_LOWER_CASE_FN, args.get(0));
+    return factory.callStaticMethod(Methods.STR_STARTS_WITH, args.get(0), args.get(1));
   }
 }

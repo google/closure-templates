@@ -1826,6 +1826,48 @@ soy.$$strToAsciiUpperCase = function(s) {
 };
 
 
+/**
+ * Trims a string.
+ * @param {string} s
+ * @return {string}
+ */
+soy.$$strTrim = function(s) {
+  return s.trim();
+};
+
+/**
+ * Returns whether s starts with val.
+ * @param {string} s
+ * @param {string} val
+ * @return {boolean}
+ */
+soy.$$strStartsWith = function(s, val) {
+  return s.length >= val.length && s.substring(0, val.length) === val;
+};
+
+
+/**
+ * Returns whether s ends with val.
+ * @param {string} s
+ * @param {string} val
+ * @return {boolean}
+ */
+soy.$$strEndsWith = function(s, val) {
+  return s.length >= val.length && s.substring(s.length - val.length) === val;
+};
+
+
+/**
+ * Splits a string.
+ * @param {string} s
+ * @param {string} sep
+ * @return {!Array<string>}
+ */
+soy.$$strSplit = function(s, sep) {
+  return s.split(sep);
+};
+
+
 // -----------------------------------------------------------------------------
 // Bidi directives/functions.
 
