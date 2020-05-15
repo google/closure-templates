@@ -1134,6 +1134,20 @@ public final class SoyFileSet {
         });
   }
 
+  /** Performs enough work to retrieve all possible warnings in a compile. */
+  public ParseResult compileForWarnings() {
+    return entryPoint(
+        () -> {
+          disallowExternalCalls();
+          return parse(
+              passManagerBuilder()
+                  .allowUnknownGlobals()
+                  .allowUnknownJsGlobals()
+                  .allowV1Expression(),
+              typeRegistry);
+        });
+  }
+
   /**
    * Parses the file set with the options we need for writing generated java *SoyInfo and invocation
    * builders.

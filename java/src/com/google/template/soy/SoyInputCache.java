@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.IOException;
 
 /** A simple cache interface for reading soy compiler inputs. */
-interface SoyInputCache {
+public interface SoyInputCache {
   /** Default implementation that does no caching. */
   SoyInputCache DEFAULT =
       new SoyInputCache() {

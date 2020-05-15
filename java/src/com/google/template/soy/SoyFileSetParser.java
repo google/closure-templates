@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
@@ -102,13 +103,16 @@ public abstract class SoyFileSetParser {
   /** A simple tuple for the result of a parse operation. */
   @AutoValue
   public abstract static class ParseResult {
-    static ParseResult create(SoyFileSetNode soyTree, TemplateRegistry registry) {
-      return new AutoValue_SoyFileSetParser_ParseResult(soyTree, registry);
+    static ParseResult create(
+        SoyFileSetNode soyTree, TemplateRegistry registry, ImmutableList<SoyError> warnings) {
+      return new AutoValue_SoyFileSetParser_ParseResult(soyTree, registry, warnings);
     }
 
     public abstract SoyFileSetNode fileSet();
 
     public abstract TemplateRegistry registry();
+
+    public abstract ImmutableList<SoyError> warnings();
   }
 
   public static Builder newBuilder() {
@@ -231,7 +235,8 @@ public abstract class SoyFileSetParser {
       if (!filesWereSkipped) {
         passManager().runWholeFilesetPasses(soyTree, registry);
       }
-      return ParseResult.create(soyTree, registry);
+      return ParseResult.create(
+          soyTree, registry, ImmutableList.copyOf(errorReporter().getWarnings()));
     }
   }
 

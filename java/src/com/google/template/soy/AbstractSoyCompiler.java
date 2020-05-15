@@ -190,7 +190,7 @@ public abstract class AbstractSoyCompiler {
     this(pluginLoader, cache, FileSystemSoyFileReader.INSTANCE);
   }
 
-  AbstractSoyCompiler() {
+  protected AbstractSoyCompiler() {
     this(new PluginLoader.Default(), SoyInputCache.DEFAULT);
   }
 
