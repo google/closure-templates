@@ -251,11 +251,21 @@ public final class PyExprUtils {
   }
 
   public static PyExpr genPyListComprehensionExpr(
-      PyExpr listExpr, PyExpr transformExpr, PyExpr filterExpr, String varName) {
+      PyExpr listExpr, PyExpr transformExpr, PyExpr filterExpr, String varName, String indexName) {
 
-    // Generate code for "[transformExpr for $foo in listExpr".
+    // Generate code for "[transformExpr for $foo, $index in listExpr".
     String genCodeString =
-        "[" + transformExpr.getText() + " for " + varName + " in " + listExpr.getText();
+        indexName == null
+            ? "[" + transformExpr.getText() + " for " + varName + " in " + listExpr.getText()
+            : "["
+                + transformExpr.getText()
+                + " for "
+                + indexName
+                + ", "
+                + varName
+                + " in enumerate("
+                + listExpr.getText()
+                + ")";
 
     // Add the "if filterExpr", if present.
     if (filterExpr != null) {

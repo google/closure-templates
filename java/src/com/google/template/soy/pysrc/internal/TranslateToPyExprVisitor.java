@@ -231,6 +231,14 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     localVarExprs.pushFrame();
     localVarExprs.addVariable(
         baseListIterVarName, new PyExpr(uniqueListIterVarName, Integer.MAX_VALUE));
+    String uniqueIndexVarName = null;
+    if (node.getIndexVar() != null) {
+      String baseIndexVarName = node.getIndexVar().name();
+      uniqueIndexVarName =
+          String.format("%sListComprehensions%d", baseIndexVarName, node.getNodeId());
+      localVarExprs.addVariable(
+          baseIndexVarName, new PyExpr(uniqueIndexVarName, Integer.MAX_VALUE));
+    }
 
     // Now we can visit the transformExpr and filterExpr (if present).
     PyExpr itemTransformExpr = visit(node.getListItemTransformExpr());
@@ -239,7 +247,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     // Build the full list comprehension expr.
     PyExpr comprehensionExpr =
         PyExprUtils.genPyListComprehensionExpr(
-            originalListExpr, itemTransformExpr, filterExpr, uniqueListIterVarName);
+            originalListExpr,
+            itemTransformExpr,
+            filterExpr,
+            uniqueListIterVarName,
+            uniqueIndexVarName);
 
     localVarExprs.popFrame();
 
