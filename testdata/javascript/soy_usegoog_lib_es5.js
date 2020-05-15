@@ -9585,18 +9585,15 @@ goog.soy.renderHtml = function(element, templateResult) {
   goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(goog.asserts.assert(element), goog.soy.ensureTemplateOutputHtml_(templateResult));
 };
 goog.soy.renderElement = function(element, template, opt_templateData, opt_injectedData) {
-  goog.asserts.assert(template, "Soy template may not be null.");
   var html = goog.soy.ensureTemplateOutputHtml_(template(opt_templateData || goog.soy.defaultTemplateData_, opt_injectedData));
   goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(goog.asserts.assert(element), html);
 };
 goog.soy.renderAsFragment = function(template, opt_templateData, opt_injectedData, opt_domHelper) {
-  goog.asserts.assert(template, "Soy template may not be null.");
   var dom = opt_domHelper || goog.dom.getDomHelper(), output = template(opt_templateData || goog.soy.defaultTemplateData_, opt_injectedData), html = goog.soy.ensureTemplateOutputHtml_(output);
   goog.soy.assertFirstTagValid_(html.getTypedStringValue());
   return dom.safeHtmlToNode(html);
 };
 goog.soy.renderAsElement = function(template, opt_templateData, opt_injectedData, opt_domHelper) {
-  goog.asserts.assert(template, "Soy template may not be null.");
   return goog.soy.convertToElement_(template(opt_templateData || goog.soy.defaultTemplateData_, opt_injectedData), opt_domHelper);
 };
 goog.soy.convertToElement = function(templateResult, opt_domHelper) {
