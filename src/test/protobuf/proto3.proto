@@ -40,3 +40,20 @@ message Proto3ImplicitDefaults {
     string field = 1;
   }
 }
+
+message Foo3 {
+  string string_field = 1;
+  float bool_field = 2;
+
+  enum AnotherEnum {
+    UNKNOWN = 0;
+    FIRST = 1;
+    SECOND = 2;
+  }
+
+  AnotherEnum an_enum = 3;
+}
+
+message Proto3MessageUnion {
+  Proto3Message.AnEnum an_enum = 1;
+}

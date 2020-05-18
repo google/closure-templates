@@ -17,3 +17,8 @@ message Proto2ImplicitDefaults {
     optional string field = 1;
   }
 }
+
+message Foo {
+  optional string string_field = 1;
+  optional int32 bool_field = 2;
+}
