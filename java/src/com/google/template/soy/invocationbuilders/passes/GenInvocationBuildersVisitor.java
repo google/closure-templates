@@ -709,17 +709,18 @@ public final class GenInvocationBuildersVisitor
   private static void logDuplicateTemplateNameWarning(
       String templateName, String generatedClassName) {
     logger.warning(
-        "When generating soy java invocation builders, soy template: "
-            + templateName
-            + " generated the same Java"
-            + " UpperCamelCase name as another template in this file.\n"
-            + " This template was skipped during invocation builder generation.\n"
-            + " To use this api, all soy template names in a given file should be"
-            + " unique when converted to UpperCamelCase (with non-alphanumeric characters"
-            + " stripped).\n"
-            + "The generated Java class name was: "
-            + generatedClassName
-            + ".");
+        String.format(
+            "When generating Soy Java Template Builders, the template: %s generated the same Java"
+                + " UpperCamelCase name as another template in this file, or collided with a"
+                + " reserved identifier: "
+                + SoyFileNodeTransformer.RESERVED_IDENTIFIERS
+                + ".\n"
+                + "This template was skipped during Soy java_builders generation.\n"
+                + "To use this API, all Soy template names in a given file should be unique when "
+                + "converted to UpperCamelCase (with non-alphanumeric characters stripped).\n"
+                + "The generated Java class name was: %s.",
+            templateName,
+            generatedClassName));
   }
 
   /**
@@ -730,13 +731,19 @@ public final class GenInvocationBuildersVisitor
       String templateParamName, String setterName, String templateName) {
     logger.warning(
         String.format(
-            "When generating soy java invocation builders, soy template: %s"
-                + " had multiple parameters that generated the same setter method name: %s"
-                + ".\nParam: %s is being skipped (no setters will be generated for this param).\n"
-                + " To use this api, all parameter names for a given template should be"
-                + " unique when converted to UpperCamelCase (with non-alphanumeric characters"
-                + " stripped).\n",
-            templateName, setterName, templateParamName));
+            "When generating Soy Java Template Builders, the param named %s in template %s"
+                + " generated the same UpperCamelCase name as another parameter, or collided with"
+                + " a reserved identifier: "
+                + SoyFileNodeTransformer.RESERVED_IDENTIFIERS
+                + ".\n"
+                + "Param: %s is being skipped (no setters will be generated for this param). The "
+                + "generated setter name was: %s.\n"
+                + "To use this API, all parameter names for a given template should be unique "
+                + "when converted to UpperCamelCase (with non-alphanumeric characters stripped).\n",
+            templateParamName,
+            templateName,
+            templateParamName,
+            setterName));
   }
 
   /** Logs a warning if two soy files mapped to the same generated java file name. */

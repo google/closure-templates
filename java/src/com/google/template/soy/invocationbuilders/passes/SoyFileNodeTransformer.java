@@ -65,6 +65,7 @@ import java.util.stream.Collectors;
  * detection, unhandled parameter types, and more.
  */
 public class SoyFileNodeTransformer {
+  public static final ImmutableList<String> RESERVED_IDENTIFIERS = ImmutableList.of("Builder");
 
   /** The transformed {@link SoyFileNode}. */
   @AutoValue
@@ -123,7 +124,7 @@ public class SoyFileNodeTransformer {
 
     static TemplateInfo error(TemplateNode template, TemplateStatus status) {
       return new AutoValue_SoyFileNodeTransformer_TemplateInfo(
-          "", ImmutableList.of(), status, template);
+          generateTemplateClassName(template), ImmutableList.of(), status, template);
     }
 
     /** Returns the fully qualified name of the generated SoyTemplate implementation. */
@@ -290,7 +291,8 @@ public class SoyFileNodeTransformer {
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
 
         String templateClassName = generateTemplateClassName(template);
-        if (uniqueTemplateClassNames.add(templateClassName)) {
+        if (!RESERVED_IDENTIFIERS.contains(templateClassName)
+            && uniqueTemplateClassNames.add(templateClassName)) {
           templates.add(transform(template, fqClassName + "." + templateClassName));
         } else {
           templates.add(TemplateInfo.error(template, TemplateStatus.NAME_COLLISION));
@@ -385,7 +387,7 @@ public class SoyFileNodeTransformer {
       }
 
       String setterName = getParamSetterSuffix(paramName);
-      if (!setterNames.add(setterName)) {
+      if (RESERVED_IDENTIFIERS.contains(paramName) || !setterNames.add(setterName)) {
         changeParamStatus(params, paramName, ParamStatus.NAME_COLLISION);
         continue;
       }
