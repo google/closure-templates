@@ -1795,6 +1795,27 @@ soy.$$listSlice = function(list, from, to) {
 
 
 /**
+ * Sorts a list of numbers in numerical order.
+ * @param {!IArrayLike<T>} list
+ * @return {!Array<T>}
+ * @template T extends number
+ */
+soy.$$numberListSort = function(list) {
+  return goog.array.toArray(list).sort((a, b) => a - b);
+};
+
+
+/**
+ * Sorts a list of strings in lexicographic order.
+ * @param {!IArrayLike<string>} list
+ * @return {!Array<string>}
+ */
+soy.$$stringListSort = function(list) {
+  return goog.array.toArray(list).sort();
+};
+
+
+/**
  * Converts the ASCII characters in the given string to lower case.
  * @param {string} s
  * @return {string}

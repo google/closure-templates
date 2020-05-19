@@ -43,6 +43,7 @@ public class BasicFunctions {
         new MapToLegacyObjectMapFunction(),
         new MaxFunction(),
         new MinFunction(),
+        new NumberListSortMethod(),
         new ParseFloatFunction(),
         new ParseIntFunction(),
         new RandomIntFunction(),
@@ -59,6 +60,7 @@ public class BasicFunctions {
         new StrSubFunction(),
         new StrToAsciiLowerCaseFunction(),
         new StrToAsciiUpperCaseFunction(),
-        new StrTrimMethod());
+        new StrTrimMethod(),
+        new StringListSortMethod());
   }
 }

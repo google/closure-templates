@@ -41,6 +41,7 @@ import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
+import com.google.template.soy.basicfunctions.NumberListSortMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
@@ -1020,6 +1021,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           node.setType(getGenericListType(node.getChildren()));
         } else if (sourceFunction instanceof ListSliceMethod) {
           // list<T>.slice(...) returns list<T>
+          node.setType(node.getBaseExprChild().getType());
+        } else if (sourceFunction instanceof NumberListSortMethod) {
+          // list<T>.sort() returns list<T>
+          // The sort() method only supports lists of number, int, or float.
           node.setType(node.getBaseExprChild().getType());
         } else {
           node.setType(sourceMethod.getReturnType());

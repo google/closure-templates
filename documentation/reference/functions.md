@@ -167,6 +167,27 @@ Joins a list of strings or integers with a string separator.
 
 Also callable by function syntax: `join(list, separator)`
 
+### `list<number>.sort()` {#sort}
+
+Sorts the list in numerical order.
+
+This method is only defined on lists of non-nullable number types. If the method
+is not found, please check the type of your list.
+
+### `list<string>.asciiSort()` {#asciiSort}
+
+Sorts the list in alphabetical order. Do not use for user visible strings.
+
+This method is only defined on lists of non-nullable strings. If the method is
+not found, please check the type of your list.
+
+WARNING: The sort is based on the Unicode values of the string. This order may
+not correspond to how users of your app would sort strings, and therefore you
+should not use this method to sort any user-visible string. Only use this method
+for non-user visible strings, e.g. to normalize the order of a list of
+identifiers. See go/unicode-codelab-cc#sorting-in-alphabetical-order for more
+information on i18n-safe string sorting.
+
 ## String Methods
 
 ### `str.contains(subStr)` {#strContains}

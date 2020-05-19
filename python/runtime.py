@@ -389,6 +389,18 @@ def list_slice(l, start, stop):
   return l[slice(start, stop)]
 
 
+def number_list_sort(l):
+  """Sorts in numerical order."""
+  # Lists of numbers are sorted numerically by default.
+  return sorted(l)
+
+
+def string_list_sort(l):
+  """Sorts in lexicographic order."""
+  # Lists of strings are sorted lexicographically by default.
+  return sorted(l)
+
+
 def type_safe_eq(first, second):
   """An equality function that does type coercion for various scenarios.
 

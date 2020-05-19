@@ -112,6 +112,30 @@ public final class BasicFunctionsRuntime {
   }
 
   /**
+   * Sorts a list in numerical order.
+   *
+   * <p>This should only be called for a list of numbers.
+   */
+  public static SoyList numberListSort(SoyList list) {
+    return ListImpl.forProviderList(
+        ImmutableList.sortedCopyOf(
+            (a, b) -> Double.compare(a.resolve().numberValue(), b.resolve().numberValue()),
+            list.asJavaList()));
+  }
+
+  /**
+   * Sorts a list in lexicographic order.
+   *
+   * <p>This should only be called for a list of strings.
+   */
+  public static SoyList stringListSort(SoyList list) {
+    return ListImpl.forProviderList(
+        ImmutableList.sortedCopyOf(
+            (a, b) -> a.resolve().stringValue().compareTo(b.resolve().stringValue()),
+            list.asJavaList()));
+  }
+
+  /**
    * Returns the largest (closest to positive infinity) integer value that is less than or equal to
    * the argument.
    */
