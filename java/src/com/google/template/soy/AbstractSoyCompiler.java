@@ -237,7 +237,7 @@ public abstract class AbstractSoyCompiler {
       StringWriter sw = new StringWriter();
       cmdLineParser.setUsageWidth(100);
       cmdLineParser.printUsage(sw, /* resource bundle = */ null);
-      exitWithError(String.format("%s\n\n%s\n%s", cle.getMessage(), usagePrefix, sw.toString()));
+      exitWithError(String.format("%s\n\n%s\n%s", cle.getMessage(), usagePrefix, sw));
     }
 
     validateFlags();

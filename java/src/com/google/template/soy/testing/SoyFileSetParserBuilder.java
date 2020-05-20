@@ -26,6 +26,7 @@ import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.passes.CompilerPass;
@@ -223,6 +224,10 @@ public final class SoyFileSetParserBuilder {
 
   public SoyFileSetParserBuilder typeRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
+    return this;
+  }
+
+  public SoyFileSetParserBuilder cssRegistry(CssRegistry cssRegistry) {
     return this;
   }
 

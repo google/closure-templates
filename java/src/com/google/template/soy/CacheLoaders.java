@@ -90,7 +90,8 @@ final class CacheLoaders {
   static final class CachedDescriptorSet {
     private final File file;
     private final Map<String, FileDescriptorProto> protosByFileName;
-    private final Map<String, FileDescriptor> fileNameToDescriptors = new LinkedHashMap<>();;
+    private final Map<String, FileDescriptor> fileNameToDescriptors = new LinkedHashMap<>();
+    ;
 
     CachedDescriptorSet(File file, FileDescriptorSet proto) {
       this.file = checkNotNull(file);
