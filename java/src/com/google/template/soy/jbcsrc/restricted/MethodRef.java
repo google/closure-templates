@@ -378,9 +378,6 @@ public abstract class MethodRef {
   public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
       create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
-  public static final MethodRef RUNTIME_GET_PROTO_FIELD =
-      create(JbcSrcRuntime.class, "getProtoField", SoyProtoValue.class, String.class).asCheap();
-
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();
 

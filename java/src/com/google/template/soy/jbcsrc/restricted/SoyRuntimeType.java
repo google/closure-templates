@@ -260,7 +260,7 @@ public abstract class SoyRuntimeType {
   }
 
   private static PrimitiveSoyType enumType(SoyProtoEnumType enumType) {
-    return new PrimitiveSoyType(enumType, Type.INT_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
+    return new PrimitiveSoyType(enumType, Type.LONG_TYPE, BytecodeUtils.INTEGER_DATA_TYPE);
   }
 
   private final SoyType soyType;
@@ -341,7 +341,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a int, just that it is not <em>known</em> to be a int at compile time.
    */
   public boolean isKnownInt() {
-    return soyType.getKind() == Kind.INT;
+    return soyType.getKind() == Kind.INT || SoyTypes.isKindOrUnionOfKind(soyType, Kind.PROTO_ENUM);
   }
 
   /**
@@ -422,9 +422,9 @@ public abstract class SoyRuntimeType {
     return this;
   }
 
-  abstract boolean isBoxed();
+  public abstract boolean isBoxed();
 
-  abstract SoyRuntimeType box();
+  public abstract SoyRuntimeType box();
 
   // NOTE: we have identity semantics.  This is fine because our caches ensure we never produce
   // two otherwise identical objects
@@ -448,7 +448,7 @@ public abstract class SoyRuntimeType {
     }
 
     @Override
-    BoxedSoyType box() {
+    public BoxedSoyType box() {
       return boxedType;
     }
   }
@@ -464,7 +464,7 @@ public abstract class SoyRuntimeType {
     }
 
     @Override
-    SoyRuntimeType box() {
+    public SoyRuntimeType box() {
       return this;
     }
   }

@@ -32,7 +32,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
-import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.error.ErrorReporter;
@@ -1069,16 +1068,9 @@ final class ExpressionCompiler {
         if (baseExpr.soyType().getKind() == Kind.PROTO) {
           // It is a single known proto field.  Generate code to call the getter directly
           SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
-          return ProtoUtils.accessField(protoType, baseExpr, node);
+          return ProtoUtils.accessField(protoType, baseExpr, node.getFieldName(), node.getType());
         } else {
-          // this must be some kind of union of protos which has support via the boxing apis
-          return SoyExpression.forSoyValue(
-              node.getType(),
-              MethodRef.RUNTIME_GET_PROTO_FIELD
-                  .invoke(
-                      baseExpr.box().checkedCast(SoyProtoValue.class),
-                      BytecodeUtils.constant(node.getFieldName()))
-                  .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+          return ProtoUtils.accessProtoUnionField(baseExpr, node, varManager);
         }
       }
       // Otherwise this must be a vanilla SoyRecord.  Box, call getFieldProvider and resolve the

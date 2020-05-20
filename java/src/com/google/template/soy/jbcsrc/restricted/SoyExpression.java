@@ -98,6 +98,10 @@ public final class SoyExpression extends Expression {
     return new SoyExpression(type, delegate);
   }
 
+  public static SoyExpression forRuntimeType(SoyRuntimeType type, Expression delegate) {
+    return new SoyExpression(type, delegate);
+  }
+
   /**
    * Returns an Expression that evaluates to a list containing all the items as boxed soy values.
    */

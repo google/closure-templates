@@ -31,6 +31,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.testing.Foo3;
 import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
@@ -70,7 +71,15 @@ public class SoyRuntimeTypeTest {
 
     assertThat(new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()))
         .isBoxedAs(IntegerData.class)
-        .isUnboxedAs(int.class);
+        .isUnboxedAs(long.class);
+
+    assertThat(
+            UnionType.of(
+                new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()),
+                new SoyProtoEnumType(Foo3.AnotherEnum.getDescriptor())))
+        .isBoxedAs(IntegerData.class)
+        .isUnboxedAs(long.class);
+
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       if (kind == SanitizedContentKind.TEXT) {
         continue;

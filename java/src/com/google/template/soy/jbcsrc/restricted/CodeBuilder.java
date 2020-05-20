@@ -310,6 +310,11 @@ public final class CodeBuilder extends MethodVisitor {
     adapter.checkCast(type);
   }
 
+  /** See {@link GeneratorAdapter#instanceOf} */
+  public void instanceOf(Type type) {
+    adapter.instanceOf(type);
+  }
+
   /** See {@link GeneratorAdapter#endMethod()} */
   public void endMethod() {
     adapter.endMethod();

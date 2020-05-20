@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.getFieldName;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.underscoresToCamelCase;
@@ -31,7 +32,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericCon
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.unboxUnchecked;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.html.types.SafeHtmlProto;
@@ -84,8 +84,13 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnionType;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -202,13 +207,9 @@ final class ProtoUtils {
    * @param node The field access operation
    */
   static SoyExpression accessField(
-      SoyProtoType protoType, SoyExpression baseExpr, FieldAccessNode node) {
+      SoyProtoType protoType, SoyExpression baseExpr, String fieldName, SoyType fieldType) {
     return new AccessorGenerator(
-            protoType,
-            baseExpr,
-            node.getFieldName(),
-            node.getType(),
-            /* useBrokenSemantics= */ true)
+            protoType, baseExpr, fieldName, fieldType, /* useBrokenSemantics= */ true)
         .generate();
   }
 
@@ -229,6 +230,11 @@ final class ProtoUtils {
     SoyProtoType protoType = (SoyProtoType) baseExpr.soyType();
     return new AccessorGenerator(protoType, baseExpr, fieldName, node.getType(), useBrokenSemantics)
         .generate();
+  }
+
+  static SoyExpression accessProtoUnionField(
+      SoyExpression baseExpr, FieldAccessNode node, LocalVariableManager varManager) {
+    return new ProtoUnionAccessorGenerator(baseExpr, node, varManager).generate();
   }
 
   private abstract static class BaseGenerator {
@@ -613,6 +619,126 @@ final class ProtoUtils {
     }
   }
 
+  private static final class ProtoUnionAccessorGenerator {
+
+    private final SoyExpression baseExpr;
+    private final FieldAccessNode node;
+    private final LocalVariableManager varManager;
+
+    ProtoUnionAccessorGenerator(
+        SoyExpression baseExpr, FieldAccessNode node, LocalVariableManager varManager) {
+      checkArgument(baseExpr.soyType().getKind() == SoyType.Kind.UNION, baseExpr.soyType());
+      this.baseExpr = baseExpr;
+      this.node = node;
+      this.varManager = varManager;
+    }
+
+    private Expression getUnboxedBaseExpression() {
+      // This is a proto union type so must be boxed.
+      checkState(baseExpr.isBoxed());
+      return baseExpr.invoke(MethodRef.SOY_PROTO_VALUE_GET_PROTO);
+    }
+
+    SoyExpression generate() {
+      // Keep the result unboxed if possible, but the result must be boxed if the Java types of the
+      // possible results are different.
+      SoyRuntimeType resultType =
+          SoyRuntimeType.getUnboxedType(node.getType())
+              .orElseGet(() -> SoyRuntimeType.getBoxedType(node.getType()));
+
+      // Store the base value in a local variable so it's easy to repeatedly check the type and call
+      // the correct getter method on it.
+      LocalVariableManager.Scope scope = varManager.enterScope();
+      Expression unboxedBaseExpr = getUnboxedBaseExpression();
+      LocalVariable base =
+          scope.createTemporary(node.getFieldName() + "__base", unboxedBaseExpr.resultType());
+      Statement baseInit = base.store(unboxedBaseExpr, base.start());
+      Statement scopeExit = scope.exitScope();
+
+      boolean foundBoxed = false;
+      Set<SoyType> members = ((UnionType) baseExpr.soyType()).getMembers();
+      // Each key is a possible type of the (union) base expression. The value is the code to access
+      // the field for the key's type.
+      Map<SoyRuntimeType, SoyExpression> getters = new LinkedHashMap<>();
+      for (SoyType member : members) {
+        // The caller should check that all member types are protos, so this cast is safe.
+        SoyProtoType protoType = (SoyProtoType) member;
+        SoyRuntimeType unboxed = SoyRuntimeType.getUnboxedType(protoType).get();
+        SoyExpression fieldAccess =
+            accessField(
+                protoType,
+                SoyExpression.forProto(unboxed, base.checkedCast(unboxed.runtimeType())),
+                node.getFieldName(),
+                protoType.getFieldType(node.getFieldName()));
+        if (fieldAccess.isBoxed()) {
+          foundBoxed = true;
+        }
+        getters.put(unboxed, fieldAccess);
+      }
+
+      // Each accesses decides whether or not to box, but if the result type is boxed or at least
+      // one of the accesses is boxed, then we need to box all of them to have a consistent result
+      // type.
+      if (resultType.isBoxed() || foundBoxed) {
+        resultType = resultType.box();
+        getters.replaceAll((key, value) -> value.box());
+      }
+
+      // Generates code to check the type of the base expression and call the correct getter method:
+      // if (base instanceof Foo) {
+      //   ((Foo) base).getMyField();
+      // } else if (base instanceof Bar) {
+      //   ((Bar) base).getMyField();
+      // } else {
+      //   ((Baz) base).getMyField();
+      // }
+      return SoyExpression.forRuntimeType(
+          resultType,
+          new Expression(resultType.runtimeType()) {
+
+            @Override
+            protected void doGen(CodeBuilder cb) {
+              Label end = new Label();
+              baseInit.gen(cb);
+
+              for (Iterator<Map.Entry<SoyRuntimeType, SoyExpression>> i =
+                      getters.entrySet().iterator();
+                  i.hasNext(); ) {
+                Map.Entry<SoyRuntimeType, SoyExpression> entry = i.next();
+                SoyRuntimeType type = entry.getKey();
+                SoyExpression getter = entry.getValue();
+                boolean last = !i.hasNext();
+
+                Label next = null;
+
+                // Check the type of the base expression and jump to the next check if it doesn't
+                // match. For the last iteration, skip the type check since it can only be the one
+                // remaining type. A cast in the getter expression will verify this.
+                if (!last) {
+                  next = new Label();
+                  base.gen(cb);
+                  cb.instanceOf(type.runtimeType());
+                  cb.ifZCmp(Opcodes.IFEQ, next);
+                }
+
+                getter.gen(cb);
+
+                // If we made it here, then the type matched, so skip the remaining checks and go to
+                // the end. This also marks the beginning of the next check (which is produced by
+                // the next iteration) so it can be skipped to if the type check doesn't match. For
+                // the last iteration, we're already at the end so can just fall out.
+                if (!last) {
+                  cb.goTo(end);
+                  cb.mark(next);
+                }
+              }
+              cb.mark(end);
+              scopeExit.gen(cb);
+            }
+          });
+    }
+  }
+
   private static final class HasserGenerator extends BaseGenerator {
 
     final String fieldName;
@@ -795,7 +921,7 @@ final class ProtoUtils {
     }
 
     private Statement handleMapSetterNotNull(final SoyExpression mapArg, FieldDescriptor field) {
-      Preconditions.checkArgument(mapArg.isNonNullable());
+      checkArgument(mapArg.isNonNullable());
       // Wait until all map values can be resolved. Since we don't box/unbox maps, directly call
       // mapArg.asJavaMap() that converts SoyMapImpl to a Map<String, SoyValueProvider>.
       // TODO(lukes): handle map literals specially
@@ -965,7 +1091,7 @@ final class ProtoUtils {
     }
 
     private Statement handleRepeatedNotNull(final SoyExpression listArg, FieldDescriptor field) {
-      Preconditions.checkArgument(listArg.isNonNullable());
+      checkArgument(listArg.isNonNullable());
 
       // Unbox listArg as List<SoyValueProvider> and wait until all items are done
       SoyExpression unboxed = listArg.unboxAsList();
@@ -1287,7 +1413,7 @@ final class ProtoUtils {
 
   /** Returns the {@link MethodRef} for the generated getter method. */
   private static MethodRef getGetterMethod(FieldDescriptor descriptor) {
-    Preconditions.checkArgument(
+    checkArgument(
         !descriptor.isExtension(), "extensions do not have getter methods. %s", descriptor);
     TypeInfo message = messageRuntimeType(descriptor.getContainingType());
     String repeatedType = "";
@@ -1379,7 +1505,7 @@ final class ProtoUtils {
 
   /** Returns the {@link MethodRef} for the generated put method for proto map. */
   private static MethodRef getPutMethod(FieldDescriptor descriptor) {
-    Preconditions.checkState(descriptor.isMapField());
+    checkState(descriptor.isMapField());
     List<FieldDescriptor> mapFields = descriptor.getMessageType().getFields();
     TypeInfo builder = builderRuntimeType(descriptor.getContainingType());
     return MethodRef.createInstanceMethod(
@@ -1427,7 +1553,7 @@ final class ProtoUtils {
 
   /** Returns the {@link FieldRef} for the generated {@link Extension} field. */
   private static FieldRef getExtensionField(FieldDescriptor descriptor) {
-    Preconditions.checkArgument(descriptor.isExtension(), "%s is not an extension", descriptor);
+    checkArgument(descriptor.isExtension(), "%s is not an extension", descriptor);
     String extensionFieldName = getFieldName(descriptor, false);
     if (descriptor.getExtensionScope() != null) {
       TypeInfo owner = messageRuntimeType(descriptor.getExtensionScope());
