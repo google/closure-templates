@@ -17,6 +17,7 @@
 package com.google.template.soy.types.ast;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -73,7 +74,7 @@ public final class TypeNodeConverter
   private static final SoyErrorKind MISSING_GENERIC_TYPE_PARAMETERS =
       SoyErrorKind.of("''{0}'' is a generic type, expected {1}.");
 
-  private static final SoyErrorKind SAFE_PROTO_TYPE =
+  public static final SoyErrorKind SAFE_PROTO_TYPE =
       SoyErrorKind.of("Please use Soy''s native ''{0}'' type instead of the ''{1}'' type.");
 
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
@@ -155,7 +156,7 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(NamedTypeNode node) {
     String name = node.name().identifier();
-    SanitizedType safeProtoType = SoyTypeRegistry.SAFE_PROTO_TO_SANITIZED_TYPE.get(name);
+    SanitizedType safeProtoType = SAFE_PROTO_TO_SANITIZED_TYPE.get(name);
     if (safeProtoType != null) {
       String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();
       errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);

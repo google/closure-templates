@@ -25,12 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
-import com.google.common.html.types.SafeHtmlProto;
-import com.google.common.html.types.SafeScriptProto;
-import com.google.common.html.types.SafeStyleProto;
-import com.google.common.html.types.SafeStyleSheetProto;
-import com.google.common.html.types.SafeUrlProto;
-import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.EnumDescriptor;
@@ -76,20 +70,6 @@ public class SoyTypeRegistry {
           .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
           .put("js", JsType.getInstance())
           .put("ve_data", VeDataType.getInstance())
-          .build();
-
-  public static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
-      ImmutableMap.<String, SanitizedType>builder()
-          .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
-          .put(SafeScriptProto.getDescriptor().getFullName(), SanitizedType.JsType.getInstance())
-          .put(SafeStyleProto.getDescriptor().getFullName(), SanitizedType.StyleType.getInstance())
-          .put(
-              SafeStyleSheetProto.getDescriptor().getFullName(),
-              SanitizedType.StyleType.getInstance())
-          .put(SafeUrlProto.getDescriptor().getFullName(), SanitizedType.UriType.getInstance())
-          .put(
-              TrustedResourceUrlProto.getDescriptor().getFullName(),
-              SanitizedType.TrustedResourceUriType.getInstance())
           .build();
 
   /** A type registry that defaults all unknown types to the 'unknown' type. */
@@ -141,8 +121,7 @@ public class SoyTypeRegistry {
     }
     this.descriptors = ImmutableMap.copyOf(visitor.descriptors);
     this.extensions = ImmutableSetMultimap.copyOf(visitor.extensions);
-    // TODO(lukes): this is wrong.  The safe string protos should not be usable as types
-    this.protoTypeCache = new HashMap<>(SAFE_PROTO_TO_SANITIZED_TYPE);
+    this.protoTypeCache = new HashMap<>();
     // Register the special number type so == comparisons work
     checkState(unionTypes.intern((UnionType) NUMBER_TYPE) == NUMBER_TYPE);
   }

@@ -18,8 +18,15 @@ package com.google.template.soy.types;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.html.types.SafeHtmlProto;
+import com.google.common.html.types.SafeScriptProto;
+import com.google.common.html.types.SafeStyleProto;
+import com.google.common.html.types.SafeStyleSheetProto;
+import com.google.common.html.types.SafeUrlProto;
+import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeGraphUtils.BreadthFirstIterator;
 import com.google.template.soy.types.SoyTypeGraphUtils.SoyTypeSuccessorsFunction;
@@ -37,6 +44,20 @@ public final class SoyTypes {
   /** Shared constant for the 'number' type. */
   public static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
+
+  public static final ImmutableMap<String, SanitizedType> SAFE_PROTO_TO_SANITIZED_TYPE =
+      ImmutableMap.<String, SanitizedType>builder()
+          .put(SafeHtmlProto.getDescriptor().getFullName(), SanitizedType.HtmlType.getInstance())
+          .put(SafeScriptProto.getDescriptor().getFullName(), SanitizedType.JsType.getInstance())
+          .put(SafeStyleProto.getDescriptor().getFullName(), SanitizedType.StyleType.getInstance())
+          .put(
+              SafeStyleSheetProto.getDescriptor().getFullName(),
+              SanitizedType.StyleType.getInstance())
+          .put(SafeUrlProto.getDescriptor().getFullName(), SanitizedType.UriType.getInstance())
+          .put(
+              TrustedResourceUrlProto.getDescriptor().getFullName(),
+              SanitizedType.TrustedResourceUriType.getInstance())
+          .build();
 
   private static final ImmutableSet<SoyType.Kind> ALWAYS_COMPARABLE_KINDS =
       Sets.immutableEnumSet(SoyType.Kind.UNKNOWN, SoyType.Kind.ANY, SoyType.Kind.NULL);

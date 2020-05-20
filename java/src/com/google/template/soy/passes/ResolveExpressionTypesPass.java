@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
+import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
 
@@ -1508,6 +1509,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         node.setType(ErrorType.getInstance());
       } else if (type.getKind() != SoyType.Kind.PROTO) {
         errorReporter.report(node.getSourceLocation(), NOT_A_PROTO_TYPE, protoName, type);
+        node.setType(ErrorType.getInstance());
+      } else if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(protoName)) {
+        errorReporter.report(
+            node.getSourceLocation(),
+            TypeNodeConverter.SAFE_PROTO_TYPE,
+            SAFE_PROTO_TO_SANITIZED_TYPE.get(protoName),
+            protoName);
         node.setType(ErrorType.getInstance());
       } else {
         node.setType(type);
