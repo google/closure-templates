@@ -40,7 +40,6 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NULL;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
-import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
@@ -292,36 +291,15 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     String listIterVarTranslation =
         "list_comp_" + node.getNodeId() + "_" + node.getListIterVar().name();
     variableMappings.put(node.getListIterVar().name(), id(listIterVarTranslation));
-    String indexVarTranslation =
-        node.getIndexVar() == null
-            ? null
-            : "list_comp_" + node.getNodeId() + "_" + node.getIndexVar().name();
-    if (node.getIndexVar() != null) {
-      variableMappings.put(node.getIndexVar().name(), id(indexVarTranslation));
-    }
     SoyType listType = SoyTypes.tryRemoveNull(node.getListExpr().getType());
     SoyType elementType =
         listType.getKind() == SoyType.Kind.LIST ? ((ListType) listType).getElementType() : null;
     // elementType can be null if it is the special EMPTY_LIST or if it isn't a known list type.
     elementType = elementType == null ? UnknownType.getInstance() : elementType;
     JsDoc doc =
-        node.getIndexVar() == null
-            ? JsDoc.builder()
-                .addParam(listIterVarTranslation, jsTypeFor(elementType).typeExpr())
-                .build()
-            : JsDoc.builder()
-                .addParam(listIterVarTranslation, jsTypeFor(elementType).typeExpr())
-                .addParam(indexVarTranslation, "number")
-                .build();
-
-    Expression baseNoFilter =
-        base.dotAccess("map").call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
+        JsDoc.builder().addParam(listIterVarTranslation, jsTypeFor(elementType).typeExpr()).build();
     if (node.getFilterExpr() != null) {
-      base =
-          SOY_FILTER_AND_MAP.call(
-              base,
-              arrowFunction(doc, visit(node.getFilterExpr())),
-              arrowFunction(doc, visit(node.getListItemTransformExpr())));
+      base = base.dotAccess("filter").call(arrowFunction(doc, visit(node.getFilterExpr())));
     }
     // handle a special case for trivial transformations
     if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
@@ -330,7 +308,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         return base;
       }
     }
-    return node.getFilterExpr() == null ? baseNoFilter : base;
+    return base.dotAccess("map").call(arrowFunction(doc, visit(node.getListItemTransformExpr())));
   }
 
   @Override
