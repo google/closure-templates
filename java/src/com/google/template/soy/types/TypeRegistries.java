@@ -1,0 +1,281 @@
+/*
+ * Copyright 2020 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.google.template.soy.types;
+
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.types.SoyTypes.NUMBER_TYPE;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
+import com.google.template.soy.types.RecordType.Member;
+import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.HtmlType;
+import com.google.template.soy.types.SanitizedType.JsType;
+import com.google.template.soy.types.SanitizedType.StyleType;
+import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
+import com.google.template.soy.types.SanitizedType.UriType;
+import com.google.template.soy.types.TemplateType.Argument;
+import java.util.Arrays;
+import java.util.Collection;
+import javax.annotation.Nullable;
+
+/** Implementations of {@link TypeRegistry} and {@link TypeInterner}. */
+final class TypeRegistries {
+
+  private TypeRegistries() {}
+
+  private static final BuiltinTypeRegistry INSTANCE = new BuiltinTypeRegistry();
+
+  public static TypeInterner newTypeInterner() {
+    return new TypeInternerImpl();
+  }
+
+  public static TypeRegistry builtinTypeRegistry() {
+    return INSTANCE;
+  }
+
+  public static SoyTypeRegistry newComposite(TypeRegistry typeRegistry, TypeInterner typeInterner) {
+    return new CompositeSoyTypeRegistry(typeRegistry, typeInterner);
+  }
+
+  private static final class TypeInternerImpl implements TypeInterner {
+
+    private final Interner<ListType> listTypes = Interners.newStrongInterner();
+    private final Interner<MapType> mapTypes = Interners.newStrongInterner();
+    private final Interner<LegacyObjectMapType> legacyObjectMapTypes =
+        Interners.newStrongInterner();
+    private final Interner<UnionType> unionTypes = Interners.newStrongInterner();
+    private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
+    private final Interner<TemplateType> templateTypes = Interners.newStrongInterner();
+    private final Interner<VeType> veTypes = Interners.newStrongInterner();
+
+    public TypeInternerImpl() {
+      // Register the special number type so == comparisons work
+      checkState(unionTypes.intern((UnionType) NUMBER_TYPE) == NUMBER_TYPE);
+    }
+
+    /**
+     * Factory function which creates a list type, given an element type. This folds list types with
+     * identical element types together, so asking for the same element type twice will return a
+     * pointer to the same type object.
+     *
+     * @param elementType The element type of the list.
+     * @return The list type.
+     */
+    @Override
+    public ListType getOrCreateListType(SoyType elementType) {
+      return listTypes.intern(ListType.of(elementType));
+    }
+
+    /**
+     * Factory function which creates a legacy object map type, given a key and value type. This
+     * folds map types with identical key/value types together, so asking for the same key/value
+     * type twice will return a pointer to the same type object.
+     *
+     * @param keyType The key type of the map.
+     * @param valueType The value type of the map.
+     * @return The map type.
+     */
+    @Override
+    public LegacyObjectMapType getOrCreateLegacyObjectMapType(SoyType keyType, SoyType valueType) {
+      return legacyObjectMapTypes.intern(LegacyObjectMapType.of(keyType, valueType));
+    }
+
+    /**
+     * Factory function which creates a map type, given a key and value type. This folds map types
+     * with identical key/value types together, so asking for the same key/value type twice will
+     * return a pointer to the same type object.
+     *
+     * @param keyType The key type of the map.
+     * @param valueType The value type of the map.
+     * @return The map type.
+     */
+    @Override
+    public MapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
+      return mapTypes.intern(MapType.of(keyType, valueType));
+    }
+
+    /**
+     * Factory function which creates a union type, given the member types. This folds identical
+     * union types together.
+     *
+     * @param members The members of the union.
+     * @return The union type.
+     */
+    @Override
+    public SoyType getOrCreateUnionType(Collection<SoyType> members) {
+      SoyType type = UnionType.of(members);
+      if (type.getKind() == SoyType.Kind.UNION) {
+        type = unionTypes.intern((UnionType) type);
+      }
+      return type;
+    }
+
+    /**
+     * Factory function which creates a union type, given the member types. This folds identical
+     * union types together.
+     *
+     * @param members The members of the union.
+     * @return The union type.
+     */
+    @Override
+    public SoyType getOrCreateUnionType(SoyType... members) {
+      return getOrCreateUnionType(Arrays.asList(members));
+    }
+
+    /**
+     * Factory function which creates a record type, given a list of fields. This folds identical
+     * record types together.
+     *
+     * @param members The list of members, in parse order.
+     * @return The record type.
+     */
+    @Override
+    public RecordType getOrCreateRecordType(Iterable<RecordType.Member> members) {
+      return recordTypes.intern(RecordType.of(members));
+    }
+
+    /**
+     * Factory function which creates a template type, given a list of arguments and a return type.
+     * This folds identical template types together.
+     */
+    @Override
+    public TemplateType getOrCreateTemplateType(
+        Iterable<TemplateType.Argument> arguments, SoyType returnType) {
+      return templateTypes.intern(TemplateType.of(arguments, returnType));
+    }
+
+    /**
+     * Factory function which creates and returns a {@code ve} type with the given {@code dataType}.
+     * This folds identical ve types together.
+     */
+    @Override
+    public VeType getOrCreateVeType(String dataType) {
+      return veTypes.intern(VeType.of(dataType));
+    }
+  }
+
+  private static final class BuiltinTypeRegistry implements TypeRegistry {
+
+    private static final ImmutableMap<String, SoyType> BUILTIN_TYPES =
+        ImmutableSortedMap.<String, SoyType>naturalOrder()
+            .put("?", UnknownType.getInstance())
+            .put("any", AnyType.getInstance())
+            .put("null", NullType.getInstance())
+            .put("bool", BoolType.getInstance())
+            .put("int", IntType.getInstance())
+            .put("float", FloatType.getInstance())
+            .put("string", StringType.getInstance())
+            .put("number", NUMBER_TYPE)
+            .put("html", HtmlType.getInstance())
+            .put("attributes", AttributesType.getInstance())
+            .put("css", StyleType.getInstance())
+            .put("uri", UriType.getInstance())
+            .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
+            .put("js", JsType.getInstance())
+            .put("ve_data", VeDataType.getInstance())
+            .build();
+
+    private BuiltinTypeRegistry() {}
+
+    @Nullable
+    @Override
+    public SoyType getType(String typeName) {
+      return BUILTIN_TYPES.get(typeName);
+    }
+
+    @Override
+    public String findTypeWithMatchingNamespace(String prefix) {
+      return null;
+    }
+
+    @Override
+    public ImmutableSet<String> getAllSortedTypeNames() {
+      return BUILTIN_TYPES.keySet();
+    }
+  }
+
+  private static final class CompositeSoyTypeRegistry implements SoyTypeRegistry {
+
+    private final TypeRegistry typeRegistry;
+    private final TypeInterner typeInterner;
+
+    public CompositeSoyTypeRegistry(TypeRegistry typeRegistry, TypeInterner typeInterner) {
+      this.typeRegistry = typeRegistry;
+      this.typeInterner = typeInterner;
+    }
+
+    @Override
+    @Nullable
+    public SoyType getType(String typeName) {
+      return typeRegistry.getType(typeName);
+    }
+
+    @Override
+    public String findTypeWithMatchingNamespace(String prefix) {
+      return typeRegistry.findTypeWithMatchingNamespace(prefix);
+    }
+
+    @Override
+    public Iterable<String> getAllSortedTypeNames() {
+      return typeRegistry.getAllSortedTypeNames();
+    }
+
+    @Override
+    public ListType getOrCreateListType(SoyType elementType) {
+      return typeInterner.getOrCreateListType(elementType);
+    }
+
+    @Override
+    public LegacyObjectMapType getOrCreateLegacyObjectMapType(SoyType keyType, SoyType valueType) {
+      return typeInterner.getOrCreateLegacyObjectMapType(keyType, valueType);
+    }
+
+    @Override
+    public MapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
+      return typeInterner.getOrCreateMapType(keyType, valueType);
+    }
+
+    @Override
+    public SoyType getOrCreateUnionType(Collection<SoyType> members) {
+      return typeInterner.getOrCreateUnionType(members);
+    }
+
+    @Override
+    public SoyType getOrCreateUnionType(SoyType... members) {
+      return typeInterner.getOrCreateUnionType(members);
+    }
+
+    @Override
+    public RecordType getOrCreateRecordType(Iterable<Member> members) {
+      return typeInterner.getOrCreateRecordType(members);
+    }
+
+    @Override
+    public TemplateType getOrCreateTemplateType(Iterable<Argument> arguments, SoyType returnType) {
+      return typeInterner.getOrCreateTemplateType(arguments, returnType);
+    }
+
+    @Override
+    public VeType getOrCreateVeType(String dataType) {
+      return typeInterner.getOrCreateVeType(dataType);
+    }
+  }
+}

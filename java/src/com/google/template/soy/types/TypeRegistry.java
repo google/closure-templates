@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Google Inc.
+ * Copyright 2020 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,21 @@ package com.google.template.soy.types;
 
 import javax.annotation.Nullable;
 
-/** Registry of types which can be looked up by name. */
-public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
+/** Repository of registered types. */
+public interface TypeRegistry {
 
-  /** A type registry that defaults all unknown types to the 'unknown' type. */
-  SoyTypeRegistry DEFAULT_UNKNOWN =
-      new DelegatingSoyTypeRegistry(SoyTypeRegistryBuilder.create()) {
-        @Nullable
-        @Override
-        public SoyType getType(String typeName) {
-          SoyType type = super.getType(typeName);
-          return type != null ? type : UnknownType.getInstance();
-        }
-      };
+  /**
+   * Looks up a simple type by name.
+   *
+   * @param typeName "string", "bool", "pkg.proto.Message", etc.
+   */
+  @Nullable
+  SoyType getType(String typeName);
+
+  /** Returns the first type in this registry whose name begins with "prefix.". */
+  @Nullable
+  String findTypeWithMatchingNamespace(String prefix);
+
+  /** Returns the sorted set of all types in this registry. */
+  Iterable<String> getAllSortedTypeNames();
 }

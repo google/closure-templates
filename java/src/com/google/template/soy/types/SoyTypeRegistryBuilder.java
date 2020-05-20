@@ -16,10 +16,17 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.collect.Streams.stream;
 import static java.util.Comparator.comparingInt;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Streams;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -41,13 +48,26 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-/** Helper class that assists in the construction of SoyTypeProviders. */
+/** Helper class that assists in the construction of {@link SoyTypeRegistry}. */
 public final class SoyTypeRegistryBuilder {
-  // use a linked hash map.  The descriptors will tend to be in dependency order, so by
-  // constructing in the provided order we will limit the depth of the recusion below.
+
+  /** Creates a type registry with only the built-in types. Mostly used for testing. */
+  public static SoyTypeRegistry create() {
+    return TypeRegistries.newComposite(
+        TypeRegistries.builtinTypeRegistry(), TypeRegistries.newTypeInterner());
+  }
+
+  /**
+   * Map of proto file name ({@link FileDescriptorProto#getName()}}) to descriptor. This needs to be
+   * insertion order-preserving. The descriptors will tend to be in dependency order, so by
+   * constructing in the provided order we will limit the depth of the recursion below.
+   */
   private final Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
+
   private final List<GenericDescriptor> descriptors = new ArrayList<>();
+
   /**
    * Whether or not all the descriptors added to {@link #descriptors} are {@link FileDescriptor}
    * objects. If they are we can optimize traversal in the {@link DescriptorVisitor}.
@@ -58,10 +78,6 @@ public final class SoyTypeRegistryBuilder {
   private boolean areAllDescriptorsFileDescriptors = true;
 
   public SoyTypeRegistryBuilder() {}
-
-  public static SoyTypeRegistry create() {
-    return new SoyTypeRegistry(new SoyTypeRegistryBuilder());
-  }
 
   /**
    * Read a file descriptor set from a file and register any proto types found within.
@@ -96,7 +112,7 @@ public final class SoyTypeRegistryBuilder {
     return this;
   }
 
-  void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
+  private void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
     Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
     for (String name : nameToProtos.keySet()) {
       visitor.visitFile(
@@ -133,11 +149,22 @@ public final class SoyTypeRegistryBuilder {
   }
 
   public SoyTypeRegistry build() {
-    return new SoyTypeRegistry(this);
+    DescriptorVisitor visitor = new DescriptorVisitor();
+    try {
+      accept(visitor);
+    } catch (DescriptorValidationException e) {
+      throw new RuntimeException("Malformed descriptor set", e);
+    }
+
+    SoyTypeRegistry base = create();
+    return new ProtoSoyTypeRegistry(
+        base,
+        ImmutableMap.copyOf(visitor.descriptors),
+        ImmutableSetMultimap.copyOf(visitor.extensions));
   }
 
   /** Walks a descriptor tree to build the descriptors, and extensions maps. */
-  static final class DescriptorVisitor {
+  private static final class DescriptorVisitor {
     final Set<String> visited = new HashSet<>();
     final Map<String, GenericDescriptor> descriptors = new LinkedHashMap<>();
     final SetMultimap<String, FieldDescriptor> extensions =
@@ -255,14 +282,87 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private boolean shouldVisitDescriptor(GenericDescriptor descriptor, boolean onlyVisitingFiles) {
-      // if we are only visiting files, then we don't need to check the visited hash set unless this
+      // if we are only visiting files, then we don't need to check the visited hash set unless
+      // this
       // descriptor is a file, this is because the traversal strategy (where we disable
-      // 'exploreDependencies') means that we are guaranteed to visit each descriptor exactly once.
+      // 'exploreDependencies') means that we are guaranteed to visit each descriptor exactly
+      // once.
       // So checking the visited set is redundant.
       if (onlyVisitingFiles && !(descriptor instanceof FileDescriptor)) {
         return true;
       }
       return visited.add(descriptor.getFullName());
+    }
+  }
+
+  private static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry {
+
+    /**
+     * Map of SoyTypes that have been created from the type descriptors. Gets filled in lazily as
+     * types are requested.
+     */
+    private final LoadingCache<String, SoyType> protoTypeCache =
+        CacheBuilder.newBuilder()
+            .build(
+                new CacheLoader<String, SoyType>() {
+                  @Override
+                  public SoyType load(String key) {
+                    GenericDescriptor descriptor = descriptors.get(key);
+                    if (descriptor instanceof EnumDescriptor) {
+                      return new SoyProtoEnumType((EnumDescriptor) descriptor);
+                    } else {
+                      return new SoyProtoType(
+                          ProtoSoyTypeRegistry.this, (Descriptor) descriptor, extensions.get(key));
+                    }
+                  }
+                });
+
+    /** Map of all the protobuf type descriptors that we've discovered. */
+    private final ImmutableMap<String, GenericDescriptor> descriptors;
+
+    /* Multimap of all known extensions of a given proto */
+    private final ImmutableSetMultimap<String, FieldDescriptor> extensions;
+
+    public ProtoSoyTypeRegistry(
+        SoyTypeRegistry delegate,
+        ImmutableMap<String, GenericDescriptor> descriptors,
+        ImmutableSetMultimap<String, FieldDescriptor> extensions) {
+      super(delegate);
+      this.descriptors = descriptors;
+      this.extensions = extensions;
+    }
+
+    @Nullable
+    @Override
+    public SoyType getType(String typeName) {
+      SoyType type = super.getType(typeName);
+      if (type != null) {
+        return type;
+      }
+      if (!descriptors.containsKey(typeName)) {
+        return null;
+      }
+      return protoTypeCache.getUnchecked(typeName);
+    }
+
+    @Override
+    public String findTypeWithMatchingNamespace(String prefix) {
+      prefix = prefix + ".";
+      // This must be sorted so that errors are deterministic, or we'll break integration tests.
+      for (String name : getAllSortedTypeNames()) {
+        if (name.startsWith(prefix)) {
+          return name;
+        }
+      }
+      return null;
+    }
+
+    @Override
+    public Iterable<String> getAllSortedTypeNames() {
+      return () ->
+          Streams.concat(stream(super.getAllSortedTypeNames()), descriptors.keySet().stream())
+              .sorted()
+              .iterator();
     }
   }
 }
