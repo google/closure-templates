@@ -8461,6 +8461,12 @@ soy.$$listIndexOf = function(list, val) {
 soy.$$listSlice = function(list, from, to) {
   return null == to ? goog.array.slice(list, from) : goog.array.slice(list, from, to);
 };
+soy.$$filterAndMap = function(list, filter, map) {
+  for (var array = [], i = 0; i < list.length; i++) {
+    filter(list[i], i) && array.push(map(list[i], i));
+  }
+  return array;
+};
 soy.$$numberListSort = function(list) {
   return goog.array.toArray(list).sort(function(a, b) {
     return a - b;

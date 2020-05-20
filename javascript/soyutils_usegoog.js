@@ -1793,6 +1793,23 @@ soy.$$listSlice = function(list, from, to) {
                       goog.array.slice(list, from, to);
 };
 
+/**
+ * A helper for list comprehension.
+ * @param {!IArrayLike<T>} list
+ * @param {function(T,number):boolean} filter
+ * @param {function(T,number):V} map
+ * @return {!IArrayLike<V>}
+ * @template T, V
+ */
+soy.$$filterAndMap = function(list, filter, map) {
+  let array = [];
+  for (let i = 0; i < list.length; i++) {
+    if (filter(list[i], i)) {
+      array.push(map(list[i], i));
+    }
+  }
+  return array;
+};
 
 /**
  * Sorts a list of numbers in numerical order.
