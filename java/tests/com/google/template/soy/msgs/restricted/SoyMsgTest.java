@@ -30,6 +30,8 @@ public final class SoyMsgTest {
 
   private static final SourceLocation SOURCE =
       new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+  private static final String TEMPLATE = "ns.foo.templates.tmpl";
+
   private static final SoyMsg MSG =
       SoyMsg.builder()
           .setId(2222)
@@ -40,7 +42,7 @@ public final class SoyMsgTest {
           .setIsHidden(true)
           .setContentType("html")
           .setIsPlrselMsg(true)
-          .addSourceLocation(SOURCE)
+          .addSourceLocation(SOURCE, TEMPLATE)
           .setParts(ImmutableList.<SoyMsgPart>of(SoyMsgRawTextPart.of("Boo!")))
           .build();
 
@@ -63,8 +65,7 @@ public final class SoyMsgTest {
   @Test
   public void toBuilder_modify() {
     assertThat(
-            MSG_MINIMAL
-                .toBuilder()
+            MSG_MINIMAL.toBuilder()
                 .setAltId(5555)
                 .setLocaleString("de-DE")
                 .setDesc("Fake description")
@@ -72,7 +73,7 @@ public final class SoyMsgTest {
                 .setIsHidden(true)
                 .setContentType("html")
                 .setIsPlrselMsg(true)
-                .addSourceLocation(SOURCE)
+                .addSourceLocation(SOURCE, TEMPLATE)
                 .build())
         .isEqualTo(MSG);
   }

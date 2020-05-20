@@ -46,6 +46,19 @@ public abstract class SoyMsg {
     return new Builder();
   }
 
+  /** Wrapper class to encapsulate source location and template for a msg. */
+  @AutoValue
+  @Immutable
+  public abstract static class SourceLocationAndTemplate {
+    static SourceLocationAndTemplate create(SourceLocation srcLoc, String template) {
+      return new AutoValue_SoyMsg_SourceLocationAndTemplate(srcLoc, template);
+    }
+
+    public abstract SourceLocation sourceLocation();
+
+    public abstract String template();
+  }
+
   /** A builder for SoyMsg. */
   public static final class Builder {
     private long id;
@@ -55,7 +68,8 @@ public abstract class SoyMsg {
     private @Nullable String desc;
     private boolean isHidden;
     private @Nullable String contentType;
-    private final ImmutableSet.Builder<SourceLocation> sourceLocations = ImmutableSet.builder();
+    private final ImmutableSet.Builder<SourceLocationAndTemplate> sourceLocations =
+        ImmutableSet.builder();
     private boolean isPlrselMsg;
     private ImmutableList<SoyMsgPart> parts;
     private boolean hasFallback;
@@ -123,15 +137,19 @@ public abstract class SoyMsg {
       return this;
     }
 
-    /** @param sourceLocation Location of a source file that this message comes from. */
-    public Builder addSourceLocation(SourceLocation sourceLocation) {
-      sourceLocations.add(checkNotNull(sourceLocation));
+    /**
+     * @param sourceLocation Location of a source file that this message comes from.
+     * @param templateName Name of template this message comes from
+     */
+    public Builder addSourceLocation(SourceLocation sourceLocation, String templateName) {
+      sourceLocations.add(
+          SourceLocationAndTemplate.create(checkNotNull(sourceLocation), templateName));
       return this;
     }
 
     /** @param sourceLocations Locations of source files that this message comes from. */
-    public Builder addAllSourceLocations(Iterable<SourceLocation> sourceLocations) {
-      this.sourceLocations.addAll(checkNotNull(sourceLocations));
+    public Builder addAllSourceLocations(Iterable<SourceLocationAndTemplate> sourceLocations) {
+      this.sourceLocations.addAll(sourceLocations);
       return this;
     }
 
@@ -233,8 +251,8 @@ public abstract class SoyMsg {
   /** Returns the parts that make up the message content. */
   public abstract ImmutableList<SoyMsgPart> getParts();
 
-  /** Returns the location(s) of the source file(s) that this message comes from. */
-  public abstract ImmutableSet<SourceLocation> getSourceLocations();
+  /** Returns the location(s) and templates of the source file(s) that this message comes from. */
+  public abstract ImmutableSet<SourceLocationAndTemplate> getSourceLocations();
 
   /** Returns {@code true} if this message has a fallback. */
   public abstract boolean hasFallback();

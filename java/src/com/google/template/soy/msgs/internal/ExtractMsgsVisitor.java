@@ -31,6 +31,8 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateNode;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,6 +50,8 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
 
+  private String currentTemplate;
+
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
    * SoyFileNode (locale string is null).
@@ -60,7 +64,8 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     visit(node);
     // the messages in this list only have one source location.
     // messages gain extra source locations when merged together in a bundle.
-    Collections.sort(msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations())));
+    Collections.sort(
+        msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations()).sourceLocation()));
     return new SoyMsgBundleImpl(null, msgs);
   }
 
@@ -79,7 +84,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
             .setDesc(node.getDesc())
             .setIsHidden(node.isHidden())
             .setContentType(node.getContentType())
-            .addSourceLocation(node.getSourceLocation())
+            .addSourceLocation(node.getSourceLocation(), currentTemplate)
             .setIsPlrselMsg(node.isPlrselMsg())
             .setParts(msgPartsAndIds.parts)
             .setHasFallback(
@@ -88,6 +93,15 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
                 node.getParent().numChildren() == 2 && node.getParent().getChildIndex(node) == 0)
             .build();
     msgs.add(msg);
+  }
+
+  @Override
+  protected void visitTemplateNode(TemplateNode node) {
+    if (node instanceof TemplateDelegateNode) {
+      currentTemplate = ((TemplateDelegateNode) node).getDelTemplateName();
+    }
+    currentTemplate = node.getTemplateName();
+    super.visitTemplateNode(node);
   }
 
   // -----------------------------------------------------------------------------------------------
