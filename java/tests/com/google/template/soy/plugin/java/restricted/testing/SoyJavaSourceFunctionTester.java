@@ -57,7 +57,7 @@ import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
@@ -163,7 +163,7 @@ public class SoyJavaSourceFunctionTester {
   private SoyType parseType(String type) {
     TypeNode parsed =
         SoyFileParser.parseType(type, fn.getClass().getName(), ErrorReporter.exploding());
-    return new TypeNodeConverter(ErrorReporter.exploding(), new SoyTypeRegistry())
+    return new TypeNodeConverter(ErrorReporter.exploding(), SoyTypeRegistryBuilder.create())
         .getOrCreateType(parsed);
   }
 

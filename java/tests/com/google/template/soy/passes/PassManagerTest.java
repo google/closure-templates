@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.shared.SoyGeneralOptions;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -35,7 +35,7 @@ public final class PassManagerTest {
     return new PassManager.Builder()
         .setGeneralOptions(new SoyGeneralOptions())
         .setSoyPrintDirectives(ImmutableList.of())
-        .setTypeRegistry(new SoyTypeRegistry())
+        .setTypeRegistry(SoyTypeRegistryBuilder.create())
         .setErrorReporter(ErrorReporter.exploding());
   }
 

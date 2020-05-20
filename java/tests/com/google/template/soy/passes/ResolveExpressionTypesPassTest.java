@@ -51,6 +51,7 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeType;
@@ -81,8 +82,7 @@ public final class ResolveExpressionTypesPassTest {
         }
       };
 
-  private static final SoyTypeRegistry TYPE_REGISTRY = new SoyTypeRegistry();
-
+  private static final SoyTypeRegistry TYPE_REGISTRY = SoyTypeRegistryBuilder.create();
 
   @Test
   public void testOptionalParamTypes() {
@@ -156,7 +156,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testStateTypeInference() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
             .build();
 
@@ -267,7 +267,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testGetExtensionMethodTyping() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(Example.getDescriptor()))
             .build();
 
@@ -774,7 +774,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testProtoInitTyping() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
             .build();
 
@@ -869,7 +869,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testVeLiteral() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
             .build();
 
@@ -909,7 +909,7 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testVeDataLiteral() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
             .build();
 

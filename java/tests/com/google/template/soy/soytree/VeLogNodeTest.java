@@ -25,7 +25,7 @@ import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -91,7 +91,7 @@ public final class VeLogNodeTest {
         SoyTreeUtils.getAllNodesOfType(
             SoyFileSetParserBuilder.forTemplateContents(true, veLog)
                 .typeRegistry(
-                    new SoyTypeRegistry.Builder()
+                    new SoyTypeRegistryBuilder()
                         .addDescriptors(
                             ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
                         .build())

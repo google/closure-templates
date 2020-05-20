@@ -32,7 +32,7 @@ public class SoyTypeRegistryTest {
 
   @Before
   public void setUp() {
-    typeRegistry = new SoyTypeRegistry();
+    typeRegistry = SoyTypeRegistryBuilder.create();
   }
 
   @Test

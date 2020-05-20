@@ -38,7 +38,7 @@ import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
@@ -137,7 +137,7 @@ public final class JsTypeTest {
 
     assertThatTypeExprStrict(
             new SoyProtoType(
-                new SoyTypeRegistry(), Proto3Message.getDescriptor(), ImmutableSet.of()))
+                SoyTypeRegistryBuilder.create(), Proto3Message.getDescriptor(), ImmutableSet.of()))
         .isEqualTo("!proto.soy.test.Proto3Message");
 
     assertThatTypeExprStrict(HtmlType.getInstance())

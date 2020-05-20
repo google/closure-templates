@@ -41,6 +41,7 @@ import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.IOException;
 import java.util.Map;
 import org.junit.Test;
@@ -307,7 +308,7 @@ public final class VeLoggingTest {
       Map<String, ?> params, OutputAppendable output, SoyLogger logger, String... templateBodyLines)
       throws IOException {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
             .build();
     SoyFileSetParser parser =

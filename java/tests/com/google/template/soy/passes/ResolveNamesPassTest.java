@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -49,7 +50,7 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class ResolveNamesPassTest {
 
-  private static final SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+  private static final SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
 
   @Test
   public void testParamNameLookupSuccess() {

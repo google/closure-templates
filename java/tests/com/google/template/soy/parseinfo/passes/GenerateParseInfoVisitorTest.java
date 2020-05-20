@@ -39,6 +39,7 @@ import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -215,7 +216,7 @@ public final class GenerateParseInfoVisitorTest {
 
   private static String createParseInfo(
       ImmutableList<GenericDescriptor> protos, String... templateLines) {
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistry.Builder().addDescriptors(protos).build();
+    SoyTypeRegistry typeRegistry = new SoyTypeRegistryBuilder().addDescriptors(protos).build();
     ParseResult parseResult =
         SoyFileSetParserBuilder.forFileContents(
                 SharedTestUtils.buildTestSoyFileContent(

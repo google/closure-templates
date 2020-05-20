@@ -34,7 +34,7 @@ public class SoyProtoTypeTest {
   @Test
   public void testExtensionFieldNames() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistry.Builder()
+        new SoyTypeRegistryBuilder()
             .addDescriptors(ImmutableList.of(Example.getDescriptor()))
             .build();
 

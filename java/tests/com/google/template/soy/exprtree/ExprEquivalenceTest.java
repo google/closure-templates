@@ -30,6 +30,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -97,7 +98,7 @@ public final class ExprEquivalenceTest {
   }
 
   private static final SoyTypeRegistry TYPE_REGISTRY =
-      new SoyTypeRegistry.Builder()
+      new SoyTypeRegistryBuilder()
           .addDescriptors(ImmutableList.of(Example.getDescriptor()))
           .build();
 

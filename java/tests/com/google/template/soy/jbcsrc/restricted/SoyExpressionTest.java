@@ -38,7 +38,7 @@ import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.SoyProtoType;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
 import java.util.List;
@@ -220,7 +220,7 @@ public class SoyExpressionTest {
     SoyExpression secretNullProto =
         SoyExpression.forSoyValue(
             new SoyProtoType(
-                new SoyTypeRegistry(), Proto3Message.getDescriptor(), ImmutableSet.of()),
+                SoyTypeRegistryBuilder.create(), Proto3Message.getDescriptor(), ImmutableSet.of()),
             new Expression(BytecodeUtils.SOY_PROTO_VALUE_TYPE, Feature.NON_NULLABLE) {
               @Override
               protected void doGen(CodeBuilder cb) {

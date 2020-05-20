@@ -43,6 +43,7 @@ import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -55,7 +56,7 @@ import javax.annotation.Nullable;
 public final class SoyFileSetParserBuilder {
 
   private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
-  private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+  private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;

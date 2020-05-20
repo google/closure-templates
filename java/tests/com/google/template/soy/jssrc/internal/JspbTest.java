@@ -29,6 +29,7 @@ import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SomeNestedExtension;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,7 +46,7 @@ import org.junit.runners.JUnit4;
 public final class JspbTest {
 
   private static final SoyTypeRegistry REGISTRY =
-      new SoyTypeRegistry.Builder()
+      new SoyTypeRegistryBuilder()
           .addDescriptors(
               ImmutableList.of(
                   Example.getDescriptor(),

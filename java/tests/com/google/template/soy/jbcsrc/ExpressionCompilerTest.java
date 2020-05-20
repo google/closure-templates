@@ -68,7 +68,7 @@ import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnknownType;
@@ -134,7 +134,7 @@ public class ExpressionCompilerTest {
               getRenderMethod()),
           fields,
           ErrorReporter.exploding(),
-          new SoyTypeRegistry());
+          SoyTypeRegistryBuilder.create());
 
   private static Method getRenderMethod() {
     try {

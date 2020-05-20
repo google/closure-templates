@@ -48,6 +48,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckReturnValue;
@@ -61,7 +62,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   private final String actual;
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-  private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+  private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private ImmutableList<String> experimentalFeatures = ImmutableList.of();
   ErrorReporter errorReporter = ErrorReporter.exploding();
@@ -189,7 +190,10 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     private SoyFileNode fileNode;
     private final GenJsCodeVisitor visitor =
         JsSrcMain.createVisitor(
-            jsSrcOptions, new SoyTypeRegistry(), BidiGlobalDir.LTR, ErrorReporter.exploding());
+            jsSrcOptions,
+            SoyTypeRegistryBuilder.create(),
+            BidiGlobalDir.LTR,
+            ErrorReporter.exploding());
 
     private ForFile(FailureMetadata failureMetadata, String expr) {
       super(failureMetadata, expr);

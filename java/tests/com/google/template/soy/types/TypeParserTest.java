@@ -35,7 +35,7 @@ public class TypeParserTest {
 
   @Before
   public void setUp() throws Exception {
-    typeRegistry = new SoyTypeRegistry();
+    typeRegistry = SoyTypeRegistryBuilder.create();
   }
 
   @Test

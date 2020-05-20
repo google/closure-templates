@@ -84,6 +84,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.tofu.SoyTofu;
 import com.google.template.soy.tofu.internal.BaseTofu;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -139,7 +140,7 @@ public final class SoyFileSet {
     private SoyGeneralOptions lazyGeneralOptions = null;
 
     /** The SoyProtoTypeProvider builder that will be built for local type registry. */
-    private final SoyTypeRegistry.Builder typeRegistryBuilder = new SoyTypeRegistry.Builder();
+    private final SoyTypeRegistryBuilder typeRegistryBuilder = new SoyTypeRegistryBuilder();
 
     @Nullable private Appendable warningSink;
 

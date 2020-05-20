@@ -64,6 +64,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -156,7 +157,7 @@ public final class TemplateTester {
 
     private Iterable<ClassData> classData;
     private CompiledTemplate.Factory factory;
-    private SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+    private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
     private ImmutableList<String> experimentalFeatures = ImmutableList.of();
     private RenderContext defaultContext;
 

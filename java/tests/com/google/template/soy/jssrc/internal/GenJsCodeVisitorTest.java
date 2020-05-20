@@ -37,7 +37,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.List;
 import java.util.Set;
 import org.junit.Before;
@@ -95,7 +95,10 @@ public final class GenJsCodeVisitorTest {
     jsSrcOptions = new SoyJsSrcOptions();
     genJsCodeVisitor =
         JsSrcMain.createVisitor(
-            jsSrcOptions, new SoyTypeRegistry(), BidiGlobalDir.LTR, ErrorReporter.exploding());
+            jsSrcOptions,
+            SoyTypeRegistryBuilder.create(),
+            BidiGlobalDir.LTR,
+            ErrorReporter.exploding());
     genJsCodeVisitor.templateAliases = TEMPLATE_ALIASES;
   }
 

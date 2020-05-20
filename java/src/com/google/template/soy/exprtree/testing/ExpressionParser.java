@@ -33,6 +33,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -121,7 +122,7 @@ public final class ExpressionParser {
     lines.add(String.format("{%s}", expression));
     String contents = Joiner.on('\n').join(lines);
 
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistry.Builder().addDescriptors(protos).build();
+    SoyTypeRegistry typeRegistry = new SoyTypeRegistryBuilder().addDescriptors(protos).build();
 
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileContents(SharedTestUtils.buildTestSoyFileContent(contents))

@@ -24,7 +24,7 @@ import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.List;
 
 /**
@@ -47,7 +47,7 @@ public final class JbcSrcJavaValues {
             context,
             pluginInstanceFn::apply,
             ErrorReporter.exploding(),
-            new SoyTypeRegistry())
+            SoyTypeRegistryBuilder.create())
         .computeForJavaSource(args);
   }
 }

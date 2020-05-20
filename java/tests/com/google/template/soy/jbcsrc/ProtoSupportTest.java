@@ -46,6 +46,7 @@ import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.IOException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,7 +62,7 @@ public final class ProtoSupportTest {
   private static final Joiner JOINER = Joiner.on('\n');
 
   final SoyTypeRegistry types =
-      new SoyTypeRegistry.Builder()
+      new SoyTypeRegistryBuilder()
           .addDescriptors(
               ImmutableList.of(
                   Example.getDescriptor(),

@@ -332,7 +332,7 @@ public class SoyTypesTest {
 
   @Test
   public void testLowestCommonType() {
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistry();
+    SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
 
     assertThat(SoyTypes.computeLowestCommonType(typeRegistry, INT_TYPE, ANY_TYPE))
         .isEqualTo(ANY_TYPE);

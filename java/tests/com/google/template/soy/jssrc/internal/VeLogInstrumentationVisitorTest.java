@@ -32,7 +32,7 @@ import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -272,7 +272,7 @@ public final class VeLogInstrumentationVisitorTest {
             // Disable desguaring pass and manually run it later
             .desugarHtmlAndStateNodes(false)
             .typeRegistry(
-                new SoyTypeRegistry.Builder()
+                new SoyTypeRegistryBuilder()
                     .addDescriptors(
                         ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
                     .build())
