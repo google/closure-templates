@@ -432,7 +432,6 @@ goog.FEATURESET_YEAR = 2012;
 goog.DEBUG = !1;
 goog.LOCALE = "en";
 goog.TRUSTED_SITE = !0;
-goog.STRICT_MODE_COMPATIBLE = !1;
 goog.DISALLOW_TEST_ONLY_CODE = !goog.DEBUG;
 goog.ENABLE_CHROME_APP_SAFE_SCRIPT_LOADING = !1;
 goog.provide = function(name) {

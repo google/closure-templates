@@ -187,7 +187,7 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
       List<TemplateHeaderVarDefn> unusedHeaderVars,
       SoyErrorKind soyError) {
     for (TemplateHeaderVarDefn unusedVar : unusedHeaderVars) {
-      errorReporter.report(unusedVar.nameLocation(), soyError, unusedVar.name());
+      errorReporter.warn(unusedVar.nameLocation(), soyError, unusedVar.name());
     }
   }
 }
