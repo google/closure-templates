@@ -158,7 +158,7 @@ attribute. These aren't harmful but they may be undesired, in this case the
 ">
 ```
 
-Now it the line joining algorithm will produce this:
+Now the line joining algorithm will produce this:
 
 ```soy
 <a href="{$url}" class="foo bar">
