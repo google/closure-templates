@@ -57,6 +57,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
 
@@ -330,8 +331,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     } else {
       jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
     }
-    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
-    jsDocBuilder.addParam("opt_ijData", "?goog.soy.IjData=");
+    jsDocBuilder.addGoogRequire(GOOG_SOY_ALIAS);
+    jsDocBuilder.addParam("opt_ijData", "?" + GOOG_SOY_ALIAS.alias() + ".IjData=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
@@ -491,8 +492,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             "constructor",
             JsDoc.builder()
                 .addParam("opt_data", paramsType)
-                .addGoogRequire(GoogRequire.createTypeRequire("goog.soy"))
-                .addParam("opt_ijData", "!goog.soy.IjData=")
+                .addGoogRequire(GOOG_SOY_ALIAS)
+                .addParam("opt_ijData", "!" + GOOG_SOY_ALIAS.alias() + ".IjData=")
                 .build(),
             ctorBody);
 

@@ -52,6 +52,9 @@ public final class JsRuntime {
   private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
   private static final GoogRequire SOY_ASSERTS = GoogRequire.create("soy.asserts");
   public static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
+  public static final GoogRequire GOOG_SOY_ALIAS =
+      GoogRequire.createWithAlias("goog.soy", "$googSoy");
+  public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
 

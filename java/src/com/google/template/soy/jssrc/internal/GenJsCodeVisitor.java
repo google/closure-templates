@@ -31,6 +31,8 @@ import static com.google.template.soy.jssrc.dsl.Statement.switchValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_IS_OBJECT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELTEMPLATE_ID;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_REGISTER_DELEGATE_FN;
@@ -425,7 +427,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // The most practical solution to that is for soy to generate its own .d.ts files.
     Map<String, SoyType> ijData = getAllIjDataParams(node);
     if (!ijData.isEmpty()) {
-      GoogRequire require = GoogRequire.create("goog.soy");
+      GoogRequire require = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
       jsCodeBuilder.appendLine();
       for (Map.Entry<String, SoyType> entry : ijData.entrySet()) {
         jsCodeBuilder.appendLine();
@@ -764,9 +766,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       jsDocBuilder.addParam("opt_data", "!" + alias + ".Params");
     }
 
-    jsDocBuilder.addGoogRequire(GoogRequire.createTypeRequire("goog.soy"));
     // TODO(lukes): remove |Object<string, *> and only add the '=/?' if ij data is truly optional
-    jsDocBuilder.addParam("opt_ijData", "(?goog.soy.IjData|?Object<string, *>)=");
+    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
+    jsDocBuilder.addGoogRequire(googSoy);
+    jsDocBuilder.addParam("opt_ijData", "(?" + googSoy.alias() + ".IjData|?Object<string, *>)=");
 
     String returnType = getTemplateReturnType(node);
     jsDocBuilder.addParameterizedAnnotation("return", returnType);
@@ -782,8 +785,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @CheckReturnValue
   protected Statement generateFunctionBody(TemplateNode node, String alias) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
     bodyStatements.add(
-        Statement.assign(JsRuntime.OPT_IJ_DATA, JsRuntime.OPT_IJ_DATA.castAs("!goog.soy.IjData")));
+        Statement.assign(
+            JsRuntime.OPT_IJ_DATA,
+            JsRuntime.OPT_IJ_DATA.castAs("!" + googSoy.alias() + ".IjData")));
     if (node instanceof TemplateElementNode) {
       TemplateElementNode elementNode = (TemplateElementNode) node;
       for (TemplateStateVar stateVar : elementNode.getStateVars()) {
