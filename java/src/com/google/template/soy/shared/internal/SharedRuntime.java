@@ -136,5 +136,20 @@ public final class SharedRuntime {
     return false;
   }
 
+  /** calculates a $soyServerKey value. This should be compatible with the JS implementation in */
+  public static String soyServerKey(SoyValue key) {
+    if (key instanceof NumberData) {
+      return serialize(key.coerceToString(), "#");
+    }
+    if (key == null) {
+      return serialize("null", "_");
+    }
+    return serialize(key.coerceToString(), ":");
+  }
+
+  private static String serialize(String key, String delimiter) {
+    return key.length() + delimiter + key;
+  }
+
   private SharedRuntime() {}
 }

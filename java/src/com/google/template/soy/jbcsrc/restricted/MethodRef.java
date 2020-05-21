@@ -261,8 +261,8 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_CHECK_RESOLVED_MAP =
       create(JbcSrcRuntime.class, "checkResolved", Map.class);
 
-  public static final MethodRef GET_KEY_OBJECT =
-      MethodRef.create(JbcSrcRuntime.class, "getKeyObject", SoyValue.class).asCheap();
+  public static final MethodRef SOY_SERVER_KEY =
+      MethodRef.create(SharedRuntime.class, "soyServerKey", SoyValue.class).asCheap();
 
   public static final MethodRef RUNTIME_RANGE_LOOP_LENGTH =
       create(JbcSrcRuntime.class, "rangeLoopLength", int.class, int.class, int.class).asCheap();

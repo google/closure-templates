@@ -132,20 +132,6 @@ public final class JbcSrcRuntime {
         new Exception());
   }
 
-  public static String getKeyObject(SoyValue key) {
-    if (key instanceof NumberData) {
-      return serialize(key.coerceToString(), "#");
-    }
-    if (key == null) {
-      return serialize("null", "_");
-    }
-    return serialize(key.coerceToString(), ":");
-  }
-
-  private static String serialize(String key, String delimiter) {
-    return key.length() + delimiter + key;
-  }
-
   public static boolean stringEqualsAsNumber(String expr, double number) {
     if (expr == null) {
       return false;

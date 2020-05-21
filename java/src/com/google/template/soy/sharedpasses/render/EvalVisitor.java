@@ -25,6 +25,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEq
 import static com.google.template.soy.shared.internal.SharedRuntime.minus;
 import static com.google.template.soy.shared.internal.SharedRuntime.negative;
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
+import static com.google.template.soy.shared.internal.SharedRuntime.soyServerKey;
 import static com.google.template.soy.shared.internal.SharedRuntime.times;
 
 import com.google.common.base.Supplier;
@@ -923,7 +924,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   }
 
   private SoyValue visitSoyServerKeyFunction(FunctionNode node) {
-    return visit(node.getChild(0));
+    SoyValue value = visit(node.getChild(0));
+    // map tofu null to soysauce null since that is what this function expects.
+    return StringData.forValue(
+        soyServerKey(value instanceof NullData || value instanceof UndefinedData ? null : value));
   }
 
   private SoyValue visitIsPrimaryMsgInUseFunction(FunctionNode node) {
