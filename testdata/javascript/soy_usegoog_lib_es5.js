@@ -2081,10 +2081,10 @@ goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
 goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
   switch(goog.i18n.bidi.estimateDirection(text)) {
     case goog.i18n.bidi.Dir.LTR:
-      element.dir = "ltr";
+      "ltr" !== element.dir && (element.dir = "ltr");
       break;
     case goog.i18n.bidi.Dir.RTL:
-      element.dir = "rtl";
+      "rtl" !== element.dir && (element.dir = "rtl");
       break;
     default:
       element.removeAttribute("dir");
