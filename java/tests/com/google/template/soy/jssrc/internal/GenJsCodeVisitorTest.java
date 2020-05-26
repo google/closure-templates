@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
-import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
@@ -240,12 +239,7 @@ public final class GenJsCodeVisitorTest {
             + "  blah\n"
             + "{/template}\n";
 
-    ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(testFileContent)
-            .cssRegistry(
-                CssRegistry.create(
-                    ImmutableSet.of("ddd.eee.fff.ggg", "aaa.bbb.ccc"), ImmutableMap.of()))
-            .parse();
+    ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
     String expectedJsFileContentStart =
         ""
@@ -565,6 +559,7 @@ public final class GenJsCodeVisitorTest {
             + "output += MSG_UNNAMED;\n";
     assertGeneratedJsCode(soyCode, expectedJsCode);
   }
+
 
   @Test
   public void testPrint() {
@@ -1525,7 +1520,9 @@ public final class GenJsCodeVisitorTest {
    */
   private void assertGeneratedJsCode(String soyCode, String expectedJsCode) {
     ParseResult parseResult =
-        SoyFileSetParserBuilder.forTemplateContents(soyCode).allowUnboundGlobals(true).parse();
+        SoyFileSetParserBuilder.forTemplateContents(soyCode)
+            .allowUnboundGlobals(true)
+            .parse();
     TemplateNode templateNode = (TemplateNode) parseResult.fileSet().getChild(0).getChild(0);
 
     // Setup the GenJsCodeVisitor's state before the node is visited.

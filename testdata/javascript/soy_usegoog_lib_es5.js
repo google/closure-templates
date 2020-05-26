@@ -652,33 +652,7 @@ goog.transpile_ = function(code$jscomp$0, path$jscomp$0, target) {
 };
 goog.typeOf = function(value) {
   var s = typeof value;
-  if ("object" == s) {
-    if (value) {
-      if (value instanceof Array) {
-        return "array";
-      }
-      if (value instanceof Object) {
-        return s;
-      }
-      var className = Object.prototype.toString.call(value);
-      if ("[object Window]" == className) {
-        return "object";
-      }
-      if ("[object Array]" == className || "number" == typeof value.length && "undefined" != typeof value.splice && "undefined" != typeof value.propertyIsEnumerable && !value.propertyIsEnumerable("splice")) {
-        return "array";
-      }
-      if ("[object Function]" == className || "undefined" != typeof value.call && "undefined" != typeof value.propertyIsEnumerable && !value.propertyIsEnumerable("call")) {
-        return "function";
-      }
-    } else {
-      return "null";
-    }
-  } else {
-    if ("function" == s && "undefined" == typeof value.call) {
-      return "object";
-    }
-  }
-  return s;
+  return "object" != s ? s : value ? Array.isArray(value) ? "array" : s : "null";
 };
 goog.isArray = function(val) {
   return Array.isArray(val);
