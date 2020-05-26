@@ -40,7 +40,8 @@ public final class ImportNode extends AbstractSoyNode {
 
   /** Only CSS is supported right now. */
   public enum ImportType {
-    CSS
+    CSS,
+    UNKNOWN,
   }
 
   public ImportNode(int id, SourceLocation location, StringNode path, List<VarDefn> defns) {
@@ -77,11 +78,10 @@ public final class ImportNode extends AbstractSoyNode {
   private ImportType getImportType() {
     // TODO(tomnguyen): Throw an error if any aliases are extracted from CSS imports, as they do not
     // exist yet.
-    if (path.getValue().endsWith(".gss") || path.getValue().endsWith(".sass")) {
+    if (path.getValue().endsWith(".gss") || path.getValue().endsWith(".scss")) {
       return ImportType.CSS;
     }
-    // TODO(tomnguyen) Write a validation pass to verify imports.
-    throw new UnsupportedOperationException("No other imports are supported right now.");
+    return ImportType.UNKNOWN;
   }
 
   public String getPath() {
@@ -90,6 +90,10 @@ public final class ImportNode extends AbstractSoyNode {
 
   public boolean isCss() {
     return getImportType() == ImportType.CSS;
+  }
+
+  public List<VarDefn> getIdentifiers() {
+    return identifiers;
   }
 
   @Override
