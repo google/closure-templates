@@ -33,6 +33,7 @@ import com.google.common.truth.ThrowableSubject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SoyRecord;
@@ -478,6 +479,20 @@ public final class TemplateTester {
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(file).build();
+    ParseResult parseResult = parser.parse();
+    return BytecodeCompiler.compile(
+            parseResult.registry(),
+            parseResult.fileSet(),
+            ErrorReporter.exploding(),
+            parser.soyFileSuppliers(),
+            parser.typeRegistry())
+        .get();
+  }
+
+  static CompiledTemplates compileFileWithCss(CssRegistry cssRegistry, String... fileBody) {
+    String file = Joiner.on('\n').join(fileBody);
+    SoyFileSetParser parser =
+        SoyFileSetParserBuilder.forFileContents(file).cssRegistry(cssRegistry).build();
     ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(
             parseResult.registry(),

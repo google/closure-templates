@@ -25,7 +25,7 @@ import com.google.errorprone.annotations.Immutable;
 @Immutable
 @AutoValue
 public abstract class CssRegistry {
-  abstract ImmutableSet<String> providedSymbols();
+  public abstract ImmutableSet<String> providedSymbols();
 
   abstract ImmutableMap<String, String> filePathToSymbol();
 

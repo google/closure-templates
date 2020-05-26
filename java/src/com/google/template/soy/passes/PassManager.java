@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SoyGeneralOptions;
@@ -132,6 +133,7 @@ public final class PassManager {
     private ImmutableList<? extends SoyPrintDirective> soyPrintDirectives;
     private ErrorReporter errorReporter;
     private SoyGeneralOptions options;
+    private CssRegistry cssRegistry;
     private boolean allowUnknownGlobals;
     private boolean allowV1Expression;
     private boolean allowUnknownJsGlobals;
@@ -159,6 +161,11 @@ public final class PassManager {
 
     public Builder setTypeRegistry(SoyTypeRegistry registry) {
       this.registry = checkNotNull(registry);
+      return this;
+    }
+
+    public Builder setCssRegistry(CssRegistry registry) {
+      this.cssRegistry = checkNotNull(registry);
       return this;
     }
 

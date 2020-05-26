@@ -1201,6 +1201,7 @@ public final class SoyFileSet {
         .setGeneralOptions(generalOptions)
         .optimize(optimize)
         .setSoyPrintDirectives(printDirectives)
+        .setCssRegistry(cssRegistry)
         .setErrorReporter(errorReporter)
         .setConformanceConfig(conformanceConfig)
         .setLoggingConfig(loggingConfig)
