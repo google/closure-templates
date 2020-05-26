@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Streams.stream;
 import static java.util.Comparator.comparingInt;
 
@@ -23,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -128,20 +130,20 @@ public final class SoyTypeRegistryBuilder {
       String requestor,
       String name,
       Map<String, FileDescriptor> descriptors,
-      Map<String, FileDescriptorProto> protos)
+      Map<String, FileDescriptorProto> nameToProtos)
       throws DescriptorValidationException {
     FileDescriptor file = descriptors.get(name);
     if (file != null) {
       return file;
     }
-    FileDescriptorProto proto = protos.get(name);
+    FileDescriptorProto proto = nameToProtos.get(name);
     if (proto == null) {
       throw new IllegalStateException(
           "Cannot find proto descriptor for " + name + " which is a dependency of " + requestor);
     }
     FileDescriptor[] deps = new FileDescriptor[proto.getDependencyCount()];
     for (int i = 0; i < proto.getDependencyCount(); i++) {
-      deps[i] = buildDescriptor(name, proto.getDependency(i), descriptors, protos);
+      deps[i] = buildDescriptor(name, proto.getDependency(i), descriptors, nameToProtos);
     }
     file = FileDescriptor.buildFrom(proto, deps);
     descriptors.put(name, file);
@@ -295,7 +297,8 @@ public final class SoyTypeRegistryBuilder {
     }
   }
 
-  private static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry {
+  /** The standard implementation of SoyTypeRegistry, which supports protobuf types. */
+  public static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry {
 
     /**
      * Map of SoyTypes that have been created from the type descriptors. Gets filled in lazily as
@@ -323,6 +326,8 @@ public final class SoyTypeRegistryBuilder {
     /* Multimap of all known extensions of a given proto */
     private final ImmutableSetMultimap<String, FieldDescriptor> extensions;
 
+    private final ImmutableSet<FileDescriptor> fileDescriptors;
+
     public ProtoSoyTypeRegistry(
         SoyTypeRegistry delegate,
         ImmutableMap<String, GenericDescriptor> descriptors,
@@ -330,6 +335,12 @@ public final class SoyTypeRegistryBuilder {
       super(delegate);
       this.descriptors = descriptors;
       this.extensions = extensions;
+      this.fileDescriptors =
+          descriptors.values().stream().map(GenericDescriptor::getFile).collect(toImmutableSet());
+    }
+
+    public ImmutableSet<FileDescriptor> getFileDescriptors() {
+      return fileDescriptors;
     }
 
     @Nullable

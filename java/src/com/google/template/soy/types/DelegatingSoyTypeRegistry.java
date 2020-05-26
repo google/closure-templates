@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
  * Implementation of {@link SoyTypeRegistry} that delegates all calls to another instance of {@link
  * SoyTypeRegistry}. Used for building chains of registries.
  */
-abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
+public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
 
   private final SoyTypeRegistry delegate;
 

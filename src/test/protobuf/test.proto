@@ -199,3 +199,19 @@ message AnotherExtension {
     optional int32 both_scoped_collision = 4001;
   }
 }
+
+enum TopLevelEnum {
+  DEFAULT = 0;
+  ONE = 1;
+  TWO = 2;
+  THREE = 3;
+}
+
+message ImportedMessage {
+  message SubMessage {
+    optional string subname = 1;
+  }
+
+  optional string name = 1;
+  optional TopLevelEnum e = 2;
+}

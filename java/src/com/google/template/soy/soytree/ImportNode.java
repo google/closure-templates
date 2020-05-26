@@ -16,13 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import java.util.List;
 
 /**
@@ -34,20 +36,24 @@ import java.util.List;
 public final class ImportNode extends AbstractSoyNode {
 
   /** The value expression that the variable is set to. */
-  private final List<VarDefn> identifiers;
+  private final ImmutableList<VarDefn> identifiers;
 
   private final StringNode path;
+
+  private final ImportType importType;
 
   /** Only CSS is supported right now. */
   public enum ImportType {
     CSS,
-    UNKNOWN,
+    PROTO,
+    UNKNOWN
   }
 
   public ImportNode(int id, SourceLocation location, StringNode path, List<VarDefn> defns) {
     super(id, location);
-    this.identifiers = defns;
+    this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
+    this.importType = importTypeForPath(path.getValue());
   }
 
   /**
@@ -57,8 +63,10 @@ public final class ImportNode extends AbstractSoyNode {
    */
   private ImportNode(ImportNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.identifiers = orig.identifiers;
+    this.identifiers =
+        orig.identifiers.stream().map(c -> ((ImportedVar) c).clone()).collect(toImmutableList());
     this.path = orig.path.copy(copyState);
+    this.importType = orig.importType;
   }
 
   @Override
@@ -75,12 +83,20 @@ public final class ImportNode extends AbstractSoyNode {
     return identifiers.isEmpty();
   }
 
-  private ImportType getImportType() {
+  public ImportType getImportType() {
+    return importType;
+  }
+
+  private static ImportType importTypeForPath(String path) {
     // TODO(tomnguyen): Throw an error if any aliases are extracted from CSS imports, as they do not
     // exist yet.
-    if (path.getValue().endsWith(".gss") || path.getValue().endsWith(".scss")) {
+    if (path.endsWith(".gss") || path.endsWith(".scss")) {
       return ImportType.CSS;
     }
+    if (path.endsWith(".proto")) {
+      return ImportType.PROTO;
+    }
+    // TODO(tomnguyen) Write a validation pass to verify imports.
     return ImportType.UNKNOWN;
   }
 
@@ -88,11 +104,11 @@ public final class ImportNode extends AbstractSoyNode {
     return path.getValue();
   }
 
-  public boolean isCss() {
-    return getImportType() == ImportType.CSS;
+  public SourceLocation getPathSourceLocation() {
+    return path.getSourceLocation();
   }
 
-  public List<VarDefn> getIdentifiers() {
+  public ImmutableList<VarDefn> getIdentifiers() {
     return identifiers;
   }
 

@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -39,6 +38,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,10 +138,13 @@ public final class TypeNodeConverter
 
   private final ErrorReporter errorReporter;
   private final SoyTypeRegistry typeRegistry;
+  private final boolean disableAllTypeChecking;
 
-  public TypeNodeConverter(ErrorReporter errorReporter, SoyTypeRegistry typeRegistry) {
-    this.errorReporter = Preconditions.checkNotNull(errorReporter);
-    this.typeRegistry = Preconditions.checkNotNull(typeRegistry);
+  public TypeNodeConverter(
+      ErrorReporter errorReporter, SoyTypeRegistry typeRegistry, boolean disableAllTypeChecking) {
+    this.errorReporter = errorReporter;
+    this.typeRegistry = typeRegistry;
+    this.disableAllTypeChecking = disableAllTypeChecking;
   }
 
   /**
@@ -170,14 +173,19 @@ public final class TypeNodeConverter
             MISSING_GENERIC_TYPE_PARAMETERS,
             name,
             genericType.formatNumTypeParams());
+        type = ErrorType.getInstance();
       } else {
-        errorReporter.report(
-            node.sourceLocation(),
-            UNKNOWN_TYPE,
-            name,
-            SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
+        if (disableAllTypeChecking) {
+          type = UnknownType.getInstance();
+        } else {
+          errorReporter.report(
+              node.sourceLocation(),
+              UNKNOWN_TYPE,
+              name,
+              SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
+          type = ErrorType.getInstance();
+        }
       }
-      type = ErrorType.getInstance();
     }
     node.setResolvedType(type);
     return type;

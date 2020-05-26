@@ -22,23 +22,24 @@ import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 
 /** Resolve the TypeNode objects in TemplateParams to SoyTypes */
 final class ResolveTemplateParamTypesPass implements CompilerFilePass {
-  private final TypeNodeConverter converter;
+  private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
 
-  ResolveTemplateParamTypesPass(
-      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
-    this.converter = new TypeNodeConverter(errorReporter, typeRegistry);
+  ResolveTemplateParamTypesPass(ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+    this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    TypeNodeConverter converter =
+        new TypeNodeConverter(errorReporter, file.getSoyTypeRegistry(), disableAllTypeChecking);
+
     for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
         if (param.getTypeNode() != null) {

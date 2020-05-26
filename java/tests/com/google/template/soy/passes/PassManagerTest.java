@@ -71,6 +71,7 @@ public final class PassManagerTest {
             "BanNonNullAssertionOperator",
             "DesugarGroupNodes",
             "ContentSecurityPolicyNonceInjection",
+            "Imports",
             "ResolveTemplateParamTypes");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
@@ -87,7 +88,8 @@ public final class PassManagerTest {
         .containsExactly(
             "BanNonNullAssertionOperator",
             "DesugarGroupNodes",
-            "ContentSecurityPolicyNonceInjection");
+            "ContentSecurityPolicyNonceInjection",
+            "Imports");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 

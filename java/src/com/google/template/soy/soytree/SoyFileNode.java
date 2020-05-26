@@ -16,14 +16,14 @@
 
 package com.google.template.soy.soytree;
 
-
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.types.SoyTypeRegistry;
 import javax.annotation.Nullable;
 
 /**
@@ -46,6 +46,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   private final TemplateNode.SoyFileHeaderInfo headerInfo;
 
   private final ImmutableList<Comment> comments;
+
+  private ImportsContext importsContext;
 
   /**
    * @param id The id for this node.
@@ -164,7 +166,9 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   /** Resolves a qualified name against the aliases for this file. */
   public Identifier resolveAlias(Identifier identifier) {
-    return headerInfo.resolveAlias(identifier);
+    Preconditions.checkState(
+        importsContext != null, "Called resolveAlias() before ImportsPass was run");
+    return importsContext.resolveAlias(identifier, headerInfo);
   }
 
   public boolean aliasUsed(String alias) {
@@ -174,6 +178,28 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   @Override
   public SourceLocation getSourceLocation() {
     return super.getSourceLocation();
+  }
+
+  public SoyTypeRegistry getSoyTypeRegistry() {
+    Preconditions.checkState(
+        importsContext != null, "Called getSoyTypeRegistry() before ImportsPass was run");
+    return importsContext.getTypeRegistry();
+  }
+
+  public void setImportsContext(ImportsContext importsContext) {
+    Preconditions.checkState(
+        this.importsContext == null,
+        "setImportsContext() should only be called once, from ImportsPass");
+    this.importsContext = importsContext;
+  }
+
+  /** A per-file context for type and alias resolution. */
+  public interface ImportsContext {
+    SoyTypeRegistry getTypeRegistry();
+
+    default Identifier resolveAlias(Identifier id, SoyFileHeaderInfo headerInfo) {
+      return headerInfo.resolveAlias(id);
+    }
   }
 
   @Override

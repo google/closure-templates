@@ -1008,7 +1008,8 @@ public final class ResolveExpressionTypesPassTest {
   private SoyType parseSoyType(String type, ErrorReporter errorReporter) {
     TypeNode parsed =
         SoyFileParser.parseType(type, "com.google.foo.bar.FakeSoyFunction", errorReporter);
-    return new TypeNodeConverter(errorReporter, TYPE_REGISTRY).getOrCreateType(parsed);
+    return new TypeNodeConverter(errorReporter, TYPE_REGISTRY, /* disableAllTypeChecking= */ false)
+        .getOrCreateType(parsed);
   }
 
   /**

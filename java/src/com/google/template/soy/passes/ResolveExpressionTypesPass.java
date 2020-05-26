@@ -296,12 +296,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
-  /** Type registry. */
-  private final SoyTypeRegistry typeRegistry;
 
   private final ValidatedLoggingConfig loggingConfig;
   private final SoyMethod.Registry methodRegistry;
-  private final TypeNodeConverter typeNodeConverter;
   /** Cached map that converts a string representation of types to actual soy types. */
   private final Map<Signature, ResolvedSignature> signatureMap = new HashMap<>();
 
@@ -309,25 +306,27 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private TypeSubstitution substitutions;
 
   private ExprEquivalence exprEquivalence;
+  private SoyTypeRegistry typeRegistry;
+  private TypeNodeConverter typeNodeConverter;
 
   ResolveExpressionTypesPass(
-      SoyTypeRegistry typeRegistry,
       ErrorReporter errorReporter,
       ValidatedLoggingConfig loggingConfig,
       PluginResolver pluginResolver) {
     this.errorReporter = errorReporter;
-    this.typeRegistry = typeRegistry;
     this.loggingConfig = loggingConfig;
     this.methodRegistry =
         new CompositeMethodRegistry(
             ImmutableList.of(BuiltinMethod.REGISTRY, new PluginMethodRegistry(pluginResolver)));
-    this.typeNodeConverter = new TypeNodeConverter(errorReporter, typeRegistry);
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     substitutions = null; // make sure substitutions don't leak across files
     exprEquivalence = new ExprEquivalence();
+    typeRegistry = file.getSoyTypeRegistry();
+    typeNodeConverter =
+        new TypeNodeConverter(errorReporter, typeRegistry, /* disableAllTypeChecking= */ false);
     new TypeAssignmentSoyVisitor().exec(file);
   }
 

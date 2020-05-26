@@ -42,7 +42,7 @@ public final class GlobalNode extends AbstractExprNode {
     return new GlobalNode(Identifier.create("error", "error", location));
   }
 
-  private final Identifier identifier;
+  private Identifier identifier;
 
   private boolean suppressUnknownGlobalErrors;
 
@@ -114,6 +114,10 @@ public final class GlobalNode extends AbstractExprNode {
 
   public Identifier getIdentifier() {
     return identifier;
+  }
+
+  public void setName(String name) {
+    this.identifier = Identifier.create(name, identifier.originalName(), identifier.location());
   }
 
   /**

@@ -293,18 +293,20 @@ public final class PassManager {
       // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
       // autoescaping.
       addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
+      addPass(
+          new ImportsPass(registry, errorReporter, disableAllTypeChecking),
+          singleFilePassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(
-          new ResolveTemplateParamTypesPass(registry, errorReporter, disableAllTypeChecking),
+          new ResolveTemplateParamTypesPass(errorReporter, disableAllTypeChecking),
           singleFilePassesBuilder);
       addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
       // to create placeholders.
       addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
       // needs to come before SoyConformancePass
-      addPass(
-          new ResolvePluginsPass(pluginResolver, registry, errorReporter), singleFilePassesBuilder);
+      addPass(new ResolvePluginsPass(pluginResolver, errorReporter), singleFilePassesBuilder);
       // Must come after ResolvePluginsPass.
       addPass(new RewriteRemaindersPass(errorReporter), singleFilePassesBuilder);
       addPass(new RewriteGenderMsgsPass(errorReporter), singleFilePassesBuilder);
@@ -317,7 +319,7 @@ public final class PassManager {
       // Run before the RewriteGlobalsPass as it removes some globals.
       addPass(new VeRewritePass(), singleFilePassesBuilder);
       addPass(
-          new RewriteGlobalsPass(registry, options.getCompileTimeGlobals(), errorReporter),
+          new RewriteGlobalsPass(options.getCompileTimeGlobals(), errorReporter),
           singleFilePassesBuilder);
       // needs to happen after rewrite globals
       addPass(new XidPass(errorReporter), singleFilePassesBuilder);
@@ -343,7 +345,7 @@ public final class PassManager {
         // accesses simpler.
         addPass(new NullSafeAccessPass(), singleFilePassesBuilder);
         addPass(
-            new ResolveExpressionTypesPass(registry, errorReporter, loggingConfig, pluginResolver),
+            new ResolveExpressionTypesPass(errorReporter, loggingConfig, pluginResolver),
             singleFilePassesBuilder);
         // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
         // types of non-null assertion operators.
@@ -365,8 +367,7 @@ public final class PassManager {
         addPass(new CheckGlobalsPass(errorReporter), singleFilePassesBuilder);
       }
       addPass(
-          new ValidateAliasesPass(registry, errorReporter, options, loggingConfig),
-          singleFilePassesBuilder);
+          new ValidateAliasesPass(errorReporter, options, loggingConfig), singleFilePassesBuilder);
       // Needs to run after HtmlRewritePass.
       addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
       addPass(new ValidateSkipNodesPass(errorReporter), singleFilePassesBuilder);

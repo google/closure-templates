@@ -32,7 +32,6 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Optional;
 
 /**
@@ -47,13 +46,10 @@ final class ResolvePluginsPass implements CompilerFilePass {
               + " ''{1}''.");
 
   private final PluginResolver resolver;
-  private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
 
-  ResolvePluginsPass(
-      PluginResolver resolver, SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
+  ResolvePluginsPass(PluginResolver resolver, ErrorReporter errorReporter) {
     this.resolver = resolver;
-    this.typeRegistry = typeRegistry;
     this.errorReporter = errorReporter;
   }
 
@@ -66,7 +62,7 @@ final class ResolvePluginsPass implements CompilerFilePass {
         String name = function.getFunctionName();
         Identifier resolvedName =
             file.resolveAlias(Identifier.create(name, function.getSourceLocation()));
-        SoyType type = typeRegistry.getType(resolvedName.identifier());
+        SoyType type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
         if (type != null && type.getKind() == SoyType.Kind.PROTO) {
           ProtoInitNode protoInit =
               new ProtoInitNode(resolvedName, ImmutableList.of(), function.getSourceLocation());

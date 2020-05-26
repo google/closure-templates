@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.ErrorReporter;
@@ -41,27 +42,24 @@ final class RewriteGlobalsPass implements CompilerFilePass {
   private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
       SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");
 
-  private final SoyTypeRegistry typeRegistry;
   private final ImmutableMap<String, PrimitiveData> compileTimeGlobals;
   private final ErrorReporter errorReporter;
 
   RewriteGlobalsPass(
-      SoyTypeRegistry typeRegistry,
-      ImmutableMap<String, PrimitiveData> compileTimeGlobals,
-      ErrorReporter errorReporter) {
-    this.typeRegistry = typeRegistry;
+      ImmutableMap<String, PrimitiveData> compileTimeGlobals, ErrorReporter errorReporter) {
     this.compileTimeGlobals = compileTimeGlobals;
     this.errorReporter = errorReporter;
   }
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    SoyTypeRegistry typeRegistry = file.getSoyTypeRegistry();
     for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(file, GlobalNode.class)) {
-      resolveGlobal(global);
+      resolveGlobal(file, typeRegistry, global);
     }
   }
 
-  private void resolveGlobal(GlobalNode global) {
+  private void resolveGlobal(SoyFileNode file, SoyTypeRegistry typeRegistry, GlobalNode global) {
     // First check to see if this global matches a proto enum.  We do this because the enums from
     // the type registry have better type information and for applications with legacy globals
     // configs there is often overlap, so the order in which we check is actually important.
@@ -86,6 +84,11 @@ final class RewriteGlobalsPass implements CompilerFilePass {
         }
         // TODO(lukes): issue a warning if a registered global also matches
         return;
+      }
+    } else {
+      Identifier alias = file.resolveAlias(global.getIdentifier());
+      if (alias != null) {
+        global.setName(alias.identifier());
       }
     }
     // if that doesn't work, see if it was registered in the globals file.
