@@ -40,6 +40,7 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.TemplateMetadataSerializer;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -158,6 +159,9 @@ public class BytecodeCompilerTest {
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 soyFileContent1, soyFileContent2, soyFileContent3, soyFileContent4)
+            .cssRegistry(
+                CssRegistry.create(
+                    ImmutableSet.of("ns.bar", "ns.foo", "ns.default"), ImmutableMap.of()))
             .build();
     ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
@@ -335,7 +339,8 @@ public class BytecodeCompilerTest {
   @Test
   public void testCallBasicNode() throws IOException {
     CompiledTemplates templates =
-        TemplateTester.compileFile(
+        TemplateTester.compileFileWithCss(
+            CssRegistry.create(ImmutableSet.of("ns.foo"), ImmutableMap.of()),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
             "/** */",
@@ -414,7 +419,8 @@ public class BytecodeCompilerTest {
   @Test
   public void testRequireCss() throws IOException {
     CompiledTemplates templates =
-        TemplateTester.compileFile(
+        TemplateTester.compileFileWithCss(
+            CssRegistry.create(ImmutableSet.of("ns.foo", "ns.bar"), ImmutableMap.of()),
             "{namespace ns requirecss=\"ns.foo\"}",
             "",
             "/** */",
