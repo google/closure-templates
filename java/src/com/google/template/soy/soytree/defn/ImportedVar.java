@@ -16,9 +16,11 @@
 
 package com.google.template.soy.soytree.defn;
 
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.types.UnknownType;
+import javax.annotation.Nullable;
 
 /**
  * A reference to an imported variable. TODO(tomnguyen): This must be fleshed out to include type
@@ -26,18 +28,36 @@ import com.google.template.soy.types.UnknownType;
  */
 public final class ImportedVar extends AbstractVarDefn {
 
+  private final String alias;
+
   /** @param name The variable name. */
-  public ImportedVar(String name, SourceLocation nameLocation) {
+  public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
     super(name, nameLocation, UnknownType.getInstance());
+    Preconditions.checkArgument(alias == null || (!alias.isEmpty() && !alias.equals(name)));
+    this.alias = alias;
   }
 
   private ImportedVar(ImportedVar var) {
     super(var);
+    this.alias = var.alias;
   }
 
   @Override
   public Kind kind() {
     return Kind.UNDECLARED;
+  }
+
+  public String getAlias() {
+    return alias;
+  }
+
+  public boolean isAliased() {
+    return alias != null;
+  }
+
+  /** Returns the symbol by which this var can be referenced in the file. */
+  public String aliasOrName() {
+    return alias != null ? alias : name();
   }
 
   @Override

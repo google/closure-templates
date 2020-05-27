@@ -215,3 +215,7 @@ message ImportedMessage {
   optional string name = 1;
   optional TopLevelEnum e = 2;
 }
+
+message SameName {
+  optional string name = 1;
+}

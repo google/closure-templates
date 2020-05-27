@@ -38,13 +38,13 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.KvPair;
-import com.google.template.soy.testing.Proto3;
-import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.ProtoMap;
 import com.google.template.soy.testing.ProtoMap.InnerMessage;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.testing3.Proto3;
+import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.IOException;
@@ -295,33 +295,33 @@ public final class ProtoSupportTest {
   @Test
   public void testProto3Fields_int() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody("{@param msg : soy.test.Proto3Message}", "{$msg.intField * 5}");
+        assertThatTemplateBody("{@param msg : soy.test3.Proto3Message}", "{$msg.intField * 5}");
     tester.rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setIntField(2)));
     tester.rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
 
   @Test
   public void testProto3Fields_message() {
-    assertThatTemplateBody("{@param msg : soy.test.Proto3Message}", "{$msg.intField * 5}")
+    assertThatTemplateBody("{@param msg : soy.test3.Proto3Message}", "{$msg.intField * 5}")
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setIntField(2)));
   }
 
   @Test
   public void testProto3Fields_oneof() {
     assertThatTemplateBody(
-            "{@param msg: soy.test.Proto3Message}", "{$msg.anotherMessageField.field * 5}")
+            "{@param msg: soy.test3.Proto3Message}", "{$msg.anotherMessageField.field * 5}")
         .rendersAs(
             "10",
             ImmutableMap.of(
                 "msg",
                 Proto3Message.newBuilder()
                     .setAnotherMessageField(Proto3Message.InnerMessage.newBuilder().setField(2))));
-    assertThatTemplateBody("{@param msg: soy.test.Proto3Message}", "{$msg.anotherIntField * 5}")
+    assertThatTemplateBody("{@param msg: soy.test3.Proto3Message}", "{$msg.anotherIntField * 5}")
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setAnotherIntField(2)))
         // missing int from a oneof returns 0
         .rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
     assertThatTemplateBody(
-            "{@param msg: soy.test.Proto3Message}", "{$msg.anotherMessageField.field}")
+            "{@param msg: soy.test3.Proto3Message}", "{$msg.anotherMessageField.field}")
         .failsToRenderWith(
             NullPointerException.class, ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
@@ -332,7 +332,7 @@ public final class ProtoSupportTest {
     // in proto2 this is a non-issue since unknown enum values automatically get mapped to 0 when
     // being parsed.
     assertThatTemplateBody(
-            "{@param msg: soy.test.Proto3Message}",
+            "{@param msg: soy.test3.Proto3Message}",
             "{$msg.anEnum} {$msg.anEnumsList}"
             )
         .rendersAs(

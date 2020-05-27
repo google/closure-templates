@@ -25,9 +25,9 @@ import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.KvPair;
-import com.google.template.soy.testing.Proto3Message;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SomeNestedExtension;
+import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
@@ -101,7 +101,7 @@ public final class JspbTest {
 
   @Test
   public void testProto3Fields_int() {
-    assertThatSoyExpr(expr("$msg.intField * 5").withParam("{@param msg : soy.test.Proto3Message}"))
+    assertThatSoyExpr(expr("$msg.intField * 5").withParam("{@param msg : soy.test3.Proto3Message}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.msg.getIntField() * 5;")
         .withPrecedence(TIMES);
@@ -111,7 +111,7 @@ public final class JspbTest {
   public void testProto3Fields_oneof() {
     assertThatSoyExpr(
             expr("$msg.anotherMessageField.field * 5")
-                .withParam("{@param msg: soy.test.Proto3Message}"))
+                .withParam("{@param msg: soy.test3.Proto3Message}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.msg.getAnotherMessageField().getField() * 5;")
         .withPrecedence(TIMES);

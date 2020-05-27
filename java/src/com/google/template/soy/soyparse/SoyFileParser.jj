@@ -85,7 +85,6 @@ import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.AliasDeclaration;
@@ -1453,7 +1452,9 @@ private ImportNode Import() :
   Token open, close;
   StringNode path = null;
   Token identifier = null;
-  ImmutableList.Builder<VarDefn> identifiers = new ImmutableList.Builder<VarDefn>();
+  Token alias = null;
+  SourceLocation loc;
+  ImmutableList.Builder<ImportedVar> identifiers = new ImmutableList.Builder<ImportedVar>();
 }
 {
   (
@@ -1461,14 +1462,36 @@ private ImportNode Import() :
     [
     <LCURLY>
     identifier = <IDENT>
+    [
+      Keyword("as")
+      alias = <IDENT>
+    ]
     {
-      identifiers.add(new ImportedVar(identifier.image, createSrcLoc(identifier)));
+      String a1 = null;
+      loc = createSrcLoc(identifier);
+      if (alias != null) {
+        a1 = alias.image;
+        loc = loc.extend(createSrcLoc(alias));
+      }
+      identifiers.add(new ImportedVar(identifier.image, a1, loc));
+      alias = null;
     }
     (
     <DEFAULT_COMMA>
     identifier = <IDENT>
+    [
+      Keyword("as")
+      alias = <IDENT>
+    ]
     {
-      identifiers.add(new ImportedVar(identifier.image, createSrcLoc(identifier)));
+      String a2 = null;
+      loc = createSrcLoc(identifier);
+      if (alias != null) {
+        a2 = alias.image;
+        loc = loc.extend(createSrcLoc(alias));
+      }
+      identifiers.add(new ImportedVar(identifier.image, a2, loc));
+      alias = null;
     }
     )*
     <RCURLY>

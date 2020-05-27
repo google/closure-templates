@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-option java_package = "com.google.template.soy.testing";
-option java_multiple_files = true;
+package soy.test3;
 
-package soy.test;
+option java_package = "com.google.template.soy.testing3";
+option java_multiple_files = true;
 
 message Proto3Message {
   message InnerMessage {
@@ -56,4 +56,8 @@ message Foo3 {
 
 message Proto3MessageUnion {
   Proto3Message.AnEnum an_enum = 1;
+}
+
+message SameName {
+  string name3 = 1;
 }

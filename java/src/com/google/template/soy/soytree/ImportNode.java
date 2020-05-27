@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import java.util.List;
 
@@ -36,7 +35,7 @@ import java.util.List;
 public final class ImportNode extends AbstractSoyNode {
 
   /** The value expression that the variable is set to. */
-  private final ImmutableList<VarDefn> identifiers;
+  private final ImmutableList<ImportedVar> identifiers;
 
   private final StringNode path;
 
@@ -44,12 +43,30 @@ public final class ImportNode extends AbstractSoyNode {
 
   /** Only CSS is supported right now. */
   public enum ImportType {
-    CSS,
-    PROTO,
-    UNKNOWN
+    CSS {
+      @Override
+      public boolean allowsSymbols() {
+        return false;
+      }
+    },
+    PROTO {
+      @Override
+      public boolean requiresSymbols() {
+        return true;
+      }
+    },
+    UNKNOWN;
+
+    public boolean allowsSymbols() {
+      return true;
+    }
+
+    public boolean requiresSymbols() {
+      return false;
+    }
   }
 
-  public ImportNode(int id, SourceLocation location, StringNode path, List<VarDefn> defns) {
+  public ImportNode(int id, SourceLocation location, StringNode path, List<ImportedVar> defns) {
     super(id, location);
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
@@ -63,8 +80,7 @@ public final class ImportNode extends AbstractSoyNode {
    */
   private ImportNode(ImportNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.identifiers =
-        orig.identifiers.stream().map(c -> ((ImportedVar) c).clone()).collect(toImmutableList());
+    this.identifiers = orig.identifiers.stream().map(ImportedVar::clone).collect(toImmutableList());
     this.path = orig.path.copy(copyState);
     this.importType = orig.importType;
   }
@@ -108,7 +124,7 @@ public final class ImportNode extends AbstractSoyNode {
     return path.getSourceLocation();
   }
 
-  public ImmutableList<VarDefn> getIdentifiers() {
+  public ImmutableList<ImportedVar> getIdentifiers() {
     return identifiers;
   }
 
@@ -118,7 +134,10 @@ public final class ImportNode extends AbstractSoyNode {
     if (!identifiers.isEmpty()) {
       exprs =
           String.format(
-              "{%s} from ", identifiers.stream().map(VarDefn::name).collect(joining(",")));
+              "{%s} from ",
+              identifiers.stream()
+                  .map(i -> i.isAliased() ? i.name() + " as " + i.getAlias() : i.name())
+                  .collect(joining(",")));
     }
     return String.format("import %s'%s'", exprs, path.getValue());
   }
