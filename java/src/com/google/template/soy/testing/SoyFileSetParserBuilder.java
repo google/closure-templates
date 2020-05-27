@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
@@ -48,7 +47,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -76,7 +74,6 @@ public final class SoyFileSetParserBuilder {
   private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private boolean desugarHtmlAndStateNodes = true;
-  private Optional<CssRegistry> cssRegistry = Optional.empty();
   // TODO(lukes): disabled for compatibility with unit tests.  Fix tests relying on the
   // escaper not running and enable by default.  This configuration bit only really exists
   // for incrementaldomsrc, not tests.
@@ -231,7 +228,6 @@ public final class SoyFileSetParserBuilder {
   }
 
   public SoyFileSetParserBuilder cssRegistry(CssRegistry cssRegistry) {
-    this.cssRegistry = Optional.of(cssRegistry);
     return this;
   }
 
@@ -327,7 +323,6 @@ public final class SoyFileSetParserBuilder {
         .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
         .setGeneralOptions(options)
         .setConformanceConfig(conformanceConfig)
-        .setCssRegistry(cssRegistry)
         .setPluginResolver(
             new PluginResolver(
                 PluginResolver.Mode.REQUIRE_DEFINITIONS,

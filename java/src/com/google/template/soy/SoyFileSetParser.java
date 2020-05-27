@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -134,7 +133,8 @@ public abstract class SoyFileSetParser {
 
   public abstract SoyTypeRegistry typeRegistry();
 
-  public abstract Optional<CssRegistry> cssRegistry();
+  @Nullable
+  public abstract CssRegistry cssRegistry();
 
   /** Builder for {@link SoyFileSetParser}. */
   @AutoValue.Builder
@@ -153,7 +153,7 @@ public abstract class SoyFileSetParser {
 
     public abstract Builder setTypeRegistry(SoyTypeRegistry typeRegistry);
 
-    public abstract Builder setCssRegistry(Optional<CssRegistry> cssRegistry);
+    public abstract Builder setCssRegistry(CssRegistry cssRegistry);
 
     public abstract SoyFileSetParser build();
   }

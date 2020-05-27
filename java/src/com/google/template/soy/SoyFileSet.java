@@ -151,7 +151,7 @@ public final class SoyFileSet {
 
     private ImmutableList<File> pluginRuntimeJars = ImmutableList.of();
 
-    private Optional<CssRegistry> cssRegistry = Optional.empty();
+    private CssRegistry cssRegistry = CssRegistry.create(ImmutableSet.of(), ImmutableMap.of());
 
     private boolean skipPluginValidation = false;
 
@@ -575,7 +575,7 @@ public final class SoyFileSet {
     }
 
     public Builder setCssRegistry(CssRegistry cssRegistry) {
-      this.cssRegistry = Optional.of(cssRegistry);
+      this.cssRegistry = cssRegistry;
       return this;
     }
 
@@ -603,7 +603,7 @@ public final class SoyFileSet {
   private final ValidatedConformanceConfig conformanceConfig;
   private final ValidatedLoggingConfig loggingConfig;
   private final ImmutableList<File> pluginRuntimeJars;
-  private final Optional<CssRegistry> cssRegistry;
+  private final CssRegistry cssRegistry;
 
   private final ImmutableList<SoyFunction> soyFunctions;
   private final ImmutableList<SoyPrintDirective> printDirectives;
@@ -636,7 +636,7 @@ public final class SoyFileSet {
       ImmutableList<File> pluginRuntimeJars,
       boolean skipPluginValidation,
       boolean optimize,
-      Optional<CssRegistry> cssRegistry) {
+      CssRegistry cssRegistry) {
     this.scopedData = apiCallScopeProvider;
     this.typeRegistry = typeRegistry;
     this.soyFileSuppliers = soyFileSuppliers;
@@ -1201,7 +1201,6 @@ public final class SoyFileSet {
         .setGeneralOptions(generalOptions)
         .optimize(optimize)
         .setSoyPrintDirectives(printDirectives)
-        .setCssRegistry(cssRegistry)
         .setErrorReporter(errorReporter)
         .setConformanceConfig(conformanceConfig)
         .setLoggingConfig(loggingConfig)
