@@ -493,7 +493,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   private static void addCodeToRequireCss(JsDoc.Builder header, SoyFileNode soyFile) {
 
     SortedSet<String> requiredCssNamespaces = new TreeSet<>();
-    requiredCssNamespaces.addAll(soyFile.getRequiredCssNamespaces());
+    requiredCssNamespaces.addAll(soyFile.getRequireCss());
     for (TemplateNode template : soyFile.getTemplates()) {
       requiredCssNamespaces.addAll(template.getRequiredCssNamespaces());
     }
