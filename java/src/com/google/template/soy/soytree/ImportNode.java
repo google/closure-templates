@@ -117,6 +117,13 @@ public final class ImportNode extends AbstractSoyNode {
   }
 
   public String getPath() {
+    if (getImportType() == ImportType.CSS) {
+      // We need users to return back ".gss" or ".scss" in order to differentiate a CSS import
+      // but the require needed omits the file extension.
+      // TODO(tomnguyen) It may be possible that CSS is the only import that doesn't need an
+      // extension.
+      return path.getValue().substring(0, path.getValue().lastIndexOf("."));
+    }
     return path.getValue();
   }
 
