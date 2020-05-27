@@ -38,10 +38,10 @@ See [reference](../reference/functions) for full list of built-in functions.
 
 ### Plugins
 
-A plugin is a custom Soy function that is hard-coded in the compiler. Developers
-can write plugins for any additional functions, print directives, or other
-message file formats. (Print directives are post-processing on the output of a
-print command.)
+A plugin is a custom Soy function that isn't hard-coded in the compiler.
+Developers can write plugins for any additional functions, print directives, or
+other message file formats. (Print directives are post-processing on the output
+of a print command.)
 
 Developers implement the plugin outside of the Soy codebase, and Soy provides an
 API to connect the implementations so that the custom functions can be used in

@@ -1782,31 +1782,14 @@ goog.dom.tags.VOID_TAGS_ = {area:!0, base:!0, br:!0, col:!0, command:!0, embed:!
 goog.dom.tags.isVoidTag = function(tagName) {
   return !0 === goog.dom.tags.VOID_TAGS_[tagName];
 };
-goog.memoize = function(f, opt_serializer) {
-  var serializer = opt_serializer || goog.memoize.simpleSerializer;
-  return function() {
-    if (goog.memoize.ENABLE_MEMOIZE) {
-      var thisOrGlobal = this || goog.global, cache = thisOrGlobal[goog.memoize.CACHE_PROPERTY_] || (thisOrGlobal[goog.memoize.CACHE_PROPERTY_] = {}), key = serializer(goog.getUid(f), arguments);
-      return cache.hasOwnProperty(key) ? cache[key] : cache[key] = f.apply(this, arguments);
-    }
-    return f.apply(this, arguments);
-  };
-};
-goog.memoize.ENABLE_MEMOIZE = !0;
-goog.memoize.clearCache = function(cacheOwner) {
-  cacheOwner[goog.memoize.CACHE_PROPERTY_] = {};
-};
-goog.memoize.CACHE_PROPERTY_ = "closure_memoize_cache_";
-goog.memoize.simpleSerializer = function(functionUid, args) {
-  for (var context = [functionUid], i = args.length - 1; 0 <= i; --i) {
-    context.push(typeof args[i], args[i]);
-  }
-  return context.join("\x0B");
-};
 goog.html = {};
 goog.html.trustedtypes = {};
 goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse = function() {
-  return goog.TRUSTED_TYPES_POLICY_NAME ? goog.memoize(goog.createTrustedTypesPolicy)(goog.TRUSTED_TYPES_POLICY_NAME + "#html") : null;
+  if (!goog.TRUSTED_TYPES_POLICY_NAME) {
+    return null;
+  }
+  void 0 === goog.html.trustedtypes.cachedPolicy_ && (goog.html.trustedtypes.cachedPolicy_ = goog.createTrustedTypesPolicy(goog.TRUSTED_TYPES_POLICY_NAME + "#html"));
+  return goog.html.trustedtypes.cachedPolicy_;
 };
 goog.string = {};
 goog.string.TypedString = function() {
