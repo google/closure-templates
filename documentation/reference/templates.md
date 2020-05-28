@@ -20,7 +20,7 @@ Syntax (basic form):
 With all optional attributes:
 
 ```soy
-{template <TEMPLATE_NAME> visibility="<private/public>" kind="html" stricthtml="true" requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
+{template <TEMPLATE_NAME> visibility="<private/public>" kind="html" stricthtml="true" requirecsspath="./foo" requirecss="<NAMESPACE>.<CSS_ELEMENT>" cssbase="<NAMESPACE>.<CSS_BASE>"}
   ...
 {/template}
 ```
