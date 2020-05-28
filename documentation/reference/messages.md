@@ -54,12 +54,12 @@ Here are details on how Soy generates placeholders in messages:
     message might look like in the `desc` attribute and consider setting a
     `phname`.
 
--   If you find a need to specify a placeholder name for a `print` or `call`
-    instead of allowing the compiler generate the default name, you can add the
-    `phname` attribute. The value can either be camel case or upper underscore.
-    For example, `{call .emailAddr phname="emailAddress" /}` causes the
-    placeholder name to be `EMAIL_ADDRESS` instead of `XXX`. Note that changing
-    a placeholder name changes the message id, causing retranslation.
+-   If you find a need to specify a placeholder name for a `print`, `call`, or
+    HTML tag instead of allowing the compiler generate the default name, you can
+    add the `phname` attribute. The value can either be camel case or upper
+    underscore. For example, `{call .emailAddr phname="emailAddress" /}` causes
+    the placeholder name to be `EMAIL_ADDRESS` instead of `XXX`. Note that
+    changing a placeholder name changes the message id, causing retranslation.
 
 -   You can set placeholder examples to aid translation. For example, `{$url
     phex="www.google.com"}` or `{$name phex="Alice"}`. Placeholder examples are
