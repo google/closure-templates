@@ -302,7 +302,7 @@ public final class PassManager {
       // autoescaping.
       addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
       addPass(
-          new ImportsPass(registry, cssRegistry, errorReporter, disableAllTypeChecking),
+          new ImportsPass(registry, errorReporter, disableAllTypeChecking),
           singleFilePassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation

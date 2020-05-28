@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -39,7 +38,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder.ProtoSoyTypeRegistry;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -59,17 +57,12 @@ final class ImportsPass implements CompilerFilePass {
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
-  private final Optional<CssRegistry> cssRegistry;
 
   ImportsPass(
-      SoyTypeRegistry registry,
-      Optional<CssRegistry> cssRegistry,
-      ErrorReporter errorReporter,
-      boolean disableAllTypeChecking) {
+      SoyTypeRegistry registry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
     this.registry = registry;
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
-    this.cssRegistry = cssRegistry;
   }
 
   @Override
@@ -126,7 +119,7 @@ final class ImportsPass implements CompilerFilePass {
 
       switch (node.getImportType()) {
         case CSS:
-          // There is nothing else to do here
+          visitCss(node);
           return;
         case PROTO:
           visitProto(node);
@@ -135,6 +128,8 @@ final class ImportsPass implements CompilerFilePass {
           throw new IllegalArgumentException(node.getImportType().name());
       }
     }
+
+    private void visitCss(ImportNode unusedNode) {}
 
     private void visitProto(ImportNode node) {
       if (disableAllTypeChecking) {
@@ -184,8 +179,8 @@ final class ImportsPass implements CompilerFilePass {
       }
     }
 
-    private boolean cssImportExists(String path) {
-      return !cssRegistry.isPresent() || cssRegistry.get().isInRegistry(path);
+    private boolean cssImportExists(String unusedPath) {
+      return true;
     }
 
     private boolean protoImportExists(String path) {

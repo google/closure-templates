@@ -131,9 +131,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   public ImmutableList<String> getRequiredCssImports() {
     return SoyTreeUtils.getAllNodesOfType(this, ImportNode.class).stream()
         .filter(n -> n.getImportType() == ImportNode.ImportType.CSS)
-        .map(
-            i ->
-                    i.getPath())
+        .map(i -> i.getPath().substring(0, i.getPath().lastIndexOf(".")))
         .collect(toImmutableList());
   }
 
