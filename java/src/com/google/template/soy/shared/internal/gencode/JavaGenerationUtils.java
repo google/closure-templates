@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
@@ -284,19 +283,6 @@ public final class JavaGenerationUtils {
       protoTypes.addAll(findProtoTypes(varDefn.type(), typeRegistry));
     }
     // anything else that may have a type now or in the future.
-    // TODO(user): Delete this loop. getExtension LSC is complete.
-    // Field access nodes need special handling to ensure that extension references are handled.
-    for (FieldAccessNode fieldAccess :
-        SoyTreeUtils.getAllNodesOfType(template, FieldAccessNode.class)) {
-      SoyType baseType = fieldAccess.getBaseExprChild().getType();
-      if (baseType.getKind() == Kind.PROTO) {
-        FieldDescriptor desc =
-            ((SoyProtoType) baseType).getFieldDescriptor(fieldAccess.getFieldName());
-        if (desc.isExtension()) {
-          protoTypes.add(ProtoUtils.getQualifiedOuterClassname(desc));
-        }
-      }
-    }
 
     // Add references for return types of getExtension method.
     SoyTreeUtils.getAllNodesOfType(template, MethodCallNode.class).stream()

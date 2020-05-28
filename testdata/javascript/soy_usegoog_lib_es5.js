@@ -686,8 +686,6 @@ goog.removeUid = function(obj) {
 };
 goog.UID_PROPERTY_ = "closure_uid_" + (1e9 * Math.random() >>> 0);
 goog.uidCounter_ = 0;
-goog.getHashCode = goog.getUid;
-goog.removeHashCode = goog.removeUid;
 goog.cloneObject = function(obj) {
   var type = goog.typeOf(obj);
   if ("object" == type || "array" == type) {
