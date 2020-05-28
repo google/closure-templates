@@ -77,15 +77,12 @@ public final class GenInvocationBuildersVisitor
   private static final String PROTOS_FIELD = "__PROTOS__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
-  private final SoyTypeRegistry typeRegistry;
   private final SoyFileNodeTransformer transformer;
 
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
-  public GenInvocationBuildersVisitor(
-      String javaPackage, TemplateRegistry templateRegistry, SoyTypeRegistry typeRegistry) {
-    this.typeRegistry = typeRegistry;
+  public GenInvocationBuildersVisitor(String javaPackage, TemplateRegistry templateRegistry) {
     this.transformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
   }
 
@@ -130,7 +127,7 @@ public final class GenInvocationBuildersVisitor
 
     ilb.increaseIndent();
 
-    appendProtoDescriptors(fileInfo);
+    appendProtoDescriptors(fileInfo, soyFile.getSoyTypeRegistry());
 
     // Add FooParams subclasses for the templates in this file.
     generateParamsClassesForEachTemplate(fileInfo);
@@ -225,7 +222,7 @@ public final class GenInvocationBuildersVisitor
     ilb.appendLine();
   }
 
-  private void appendProtoDescriptors(FileInfo fileInfo) {
+  private void appendProtoDescriptors(FileInfo fileInfo, SoyTypeRegistry typeRegistry) {
     List<String> protoTypes =
         fileInfo.getProtoTypes(typeRegistry).stream().sorted().collect(toList());
 

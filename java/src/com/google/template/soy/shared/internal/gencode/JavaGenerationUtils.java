@@ -21,18 +21,18 @@ import static java.util.stream.Collectors.toSet;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -40,7 +40,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +47,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /** Utils for writing generated Java classes. */
 public final class JavaGenerationUtils {
@@ -270,59 +270,80 @@ public final class JavaGenerationUtils {
   }
 
   public static Set<String> getProtoTypes(SoyFileNode node, SoyTypeRegistry typeRegistry) {
-    return SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class).stream()
-        .flatMap(template -> getProtoTypes(template, typeRegistry).stream())
+    // Get any enums or messages from imports. Extensions are handled by the global pass.
+    Stream<String> fromImports =
+        node.getImports().stream()
+            .filter(i -> i.getImportType() == ImportType.PROTO)
+            .flatMap(i -> i.getIdentifiers().stream())
+            .map(varName -> typeRegistry.getType(varName.aliasOrName()))
+            .filter(Objects::nonNull)
+            .map(
+                type -> {
+                  if (type.getKind() == Kind.PROTO) {
+                    return ((SoyProtoType) type).getDescriptorExpression();
+                  } else if (type.getKind() == Kind.PROTO_ENUM) {
+                    return ((SoyProtoEnumType) type).getDescriptorExpression();
+                  }
+                  return null;
+                })
+            .filter(Objects::nonNull);
+
+    return Streams.concat(
+            fromImports,
+            SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class).stream()
+                .flatMap(template -> getProtoTypes(template, typeRegistry)))
         .collect(toSet());
   }
 
-  private static Set<String> getProtoTypes(TemplateNode template, SoyTypeRegistry typeRegistry) {
+  private static Stream<String> getProtoTypes(TemplateNode template, SoyTypeRegistry typeRegistry) {
     // Collect the following:
     // + for any params whose type is a proto, get the proto name and Java class name.
-    Set<String> protoTypes = new HashSet<>();
-    for (TemplateHeaderVarDefn varDefn : template.getHeaderParams()) {
-      protoTypes.addAll(findProtoTypes(varDefn.type(), typeRegistry));
-    }
+    Stream<String> fromHeader =
+        template.getHeaderParams().stream()
+            .flatMap(varDefn -> findProtoTypes(varDefn.type(), typeRegistry));
+
     // anything else that may have a type now or in the future.
 
     // Add references for return types of getExtension method.
-    SoyTreeUtils.getAllNodesOfType(template, MethodCallNode.class).stream()
-        .filter(MethodCallNode::isMethodResolved)
-        .filter(n -> n.getSoyMethod() instanceof BuiltinMethod)
-        .flatMap(
-            methodNode ->
-                ((BuiltinMethod) methodNode.getSoyMethod())
-                    .getProtoDependencyTypes(methodNode).stream())
-        .forEach(protoTypes::add);
+    Stream<String> fromCall =
+        SoyTreeUtils.getAllNodesOfType(template, MethodCallNode.class).stream()
+            .filter(MethodCallNode::isMethodResolved)
+            .filter(n -> n.getSoyMethod() instanceof BuiltinMethod)
+            .flatMap(
+                methodNode ->
+                    ((BuiltinMethod) methodNode.getSoyMethod())
+                        .getProtoDependencyTypes(methodNode).stream());
 
     // Note: we need to add descriptors from other parts of the expression api that contain direct
     // proto references.  We do not just scan for all referenced proto types since that would
     // cause us to add direct references to the parseinfos for protos that are only indirectly
     // referenced.  If we were to do this it would trigger strict deps issues.
     // Add enums
-    for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(template, GlobalNode.class)) {
-      if (global.isResolved() && global.getType().getKind() == Kind.PROTO_ENUM) {
-        protoTypes.add(((SoyProtoEnumType) global.getType()).getDescriptorExpression());
-      }
-    }
-    // Add proto init
-    for (ProtoInitNode protoInit : SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class)) {
-      if (protoInit.getType().getKind() == Kind.PROTO) {
-        SoyProtoType proto = (SoyProtoType) protoInit.getType();
-        protoTypes.add(proto.getDescriptorExpression());
-        for (Identifier paramName : protoInit.getParamNames()) {
-          FieldDescriptor fieldDescriptor = proto.getFieldDescriptor(paramName.identifier());
-          if (fieldDescriptor.isExtension()) {
-            protoTypes.add(ProtoUtils.getQualifiedOuterClassname(fieldDescriptor));
-          }
-        }
-      }
-    }
+    Stream<String> fromGlobal =
+        SoyTreeUtils.getAllNodesOfType(template, GlobalNode.class).stream()
+            .filter(global -> global.isResolved() && global.getType().getKind() == Kind.PROTO_ENUM)
+            .map(global -> ((SoyProtoEnumType) global.getType()).getDescriptorExpression());
 
-    return protoTypes;
+    // Add proto init
+    Stream<String> fromProtoInit =
+        SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class).stream()
+            .filter(protoInit -> protoInit.getType().getKind() == Kind.PROTO)
+            .flatMap(
+                protoInit -> {
+                  SoyProtoType proto = (SoyProtoType) protoInit.getType();
+                  return Streams.concat(
+                      Stream.of(proto.getDescriptorExpression()),
+                      protoInit.getParamNames().stream()
+                          .map(paramName -> proto.getFieldDescriptor(paramName.identifier()))
+                          .filter(FieldDescriptor::isExtension)
+                          .map(ProtoUtils::getQualifiedOuterClassname));
+                });
+
+    return Streams.concat(fromHeader, fromCall, fromGlobal, fromProtoInit);
   }
 
   /** Recursively search for protocol buffer types within the given type. */
-  private static Set<String> findProtoTypes(SoyType root, SoyTypeRegistry typeRegistry) {
+  private static Stream<String> findProtoTypes(SoyType root, SoyTypeRegistry typeRegistry) {
     return stream(typeIterator(root, typeRegistry))
         .map(
             type -> {
@@ -335,8 +356,7 @@ public final class JavaGenerationUtils {
                   return null;
               }
             })
-        .filter(Objects::nonNull)
-        .collect(toSet());
+        .filter(Objects::nonNull);
   }
 
   private static Iterator<? extends SoyType> typeIterator(

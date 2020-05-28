@@ -714,8 +714,7 @@ public final class SoyFileSet {
           throwIfErrorsPresent();
 
           // Generate template invocation builders for the soy tree.
-          return new GenInvocationBuildersVisitor(javaPackage, registry, typeRegistry)
-              .exec(soyTree);
+          return new GenInvocationBuildersVisitor(javaPackage, registry).exec(soyTree);
         });
   }
 

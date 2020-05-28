@@ -16,7 +16,6 @@
 
 package com.google.template.soy.types;
 
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Streams.stream;
 import static java.util.Comparator.comparingInt;
 
@@ -162,7 +161,8 @@ public final class SoyTypeRegistryBuilder {
     return new ProtoSoyTypeRegistry(
         base,
         ImmutableMap.copyOf(visitor.descriptors),
-        ImmutableSetMultimap.copyOf(visitor.extensions));
+        ImmutableSetMultimap.copyOf(visitor.extensions),
+        ImmutableSet.copyOf(visitor.files));
   }
 
   /** Walks a descriptor tree to build the descriptors, and extensions maps. */
@@ -177,6 +177,7 @@ public final class SoyTypeRegistryBuilder {
                 comparingInt(FieldDescriptor::getNumber)
                     .thenComparing(left -> left.getContainingType().getFullName()))
             .build();
+    final Set<FileDescriptor> files = new HashSet<>();
 
     /**
      * Collect all enum, message, and extension descriptors referenced by the given descriptor
@@ -209,6 +210,7 @@ public final class SoyTypeRegistryBuilder {
       if (!shouldVisitDescriptor(fileDescriptor, onlyVisitingFiles)) {
         return;
       }
+      files.add(fileDescriptor);
       visitFiles(fileDescriptor.getDependencies(), onlyVisitingFiles);
       // disable exploring dependencies when visiting all declarations in a file. Because we have
       // already visited all the file level dependencies we don't need to do more explorations
@@ -331,12 +333,12 @@ public final class SoyTypeRegistryBuilder {
     public ProtoSoyTypeRegistry(
         SoyTypeRegistry delegate,
         ImmutableMap<String, GenericDescriptor> descriptors,
-        ImmutableSetMultimap<String, FieldDescriptor> extensions) {
+        ImmutableSetMultimap<String, FieldDescriptor> extensions,
+        ImmutableSet<FileDescriptor> fileDescriptors) {
       super(delegate);
       this.descriptors = descriptors;
       this.extensions = extensions;
-      this.fileDescriptors =
-          descriptors.values().stream().map(GenericDescriptor::getFile).collect(toImmutableSet());
+      this.fileDescriptors = fileDescriptors;
     }
 
     public ImmutableSet<FileDescriptor> getFileDescriptors() {
