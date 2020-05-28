@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -127,18 +126,15 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return namespaceDeclaration.getRequiredCssNamespaces();
   }
 
-  /** Returns the CSS imports required by this file (usable in any template in this file). */
-  public ImmutableList<String> getRequiredCssImports() {
-    return SoyTreeUtils.getAllNodesOfType(this, ImportNode.class).stream()
-        .filter(n -> n.getImportType() == ImportNode.ImportType.CSS)
-        .map(i -> i.getPath().substring(0, i.getPath().lastIndexOf(".")))
-        .collect(toImmutableList());
+  /** Returns the CSS namespaces required by this file (usable in any template in this file). */
+  public ImmutableList<String> getRequiredCssPaths() {
+    return namespaceDeclaration.getRequiredCssPaths();
   }
 
   public ImmutableList<String> getRequireCss() {
     return new ImmutableList.Builder<String>()
         .addAll(getRequiredCssNamespaces())
-        .addAll(getRequiredCssImports())
+        .addAll(getRequiredCssPaths())
         .build();
   }
 

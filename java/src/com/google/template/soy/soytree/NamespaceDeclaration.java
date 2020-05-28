@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 public final class NamespaceDeclaration {
   private final Identifier namespace;
   private final ImmutableList<String> requiredCssNamespaces;
+  private final ImmutableList<String> requiredCssPaths;
   private final String cssBaseNamespace;
   private final SourceLocation srcLoc;
 
@@ -40,11 +41,15 @@ public final class NamespaceDeclaration {
       ErrorReporter errorReporter,
       SourceLocation srcLoc) {
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
+    ImmutableList<String> requiredCssPaths = ImmutableList.of();
     String cssBaseNamespace = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
         case "requirecss":
           requiredCssNamespaces = attr.valueAsRequireCss(errorReporter);
+          break;
+        case "requirecsspath":
+          requiredCssPaths = attr.valueAsRequireCssPath();
           break;
         case "cssbase":
           cssBaseNamespace = attr.getValue();
@@ -59,13 +64,14 @@ public final class NamespaceDeclaration {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "namespace",
-              ImmutableList.of("cssbase", "requirecss"));
+              ImmutableList.of("cssbase", "requirecss", "requirecsspath"));
           break;
       }
     }
 
     this.namespace = namespace;
     this.requiredCssNamespaces = requiredCssNamespaces;
+    this.requiredCssPaths = requiredCssPaths;
     this.cssBaseNamespace = cssBaseNamespace;
     this.srcLoc = srcLoc;
     this.attrs = ImmutableList.copyOf(attrs);
@@ -85,6 +91,10 @@ public final class NamespaceDeclaration {
 
   ImmutableList<String> getRequiredCssNamespaces() {
     return requiredCssNamespaces;
+  }
+
+  ImmutableList<String> getRequiredCssPaths() {
+    return requiredCssPaths;
   }
 
   @Nullable

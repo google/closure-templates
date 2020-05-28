@@ -118,9 +118,6 @@ final class ImportsPass implements CompilerFilePass {
       }
 
       switch (node.getImportType()) {
-        case CSS:
-          visitCss(node);
-          return;
         case PROTO:
           visitProto(node);
           return;
@@ -128,8 +125,6 @@ final class ImportsPass implements CompilerFilePass {
           throw new IllegalArgumentException(node.getImportType().name());
       }
     }
-
-    private void visitCss(ImportNode unusedNode) {}
 
     private void visitProto(ImportNode node) {
       if (disableAllTypeChecking) {
@@ -170,17 +165,11 @@ final class ImportsPass implements CompilerFilePass {
 
     private boolean importExists(ImportType importType, String path) {
       switch (importType) {
-        case CSS:
-          return cssImportExists(path);
         case PROTO:
           return protoImportExists(path);
         default:
           throw new IllegalArgumentException(importType.name());
       }
-    }
-
-    private boolean cssImportExists(String unusedPath) {
-      return true;
     }
 
     private boolean protoImportExists(String path) {

@@ -232,6 +232,12 @@ public final class CommandTagAttribute {
     return hasError ? ImmutableList.of() : ImmutableList.copyOf(namespaces);
   }
 
+  ImmutableList<String> valueAsRequireCssPath() {
+    checkState(valueExprList == null);
+
+    return ImmutableList.copyOf(SPLITTER.split(value));
+  }
+
   @Nullable
   Visibility valueAsVisibility(ErrorReporter errorReporter) {
     checkState(valueExprList == null);

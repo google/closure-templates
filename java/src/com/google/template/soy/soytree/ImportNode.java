@@ -41,14 +41,8 @@ public final class ImportNode extends AbstractSoyNode {
 
   private final ImportType importType;
 
-  /** Only CSS is supported right now. */
+  /** Only Proto is supported right now. */
   public enum ImportType {
-    CSS {
-      @Override
-      public boolean allowsSymbols() {
-        return false;
-      }
-    },
     PROTO {
       @Override
       public boolean requiresSymbols() {
@@ -104,11 +98,6 @@ public final class ImportNode extends AbstractSoyNode {
   }
 
   private static ImportType importTypeForPath(String path) {
-    // TODO(tomnguyen): Throw an error if any aliases are extracted from CSS imports, as they do not
-    // exist yet.
-    if (path.endsWith(".gss") || path.endsWith(".scss")) {
-      return ImportType.CSS;
-    }
     if (path.endsWith(".proto")) {
       return ImportType.PROTO;
     }
