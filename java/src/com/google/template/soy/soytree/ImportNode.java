@@ -48,6 +48,11 @@ public final class ImportNode extends AbstractSoyNode {
       public boolean requiresSymbols() {
         return true;
       }
+
+      @Override
+      public boolean isGa() {
+        return true;
+      }
     },
     UNKNOWN;
 
@@ -56,6 +61,10 @@ public final class ImportNode extends AbstractSoyNode {
     }
 
     public boolean requiresSymbols() {
+      return false;
+    }
+
+    public boolean isGa() {
       return false;
     }
   }

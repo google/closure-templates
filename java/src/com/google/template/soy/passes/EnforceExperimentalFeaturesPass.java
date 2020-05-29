@@ -43,7 +43,7 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       SoyErrorKind.of("Soy template types are not available for general use.");
 
   private static final SoyErrorKind IMPORTS_NOT_ALLOWED =
-      SoyErrorKind.of("Soy imports are not available for general use.");
+      SoyErrorKind.of("Soy imports of type {0} are not available for general use.");
 
   private static final SoyErrorKind INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED =
       SoyErrorKind.of("Soy indices for list comprehensions are not available for general use.");
@@ -67,7 +67,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
     }
     if (!features.contains("enableImports")) {
       for (ImportNode child : file.getImports()) {
-        reporter.report(child.getSourceLocation(), IMPORTS_NOT_ALLOWED);
+        if (!child.getImportType().isGa()) {
+          reporter.report(child.getSourceLocation(), IMPORTS_NOT_ALLOWED, child.getImportType());
+        }
       }
     }
     if (!features.contains("indices_for_list_comprehension")) {
