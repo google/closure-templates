@@ -110,27 +110,25 @@ public final class TemplateMetadataSerializer {
     return builder.build();
   }
 
-  public static ImmutableList<TemplateMetadata> templatesFromCompilationUnit(
-      CompilationUnit compilationUnit,
+  public static ImmutableList<TemplateMetadata> templatesFromSoyFileP(
+      SoyFileP fileProto,
       SoyFileKind fileKind,
       SoyTypeRegistry typeRegistry,
-      String filePath,
+      String headerFilePath,
       ErrorReporter errorReporter) {
     ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
-    for (SoyFileP fileProto : compilationUnit.getFileList()) {
       for (TemplateMetadataP templateProto : fileProto.getTemplateList()) {
         try {
-          templates.add(
-              metadataFromProto(
-                  fileProto, templateProto, fileKind, typeRegistry, filePath, errorReporter));
+        templates.add(
+            metadataFromProto(
+                fileProto, templateProto, fileKind, typeRegistry, headerFilePath, errorReporter));
         } catch (IllegalArgumentException iae) {
-          errorReporter.report(
-              new SourceLocation(filePath),
-              UNABLE_TO_PARSE_TEMPLATE_HEADER,
-              templateProto.getTemplateName(),
-              fileProto.getFilePath(),
-              iae.getMessage());
-        }
+        errorReporter.report(
+            new SourceLocation(headerFilePath),
+            UNABLE_TO_PARSE_TEMPLATE_HEADER,
+            templateProto.getTemplateName(),
+            fileProto.getFilePath(),
+            iae.getMessage());
       }
     }
     return templates.build();

@@ -17,6 +17,7 @@
 package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -33,16 +34,15 @@ import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.FileSetTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -174,16 +174,6 @@ public abstract class SoyFileSetParser {
    * registry.
    */
   private ParseResult parseWithVersions() throws IOException {
-    List<TemplateMetadata> templateMetadatas = new ArrayList<>();
-    for (CompilationUnitAndKind unit : compilationUnits()) {
-      templateMetadatas.addAll(
-          TemplateMetadataSerializer.templatesFromCompilationUnit(
-              unit.compilationUnit(),
-              unit.fileKind(),
-              typeRegistry(),
-              unit.filePath(),
-              errorReporter()));
-    }
     IdGenerator nodeIdGen =
         (cache() != null) ? cache().getNodeIdGenerator() : new IncrementingIdGenerator();
     SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
@@ -216,19 +206,31 @@ public abstract class SoyFileSetParser {
         }
         soyTree.addChild(node);
       }
-      // Only contains information from compilation units, but can be passed into single file
-      // passes.
-      TemplateRegistry.Builder builder = TemplateRegistry.builder(errorReporter());
-      for (TemplateMetadata template : templateMetadatas) {
-        builder.addTemplate(template);
+
+      // Build the template registry for the file set & its dependencies.
+      FileSetTemplateRegistry.Builder builder = FileSetTemplateRegistry.builder(errorReporter());
+
+      // Register templates for each file in the dependencies.
+      for (CompilationUnitAndKind unit : compilationUnits()) {
+        for (SoyFileP file : unit.compilationUnit().getFileList()) {
+          builder.addTemplatesForFile(
+              file.getFilePath(),
+              TemplateMetadataSerializer.templatesFromSoyFileP(
+                  file, unit.fileKind(), typeRegistry(), unit.filePath(), errorReporter()));
+        }
       }
+
       if (!filesWereSkipped) {
         passManager().runTemplateReturnTypeInferencePasses(soyTree, builder.build());
       }
+
+      // Now register the templates in this file set.
       for (SoyFileNode node : soyTree.getChildren()) {
-        for (TemplateNode template : node.getTemplates()) {
-          builder.addTemplate(TemplateMetadata.fromTemplate(template));
-        }
+        builder.addTemplatesForFile(
+            node.getFilePath(),
+            node.getTemplates().stream()
+                .map(TemplateMetadata::fromTemplate)
+                .collect(toImmutableList()));
       }
       TemplateRegistry registry = builder.build();
       // Run passes that check the tree iff we successfully parsed every file.
