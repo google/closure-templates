@@ -399,6 +399,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     addJsDocToRequireDelTemplates(jsDocBuilder, node);
     addCodeToRequireCss(jsDocBuilder, node);
     jsDocBuilder.addAnnotation("public");
+    // TODO(b/157149103) Enable this either by migrating SoyJS to goog.module or conditionally
+    // using aliases when possible.
+    if (jsSrcOptions.shouldGenerateGoogModules()) {
+      jsDocBuilder.addParameterizedAnnotation("suppress", "missingRequire");
+    }
     file.append(jsDocBuilder.build());
     file.append("\n\n");
 

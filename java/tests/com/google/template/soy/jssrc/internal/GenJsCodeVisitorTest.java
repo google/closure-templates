@@ -1312,6 +1312,7 @@ public final class GenJsCodeVisitorTest {
             + "/**\n"
             + " * @fileoverview Templates in namespace boo.foo.\n"
             + " * @public\n"
+            + " * @suppress {missingRequire}\n"
             + " */\n"
             + "\n"
             + "goog.module('boo.foo');\n"
