@@ -158,6 +158,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
 
       case VE_LITERAL_NODE:
         return visitVeLiteralNode((VeLiteralNode) node);
+      case TEMPLATE_LITERAL_NODE:
+        return visitTemplateLiteralNode((TemplateLiteralNode) node);
 
       default:
         throw new UnsupportedOperationException();
@@ -357,6 +359,12 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   // Implementations for ve nodes.
 
   protected R visitVeLiteralNode(VeLiteralNode node) {
+    return visitExprNode(node);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  // Implementations for template nodes.
+  protected R visitTemplateLiteralNode(TemplateLiteralNode node) {
     return visitExprNode(node);
   }
 

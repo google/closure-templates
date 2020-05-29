@@ -31,7 +31,6 @@ import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.StyleType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
-import com.google.template.soy.types.TemplateType.Argument;
 import java.util.Arrays;
 import java.util.Collection;
 import javax.annotation.Nullable;
@@ -153,13 +152,13 @@ final class TypeRegistries {
     }
 
     /**
-     * Factory function which creates a template type, given a list of arguments and a return type.
-     * This folds identical template types together.
+     * Factory function for template types that folds identical template types together. Takes a
+     * TemplateType so callers can use the convenient builder methods or factory methods on the
+     * class to construct.
      */
     @Override
-    public TemplateType getOrCreateTemplateType(
-        Iterable<TemplateType.Argument> arguments, SoyType returnType) {
-      return templateTypes.intern(TemplateType.of(arguments, returnType));
+    public TemplateType internTemplateType(TemplateType typeToIntern) {
+      return templateTypes.intern(typeToIntern);
     }
 
     /**
@@ -269,8 +268,8 @@ final class TypeRegistries {
     }
 
     @Override
-    public TemplateType getOrCreateTemplateType(Iterable<Argument> arguments, SoyType returnType) {
-      return typeInterner.getOrCreateTemplateType(arguments, returnType);
+    public TemplateType internTemplateType(TemplateType typeToIntern) {
+      return typeInterner.internTemplateType(typeToIntern);
     }
 
     @Override

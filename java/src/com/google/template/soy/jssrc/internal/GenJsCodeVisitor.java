@@ -102,9 +102,9 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -1491,7 +1491,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     IndirectParamsInfo ipi =
         new IndirectParamsCalculator(templateRegistry)
             .calculateIndirectParams(
-                TemplateSignature.fromTemplateMetadata(templateRegistry.getMetadata(node)));
+                TemplateMetadata.asTemplateType(templateRegistry.getMetadata(node)));
     // If there are any calls outside of the file set, then we can't know
     // the complete types of any indirect params. In such a case, we can simply
     // omit the indirect params from the function type signature, since record

@@ -54,8 +54,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.types.TemplateType;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -503,12 +503,12 @@ final class InferenceEngine {
      * <p>This relies on CheckDelegatesPass to print friendly messages if the deltemplates differ in
      * content kind.
      */
-    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateMetadata> templates) {
+    private SanitizedContentKind getCommonContentKindIfStrict(List<TemplateType> templates) {
       if (templates.isEmpty()) {
         return null;
       }
       SanitizedContentKind contentKind = templates.get(0).getContentKind();
-      for (TemplateMetadata template : templates) {
+      for (TemplateType template : templates) {
         Preconditions.checkArgument(template.getContentKind() == contentKind);
       }
       return contentKind;
@@ -525,7 +525,7 @@ final class InferenceEngine {
      *     side-effect of this call.
      */
     private Context inferCallSite(CallNode callNode, Context startContext, Inferences inferences) {
-      List<TemplateMetadata> targets = inferences.lookupTemplates(callNode);
+      List<TemplateType> targets = inferences.lookupTemplates(callNode);
       SanitizedContentKind calleeStrictContentKind = getCommonContentKindIfStrict(targets);
       // Check what kind of template is being called.
       if (calleeStrictContentKind != null

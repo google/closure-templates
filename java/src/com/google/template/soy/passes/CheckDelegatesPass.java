@@ -25,8 +25,8 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -51,6 +51,10 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind CALL_TO_DELTEMPLATE =
       SoyErrorKind.of("''call'' to delegate template ''{0}'' (expected ''delcall'').");
+  private static final SoyErrorKind DELTEMPLATE_IN_EXPRESSION =
+      SoyErrorKind.of(
+          "Delegate template `{0}` not allowed in expression; only basic templates may be used in"
+              + " expressions.");
   private static final SoyErrorKind CROSS_PACKAGE_DELCALL =
       SoyErrorKind.of(
           "Found illegal call from ''{0}'' to ''{1}'', which is in a different delegate package.");
@@ -87,9 +91,10 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       for (TemplateNode template : fileNode.getTemplates()) {
         String currTemplateNameForUserMsgs = template.getTemplateNameForUserMsgs();
         String currDelPackageName = template.getDelPackageName();
-        for (CallBasicNode callNode :
-            SoyTreeUtils.getAllNodesOfType(template, CallBasicNode.class)) {
-          checkCallBasicNode(callNode, registry, currDelPackageName, currTemplateNameForUserMsgs);
+        for (TemplateLiteralNode templateLiteralNode :
+            SoyTreeUtils.getAllNodesOfType(template, TemplateLiteralNode.class)) {
+          checkTemplateLiteralNode(
+              templateLiteralNode, registry, currDelPackageName, currTemplateNameForUserMsgs);
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
@@ -193,17 +198,20 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         .collect(Collectors.toSet());
   }
 
-  private void checkCallBasicNode(
-      CallBasicNode node,
+  private void checkTemplateLiteralNode(
+      TemplateLiteralNode node,
       TemplateRegistry templateRegistry,
       @Nullable String currDelPackageName,
       String currTemplateNameForUserMsgs) {
-
-    String calleeName = node.getCalleeName();
+    String calleeName = node.getResolvedName();
 
     // Check that the callee name is not a delegate template name.
     if (templateRegistry.getDelTemplateSelector().hasDelTemplateNamed(calleeName)) {
-      errorReporter.report(node.getSourceLocation(), CALL_TO_DELTEMPLATE, calleeName);
+      if (node.isSynthetic()) {
+        errorReporter.report(node.getSourceLocation(), CALL_TO_DELTEMPLATE, calleeName);
+      } else {
+        errorReporter.report(node.getSourceLocation(), DELTEMPLATE_IN_EXPRESSION, calleeName);
+      }
     }
 
     // Check that the callee is either not in a delegate package or in the same delegate package.

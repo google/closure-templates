@@ -79,7 +79,7 @@ public final class GenJsCodeVisitorTest {
 
         @Override
         public ImmutableSet<String> getRequiredJsLibNames() {
-          return ImmutableSet.of("for.function", "also.for.function");
+          return ImmutableSet.of("some.function", "also.some.function");
         }
 
         @Override
@@ -190,7 +190,7 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "/** Test template. */\n"
             + "{template .goo}\n"
-            + "  {call for.function.aaa data=\"all\" /}\n"
+            + "  {call some.function.aaa data=\"all\" /}\n"
             + "  {noopRequire()}\n"
             + "{/template}\n";
 
@@ -212,9 +212,9 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "goog.provide('boo.foo');\n"
             + "\n"
-            + "goog.require('also.for.function');\n"
-            + "goog.require('for.function');\n"
+            + "goog.require('also.some.function');\n"
             + "goog.require('goog.soy');\n"
+            + "goog.require('some.function');\n"
             + "goog.require('soydata.VERY_UNSAFE');\n"
             + "\n";
 

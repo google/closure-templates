@@ -16,6 +16,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Supplier;
@@ -28,6 +29,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
 import javax.annotation.Nullable;
 
 /**
@@ -68,16 +70,16 @@ public abstract class TemplateMetadata {
     }
     switch (template.getKind()) {
       case TEMPLATE_BASIC_NODE:
-        builder.setTemplateKind(Kind.BASIC);
+        builder.setTemplateKind(TemplateType.TemplateKind.BASIC);
         break;
       case TEMPLATE_DELEGATE_NODE:
-        builder.setTemplateKind(Kind.DELTEMPLATE);
+        builder.setTemplateKind(TemplateType.TemplateKind.DELTEMPLATE);
         TemplateDelegateNode deltemplate = (TemplateDelegateNode) template;
         builder.setDelTemplateName(deltemplate.getDelTemplateName());
         builder.setDelTemplateVariant(deltemplate.getDelTemplateVariant());
         break;
       case TEMPLATE_ELEMENT_NODE:
-        builder.setTemplateKind(Kind.ELEMENT);
+        builder.setTemplateKind(TemplateType.TemplateKind.ELEMENT);
         break;
       default:
         throw new AssertionError("unexpected template kind: " + template.getKind());
@@ -287,13 +289,6 @@ public abstract class TemplateMetadata {
     }
   }
 
-  /** The kind of template. */
-  public enum Kind {
-    BASIC,
-    DELTEMPLATE,
-    ELEMENT;
-  }
-
   public abstract SoyFileKind getSoyFileKind();
 
   /**
@@ -308,7 +303,7 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract SoyElementMetadataP getSoyElement();
 
-  public abstract Kind getTemplateKind();
+  public abstract TemplateType.TemplateKind getTemplateKind();
 
   public abstract String getTemplateName();
 
@@ -351,7 +346,7 @@ public abstract class TemplateMetadata {
 
     public abstract Builder setSoyElement(SoyElementMetadataP isSoyEl);
 
-    public abstract Builder setTemplateKind(Kind kind);
+    public abstract Builder setTemplateKind(TemplateType.TemplateKind kind);
 
     public abstract Builder setTemplateName(String templateName);
 
@@ -374,7 +369,7 @@ public abstract class TemplateMetadata {
 
     public final TemplateMetadata build() {
       TemplateMetadata built = autobuild();
-      if (built.getTemplateKind() == Kind.DELTEMPLATE) {
+      if (built.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
         checkState(built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
         checkState(
             built.getDelTemplateVariant() != null, "Deltemplates must have a deltemplateName");
@@ -388,5 +383,31 @@ public abstract class TemplateMetadata {
     }
 
     abstract TemplateMetadata autobuild();
+  }
+
+  public static TemplateType asTemplateType(TemplateMetadata templateMetadata) {
+    return TemplateType.builder()
+        .setTemplateKind(templateMetadata.getTemplateKind())
+        .setContentKind(templateMetadata.getContentKind())
+        .setStrictHtml(templateMetadata.isStrictHtml())
+        .setParameters(
+            templateMetadata.getParameters().stream()
+                .map(
+                    (param) ->
+                        TemplateType.Parameter.create(
+                            param.getName(), param.getType(), param.isRequired()))
+                .collect(toImmutableList()))
+        .setDataAllCallSituations(
+            templateMetadata.getDataAllCallSituations().stream()
+                .map(
+                    (dataAllCallSituation) ->
+                        TemplateType.DataAllCallSituation.create(
+                            dataAllCallSituation.getTemplateName(),
+                            dataAllCallSituation.isDelCall(),
+                            dataAllCallSituation.getExplicitlyPassedParameters()))
+                .collect(toImmutableList()))
+        .setIdentifierForDebugging(templateMetadata.getTemplateName())
+        .setInferredType(true)
+        .build();
   }
 }

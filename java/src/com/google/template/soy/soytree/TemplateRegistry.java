@@ -17,7 +17,9 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,6 +30,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UnionType;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -165,14 +170,34 @@ public final class TemplateRegistry {
   }
 
   /** Look up possible targets for a call. */
-  public ImmutableList<TemplateMetadata> getTemplates(CallNode node) {
+  public ImmutableList<TemplateType> getTemplates(CallNode node) {
     if (node instanceof CallBasicNode) {
-      String calleeName = ((CallBasicNode) node).getCalleeName();
-      TemplateMetadata template = basicTemplatesOrElementsMap.get(calleeName);
-      return template == null ? ImmutableList.of() : ImmutableList.of(template);
+      SoyType calleeType = ((CallBasicNode) node).getCalleeExpr().getType();
+      if (calleeType == null) {
+        return ImmutableList.of();
+      }
+      if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
+        return ImmutableList.of((TemplateType) calleeType);
+      } else if (calleeType.getKind() == SoyType.Kind.UNION) {
+        ImmutableList.Builder<TemplateType> signatures = ImmutableList.builder();
+        for (SoyType member : ((UnionType) calleeType).getMembers()) {
+          // Rely on CheckTemplateCallsPass to catch this with nice error messages.
+          Preconditions.checkState(member.getKind() == SoyType.Kind.TEMPLATE);
+          signatures.add((TemplateType) member);
+        }
+        return signatures.build();
+      } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
+        // We may end up with UNKNOWN here for external calls.
+        return ImmutableList.of();
+      } else {
+        // Rely on previous passes to catch this with nice error messages.
+        throw new IllegalStateException("Unexpected type in call: " + calleeType);
+      }
     } else {
       String calleeName = ((CallDelegateNode) node).getDelCalleeName();
-      return delTemplateSelector.delTemplateNameToValues().get(calleeName);
+      return delTemplateSelector.delTemplateNameToValues().get(calleeName).stream()
+          .map(TemplateMetadata::asTemplateType)
+          .collect(toImmutableList());
     }
   }
 
@@ -217,7 +242,7 @@ public final class TemplateRegistry {
    * @return The kind of content that the call results in.
    */
   public Optional<SanitizedContentKind> getCallContentKind(CallNode node) {
-    ImmutableList<TemplateMetadata> templateNodes = getTemplates(node);
+    ImmutableList<TemplateType> templateNodes = getTemplates(node);
     // For per-file compilation, we may not have any of the delegate templates in the compilation
     // unit.
     if (!templateNodes.isEmpty()) {

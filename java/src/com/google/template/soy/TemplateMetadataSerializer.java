@@ -39,7 +39,6 @@ import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateKindP;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.DataAllCallSituation;
-import com.google.template.soy.soytree.TemplateMetadata.Kind;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateMetadataP;
 import com.google.template.soy.soytree.TemplateNode;
@@ -85,8 +84,8 @@ public final class TemplateMetadataSerializer {
 
   private static final Converter<VisibilityP, Visibility> VISIBILITY_CONVERTER =
       createEnumConverter(VisibilityP.class, Visibility.class);
-  private static final Converter<TemplateKindP, TemplateMetadata.Kind> TEMPLATE_KIND_CONVERTER =
-      createEnumConverter(TemplateKindP.class, TemplateMetadata.Kind.class);
+  private static final Converter<TemplateKindP, TemplateType.TemplateKind> TEMPLATE_KIND_CONVERTER =
+      createEnumConverter(TemplateKindP.class, TemplateType.TemplateKind.class);
   private static final Converter<SanitizedContentKindP, SanitizedContentKind>
       CONTENT_KIND_CONVERTER =
           createEnumConverter(SanitizedContentKindP.class, SanitizedContentKind.class);
@@ -141,7 +140,7 @@ public final class TemplateMetadataSerializer {
     TemplateMetadataP.Builder builder =
         TemplateMetadataP.newBuilder()
             .setTemplateName(
-                meta.getTemplateKind() == Kind.DELTEMPLATE
+                meta.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE
                     ? meta.getDelTemplateName()
                     : maybeShortenTemplateName(fileNode.getNamespace(), meta.getTemplateName()))
             .setTemplateKind(TEMPLATE_KIND_CONVERTER.reverse().convert(meta.getTemplateKind()))
@@ -170,7 +169,7 @@ public final class TemplateMetadataSerializer {
       String filePath,
       ErrorReporter errorReporter) {
     TemplateMetadata.Builder builder = TemplateMetadata.builder();
-    TemplateMetadata.Kind templateKind =
+    TemplateType.TemplateKind templateKind =
         TEMPLATE_KIND_CONVERTER.convert(templateProto.getTemplateKind());
     @Nullable String delPackageName = emptyToNull(fileProto.getDelpackage());
     String templateName;
@@ -369,22 +368,26 @@ public final class TemplateMetadataSerializer {
         }
       case TEMPLATE:
         {
-          List<TemplateType.Argument> arguments = new ArrayList<>();
+          List<TemplateType.Parameter> parameters = new ArrayList<>();
           // TODO: this relies on proto map insertion order, which is not guaranteed by the spec.
           for (Map.Entry<String, SoyTypeP> entry :
-              proto.getTemplate().getArgumentMap().entrySet()) {
-            arguments.add(
-                TemplateType.argumentOf(
+              proto.getTemplate().getParameterMap().entrySet()) {
+            parameters.add(
+                TemplateType.Parameter.create(
                     entry.getKey(),
-                    fromProto(entry.getValue(), typeRegistry, filePath, errorReporter)));
+                    fromProto(entry.getValue(), typeRegistry, filePath, errorReporter),
+                    true /* isRequired */));
           }
-          return typeRegistry.getOrCreateTemplateType(
-              arguments,
-              fromProto(
-                  SoyTypeP.newBuilder().setPrimitive(proto.getTemplate().getReturnType()).build(),
-                  typeRegistry,
-                  filePath,
-                  errorReporter));
+          return typeRegistry.internTemplateType(
+              TemplateType.declaredTypeOf(
+                  parameters,
+                  fromProto(
+                      SoyTypeP.newBuilder()
+                          .setPrimitive(proto.getTemplate().getReturnType())
+                          .build(),
+                      typeRegistry,
+                      filePath,
+                      errorReporter)));
         }
       case UNION:
         {

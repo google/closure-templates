@@ -19,73 +19,151 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Streams.stream;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.SoyTypeP;
-import com.google.template.soy.types.SoyType.Kind;
-import java.util.Objects;
 
 /** Template type, containing a list of named, typed parameters and a return type. */
-public final class TemplateType extends SoyType {
+@AutoValue
+public abstract class TemplateType extends SoyType {
+  public enum TemplateKind {
+    BASIC,
+    DELTEMPLATE,
+    ELEMENT;
+  }
 
-  /** The {name, type} pair that is a template argument. */
+  public abstract TemplateKind getTemplateKind();
+
+  public abstract SanitizedContentKind getContentKind();
+
+  public abstract boolean isStrictHtml();
+
+  public abstract ImmutableList<Parameter> getParameters();
+
+  private final ImmutableMap<String, SoyType> getParameterMap() {
+    return stream(getParameters()).collect(toImmutableMap(Parameter::getName, Parameter::getType));
+  }
+
+  public abstract ImmutableList<DataAllCallSituation> getDataAllCallSituations();
+
+  public abstract String getIdentifierForDebugging();
+
+  public abstract boolean isInferredType();
+
+  public static Builder builder() {
+    return new AutoValue_TemplateType.Builder();
+  }
+
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setTemplateKind(TemplateKind templateKind);
+
+    public abstract Builder setContentKind(SanitizedContentKind sanitizedContentKind);
+
+    public abstract Builder setStrictHtml(boolean isStrictHtml);
+
+    public abstract Builder setParameters(ImmutableList<Parameter> parameters);
+
+    public abstract Builder setDataAllCallSituations(
+        ImmutableList<DataAllCallSituation> dataAllCallSituations);
+
+    public abstract Builder setIdentifierForDebugging(String identifierForDebugging);
+
+    public abstract Builder setInferredType(boolean isInferredType);
+
+    public abstract TemplateType build();
+  }
+
   @AutoValue
-  public abstract static class Argument {
-    public abstract String name();
+  public abstract static class Parameter {
+    public static Parameter create(String name, SoyType type, boolean required) {
+      return new AutoValue_TemplateType_Parameter(name, type, required);
+    }
 
-    public abstract SoyType type();
+    public abstract String getName();
+
+    public abstract SoyType getType();
+
+    public abstract boolean isRequired();
   }
 
-  private final ImmutableList<Argument> arguments;
-  private final ImmutableMap<String, SoyType> argumentMap;
-  private final SoyType returnType;
+  @AutoValue
+  public abstract static class DataAllCallSituation {
+    public static DataAllCallSituation create(
+        String templateName, boolean delCall, ImmutableSet<String> explicitlyPassedParameters) {
+      return new AutoValue_TemplateType_DataAllCallSituation(
+          templateName, delCall, explicitlyPassedParameters);
+    }
 
-  private TemplateType(Iterable<Argument> arguments, SoyType returnType) {
-    this.arguments = ImmutableList.copyOf(arguments);
-    this.argumentMap = stream(arguments).collect(toImmutableMap(Argument::name, Argument::type));
-    this.returnType = returnType;
+    public abstract String getTemplateName();
+
+    public abstract boolean isDelCall();
+
+    public abstract ImmutableSet<String> getExplicitlyPassedParameters();
   }
 
-  public static Argument argumentOf(String name, SoyType type) {
-    return new AutoValue_TemplateType_Argument(name, type);
-  }
-
-  public static TemplateType of(Iterable<Argument> arguments, SoyType returnType) {
-    return new TemplateType(arguments, returnType);
+  public static TemplateType declaredTypeOf(Iterable<Parameter> parameters, SoyType returnType) {
+    SanitizedContentKind contentKind;
+    if (returnType instanceof SanitizedType) {
+      contentKind = ((SanitizedType) returnType).getContentKind();
+    } else {
+      // Only other valid type is string.
+      contentKind = SanitizedContentKind.TEXT;
+    }
+    return builder()
+        // Declared templates can only be basic templates (no deltemplates/elements allowed).
+        .setTemplateKind(TemplateKind.BASIC)
+        .setContentKind(contentKind)
+        // Declared HTML templates are implicitly strict. A separate check enforces that
+        // non-strict templates may not be bound in template literals.
+        .setStrictHtml(contentKind == SanitizedContentKind.HTML)
+        .setParameters(ImmutableList.copyOf(parameters))
+        // data=all is banned on declared templates.
+        .setDataAllCallSituations(ImmutableList.of())
+        .setIdentifierForDebugging(stringRepresentation(parameters, contentKind))
+        .setInferredType(false)
+        .build();
   }
 
   @Override
-  public Kind getKind() {
-    return Kind.TEMPLATE;
-  }
-
-  public ImmutableList<Argument> getArguments() {
-    return arguments;
+  public final SoyType.Kind getKind() {
+    return SoyType.Kind.TEMPLATE;
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    if (srcType.getKind() == Kind.NAMED_TEMPLATE) {
+  final boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+    if (srcType.getKind() == SoyType.Kind.NAMED_TEMPLATE) {
       // Checking happens later for named templates.
       return true;
     }
-    if (srcType.getKind() == Kind.TEMPLATE) {
+    if (srcType.getKind() == SoyType.Kind.TEMPLATE) {
       TemplateType srcTemplate = (TemplateType) srcType;
-      // The source template must have the exact same template argument names, and each individual
-      // argument type must be assignable, and the return type must be identical.
-      if (!srcTemplate.argumentMap.keySet().equals(this.argumentMap.keySet())) {
+      // The source template type's arguments must be a superset of this type's arguments (possibly
+      // containing some optional parameters omitted from this type).
+      if (!srcTemplate.getParameterMap().keySet().containsAll(this.getParameterMap().keySet())) {
         return false;
       }
-      for (Argument srcArgument : srcTemplate.arguments) {
-        SoyType thisArgumentType = this.argumentMap.get(srcArgument.name());
-        // Check that each argument of the source type is assignable FROM the corresponding argument
-        // of this type. This is because the parameter types are constraints; assignability of a
-        // template type is only possible when the constraints of the from-type are narrower.
-        if (!srcArgument.type().isAssignableFrom(thisArgumentType)) {
-          return false;
+      for (Parameter srcParameter : srcTemplate.getParameters()) {
+        if (!this.getParameterMap().containsKey(srcParameter.getName())) {
+          if (srcParameter.isRequired()) {
+            return false;
+          }
+        } else {
+          SoyType thisParameterType = this.getParameterMap().get(srcParameter.getName());
+          // Check that each argument of the source type is assignable FROM the corresponding
+          // argument
+          // of this type. This is because the parameter types are constraints; assignability of a
+          // template type is only possible when the constraints of the from-type are narrower.
+          if (!srcParameter.getType().isAssignableFrom(thisParameterType)) {
+            return false;
+          }
         }
       }
-      if (!srcTemplate.returnType.equals(this.returnType)) {
+      if (!srcTemplate.getContentKind().equals(this.getContentKind())) {
         return false;
       }
       return true;
@@ -94,49 +172,47 @@ public final class TemplateType extends SoyType {
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
+    return stringRepresentation(getParameters(), getContentKind());
+  }
+
+  private static String stringRepresentation(
+      Iterable<Parameter> parameters, SanitizedContentKind contentKind) {
     StringBuilder sb = new StringBuilder();
     sb.append("(");
     boolean first = true;
-    for (Argument argument : arguments) {
+    for (Parameter parameter : parameters) {
       if (first) {
         first = false;
       } else {
         sb.append(", ");
       }
-      sb.append(argument.name());
+      sb.append(parameter.getName());
+      if (!parameter.isRequired()) {
+        sb.append("?");
+      }
       sb.append(": ");
-      sb.append(argument.type());
+      sb.append(parameter.getType());
     }
     sb.append(") => ");
-    sb.append(returnType);
+    sb.append(SanitizedType.getTypeForContentKind(contentKind).toString());
     return sb.toString();
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  final void doToProto(SoyTypeP.Builder builder) {
+    Preconditions.checkState(
+        !isInferredType(), "Only declared types may be serialized to proto form.");
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
-    for (Argument argument : arguments) {
-      templateBuilder.putArgument(argument.name(), argument.type().toProto());
+    for (Parameter parameter : getParameters()) {
+      templateBuilder.putParameter(parameter.getName(), parameter.getType().toProto());
     }
-    templateBuilder.setReturnType(returnType.toProto().getPrimitive());
+    templateBuilder.setReturnType(
+        SanitizedType.getTypeForContentKind(getContentKind()).toProto().getPrimitive());
   }
 
   @Override
-  public boolean equals(Object other) {
-    return other != null
-        && other.getClass() == this.getClass()
-        && ((TemplateType) other).arguments.equals(arguments)
-        && ((TemplateType) other).returnType.equals(returnType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), arguments, returnType);
-  }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
+  public final <T> T accept(SoyTypeVisitor<T> visitor) {
     return visitor.visit(this);
   }
 }

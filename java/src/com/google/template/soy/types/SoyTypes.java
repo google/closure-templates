@@ -347,8 +347,8 @@ public final class SoyTypes {
             if (type.getKind() == kind) {
               return true;
             }
-            for (TemplateType.Argument argument : type.getArguments()) {
-              if (argument.type().accept(this)) {
+            for (TemplateType.Parameter parameter : type.getParameters()) {
+              if (parameter.getType().accept(this)) {
                 return true;
               }
             }

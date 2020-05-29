@@ -26,20 +26,31 @@ public final class TemplateLiteralNode extends AbstractExprNode {
 
   private final Identifier templateIdentifier;
   private final String resolvedName;
+  // True for 'synthetic' template literal nodes that are the direct children of {call} statements.
+  // These are exempt from some checks around the explicit template() expressions.
+  private final boolean isSynthetic;
 
   private SoyType type;
 
-  public TemplateLiteralNode(Identifier templateIdentifier, SourceLocation sourceLocation) {
+  public TemplateLiteralNode(
+      Identifier templateIdentifier, SourceLocation sourceLocation, boolean isSynthetic) {
     super(sourceLocation);
     this.templateIdentifier = templateIdentifier;
     this.resolvedName = templateIdentifier.identifier();
     this.type = new NamedTemplateType(resolvedName);
+    this.isSynthetic = isSynthetic;
   }
 
   private TemplateLiteralNode(TemplateLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
     this.templateIdentifier = orig.templateIdentifier;
     this.resolvedName = orig.resolvedName;
+    this.type = orig.type;
+    this.isSynthetic = orig.isSynthetic;
+  }
+
+  public boolean isSynthetic() {
+    return isSynthetic;
   }
 
   public String getResolvedName() {
@@ -62,7 +73,9 @@ public final class TemplateLiteralNode extends AbstractExprNode {
 
   @Override
   public String toSourceString() {
-    return templateIdentifier.identifier();
+    return isSynthetic
+        ? templateIdentifier.originalName()
+        : "template(" + templateIdentifier.originalName() + ")";
   }
 
   @Override

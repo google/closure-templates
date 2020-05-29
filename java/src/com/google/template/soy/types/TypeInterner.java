@@ -35,8 +35,7 @@ public interface TypeInterner {
 
   RecordType getOrCreateRecordType(Iterable<RecordType.Member> members);
 
-  TemplateType getOrCreateTemplateType(
-      Iterable<TemplateType.Argument> arguments, SoyType returnType);
+  TemplateType internTemplateType(TemplateType typeToIntern);
 
   VeType getOrCreateVeType(String dataType);
 }

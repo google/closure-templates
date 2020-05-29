@@ -16,6 +16,8 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,21 +46,21 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.TemplateSignature;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -94,6 +96,10 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Found call to non stricthtml template. Strict HTML template "
               + "can only call other strict HTML templates from an HTML context.");
+  private static final SoyErrorKind CAN_ONLY_CALL_TEMPLATE_TYPES =
+      SoyErrorKind.of("'{'call'}' is only valid on template types, but found type ''{0}''.");
+  private static final SoyErrorKind CANNOT_CALL_MIXED_CONTENT_TYPE =
+      SoyErrorKind.of("Cannot call expressions of different content types; found {0} and {1}.");
 
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
@@ -128,27 +134,58 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
     private final TemplateRegistry templateRegistry;
 
     /** Map of all template parameters, both explicit and implicit, organized by template. */
-    private final Map<TemplateSignature, TemplateParamTypes> paramTypesMap = new HashMap<>();
+    private final Map<TemplateType, TemplateParamTypes> paramTypesMap = new HashMap<>();
 
     CheckCallsHelper(TemplateRegistry registry) {
       this.templateRegistry = registry;
     }
 
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
-      TemplateSignature callee =
-          TemplateSignature.fromTemplateMetadata(
-              templateRegistry.getBasicTemplateOrElement(node.getCalleeName()));
-      if (callee != null) {
-        Predicate<String> paramsToRuntimeCheck = checkCallParamTypes(callerTemplate, node, callee);
+      SoyType calleeType = node.getCalleeExpr().getType();
+      if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
+        Predicate<String> paramsToRuntimeCheck =
+            checkCall(callerTemplate, node, (TemplateType) calleeType);
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
-        checkCallParamNames(node, callee);
-        checkPassesUnusedParams(node, callee);
+      } else if (calleeType.getKind() == SoyType.Kind.UNION) {
+        List<Predicate<String>> paramsToRuntimeCheckList = new ArrayList<>();
+        SanitizedContentKind sanitizedContentKind = null;
+        for (SoyType member : ((UnionType) calleeType).getMembers()) {
+          if (member.getKind() == SoyType.Kind.TEMPLATE) {
+            // Check that all members of a union type have the same content kind.
+            TemplateType templateType = (TemplateType) member;
+            if (sanitizedContentKind == null) {
+              sanitizedContentKind = templateType.getContentKind();
+            } else if (templateType.getContentKind() != sanitizedContentKind) {
+              errorReporter.report(
+                  node.getSourceLocation(),
+                  CANNOT_CALL_MIXED_CONTENT_TYPE,
+                  sanitizedContentKind,
+                  templateType.getContentKind());
+            }
+            paramsToRuntimeCheckList.add(checkCall(callerTemplate, node, templateType));
+          } else {
+            errorReporter.report(
+                node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
+          }
+        }
+        node.setParamsToRuntimeCheck(Predicates.or(paramsToRuntimeCheckList));
+      } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
+        // We may end up with UNKNOWN here for external calls.
+      } else {
+        errorReporter.report(node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
       }
-      checkStrictHtml(callerTemplate, node, callee);
+    }
+
+    Predicate<String> checkCall(
+        TemplateNode callerTemplate, CallBasicNode node, TemplateType calleeType) {
+      checkCallParamNames(node, calleeType);
+      checkPassesUnusedParams(node, calleeType);
+      checkStrictHtml(callerTemplate, node, calleeType);
+      return checkCallParamTypes(callerTemplate, node, calleeType);
     }
 
     void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
-      ImmutableMap.Builder<String, Predicate<String>> paramsToCheckByTemplate =
+      ImmutableMap.Builder<String, java.util.function.Predicate<String>> paramsToCheckByTemplate =
           ImmutableMap.builder();
       ImmutableList<TemplateMetadata> potentialCallees =
           templateRegistry
@@ -156,11 +193,10 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
               .delTemplateNameToValues()
               .get(node.getDelCalleeName());
       for (TemplateMetadata delTemplate : potentialCallees) {
-        TemplateSignature delTemplateSignature =
-            TemplateSignature.fromTemplateMetadata(delTemplate);
-        Predicate<String> params = checkCallParamTypes(callerTemplate, node, delTemplateSignature);
+        TemplateType delTemplateType = TemplateMetadata.asTemplateType(delTemplate);
+        Predicate<String> params = checkCallParamTypes(callerTemplate, node, delTemplateType);
         paramsToCheckByTemplate.put(delTemplate.getTemplateName(), params);
-        checkCallParamNames(node, delTemplateSignature);
+        checkCallParamNames(node, delTemplateType);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
       node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
@@ -169,7 +205,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       // as an error independently.
       if (!potentialCallees.isEmpty()) {
         checkStrictHtml(
-            callerTemplate, node, TemplateSignature.fromTemplateMetadata(potentialCallees.get(0)));
+            callerTemplate, node, TemplateMetadata.asTemplateType(potentialCallees.get(0)));
       }
     }
 
@@ -178,7 +214,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * type checking.
      */
     private Predicate<String> checkCallParamTypes(
-        TemplateNode callerTemplate, CallNode call, TemplateSignature callee) {
+        TemplateNode callerTemplate, CallNode call, TemplateType callee) {
       TemplateParamTypes calleeParamTypes = getTemplateParamTypes(callee);
       // Explicit params being passed by the CallNode
       Set<String> explicitParams = new HashSet<>();
@@ -353,13 +389,13 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * @param callee The template being called.
      * @return The set of template parameters, both explicit and implicit.
      */
-    private TemplateParamTypes getTemplateParamTypes(TemplateSignature callee) {
+    private TemplateParamTypes getTemplateParamTypes(TemplateType callee) {
       TemplateParamTypes paramTypes = paramTypesMap.get(callee);
       if (paramTypes == null) {
         paramTypes = new TemplateParamTypes();
 
         // Store all of the explicitly declared param types
-        for (TemplateSignature.Parameter param : callee.getParameters()) {
+        for (TemplateType.Parameter param : callee.getParameters()) {
           paramTypes.params.put(param.getName(), param.getType());
         }
 
@@ -389,7 +425,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * template from HTML context.
      */
     private void checkStrictHtml(
-        TemplateNode callerTemplate, CallNode caller, @Nullable TemplateSignature callee) {
+        TemplateNode callerTemplate, CallNode caller, @Nullable TemplateType callee) {
       // We should only check strict html if 1) the current template
       // sets stricthtml to true, and 2) the current call node is in HTML context.
       // Then we report an error if the callee is HTML but is not a strict HTML template.
@@ -410,7 +446,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      *   <li>Required parameters in callee template are not presented in the caller.
      * </ul>
      */
-    private void checkCallParamNames(CallNode caller, TemplateSignature callee) {
+    private void checkCallParamNames(CallNode caller, TemplateType callee) {
       if (callee != null) {
         // Get param keys passed by caller.
         Set<String> callerParamKeys = Sets.newHashSet();
@@ -429,7 +465,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         if (!caller.isPassingData()) {
           // Check param keys required by callee.
           List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
-          for (TemplateSignature.Parameter calleeParam : callee.getParameters()) {
+          for (TemplateType.Parameter calleeParam : callee.getParameters()) {
             if (calleeParam.isRequired() && !callerParamKeys.contains(calleeParam.getName())) {
               missingParamKeys.add(calleeParam.getName());
             }
@@ -447,12 +483,12 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
     }
 
     /** Reports error if unused params are passed to a template. */
-    private void checkPassesUnusedParams(CallNode caller, TemplateSignature callee) {
+    private void checkPassesUnusedParams(CallNode caller, TemplateType callee) {
       if (caller.numChildren() == 0) {
         return;
       }
       Set<String> paramNames = Sets.newHashSet();
-      for (TemplateSignature.Parameter param : callee.getParameters()) {
+      for (TemplateType.Parameter param : callee.getParameters()) {
         paramNames.add(param.getName());
       }
       IndirectParamsInfo ipi = null; // Compute only if necessary.

@@ -258,15 +258,17 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(TemplateTypeNode node) {
-    Map<String, TemplateType.Argument> map = new LinkedHashMap<>();
-    for (TemplateTypeNode.Argument argument : node.arguments()) {
-      TemplateType.Argument oldArgument =
+    Map<String, TemplateType.Parameter> map = new LinkedHashMap<>();
+    for (TemplateTypeNode.Parameter parameter : node.parameters()) {
+      TemplateType.Parameter oldParameter =
           map.put(
-              argument.name(),
-              TemplateType.argumentOf(argument.name(), argument.type().accept(this)));
-      if (oldArgument != null) {
-        errorReporter.report(argument.nameLocation(), DUPLICATE_TEMPLATE_ARGUMENT, argument.name());
-        map.put(argument.name(), oldArgument);
+              parameter.name(),
+              TemplateType.Parameter.create(
+                  parameter.name(), parameter.type().accept(this), true /* isRequired */));
+      if (oldParameter != null) {
+        errorReporter.report(
+            parameter.nameLocation(), DUPLICATE_TEMPLATE_ARGUMENT, parameter.name());
+        map.put(parameter.name(), oldParameter);
       }
     }
     SoyType returnType = node.returnType().accept(this);
@@ -274,7 +276,8 @@ public final class TypeNodeConverter
     if (!ALLOWED_TEMPLATE_RETURN_TYPES.contains(returnType.getKind())) {
       errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
     }
-    SoyType type = typeRegistry.getOrCreateTemplateType(map.values(), returnType);
+    SoyType type =
+        typeRegistry.internTemplateType(TemplateType.declaredTypeOf(map.values(), returnType));
     node.setResolvedType(type);
     return type;
   }

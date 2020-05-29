@@ -83,8 +83,8 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
 
   @Override
   public Void visit(TemplateTypeNode node) {
-    for (TemplateTypeNode.Argument argument : node.arguments()) {
-      argument.type().accept(this);
+    for (TemplateTypeNode.Parameter parameter : node.parameters()) {
+      parameter.type().accept(this);
     }
     node.returnType().accept(this);
     return null;

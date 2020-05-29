@@ -1896,7 +1896,7 @@ public final class TemplateParserTest {
         errorReporter);
     List<SoyError> errors = errorReporter.getErrors();
     assertThat(errors).hasSize(4);
-    assertThat(errors.get(0).message()).isEqualTo("parse error at '1': expected identifier");
+    assertThat(errors.get(0).message()).isEqualTo("parse error at '123': expected identifier");
     assertThat(errors.get(1).message()).isEqualTo("parse error at '4': expected identifier or .");
     assertThat(errors.get(2).message()).contains("parse error at 'foo': expected variable");
     assertThat(errors.get(3).message()).isEqualTo("parse error at '/}': expected variable");

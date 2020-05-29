@@ -71,7 +71,7 @@ message SoyTypeP {
     repeated SoyTypeP member = 1;
   }
   message TemplateTypeP {
-    map<string, SoyTypeP> argument = 1;
+    map<string, SoyTypeP> parameter = 1;
     PrimitiveTypeP return_type = 2;
   }
   // discriminated union of the different type categories

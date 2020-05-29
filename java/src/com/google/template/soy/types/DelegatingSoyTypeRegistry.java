@@ -17,7 +17,6 @@
 package com.google.template.soy.types;
 
 import com.google.template.soy.types.RecordType.Member;
-import com.google.template.soy.types.TemplateType.Argument;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
@@ -64,8 +63,8 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   }
 
   @Override
-  public TemplateType getOrCreateTemplateType(Iterable<Argument> arguments, SoyType returnType) {
-    return delegate.getOrCreateTemplateType(arguments, returnType);
+  public TemplateType internTemplateType(TemplateType typeToIntern) {
+    return delegate.internTemplateType(typeToIntern);
   }
 
   @Override

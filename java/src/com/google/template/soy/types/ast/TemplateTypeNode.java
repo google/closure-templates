@@ -25,16 +25,16 @@ import com.google.template.soy.base.SourceLocation;
 public abstract class TemplateTypeNode extends TypeNode {
 
   public static TemplateTypeNode create(
-      SourceLocation sourceLocation, Iterable<Argument> arguments, TypeNode returnType) {
+      SourceLocation sourceLocation, Iterable<Parameter> parameters, TypeNode returnType) {
     return new AutoValue_TemplateTypeNode(
-        sourceLocation, ImmutableList.copyOf(arguments), returnType);
+        sourceLocation, ImmutableList.copyOf(parameters), returnType);
   }
 
-  /** A single named, typed argument to a template. */
+  /** A single named, typed parameter to a template. */
   @AutoValue
-  public abstract static class Argument {
-    public static Argument create(SourceLocation nameLocation, String name, TypeNode type) {
-      return new AutoValue_TemplateTypeNode_Argument(nameLocation, name, type);
+  public abstract static class Parameter {
+    public static Parameter create(SourceLocation nameLocation, String name, TypeNode type) {
+      return new AutoValue_TemplateTypeNode_Parameter(nameLocation, name, type);
     }
 
     public abstract SourceLocation nameLocation();
@@ -48,21 +48,21 @@ public abstract class TemplateTypeNode extends TypeNode {
       return name() + ": " + type();
     }
 
-    Argument copy() {
+    Parameter copy() {
       return create(nameLocation(), name(), type().copy());
     }
   }
 
-  public abstract ImmutableList<Argument> arguments();
+  public abstract ImmutableList<Parameter> parameters();
 
   public abstract TypeNode returnType();
 
   @Override
   public final String toString() {
-    if (arguments().size() < 3) {
-      return "(" + Joiner.on(", ").join(arguments()) + ") => " + returnType();
+    if (parameters().size() < 3) {
+      return "(" + Joiner.on(", ").join(parameters()) + ") => " + returnType();
     }
-    return "(\n  " + Joiner.on(",\n  ").join(arguments()) + "\n) => " + returnType();
+    return "(\n  " + Joiner.on(",\n  ").join(parameters()) + "\n) => " + returnType();
   }
 
   @Override
@@ -72,11 +72,11 @@ public abstract class TemplateTypeNode extends TypeNode {
 
   @Override
   public TemplateTypeNode copy() {
-    ImmutableList.Builder<Argument> newArguments = ImmutableList.builder();
-    for (Argument argument : arguments()) {
-      newArguments.add(argument.copy());
+    ImmutableList.Builder<Parameter> newParameters = ImmutableList.builder();
+    for (Parameter parameter : parameters()) {
+      newParameters.add(parameter.copy());
     }
-    TemplateTypeNode copy = create(sourceLocation(), newArguments.build(), returnType().copy());
+    TemplateTypeNode copy = create(sourceLocation(), newParameters.build(), returnType().copy());
     copy.copyResolvedTypeFrom(this);
     return copy;
   }

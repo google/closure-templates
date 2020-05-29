@@ -16,17 +16,18 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import java.util.List;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -38,12 +39,14 @@ import javax.annotation.Nullable;
  *
  */
 public final class CallBasicNode extends CallNode {
+  private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
+      SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
 
-  /** The full name of the template being called, after namespace / alias resolution. */
-  private final String fullCalleeName;
-
-  /** The identifier, containing full template name and alias. */
-  private final Identifier identifier;
+  /**
+   * The callee expression. Usually this will contain a single node corresponding to the template to
+   * be called.
+   */
+  private final ExprRootNode calleeExpr;
 
   /**
    * The list of params that need to be type checked when this node is run. All the params that
@@ -60,15 +63,13 @@ public final class CallBasicNode extends CallNode {
       int id,
       SourceLocation location,
       SourceLocation openTagLocation,
-      Identifier name,
+      ExprNode calleeExpr,
       List<CommandTagAttribute> attributes,
       boolean selfClosing,
       ErrorReporter errorReporter) {
     super(id, location, openTagLocation, "call", attributes, selfClosing, errorReporter);
-    checkArgument(BaseUtils.isDottedIdentifier(name.identifier()));
 
-    this.identifier = name;
-    this.fullCalleeName = name.identifier();
+    this.calleeExpr = new ExprRootNode(calleeExpr);
 
     for (CommandTagAttribute attr : attributes) {
       String ident = attr.getName().identifier();
@@ -84,11 +85,14 @@ public final class CallBasicNode extends CallNode {
           errorReporter.report(
               attr.getName().location(),
               UNSUPPORTED_ATTRIBUTE_KEY,
-              name,
+              ident,
               "call",
               ImmutableList.of(
                   "data", MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
       }
+    }
+    if (isPassingData() && !isStaticCall()) {
+      errorReporter.report(openTagLocation, DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS);
     }
   }
 
@@ -99,8 +103,7 @@ public final class CallBasicNode extends CallNode {
    */
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.identifier = orig.identifier;
-    this.fullCalleeName = orig.fullCalleeName;
+    this.calleeExpr = orig.calleeExpr.copy(copyState);
     this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
 
@@ -111,17 +114,35 @@ public final class CallBasicNode extends CallNode {
 
   /** Returns the callee name string as it appears in the source code. */
   public String getSourceCalleeName() {
-    return identifier.originalName();
+    checkState(isStaticCall());
+    return ((TemplateLiteralNode) calleeExpr.getRoot()).toSourceString();
   }
 
   @Override
   public SourceLocation getSourceCalleeLocation() {
-    return identifier.location();
+    return calleeExpr.getSourceLocation();
   }
 
   /** Returns the full name of the template being called, or null if not yet set. */
   public String getCalleeName() {
-    return fullCalleeName;
+    checkState(isStaticCall(), "Expected static call, but found: %s", calleeExpr.getRoot());
+    return ((TemplateLiteralNode) calleeExpr.getRoot()).getResolvedName();
+  }
+
+  public boolean isStaticCall() {
+    return calleeExpr.getRoot().getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
+  }
+
+  public ExprRootNode getCalleeExpr() {
+    return calleeExpr;
+  }
+
+  @Override
+  public ImmutableList<ExprRootNode> getExprList() {
+    ImmutableList.Builder<ExprRootNode> allExprs = ImmutableList.builder();
+    allExprs.add(calleeExpr);
+    allExprs.addAll(super.getExprList());
+    return allExprs.build();
   }
 
   /**

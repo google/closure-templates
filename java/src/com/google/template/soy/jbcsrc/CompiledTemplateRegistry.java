@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.TemplateType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +47,7 @@ final class CompiledTemplateRegistry {
           CompiledTemplateMetadata.create(template.getTemplateName(), template.getSoyFileKind());
       templateToMetadata.put(template.getTemplateName(), metadata);
       classToMetadata.put(metadata.typeInfo().className(), metadata);
-      if (template.getTemplateKind() == TemplateMetadata.Kind.DELTEMPLATE) {
+      if (template.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
         delegateTemplateNames.add(template.getTemplateName());
         // all delegates are guaranteed to have the same content kind by the
         // checkdelegatesvisitor

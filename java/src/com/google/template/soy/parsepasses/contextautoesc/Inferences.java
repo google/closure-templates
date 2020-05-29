@@ -26,8 +26,8 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.TemplateType;
 import java.util.List;
 import java.util.Map;
 
@@ -69,7 +69,7 @@ public final class Inferences {
    *
    * @param templateName A qualified template name.
    */
-  ImmutableList<TemplateMetadata> lookupTemplates(CallNode call) {
+  ImmutableList<TemplateType> lookupTemplates(CallNode call) {
     return templates.getTemplates(call);
   }
 

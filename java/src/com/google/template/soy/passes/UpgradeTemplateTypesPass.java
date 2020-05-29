@@ -20,10 +20,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -37,7 +39,6 @@ import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.PrimitiveType;
 import com.google.template.soy.types.RecordType;
-import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -46,6 +47,7 @@ import com.google.template.soy.types.SoyTypeVisitor;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
+import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeType;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -55,14 +57,14 @@ import java.util.Set;
 /** Upgrades template types from the "named template" placeholder type to proper types. */
 final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind COULD_NOT_FIND_TEMPLATE =
-      SoyErrorKind.of(
-          "Could not find template named `{0}`. Note that deltemplates cannot be created in"
-              + " expressions.");
-
   private static final SoyErrorKind ONLY_BASIC_TEMPLATES_ALLOWED =
       SoyErrorKind.of(
           "Only basic templates are allowed in expressions, but found template of kind: `{0}`.");
+
+  private static final SoyErrorKind ONLY_STRICT_HTML_TEMPLATES_ALLOWED =
+      SoyErrorKind.of(
+          "Only strict HTML templates are allowed in expressions, but template `{0}` was not"
+              + " strict HTML.");
 
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
@@ -83,12 +85,23 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
       for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
         if (SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
           boolean isTemplateLiteral = exprNode.getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
+          // Template literal nodes and expr root nodes directly wrapping a TemplateLiteralNode are
+          // exempt from some checks.
+          boolean isSynthetic =
+              (isTemplateLiteral && ((TemplateLiteralNode) exprNode).isSynthetic())
+                  || (exprNode.getKind() == ExprNode.Kind.EXPR_ROOT_NODE
+                      && ((ExprRootNode) exprNode).getRoot().getKind()
+                          == ExprNode.Kind.TEMPLATE_LITERAL_NODE
+                      && ((TemplateLiteralNode) ((ExprRootNode) exprNode).getRoot()).isSynthetic());
           SoyType resolvedType =
               exprNode
                   .getType()
                   .accept(
                       new TemplateTypeUpgrader(
-                          exprNode.getSourceLocation(), templateRegistry, isTemplateLiteral));
+                          exprNode.getSourceLocation(),
+                          templateRegistry,
+                          isTemplateLiteral,
+                          isSynthetic));
           switch (exprNode.getKind()) {
             case TEMPLATE_LITERAL_NODE:
               ((TemplateLiteralNode) exprNode).setType(resolvedType);
@@ -113,21 +126,26 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
 
   private void checkReportedAllInvalidNames() {
     // Sanity check that we reported at least one error for each invalid template name.
-    Preconditions.checkState(invalidTemplateNames.equals(reportedInvalidTemplateNames));
+    Preconditions.checkState(
+        invalidTemplateNames.equals(reportedInvalidTemplateNames),
+        "Expected: " + invalidTemplateNames + "; found: " + reportedInvalidTemplateNames);
   }
 
   private class TemplateTypeUpgrader implements SoyTypeVisitor<SoyType> {
     private final SourceLocation whereToReportErrors;
     private final TemplateRegistry templateRegistry;
     private final boolean isTemplateLiteral;
+    private final boolean isSynthetic;
 
     private TemplateTypeUpgrader(
         SourceLocation whereToReportErrors,
         TemplateRegistry templateRegistry,
-        boolean isTemplateLiteral) {
+        boolean isTemplateLiteral,
+        boolean isSynthetic) {
       this.whereToReportErrors = whereToReportErrors;
       this.templateRegistry = templateRegistry;
       this.isTemplateLiteral = isTemplateLiteral;
+      this.isSynthetic = isSynthetic;
     }
 
     @Override
@@ -169,16 +187,15 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
       TemplateMetadata basicTemplateOrElement =
           templateRegistry.getBasicTemplateOrElement(type.getTemplateName());
       if (basicTemplateOrElement == null) {
-        // Only report errors for template literal nodes, to avoid reporting errors multiple times
-        // (ie., once for everywhere the 'named' template type has propagated in the expression
-        // tree).
-        if (isTemplateLiteral) {
-          errorReporter.report(
-              whereToReportErrors, COULD_NOT_FIND_TEMPLATE, type.getTemplateName());
+        // Synthetic nodes are exempt from this check, to support external calls.
+        if (isSynthetic) {
+          return UnknownType.getInstance();
         }
+        // Error reporting here should be handled by StrictDepsPass and CheckDelegatesPass.
         return ErrorType.getInstance();
       }
-      if (basicTemplateOrElement.getTemplateKind() != TemplateMetadata.Kind.BASIC) {
+      if (basicTemplateOrElement.getTemplateKind() != TemplateType.TemplateKind.BASIC
+          && !isSynthetic) {
         // Only report errors for template literal nodes, to avoid reporting errors multiple times
         // (ie., once for everywhere the 'named' template type has propagated in the expression
         // tree).
@@ -192,12 +209,24 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
         }
         return ErrorType.getInstance();
       }
-      List<TemplateType.Argument> arguments = new ArrayList<>();
-      for (TemplateMetadata.Parameter parameter : basicTemplateOrElement.getParameters()) {
-        arguments.add(TemplateType.argumentOf(parameter.getName(), parameter.getType()));
+      if (basicTemplateOrElement.getContentKind() == SanitizedContentKind.HTML
+          && !basicTemplateOrElement.isStrictHtml()
+          && !isSynthetic) {
+        // Only report errors for template literal nodes, to avoid reporting errors multiple times
+        // (ie., once for everywhere the 'named' template type has propagated in the expression
+        // tree).
+        invalidTemplateNames.add(type.getTemplateName());
+        if (isTemplateLiteral) {
+          errorReporter.report(
+              whereToReportErrors,
+              ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
+              basicTemplateOrElement.getTemplateName());
+          reportedInvalidTemplateNames.add(type.getTemplateName());
+        }
+        return ErrorType.getInstance();
       }
-      return typeRegistry.getOrCreateTemplateType(
-          arguments, SanitizedType.getTypeForContentKind(basicTemplateOrElement.getContentKind()));
+      return typeRegistry.internTemplateType(
+          TemplateMetadata.asTemplateType(basicTemplateOrElement));
     }
 
     @Override

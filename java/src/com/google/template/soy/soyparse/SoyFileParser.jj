@@ -1097,7 +1097,7 @@ TOKEN_MGR_DECLS: {
 
 | < CMD_OPEN_LITERAL             : "{literal}"      > : IN_LITERAL_BLOCK
 
-| < CMD_BEGIN_CALL               : "{call" <WS>     > : IN_CMD_TAG
+| < CMD_BEGIN_CALL               : "{call" <WS>     > : EXPR
 | < CMD_BEGIN_DELCALL            : "{delcall" <WS>  > : IN_CMD_TAG
 | < CMD_CLOSE_CALL               : "{/call}"        >
 | < CMD_CLOSE_DELCALL            : "{/delcall}"     >
@@ -3180,6 +3180,7 @@ private CallNode CallStmt() :
   Token tagBegin, tagClose;
   Token tagBeginEnd = null;
   Identifier calleeName = null;
+  ExprNode calleeExpr = null;
   boolean selfClosing = false;
   List<CommandTagAttribute> attributes = ImmutableList.of();
   List<CallParamNode> params = ImmutableList.of();
@@ -3190,7 +3191,11 @@ private CallNode CallStmt() :
     tagBegin = <CMD_BEGIN_CALL>
 
     try {
-      calleeName = TemplateName()
+      (
+        calleeExpr = Expr()
+      |
+        calleeName = PartialTemplateNameInExpression()
+      )
       attributes = Attributes()
       (
         tagClose = <CMD_SELF_CLOSE>
@@ -3202,21 +3207,36 @@ private CallNode CallStmt() :
       )
     } catch (ParseException e) {
       tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_CLOSE_CALL);
-      if (calleeName == null) {
-        calleeName = Identifier.create(".error", createSrcLoc(tagBegin));
+      if (calleeExpr == null && calleeName == null) {
+        calleeExpr = new TemplateLiteralNode(Identifier.create(".error", createSrcLoc(tagBegin)),  createSrcLoc(tagBegin), false /* isSynthetic */);
       }
     }
 
     {
-      Identifier name =
-          SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter);
-
       SourceLocation loc = createSrcLoc(tagBegin, tagClose);
+      if (calleeExpr == null) {
+        calleeExpr = new TemplateLiteralNode(
+            SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter),
+            calleeName.location(),
+            true /* isSynthetic */);
+      } else if (calleeExpr.getKind() == ExprNode.Kind.GLOBAL_NODE) {
+        // De-alias the identifier in the global node, since we want to run the normal validation
+        // for template aliasing.
+        // See SoyFileParserTest.testCalleeNameExpansion() for an example that fails without this.
+        GlobalNode calleeAsGlobalNode = (GlobalNode) calleeExpr;
+        Identifier originalIdentifier = Identifier.create(
+            calleeAsGlobalNode.getIdentifier().originalName(),
+            calleeAsGlobalNode.getIdentifier().location());
+        calleeExpr = new TemplateLiteralNode(
+            SoyParseUtils.calculateFullCalleeName(originalIdentifier, headerInfo, errorReporter),
+            calleeExpr.getSourceLocation(),
+            true /* isSynthetic */);
+      }
       CallBasicNode node = new CallBasicNode(
           nodeIdGen.genId(),
           createSrcLoc(tagBegin, tagClose),
           (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : loc,
-          name,
+          calleeExpr,
           attributes,
           selfClosing,
           errorReporter);
@@ -4340,7 +4360,8 @@ private TemplateLiteralNode TemplateLiteral(Identifier ident) :
   {
     return new TemplateLiteralNode(
         SoyParseUtils.calculateFullCalleeName(templateName, headerInfo, errorReporter),
-        ident.location().extend(createSrcLoc(closeParen)));
+        ident.location().extend(createSrcLoc(closeParen)),
+        false /* isSynthetic */);
   }
 }
 
@@ -4492,25 +4513,25 @@ private TypeNode PrimaryType() :
  */
 private TypeNode TemplateType() :
 {
-  List<TemplateTypeNode.Argument> arguments = ImmutableList.of();
+  List<TemplateTypeNode.Parameter> parameters = ImmutableList.of();
   Token open, close, arrow;
   TypeNode returnType;
-  TemplateTypeNode.Argument argument;
+  TemplateTypeNode.Parameter parameter;
 }
 {
   open = <LPAREN>
 
   (
-    argument = TemplateArgument()
+    parameter = TemplateParameter()
     {
-      arguments = new ArrayList<TemplateTypeNode.Argument>();
-      arguments.add(argument);
+      parameters = new ArrayList<TemplateTypeNode.Parameter>();
+      parameters.add(parameter);
     }
     (
       <COMMA>
-      argument = TemplateArgument()
+      parameter = TemplateParameter()
       {
-        arguments.add(argument);
+        parameters.add(parameter);
       }
     )*
   )?
@@ -4523,25 +4544,25 @@ private TypeNode TemplateType() :
 
   {
     SourceLocation srcLoc = createSrcLoc(open, close, arrow);
-    return TemplateTypeNode.create(srcLoc, arguments, returnType);
+    return TemplateTypeNode.create(srcLoc, parameters, returnType);
   }
 }
 
 /**
  * TemplateArgument -> IDENT ":" TypeExpr
  */
-private TemplateTypeNode.Argument TemplateArgument() :
+private TemplateTypeNode.Parameter TemplateParameter() :
 {
-  Token argumentName;
-  TypeNode argumentType;
+  Token parameterName;
+  TypeNode parameterType;
 }
 {
-  argumentName = <IDENT>
+  parameterName = <IDENT>
   <COLON>
-  argumentType = TypeExpr()
+  parameterType = TypeExpr()
 
   {
-    return TemplateTypeNode.Argument.create(createSrcLoc(argumentName), argumentName.image, argumentType);
+    return TemplateTypeNode.Parameter.create(createSrcLoc(parameterName), parameterName.image, parameterType);
   }
 }
 

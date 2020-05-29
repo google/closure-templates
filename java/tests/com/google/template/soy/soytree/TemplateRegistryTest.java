@@ -27,6 +27,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -195,10 +196,13 @@ public final class TemplateRegistryTest {
             0,
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
-            Identifier.create("ns.foo", SourceLocation.UNKNOWN),
+            new TemplateLiteralNode(
+                Identifier.create("ns.foo", SourceLocation.UNKNOWN), SourceLocation.UNKNOWN, false),
             NO_ATTRS,
             false,
             FAIL);
+    node.getCalleeExpr()
+        .setType(TemplateMetadata.asTemplateType(registry.getBasicTemplateOrElement("ns.foo")));
     assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 
@@ -219,7 +223,8 @@ public final class TemplateRegistryTest {
             0,
             SourceLocation.UNKNOWN,
             SourceLocation.UNKNOWN,
-            Identifier.create("ns.moo", SourceLocation.UNKNOWN),
+            new TemplateLiteralNode(
+                Identifier.create("ns.moo", SourceLocation.UNKNOWN), SourceLocation.UNKNOWN, false),
             NO_ATTRS,
             false,
             FAIL);

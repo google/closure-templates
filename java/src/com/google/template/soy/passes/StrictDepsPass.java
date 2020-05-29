@@ -23,7 +23,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -53,8 +53,9 @@ public final class StrictDepsPass implements CompilerFileSetPass {
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
-      for (CallBasicNode node : SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class)) {
-        checkBasicCall(node, registry);
+      for (TemplateLiteralNode node :
+          SoyTreeUtils.getAllNodesOfType(file, TemplateLiteralNode.class)) {
+        checkTemplateLiteralNode(node, registry);
       }
     }
     return Result.CONTINUE;
@@ -63,17 +64,17 @@ public final class StrictDepsPass implements CompilerFileSetPass {
   // TODO(gboyer): Consider some deltemplate checking, but it's hard to make a coherent case for
   // deltemplates since it's legitimate to have zero implementations, or to have the implementation
   // in a different part of the dependency graph (if it's late-bound).
-  private void checkBasicCall(CallBasicNode node, TemplateRegistry registry) {
-    TemplateMetadata callee = registry.getBasicTemplateOrElement(node.getCalleeName());
+  private void checkTemplateLiteralNode(TemplateLiteralNode node, TemplateRegistry registry) {
+    TemplateMetadata callee = registry.getBasicTemplateOrElement(node.getResolvedName());
 
     if (callee == null) {
       String extraErrorMessage =
           SoyErrors.getDidYouMeanMessage(
-              registry.getBasicTemplateOrElementNames(), node.getCalleeName());
+              registry.getBasicTemplateOrElementNames(), node.getResolvedName());
       errorReporter.report(
           node.getSourceLocation(),
           CALL_TO_UNDEFINED_TEMPLATE,
-          node.getCalleeName(),
+          node.getResolvedName(),
           extraErrorMessage);
     } else {
       SoyFileKind calleeKind = callee.getSoyFileKind();

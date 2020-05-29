@@ -114,7 +114,7 @@ public final class TypeNodeTest {
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "x", TYPE_ABC)),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "x", TYPE_ABC)),
                     NamedTypeNode.create(SOURCE_LOCATION, "attributes"))
                 .toString())
         .isEqualTo("(x: abc) => attributes");
@@ -123,8 +123,8 @@ public final class TypeNodeTest {
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "x", TYPE_ABC),
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "y", TYPE_DEF)),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "x", TYPE_ABC),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "y", TYPE_DEF)),
                     NamedTypeNode.create(SOURCE_LOCATION, "css"))
                 .toString())
         .isEqualTo("(x: abc, y: def) => css");
@@ -133,10 +133,10 @@ public final class TypeNodeTest {
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "x", TYPE_ABC),
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "y", TYPE_DEF),
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "z", TYPE_GHI),
-                        TemplateTypeNode.Argument.create(SOURCE_LOCATION, "w", TYPE_JKL)),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "x", TYPE_ABC),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "y", TYPE_DEF),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "z", TYPE_GHI),
+                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "w", TYPE_JKL)),
                     NamedTypeNode.create(SOURCE_LOCATION, "uri"))
                 .toString())
         .isEqualTo("(\n  x: abc,\n  y: def,\n  z: ghi,\n  w: jkl\n) => uri");
@@ -221,17 +221,17 @@ public final class TypeNodeTest {
 
           @Override
           public Void visit(TemplateTypeNode node) {
-            assertThat(node.arguments()).hasSize(((TemplateTypeNode) right).arguments().size());
+            assertThat(node.parameters()).hasSize(((TemplateTypeNode) right).parameters().size());
             ImmutableMap<String, TypeNode> leftArgumentMap =
-                node.arguments().stream()
+                node.parameters().stream()
                     .collect(
                         toImmutableMap(
-                            TemplateTypeNode.Argument::name, TemplateTypeNode.Argument::type));
+                            TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
             ImmutableMap<String, TypeNode> rightArgumentMap =
-                Streams.stream(((TemplateTypeNode) right).arguments())
+                Streams.stream(((TemplateTypeNode) right).parameters())
                     .collect(
                         toImmutableMap(
-                            TemplateTypeNode.Argument::name, TemplateTypeNode.Argument::type));
+                            TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
             assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
             for (String key : leftArgumentMap.keySet()) {
               assertEquals(leftArgumentMap.get(key), rightArgumentMap.get(key));

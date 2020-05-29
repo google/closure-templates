@@ -48,12 +48,12 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.TemplateType;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -264,7 +264,7 @@ final class Rewriter {
       // deltemplates but there is currently no strong guarantee that they are compatible.  So be
       // conservative here.
       if (node instanceof CallBasicNode) {
-        ImmutableList<TemplateMetadata> targets = inferences.lookupTemplates(node);
+        ImmutableList<TemplateType> targets = inferences.lookupTemplates(node);
         if (!targets.isEmpty()) {
           directives =
               ShortCircuitables.filterDirectivesForKind(
