@@ -80,8 +80,6 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
     SortedMap<Long, ImmutableList<SoyMsgPart>> partsMap = new TreeMap<>();
     for (SoyMsg msg : msgs) {
       checkArgument(Objects.equals(msg.getLocaleString(), localeString));
-      checkArgument(
-          msg.getAltId() < 0, "RenderOnlySoyMsgBundleImpl doesn't support alternate ID's.");
       long msgId = msg.getId();
       checkArgument(
           !partsMap.containsKey(msgId),
@@ -100,7 +98,7 @@ final class RenderOnlySoyMsgBundleImpl extends SoyMsgBundle {
   }
 
   /** Brings a message back to life from only its ID and parts. */
-  @SuppressWarnings("unchecked") // The constructor guarantees the type of ImmutableList.
+  // The constructor guarantees the type of ImmutableList.
   private SoyMsg resurrectMsg(long id, ImmutableList<SoyMsgPart> parts) {
     return SoyMsg.builder()
         .setId(id)

@@ -62,7 +62,6 @@ public abstract class SoyMsg {
   /** A builder for SoyMsg. */
   public static final class Builder {
     private long id;
-    private long altId = -1;
     private @Nullable String localeString;
     private @Nullable String meaning;
     private @Nullable String desc;
@@ -80,13 +79,6 @@ public abstract class SoyMsg {
     public Builder setId(long id) {
       checkArgument(id >= 0L);
       this.id = id;
-      return this;
-    }
-
-    /** @param altId An alternate unique id for this message. */
-    public Builder setAltId(long altId) {
-      checkArgument(altId >= 0L);
-      this.altId = altId;
       return this;
     }
 
@@ -176,7 +168,6 @@ public abstract class SoyMsg {
       return new AutoValue_SoyMsg(
           localeString,
           id,
-          altId,
           meaning,
           desc,
           isHidden,
@@ -211,9 +202,6 @@ public abstract class SoyMsg {
     if (getDesc() != null) {
       builder.setDesc(getDesc());
     }
-    if (getAltId() != -1) {
-      builder.setAltId(getAltId());
-    }
     if (getContentType() != null) {
       builder.setContentType(getContentType());
     }
@@ -226,9 +214,6 @@ public abstract class SoyMsg {
 
   /** Returns the unique id for this message (same across all translations). */
   public abstract long getId();
-
-  /** Returns the alternate unique id for this message, or -1L if not applicable. */
-  public abstract long getAltId();
 
   /** Returns the meaning string if set, otherwise null (usually null). */
   @Nullable
