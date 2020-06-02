@@ -294,6 +294,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Could not find logging configuration for this element.{0}",
           StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES =
+      SoyErrorKind.of(
+          "Template type parameters cannot be inferred. Instead, explicitly declare the type.");
 
   private final ErrorReporter errorReporter;
 
@@ -1672,6 +1675,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Override
     protected void visitTemplateLiteralNode(TemplateLiteralNode node) {
+      // Template literals are not legal as default values without a declared type. This is because
+      // we don't have enough information to resolve the type at the time this pass is run. For
+      // example, two templates may have each other as default parameters, which would create a
+      // circular dependency for the type resolution.
+      if (isDefaultInitializerForInferredParam) {
+        errorReporter.report(
+            node.getSourceLocation(), TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES);
+      }
       // Template literal nodes are instantiated with a temporary type because we don't have enough
       // information to give them a type at the time this pass is run -- we need to know the
       // signature of the referenced template. The type is resolved and checked in a later pass.
