@@ -526,12 +526,6 @@ goog.getObjectByName = function(name, opt_obj) {
   }
   return cur;
 };
-goog.globalize = function(obj, opt_global) {
-  var global = opt_global || goog.global, x;
-  for (x in obj) {
-    global[x] = obj[x];
-  }
-};
 goog.addDependency = function() {
 };
 goog.useStrictRequires = !1;
@@ -848,7 +842,7 @@ goog.defineClass.applyProperties_ = function(target, source) {
     key = goog.defineClass.OBJECT_PROTOTYPE_FIELDS_[i], Object.prototype.hasOwnProperty.call(source, key) && (target[key] = source[key]);
   }
 };
-goog.TRUSTED_TYPES_POLICY_NAME = "";
+goog.TRUSTED_TYPES_POLICY_NAME = "goog";
 goog.identity_ = function(s) {
   return s;
 };

@@ -54,7 +54,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
@@ -660,17 +659,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         Arrays.asList(maybeCoerceToBoolean(operand.getType(), visit(operand), false)));
   }
 
-  private static final ImmutableSet<Kind> TYPES_TO_COERCE_TO_BOOLEAN =
-      Sets.immutableEnumSet(
-          Kind.ANY,
-          Kind.UNKNOWN,
-          Kind.HTML,
-          Kind.ATTRIBUTES,
-          Kind.JS,
-          Kind.CSS,
-          Kind.URI,
-          Kind.TRUSTED_RESOURCE_URI);
-
   /**
    * Wraps an arbitrary expression to be checked for truthiness.
    *
@@ -678,7 +666,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    *     TODO(b/74192616): Remove this parameter and always convert.
    */
   protected Expression maybeCoerceToBoolean(SoyType type, Expression chunk, boolean force) {
-    if (force && SoyTypes.containsKinds(type, TYPES_TO_COERCE_TO_BOOLEAN)) {
+    if (force && type.getKind() != Kind.BOOL) {
       return SOY_COERCE_TO_BOOLEAN.call(chunk);
     }
     return chunk;

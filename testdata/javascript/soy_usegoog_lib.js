@@ -731,22 +731,6 @@ goog.getObjectByName = function(name, opt_obj) {
 
 
 /**
- * Globalizes a whole namespace, such as goog or goog.lang.
- *
- * @param {!Object} obj The namespace to globalize.
- * @param {Object=} opt_global The object to add the properties to.
- * @deprecated Properties may be explicitly exported to the global scope, but
- *     this should no longer be done in bulk.
- */
-goog.globalize = function(obj, opt_global) {
-  var global = opt_global || goog.global;
-  for (var x in obj) {
-    global[x] = obj[x];
-  }
-};
-
-
-/**
  * Adds a dependency from a file to the files it requires.
  * @param {string} relPath The path to the js file.
  * @param {!Array<string>} provides An array of strings with
@@ -3836,7 +3820,7 @@ if (!COMPILED && goog.DEPENDENCIES_ENABLED) {
  * use Trusted Types.
  */
 goog.TRUSTED_TYPES_POLICY_NAME =
-    goog.define('goog.TRUSTED_TYPES_POLICY_NAME', '');
+    goog.define('goog.TRUSTED_TYPES_POLICY_NAME', 'goog');
 
 
 /**
@@ -7826,6 +7810,9 @@ goog.require('goog.string.TypedString');
  * such as "&lt;" are not allowed. See
  * http://www.w3.org/TR/html5/scripting-1.html#restrictions-for-contents-of-script-elements.
  *
+ * Creating SafeScript objects HAS SIDE-EFFECTS due to calling Trusted Types Web
+ * API.
+ *
  * @see goog.html.SafeScript#fromConstant
  * @constructor
  * @final
@@ -9229,6 +9216,9 @@ goog.require('goog.string.TypedString');
  * is organized in a way that only methods from that file can call it and
  * initialize with non-empty values. Anyone else calling constructor will
  * get default instance with empty value.
+ *
+ * Creating TrustedResourceUrl objects HAS SIDE-EFFECTS due to calling
+ * Trusted Types Web API.
  *
  * @see goog.html.TrustedResourceUrl#fromConstant
  * @constructor
@@ -12371,6 +12361,9 @@ goog.require('goog.string.internal');
  * etc and not by invoking its constructor.  The constructor intentionally
  * takes no parameters and the type is immutable; hence only a default instance
  * corresponding to the empty string can be obtained via constructor invocation.
+ *
+ * Creating SafeHtml objects HAS SIDE-EFFECTS due to calling Trusted Types Web
+ * API.
  *
  * Note that there is no `goog.html.SafeHtml.fromConstant`. The reason is that
  * the following code would create an unsafe HTML:
@@ -46989,9 +46982,9 @@ goog.soy.renderElement = function(
 /**
  * Renders a Soy template into a single node or a document
  * fragment. If the rendered HTML string represents a single node, then that
- * node is returned (note that this is *not* a fragment, despite them name of
- * the method). Otherwise a document fragment is returned containing the
- * rendered nodes.
+ * node is returned (note that this is *not* a fragment, despite the name of the
+ * method). Otherwise a document fragment is returned containing the rendered
+ * nodes.
  *
  * @param {function(ARG_TYPES, ?goog.soy.CompatibleIj_=): *} template The Soy
  *     template defining the element's content. The kind of the template must be
