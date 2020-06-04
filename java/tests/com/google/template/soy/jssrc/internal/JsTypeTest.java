@@ -151,11 +151,10 @@ public final class JsTypeTest {
   public void testGetTypeAssertion() {
     assertThat(getTypeAssertion(StringType.getInstance(), "x")).isEqualTo("typeof x === 'string'");
     assertThat(getTypeAssertion(IntType.getInstance(), "x")).isEqualTo("typeof x === 'number'");
-    assertThat(getTypeAssertion(BoolType.getInstance(), "x"))
-        .isEqualTo("typeof x === 'boolean' || x === 1 || x === 0");
+    assertThat(getTypeAssertion(BoolType.getInstance(), "x")).isEqualTo("typeof x === 'boolean'");
 
     assertThat(getTypeAssertion(SoyTypes.makeNullable(BoolType.getInstance()), "x"))
-        .isEqualTo("x == null || (typeof x === 'boolean' || x === 1 || x === 0)");
+        .isEqualTo("x == null || typeof x === 'boolean'");
     assertThat(getTypeAssertion(HtmlType.getInstance(), "x"))
         .isEqualTo("goog.soy.data.SanitizedHtml.isCompatibleWith(x)");
 
@@ -172,8 +171,6 @@ public final class JsTypeTest {
 
   @Test
   public void testGetSoyTypeAssertionStrict() {
-    assertThat(getSoyTypeAssertionStrict(BoolType.getInstance(), "x"))
-        .isEqualTo("soy.asserts.assertType(typeof x === 'boolean', 'x', x, 'boolean')");
     assertThat(
             getSoyTypeAssertionStrict(
                 UnionType.of(BoolType.getInstance(), IntType.getInstance()), "x"))

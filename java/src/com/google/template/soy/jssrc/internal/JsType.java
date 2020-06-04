@@ -19,7 +19,6 @@ package com.google.template.soy.jssrc.internal;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ARRAY_IS_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_HTML_SAFE_HTML;
@@ -110,22 +109,6 @@ public final class JsType {
       builder().addType("?").setPredicate(TypePredicate.NO_OP).build();
 
   private static final JsType BOOLEAN_TYPE =
-      builder()
-          .addType("boolean")
-          .setPredicate(
-              (value, codeGenerator) ->
-                  // TODO(lukes): we shouldn't allow numbers here, see if anyone relies on this
-                  // 'feature'.
-                  Optional.of(
-                      value
-                          .typeof()
-                          .tripleEquals(Expression.stringLiteral("boolean"))
-                          .or(value.tripleEquals(number(1)), codeGenerator)
-                          .or(value.tripleEquals(number(0)), codeGenerator)))
-          .build();
-
-  // Unlike BOOLEAN_TYPE, type assertion does not allow values of 0 or 1.
-  private static final JsType BOOLEAN_TYPE_STRICT =
       builder().addType("boolean").setPredicate(typeofTypePredicate("boolean")).build();
 
   private static final JsType NUMBER_TYPE =
@@ -261,7 +244,7 @@ public final class JsType {
         return UNKNOWN_TYPE;
 
       case BOOL:
-        return isStrict ? BOOLEAN_TYPE_STRICT : BOOLEAN_TYPE;
+        return BOOLEAN_TYPE;
 
       case PROTO_ENUM:
         SoyProtoEnumType enumType = (SoyProtoEnumType) soyType;
