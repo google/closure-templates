@@ -3273,6 +3273,9 @@ goog.dom.safe.setInnerHtml = function(elem, html) {
   }
   goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(elem, html);
 };
+goog.dom.safe.setInnerHtmlFromConstant = function(element, constHtml) {
+  goog.dom.safe.setInnerHtml(element, goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract(goog.string.Const.from("Constant HTML to be immediatelly used."), goog.string.Const.unwrap(constHtml)));
+};
 goog.dom.safe.setOuterHtml = function(elem, html) {
   elem.outerHTML = goog.html.SafeHtml.unwrapTrustedHTML(html);
 };
