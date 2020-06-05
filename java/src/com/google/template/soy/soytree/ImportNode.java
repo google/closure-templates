@@ -114,6 +114,10 @@ public final class ImportNode extends AbstractSoyNode {
     return ImportType.UNKNOWN;
   }
 
+  public StringNode getPathNode() {
+    return path;
+  }
+
   public String getPath() {
     return path.getValue();
   }

@@ -300,7 +300,8 @@ public final class SoyTypeRegistryBuilder {
   }
 
   /** The standard implementation of SoyTypeRegistry, which supports protobuf types. */
-  public static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry {
+  public static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry
+      implements TypeRegistry.ProtoRegistry {
 
     /**
      * Map of SoyTypes that have been created from the type descriptors. Gets filled in lazily as
@@ -341,6 +342,7 @@ public final class SoyTypeRegistryBuilder {
       this.fileDescriptors = fileDescriptors;
     }
 
+    @Override
     public ImmutableSet<FileDescriptor> getFileDescriptors() {
       return fileDescriptors;
     }

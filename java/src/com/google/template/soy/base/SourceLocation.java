@@ -315,6 +315,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return end;
   }
 
+  public boolean containsPoint(Point point) {
+    return begin.compareTo(point) <= 0 && end.compareTo(point) >= 0;
+  }
+
   /** A Point in a source file. */
   @AutoValue
   @Immutable

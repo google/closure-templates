@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -37,6 +38,7 @@ import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder.ProtoSoyTypeRegistry;
+import com.google.template.soy.types.TypeRegistry;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -187,19 +189,20 @@ final class ImportsPass implements CompilerFilePass {
   }
 
   private static final class ImportsTypeRegistry extends DelegatingSoyTypeRegistry
-      implements ImportsContext {
+      implements ImportsContext, TypeRegistry.ProtoRegistry {
 
     // Map of symbol (possibly aliased) to fully qualified proto name (messages and enums).
     private final ImmutableMap<String, String> messagesAndEnums;
     // Map of symbol (possibly aliased) to fully qualified proto name (extensions).
     private final ImmutableMap<String, String> extensions;
+    private final SoyTypeRegistry delegate;
 
     ImportsTypeRegistry(
         SoyTypeRegistry delegate,
         ImmutableMap<String, String> messagesAndEnums,
         ImmutableMap<String, String> extensions) {
       super(delegate);
-
+      this.delegate = delegate;
       this.messagesAndEnums = messagesAndEnums;
       this.extensions = extensions;
     }
@@ -238,6 +241,13 @@ final class ImportsPass implements CompilerFilePass {
         return Identifier.create(fullName, id.location());
       }
       return headerInfo.resolveAlias(id);
+    }
+
+    @Override
+    public ImmutableSet<FileDescriptor> getFileDescriptors() {
+      return delegate instanceof TypeRegistry.ProtoRegistry
+          ? ((TypeRegistry.ProtoRegistry) delegate).getFileDescriptors()
+          : ImmutableSet.of();
     }
   }
 }
