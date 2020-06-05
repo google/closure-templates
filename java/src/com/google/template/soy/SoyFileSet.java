@@ -1136,12 +1136,21 @@ public final class SoyFileSet {
   }
 
   /** Performs enough work to retrieve all possible warnings in a compile. */
-  public ParseResult compileForWarnings() {
+  public ParseResult compileForAnalysis() {
     return entryPoint(
         () -> {
           disallowExternalCalls();
           return parse(
               passManagerBuilder()
+                  // the optimizer mutates the AST heavily which inhibits certain source analysis
+                  // rules.
+                  .optimize(false)
+                  // skip adding extra attributes
+                  .addHtmlAttributesForDebugging(false)
+                  // skip the autoescaper
+                  .setAutoescaperEnabled(false)
+                  // TODO(lukes): other passes should be disabled, basically anything that mutates
+                  // the AST
                   .allowUnknownGlobals()
                   .allowUnknownJsGlobals()
                   .allowV1Expression(),
