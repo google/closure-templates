@@ -59,12 +59,23 @@ final class ImportsPass implements CompilerFilePass {
   private final SoyTypeRegistry registry;
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
+  /**
+   * Proto names to descriptors for the delegate {@link ProtoSoyTypeRegistry}, if present. Store
+   * this once per pass (rather than per file) to help with edit-refresh times.
+   */
+  private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
 
   ImportsPass(
       SoyTypeRegistry registry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
     this.registry = registry;
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
+    this.pathToDescriptor =
+        registry instanceof ProtoSoyTypeRegistry
+            ? ((ProtoSoyTypeRegistry) registry)
+                .getFileDescriptors().stream()
+                    .collect(toImmutableMap(FileDescriptor::getName, d -> d))
+            : ImmutableMap.of();
   }
 
   @Override
@@ -79,20 +90,9 @@ final class ImportsPass implements CompilerFilePass {
   }
 
   private final class ImportVisitor {
-
-    private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
     private final Set<String> allProtoSymbols = new HashSet<>();
     private final ImmutableMap.Builder<String, String> messagesAndEnums = ImmutableMap.builder();
     private final ImmutableMap.Builder<String, String> extensions = ImmutableMap.builder();
-
-    ImportVisitor() {
-      this.pathToDescriptor =
-          registry instanceof ProtoSoyTypeRegistry
-              ? ((ProtoSoyTypeRegistry) registry)
-                  .getFileDescriptors().stream()
-                      .collect(toImmutableMap(FileDescriptor::getName, d -> d))
-              : ImmutableMap.of();
-    }
 
     void visit(ImportNode node) {
       if (!importExists(node.getImportType(), node.getPath())) {
