@@ -27,6 +27,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadata.Parameter;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
@@ -152,7 +153,7 @@ public final class IndirectParamsCalculator {
   }
 
   /** Registry of all templates in the Soy tree. */
-  private TemplateRegistry templateRegistry;
+  private final TemplateRegistry templateRegistry;
 
   /** The set of calls we've visited already (during pass). */
   private Set<TransitiveCallSituation> visitedCallSituations;
@@ -181,6 +182,11 @@ public final class IndirectParamsCalculator {
   /** @param templateRegistry Map from template name to TemplateNode to use during the pass. */
   public IndirectParamsCalculator(TemplateRegistry templateRegistry) {
     this.templateRegistry = checkNotNull(templateRegistry);
+  }
+
+  public IndirectParamsInfo calculateIndirectParams(TemplateNode node) {
+    return calculateIndirectParams(
+        TemplateMetadata.asTemplateType(templateRegistry.getMetadata(node)));
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateType template) {

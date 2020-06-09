@@ -484,8 +484,7 @@ public final class GenerateParseInfoVisitor
     TemplateMetadata nodeMetadata = templateRegistry.getMetadata(node);
     // Indirect params.
     IndirectParamsInfo indirectParamsInfo =
-        new IndirectParamsCalculator(templateRegistry)
-            .calculateIndirectParams(TemplateMetadata.asTemplateType(nodeMetadata));
+        new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(node);
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
     String upperUnderscoreName =
