@@ -79,9 +79,7 @@ In addition to templates, the `alias` directive also applies to all places where
 named identifiers are used:
 
 *   [Global references](expressions#globals), including proto enum literals
-*   The identifiers in [proto init](expressions#proto-initialization)
-    expressions
-*   The named types, especially [proto type](types#proto)
+*   The named types
 *   The ID parameter to the [`xid()` function](functions#xid)
 
 ## delpackage {#delpackage}

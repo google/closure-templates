@@ -9,12 +9,8 @@ The table below lists Soy methods that are available.
 
 ## `proto.getExtension(name)`
 
-Returns the value of the extension field of the `proto`, given the fully
-qualified name of the extension field as the parameter. The fully qualified name
-should be a dotted identifier.
-
-TIP: You can use the `{alias ...}` directive to abbreviate the fully qualified
-names of proto extension.
+Returns the value of the extension field of the `proto`, given the name of an
+imported extension field as the parameter.
 
 ### Example usage
 

@@ -390,15 +390,12 @@ Python     | `dict`
 
 ### protos: `foo.bar.BazProto` {#proto}
 
-Protocol buffers in Soy are referenced by their fully qualified proto name. They
-can be accessed as though they were `record` types with the `.` operator.
+Protocol buffers are supported in Soy. They can be accessed as though they were
+`record` types with the `.` operator.
 
 Protocol Buffers in Soy have the same semantics as `JSPB`, not `Java` protos.
 
 See the [dev guide](../dev/protos.md) for more information on how protos work.
-
-TIP: You can use the [`{alias ...}`](file-declarations.md#alias) directive to
-abbreviate proto type names.
 
 NOTE: currently, protos are _not supported_ in the Python backend.
 
