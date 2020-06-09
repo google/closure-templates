@@ -339,6 +339,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.strictHtml = orig.strictHtml;
     this.commandText = orig.commandText;
     this.openTagLocation = orig.openTagLocation;
+    this.templateMetadata = orig.templateMetadata;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
   }

@@ -170,6 +170,7 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     this.escapingDirectives = orig.escapingDirectives;
     this.callKey = orig.callKey;
     this.isPcData = orig.getIsPcData();
+    this.htmlContext = orig.htmlContext;
     this.openTagLocation = orig.openTagLocation;
     this.selfClosing = orig.selfClosing;
     this.attributes =
