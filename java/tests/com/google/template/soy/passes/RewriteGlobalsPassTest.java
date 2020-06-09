@@ -66,8 +66,8 @@ public final class RewriteGlobalsPassTest {
         .containsExactly(
             "foo.bar.baz",
             "foo.bar.baz.with.field",
-            "global.with.sugar",
-            "global.with.sugar.with.field",
+            "foo.bar.baz.with.sugar",
+            "foo.bar.baz.with.sugar.with.field",
             "unregistered")
         .inOrder();
   }

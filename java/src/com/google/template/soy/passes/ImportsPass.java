@@ -236,9 +236,19 @@ final class ImportsPass implements CompilerFilePass {
 
     @Override
     public Identifier resolveAlias(Identifier id, SoyFileHeaderInfo headerInfo) {
-      String fullName = extensions.get(id.identifier());
-      if (fullName != null) {
-        return Identifier.create(fullName, id.location());
+      String localSymbol = id.identifier();
+      int dotIndex = localSymbol.indexOf('.');
+      if (dotIndex >= 0) {
+        // Extensions may be nested under top-level messages.
+        String fullName = messagesAndEnums.get(localSymbol.substring(0, dotIndex));
+        if (fullName != null) {
+          return Identifier.create(fullName + localSymbol.substring(dotIndex), id.location());
+        }
+      } else {
+        String fullName = extensions.get(localSymbol);
+        if (fullName != null) {
+          return Identifier.create(fullName, id.location());
+        }
       }
       return headerInfo.resolveAlias(id);
     }

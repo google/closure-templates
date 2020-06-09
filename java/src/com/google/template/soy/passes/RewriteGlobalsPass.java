@@ -85,12 +85,13 @@ final class RewriteGlobalsPass implements CompilerFilePass {
         // TODO(lukes): issue a warning if a registered global also matches
         return;
       }
-    } else {
-      Identifier alias = file.resolveAlias(global.getIdentifier());
-      if (alias != null) {
-        global.setName(alias.identifier());
-      }
     }
+
+    Identifier alias = file.resolveAlias(global.getIdentifier());
+    if (alias != null) {
+      global.setName(alias.identifier());
+    }
+
     // if that doesn't work, see if it was registered in the globals file.
     PrimitiveData value = compileTimeGlobals.get(global.getName());
     if (value != null) {
