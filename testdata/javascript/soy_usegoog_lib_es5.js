@@ -736,33 +736,8 @@ goog.now = goog.TRUSTED_SITE && Date.now || function() {
   return +new Date;
 };
 goog.globalEval = function(script) {
-  if (goog.global.execScript) {
-    goog.global.execScript(script, "JavaScript");
-  } else {
-    if (goog.global.eval) {
-      if (null == goog.evalWorks_) {
-        try {
-          goog.global.eval(""), goog.evalWorks_ = !0;
-        } catch (ignore) {
-          goog.evalWorks_ = !1;
-        }
-      }
-      if (goog.evalWorks_) {
-        goog.global.eval(script);
-      } else {
-        var doc = goog.global.document, scriptElt = doc.createElement("script");
-        scriptElt.type = "text/javascript";
-        scriptElt.defer = !1;
-        scriptElt.appendChild(doc.createTextNode(script));
-        doc.head.appendChild(scriptElt);
-        doc.head.removeChild(scriptElt);
-      }
-    } else {
-      throw Error("goog.globalEval not available");
-    }
-  }
+  (0,eval)(script);
 };
-goog.evalWorks_ = null;
 goog.getCssName = function(className, opt_modifier) {
   if ("." == String(className).charAt(0)) {
     throw Error('className passed in goog.getCssName must not start with ".". You passed: ' + className);

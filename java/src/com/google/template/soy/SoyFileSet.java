@@ -1149,6 +1149,7 @@ public final class SoyFileSet {
                   .addHtmlAttributesForDebugging(false)
                   // skip the autoescaper
                   .setAutoescaperEnabled(false)
+                  .desugarHtmlAndStateNodes(false)
                   // TODO(lukes): other passes should be disabled, basically anything that mutates
                   // the AST
                   .allowUnknownGlobals()
