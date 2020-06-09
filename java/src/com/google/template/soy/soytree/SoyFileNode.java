@@ -192,11 +192,6 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return headerInfo.aliasUsed(alias);
   }
 
-  @Override
-  public SourceLocation getSourceLocation() {
-    return super.getSourceLocation();
-  }
-
   public SoyTypeRegistry getSoyTypeRegistry() {
     Preconditions.checkState(
         importsContext != null, "Called getSoyTypeRegistry() before ImportsPass was run");

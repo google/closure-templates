@@ -233,14 +233,16 @@ $jscomp.polyfill("WeakMap", function(NativeWeakMap) {
     }
   }
   function patch(name) {
-    var prev = Object[name];
-    prev && (Object[name] = function(target) {
-      if (target instanceof WeakMapMembership) {
-        return target;
-      }
-      insert(target);
-      return prev(target);
-    });
+    if (!$jscomp.ISOLATE_POLYFILLS) {
+      var prev = Object[name];
+      prev && (Object[name] = function(target) {
+        if (target instanceof WeakMapMembership) {
+          return target;
+        }
+        Object.isExtensible(target) && insert(target);
+        return prev(target);
+      });
+    }
   }
   if ($jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS) {
     if (NativeWeakMap && $jscomp.ES6_CONFORMANCE) {
