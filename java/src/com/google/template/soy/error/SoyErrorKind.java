@@ -51,7 +51,8 @@ public final class SoyErrorKind {
   public String format(Object... args) {
     Preconditions.checkState(
         args.length == requiredArgs,
-        "Error format required %s parameters, %s were supplied.",
+        "Error format (%s) required %s parameters, %s were supplied.",
+        messageFormat.toPattern(),
         requiredArgs,
         args.length);
     return messageFormat.format(args);
