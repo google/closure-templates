@@ -16,8 +16,28 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableList;
+
 /** A compiler pass */
 public interface CompilerPass {
+
+  default ImmutableList<Class<? extends CompilerPass>> runBefore() {
+    RunBefore ann = getClass().getAnnotation(RunBefore.class);
+    if (ann != null) {
+      // TODO(lukes): consider ClassValue if this is slow
+      return ImmutableList.copyOf(ann.value());
+    }
+    return ImmutableList.of();
+  }
+
+  default ImmutableList<Class<? extends CompilerPass>> runAfter() {
+    RunAfter ann = getClass().getAnnotation(RunAfter.class);
+    if (ann != null) {
+      // TODO(lukes): consider ClassValue if this is slow
+      return ImmutableList.copyOf(ann.value());
+    }
+    return ImmutableList.of();
+  }
 
   default String name() {
     String localName = getClass().getSimpleName();

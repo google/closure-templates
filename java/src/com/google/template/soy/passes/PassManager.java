@@ -17,9 +17,11 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
@@ -33,8 +35,11 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Configures all compiler passes.
@@ -88,6 +93,7 @@ public final class PassManager {
     this.singleFilePasses = singleFilePasses;
     this.templateReturnTypeInferencePasses = templateReturnTypeInferencePasses;
     this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
+    checkOrdering();
   }
 
   public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
@@ -124,6 +130,46 @@ public final class PassManager {
         break;
       }
     }
+  }
+
+  /** Enforces that the current set of passes doesn't violate any annotated ordering constraints. */
+  private void checkOrdering() {
+    Set<Class<? extends CompilerPass>> executed = new LinkedHashSet<>();
+    for (CompilerPass pass :
+        Iterables.concat(
+            singleFilePasses, templateReturnTypeInferencePasses, crossTemplateCheckingPasses)) {
+      prepareToRun(executed, pass);
+    }
+  }
+
+  private static void prepareToRun(Set<Class<? extends CompilerPass>> executed, CompilerPass pass) {
+    ImmutableList<Class<? extends CompilerPass>> shouldHaveAlreadyRun = pass.runAfter();
+    if (!executed.containsAll(shouldHaveAlreadyRun)) {
+      throw new IllegalStateException(
+          "Attempted to executed pass "
+              + pass.name()
+              + " but its dependencies ("
+              + shouldHaveAlreadyRun.stream()
+                  .filter(dep -> !executed.contains(dep))
+                  .map(Class::getSimpleName)
+                  .collect(joining(", "))
+              + ") haven't run yet.\n Passes executed so far: "
+              + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
+    }
+    ImmutableList<Class<? extends CompilerPass>> shouldNotHaveAlreadyRun = pass.runBefore();
+    if (!Collections.disjoint(executed, shouldNotHaveAlreadyRun)) {
+      throw new IllegalStateException(
+          "Attempted to executed pass "
+              + pass.name()
+              + " but it should always run before ("
+              + shouldHaveAlreadyRun.stream()
+                  .filter(dep -> !executed.contains(dep))
+                  .map(Class::getSimpleName)
+                  .collect(joining(", "))
+              + ") haven't run yet.\n Passes executed so far: "
+              + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
+    }
+    executed.add(pass.getClass());
   }
 
   /** A builder for configuring the pass manager. */
