@@ -335,7 +335,7 @@ public final class SoyFileSetParserBuilder {
                 sourceFunctions.build(),
                 soyMethods.build(),
                 errorReporter))
-        .setAutoescaperEnabled(runAutoescaper)
+        .insertEscapingDirectives(runAutoescaper)
         .optimize(runOptimizer)
         .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging)
         .setLoggingConfig(loggingConfig);

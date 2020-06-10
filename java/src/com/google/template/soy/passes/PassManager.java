@@ -143,7 +143,7 @@ public final class PassManager {
     private boolean optimize = true;
     private ValidatedConformanceConfig conformanceConfig = ValidatedConformanceConfig.EMPTY;
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
-    private boolean autoescaperEnabled = true;
+    private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
@@ -263,8 +263,8 @@ public final class PassManager {
      *
      * <p>The autoescaper is enabled by default.
      */
-    public Builder setAutoescaperEnabled(boolean autoescaperEnabled) {
-      this.autoescaperEnabled = autoescaperEnabled;
+    public Builder insertEscapingDirectives(boolean insertEscapingDirectives) {
+      this.insertEscapingDirectives = insertEscapingDirectives;
       return this;
     }
 
@@ -424,16 +424,13 @@ public final class PassManager {
         addPass(new StrictDepsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       }
 
-      if (autoescaperEnabled) {
-        addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
-        addPass(
-            new AutoescaperPass(errorReporter, soyPrintDirectives),
-            crossTemplateCheckingPassesBuilder);
-        // Relies on information from the autoescaper and valid type information
-        if (!disableAllTypeChecking) {
-          addPass(
-              new CheckBadContextualUsagePass(errorReporter), crossTemplateCheckingPassesBuilder);
-        }
+      addPass(new CombineConsecutiveRawTextNodesPass(), crossTemplateCheckingPassesBuilder);
+      addPass(
+          new AutoescaperPass(errorReporter, soyPrintDirectives, insertEscapingDirectives),
+          crossTemplateCheckingPassesBuilder);
+      // Relies on information from the autoescaper and valid type information
+      if (!disableAllTypeChecking && insertEscapingDirectives) {
+        addPass(new CheckBadContextualUsagePass(errorReporter), crossTemplateCheckingPassesBuilder);
       }
 
       // Simplification Passes.

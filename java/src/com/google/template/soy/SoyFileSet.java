@@ -1147,7 +1147,7 @@ public final class SoyFileSet {
                   // skip adding extra attributes
                   .addHtmlAttributesForDebugging(false)
                   // skip the autoescaper
-                  .setAutoescaperEnabled(false)
+                  .insertEscapingDirectives(false)
                   .desugarHtmlAndStateNodes(false)
                   // TODO(lukes): other passes should be disabled, basically anything that mutates
                   // the AST

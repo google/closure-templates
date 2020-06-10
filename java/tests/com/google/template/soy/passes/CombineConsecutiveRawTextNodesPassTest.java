@@ -163,6 +163,7 @@ public final class CombineConsecutiveRawTextNodesPassTest {
     ErrorReporter boomForTest = ErrorReporter.createForTest();
     SoyFileSetNode soyFileSetNode =
         SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .runAutoescaper(true)
             .errorReporter(boomForTest)
             .parse() // NOTE(b/145693330): this would fail.
             .fileSet();

@@ -29,11 +29,15 @@ final class AutoescaperPass implements CompilerFileSetPass {
 
   private final ContextualAutoescaper autoescaper;
   private final ErrorReporter errorReporter;
+  private final boolean autoescaperEnabled;
 
   AutoescaperPass(
-      ErrorReporter errorReporter, ImmutableList<? extends SoyPrintDirective> printDirectives) {
+      ErrorReporter errorReporter,
+      ImmutableList<? extends SoyPrintDirective> printDirectives,
+      boolean autoescaperEnabled) {
     this.errorReporter = errorReporter;
     this.autoescaper = new ContextualAutoescaper(errorReporter, printDirectives);
+    this.autoescaperEnabled = autoescaperEnabled;
   }
 
   @Override
@@ -51,7 +55,9 @@ final class AutoescaperPass implements CompilerFileSetPass {
     if (inferences == null) {
       return Result.STOP;
     }
-    autoescaper.rewrite(sourceFiles, idGenerator, inferences);
+    if (autoescaperEnabled) {
+      autoescaper.rewrite(sourceFiles, idGenerator, inferences);
+    }
     // for historical reasons compiler passes that run after the autoescaper depend on the metadata
     // addded by the escaping being present. So for now we abort compilation on autoescaper errors.
     if (errorReporter.hasErrors()) {
