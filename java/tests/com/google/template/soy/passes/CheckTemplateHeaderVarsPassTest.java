@@ -176,109 +176,6 @@ public final class CheckTemplateHeaderVarsPassTest {
   }
 
   @Test
-  public void testUndeclaredParam() {
-    String params = "{@param foo: ?}";
-    String templateBody = "{$boo.foo}";
-    ImmutableList<SoyError> errors = paramsErrorsForTemplate(params, templateBody);
-    assertThat(errors).hasSize(1);
-    assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
-  }
-
-  @Test
-  public void testUnusedParam() {
-    String params = "{@param boo: ?}{@param? foo: ?}";
-    String templateBody = "{$boo.foo}";
-    ImmutableList<SoyError> errors = paramsWarningsForTemplate(params, templateBody);
-    assertThat(Iterables.getOnlyElement(errors).message())
-        .isEqualTo("'foo' unused in template body.");
-  }
-
-  @Test
-  public void testUnusedParamInCallWithAllData() {
-    String fileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{template .foo}\n"
-            + "  {@param moo: ?}\n"
-            + "  {@param zoo: ?}\n" // 'zoo' is not used, even in call to .goo
-            + "  {call .goo data=\"all\" /}\n"
-            + "{/template}\n"
-            + "\n"
-            + "{template .goo}\n"
-            + "  {@param moo: ?}\n"
-            + "  {$moo}\n"
-            + "{/template}\n";
-
-    ImmutableList<SoyError> errors = soyDocWarningsFor(fileContent);
-    assertThat(Iterables.getOnlyElement(errors).message())
-        .isEqualTo("'zoo' unused in template body.");
-  }
-
-  @Test
-  public void testWithExternalCallWithAllData() {
-    String fileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{template .foo}\n"
-            + "  {@param zoo: ?}\n" // 'zoo' is okay because it may be used in 'goo.moo'
-            + "  {call goo.moo data=\"all\" /}\n"
-            + "{/template}\n";
-
-    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
-  }
-
-  @Test
-  public void testUnusedParamWithRecursiveCall() {
-    String params = "{@param boo: ?}{@param foo: ?}";
-    String templateBody = "{call .foo data=\"all\" /}";
-    ImmutableList<SoyError> errors = paramsWarningsForTemplate(params, templateBody);
-    assertThat(errors).hasSize(2);
-    assertThat(errors.get(0).message()).isEqualTo("'boo' unused in template body.");
-    assertThat(errors.get(1).message()).isEqualTo("'foo' unused in template body.");
-  }
-
-  @Test
-  public void testUnusedParamInDelegateTemplate() {
-    String fileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{deltemplate MagicButton}\n"
-            + "  {@param zoo: ?}\n" // 'zoo' may be needed in other implementations of the same
-            // delegate
-            + "  blah\n"
-            + "{/deltemplate}\n";
-
-    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
-  }
-
-  @Test
-  public void testPassingUnusedParamToUnknownTemplate() {
-    String fileContent =
-        "{namespace ns}\n"
-            + "\n"
-            + "{template .a}\n"
-            // This is fine because we know nothing about ns2.b.
-            + "  {call ns2.b}{param a: '' /}{/call}\n"
-            + "{/template}\n";
-
-    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
-  }
-
-  @Test
-  public void testDelegateCallVariant() {
-    String fileContent =
-        ""
-            + "{namespace boo}\n"
-            + "\n"
-            + "{template .foo}\n"
-            + "  {@param variant: ?}\n"
-            + "  {delcall MagicButton variant=\"$variant\" /}\n"
-            + "{/template}\n";
-
-    assertThat(soyDocErrorsFor(fileContent)).isEmpty();
-  }
-
-  @Test
   public void testV1Expression() {
     String fileContent1 =
         "{namespace boo1}\n"
@@ -298,27 +195,8 @@ public final class CheckTemplateHeaderVarsPassTest {
 
     ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent1, fileContent2);
     assertThat(errors).hasSize(2);
-    assertThat(errors.get(0).message()).isEqualTo("Unknown data key 'goo1'.");
-    assertThat(errors.get(1).message()).isEqualTo("Unknown data key 'goo2'.");
-  }
-
-  @Test
-  public void testUndeclaredStateVar() {
-    String stateVarDecl = "{@state foo:= 1}";
-    String templateBody = "<div>{$boo}</div>";
-    ImmutableList<SoyError> errors = soyErrorsForElement(stateVarDecl, templateBody);
-    assertThat(errors).hasSize(1);
-    assertThat(errors.get(0).message()).contains("Unknown data key 'boo'. Did you mean 'foo'?");
-    ImmutableList<SoyError> warnings = soyWarningsForElement(stateVarDecl, templateBody);
-    assertThat(warnings.get(0).message()).isEqualTo("'foo' unused in template body.");
-  }
-
-  @Test
-  public void testUnusedStateVar() {
-    String stateVarDecl = "{@state foo:= 2}";
-    String templateBody = "<b>Hello</b>";
-    ImmutableList<SoyError> warnings = soyWarningsForElement(stateVarDecl, templateBody);
-    assertThat(warnings.get(0).message()).isEqualTo("'foo' unused in template body.");
+    assertThat(errors.get(0).message()).isEqualTo("Unknown variable.");
+    assertThat(errors.get(1).message()).isEqualTo("Unknown variable.");
   }
 
   private static ImmutableList<SoyError> paramsErrorsForTemplate(
@@ -335,20 +213,6 @@ public final class CheckTemplateHeaderVarsPassTest {
     return soyDocErrorsFor(testFileContent);
   }
 
-  private static ImmutableList<SoyError> paramsWarningsForTemplate(
-      String params, String templateBody) {
-    String testFileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{template .foo}\n"
-            + params
-            + templateBody
-            + "\n"
-            + "{/template}\n";
-
-    return soyDocWarningsFor(testFileContent);
-  }
-
   private static ImmutableList<SoyError> soyDocErrorsFor(String... soyFileContents) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(soyFileContents)
@@ -356,46 +220,5 @@ public final class CheckTemplateHeaderVarsPassTest {
         .errorReporter(errorReporter)
         .parse();
     return errorReporter.getErrors();
-  }
-
-  private static ImmutableList<SoyError> soyDocWarningsFor(String... soyFileContents) {
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .allowV1Expression(true)
-        .errorReporter(errorReporter)
-        .parse();
-    return errorReporter.getWarnings();
-  }
-
-  private static ImmutableList<SoyError> soyErrorsForElement(
-      String headerVarDecl, String templateBody) {
-    String testFileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{element .foo}\n"
-            + headerVarDecl
-            + templateBody
-            + "\n"
-            + "{/element}\n";
-
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(testFileContent).errorReporter(errorReporter).parse();
-    return errorReporter.getErrors();
-  }
-
-  private static ImmutableList<SoyError> soyWarningsForElement(
-      String headerVarDecl, String templateBody) {
-    String testFileContent =
-        "{namespace boo}\n"
-            + "\n"
-            + "{element .foo}\n"
-            + headerVarDecl
-            + templateBody
-            + "\n"
-            + "{/element}\n";
-
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(testFileContent).errorReporter(errorReporter).parse();
-    return errorReporter.getWarnings();
   }
 }

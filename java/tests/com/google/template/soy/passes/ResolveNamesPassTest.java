@@ -164,8 +164,7 @@ public final class ResolveNamesPassTest {
                 "{for $item in ['a', 'b']}",
                 "  {let $la: 1 /}",
                 "{/for}"))
-        .parse()
-        .fileSet();
+        .parse();
   }
 
   @Test
@@ -219,6 +218,18 @@ public final class ResolveNamesPassTest {
     assertThat(node.getDefnDecl().kind()).isEqualTo(VarDefn.Kind.LOCAL_VAR);
   }
 
+  @Test
+  public void testUnknownVariable_v1Expression() {
+    assertResolveNamesFails(
+        "Unknown variable.",
+        "{namespace ns}{template .foo}{v1Expression('$goo.moo1()')}{/template}");
+  }
+
+  @Test
+  public void testUnknownVariable() {
+    assertResolveNamesFails("Unknown variable.", "{namespace ns}{template .foo}{$goo}{/template}");
+  }
+
   private void runPass(SoyFileSetNode soyTree) {
     for (SoyFileNode file : soyTree.getChildren()) {
       new ResolveNamesPass(ErrorReporter.exploding()).run(file, soyTree.getNodeIdGenerator());
@@ -249,6 +260,7 @@ public final class ResolveNamesPassTest {
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .errorReporter(errorReporter)
         .typeRegistry(typeRegistry)
+        .allowV1Expression(true)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(errorReporter.getErrors().get(0).message()).isEqualTo(expectedError);

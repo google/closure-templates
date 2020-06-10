@@ -16,45 +16,25 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ListMultimap;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.soytree.defn.TemplateStateVar;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
- * Pass for checking that in each template, the declared parameters match the data keys referenced
- * in the template.
+ * Pass for checking that in each template there is no ambiguity between inject parameters and
+ * indirect parameters.
  *
- * <p>Note this visitor only works for code in Soy V2 syntax.
+ * <p>TODO(lukes): rename this pass? find another place for this functionality
  */
 public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind UNDECLARED_DATA_KEY =
-      SoyErrorKind.of("Unknown data key ''{0}''.{1}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind UNUSED_VAR =
-      SoyErrorKind.of("''{0}'' unused in template body.");
   private static final SoyErrorKind INJECTED_PARAM_COLLISION =
       SoyErrorKind.of(
           "Injected param ''{0}'' conflicts with indirect param with the same name in template"
@@ -69,9 +49,10 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
   @Override
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+    IndirectParamsCalculator calculator = new IndirectParamsCalculator(registry);
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode templateNode : fileNode.getTemplates()) {
-        checkTemplate(templateNode, registry);
+        checkTemplate(templateNode, calculator);
       }
     }
     return Result.CONTINUE;
@@ -80,37 +61,8 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 
-  private void checkTemplate(TemplateNode node, TemplateRegistry templateRegistry) {
-    ListMultimap<String, SourceLocation> dataKeys = ArrayListMultimap.create();
-
-    for (VarRefNode varRefNode : SoyTreeUtils.getAllNodesOfType(node, VarRefNode.class)) {
-      if (varRefNode.isPossibleHeaderVar()) {
-        dataKeys.put(varRefNode.getName(), varRefNode.getSourceLocation());
-      }
-    }
-    if (node instanceof TemplateElementNode) {
-      TemplateElementNode el = (TemplateElementNode) node;
-      for (TemplateStateVar state : el.getStateVars()) {
-        for (VarRefNode varRefNode :
-            SoyTreeUtils.getAllNodesOfType(state.defaultValue(), VarRefNode.class)) {
-          // This is in the case where @state appears before @param and uses @param.
-          if (varRefNode.getDefnDecl().kind() == VarDefn.Kind.UNDECLARED) {
-            errorReporter.report(
-                varRefNode.getSourceLocation(),
-                UNDECLARED_DATA_KEY,
-                varRefNode.getDefnDecl().name(),
-                "");
-          } else if (varRefNode.isPossibleHeaderVar()) {
-            dataKeys.put(varRefNode.getName(), varRefNode.getSourceLocation());
-          }
-        }
-      }
-    }
-
-    IndirectParamsInfo ipi =
-        new IndirectParamsCalculator(templateRegistry)
-            .calculateIndirectParams(
-                TemplateMetadata.asTemplateType(templateRegistry.getMetadata(node)));
+  private void checkTemplate(TemplateNode node, IndirectParamsCalculator calculator) {
+    IndirectParamsInfo ipi = calculator.calculateIndirectParams(node);
 
     // Check for naming collisions between @inject in this template and @param in a data=all callee
     for (TemplateHeaderVarDefn param : node.getInjectedParams()) {
@@ -121,72 +73,6 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
             param.name(),
             template.getTemplateName());
       }
-    }
-
-    Set<String> allHeaderVarNames = new HashSet<>();
-    List<TemplateHeaderVarDefn> unusedParams = new ArrayList<>();
-    // Process @param header variables.
-    // TODO: Switch getAllParams to getHeaderParams
-    for (TemplateHeaderVarDefn param : node.getAllParams()) {
-      allHeaderVarNames.add(param.name());
-      if (dataKeys.containsKey(param.name())) {
-        // Good: Declared and referenced in template. We remove these from dataKeys so
-        // that at the end of the for-loop, dataKeys will only contain the keys that are referenced
-        // but not declared in SoyDoc.
-        dataKeys.removeAll(param.name());
-      } else if (!param.isInjected()
-          && (ipi.paramKeyToCalleesMultimap.containsKey(param.name())
-              || ipi.mayHaveIndirectParamsInExternalCalls
-              || ipi.mayHaveIndirectParamsInExternalDelCalls)) {
-        // TODO: Skip this for @state too
-        // Good: Declared in SoyDoc and either (a) used in a call that passes all data or (b) used
-        // in an external call or delcall that passes all data, which may need the param (we can't
-        // verify).
-      } else {
-        // Bad: Declared in SoyDoc but not referenced in template.
-        unusedParams.add(param);
-      }
-    }
-
-    List<TemplateHeaderVarDefn> unusedStateVars = new ArrayList<>();
-    // Process @state header variables.
-    if (node instanceof TemplateElementNode) {
-      TemplateElementNode el = (TemplateElementNode) node;
-      for (TemplateStateVar stateVar : el.getStateVars()) {
-        allHeaderVarNames.add(stateVar.name());
-        if (dataKeys.containsKey(stateVar.name())) {
-          // Good: declared and referenced in the template.
-          dataKeys.removeAll(stateVar.name());
-        } else {
-          // Bad: declared in the header, but not used.
-          unusedStateVars.add(stateVar);
-        }
-      }
-    }
-    // At this point, the only keys left in dataKeys are undeclared.
-    for (Entry<String, SourceLocation> undeclared : dataKeys.entries()) {
-      String extraErrorMessage =
-          SoyErrors.getDidYouMeanMessage(allHeaderVarNames, undeclared.getKey());
-      errorReporter.report(
-          undeclared.getValue(), UNDECLARED_DATA_KEY, undeclared.getKey(), extraErrorMessage);
-    }
-
-    // Delegate templates can declare unused params because other implementations
-    // of the same delegate may need to use those params.
-    if (node instanceof TemplateBasicNode) {
-      reportUnusedHeaderVars(errorReporter, unusedParams, UNUSED_VAR);
-    }
-    if (node instanceof TemplateElementNode) {
-      reportUnusedHeaderVars(errorReporter, unusedStateVars, UNUSED_VAR);
-    }
-  }
-
-  private static void reportUnusedHeaderVars(
-      ErrorReporter errorReporter,
-      List<TemplateHeaderVarDefn> unusedHeaderVars,
-      SoyErrorKind soyError) {
-    for (TemplateHeaderVarDefn unusedVar : unusedHeaderVars) {
-      errorReporter.warn(unusedVar.nameLocation(), soyError, unusedVar.name());
     }
   }
 }

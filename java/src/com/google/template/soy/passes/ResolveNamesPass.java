@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
@@ -23,6 +24,8 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
@@ -48,6 +51,7 @@ import com.google.template.soy.soytree.defn.UndeclaredVar;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -63,6 +67,8 @@ public final class ResolveNamesPass implements CompilerFilePass {
 
   private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
       SoyErrorKind.of("Variable ''${0}'' already defined{1}.");
+  private static final SoyErrorKind UKNOWN_VARIABLE =
+      SoyErrorKind.of("Unknown variable.{0}", StyleAllowance.NO_PUNCTUATION);
 
   /**
    * Manages the set of active variable names.
@@ -116,6 +122,10 @@ public final class ResolveNamesPass implements CompilerFilePass {
       }
       currentScope.peek().put(defn.name(), defn);
       return true;
+    }
+
+    List<String> allVariablesInScope() {
+      return currentScope.stream().flatMap(map -> map.keySet().stream()).collect(toList());
     }
   }
 
@@ -314,7 +324,10 @@ public final class ResolveNamesPass implements CompilerFilePass {
       }
       VarDefn varDefn = localVariables.lookup(varRef.getName());
       if (varDefn == null) {
-        // Undeclared vars are flagged as errors in the CheckTemplateHeaderVarsPass.
+        errorReporter.report(
+            varRef.getSourceLocation(),
+            UKNOWN_VARIABLE,
+            SoyErrors.getDidYouMeanMessage(localVariables.allVariablesInScope(), varRef.getName()));
         varDefn = new UndeclaredVar(varRef.getName(), varRef.getSourceLocation());
       }
       varRef.setDefn(varDefn);
