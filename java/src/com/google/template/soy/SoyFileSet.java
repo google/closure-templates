@@ -782,14 +782,13 @@ public final class SoyFileSet {
           // SoyConformance pass.
           parse(
               passManagerBuilder()
-                  // We have to set disableAllTypeChecking to make sure default parameter types
-                  // don't break calculating TemplateMetadata objects.  This is because
-                  // SoyConformancePass runs before ResolveExpressionTypesPass which normally
-                  // populates the parameter types for default params.  With disableAllTypeChecking
-                  // set an earlier pass will just set those types to unknown
-                  // TODO(lukes):  change the pass continuation mechanism to avoid generating a
-                  // template registry if we halt prior to cross template passes.
-                  .disableAllTypeChecking()
+                  // TODO(lukes): kill the pass continuation mechanism
+                  .allowUnknownGlobals()
+                  .allowUnknownJsGlobals()
+                  .allowV1Expression()
+                  .desugarHtmlAndStateNodes(false)
+                  .optimize(false)
+                  .addHtmlAttributesForDebugging(false)
                   .addPassContinuationRule(
                       SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS));
         });

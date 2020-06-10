@@ -321,9 +321,6 @@ public final class PassManager {
       // Needs to come after any pass that manipulates msg placeholders.
       addPass(new CalculateMsgSubstitutionInfoPass(errorReporter), singleFilePassesBuilder);
       addPass(new CheckNonEmptyMsgNodesPass(errorReporter), singleFilePassesBuilder);
-      // The check conformance pass needs to run on the rewritten html nodes, so it must
-      // run after HtmlRewritePass
-      addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
       // Run before the RewriteGlobalsPass as it removes some globals.
       addPass(new VeRewritePass(), singleFilePassesBuilder);
       addPass(
@@ -367,6 +364,11 @@ public final class PassManager {
         // parameters.
         addPass(new GetExtensionRewriteParamPass(), singleFilePassesBuilder);
       }
+      // The check conformance pass needs to run on the rewritten html nodes, so it must run after
+      // HtmlRewritePass. Because conformance exits abruptly after this pass we must ensure that the
+      // AST is left in a complete state. Therefore this pass should also come after
+      // ResolveExpressionTypesPass and others.
+      addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
       addPass(new ResolvePackageRelativeCssNamesPass(errorReporter), singleFilePassesBuilder);
       if (!allowUnknownGlobals) {
         // Must come after RewriteGlobalsPass since that is when values are substituted.
