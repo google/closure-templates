@@ -38,6 +38,9 @@ import com.google.template.soy.types.SoyTypeRegistry;
  * <p>TODO(lukes): consider introducing a SoyEnumNode and replacing globals that reference enums
  * with that node type here.
  */
+@RunAfter({
+  VeRewritePass.class, // rewrites some VE references that are parsed as globals in a different way
+})
 final class RewriteGlobalsPass implements CompilerFilePass {
   private static final SoyErrorKind ENUM_MEMBERSHIP_ERROR =
       SoyErrorKind.of("''{0}'' is not a member of enum ''{1}''.");

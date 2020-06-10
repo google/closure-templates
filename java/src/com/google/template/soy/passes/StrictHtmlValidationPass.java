@@ -66,6 +66,7 @@ import javax.annotation.Nullable;
  *
  * <p>Note: This pass requires that the {@link SoyConformancePass} has already been run.
  */
+@RunAfter(ResolveNamesPass.class)
 public final class StrictHtmlValidationPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;

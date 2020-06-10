@@ -64,15 +64,11 @@ import javax.annotation.Nullable;
  *
  * <p>Then if the user configures a {@code csp_nonce} in their CSP settings and as an injected
  * variable to rendering, all author controlled scripts and styles will be authorized.
- *
- * <p>This pass should:
- *
- * <ul>
- *   <li>Run before ResolveNamesPass, since it adds new varref nodes
- *   <li>Run before the autoescaper, since it inserts print directives
- *   <li>Run after HtmlRewritePass, since it depends on the html nodes.
- * </ul>
  */
+@RunBefore({
+  ResolveNamesPass.class, // since it adds new varref nodes
+  AutoescaperPass.class, // since it inserts print directives
+})
 public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFilePass {
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
 

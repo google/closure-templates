@@ -64,6 +64,9 @@ import com.google.template.soy.soytree.TemplateNode;
  * attempting to calculate it itself. However, this is likely to be significantly more complex than
  * the current approach.
  */
+@RunBefore(
+    // So we don't need to worry about types for synthetic expressions.
+    ResolveExpressionTypesPass.class)
 final class AddDebugAttributesPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {

@@ -48,6 +48,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  * </ul>
  *
  */
+@RunAfter(ResolvePluginsPass.class)
 final class RewriteRemaindersPass implements CompilerFilePass {
 
   private static final SoyErrorKind REMAINDER_OUTSIDE_PLURAL =

@@ -27,6 +27,11 @@ import com.google.template.soy.soytree.SoyTreeUtils;
  *
  * <p>All passes which add placeholders must run prior to this.
  */
+@RunAfter({
+  InsertMsgPlaceholderNodesPass.class,
+  RewriteGenderMsgsPass.class,
+  RewriteRemaindersPass.class
+})
 final class CalculateMsgSubstitutionInfoPass implements CompilerFilePass {
   private final ErrorReporter errorReporter;
 

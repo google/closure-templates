@@ -58,11 +58,15 @@ import com.google.template.soy.soytree.defn.LocalVar;
  *   <li>{@code msgWithId} will return a record of the id and the msg text which is slightly more
  *       usable.
  * </ul>
- *
- * <p>Must run after the ResolveNamesPass and the CheckNonEmptyMsgNodesPass since we depend on
- * finding local variable definitions and empty message nodes don't have valid ids. Should run
- * before ResolveExpressionTypesPass so that we don't need to worry about assigning types here.
  */
+@RunAfter({
+  ResolveNamesPass.class, // depends on looking up definitions from names
+  CheckNonEmptyMsgNodesPass.class, // depends on calculating ids and empty msg nodes don't have them
+})
+@RunBefore({
+  ResolveExpressionTypesPass
+      .class, // so we don't need to worry about assigning types to our synthetic expressions
+})
 final class MsgWithIdFunctionPass implements CompilerFilePass {
   private static final SoyErrorKind MSG_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of(
