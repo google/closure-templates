@@ -221,7 +221,7 @@ public abstract class SoyFileSetParser {
       }
 
       if (!filesWereSkipped) {
-        passManager().runTemplateReturnTypeInferencePasses(soyTree, builder.build());
+        passManager().runPartialTemplateRegistryPasses(soyTree, builder.build());
       }
 
       // Now register the templates in this file set.

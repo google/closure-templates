@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.template.soy.passes.CompilerFilePassToFileSetPassShim.filePassAsFileSetPass;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -83,15 +84,15 @@ public final class PassManager {
   }
 
   @VisibleForTesting final ImmutableList<CompilerFilePass> singleFilePasses;
-  @VisibleForTesting final ImmutableList<CompilerFileSetPass> templateReturnTypeInferencePasses;
+  @VisibleForTesting final ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
 
   private PassManager(
       ImmutableList<CompilerFilePass> singleFilePasses,
-      ImmutableList<CompilerFileSetPass> templateReturnTypeInferencePasses,
+      ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses,
       ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses) {
     this.singleFilePasses = singleFilePasses;
-    this.templateReturnTypeInferencePasses = templateReturnTypeInferencePasses;
+    this.partialTemplateRegistryPasses = partialTemplateRegistryPasses;
     this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
     checkOrdering();
   }
@@ -106,11 +107,11 @@ public final class PassManager {
    * Runs fileset passes that only require partial template registries that only contain
    * dependencies.
    */
-  public void runTemplateReturnTypeInferencePasses(
+  public void runPartialTemplateRegistryPasses(
       SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
-    for (CompilerFileSetPass pass : templateReturnTypeInferencePasses) {
+    for (CompilerFileSetPass pass : partialTemplateRegistryPasses) {
       CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
       if (result == CompilerFileSetPass.Result.STOP) {
         break;
@@ -137,7 +138,7 @@ public final class PassManager {
     Set<Class<? extends CompilerPass>> executed = new LinkedHashSet<>();
     for (CompilerPass pass :
         Iterables.concat(
-            singleFilePasses, templateReturnTypeInferencePasses, crossTemplateCheckingPasses)) {
+            singleFilePasses, partialTemplateRegistryPasses, crossTemplateCheckingPasses)) {
       prepareToRun(executed, pass);
     }
   }
@@ -347,101 +348,124 @@ public final class PassManager {
       // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
       // autoescaping.
       addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
+      addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
+
+      // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
+      // to create placeholders.
+      addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
+
+      // can run anywhere
+      addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
+
+      // Fileset passes run on all sources files and have access to a partial template registry so
+      // they can examine information about dependencies.
+      // TODO(b/158474755): Try to simplify this pass structure structure once we have template
+      // imports.
+      ImmutableList.Builder<CompilerFileSetPass> partialTemplateRegistryPassesBuilder =
+          ImmutableList.builder();
       addPass(
           new ImportsPass(registry, errorReporter, disableAllTypeChecking),
-          singleFilePassesBuilder);
+          partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(
           new ResolveTemplateParamTypesPass(errorReporter, disableAllTypeChecking),
-          singleFilePassesBuilder);
-      addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-      // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
-      // to create placeholders.
-      addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
+          partialTemplateRegistryPassesBuilder);
+
       // needs to come before SoyConformancePass
-      addPass(new ResolvePluginsPass(pluginResolver, errorReporter), singleFilePassesBuilder);
+      addPass(
+          new ResolvePluginsPass(pluginResolver, errorReporter),
+          partialTemplateRegistryPassesBuilder);
+
       // Must come after ResolvePluginsPass.
-      addPass(new RewriteRemaindersPass(errorReporter), singleFilePassesBuilder);
-      addPass(new RewriteGenderMsgsPass(errorReporter), singleFilePassesBuilder);
+      addPass(new RewriteRemaindersPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(new RewriteGenderMsgsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // Needs to come after any pass that manipulates msg placeholders.
-      addPass(new CalculateMsgSubstitutionInfoPass(errorReporter), singleFilePassesBuilder);
-      addPass(new CheckNonEmptyMsgNodesPass(errorReporter), singleFilePassesBuilder);
+      addPass(
+          new CalculateMsgSubstitutionInfoPass(errorReporter),
+          partialTemplateRegistryPassesBuilder);
+      addPass(new CheckNonEmptyMsgNodesPass(errorReporter), partialTemplateRegistryPassesBuilder);
+
       // Run before the RewriteGlobalsPass as it removes some globals.
-      addPass(new VeRewritePass(), singleFilePassesBuilder);
+      addPass(new VeRewritePass(), partialTemplateRegistryPassesBuilder);
       addPass(
           new RewriteGlobalsPass(options.getCompileTimeGlobals(), errorReporter),
-          singleFilePassesBuilder);
+          partialTemplateRegistryPassesBuilder);
       // needs to happen after rewrite globals
-      addPass(new XidPass(errorReporter), singleFilePassesBuilder);
+      addPass(new XidPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // Needs to be before ResolveNamesPass.
-      addPass(new V1ExpressionPass(allowV1Expression, errorReporter), singleFilePassesBuilder);
       addPass(
-          new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter), singleFilePassesBuilder);
-      addPass(new ResolveNamesPass(errorReporter), singleFilePassesBuilder);
+          new V1ExpressionPass(allowV1Expression, errorReporter),
+          partialTemplateRegistryPassesBuilder);
+      addPass(
+          new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter),
+          partialTemplateRegistryPassesBuilder);
+      addPass(new ResolveNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to be after ResolveNames and MsgsPass
-      addPass(new MsgWithIdFunctionPass(errorReporter), singleFilePassesBuilder);
-      // can run anywhere
-      addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
+      addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
+
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
-      addPass(new StrictHtmlValidationPass(errorReporter), singleFilePassesBuilder);
+      addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
         // and before ResolveExpressionTypesPass (since we insert expressions).
-        addPass(new AddDebugAttributesPass(), singleFilePassesBuilder);
+        addPass(new AddDebugAttributesPass(), partialTemplateRegistryPassesBuilder);
       }
       if (!disableAllTypeChecking) {
-        addPass(new CheckDeclaredTypesPass(errorReporter), singleFilePassesBuilder);
+        addPass(new CheckDeclaredTypesPass(errorReporter), partialTemplateRegistryPassesBuilder);
         // Run before ResolveExpressionTypesPass since this makes type analysis on null safe
         // accesses simpler.
-        addPass(new NullSafeAccessPass(), singleFilePassesBuilder);
+        addPass(new NullSafeAccessPass(), partialTemplateRegistryPassesBuilder);
+
         addPass(
             new ResolveExpressionTypesPass(errorReporter, loggingConfig, pluginResolver),
-            singleFilePassesBuilder);
+            partialTemplateRegistryPassesBuilder);
         // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
         // types of non-null assertion operators.
-        addPass(new SimplifyAssertNonNullPass(), singleFilePassesBuilder);
+        addPass(new SimplifyAssertNonNullPass(), partialTemplateRegistryPassesBuilder);
         // Needs to come after types have been set.
         addPass(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
-            singleFilePassesBuilder);
-        addPass(new VeLogRewritePass(), singleFilePassesBuilder);
+            partialTemplateRegistryPassesBuilder);
+        addPass(new VeLogRewritePass(), partialTemplateRegistryPassesBuilder);
         // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
         // parameters.
-        addPass(new GetExtensionRewriteParamPass(), singleFilePassesBuilder);
+        addPass(new GetExtensionRewriteParamPass(), partialTemplateRegistryPassesBuilder);
       }
+
       // The check conformance pass needs to run on the rewritten html nodes, so it must run after
       // HtmlRewritePass. Because conformance exits abruptly after this pass we must ensure that the
       // AST is left in a complete state. Therefore this pass should also come after
       // ResolveExpressionTypesPass and others.
-      addPass(new SoyConformancePass(conformanceConfig, errorReporter), singleFilePassesBuilder);
-      addPass(new ResolvePackageRelativeCssNamesPass(errorReporter), singleFilePassesBuilder);
+      addPass(
+          new SoyConformancePass(conformanceConfig, errorReporter),
+          partialTemplateRegistryPassesBuilder);
+      addPass(
+          new ResolvePackageRelativeCssNamesPass(errorReporter),
+          partialTemplateRegistryPassesBuilder);
+
       if (!allowUnknownGlobals) {
         // Must come after RewriteGlobalsPass since that is when values are substituted.
         // We should also run after the ResolveNamesPass which checks for global/param ambiguity and
         // may issue better error messages.
-        addPass(new CheckGlobalsPass(errorReporter), singleFilePassesBuilder);
+        addPass(new CheckGlobalsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       }
       addPass(
-          new ValidateAliasesPass(errorReporter, options, loggingConfig), singleFilePassesBuilder);
+          new ValidateAliasesPass(errorReporter, options, loggingConfig),
+          partialTemplateRegistryPassesBuilder);
       // Needs to run after HtmlRewritePass.
-      addPass(new KeyCommandPass(errorReporter, disableAllTypeChecking), singleFilePassesBuilder);
-      addPass(new ValidateSkipNodesPass(errorReporter), singleFilePassesBuilder);
-
-      // Fileset passes run on all sources files and have access to a partial template registry so
-      // they can examine information about dependencies.
-      // In contrast to the set of passes below, the results of these passes can be cached in the
-      // AST cache.
-      ImmutableList.Builder<CompilerFileSetPass> templateReturnTypeInferencePasses =
-          ImmutableList.builder();
+      addPass(
+          new KeyCommandPass(errorReporter, disableAllTypeChecking),
+          partialTemplateRegistryPassesBuilder);
+      addPass(new ValidateSkipNodesPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
       // validation).
-      addPass(new SoyElementPass(errorReporter), templateReturnTypeInferencePasses);
-      addPass(new CallAnnotationPass(), templateReturnTypeInferencePasses);
+      addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(new CallAnnotationPass(), partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {
         addPass(
-            new VeLogValidationPass(errorReporter, registry), templateReturnTypeInferencePasses);
+            new VeLogValidationPass(errorReporter, registry), partialTemplateRegistryPassesBuilder);
       }
       // Cross template checking passes
 
@@ -503,12 +527,40 @@ public final class PassManager {
       }
       return new PassManager(
           singleFilePassesBuilder.build(),
-          templateReturnTypeInferencePasses.build(),
+          partialTemplateRegistryPassesBuilder.build(),
           crossTemplateCheckingPassesBuilder.build());
     }
 
-    <T extends CompilerPass> void addPass(T pass, ImmutableList.Builder<T> builder) {
-      PassContinuationRule rule = passContinuationRegistry.remove(pass.getClass());
+    /**
+     * Adds the pass as a file set pass; if {@code pass} is a {@link CompilerFilePass} and doesn't
+     * also implement {@link CompilerFileSetPass}, this manually wraps it as a file set pass.
+     *
+     * <p>The structure of the two overloads & {@code addPassInternal} is because we need a way to
+     * do filePassAsFileSetPass without having ambgious method references for addPassInternal (when
+     * a pass implements both the file set & file pass interfaces).
+     */
+    void addPass(CompilerPass pass, ImmutableList.Builder<CompilerFileSetPass> passBuilder) {
+      // casts in this method.
+      if (pass instanceof CompilerFileSetPass) {
+        addPassInternal((CompilerFileSetPass) pass, passBuilder);
+        return;
+      }
+      addPassInternal(filePassAsFileSetPass((CompilerFilePass) pass), passBuilder);
+    }
+
+    void addPass(CompilerFilePass pass, ImmutableList.Builder<CompilerFilePass> passBuilder) {
+      addPassInternal(pass, passBuilder);
+    }
+
+    private <T extends CompilerPass> void addPassInternal(
+        T pass, ImmutableList.Builder<T> builder) {
+
+      Class<?> passClass =
+          pass instanceof CompilerFilePassToFileSetPassShim
+              ? ((CompilerFilePassToFileSetPassShim) pass).getDelegateClass()
+              : pass.getClass();
+
+      PassContinuationRule rule = passContinuationRegistry.remove(passClass);
       if (!building) {
         return;
       }

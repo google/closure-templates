@@ -73,7 +73,7 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_AFTER_PASS)
+                BasicHtmlValidationPass.class, PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
     assertThat(names(manager.singleFilePasses))
@@ -81,8 +81,7 @@ public final class PassManagerTest {
             "BanNonNullAssertionOperator",
             "DesugarGroupNodes",
             "ContentSecurityPolicyNonceInjection",
-            "Imports",
-            "ResolveTemplateParamTypes");
+            "BasicHtmlValidation");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -91,15 +90,14 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                ResolveTemplateParamTypesPass.class, PassContinuationRule.STOP_BEFORE_PASS)
+                BasicHtmlValidationPass.class, PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
     assertThat(names(manager.singleFilePasses))
         .containsExactly(
             "BanNonNullAssertionOperator",
             "DesugarGroupNodes",
-            "ContentSecurityPolicyNonceInjection",
-            "Imports");
+            "ContentSecurityPolicyNonceInjection");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -117,10 +115,11 @@ public final class PassManagerTest {
         manager -> {
           Streams.<CompilerPass>concat(
                   manager.singleFilePasses.stream(),
-                  manager.templateReturnTypeInferencePasses.stream(),
+                  manager.partialTemplateRegistryPasses.stream(),
                   manager.crossTemplateCheckingPasses.stream())
+              .map(this::unwrapPassIfShimClass)
               .filter(pass -> pass.runBefore().isEmpty() && pass.runAfter().isEmpty())
-              .map(CompilerPass::getClass)
+              .map(pass -> pass.getClass())
               .forEach(passesWithoutAnnotations::add);
         });
     // Over time this list should decrease in size, it is, however,  reasonable that some passes may
@@ -217,6 +216,12 @@ public final class PassManagerTest {
         }
       }
     }
+  }
+
+  private CompilerPass unwrapPassIfShimClass(CompilerPass pass) {
+    return pass instanceof CompilerFilePassToFileSetPassShim
+        ? ((CompilerFilePassToFileSetPassShim) pass).getDelegate()
+        : pass;
   }
 
   private static Iterable<Boolean> bools() {

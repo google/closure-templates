@@ -31,6 +31,7 @@ import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import java.util.List;
 
@@ -79,6 +80,11 @@ public final class MsgSubstUnitBaseVarNameUtils {
    * @return The base placeholder (or plural/select var) name for the given expression.
    */
   public static String genNaiveBaseNameForExpr(ExprNode exprNode, String fallbackBaseName) {
+    if (exprNode instanceof NullSafeAccessNode) {
+      throw new IllegalStateException(
+          "Msg placeholders cannot be generated for NullSafeAccessNodes; they must be created"
+              + " before the NullSafeAccessPass");
+    }
     if (exprNode instanceof VarRefNode) {
       return BaseUtils.convertToUpperUnderscore(((VarRefNode) exprNode).getName());
     } else if (exprNode instanceof FieldAccessNode) {
@@ -239,6 +245,11 @@ public final class MsgSubstUnitBaseVarNameUtils {
    */
   @VisibleForTesting
   static List<String> genCandidateBaseNamesForExpr(ExprNode exprNode) {
+    if (exprNode instanceof NullSafeAccessNode) {
+      throw new IllegalStateException(
+          "Msg placeholders cannot be generated for NullSafeAccessNodes; they must be created"
+              + " before the NullSafeAccessPass");
+    }
     if (exprNode instanceof VarRefNode || exprNode instanceof DataAccessNode) {
       List<String> baseNames = Lists.newArrayList();
       String baseName = null;
