@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.DoNotMock;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
+import java.util.OptionalLong;
 import javax.annotation.Nullable;
 
 /**
@@ -62,6 +63,7 @@ public abstract class SoyMsg {
   /** A builder for SoyMsg. */
   public static final class Builder {
     private long id;
+    private OptionalLong alternateId = OptionalLong.empty();
     private @Nullable String localeString;
     private @Nullable String meaning;
     private @Nullable String desc;
@@ -79,6 +81,13 @@ public abstract class SoyMsg {
     public Builder setId(long id) {
       checkArgument(id >= 0L);
       this.id = id;
+      return this;
+    }
+
+    /** Optional alternate id to be used if a translation for {@code id} is missing. */
+    public Builder setAlternateId(long alternateId) {
+      checkArgument(alternateId >= 0L);
+      this.alternateId = OptionalLong.of(alternateId);
       return this;
     }
 
@@ -168,6 +177,7 @@ public abstract class SoyMsg {
       return new AutoValue_SoyMsg(
           localeString,
           id,
+          alternateId,
           meaning,
           desc,
           isHidden,
@@ -205,6 +215,7 @@ public abstract class SoyMsg {
     if (getContentType() != null) {
       builder.setContentType(getContentType());
     }
+    getAlternateId().ifPresent(builder::setAlternateId);
     return builder;
   }
 
@@ -214,6 +225,9 @@ public abstract class SoyMsg {
 
   /** Returns the unique id for this message (same across all translations). */
   public abstract long getId();
+
+  /** Returns the optional alternate id for this message. */
+  public abstract OptionalLong getAlternateId();
 
   /** Returns the meaning string if set, otherwise null (usually null). */
   @Nullable

@@ -48,6 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -160,6 +161,9 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** The EscapingMode where this message is used. */
   @Nullable private EscapingMode escapingMode = null;
 
+  /** The optional alternate id to be used if a translation for the msg id is missing. */
+  private final OptionalLong alternateId;
+
   public MsgNode(
       int id,
       SourceLocation location,
@@ -173,6 +177,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     String desc = null;
     boolean hidden = false;
     ImmutableList<ExprRootNode> genders = null;
+    OptionalLong alternateId = OptionalLong.empty();
 
     this.attributes = attributes;
     this.openTagLocation = openTagLocation;
@@ -199,13 +204,16 @@ public final class MsgNode extends AbstractBlockCommandNode
             errorReporter.report(attr.getValueLocation(), WRONG_NUMBER_OF_GENDER_EXPRS);
           }
           break;
+        case "alternateId":
+          alternateId = attr.valueAsOptionalLong(errorReporter);
+          break;
         default:
           errorReporter.report(
               attr.getName().location(),
               UNSUPPORTED_ATTRIBUTE_KEY,
               name,
               commandName,
-              ImmutableList.of("meaning", "desc", "hidden", "genders"));
+              ImmutableList.of("meaning", "desc", "hidden", "genders", "alternateId"));
           break;
       }
     }
@@ -219,6 +227,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     this.desc = desc;
     this.isHidden = hidden;
     this.genderExprs = genders;
+    this.alternateId = alternateId;
 
     // Calculate eagerly so we still have this even after getAndRemoveGenderExprs() is called.
     this.genderExprsString = (genders != null) ? SoyTreeUtils.toSourceString(genders) : null;
@@ -266,6 +275,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
     this.genderExprsString = orig.genderExprsString;
     this.escapingMode = orig.escapingMode;
+    this.alternateId = orig.alternateId;
   }
 
   /** The location of the {msg ...} */
@@ -343,6 +353,11 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** Returns whether the message should be added as 'hidden' in the TC. */
   public boolean isHidden() {
     return isHidden;
+  }
+
+  /** Returns the optional alternate id. */
+  public OptionalLong getAlternateId() {
+    return alternateId;
   }
 
   /** Returns the content type for the TC. */
@@ -463,6 +478,9 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
     if (genderExprsString != null) {
       commandText.append(" genders=\"").append(genderExprsString).append('"');
+    }
+    if (alternateId.isPresent()) {
+      commandText.append(" alternate=\"").append(alternateId).append('"');
     }
     return commandText.toString().trim();
   }

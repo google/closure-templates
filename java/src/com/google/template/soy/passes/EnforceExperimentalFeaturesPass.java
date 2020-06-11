@@ -24,7 +24,9 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
@@ -47,6 +49,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED =
       SoyErrorKind.of("Soy indices for list comprehensions are not available for general use.");
+
+  private static final SoyErrorKind MSG_ALTERNATE_ID_NOT_ALLOWED =
+      SoyErrorKind.of("Soy msg alternate ids are not available for general use.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -79,6 +84,15 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
           reporter.report(
               listComprehensionNode.getIndexVar().nameLocation(),
               INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED);
+        }
+      }
+    }
+    if (!features.contains("msg_alternate_id")) {
+      for (MsgNode msgNode : SoyTreeUtils.getAllNodesOfType(file, MsgNode.class)) {
+        for (CommandTagAttribute attr : msgNode.getAttributes()) {
+          if (attr.getName().identifier().equals("alternateId")) {
+            reporter.report(attr.getValueLocation(), MSG_ALTERNATE_ID_NOT_ALLOWED);
+          }
         }
       }
     }

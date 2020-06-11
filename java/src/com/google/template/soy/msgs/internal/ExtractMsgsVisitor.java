@@ -79,6 +79,7 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     if (node.getMeaning() != null) {
       builder.setMeaning(node.getMeaning());
     }
+    node.getAlternateId().ifPresent(builder::setAlternateId);
     SoyMsg msg =
         builder
             .setDesc(node.getDesc())

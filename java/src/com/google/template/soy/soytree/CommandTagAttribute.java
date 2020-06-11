@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import javax.annotation.Nullable;
 
@@ -189,6 +190,17 @@ public final class CommandTagAttribute {
     } catch (NumberFormatException e) {
       errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "an integer");
       return defaultValue;
+    }
+  }
+
+  public OptionalLong valueAsOptionalLong(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    try {
+      return OptionalLong.of(Long.parseLong(value));
+    } catch (NumberFormatException e) {
+      errorReporter.report(valueLocation, INVALID_ATTRIBUTE, key.identifier(), "a number");
+      return OptionalLong.empty();
     }
   }
 
