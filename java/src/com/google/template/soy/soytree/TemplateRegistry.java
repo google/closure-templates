@@ -17,6 +17,7 @@
 package com.google.template.soy.soytree;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
@@ -42,6 +43,12 @@ public interface TemplateRegistry {
   /** Look up possible targets for a call. */
   ImmutableList<TemplateType> getTemplates(CallNode node);
 
+  /** Gets a map of file paths to templates defined in each file. */
+  ImmutableMap<String, TemplatesPerFile> getTemplatesPerFile();
+
+  /** Gets the templates in the given file. */
+  TemplatesPerFile getTemplatesPerFile(String fileName);
+
   /**
    * Retrieves a template or element given the template name.
    *
@@ -61,6 +68,9 @@ public interface TemplateRegistry {
    * TemplateDelegateNode delegate} nodes), in no particular order.
    */
   ImmutableList<TemplateMetadata> getAllTemplates();
+
+  /** Returns the full file paths for all files in the registry. */
+  ImmutableSet<String> getAllFileNames();
 
   /**
    * Gets the content kind that a call results in. If used with delegate calls, the delegate

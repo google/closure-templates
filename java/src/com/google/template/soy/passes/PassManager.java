@@ -364,7 +364,7 @@ public final class PassManager {
       ImmutableList.Builder<CompilerFileSetPass> partialTemplateRegistryPassesBuilder =
           ImmutableList.builder();
       addPass(
-          new ImportsPass(registry, errorReporter, disableAllTypeChecking),
+          new ResolveProtoImportsPass(registry, errorReporter, disableAllTypeChecking),
           partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
@@ -476,6 +476,7 @@ public final class PassManager {
       // use.
       ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
           ImmutableList.builder();
+      addPass(new ResolveTemplateImportsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
         // Upgrade the "named template" placeholder types to proper template types, now that their

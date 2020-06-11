@@ -147,7 +147,6 @@ public final class PassManagerTest {
             DesugarStateNodesPass.class,
             EnforceExperimentalFeaturesPass.class,
             GetExtensionRewriteParamPass.class,
-            ImportsPass.class,
             InsertMsgPlaceholderNodesPass.class,
             KeyCommandPass.class,
             NullSafeAccessPass.class,

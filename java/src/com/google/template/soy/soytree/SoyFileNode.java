@@ -69,6 +69,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     this.namespaceDeclaration = namespaceDeclaration; // Immutable
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
     this.comments = comments;
+    this.importsContext = new ImportsContext();
   }
 
   /**
@@ -83,6 +84,9 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     this.aliasDeclarations = orig.aliasDeclarations; // immutable
     this.headerInfo = orig.headerInfo.copy();
     this.comments = orig.comments;
+    // Imports context must be reset during edit-refresh (can't be set/cached in single file
+    // passes).
+    this.importsContext = new ImportsContext();
   }
 
   @Override
@@ -194,24 +198,20 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   public SoyTypeRegistry getSoyTypeRegistry() {
     Preconditions.checkState(
-        importsContext != null, "Called getSoyTypeRegistry() before ImportsPass was run");
+        importsContext != null,
+        "Called getSoyTypeRegistry() before ResolveProtoImportsPass was run.");
     return importsContext.getTypeRegistry();
   }
 
-  public void setImportsContext(ImportsContext importsContext) {
+  public TemplateRegistry getTemplateRegistry() {
     Preconditions.checkState(
-        this.importsContext == null,
-        "setImportsContext() should only be called once, from ImportsPass");
-    this.importsContext = importsContext;
+        importsContext != null,
+        "Called getTemplateRegistry() before ResolveTemplateImportsPass was run.");
+    return importsContext.getTemplateRegistry();
   }
 
-  /** A per-file context for type and alias resolution. */
-  public interface ImportsContext {
-    SoyTypeRegistry getTypeRegistry();
-
-    default Identifier resolveAlias(Identifier id, SoyFileHeaderInfo headerInfo) {
-      return headerInfo.resolveAlias(id);
-    }
+  public ImportsContext getImportsContext() {
+    return importsContext;
   }
 
   @Override

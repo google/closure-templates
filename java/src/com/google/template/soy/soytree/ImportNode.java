@@ -54,6 +54,17 @@ public final class ImportNode extends AbstractSoyNode {
         return true;
       }
     },
+    TEMPLATE {
+      @Override
+      public boolean requiresSymbols() {
+        return true;
+      }
+
+      @Override
+      public boolean isGa() {
+        return false;
+      }
+    },
     UNKNOWN;
 
     public boolean allowsSymbols() {
@@ -109,8 +120,9 @@ public final class ImportNode extends AbstractSoyNode {
   private static ImportType importTypeForPath(String path) {
     if (path.endsWith(".proto")) {
       return ImportType.PROTO;
+    } else if (path.endsWith(".soy")) {
+      return ImportType.TEMPLATE;
     }
-    // TODO(tomnguyen) Write a validation pass to verify imports.
     return ImportType.UNKNOWN;
   }
 

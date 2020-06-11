@@ -16,14 +16,8 @@
 
 package com.google.template.soy.passes;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-
-import com.google.common.base.CaseFormat;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -31,22 +25,17 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyFileNode.ImportsContext;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.types.DelegatingSoyTypeRegistry;
-import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder.ProtoSoyTypeRegistry;
-import com.google.template.soy.types.TypeRegistry;
-import java.util.HashSet;
-import java.util.Set;
-import javax.annotation.Nullable;
 
-/** Checks and processes file-level imports. */
-final class ImportsPass implements CompilerFilePass {
+/**
+ * Abstract base class for an imports pass. Verifies that import paths are valid and symbols are
+ * unique, before delegating to implementations for what to do when we visit each {@link
+ * ImportNode}.
+ */
+abstract class ImportsPass {
 
-  private static final SoyErrorKind IMPORT_NOT_IN_DEPS = SoyErrorKind.of("Unknown import dep {0}.");
+  private static final SoyErrorKind IMPORT_NOT_IN_DEPS =
+      SoyErrorKind.of("Unknown import dep {0}.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNKNOWN_SYMBOL =
       SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind IMPORT_COLLISION =
@@ -56,47 +45,59 @@ final class ImportsPass implements CompilerFilePass {
   private static final SoyErrorKind SYMBOLS_REQUIRED =
       SoyErrorKind.of("One or more imported symbols are required for import type {0}.");
 
-  private final SoyTypeRegistry registry;
-  private final ErrorReporter errorReporter;
-  private final boolean disableAllTypeChecking;
-  /**
-   * Proto names to descriptors for the delegate {@link ProtoSoyTypeRegistry}, if present. Store
-   * this once per pass (rather than per file) to help with edit-refresh times.
-   */
-  private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
-
-  ImportsPass(
-      SoyTypeRegistry registry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
-    this.registry = registry;
-    this.errorReporter = errorReporter;
-    this.disableAllTypeChecking = disableAllTypeChecking;
-    this.pathToDescriptor =
-        registry instanceof ProtoSoyTypeRegistry
-            ? ((ProtoSoyTypeRegistry) registry)
-                .getFileDescriptors().stream()
-                    .collect(toImmutableMap(FileDescriptor::getName, d -> d))
-            : ImmutableMap.of();
+  /** Visits a Soy file, validating its imports and updating the file's {@link ImportContext}. */
+  void visitFile(SoyFileNode file) {
+    createImportVisitorForFile(file).exec();
   }
 
-  @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    ImportVisitor visitor = new ImportVisitor();
+  /** Constructs an {@link ImportVisitor} for the given soy file. */
+  abstract ImportVisitor createImportVisitorForFile(SoyFileNode file);
 
-    for (ImportNode importNode : file.getImports()) {
-      visitor.visit(importNode);
+  /** Visitor for imports in a single soy file. */
+  abstract static class ImportVisitor {
+    final SoyFileNode file;
+    final ErrorReporter errorReporter;
+    private final ImmutableSet<ImportType> importTypesToVisit;
+
+    ImportVisitor(
+        SoyFileNode file,
+        ImmutableSet<ImportType> importTypesToVisit,
+        ErrorReporter errorReporter) {
+      this.file = file;
+      this.importTypesToVisit = importTypesToVisit;
+      this.errorReporter = errorReporter;
     }
 
-    file.setImportsContext(visitor.getImportsContext());
-  }
+    /** Visits all of the file's imports, and then updates the file's {@link ImportContext}. */
+    final void exec() {
+      for (ImportNode importNode : file.getImports()) {
+        visit(importNode);
+      }
+      updateImportsContext();
+    }
 
-  private final class ImportVisitor {
-    private final Set<String> allProtoSymbols = new HashSet<>();
-    private final ImmutableMap.Builder<String, String> messagesAndEnums = ImmutableMap.builder();
-    private final ImmutableMap.Builder<String, String> extensions = ImmutableMap.builder();
+    /**
+     * Updates the {@link SoyFileNode}'s {@link ImportsContext} after the visitor has been executed.
+     */
+    abstract void updateImportsContext();
 
-    void visit(ImportNode node) {
+    /**
+     * Visits an import node. First, validates that the import path exists and the symbol names
+     * and/or optional aliases do not collide with other import symbols. Then, delegates to the
+     * abstract {@link visitImportNodeWithValidPathAndSymbol}.
+     */
+    private void visit(ImportNode node) {
+      if (!importTypesToVisit.contains(node.getImportType())) {
+        return;
+      }
+
       if (!importExists(node.getImportType(), node.getPath())) {
-        errorReporter.report(node.getPathSourceLocation(), IMPORT_NOT_IN_DEPS, node.getPath());
+        errorReporter.report(
+            node.getPathSourceLocation(),
+            IMPORT_NOT_IN_DEPS,
+            node.getPath(),
+            SoyErrors.getDidYouMeanMessage(
+                getValidImportPathsForType(node.getImportType()), node.getPath()));
         return;
       }
 
@@ -108,7 +109,7 @@ final class ImportsPass implements CompilerFilePass {
 
         for (ImportedVar symbol : node.getIdentifiers()) {
           String name = symbol.aliasOrName();
-          if (!allProtoSymbols.add(name)) {
+          if (!file.getImportsContext().addImportedSymbol(name)) {
             errorReporter.report(symbol.nameLocation(), IMPORT_COLLISION, name);
             return;
           }
@@ -119,145 +120,40 @@ final class ImportsPass implements CompilerFilePass {
         return;
       }
 
-      switch (node.getImportType()) {
-        case PROTO:
-          visitProto(node);
-          return;
-        default:
-          throw new IllegalArgumentException(node.getImportType().name());
-      }
+      visitImportNodeWithValidPathAndSymbol(node);
     }
 
-    private void visitProto(ImportNode node) {
-      if (disableAllTypeChecking) {
-        return;
-      }
-      FileDescriptor fd = pathToDescriptor.get(node.getPath());
-      Set<String> extensionNames = new HashSet<>();
-      fd.getExtensions()
-          .forEach(
-              t ->
-                  extensionNames.add(
-                      CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, t.getName())));
+    /**
+     * Whether the path exists and is valid for the given import type. Will only be called for nodes
+     * of type {@link importTypesToVisit}.
+     */
+    abstract boolean importExists(ImportType importType, String path);
 
-      Set<String> validSymbols = new HashSet<>();
-      fd.getMessageTypes().forEach(t -> validSymbols.add(t.getName()));
-      fd.getEnumTypes().forEach(t -> validSymbols.add(t.getName()));
-      validSymbols.addAll(extensionNames);
+    /**
+     * Visits an import node that has already been verified to have a valid import path and symbol
+     * (+ optional alias) that doesn't collide with other imports (yet). Will only be called for
+     * nodes of type {@link importTypesToVisit}.
+     */
+    abstract void visitImportNodeWithValidPathAndSymbol(ImportNode node);
 
-      for (ImportedVar symbol : node.getIdentifiers()) {
-        String name = symbol.name();
-        if (!validSymbols.contains(name)) {
-          errorReporter.report(
-              symbol.nameLocation(),
-              UNKNOWN_SYMBOL,
-              name,
-              node.getPath(),
-              SoyErrors.getDidYouMeanMessage(validSymbols, name));
-          continue;
-        }
+    /**
+     * Gets the list of valid paths for a given import type, used for "Did you mean?" error
+     * messages. Will only be called for nodes of type {@link importTypesToVisit}.
+     */
+    abstract ImmutableSet<String> getValidImportPathsForType(ImportType importType);
 
-        if (extensionNames.contains(name)) {
-          extensions.put(symbol.aliasOrName(), fd.getPackage() + "." + name);
-        } else {
-          messagesAndEnums.put(symbol.aliasOrName(), fd.getPackage() + "." + name);
-        }
-      }
-    }
-
-    private boolean importExists(ImportType importType, String path) {
-      switch (importType) {
-        case PROTO:
-          return protoImportExists(path);
-        default:
-          throw new IllegalArgumentException(importType.name());
-      }
-    }
-
-    private boolean protoImportExists(String path) {
-      if (disableAllTypeChecking) {
-        return true;
-      }
-      return pathToDescriptor.containsKey(path);
-    }
-
-    ImportsContext getImportsContext() {
-      return disableAllTypeChecking
-          ? () -> registry
-          : new ImportsTypeRegistry(registry, messagesAndEnums.build(), extensions.build());
-    }
-  }
-
-  private static final class ImportsTypeRegistry extends DelegatingSoyTypeRegistry
-      implements ImportsContext, TypeRegistry.ProtoRegistry {
-
-    // Map of symbol (possibly aliased) to fully qualified proto name (messages and enums).
-    private final ImmutableMap<String, String> messagesAndEnums;
-    // Map of symbol (possibly aliased) to fully qualified proto name (extensions).
-    private final ImmutableMap<String, String> extensions;
-    private final SoyTypeRegistry delegate;
-
-    ImportsTypeRegistry(
-        SoyTypeRegistry delegate,
-        ImmutableMap<String, String> messagesAndEnums,
-        ImmutableMap<String, String> extensions) {
-      super(delegate);
-      this.delegate = delegate;
-      this.messagesAndEnums = messagesAndEnums;
-      this.extensions = extensions;
-    }
-
-    @Nullable
-    @Override
-    public SoyType getType(String typeName) {
-      // Support nested messages by resolving the first token against the map and then appending
-      // subsequent tokens.
-      int index = typeName.indexOf('.');
-      String baseRefType = index >= 0 ? typeName.substring(0, index) : typeName;
-      String baseType = messagesAndEnums.get(baseRefType);
-
-      if (baseType == null) {
-        return super.getType(typeName);
-      }
-
-      String fullType = index >= 0 ? baseType + typeName.substring(index) : baseType;
-
-      // Pass the FQ proto message name to the delegate. The delegate should be a
-      // ProtoSoyTypeRegistry, which can resolve any registered FQ proto name. Once we remove the
-      // global proto type registration we will need to implement this here rather than delegating
-      // to super.
-      return super.getType(fullType);
-    }
-
-    @Override
-    public SoyTypeRegistry getTypeRegistry() {
-      return this;
-    }
-
-    @Override
-    public Identifier resolveAlias(Identifier id, SoyFileHeaderInfo headerInfo) {
-      String localSymbol = id.identifier();
-      int dotIndex = localSymbol.indexOf('.');
-      if (dotIndex >= 0) {
-        // Extensions may be nested under top-level messages.
-        String fullName = messagesAndEnums.get(localSymbol.substring(0, dotIndex));
-        if (fullName != null) {
-          return Identifier.create(fullName + localSymbol.substring(dotIndex), id.location());
-        }
-      } else {
-        String fullName = extensions.get(localSymbol);
-        if (fullName != null) {
-          return Identifier.create(fullName, id.location());
-        }
-      }
-      return headerInfo.resolveAlias(id);
-    }
-
-    @Override
-    public ImmutableSet<FileDescriptor> getFileDescriptors() {
-      return delegate instanceof TypeRegistry.ProtoRegistry
-          ? ((TypeRegistry.ProtoRegistry) delegate).getFileDescriptors()
-          : ImmutableSet.of();
+    /** Reports an error when an invalid symbol is imported from a valid file. */
+    void reportUnknownSymbolError(
+        SourceLocation symbolLocation,
+        String incorrectName,
+        String importPath,
+        Iterable<String> validSymbols) {
+      errorReporter.report(
+          symbolLocation,
+          UNKNOWN_SYMBOL,
+          incorrectName,
+          importPath,
+          SoyErrors.getDidYouMeanMessage(validSymbols, incorrectName));
     }
   }
 }

@@ -216,6 +216,16 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
     }
   }
 
+  @Override
+  public ImmutableMap<String, TemplatesPerFile> getTemplatesPerFile() {
+    return templatesPerFile;
+  }
+
+  @Override
+  public TemplatesPerFile getTemplatesPerFile(String fileName) {
+    return templatesPerFile.get(fileName);
+  }
+
   /**
    * Retrieves a template or element given the template name.
    *
@@ -253,6 +263,11 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
     return templatesPerFile.values().stream()
         .flatMap(r -> r.getAllTemplates().stream())
         .collect(toImmutableList());
+  }
+
+  @Override
+  public ImmutableSet<String> getAllFileNames() {
+    return templatesPerFile.keySet();
   }
 
   /**
