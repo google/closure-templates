@@ -136,10 +136,6 @@ public abstract class TemplateType extends SoyType {
 
   @Override
   final boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    if (srcType.getKind() == SoyType.Kind.NAMED_TEMPLATE) {
-      // Checking happens later for named templates.
-      return true;
-    }
     if (srcType.getKind() == SoyType.Kind.TEMPLATE) {
       TemplateType srcTemplate = (TemplateType) srcType;
       // The source template type's arguments must be a superset of this type's arguments (possibly

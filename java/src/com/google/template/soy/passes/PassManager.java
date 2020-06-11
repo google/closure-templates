@@ -485,6 +485,9 @@ public final class PassManager {
             crossTemplateCheckingPassesBuilder);
         // Make sure we really upgraded *all* the template types.
         addPass(new CheckNoNamedTemplateTypesPass(), crossTemplateCheckingPassesBuilder);
+        // Run type template-type-specific validation passes now that template types have been
+        // resolved.
+        addPass(new TemplateTypeValidationPass(errorReporter), crossTemplateCheckingPassesBuilder);
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       }
       addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);
