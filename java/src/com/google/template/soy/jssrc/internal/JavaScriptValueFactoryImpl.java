@@ -19,7 +19,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -29,7 +28,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -73,7 +71,6 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   }
 
   private final ErrorReporter reporter;
-  private final SoyJsSrcOptions jsSrcOptions;
   private final BidiGlobalDir dir;
 
   private JavaScriptPluginContext createContext(final CodeChunk.Generator codeGenerator) {
@@ -91,10 +88,8 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
     };
   }
 
-  public JavaScriptValueFactoryImpl(
-      SoyJsSrcOptions jsSrcOptions, BidiGlobalDir dir, ErrorReporter reporter) {
+  public JavaScriptValueFactoryImpl(BidiGlobalDir dir, ErrorReporter reporter) {
     this.dir = dir;
-    this.jsSrcOptions = jsSrcOptions;
     this.reporter = reporter;
   }
 
@@ -142,17 +137,10 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
   }
 
   private Expression referenceModuleExport(String moduleName, String export) {
-    Expression module;
-    if (jsSrcOptions.shouldGenerateGoogModules()) {
-      String alias =
-          "$"
-              + CaseFormat.LOWER_UNDERSCORE.to(
-                  CaseFormat.LOWER_CAMEL, moduleName.replace('.', '_'));
-      module = GoogRequire.createWithAlias(moduleName, alias).reference();
-    } else {
-      module = GoogRequire.create(moduleName).googModuleGet();
-    }
-    return chainedDotAccess(module, export);
+    // Just use goog.module.get().  It isn't currently possible to create an alias without
+    // potentially creating name conflicts.
+    // TODO(b/35203585): come up with an aliasing strategy
+    return chainedDotAccess(GoogRequire.create(moduleName).googModuleGet(), export);
   }
 
   @Override

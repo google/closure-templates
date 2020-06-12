@@ -253,8 +253,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       UniqueNameGenerator nameGenerator = JsSrcNameGenerators.forLocalVariables();
       this.chunk =
           new TranslateExprNodeVisitor(
-                  new JavaScriptValueFactoryImpl(
-                      new SoyJsSrcOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding()),
+                  new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding()),
                   TranslationContext.of(
                       SoyToJsVariableMappings.startingWith(initialLocalVarTranslations),
                       CodeChunk.Generator.create(nameGenerator),

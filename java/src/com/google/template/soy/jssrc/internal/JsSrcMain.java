@@ -105,7 +105,7 @@ public class JsSrcMain {
     final IsComputableAsJsExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsJsExprsVisitor();
     final JavaScriptValueFactoryImpl javaScriptValueFactory =
-        new JavaScriptValueFactoryImpl(options, dir, errorReporter);
+        new JavaScriptValueFactoryImpl(dir, errorReporter);
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
     // This supplier is used to break a circular dependency between GenCallCodeUtils and

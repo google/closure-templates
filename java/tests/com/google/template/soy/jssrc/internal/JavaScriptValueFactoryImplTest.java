@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
-import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
@@ -43,44 +42,16 @@ public final class JavaScriptValueFactoryImplTest {
       (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz");
 
   @Test
-  public void testGetModuleExportInGoogModule() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldGenerateGoogModules(true);
-
-    Expression expr = applyFunction(opts, moduleExportFn);
-
-    assertThat(getRequires(expr)).isEqualTo("const $fooBar = goog.require('foo.bar');\n");
-    assertThat(expr.getCode()).isEqualTo("$fooBar.baz.qux;");
-  }
-
-  @Test
-  public void testGetModuleExportInGoogProvide() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldProvideRequireSoyNamespaces(true);
-
-    Expression expr = applyFunction(opts, moduleExportFn);
+  public void testGetModuleExport() throws Exception {
+    Expression expr = applyFunction(moduleExportFn);
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("goog.module.get('foo.bar').baz.qux;");
   }
 
   @Test
-  public void testCallModuleFunctionInGoogModule() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldGenerateGoogModules(true);
-
-    Expression expr = applyFunction(opts, callModuleFn);
-
-    assertThat(getRequires(expr)).isEqualTo("const $fooBar = goog.require('foo.bar');\n");
-    assertThat(expr.getCode()).isEqualTo("$fooBar.baz();");
-  }
-
-  @Test
-  public void testCallModuleFunctionInGoogProvide() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldProvideRequireSoyNamespaces(true);
-
-    Expression expr = applyFunction(opts, callModuleFn);
+  public void testCallModuleFunction() throws Exception {
+    Expression expr = applyFunction(callModuleFn);
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
     assertThat(expr.getCode()).isEqualTo("goog.module.get('foo.bar').baz();");
@@ -88,12 +59,9 @@ public final class JavaScriptValueFactoryImplTest {
 
   @Test
   public void testCallNamespaceFnDirect() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldProvideRequireSoyNamespaces(true);
 
     Expression expr =
         applyFunction(
-            new SoyJsSrcOptions(),
             (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
@@ -102,12 +70,8 @@ public final class JavaScriptValueFactoryImplTest {
 
   @Test
   public void testCallNamespaceFn() throws Exception {
-    SoyJsSrcOptions opts = new SoyJsSrcOptions();
-    opts.setShouldProvideRequireSoyNamespaces(true);
-
     Expression expr =
         applyFunction(
-            new SoyJsSrcOptions(),
             (factory, args, context) -> factory.callNamespaceFunction("foo.bar", "foo.bar.baz"));
 
     assertThat(getRequires(expr)).isEqualTo("goog.require('foo.bar');\n");
@@ -117,8 +81,7 @@ public final class JavaScriptValueFactoryImplTest {
   @Test
   public void testConstant() {
     JavaScriptValueFactoryImpl factory =
-        new JavaScriptValueFactoryImpl(
-            new SoyJsSrcOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding());
+        new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding());
     assertThat(factory.constant(1).toString()).isEqualTo("1;");
     assertThat(factory.constant(1.1).toString()).isEqualTo("1.1;");
     assertThat(factory.constant(false).toString()).isEqualTo("false;");
@@ -129,8 +92,7 @@ public final class JavaScriptValueFactoryImplTest {
   @Test
   public void testInvokeMethod() {
     JavaScriptValueFactoryImpl factory =
-        new JavaScriptValueFactoryImpl(
-            new SoyJsSrcOptions(), BidiGlobalDir.LTR, ErrorReporter.exploding());
+        new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding());
     assertThat(factory.constant("str").invokeMethod("indexOf", factory.constant("s")).toString())
         .isEqualTo("'str'.indexOf('s');");
   }
@@ -141,9 +103,8 @@ public final class JavaScriptValueFactoryImplTest {
     return sb.toString();
   }
 
-  static Expression applyFunction(
-      SoyJsSrcOptions opts, SoyJavaScriptSourceFunction fn, Expression... args) {
-    return new JavaScriptValueFactoryImpl(opts, BidiGlobalDir.LTR, ErrorReporter.exploding())
+  static Expression applyFunction(SoyJavaScriptSourceFunction fn, Expression... args) {
+    return new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, ErrorReporter.exploding())
         .applyFunction(
             SourceLocation.UNKNOWN, "foo", fn, ImmutableList.copyOf(args), newGenerator());
   }

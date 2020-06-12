@@ -108,7 +108,7 @@ public class IncrementalDomSrcMain {
     final IsComputableAsIncrementalDomExprsVisitor isComputableAsJsExprsVisitor =
         new IsComputableAsIncrementalDomExprsVisitor();
     final JavaScriptValueFactoryImpl javaScriptValueFactory =
-        new JavaScriptValueFactoryImpl(options, dir, errorReporter);
+        new JavaScriptValueFactoryImpl(dir, errorReporter);
     CanInitOutputVarVisitor canInitOutputVarVisitor =
         new CanInitOutputVarVisitor(isComputableAsJsExprsVisitor);
     // TODO(lukes): eliminate this supplier.  See commend in JsSrcMain for more information.
