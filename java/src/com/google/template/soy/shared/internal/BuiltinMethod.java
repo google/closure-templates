@@ -95,9 +95,6 @@ public enum BuiltinMethod implements SoyMethod {
         return false;
       }
       if (fd.getFile().getSyntax() == Syntax.PROTO3) {
-        // In proto3 only submessages and optional primitives have hassers.
-        // TODO(user): Uncomment when new method lands in open source proto lib.
-        // return fd.hasOptionalKeyword();
         return false;
       }
 
