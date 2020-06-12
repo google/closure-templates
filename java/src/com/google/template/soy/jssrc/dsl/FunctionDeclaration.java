@@ -80,7 +80,9 @@ abstract class FunctionDeclaration extends Expression {
     if (paramsNeedParens) {
       ctx.append("(");
     }
-    ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
+    ctx.append(
+        CodeChunkUtils.generateParamList(
+            jsDoc(), /* addInlineTypeAnnotations= */ isArrowFunction()));
     if (paramsNeedParens) {
       ctx.append(") ");
     }

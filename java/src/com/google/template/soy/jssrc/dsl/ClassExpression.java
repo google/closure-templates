@@ -135,7 +135,7 @@ public abstract class ClassExpression extends Expression {
       ctx.append(jsDoc());
       ctx.endLine();
       ctx.append(name() + "(");
-      ctx.append(CodeChunkUtils.generateParamList(jsDoc()));
+      ctx.append(CodeChunkUtils.generateParamList(jsDoc(), /* addInlineTypeAnnotations=*/ false));
       ctx.append(") ");
       try (FormattingContext ignored = ctx.enterBlock()) {
         ctx.appendAll(body());

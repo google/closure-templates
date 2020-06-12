@@ -84,12 +84,16 @@ public final class CodeChunkUtils {
    * Outputs a stringified parameter list (e.g. `foo, bar, baz`) from JsDoc. Used e.g. in function
    * and method declarations.
    */
-  static String generateParamList(JsDoc jsDoc) {
+  static String generateParamList(JsDoc jsDoc, boolean addInlineTypeAnnotations) {
     ImmutableList<JsDoc.Param> params = jsDoc.params();
     List<String> functionParameters = new ArrayList<>();
     for (JsDoc.Param param : params) {
       if ("param".equals(param.annotationType())) {
-        functionParameters.add(param.paramTypeName());
+        if (addInlineTypeAnnotations) {
+          functionParameters.add(String.format("/* %s */ %s", param.type(), param.paramTypeName()));
+        } else {
+          functionParameters.add(param.paramTypeName());
+        }
       }
     }
     StringBuilder sb = new StringBuilder();
