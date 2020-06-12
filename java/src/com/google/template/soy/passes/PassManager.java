@@ -430,7 +430,9 @@ public final class PassManager {
         addPass(new VeLogRewritePass(), partialTemplateRegistryPassesBuilder);
         // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
         // parameters.
-        addPass(new GetExtensionRewriteParamPass(), partialTemplateRegistryPassesBuilder);
+        if (!allowUnknownGlobals) {
+          addPass(new GetExtensionRewriteParamPass(), partialTemplateRegistryPassesBuilder);
+        }
       }
 
       // The check conformance pass needs to run on the rewritten html nodes, so it must run after

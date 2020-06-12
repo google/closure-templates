@@ -159,7 +159,14 @@ public enum BuiltinMethod implements SoyMethod {
   }
 
   public static String getProtoExtensionIdFromMethodCall(MethodCallNode node) {
-    return ((StringNode) node.getChild(1)).getValue();
+    ExprNode arg = node.getChild(1);
+    if (arg instanceof StringNode) {
+      return ((StringNode) arg).getValue();
+    } else if (arg instanceof GlobalNode) {
+      return ((GlobalNode) arg).getName();
+    } else {
+      throw new ClassCastException(arg.getClass().getName());
+    }
   }
 
   private static String methodToFieldName(String methodName) {
