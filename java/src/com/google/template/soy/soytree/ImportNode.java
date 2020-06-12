@@ -41,6 +41,12 @@ public final class ImportNode extends AbstractSoyNode {
 
   private final ImportType importType;
 
+  /**
+   * Whether the import has been resolved/validated yet (some import types need to be processed in
+   * multiple passes).
+   */
+  private boolean isResolved;
+
   /** Only Proto is supported right now. */
   public enum ImportType {
     PROTO {
@@ -85,6 +91,7 @@ public final class ImportNode extends AbstractSoyNode {
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
     this.importType = importTypeForPath(path.getValue());
+    this.isResolved = false;
   }
 
   /**
@@ -97,6 +104,7 @@ public final class ImportNode extends AbstractSoyNode {
     this.identifiers = orig.identifiers.stream().map(ImportedVar::clone).collect(toImmutableList());
     this.path = orig.path.copy(copyState);
     this.importType = orig.importType;
+    this.isResolved = orig.isResolved;
   }
 
   @Override
@@ -132,6 +140,14 @@ public final class ImportNode extends AbstractSoyNode {
 
   public String getPath() {
     return path.getValue();
+  }
+
+  public boolean isResolved() {
+    return isResolved;
+  }
+
+  public void setIsResolved() {
+    this.isResolved = true;
   }
 
   public SourceLocation getPathSourceLocation() {

@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 public final class ImportsContext {
 
   private SoyTypeRegistry typeRegistry;
-  private TemplateRegistry templateRegistry;
+  private ImportsTemplateRegistry templateRegistry;
   private final Set<String> allImportedSymbols;
 
   public ImportsContext() {
@@ -62,13 +62,23 @@ public final class ImportsContext {
     return checkNotNull(typeRegistry, "Type registry has not been set yet.");
   }
 
-  public void setTemplateRegistry(TemplateRegistry templateRegistry) {
+  public void setTemplateRegistry(ImportsTemplateRegistry templateRegistry) {
     checkState(
-        this.templateRegistry == null, "Template registry is already set; cannot be overwritten.");
+        this.templateRegistry == null,
+        "Template registry is already set; use overrideTemplateRegistry if you're sure you want to"
+            + " override.");
     this.templateRegistry = templateRegistry;
   }
 
-  public TemplateRegistry getTemplateRegistry() {
+  public void overrideTemplateRegistry(ImportsTemplateRegistry templateRegistry) {
+    this.templateRegistry = templateRegistry;
+  }
+
+  public boolean hasTemplateRegistry() {
+    return this.templateRegistry != null;
+  }
+
+  public ImportsTemplateRegistry getTemplateRegistry() {
     return checkNotNull(templateRegistry, "Template registry has not been set yet.");
   }
 
@@ -182,6 +192,10 @@ public final class ImportsContext {
       }
       // Otherwise, check the file set's template registry (which uses fully qualified names).
       return fileSetTemplateRegistry.getBasicTemplateOrElement(callTmplName);
+    }
+
+    public ImmutableMap<String, TemplateName> getSymbolsToTemplateNamesMap() {
+      return symbolToTemplateMap;
     }
   }
 }

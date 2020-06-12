@@ -24,8 +24,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
-import com.google.template.soy.soytree.ImportsContext;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplatesPerFile;
@@ -36,14 +34,7 @@ import com.google.template.soy.soytree.defn.ImportedVar;
  * Resolves Soy template imports; verifies that the imports are valid and populates a local template
  * registry that maps the imported symbols to their types.
  */
-@RunBefore({
-  CheckTemplateHeaderVarsPass.class,
-  UpgradeTemplateTypesPass.class,
-  CheckNoNamedTemplateTypesPass.class,
-  CheckTemplateCallsPass.class,
-  CheckTemplateVisibilityPass.class
-})
-final class ResolveTemplateImportsPass extends ImportsPass implements CompilerFileSetPass {
+abstract class ResolveTemplateImportsPass extends ImportsPass implements CompilerFileSetPass {
   private TemplateRegistry fileSetTemplateRegistry;
   private final ErrorReporter errorReporter;
 
@@ -64,17 +55,23 @@ final class ResolveTemplateImportsPass extends ImportsPass implements CompilerFi
     return Result.CONTINUE;
   }
 
-  @Override
-  ImportVisitor createImportVisitorForFile(SoyFileNode file) {
-    return new TemplateImportVisitor(file, fileSetTemplateRegistry, errorReporter);
+  ErrorReporter errorReporter() {
+    return errorReporter;
   }
 
-  private static final class TemplateImportVisitor extends ImportVisitor {
+  TemplateRegistry getFileSetTemplateRegistry() {
+    return fileSetTemplateRegistry;
+  }
+
+  @Override
+  abstract TemplateImportVisitor createImportVisitorForFile(SoyFileNode file);
+
+  abstract static class TemplateImportVisitor extends ImportVisitor {
     private final TemplateRegistry fileSetTemplateRegistry;
-    private final ImmutableMap.Builder<String, TemplateName> symbolsToTemplatesMap =
+    final ImmutableMap.Builder<String, TemplateName> symbolsToTemplatesMap =
         new ImmutableMap.Builder<>();
 
-    private TemplateImportVisitor(
+    TemplateImportVisitor(
         SoyFileNode file, TemplateRegistry fileSetTemplateRegistry, ErrorReporter errorReporter) {
       super(file, ImmutableSet.of(ImportType.TEMPLATE), errorReporter);
       this.fileSetTemplateRegistry = fileSetTemplateRegistry;
@@ -102,20 +99,13 @@ final class ResolveTemplateImportsPass extends ImportsPass implements CompilerFi
         }
         symbolsToTemplatesMap.put(symbol.aliasOrName(), templatesPerFile.getFullTemplateName(name));
       }
+      node.setIsResolved(); // Node has been validated
     }
 
     @Override
     boolean importExists(ImportType type, String path) {
       // We can ignore the type param because this visitor only visits template imports.
       return fileSetTemplateRegistry.getTemplatesPerFile().containsKey(path);
-    }
-
-    /** Sets the local template registry for the file's {@link ImportsContext}. */
-    @Override
-    void updateImportsContext() {
-      file.getImportsContext()
-          .setTemplateRegistry(
-              new ImportsTemplateRegistry(fileSetTemplateRegistry, symbolsToTemplatesMap.build()));
     }
 
     @Override

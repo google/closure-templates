@@ -82,12 +82,22 @@ abstract class ImportsPass {
     abstract void updateImportsContext();
 
     /**
+     * Whether to visit the node. Will only be called if the nodes has a type in {@link
+     * importTypesToVisit}. This can be used if there are additional criteria for whether to visit a
+     * node or not (e.g. template imports are visited in two phases, one for deps and one for the
+     * current file set).
+     */
+    boolean shouldVisit(ImportNode node) {
+      return true;
+    }
+
+    /**
      * Visits an import node. First, validates that the import path exists and the symbol names
      * and/or optional aliases do not collide with other import symbols. Then, delegates to the
      * abstract {@link visitImportNodeWithValidPathAndSymbol}.
      */
     private void visit(ImportNode node) {
-      if (!importTypesToVisit.contains(node.getImportType())) {
+      if (!importTypesToVisit.contains(node.getImportType()) || !shouldVisit(node)) {
         return;
       }
 

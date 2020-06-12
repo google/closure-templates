@@ -36,6 +36,10 @@ public abstract class DelegatingTemplateRegistry implements TemplateRegistry {
     this.delegate = delegate;
   }
 
+  public TemplateRegistry getDelegate() {
+    return this.delegate;
+  }
+
   @Override
   public ImmutableMap<String, TemplatesPerFile> getTemplatesPerFile() {
     return delegate.getTemplatesPerFile();
