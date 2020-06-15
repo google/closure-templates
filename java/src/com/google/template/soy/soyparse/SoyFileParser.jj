@@ -3216,7 +3216,7 @@ private CallNode CallStmt() :
       SourceLocation loc = createSrcLoc(tagBegin, tagClose);
       if (calleeExpr == null) {
         calleeExpr = new TemplateLiteralNode(
-            SoyParseUtils.calculateFullCalleeName(calleeName, headerInfo, errorReporter),
+            calleeName,
             calleeName.location(),
             true /* isSynthetic */);
       } else if (calleeExpr.getKind() == ExprNode.Kind.GLOBAL_NODE) {
@@ -3228,7 +3228,7 @@ private CallNode CallStmt() :
             calleeAsGlobalNode.getIdentifier().originalName(),
             calleeAsGlobalNode.getIdentifier().location());
         calleeExpr = new TemplateLiteralNode(
-            SoyParseUtils.calculateFullCalleeName(originalIdentifier, headerInfo, errorReporter),
+            originalIdentifier,
             calleeExpr.getSourceLocation(),
             true /* isSynthetic */);
       }
@@ -4359,7 +4359,7 @@ private TemplateLiteralNode TemplateLiteral(Identifier ident) :
   closeParen = <RPAREN>
   {
     return new TemplateLiteralNode(
-        SoyParseUtils.calculateFullCalleeName(templateName, headerInfo, errorReporter),
+        templateName,
         ident.location().extend(createSrcLoc(closeParen)),
         false /* isSynthetic */);
   }

@@ -15,20 +15,25 @@
  */
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.SoyType;
+import java.util.Optional;
+import javax.annotation.Nullable;
 
 /** Node representing a template literal. */
 public final class TemplateLiteralNode extends AbstractExprNode {
 
-  private final Identifier templateIdentifier;
-  private final String resolvedName;
   // True for 'synthetic' template literal nodes that are the direct children of {call} statements.
   // These are exempt from some checks around the explicit template() expressions.
   private final boolean isSynthetic;
+
+  private Identifier templateIdentifier;
+  private Optional<String> resolvedName;
 
   private SoyType type;
 
@@ -36,8 +41,8 @@ public final class TemplateLiteralNode extends AbstractExprNode {
       Identifier templateIdentifier, SourceLocation sourceLocation, boolean isSynthetic) {
     super(sourceLocation);
     this.templateIdentifier = templateIdentifier;
-    this.resolvedName = templateIdentifier.identifier();
-    this.type = new NamedTemplateType(resolvedName);
+    this.resolvedName = Optional.empty();
+    this.type = new NamedTemplateType(templateIdentifier.identifier());
     this.isSynthetic = isSynthetic;
   }
 
@@ -53,8 +58,29 @@ public final class TemplateLiteralNode extends AbstractExprNode {
     return isSynthetic;
   }
 
+  public void resolveTemplateName(Identifier resolvedIdent) {
+    checkState(!resolvedName.isPresent(), "Template identifier has already been resolved.");
+    this.templateIdentifier = resolvedIdent;
+    this.resolvedName = Optional.of(resolvedIdent.identifier());
+
+    // Only set the type if it hasn't been upgraded already.
+    if (type instanceof NamedTemplateType) {
+      type = new NamedTemplateType(resolvedIdent.identifier());
+    }
+  }
+
+  public boolean isResolved() {
+    return resolvedName.isPresent();
+  }
+
+  /** Returns the resolved template name, or null if not resolved yet. */
+  @Nullable
   public String getResolvedName() {
-    return resolvedName;
+    return resolvedName.orElse(null);
+  }
+
+  public Identifier getIdentifier() {
+    return templateIdentifier;
   }
 
   @Override

@@ -70,11 +70,11 @@ public final class StrictDepsPass implements CompilerFileSetPass {
     if (callee == null) {
       String extraErrorMessage =
           SoyErrors.getDidYouMeanMessage(
-              registry.getBasicTemplateOrElementNames(), node.getResolvedName());
+              registry.getBasicTemplateOrElementNames(), node.getIdentifier().identifier());
       errorReporter.report(
           node.getSourceLocation(),
           CALL_TO_UNDEFINED_TEMPLATE,
-          node.getResolvedName(),
+          node.getIdentifier().identifier(),
           extraErrorMessage);
     } else {
       SoyFileKind calleeKind = callee.getSoyFileKind();

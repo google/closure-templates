@@ -196,6 +196,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return headerInfo.aliasUsed(alias);
   }
 
+  public SoyFileHeaderInfo getHeaderInfo() {
+    return headerInfo;
+  }
+
   public SoyTypeRegistry getSoyTypeRegistry() {
     Preconditions.checkState(
         importsContext != null,

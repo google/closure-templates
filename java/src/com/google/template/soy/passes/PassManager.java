@@ -369,6 +369,11 @@ public final class PassManager {
       addPass(
           new ResolveTemplateImportsFromDepsPass(errorReporter),
           partialTemplateRegistryPassesBuilder);
+      // TODO(cl/316025976): Switch throwErrorIfCantResolve to false, and add a second run of this
+      // pass after we've resolved the same-fileset template imports.
+      addPass(
+          new ResolveTemplateNamesPass(errorReporter, /* throwErrorIfCantResolve= */ true),
+          partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(

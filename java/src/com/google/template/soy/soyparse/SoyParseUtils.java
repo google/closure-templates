@@ -19,11 +19,9 @@ package com.google.template.soy.soyparse;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 
 /** Shared utilities for the 'soyparse' package. */
 final class SoyParseUtils {
@@ -36,34 +34,6 @@ final class SoyParseUtils {
       SoyErrorKind.of("Unknown escape code ''{0}''.");
   private static final SoyErrorKind MISSING_CALLEE_NAMESPACE =
       SoyErrorKind.of("Callee ''{0}'' should be relative to a namespace. Did you mean ''.{0}''?");
-
-  /** Given a template call and file header info, return the expanded callee name if possible. */
-  @SuppressWarnings("unused") // called in SoyFileParser.jj
-  public static final Identifier calculateFullCalleeName(
-      Identifier ident, SoyFileHeaderInfo header, ErrorReporter errorReporter) {
-
-    String name = ident.identifier();
-    switch (ident.type()) {
-      case DOT_IDENT:
-        // Case 1: Source callee name is partial.
-        return Identifier.create(header.getNamespace() + name, name, ident.location());
-      case DOTTED_IDENT:
-        // Case 2: Source callee name is a proper dotted ident, which might start with an alias.
-        return header.resolveAlias(ident);
-      case SINGLE_IDENT:
-        // Case 3: Source callee name is a single ident (not dotted).
-        if (header.hasAlias(name)) {
-          // Case 3a: This callee collides with a namespace alias, which likely means the alias
-          // incorrectly references a template.
-          errorReporter.report(ident.location(), CALL_COLLIDES_WITH_NAMESPACE_ALIAS, name);
-        } else {
-          // Case 3b: The callee name needs a namespace.
-          errorReporter.report(ident.location(), MISSING_CALLEE_NAMESPACE, name);
-        }
-        return Identifier.create(name, ident.location());
-    }
-    throw new AssertionError(ident.type());
-  }
 
   /** Unescapes a Soy string, according to JavaScript rules. */
   @SuppressWarnings("unused") // called in SoyFileParser.jj

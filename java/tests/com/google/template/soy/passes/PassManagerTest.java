@@ -155,6 +155,7 @@ public final class PassManagerTest {
             ResolveNamesPass.class,
             ResolvePackageRelativeCssNamesPass.class,
             ResolvePluginsPass.class,
+            ResolveTemplateNamesPass.class, // Needs to run multiple times.
             ResolveTemplateParamTypesPass.class,
             RewriteGenderMsgsPass.class,
             SimplifyAssertNonNullPass.class,
