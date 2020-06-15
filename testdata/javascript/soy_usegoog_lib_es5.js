@@ -68,7 +68,9 @@ $jscomp.polyfill = function(target, polyfill, fromLang, toLang) {
 $jscomp.polyfillUnisolated = function(target, polyfill) {
   for (var obj = $jscomp.global, split = target.split("."), i = 0; i < split.length - 1; i++) {
     var key = split[i];
-    key in obj || (obj[key] = {});
+    if (!(key in obj)) {
+      return;
+    }
     obj = obj[key];
   }
   var property = split[split.length - 1], orig = obj[property], impl = polyfill(orig);
@@ -79,7 +81,9 @@ $jscomp.polyfillIsolated = function(target, polyfill, fromLang) {
   var obj = !isNativeClass && root in $jscomp.polyfills ? $jscomp.polyfills : $jscomp.global;
   for (var i = 0; i < split.length - 1; i++) {
     var key = split[i];
-    key in obj || (obj[key] = {});
+    if (!(key in obj)) {
+      return;
+    }
     obj = obj[key];
   }
   var property = split[split.length - 1], nativeImpl = $jscomp.IS_SYMBOL_NATIVE && "es6" === fromLang ? obj[property] : null, impl = polyfill(nativeImpl);
