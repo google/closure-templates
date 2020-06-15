@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 /** A simple cache interface for reading soy compiler inputs. */
 public interface SoyInputCache {
@@ -25,9 +26,13 @@ public interface SoyInputCache {
   SoyInputCache DEFAULT =
       new SoyInputCache() {
         @Override
-        public <T> T read(File file, CacheLoader<T> loader, SoyCompilerFileReader reader)
+        public <T> T read(
+            File file,
+            CacheLoader<T> loader,
+            SoyCompilerFileReader reader,
+            Map<String, String> generatedFiles)
             throws IOException {
-          T value = loader.read(file, reader, this);
+          T value = loader.read(file, reader, this, generatedFiles);
           // everything is always immediately evicted
           loader.onEvict(value);
           return value;
@@ -40,7 +45,12 @@ public interface SoyInputCache {
   /** A Reader can read a file as a structured object. */
   interface CacheLoader<T> {
     /** Reads an object from the file using the given file reader. */
-    T read(File file, SoyCompilerFileReader fileReader, SoyInputCache cache) throws IOException;
+    T read(
+        File file,
+        SoyCompilerFileReader fileReader,
+        SoyInputCache cache,
+        Map<String, String> generatedFiles)
+        throws IOException;
 
     /**
      * Called when the item is removed from the cache.
@@ -64,7 +74,12 @@ public interface SoyInputCache {
    * @param reader The reader to use to open the file
    * @return the result of reaeding the file, possibly from a cache.
    */
-  <T> T read(File file, CacheLoader<T> loader, SoyCompilerFileReader reader) throws IOException;
+  <T> T read(
+      File file,
+      CacheLoader<T> loader,
+      SoyCompilerFileReader reader,
+      Map<String, String> generatedFiles)
+      throws IOException;
 
   /**
    * Declares that one file depends on another. Therefore if {@code dependency} changes then {@code

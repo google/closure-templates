@@ -42,6 +42,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,7 +55,11 @@ final class CacheLoaders {
   static final SoyInputCache.CacheLoader<LoggingConfig> LOGGING_CONFIG_LOADER =
       new SoyInputCache.CacheLoader<LoggingConfig>() {
         @Override
-        public LoggingConfig read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
+        public LoggingConfig read(
+            File file,
+            SoyCompilerFileReader reader,
+            SoyInputCache cache,
+            Map<String, String> generatedFilesToNormalizedPath)
             throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
             return LoggingConfig.parseFrom(stream);
@@ -66,7 +71,11 @@ final class CacheLoaders {
       new SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>>() {
         @Override
         public ImmutableMap<String, PrimitiveData> read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
+            File file,
+            SoyCompilerFileReader reader,
+            SoyInputCache cache,
+            Map<String, String> generatedFilesToNormalizedPath)
+            throws IOException {
           return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
         }
       };
@@ -185,7 +194,11 @@ final class CacheLoaders {
       new SoyInputCache.CacheLoader<CachedDescriptorSet>() {
         @Override
         public CachedDescriptorSet read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
+            File file,
+            SoyCompilerFileReader reader,
+            SoyInputCache cache,
+            Map<String, String> generatedFilesToNormalizedPath)
+            throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
             return new CachedDescriptorSet(
                 file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
@@ -198,7 +211,11 @@ final class CacheLoaders {
   static final SoyInputCache.CacheLoader<CompilationUnit> COMPILATION_UNIT_LOADER =
       new SoyInputCache.CacheLoader<CompilationUnit>() {
         @Override
-        public CompilationUnit read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
+        public CompilationUnit read(
+            File file,
+            SoyCompilerFileReader reader,
+            SoyInputCache cache,
+            Map<String, String> generatedFilesToNormalizedPath)
             throws IOException {
           try (InputStream is =
               new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
@@ -253,7 +270,7 @@ final class CacheLoaders {
     }
 
     @Override
-    public java.io.Reader open() throws IOException {
+    public Reader open() throws IOException {
       return delegate.open();
     }
 
@@ -269,14 +286,21 @@ final class CacheLoaders {
 
         @Override
         public CachedSoyFileSupplier read(
-            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
+            File file,
+            SoyCompilerFileReader reader,
+            SoyInputCache cache,
+            Map<String, String> generatedFilesToNormalizedPath)
+            throws IOException {
           CharSource source = reader.read(file).asCharSource(UTF_8);
-          SoyFileSupplier delegate = new StableSoyFileSupplier(source, file.getPath());
+          String path =
+              generatedFilesToNormalizedPath.containsKey(file.getPath())
+                  ? generatedFilesToNormalizedPath.get(file.getPath())
+                  : file.getPath();
+          SoyFileSupplier delegate = new StableSoyFileSupplier(source, path);
           ErrorReporter errors = ErrorReporter.create(/*fileSuppliers*/ ImmutableMap.of());
           SoyFileNode fileNode;
-          try (java.io.Reader charReader = source.openStream()) {
-            fileNode =
-                new SoyFileParser(idGenerator, charReader, file.getPath(), errors).parseSoyFile();
+          try (Reader charReader = source.openStream()) {
+            fileNode = new SoyFileParser(idGenerator, charReader, path, errors).parseSoyFile();
           }
           return new CachedSoyFileSupplier(delegate, errors, fileNode);
         }
