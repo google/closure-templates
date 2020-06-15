@@ -40,7 +40,7 @@ import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
 
 /** A command line parser for soy, based on args4j. */
-final class SoyCmdLineParser extends CmdLineParser {
+public final class SoyCmdLineParser extends CmdLineParser {
   static {
     CmdLineParser.registerHandler(Module.class, ModuleOptionHandler.class);
     // overwrite the built in boolean handler

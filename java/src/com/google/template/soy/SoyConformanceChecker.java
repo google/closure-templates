@@ -49,7 +49,7 @@ public final class SoyConformanceChecker extends AbstractSoyCompiler {
   }
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     if (conformanceConfigs.isEmpty()) {
       exitWithError("Must set --conformanceConfig");
     }

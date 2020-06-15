@@ -117,7 +117,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   }
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     if (runtimePath.length() == 0) {
       exitWithError("Must provide the Python runtime library path.");
     }

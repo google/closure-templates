@@ -113,7 +113,7 @@ public final class SoyParseInfoGenerator extends AbstractSoyCompiler {
   }
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     // Java package is always required.
     if (javaPackage.length() == 0) {
       exitWithError("Must provide Java package.");

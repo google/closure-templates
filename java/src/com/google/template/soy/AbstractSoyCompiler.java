@@ -15,6 +15,8 @@
  */
 package com.google.template.soy;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +33,7 @@ import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
@@ -175,12 +178,12 @@ public abstract class AbstractSoyCompiler {
   /** The remaining arguments after parsing command-line flags. */
   @Argument private List<String> arguments = new ArrayList<>();
 
-  private final SoyCompilerFileReader soyCompilerFileReader;
+  protected final SoyCompilerFileReader soyCompilerFileReader;
 
   final PluginLoader pluginLoader;
   private final SoyInputCache cache;
 
-  AbstractSoyCompiler(
+  protected AbstractSoyCompiler(
       PluginLoader pluginLoader, SoyInputCache cache, SoyCompilerFileReader soyCompilerFileReader) {
     this.cache = cache;
     this.pluginLoader = pluginLoader;
@@ -192,7 +195,7 @@ public abstract class AbstractSoyCompiler {
     this(pluginLoader, SoyInputCache.DEFAULT, soyCompilerFileReader);
   }
 
-  AbstractSoyCompiler(PluginLoader pluginLoader, SoyInputCache cache) {
+  protected AbstractSoyCompiler(PluginLoader pluginLoader, SoyInputCache cache) {
     this(pluginLoader, cache, FileSystemSoyFileReader.INSTANCE);
   }
 
@@ -292,8 +295,14 @@ public abstract class AbstractSoyCompiler {
     // add sources
     for (File src : srcs) {
       try {
-        sfsBuilder.addFile(
-            cache.read(src, CacheLoaders.SOY_FILE_LOADER, soyCompilerFileReader, generatedFiles));
+        if (cacheAsts()) {
+          sfsBuilder.addFile(
+              cache.read(src, CacheLoaders.SOY_FILE_LOADER, soyCompilerFileReader, generatedFiles));
+        } else {
+          sfsBuilder.addFile(
+              new StableSoyFileSupplier(
+                  soyCompilerFileReader.read(src).asCharSource(UTF_8), src.getPath()));
+        }
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
             "File: " + src.getPath() + " passed to --srcs does not exist", fnfe);
@@ -469,10 +478,21 @@ public abstract class AbstractSoyCompiler {
   }
 
   /**
+   * Extension point for subclasses to disable the caching of Soy ASTS.
+   *
+   * <p>TODO(lukes): this is necessary because the way we implemented Soy AST caching is a hack!.
+   * See copious comments SoyFileSetParser.HasAstOrErrors.
+   */
+  @ForOverride
+  protected boolean cacheAsts() {
+    return true;
+  }
+
+  /**
    * Extension point for subtypes to perform additional logic to validate compiler specific flags.
    */
   @ForOverride
-  void validateFlags() {}
+  protected void validateFlags() {}
 
   /** Extension point for subclasses to disable soy sources being required. */
   @ForOverride
@@ -507,7 +527,7 @@ public abstract class AbstractSoyCompiler {
    *
    * @param errorMsg The error message to print.
    */
-  static final RuntimeException exitWithError(String errorMsg) {
+  protected static final RuntimeException exitWithError(String errorMsg) {
     throw new CommandLineError(errorMsg);
   }
 }

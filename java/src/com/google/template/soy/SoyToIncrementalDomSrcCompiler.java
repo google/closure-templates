@@ -50,7 +50,7 @@ public final class SoyToIncrementalDomSrcCompiler extends AbstractSoyCompiler {
   SoyToIncrementalDomSrcCompiler() {}
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     outputFiles.validateFlags();
   }
 

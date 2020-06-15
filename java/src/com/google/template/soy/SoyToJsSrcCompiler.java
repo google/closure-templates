@@ -146,7 +146,7 @@ public final class SoyToJsSrcCompiler extends AbstractSoyCompiler {
   }
 
   @Override
-  void validateFlags() {
+  protected void validateFlags() {
     outputFiles.validateFlags();
   }
 
