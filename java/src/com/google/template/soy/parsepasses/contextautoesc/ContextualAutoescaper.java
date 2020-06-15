@@ -75,12 +75,12 @@ public final class ContextualAutoescaper {
    * @param sourceFiles The files to rewrite
    * @param registry The registry to look up information about callees
    */
-  public Inferences annotate(ImmutableList<SoyFileNode> sourceFiles, TemplateRegistry registry) {
-
+  public Inferences annotate(ImmutableList<SoyFileNode> sourceFiles) {
+    Inferences inferences = new Inferences();
     // Inferences collects all the typing decisions we make and escaping modes we choose.
-    Inferences inferences = new Inferences(registry);
-
     for (SoyFileNode file : sourceFiles) {
+      inferences.setTemplateRegistry(
+          file.hasTemplateRegistry() ? file.getTemplateRegistry() : TemplateRegistry.EMPTY);
       for (TemplateNode templateNode : file.getTemplates()) {
         try {
           // The author specifies the kind of SanitizedContent to produce, and thus the context in

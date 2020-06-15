@@ -50,7 +50,7 @@ import java.util.Map;
 public final class Inferences {
 
   /** Map of template names to instances used to type <code>{call}</code> commands. */
-  private final TemplateRegistry templates;
+  private TemplateRegistry templateRegistry = null;
 
   /** Maps print, msg and call commands to the inferred escaping modes. */
   private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
@@ -59,9 +59,8 @@ public final class Inferences {
   /** Maps print, msg and call commands to the context. */
   private final Map<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
 
-  /** An instance that does not inherit from a parent. */
-  public Inferences(TemplateRegistry templates) {
-    this.templates = templates;
+  public void setTemplateRegistry(TemplateRegistry templateRegistry) {
+    this.templateRegistry = templateRegistry;
   }
 
   /**
@@ -70,7 +69,7 @@ public final class Inferences {
    * @param templateName A qualified template name.
    */
   ImmutableList<TemplateType> lookupTemplates(CallNode call) {
-    return templates.getTemplates(call);
+    return templateRegistry.getTemplates(call);
   }
 
   /**

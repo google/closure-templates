@@ -16,18 +16,20 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 /**
  * Visitor to check that there are no external calls. Used by backends that disallow external calls,
@@ -50,12 +52,11 @@ public final class StrictDepsPass implements CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateLiteralNode node :
           SoyTreeUtils.getAllNodesOfType(file, TemplateLiteralNode.class)) {
-        checkTemplateLiteralNode(node, registry);
+        checkTemplateLiteralNode(node, file.getTemplateRegistry());
       }
     }
     return Result.CONTINUE;
@@ -64,18 +65,12 @@ public final class StrictDepsPass implements CompilerFileSetPass {
   // TODO(gboyer): Consider some deltemplate checking, but it's hard to make a coherent case for
   // deltemplates since it's legitimate to have zero implementations, or to have the implementation
   // in a different part of the dependency graph (if it's late-bound).
-  private void checkTemplateLiteralNode(TemplateLiteralNode node, TemplateRegistry registry) {
+  private void checkTemplateLiteralNode(
+      TemplateLiteralNode node, ImportsTemplateRegistry registry) {
     TemplateMetadata callee = registry.getBasicTemplateOrElement(node.getResolvedName());
 
     if (callee == null) {
-      String extraErrorMessage =
-          SoyErrors.getDidYouMeanMessage(
-              registry.getBasicTemplateOrElementNames(), node.getIdentifier().identifier());
-      errorReporter.report(
-          node.getSourceLocation(),
-          CALL_TO_UNDEFINED_TEMPLATE,
-          node.getIdentifier().identifier(),
-          extraErrorMessage);
+      reportUndefinedTemplateErrors(node, registry);
     } else {
       SoyFileKind calleeKind = callee.getSoyFileKind();
       String callerFilePath = node.getSourceLocation().getFilePath();
@@ -87,5 +82,28 @@ public final class StrictDepsPass implements CompilerFileSetPass {
             calleeFilePath);
       }
     }
+  }
+
+  private void reportUndefinedTemplateErrors(
+      TemplateLiteralNode node, ImportsTemplateRegistry registry) {
+    Identifier ident = node.getIdentifier();
+    // Cross-check the called template's name against the list of imported symbols and the list of
+    // known fully-namespaced file names, and report suggestions for the undefined template.
+    String closestImportedSymbol =
+        SoyErrors.getClosest(registry.getImportedSymbols(), ident.originalName());
+    if (!Strings.isNullOrEmpty(closestImportedSymbol)) {
+      // Clarify that imports shouldn't be called with a "."
+      closestImportedSymbol = "'" + closestImportedSymbol + "' (with no '.')";
+    }
+    String extraErrorMessage =
+        SoyErrors.getDidYouMeanMessage(
+            closestImportedSymbol,
+            SoyErrors.getClosest(registry.getBasicTemplateOrElementNames(), ident.identifier()));
+
+    errorReporter.report(
+        node.getSourceLocation(),
+        CALL_TO_UNDEFINED_TEMPLATE,
+        ident.identifier(),
+        extraErrorMessage);
   }
 }

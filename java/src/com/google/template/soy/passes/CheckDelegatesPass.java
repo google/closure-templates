@@ -83,9 +83,12 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
 
   @Override
   public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    // Perform checks that only involve templates (uses templateRegistry only, no traversal).
-    checkTemplates(registry);
+      ImmutableList<SoyFileNode> sourceFiles,
+      IdGenerator idGenerator,
+      TemplateRegistry fileSetTemplateRegistry) {
+    // Perform checks that only involve templates (uses fileset templateRegistry only, no traversal
+    // and no imports context needed).
+    checkTemplates(fileSetTemplateRegistry.getDelTemplateSelector());
 
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode template : fileNode.getTemplates()) {
@@ -94,11 +97,14 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         for (TemplateLiteralNode templateLiteralNode :
             SoyTreeUtils.getAllNodesOfType(template, TemplateLiteralNode.class)) {
           checkTemplateLiteralNode(
-              templateLiteralNode, registry, currDelPackageName, currTemplateNameForUserMsgs);
+              templateLiteralNode,
+              fileNode.getTemplateRegistry(),
+              currDelPackageName,
+              currTemplateNameForUserMsgs);
         }
         for (CallDelegateNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallDelegateNode.class)) {
-          checkCallDelegateNode(callNode, registry);
+          checkCallDelegateNode(callNode, fileNode.getTemplateRegistry());
         }
       }
     }
@@ -106,14 +112,12 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
   }
 
   /** Performs checks that only involve templates (uses templateRegistry only). */
-  private void checkTemplates(TemplateRegistry templateRegistry) {
-
-    DelTemplateSelector<TemplateMetadata> selector = templateRegistry.getDelTemplateSelector();
+  private void checkTemplates(DelTemplateSelector<TemplateMetadata> fileSetDelTemplateSelector) {
 
     // Check that all delegate templates with the same name have the same declared params,
     // content kind, and strict html mode.
     for (Collection<TemplateMetadata> delTemplateGroup :
-        selector.delTemplateNameToValues().asMap().values()) {
+        fileSetDelTemplateSelector.delTemplateNameToValues().asMap().values()) {
       TemplateMetadata firstDelTemplate = null;
       // loop over all members of the deltemplate group looking for a source template.
       for (TemplateMetadata delTemplate : delTemplateGroup) {

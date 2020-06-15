@@ -24,7 +24,6 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 
 /**
@@ -44,13 +43,13 @@ final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateLiteralNode node :
           SoyTreeUtils.getAllNodesOfType(file, TemplateLiteralNode.class)) {
         String calleeName = node.getResolvedName();
-        TemplateMetadata definition = registry.getBasicTemplateOrElement(calleeName);
+        TemplateMetadata definition =
+            file.getTemplateRegistry().getBasicTemplateOrElement(calleeName);
         if (definition != null && !isVisible(file, definition)) {
           errorReporter.report(
               node.getSourceLocation(),

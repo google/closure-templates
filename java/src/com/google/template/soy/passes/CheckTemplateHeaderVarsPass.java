@@ -24,7 +24,6 @@ import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInf
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 
 /**
@@ -47,12 +46,10 @@ public final class CheckTemplateHeaderVarsPass implements CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    IndirectParamsCalculator calculator = new IndirectParamsCalculator(registry);
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode fileNode : sourceFiles) {
       for (TemplateNode templateNode : fileNode.getTemplates()) {
-        checkTemplate(templateNode, calculator);
+        checkTemplate(templateNode, new IndirectParamsCalculator(fileNode.getTemplateRegistry()));
       }
     }
     return Result.CONTINUE;

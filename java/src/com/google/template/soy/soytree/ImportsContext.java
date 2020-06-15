@@ -197,5 +197,9 @@ public final class ImportsContext {
     public ImmutableMap<String, TemplateName> getSymbolsToTemplateNamesMap() {
       return symbolToTemplateMap;
     }
+
+    public ImmutableSet<String> getImportedSymbols() {
+      return symbolToTemplateMap.keySet();
+    }
   }
 }

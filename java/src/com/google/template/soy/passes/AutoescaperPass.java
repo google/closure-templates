@@ -22,7 +22,6 @@ import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.parsepasses.contextautoesc.Inferences;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateRegistry;
 
 /** A shim around ContextualAutoescaper to make it conform to the pass interface. */
 final class AutoescaperPass implements CompilerFileSetPass {
@@ -41,8 +40,7 @@ final class AutoescaperPass implements CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     // The autoescaper depends on certain amounts of template validation having been done, so we
     // can't safely run on broken trees.
     //  * that all deltemplates have compatible content kinds
@@ -51,7 +49,7 @@ final class AutoescaperPass implements CompilerFileSetPass {
     if (errorReporter.hasErrors()) {
       return Result.STOP;
     }
-    Inferences inferences = autoescaper.annotate(sourceFiles, registry);
+    Inferences inferences = autoescaper.annotate(sourceFiles);
     if (inferences == null) {
       return Result.STOP;
     }

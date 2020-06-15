@@ -272,11 +272,9 @@ public class SoyFileNodeTransformer {
   }
 
   private final String javaPackage;
-  private final IndirectParamsCalculator indirectParamsCalculator;
 
   public SoyFileNodeTransformer(String javaPackage, TemplateRegistry templateRegistry) {
     this.javaPackage = javaPackage;
-    this.indirectParamsCalculator = new IndirectParamsCalculator(templateRegistry);
   }
 
   public FileInfo transform(SoyFileNode node) {
@@ -327,8 +325,9 @@ public class SoyFileNodeTransformer {
     Set<String> directParamNames = ImmutableSet.copyOf(params.keySet());
 
     IndirectParamsInfo idi =
-        indirectParamsCalculator.calculateIndirectParams(
-            TemplateMetadata.asTemplateType(TemplateMetadata.fromTemplate(template)));
+        new IndirectParamsCalculator(template.getParent().getTemplateRegistry())
+            .calculateIndirectParams(
+                TemplateMetadata.asTemplateType(TemplateMetadata.fromTemplate(template)));
 
     for (Map.Entry<String, Parameter> entry : idi.indirectParams.entrySet()) {
       String paramName = entry.getKey();

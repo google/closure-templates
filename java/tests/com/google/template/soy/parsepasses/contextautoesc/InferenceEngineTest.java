@@ -314,7 +314,7 @@ public final class InferenceEngineTest {
             // html nodes are preserved and the autoescaper can see them
             .desugarHtmlAndStateNodes(false)
             .parse();
-    Inferences inferences = new Inferences(result.registry());
+    Inferences inferences = new Inferences();
     TemplateNode template = (TemplateNode) result.fileSet().getChild(0).getChild(0);
     InferenceEngine.inferTemplateEndContext(
         template,

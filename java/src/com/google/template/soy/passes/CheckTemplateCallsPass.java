@@ -109,10 +109,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
   }
 
   @Override
-  public Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
-    CheckCallsHelper helper = new CheckCallsHelper(registry);
+  public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
+      CheckCallsHelper helper = new CheckCallsHelper(file.getTemplateRegistry());
       for (TemplateNode template : file.getTemplates()) {
         for (CallBasicNode callNode :
             SoyTreeUtils.getAllNodesOfType(template, CallBasicNode.class)) {

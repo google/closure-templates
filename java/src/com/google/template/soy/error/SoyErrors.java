@@ -17,14 +17,17 @@
 package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.Descriptor;
+import java.util.Arrays;
 import javax.annotation.Nullable;
 
 /** Utility methods for constructing Soy error messages. */
@@ -42,6 +45,22 @@ public final class SoyErrors {
       return String.format(" Did you mean '%s'?", closestName);
     }
     return "";
+  }
+
+  /** Produces a "Did you mean..?" message for a list of suggestions. */
+  public static String getDidYouMeanMessage(String... closestNames) {
+    ImmutableList<String> closestNamesList =
+        Arrays.stream(closestNames)
+            .filter(s -> !Strings.isNullOrEmpty(s))
+            // Wrap in quotes, unless it already contains them (sometimes these are already
+            // formatted w/ helper text after the suggestion).
+            .map(s -> s.contains("'") ? s : "'" + s + "'")
+            .collect(toImmutableList());
+
+    if (closestNamesList.isEmpty()) {
+      return "";
+    }
+    return String.format(" Did you mean %s?", Joiner.on(" or ").join(closestNamesList));
   }
 
   /**
@@ -70,7 +89,7 @@ public final class SoyErrors {
    */
   @Nullable
   @VisibleForTesting
-  static String getClosest(Iterable<String> allNames, String wrongName) {
+  public static String getClosest(Iterable<String> allNames, String wrongName) {
     // only suggest matches that are closer than this.  This magic heuristic is based on what llvm
     // and javac do
     int shortest = (wrongName.length() + 2) / 3 + 1;

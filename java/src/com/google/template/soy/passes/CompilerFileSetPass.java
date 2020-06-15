@@ -26,6 +26,16 @@ import com.google.template.soy.soytree.TemplateRegistry;
  *
  * <p>Prefer implementing {@link CompilerFilePass} whenever possible. This should only be used for
  * passes that need to access transitive callee information.
+ *
+ * <p>TODO(b/157519545): Refactor this interface. Right now half of these passes need the file set
+ * registry, and the other half use the per-file registries (once they're ready, after the second
+ * template imports pass). We should restructure this once we've decided how we want to refactor the
+ * template registry object first.
+ *
+ * <p>For now, each CompilerFileSetPass should implement one of the run methods in this file;
+ * run(sourceFiles, idGenerator) should be preferred (and sourceFile.getTemplateRegistry() should be
+ * used to get a file-local template registry that includes imports), unless the file-set template
+ * registyr is needed for the pass.
  */
 interface CompilerFileSetPass extends CompilerPass {
   enum Result {
@@ -33,14 +43,24 @@ interface CompilerFileSetPass extends CompilerPass {
     STOP;
   }
 
+  default Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    throw new UnsupportedOperationException(
+        "run(  ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) is not"
+            + " implemented.");
+  }
+
   /**
    * Runs the pass and returns whether or not compilation should abort.
    *
-   * @param registry This can either be a complete registry (for crossTemplateCheckingPasses) for a
-   *     registry containing metadata about dependencies (for templateReturnTypeInferencePasses).
-   *     The latter is for modifying template node information (such as whether the template is a
-   *     Soy element) based off of its callees.
+   * @param fileSetRegistry This can either be a complete registry (for crossTemplateCheckingPasses)
+   *     for a registry containing metadata about dependencies (for
+   *     templateReturnTypeInferencePasses). The latter is for modifying template node information
+   *     (such as whether the template is a Soy element) based off of its callees.
    */
-  Result run(
-      ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry);
+  default Result run(
+      ImmutableList<SoyFileNode> sourceFiles,
+      IdGenerator idGenerator,
+      TemplateRegistry fileSetRegistry) {
+    return run(sourceFiles, idGenerator);
+  }
 }
