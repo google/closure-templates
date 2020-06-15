@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+syntax = "proto2";
 
 package soy;
 option java_package = "com.google.template.soy.logging";
@@ -34,11 +34,26 @@ message LoggableElement {
   // soy identifier (it should match:
   // '[a-zA-Z_][a-zA-Z_0-9]*([.][a-zA-Z_][a-zA-Z_0-9]*)*' )
   // Must be unique.
-  string name = 1;
+  optional string name = 1;
   // The id that will be logged.  Must be unique.
-  int64 id = 2;
+  optional int64 id = 2;
   // The fully qualified name of the protocol buffer that
   // will be used to specify metadata for the element.  Allowed to be the empty
   // string if there is no such proto.
-  string proto_type = 3;
+  optional string proto_type = 3;
+  // Additional metadata to be included with this loggable element. Use this to
+  // set compile-time constant VE metadata, that will be available from Soy
+  // source code.
+  optional LoggableElementMetadata metadata = 4;
+}
+
+// Additional metadata to be included with a loggable element. Extend this and
+// set the metadata in your logging config. Note that metadata will be
+// serialized in JS and sent to the client, so copious metadata could bloat JS
+// size. To keep JS code size down, we recommend using smart defaults for
+// metadata (so metadata only has to be sent to the client if the value is
+// different than the default) and only setting the metadata on a VE if that
+// metadata is different from the default.
+message LoggableElementMetadata {
+  extensions 1000 to max;
 }
