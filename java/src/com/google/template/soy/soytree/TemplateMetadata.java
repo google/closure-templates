@@ -30,6 +30,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 
 /**
@@ -102,7 +103,8 @@ public abstract class TemplateMetadata {
     public static Parameter fromParam(TemplateParam param) {
       return builder()
           .setName(param.name())
-          .setType(param.type())
+          // Proto imports when compiler is not given proto descriptors will cause type to be unset.
+          .setType(param.hasType() ? param.type() : UnknownType.getInstance())
           .setRequired(param.isRequired())
           .setDescription(param.desc())
           .build();
