@@ -91,6 +91,10 @@ public final class ExprEquivalenceTest {
     runTest("{assertNotEquals(1 + 2, 2 + 1)}");
     runTest("{assertEquals(1 + 2, 1 + 2)}");
     runTest("{assertNotEquals(1 + 2, 1 - 2)}");
+    runTest(
+        "{assertNotEquals([$a for $a, $b in [1,2,3] if $a < 0], [$a for $a, $b in [1,2,3] if $a <"
+            + " 0])}");
+    runTest("{let $a: [$a for $a, $b in [1,2,3] if $a < 0] /}", "{assertEquals($a, $a)}");
 
     // null safe matters, though perhaps it shouldn't.  The two expressions will evaluate to the
     // same thing (because if it wouldn't then some kind of runtime error would occur).
@@ -115,6 +119,7 @@ public final class ExprEquivalenceTest {
             .addSoyFunction(ASSERT_REFLEXIVE_FUNCTION)
             .addSoyFunction(ASSERT_EQUALS_FUNCTION)
             .addSoyFunction(ASSERT_NOT_EQUALS_FUNCTION)
+            .enableExperimentalFeatures(ImmutableList.of("indices_for_list_comprehension"))
             .typeRegistry(TYPE_REGISTRY)
             .parse()
             .fileSet();

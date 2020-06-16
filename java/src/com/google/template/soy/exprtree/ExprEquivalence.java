@@ -276,6 +276,15 @@ public final class ExprEquivalence {
       return mapLiteralFields(node).equals(mapLiteralFields((MapLiteralNode) other));
     }
 
+    /**
+     * As seen above in the hash implementation, two list comprehension nodes can only be equivalent
+     * if they are the exact same object.
+     */
+    @Override
+    protected Boolean visitListComprehensionNode(ListComprehensionNode node) {
+      return node == other;
+    }
+
     // literals
 
     @Override
