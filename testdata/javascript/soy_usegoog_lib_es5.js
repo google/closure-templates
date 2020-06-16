@@ -736,9 +736,7 @@ goog.mixin = function(target, source) {
     target[x] = source[x];
   }
 };
-goog.now = goog.TRUSTED_SITE && Date.now || function() {
-  return +new Date;
-};
+goog.now = Date.now;
 goog.globalEval = function(script) {
   (0,eval)(script);
 };
