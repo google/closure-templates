@@ -18,6 +18,7 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -252,8 +253,8 @@ public abstract class AbstractSoyCompiler {
     validateFlags();
     if (!arguments.isEmpty()) {
       exitWithError(
-          "Found extra arguments passed on the command line. If these are sources, use --srcs=..."
-              + " instead.");
+          "Found unexpected extra arguments passed on the command line:\n  "
+              + Joiner.on(" ").join(arguments));
     }
     if (requireSources() && srcs.isEmpty()) {
       exitWithError("Must provide list of source Soy files (--srcs).");
