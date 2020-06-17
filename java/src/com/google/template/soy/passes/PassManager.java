@@ -170,7 +170,7 @@ public final class PassManager {
               + ") haven't run yet.\n Passes executed so far: "
               + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
     }
-    executed.add(pass.getClass());
+    executed.add(getPassClass(pass));
   }
 
   /** A builder for configuring the pass manager. */
@@ -573,11 +573,7 @@ public final class PassManager {
     private <T extends CompilerPass> void addPassInternal(
         T pass, ImmutableList.Builder<T> builder) {
 
-      Class<?> passClass =
-          pass instanceof CompilerFilePassToFileSetPassShim
-              ? ((CompilerFilePassToFileSetPassShim) pass).getDelegateClass()
-              : pass.getClass();
-
+      Class<?> passClass = getPassClass(pass);
       PassContinuationRule rule = passContinuationRegistry.remove(passClass);
       if (!building) {
         return;
@@ -596,5 +592,11 @@ public final class PassManager {
       }
       throw new AssertionError("unhandled rule: " + rule);
     }
+  }
+
+  private static Class<? extends CompilerPass> getPassClass(CompilerPass pass) {
+    return pass instanceof CompilerFilePassToFileSetPassShim
+        ? ((CompilerFilePassToFileSetPassShim) pass).getDelegateClass()
+        : pass.getClass();
   }
 }

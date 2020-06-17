@@ -35,6 +35,21 @@ final class CompilerFilePassToFileSetPassShim implements CompilerFileSetPass {
   }
 
   @Override
+  public ImmutableList<Class<? extends CompilerPass>> runBefore() {
+    return filePassDelegate.runBefore();
+  }
+
+  @Override
+  public ImmutableList<Class<? extends CompilerPass>> runAfter() {
+    return filePassDelegate.runAfter();
+  }
+
+  @Override
+  public String name() {
+    return filePassDelegate.name();
+  }
+
+  @Override
   public Result run(
       ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator, TemplateRegistry registry) {
     for (SoyFileNode file : sourceFiles) {
