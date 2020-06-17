@@ -2937,7 +2937,7 @@ private IfNode IfStmt() :
       ifCondNode = new IfCondNode(
           nodeIdGen.genId(),
           createSrcLoc(condTagBegin, getPointJustBeforeNextToken()),
-          tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
+          tagBeginEnd == null ? createSrcLoc(condTagBegin) : createSrcLoc(condTagBegin, tagBeginEnd),
           "elseif",
           ifExpr);
       condNodes.add(ifCondNode);
