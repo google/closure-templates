@@ -357,6 +357,17 @@ public final class PassManager {
       // can run anywhere
       addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
 
+      // TODO(b/157519545): Resolve template imports (and calls to imports) here, once we decouple
+      // the imports pass from the template registry in cl/316826822. Then we won't need to
+      // duplicate these passes.
+      // Until then, we need this to resolve template names for data="all" calls. Normally this
+      // could just be done in the later run of this pass, but if other files in the file set have
+      // parse errors, then the file set passes won't be run, and parser will crash when it tries to
+      // create the DataAllCallSituation for the TemplateRegistry.
+      addPass(
+          new ResolveTemplateNamesPass(errorReporter, /* throwErrorIfCantResolve= */ false),
+          singleFilePassesBuilder);
+
       // Fileset passes run on all sources files and have access to a partial template registry so
       // they can examine information about dependencies.
       // TODO(b/158474755): Try to simplify this pass structure structure once we have template

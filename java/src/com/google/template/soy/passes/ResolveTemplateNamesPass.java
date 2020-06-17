@@ -36,7 +36,7 @@ import java.util.Optional;
  * imports are resolved in two passes (once for deps and once for the current fileset), this pass
  * also needs to be run twice for the passes that require a partial template registry.
  */
-public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
+public final class ResolveTemplateNamesPass implements CompilerFilePass, CompilerFileSetPass {
   private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
       SoyErrorKind.of("Call collides with namespace alias ''{0}''.");
 
@@ -57,10 +57,17 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      visitFile(file, Optional.of(file.getTemplateRegistry()));
+      run(file, idGenerator);
     }
 
     return Result.CONTINUE;
+  }
+
+  @Override
+  public void run(SoyFileNode file, IdGenerator idGenerator) {
+    visitFile(
+        file,
+        file.hasTemplateRegistry() ? Optional.of(file.getTemplateRegistry()) : Optional.empty());
   }
 
   private void visitFile(SoyFileNode file, Optional<ImportsTemplateRegistry> templateRegistry) {
