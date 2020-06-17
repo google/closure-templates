@@ -2229,9 +2229,13 @@ goog.html.SafeUrl.fromMediaSource = function(mediaSource) {
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 goog.html.DATA_URL_PATTERN_ = /^data:(.*);base64,[a-z0-9+\/]+=*$/i;
+goog.html.SafeUrl.tryFromDataUrl = function(dataUrl) {
+  dataUrl = String(dataUrl);
+  var filteredDataUrl = dataUrl.replace(/(%0A|%0D)/g, ""), match = filteredDataUrl.match(goog.html.DATA_URL_PATTERN_);
+  return match && goog.html.SafeUrl.isSafeMimeType(match[1]) ? goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(filteredDataUrl) : null;
+};
 goog.html.SafeUrl.fromDataUrl = function(dataUrl) {
-  var filteredDataUrl = dataUrl.replace(/(%0A|%0D)/g, ""), match = filteredDataUrl.match(goog.html.DATA_URL_PATTERN_), valid = match && goog.html.SafeUrl.isSafeMimeType(match[1]);
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(valid ? filteredDataUrl : goog.html.SafeUrl.INNOCUOUS_STRING);
+  return goog.html.SafeUrl.tryFromDataUrl(dataUrl) || goog.html.SafeUrl.INNOCUOUS_URL;
 };
 goog.html.SafeUrl.fromTelUrl = function(telUrl) {
   goog.string.internal.caseInsensitiveStartsWith(telUrl, "tel:") || (telUrl = goog.html.SafeUrl.INNOCUOUS_STRING);
@@ -2305,13 +2309,15 @@ goog.html.SafeUrl.fromTrustedResourceUrl = function(trustedResourceUrl) {
 };
 goog.html.SAFE_URL_PATTERN_ = /^(?:(?:https?|mailto|ftp):|[^:/?#]*(?:[/?#]|$))/i;
 goog.html.SafeUrl.SAFE_URL_PATTERN = goog.html.SAFE_URL_PATTERN_;
-goog.html.SafeUrl.sanitize = function(url) {
+goog.html.SafeUrl.trySanitize = function(url) {
   if (url instanceof goog.html.SafeUrl) {
     return url;
   }
   url = "object" == typeof url && url.implementsGoogStringTypedString ? url.getTypedStringValue() : String(url);
-  goog.html.SAFE_URL_PATTERN_.test(url) || (url = goog.html.SafeUrl.INNOCUOUS_STRING);
-  return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
+  return goog.html.SAFE_URL_PATTERN_.test(url) ? goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url) : null;
+};
+goog.html.SafeUrl.sanitize = function(url) {
+  return goog.html.SafeUrl.trySanitize(url) || goog.html.SafeUrl.INNOCUOUS_URL;
 };
 goog.html.SafeUrl.sanitizeAssertUnchanged = function(url, opt_allowDataUrl) {
   if (url instanceof goog.html.SafeUrl) {
@@ -2331,6 +2337,7 @@ goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(url) {
   return new goog.html.SafeUrl(goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_, url);
 };
+goog.html.SafeUrl.INNOCUOUS_URL = goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(goog.html.SafeUrl.INNOCUOUS_STRING);
 goog.html.SafeUrl.ABOUT_BLANK = goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse("about:blank");
 goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 goog.html.SafeStyle = function() {
