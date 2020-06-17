@@ -1368,9 +1368,7 @@ private SoyFileNode SoyFile() :
         aliases.add(alias);
       }
     }
-  )*
-
-  (
+|
     importNode = Import()
     {
       if (importNode != null) {
