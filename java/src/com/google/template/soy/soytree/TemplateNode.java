@@ -244,7 +244,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private final String templateName;
 
   /** This template's partial name. */
-  private final String partialTemplateName;
+  private final Identifier partialTemplateName;
 
   /** Visibility of this template. */
   private final Visibility visibility;
@@ -378,6 +378,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return templateName;
   }
 
+  /** Returns the source location of the template's name (e.g. ".foo" in "{template .foo}". */
+  public SourceLocation getTemplateNameLocation() {
+    return partialTemplateName.location();
+  }
+
   /**
    * This exists as part of the work in DesugarStateNodesPass to downlevel @state to @let. As part
    * of that, all state nodes should be cleared.
@@ -391,7 +396,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   /** Returns this template's partial name. */
   public String getPartialTemplateName() {
-    return partialTemplateName;
+    return partialTemplateName.identifier();
   }
 
   /** Returns the visibility of this template. */
@@ -625,7 +630,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* declaringClass= */ soyFileHeaderInfo.namespace,
         // The partial template name begins with a '.' that causes the stack trace element to
         // print "namespace..templateName" otherwise.
-        /* methodName= */ partialTemplateName.substring(1),
+        /* methodName= */ partialTemplateName.identifier().substring(1),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
   }

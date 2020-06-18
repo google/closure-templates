@@ -59,8 +59,7 @@ public final class TemplateElementNodeBuilder
     this.cmdText = templateName.identifier() + " " + Joiner.on(' ').join(attrs);
     setCommonCommandValues(attrs);
 
-    setTemplateNames(
-        soyFileHeaderInfo.getNamespace() + templateName.identifier(), templateName.identifier());
+    setTemplateNames(soyFileHeaderInfo.getNamespace() + templateName.identifier(), templateName);
     return this;
   }
 

@@ -64,8 +64,7 @@ public class TemplateBasicNodeBuilder extends TemplateNodeBuilder<TemplateBasicN
       }
     }
 
-    setTemplateNames(
-        soyFileHeaderInfo.getNamespace() + templateName.identifier(), templateName.identifier());
+    setTemplateNames(soyFileHeaderInfo.getNamespace() + templateName.identifier(), templateName);
     return this;
   }
 

@@ -97,7 +97,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
     }
 
     this.delPriority = soyFileHeaderInfo.getPriority();
-    genInternalTemplateNameHelper();
+    genInternalTemplateNameHelper(templateName);
     return this;
   }
 
@@ -139,7 +139,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
    * Private helper for both setCmdText() and setCmdTextInfo() to generate and set the internal-use
    * partial template name and template name.
    */
-  private void genInternalTemplateNameHelper() {
+  private void genInternalTemplateNameHelper(Identifier originalNameIdentifier) {
     Preconditions.checkState(id != null);
     // encode all the deltemplate information into the name to get a unique string
     // though... it might make more sense for this to not have a user visible name given that the
@@ -158,7 +158,12 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
         partialDeltemplateTemplateName(
             delTemplateName, soyFileHeaderInfo.getDelPackageName(), variant);
     String generatedTemplateName = soyFileHeaderInfo.getNamespace() + generatedPartialTemplateName;
-    setTemplateNames(generatedTemplateName, generatedPartialTemplateName);
+    setTemplateNames(
+        generatedTemplateName,
+        Identifier.create(
+            generatedPartialTemplateName,
+            originalNameIdentifier.identifier(),
+            originalNameIdentifier.location()));
   }
 
   /** Returns the inferred 'partial' name for a deltemplate. */

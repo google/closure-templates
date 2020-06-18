@@ -80,7 +80,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
    * This template's partial name. Only applicable for V2. This is private instead of protected to
    * enforce use of setTemplateNames().
    */
-  private String partialTemplateName;
+  private Identifier partialTemplateName;
 
   /** This template's visibility level. */
   protected Visibility visibility;
@@ -300,7 +300,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected final void setTemplateNames(String templateName, String partialTemplateName) {
+  protected final void setTemplateNames(String templateName, Identifier partialTemplateName) {
     this.templateName = checkNotNull(templateName);
     this.partialTemplateName = checkNotNull(partialTemplateName);
   }
@@ -313,7 +313,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     return templateName;
   }
 
-  protected String getPartialTemplateName() {
+  protected Identifier getPartialTemplateName() {
     return partialTemplateName;
   }
 
