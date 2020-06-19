@@ -34,6 +34,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.parseinfo.SoyTemplateInfo;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -43,9 +44,7 @@ import com.google.template.soy.shared.internal.SoyScopedData;
 import com.google.template.soy.sharedpasses.render.EvalVisitorFactoryImpl;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.sharedpasses.render.RenderVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
-import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -140,20 +139,17 @@ public final class BaseTofu implements SoyTofu {
         }
         // otherwise we need to add these ijs and then push all if its direct callees
         collectIjParams(currentTemplate, ijsForTemplate);
-        for (CallNode call : SoyTreeUtils.getAllNodesOfType(currentTemplate, CallNode.class)) {
-          if (call instanceof CallBasicNode) {
-            TemplateNode callee = basicTemplates.get(((CallBasicNode) call).getCalleeName());
-            if (callee != null) {
-              toVisit.add(callee);
-            }
-          } else if (call instanceof CallDelegateNode) {
-            toVisit.addAll(
-                delTemplates
-                    .delTemplateNameToValues()
-                    .get(((CallDelegateNode) call).getDelCalleeName()));
-          } else {
-            throw new AssertionError("Unexpected CallNode: " + call);
+        for (TemplateLiteralNode templateLiteralNode :
+            SoyTreeUtils.getAllNodesOfType(currentTemplate, TemplateLiteralNode.class)) {
+          TemplateNode callee = basicTemplates.get(templateLiteralNode.getResolvedName());
+          if (callee != null) {
+            toVisit.add(callee);
           }
+        }
+        for (CallDelegateNode callDelegateNode :
+            SoyTreeUtils.getAllNodesOfType(currentTemplate, CallDelegateNode.class)) {
+          toVisit.addAll(
+              delTemplates.delTemplateNameToValues().get(callDelegateNode.getDelCalleeName()));
         }
       }
       // when we exit the loop we have calculated everything for this template.
