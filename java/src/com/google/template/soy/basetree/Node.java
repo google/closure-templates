@@ -97,9 +97,6 @@ public interface Node {
    *   <li>all non-leaf copy constructors should be protected
    * </ul>
    *
-   * <p>TODO(lukes): The usecases for a copy method are few and far between. Making the AST nodes
-   * immutable (or at least unmodifiable) would be preferable to maintaining our copy() methods.
-   *
    * <p>Don't clone nodes unless you know what you're doing. The Soy AST is not actually a tree (it
    * contains back edges from variables to their definitions), and naively copying nodes can result
    * in pointers into stale ASTs

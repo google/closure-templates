@@ -53,10 +53,24 @@ public final class VeLogNode extends AbstractBlockCommandNode
    * is useful for deciding placeholder equivalence for velog nodes in messages.
    */
   static final class SamenessKey {
-    private final VeLogNode delegate;
+    private VeLogNode delegate;
 
     private SamenessKey(VeLogNode delegate) {
       this.delegate = delegate;
+    }
+
+    private SamenessKey(SamenessKey orig, CopyState copyState) {
+      // store the original, this may still be valid if we are only copying a subtree
+      this.delegate = orig.delegate;
+      copyState.registerRefListener(
+          orig.delegate,
+          newDelegate -> {
+            this.delegate = newDelegate;
+          });
+    }
+
+    SamenessKey copy(CopyState copyState) {
+      return new SamenessKey(this, copyState);
     }
 
     @Override
@@ -122,6 +136,8 @@ public final class VeLogNode extends AbstractBlockCommandNode
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     this.logonlyExpr = orig.logonlyExpr == null ? null : orig.logonlyExpr.copy(copyState);
     this.needsSyntheticVelogNode = orig.needsSyntheticVelogNode;
+    // See SamenessKey copy constructor
+    copyState.updateRefs(orig, this);
   }
 
   @Override

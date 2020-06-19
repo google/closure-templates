@@ -16,6 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -25,6 +28,7 @@ import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
@@ -135,15 +139,15 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
     MsgSelectCaseNode femaleCase =
         new MsgSelectCaseNode(
             nodeIdGen.genId(), msg.getSourceLocation(), msg.getOpenTagLocation(), "female");
-    femaleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
+    femaleCase.addChildren(origChildren);
     MsgSelectCaseNode maleCase =
         new MsgSelectCaseNode(
             nodeIdGen.genId(), msg.getSourceLocation(), msg.getOpenTagLocation(), "male");
-    maleCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
+    maleCase.addChildren(copyWhilePresevingPlaceholderIdentity(origChildren, nodeIdGen));
     MsgSelectDefaultNode defaultCase =
         new MsgSelectDefaultNode(
             nodeIdGen.genId(), msg.getSourceLocation(), msg.getOpenTagLocation());
-    defaultCase.addChildren(SoyTreeUtils.cloneListWithNewIds(origChildren, nodeIdGen));
+    defaultCase.addChildren(copyWhilePresevingPlaceholderIdentity(origChildren, nodeIdGen));
 
     MsgSelectNode selectNode =
         new MsgSelectNode(
@@ -157,6 +161,30 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
     selectNode.addChild(defaultCase);
 
     msg.addChild(selectNode);
+  }
+
+  /**
+   * Copies the nodes with new ids but preserves the placeholder identity. This is important
+   * because, while we don't have a great algorithm for telling that certain placeholders are
+   * actually identical, in the special case of {@code genders=} messages we do know that
+   * placeholders are equivalent since we are actually cloning messages into multiple cases.
+   */
+  private static List<StandaloneNode> copyWhilePresevingPlaceholderIdentity(
+      List<StandaloneNode> nodes, IdGenerator nodeIdGen) {
+    List<StandaloneNode> copy = SoyTreeUtils.cloneListWithNewIds(nodes, nodeIdGen);
+    List<MsgPlaceholderNode> placeholders = allPlaceholders(nodes);
+    List<MsgPlaceholderNode> copyPlaceholders = allPlaceholders(copy);
+    checkState(copyPlaceholders.size() == placeholders.size());
+    for (int i = 0; i < copyPlaceholders.size(); i++) {
+      copyPlaceholders.get(i).copySamenessKey(placeholders.get(i));
+    }
+    return copy;
+  }
+
+  private static List<MsgPlaceholderNode> allPlaceholders(List<StandaloneNode> nodes) {
+    return nodes.stream()
+        .flatMap(node -> SoyTreeUtils.getAllNodesOfType(node, MsgPlaceholderNode.class).stream())
+        .collect(toList());
   }
 
   /**

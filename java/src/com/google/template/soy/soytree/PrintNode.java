@@ -129,6 +129,8 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.htmlContext = orig.htmlContext;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+    // we may have handed out a copy to ourselves via genSamenessKey()
+    copyState.updateRefs(orig, this);
   }
 
   @Override
@@ -199,23 +201,37 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   }
 
   @Override
-  public Object genSamenessKey() {
-    return new SamenessKey(this);
+  public SamenessKey genSamenessKey() {
+    return new SamenessKeyImpl(this);
   }
 
-  private static final class SamenessKey {
-    final PrintNode node;
+  private static final class SamenessKeyImpl implements SamenessKey {
+    PrintNode node;
 
-    SamenessKey(PrintNode node) {
-      this.node = node;
+    SamenessKeyImpl(PrintNode node) {
+      this.node = checkNotNull(node);
+    }
+
+    SamenessKeyImpl(SamenessKeyImpl orig, CopyState copyState) {
+      this.node = orig.node;
+      copyState.registerRefListener(
+          orig.node,
+          newNode -> {
+            this.node = newNode;
+          });
+    }
+
+    @Override
+    public SamenessKeyImpl copy(CopyState copyState) {
+      return new SamenessKeyImpl(this, copyState);
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof SamenessKey)) {
+      if (!(obj instanceof SamenessKeyImpl)) {
         return false;
       }
-      PrintNode other = ((SamenessKey) obj).node;
+      PrintNode other = ((SamenessKeyImpl) obj).node;
       return Objects.equals(node.getUserSuppliedPhName(), other.getUserSuppliedPhName())
           && PrintEquivalence.get().equivalent(node, other);
     }

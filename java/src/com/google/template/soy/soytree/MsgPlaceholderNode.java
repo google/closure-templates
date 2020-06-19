@@ -46,7 +46,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    * Key object for determining whether this node and another node should be represented by the same
    * placeholder.
    */
-  private final Object samenessKey;
+  private MsgPlaceholderInitialNode.SamenessKey samenessKey;
 
   /**
    * @param id The id for this node.
@@ -73,8 +73,18 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
     this.basePhName = orig.basePhName;
     this.phExample = orig.phExample;
     this.initialNodeKind = orig.initialNodeKind;
-    this.samenessKey = orig.samenessKey;
+    this.samenessKey = orig.samenessKey.copy(copyState);
     copyState.updateRefs(orig, this);
+  }
+
+  /**
+   * Copies the samenesskey from another placeholder. This will force other parts of the translation
+   * system to treat these placeholders as being identical.
+   *
+   * <p>See RewriteGendersPass for the usecase
+   */
+  public void copySamenessKey(MsgPlaceholderNode placeholderNode) {
+    this.samenessKey = placeholderNode.samenessKey;
   }
 
   @Override

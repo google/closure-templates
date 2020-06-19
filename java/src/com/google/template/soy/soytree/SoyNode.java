@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -303,6 +305,44 @@ public interface SoyNode extends Node {
   /** A node that can be the initial content (i.e. initial child) of a MsgPlaceholderNode. */
   interface MsgPlaceholderInitialNode extends StandaloneNode {
 
+    /** A value object that can be used to test for placehoolder */
+    interface SamenessKey {
+      SamenessKey copy(CopyState copy);
+    }
+
+    /** A SamenessKey that uses the identity of a SoyNode. */
+    static final class IdentitySamenessKey implements SamenessKey {
+      private SoyNode node;
+
+      IdentitySamenessKey(SoyNode node) {
+        this.node = checkNotNull(node);
+      }
+
+      private IdentitySamenessKey(IdentitySamenessKey orig, CopyState copyState) {
+        this.node = orig.node;
+        copyState.registerRefListener(
+            orig.node,
+            newNode -> {
+              this.node = newNode;
+            });
+      }
+
+      @Override
+      public IdentitySamenessKey copy(CopyState copyState) {
+        return new IdentitySamenessKey(this, copyState);
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        return other instanceof IdentitySamenessKey && ((IdentitySamenessKey) other).node == node;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(node);
+      }
+    }
+
     /**
      * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
      * this raw name can be any identifier (not necessarily in upper-underscore format).
@@ -334,6 +374,6 @@ public interface SoyNode extends Node {
      * @return The key object for determining whether this node and another node should be
      *     represented by the same placeholder.
      */
-    Object genSamenessKey();
+    SamenessKey genSamenessKey();
   }
 }

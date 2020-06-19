@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
@@ -93,7 +94,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
         phExample,
         lcTagName,
         tagNode instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tagNode).isSelfClosing(),
-        fullTagText != null ? SamenessKey.create(phName, fullTagText, key) : null,
+        fullTagText != null ? SamenessKeyImpl.create(phName, fullTagText, key) : null,
         tagNode);
   }
 
@@ -247,9 +248,11 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     super(orig, copyState);
     this.lcTagName = orig.lcTagName;
     this.isSelfEnding = orig.isSelfEnding;
-    this.samenessKey = orig.samenessKey;
+    this.samenessKey = orig.samenessKey != null ? orig.samenessKey.copy(copyState) : null;
     this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
     this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
+    // we may have handed out a copy to ourselves via genSamenessKey()
+    copyState.updateRefs(orig, this);
   }
 
 
@@ -314,20 +317,28 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return Ascii.toUpperCase(basePlaceholderName);
   }
 
-
-  @Override public Object genSamenessKey() {
-    return samenessKey == null ? this : samenessKey;
+  @Override
+  public SamenessKey genSamenessKey() {
+    return samenessKey == null ? new IdentitySamenessKey(this) : samenessKey;
   }
 
   @AutoValue
-  abstract static class SamenessKey {
-    static SamenessKey create(
+  abstract static class SamenessKeyImpl implements SamenessKey {
+    static SamenessKeyImpl create(
         String userSuppliedPlaceholderName, String fullTagText, VeLogNode.SamenessKey key) {
       if (userSuppliedPlaceholderName == null && fullTagText == null && key == null) {
         throw new IllegalArgumentException("at least one parameter should be nonnull");
       }
-      return new AutoValue_MsgHtmlTagNode_SamenessKey(
+      return new AutoValue_MsgHtmlTagNode_SamenessKeyImpl(
           userSuppliedPlaceholderName, fullTagText, key);
+    }
+
+    @Override
+    public SamenessKeyImpl copy(CopyState copyState) {
+      return create(
+          userSuppliedPlaceholderName(),
+          fullTagText(),
+          logKey() == null ? null : logKey().copy(copyState));
     }
 
     // at least one of these is nonnull
