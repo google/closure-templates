@@ -53,6 +53,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -625,6 +626,7 @@ public class SoyFileParser {
    *
    * See https://javacc.org/tutorials/errorrecovery
    */
+  @CheckReturnValue
   private Token reportTemplateBodyErrorAndSkipTo(ParseException error, int... kinds) {
     ParseErrors.reportSoyFileParseException(
         errorReporter, filePath, error, token_source.curLexState);
@@ -639,13 +641,15 @@ public class SoyFileParser {
    *
    * See https://javacc.org/tutorials/errorrecovery
    */
-    private Token reportTemplateBodyErrorAndSkipTo(ParseException error, String adviceToUser,
+  @CheckReturnValue
+  private Token reportTemplateBodyErrorAndSkipTo(ParseException error, String adviceToUser,
         int... kinds) {
     ParseErrors.reportSoyFileParseException(
         errorReporter, filePath, error, token_source.curLexState, adviceToUser);
     return skipToTemplateToken(kinds);
   }
 
+  @CheckReturnValue
   private Token skipToTemplateToken(int... kinds) {
     ImmutableSet<Integer> skipTo = ImmutableSet.copyOf(Ints.asList(kinds));
     Token t;
@@ -662,6 +666,7 @@ public class SoyFileParser {
     }
   }
 
+  @CheckReturnValue
   Point getPointJustBeforeNextToken() {
     return ((SoySimpleCharStream) (token_source.input_stream)).getPointJustBeforeNextToken();
   }
@@ -992,10 +997,10 @@ TOKEN_MGR_DECLS: {
 
 // exits the attribute value
 <EXPR_NO_DOUBLE_QUOTE> TOKEN: {
-  < END_DQ_EXPR_ATTR: "\"" >
+  < END_DQ_EXPR_ATTR: "\"" > : IN_CMD_TAG
 }
 <EXPR_NO_SINGLE_QUOTE> TOKEN: {
-  < END_SQ_EXPR_ATTR: "'" >
+  < END_SQ_EXPR_ATTR: "'" >: IN_CMD_TAG
 }
 
 
@@ -1612,13 +1617,10 @@ private CommandTagAttribute Attribute() :
           exprList = ExprList()
         ]
         qToken = <END_DQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(IN_CMD_TAG);
-        }
       } catch (ParseException e) {
         token_source.SwitchTo(IN_CMD_TAG);
         exprList = ImmutableList.of(errorExpr(e.currentToken));
-        qToken = reportTemplateBodyErrorAndSkipTo(e, DOUBLE_QUOTE);
+        qToken = reportTemplateBodyErrorAndSkipTo(e, CMD_DOUBLE_QUOTE, END_DQ_EXPR_ATTR);
       }
     |
       <CMD_SINGLE_QUOTE>
@@ -1634,13 +1636,10 @@ private CommandTagAttribute Attribute() :
           exprList = ExprList()
         ]
         qToken = <END_SQ_EXPR_ATTR>
-        {
-          token_source.SwitchTo(IN_CMD_TAG);
-        }
       } catch (ParseException e) {
         token_source.SwitchTo(IN_CMD_TAG);
         exprList = ImmutableList.of(errorExpr(e.currentToken));
-        qToken = reportTemplateBodyErrorAndSkipTo(e, SINGLE_QUOTE);
+        qToken = reportTemplateBodyErrorAndSkipTo(e, CMD_SINGLE_QUOTE, END_SQ_EXPR_ATTR);
       }
     )
     {
@@ -2118,7 +2117,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
     )
     tagEnd = <CMD_END>
   } catch (ParseException parseException) {
-    reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
+    tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
   }
 
   {
@@ -2602,7 +2601,7 @@ private MsgSelectNode MsgSelect() :
     tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     selectExpr = errorExpr(tagBegin);
-    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
@@ -2859,7 +2858,7 @@ private LetNode LetStmt() :
       attr = Attribute()
       tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
-      reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
+      tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
     templateBlock = TemplateBlock()
@@ -2906,7 +2905,7 @@ private IfNode IfStmt() :
     tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     ifExpr = errorExpr(tagBegin);
-    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
   templateBlock = TemplateBlock()
 
@@ -2929,7 +2928,7 @@ private IfNode IfStmt() :
       tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
       ifExpr = errorExpr(condTagBegin);
-      reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+      tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
     }
     templateBlock = TemplateBlock()
 
@@ -3031,7 +3030,7 @@ private SwitchNode SwitchStmt() :
     tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     switchExpr = errorExpr(tagBegin);
-    reportTemplateBodyErrorAndSkipTo(e, CMD_END);
+    tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
@@ -3117,7 +3116,7 @@ private ForNode ForStmt() :
 
     tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
-    reportTemplateBodyErrorAndSkipTo(
+    tagBeginEnd = reportTemplateBodyErrorAndSkipTo(
         e,
         "\nFor-loops should be formatted as: \"{for $foo in <listExpression>}\".",
         CMD_END);
@@ -3363,7 +3362,7 @@ private CallParamNode CallParam() :
       attr = Attribute()
       tagBeginEnd = <CMD_END>
     } catch (ParseException e) {
-      reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
+      tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END, CMD_SELF_CLOSE);
     }
 
     templateBlock = TemplateBlock()
