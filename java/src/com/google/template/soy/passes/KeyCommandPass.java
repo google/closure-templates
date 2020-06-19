@@ -20,6 +20,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
@@ -69,7 +71,15 @@ final class KeyCommandPass implements CompilerFilePass {
       checkNodeIsValidChildOfOpenTagNode(node);
       checkNoDuplicateKeyAttribute(node);
       if (!disableAllTypeChecking) {
-        checkNodeIsSupportedType(node);
+        checkNodeIsSupportedType(node.getExpr());
+      }
+    }
+    if (disableAllTypeChecking) {
+      return;
+    }
+    for (CallNode call : SoyTreeUtils.getAllNodesOfType(file, CallNode.class)) {
+      if (call.getKeyExpr() != null) {
+        checkNodeIsSupportedType(call.getKeyExpr());
       }
     }
   }
@@ -116,8 +126,8 @@ final class KeyCommandPass implements CompilerFilePass {
     }
   }
 
-  private void checkNodeIsSupportedType(KeyNode node) {
-    SoyType exprType = node.getExpr().getRoot().getType();
+  private void checkNodeIsSupportedType(ExprRootNode exprRootNode) {
+    SoyType exprType = exprRootNode.getRoot().getType();
     Collection<SoyType> unwrapped =
         exprType.getKind() == Kind.UNION
             ? ((UnionType) exprType).getMembers()
@@ -159,7 +169,7 @@ final class KeyCommandPass implements CompilerFilePass {
       }
     }
     if (!isSupportedType) {
-      errorReporter.report(node.getExpr().getSourceLocation(), UNSUPPORTED_TYPE, exprType);
+      errorReporter.report(exprRootNode.getSourceLocation(), UNSUPPORTED_TYPE, exprType);
     }
   }
 }
