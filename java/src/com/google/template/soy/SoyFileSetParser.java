@@ -102,18 +102,51 @@ public abstract class SoyFileSetParser {
   }
 
   /** A simple tuple for the result of a parse operation. */
-  @AutoValue
-  public abstract static class ParseResult {
+  public static class ParseResult {
+    private final SoyFileSetNode soyTree;
+
+    /** The TemplateRegistry, which is guaranteed to be present if the error reporter is empty. */
+    private final Optional<TemplateRegistry> registry;
+
+    private final ImmutableList<SoyError> warnings;
+
     static ParseResult create(
-        SoyFileSetNode soyTree, TemplateRegistry registry, ImmutableList<SoyError> warnings) {
-      return new AutoValue_SoyFileSetParser_ParseResult(soyTree, registry, warnings);
+        SoyFileSetNode soyTree,
+        Optional<TemplateRegistry> registry,
+        ImmutableList<SoyError> warnings) {
+      return new ParseResult(soyTree, registry, warnings);
     }
 
-    public abstract SoyFileSetNode fileSet();
+    ParseResult(
+        SoyFileSetNode soyTree,
+        Optional<TemplateRegistry> registry,
+        ImmutableList<SoyError> warnings) {
+      this.soyTree = soyTree;
+      this.registry = registry;
+      this.warnings = warnings;
+    }
 
-    public abstract TemplateRegistry registry();
+    public SoyFileSetNode fileSet() {
+      return soyTree;
+    }
 
-    public abstract ImmutableList<SoyError> warnings();
+    /**
+     * Gets the TemplateRegistry, which is guaranteed to be present if the error reporter is empty.
+     */
+    public final TemplateRegistry registry() {
+      return registry.orElseThrow(
+          () ->
+              new IllegalStateException(
+                  "No template registry, did you forget to check the error reporter?"));
+    }
+
+    public final boolean hasRegistry() {
+      return registry.isPresent();
+    }
+
+    public ImmutableList<SoyError> warnings() {
+      return warnings;
+    }
   }
 
   public static Builder newBuilder() {
@@ -207,6 +240,13 @@ public abstract class SoyFileSetParser {
         soyTree.addChild(node);
       }
 
+      // If we couldn't parse all the files, we can't run the fileset passes or build the template
+      // registry.
+      if (filesWereSkipped) {
+        return ParseResult.create(
+            soyTree, Optional.empty(), ImmutableList.copyOf(errorReporter().getWarnings()));
+      }
+
       // Build the template registry for the file set & its dependencies.
       FileSetTemplateRegistry.Builder builder = FileSetTemplateRegistry.builder(errorReporter());
 
@@ -220,9 +260,7 @@ public abstract class SoyFileSetParser {
         }
       }
 
-      if (!filesWereSkipped) {
-        passManager().runPartialTemplateRegistryPasses(soyTree, builder.build());
-      }
+      passManager().runPartialTemplateRegistryPasses(soyTree, builder.build());
 
       // Now register the templates in this file set.
       for (SoyFileNode node : soyTree.getChildren()) {
@@ -233,12 +271,10 @@ public abstract class SoyFileSetParser {
                 .collect(toImmutableList()));
       }
       TemplateRegistry registry = builder.build();
-      // Run passes that check the tree iff we successfully parsed every file.
-      if (!filesWereSkipped) {
-        passManager().runWholeFilesetPasses(soyTree, registry);
-      }
+
+      passManager().runWholeFilesetPasses(soyTree, registry);
       return ParseResult.create(
-          soyTree, registry, ImmutableList.copyOf(errorReporter().getWarnings()));
+          soyTree, Optional.of(registry), ImmutableList.copyOf(errorReporter().getWarnings()));
     }
   }
 

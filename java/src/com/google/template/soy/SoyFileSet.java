@@ -709,9 +709,9 @@ public final class SoyFileSet {
     return entryPoint(
         () -> {
           ParseResult result = parseForGenJava();
+          throwIfErrorsPresent();
           TemplateRegistry registry = result.registry();
           SoyFileSetNode soyTree = result.fileSet();
-          throwIfErrorsPresent();
 
           // Generate template invocation builders for the soy tree.
           return new GenInvocationBuildersVisitor(javaPackage, registry).exec(soyTree);
