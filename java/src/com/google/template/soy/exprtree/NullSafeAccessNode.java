@@ -42,6 +42,8 @@ import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
  */
 public final class NullSafeAccessNode extends AbstractParentExprNode {
 
+  public static final String DO_NOT_USE_NULL_SAFE_ACCESS = "DO_NOT_USE__NULL_SAFE_ACCESS";
+
   private NullSafeAccessNode(ExprNode base, AccessChainComponentNode access) {
     super(access.getSourceLocation());
     addChild(base);
@@ -123,7 +125,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
     // TODO(spishak): Find a better way to represent this placeholder node, likely by removing it
     // from the AST.
     GlobalNode basePlaceholder =
-        new GlobalNode(Identifier.create("DO_NOT_USE__NULL_SAFE_ACCESS", base.getSourceLocation()));
+        new GlobalNode(Identifier.create(DO_NOT_USE_NULL_SAFE_ACCESS, base.getSourceLocation()));
 
     DataAccessNode child;
     switch (node.getKind()) {

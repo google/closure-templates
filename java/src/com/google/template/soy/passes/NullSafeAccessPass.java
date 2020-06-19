@@ -26,7 +26,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 
 /** Translates {@link DataAccessNode}s with null safe accesses into {@link NullSafeAccessNode}s. */
-class NullSafeAccessPass implements CompilerFilePass {
+public class NullSafeAccessPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
