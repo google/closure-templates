@@ -47,6 +47,13 @@ abstract class CompiledTemplateMetadata {
           "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, SOY_RECORD_TYPE, SOY_RECORD_TYPE));
 
   /**
+   * The {@link Method} signature of all generated constructors for the {@link
+   * CompiledTemplate.Factory} classes.
+   */
+  private static final Method FACTORY_CONSTRUCTOR =
+      new Method("<init>", Type.getMethodDescriptor(Type.VOID_TYPE));
+
+  /**
    * The {@link Method} signature of the {@link CompiledTemplate#render(AdvisingAppendable,
    * RenderContext)} method.
    */
@@ -69,9 +76,12 @@ abstract class CompiledTemplateMetadata {
 
   static CompiledTemplateMetadata create(String templateName, SoyFileKind kind) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
+    String factoryClassName = className + "$Factory";
     TypeInfo type = TypeInfo.createClass(className);
+    TypeInfo factoryType = TypeInfo.createClass(factoryClassName);
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
+        ConstructorRef.create(factoryType, FACTORY_CONSTRUCTOR),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
         MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
         type,
@@ -85,6 +95,12 @@ abstract class CompiledTemplateMetadata {
    * com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory#create}
    */
   abstract ConstructorRef constructor();
+
+  /**
+   * The constructor for the generated factory class. Used for template types in expressions /
+   * dyanmic calls.
+   */
+  abstract ConstructorRef factoryConstructor();
 
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();

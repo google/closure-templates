@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.shared;
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
@@ -27,9 +28,28 @@ import java.io.IOException;
 public interface CompiledTemplate {
   /** A factory interface for constructing a {@link CompiledTemplate}. */
   @Immutable
-  interface Factory {
+  abstract class Factory extends SoyAbstractValue {
     /** Returns a new {@link CompiledTemplate} with the given {@link SoyRecord params}. */
-    CompiledTemplate create(SoyRecord params, SoyRecord ij);
+    public abstract CompiledTemplate create(SoyRecord params, SoyRecord ij);
+
+    @Override
+    public final boolean coerceToBoolean() {
+      return true;
+    }
+
+    @Override
+    public final String coerceToString() {
+      String className = getClass().getName();
+      String soyTemplateName =
+          Names.soyTemplateNameFromJavaClassName(
+              className.substring(0, className.length() - "$Factory".length()));
+      return String.format("** FOR DEBUGGING ONLY: template(%s) **", soyTemplateName);
+    }
+
+    @Override
+    public final void render(LoggingAdvisingAppendable appendable) {
+      throw new IllegalStateException("Printing template types is not allowed.");
+    }
   }
 
   /**

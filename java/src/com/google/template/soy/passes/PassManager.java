@@ -442,6 +442,9 @@ public final class PassManager {
         addPass(new SimplifyAssertNonNullPass(), partialTemplateRegistryPassesBuilder);
         // Needs to come after types have been set.
         addPass(
+            new ValidatePrintExpressionTypes(errorReporter), partialTemplateRegistryPassesBuilder);
+        // Needs to come after types have been set.
+        addPass(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
             partialTemplateRegistryPassesBuilder);
         addPass(new VeLogRewritePass(), partialTemplateRegistryPassesBuilder);

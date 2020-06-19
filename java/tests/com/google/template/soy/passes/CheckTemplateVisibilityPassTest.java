@@ -84,7 +84,7 @@ public final class CheckTemplateVisibilityPassTest {
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
                 + "{let $foo: template(.foo) /}\n"
-                + "{$foo}\n"
+                + "{call $foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
@@ -127,7 +127,7 @@ public final class CheckTemplateVisibilityPassTest {
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
                 + "{let $foo: template(ns.foo) /}\n"
-                + "{$foo}\n"
+                + "{call $foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
         .parse();
@@ -179,7 +179,7 @@ public final class CheckTemplateVisibilityPassTest {
                     + "/** Public template. */\n"
                     + "{template .bar}\n"
                     + "{let $foo: template(ns.foo) /}\n"
-                    + "{$foo}\n"
+                    + "{call $foo /}\n"
                     + "{/template}",
                 "baz/bar.soy"))
         .errorReporter(errorReporter)

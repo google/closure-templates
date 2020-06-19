@@ -30,6 +30,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -79,6 +80,7 @@ import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
@@ -145,10 +147,17 @@ final class ExpressionCompiler {
         LocalVariableManager varManager,
         FieldManager fields,
         ErrorReporter reporter,
-        SoyTypeRegistry registry) {
+        SoyTypeRegistry registry,
+        CompiledTemplateRegistry compiledTemplateRegistry) {
       this.compilerVisitor =
           new CompilerVisitor(
-              parameters, varManager, fields, BasicDetacher.INSTANCE, reporter, registry);
+              parameters,
+              varManager,
+              fields,
+              BasicDetacher.INSTANCE,
+              reporter,
+              registry,
+              compiledTemplateRegistry);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -181,15 +190,18 @@ final class ExpressionCompiler {
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
-      SoyTypeRegistry registry) {
-    return new ExpressionCompiler(checkNotNull(parameters), varManager, fields, reporter, registry);
+      SoyTypeRegistry registry,
+      CompiledTemplateRegistry compiledTemplateRegistry) {
+    return new ExpressionCompiler(
+        checkNotNull(parameters), varManager, fields, reporter, registry, compiledTemplateRegistry);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
-      SoyTypeRegistry registry) {
+      SoyTypeRegistry registry,
+      CompiledTemplateRegistry compiledTemplateRegistry) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
             new AbstractTemplateParameterLookup() {
@@ -237,7 +249,8 @@ final class ExpressionCompiler {
             fields,
             ExpressionDetacher.NullDetatcher.INSTANCE,
             reporter,
-            registry));
+            registry,
+            compiledTemplateRegistry));
   }
 
   /**
@@ -251,8 +264,10 @@ final class ExpressionCompiler {
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
-      SoyTypeRegistry registry) {
-    return new BasicExpressionCompiler(parameters, varManager, fields, reporter, registry);
+      SoyTypeRegistry registry,
+      CompiledTemplateRegistry compiledTemplateRegistry) {
+    return new BasicExpressionCompiler(
+        parameters, varManager, fields, reporter, registry, compiledTemplateRegistry);
   }
 
   /**
@@ -268,18 +283,21 @@ final class ExpressionCompiler {
   private final FieldManager fields;
   private final ErrorReporter reporter;
   private final SoyTypeRegistry registry;
+  private final CompiledTemplateRegistry compiledTemplateRegistry;
 
   private ExpressionCompiler(
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
-      SoyTypeRegistry registry) {
+      SoyTypeRegistry registry,
+      CompiledTemplateRegistry compiledTemplateRegistry) {
     this.parameters = checkNotNull(parameters);
     this.varManager = checkNotNull(varManager);
     this.fields = checkNotNull(fields);
     this.reporter = reporter;
     this.registry = registry;
+    this.compiledTemplateRegistry = compiledTemplateRegistry;
   }
 
   /** Compiles the given expression tree to a sequence of bytecode. */
@@ -311,7 +329,14 @@ final class ExpressionCompiler {
       return Optional.empty();
     }
     return Optional.of(
-        new CompilerVisitor(parameters, varManager, fields, /* detacher=*/ null, reporter, registry)
+        new CompilerVisitor(
+                parameters,
+                varManager,
+                fields,
+                /* detacher=*/ null,
+                reporter,
+                registry,
+                compiledTemplateRegistry)
             .exec(node));
   }
 
@@ -321,7 +346,14 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(ExpressionDetacher detacher) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(parameters, varManager, fields, detacher, reporter, registry));
+        new CompilerVisitor(
+            parameters,
+            varManager,
+            fields,
+            detacher,
+            reporter,
+            registry,
+            compiledTemplateRegistry));
   }
 
   private static final class CompilerVisitor
@@ -333,6 +365,7 @@ final class ExpressionCompiler {
     final FieldManager fields;
     final ErrorReporter reporter;
     final SoyTypeRegistry registry;
+    final CompiledTemplateRegistry compiledTemplateRegistry;
 
     CompilerVisitor(
         TemplateParameterLookup parameters,
@@ -340,13 +373,15 @@ final class ExpressionCompiler {
         FieldManager fields,
         ExpressionDetacher detacher,
         ErrorReporter reporter,
-        SoyTypeRegistry registry) {
+        SoyTypeRegistry registry,
+        CompiledTemplateRegistry compiledTemplateRegistry) {
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
       this.fields = fields;
       this.reporter = reporter;
       this.registry = registry;
+      this.compiledTemplateRegistry = compiledTemplateRegistry;
     }
 
     @Override
@@ -1486,6 +1521,20 @@ final class ExpressionCompiler {
               constant(node.getId()), constant(node.getName().identifier())));
     }
 
+    @Override
+    protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
+      CompiledTemplateMetadata callee =
+          compiledTemplateRegistry.getTemplateInfoByTemplateName(node.getResolvedName());
+      // TODO(cwgordon): It used to be that factories were only ever constructed by
+      // CompiledTemplates, which would cache them. If this turns out to be too expensive, consider
+      // always using CompiledTemplates to create them, or otherwise 'singletonify' them.
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          callee.filekind() == SoyFileKind.SRC
+              ? callee.factoryConstructor().construct()
+              : parameters.getRenderContext().getTemplateFactory(node.getResolvedName()));
+    }
+
     // Catch-all for unimplemented nodes
 
     @Override
@@ -1535,6 +1584,15 @@ final class ExpressionCompiler {
     protected Boolean visitVeLiteralNode(VeLiteralNode node) {
       // this is essentially a primitive
       return true;
+    }
+
+    @Override
+    protected Boolean visitTemplateLiteralNode(TemplateLiteralNode node) {
+      // This requires a RenderContext object to look up the template.
+      // Technically this could be conditional on whether or not the callee is in a SRC file, but
+      // this would require wiring through the CompiledTemplateRegistry to this class to calculate
+      // and probably isn't a big deal.
+      return false;
     }
 
     @Override

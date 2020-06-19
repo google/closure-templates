@@ -149,7 +149,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       SoyTypeRegistry typeRegistry) {
     DetachState detachState = new DetachState(variables, thisVar, fields);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(parameterLookup, variables, fields, reporter, typeRegistry);
+        ExpressionCompiler.create(
+            parameterLookup, variables, fields, reporter, typeRegistry, registry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(
             variables, expressionCompiler, parameterLookup, detachState);
@@ -872,21 +873,30 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   @Override
   protected Statement visitCallBasicNode(CallBasicNode node) {
-    CompiledTemplateMetadata callee = registry.getTemplateInfoByTemplateName(node.getCalleeName());
+    Expression calleeExpression;
     Label reattachPoint = new Label();
     Expression params = prepareParamsHelper(node, reattachPoint);
     Expression ijRecord = parameterLookup.getIjRecord();
-
-    // If possible, use the constructor to instantiate the template, otherwise go through the
-    // classloader. We do this for templates that are declared as sources in the same fileset. These
-    // are guaranteed to be bundled in the same jar, thus loaded atomically with the same
-    // classloader.
-    Expression calleeExpression =
-        callee.filekind() == SoyFileKind.SRC
-            ? callee.constructor().construct(params, ijRecord)
-            : parameterLookup
-                .getRenderContext()
-                .getTemplate(node.getCalleeName(), params, ijRecord);
+    if (node.isStaticCall()) {
+      CompiledTemplateMetadata callee =
+          registry.getTemplateInfoByTemplateName(node.getCalleeName());
+      // If possible, use the constructor to instantiate the template, otherwise go through the
+      // classloader. We do this for templates that are declared as sources in the same fileset.
+      // These are guaranteed to be bundled in the same jar, thus loaded atomically with the same
+      // classloader.
+      calleeExpression =
+          callee.filekind() == SoyFileKind.SRC
+              ? callee.constructor().construct(params, ijRecord)
+              : parameterLookup
+                  .getRenderContext()
+                  .getTemplateFactory(node.getCalleeName())
+                  .invoke(MethodRef.COMPILED_TEMPLATE_FACTORY_CREATE, params, ijRecord);
+    } else {
+      calleeExpression =
+          exprCompiler
+              .compile(node.getCalleeExpr(), detachState.createExpressionDetacher(reattachPoint))
+              .invoke(MethodRef.COMPILED_TEMPLATE_FACTORY_CREATE, params, ijRecord);
+    }
     return renderCallNode(reattachPoint, node, calleeExpression);
   }
 

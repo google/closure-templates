@@ -33,9 +33,8 @@ import java.util.List;
 /** An expression for a {@link RenderContext} object. */
 final class RenderContextExpression extends Expression implements JbcSrcPluginContext {
 
-  private static final MethodRef GET_TEMPLATE =
-      MethodRef.create(
-          RenderContext.class, "getTemplate", String.class, SoyRecord.class, SoyRecord.class);
+  private static final MethodRef GET_TEMPLATE_FACTORY =
+      MethodRef.create(RenderContext.class, "getTemplateFactory", String.class);
 
   private static final MethodRef GET_DELTEMPLATE =
       MethodRef.create(
@@ -122,8 +121,8 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(RENAME_CSS_SELECTOR, constant(value));
   }
 
-  Expression getTemplate(String calleeName, Expression params, Expression ijRecord) {
-    return delegate.invoke(GET_TEMPLATE, constant(calleeName), params, ijRecord);
+  Expression getTemplateFactory(String calleeName) {
+    return delegate.invoke(GET_TEMPLATE_FACTORY, constant(calleeName));
   }
 
   Expression getDeltemplate(

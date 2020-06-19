@@ -402,6 +402,10 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
+  public static final MethodRef COMPILED_TEMPLATE_FACTORY_CREATE =
+      create(CompiledTemplate.Factory.class, "create", SoyRecord.class, SoyRecord.class)
+          .asNonNullable();
+
   public static final MethodRef RUNTIME_CHECK_SOY_STRING =
       create(JbcSrcRuntime.class, "checkSoyString", Object.class).asCheap().asNonNullable();
 

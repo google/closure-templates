@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.template.soy.jbcsrc.StandardNames.FACTORY_CLASS;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.defineDefaultConstructor;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
 
@@ -33,6 +32,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -56,8 +56,6 @@ import org.objectweb.asm.commons.Method;
 final class TemplateFactoryCompiler {
   private static final TypeInfo FACTORY_TYPE = TypeInfo.create(CompiledTemplate.Factory.class);
 
-  private static final int FACTORY_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL;
-
   private static final Method CREATE_METHOD;
 
   static {
@@ -74,27 +72,34 @@ final class TemplateFactoryCompiler {
   private final CompiledTemplateMetadata template;
   private final TemplateNode templateNode;
   private final InnerClasses innerClasses;
+  private final Visibility visibility;
 
   TemplateFactoryCompiler(
-      CompiledTemplateMetadata currentClass, TemplateNode templateNode, InnerClasses innerClasses) {
+      CompiledTemplateMetadata currentClass,
+      TemplateNode templateNode,
+      InnerClasses innerClasses,
+      Visibility visibility) {
     this.template = currentClass;
     this.templateNode = templateNode;
     this.innerClasses = innerClasses;
+    this.visibility = visibility;
   }
 
   /** Compiles the factory. */
   void compile() {
-    TypeInfo factoryType = innerClasses.registerInnerClass(FACTORY_CLASS, FACTORY_ACCESS);
+    int factoryAccess =
+        (visibility == Visibility.PRIVATE ? 0 : Opcodes.ACC_PUBLIC) | Opcodes.ACC_FINAL;
+    TypeInfo factoryType = innerClasses.registerInnerClass(FACTORY_CLASS, factoryAccess);
     SoyClassWriter cw =
         SoyClassWriter.builder(factoryType)
-            .implementing(FACTORY_TYPE)
-            .setAccess(FACTORY_ACCESS)
+            .extending(FACTORY_TYPE)
+            .setAccess(factoryAccess)
             .sourceFileName(templateNode.getSourceLocation().getFileName())
             .build();
     innerClasses.registerAsInnerClass(cw, factoryType);
 
     generateStaticInitializer(cw);
-    defineDefaultConstructor(cw, factoryType);
+    defineFactoryConstructor(cw, factoryType);
     generateCreateMethod(cw, factoryType);
     cw.visitEnd();
     innerClasses.add(cw.toClassData());
@@ -121,6 +126,29 @@ final class TemplateFactoryCompiler {
         }
       }.writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, cv);
     }
+  }
+
+  /**
+   * Generates a default constructor, equivalent of just calling super(), with visibility depending
+   * on the visibility of the template.
+   */
+  private void defineFactoryConstructor(ClassVisitor cv, TypeInfo factoryType) {
+    CodeBuilder mg =
+        new CodeBuilder(
+            visibility == Visibility.PRIVATE ? 0 : Opcodes.ACC_PUBLIC,
+            BytecodeUtils.NULLARY_INIT,
+            null,
+            cv);
+    mg.visitCode();
+    Label start = mg.mark();
+    Label end = mg.newLabel();
+    LocalVariable thisVar = LocalVariable.createThisVar(factoryType, start, end);
+    thisVar.gen(mg);
+    mg.invokeConstructor(FACTORY_TYPE.type(), BytecodeUtils.NULLARY_INIT);
+    mg.returnValue();
+    mg.mark(end);
+    thisVar.tableEntry(mg);
+    mg.endMethod();
   }
 
   /**

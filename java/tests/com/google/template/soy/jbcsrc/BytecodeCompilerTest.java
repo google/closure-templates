@@ -1351,6 +1351,94 @@ public class BytecodeCompilerTest {
             "com.google.template.soy.jbcsrc.gen.loader2.publicTemplate");
   }
 
+  @Test
+  public void testRenderingWithMultipleCompilationStepsAndDynamicTemplateCalls() {
+    SoyFileSetParser parser1 =
+        createParserForFileContents(
+            ImmutableList.of(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader1}",
+                        "{template .publicTemplate1}",
+                        "L1T1",
+                        "{sp}{call .privateTemplate_ /}",
+                        "{sp}{call .publicTemplate2 /}",
+                        "{/template}",
+                        "",
+                        "{template .privateTemplate_ visibility=\"private\"}",
+                        "PVT",
+                        "{/template}"),
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader1}",
+                        "{template .publicTemplate2}",
+                        "L1T2",
+                        "{/template}")));
+    ParseResult parseResult1 = parser1.parse();
+    CompilingClassLoader loader1 = createCompilingClassLoader(parser1, parseResult1);
+    CompilationUnitAndKind dependency1 =
+        CompilationUnitAndKind.create(
+            SoyFileKind.DEP,
+            "foo.soy",
+            TemplateMetadataSerializer.compilationUnitFromFileSet(
+                parseResult1.fileSet(), parseResult1.registry()));
+
+    SoyFileSetParser parser1Recompiled =
+        createParserForFileContents(
+            ImmutableList.of(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader1}",
+                        "{template .publicTemplate1}",
+                        "L1T1 RECOMPILED",
+                        "{/template}")));
+    ParseResult parseResult1Recompiled = parser1Recompiled.parse();
+    CompilingClassLoader loader1Recompiled =
+        createCompilingClassLoader(parser1Recompiled, parseResult1Recompiled);
+
+    SoyFileSetParser parser2 =
+        createParserForFileContentsWithDependencies(
+            ImmutableList.of(
+                Joiner.on("\n")
+                    .join(
+                        "{namespace loader2}",
+                        "{template .publicTemplate}",
+                        "{@param renderTemplate: bool = true}",
+                        "{let $tpl: $renderTemplate ? template(loader1.publicTemplate1) :"
+                            + " template(.dummyTemplate) /}",
+                        "L2T",
+                        "{sp}{call $tpl /}",
+                        "{sp}{call $tpl /}",
+                        "{/template}",
+                        "{template .dummyTemplate visibility=\"private\"}dummy{/template}")),
+            ImmutableList.of(dependency1));
+    ParseResult parseResult2 = parser2.parse();
+    CompilingClassLoader loader2 = createCompilingClassLoader(parser2, parseResult2);
+
+    DelegatingClassLoader delegatingClassLoader1 = new DelegatingClassLoader(loader1, loader2);
+    SoySauce sauce = new SoySauceBuilder().withClassLoader(delegatingClassLoader1).build();
+    assertThat(sauce.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
+        .isEqualTo("L2T L1T1 PVT L1T2 L1T1 PVT L1T2");
+
+    assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
+    assertThat(delegatingClassLoader1.loadedClasses().elementSet())
+        .containsExactly(
+            "com.google.template.soy.jbcsrc.gen.loader1.publicTemplate1",
+            "com.google.template.soy.jbcsrc.gen.loader2.publicTemplate");
+
+    DelegatingClassLoader delegatingClassLoader2 =
+        new DelegatingClassLoader(loader1Recompiled, loader2);
+    SoySauce sauceReloaded = new SoySauceBuilder().withClassLoader(delegatingClassLoader2).build();
+    assertThat(sauceReloaded.renderTemplate("loader2.publicTemplate").renderHtml().get().toString())
+        .isEqualTo("L2T L1T1 RECOMPILED L1T1 RECOMPILED");
+
+    assertThat(delegatingClassLoader1.loadedClasses()).containsNoDuplicates();
+    assertThat(delegatingClassLoader1.loadedClasses().elementSet())
+        .containsExactly(
+            "com.google.template.soy.jbcsrc.gen.loader1.publicTemplate1",
+            "com.google.template.soy.jbcsrc.gen.loader2.publicTemplate");
+  }
+
   private static class DelegatingClassLoader extends ClassLoader {
     private final CompilingClassLoader loader1;
     private final CompilingClassLoader loader2;

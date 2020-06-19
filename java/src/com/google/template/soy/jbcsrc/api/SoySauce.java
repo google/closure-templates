@@ -53,16 +53,21 @@ public interface SoySauce {
   }
 
   /**
-   * Returns the transitive set of {@code $ij} params needed to render this template.
+   * Returns the transitive set of {@code $ij} params that might be needed to render this template.
    *
-   * <p>NOTE: this will return a super-set of the parameters that will actually be used at runtime,
+   * <p>NOTE: this will return a superset of the parameters that will actually be used at runtime;
    * this is because it doesn't take delpackages or conditional logic inside templates into account.
+   * Additionally, this treats all references to template literals as though they may be called.
    */
   ImmutableSet<String> getTransitiveIjParamsForTemplate(String templateInfo);
 
   /**
-   * Returns all css module namespaces needed to render this template. This follows css through
-   * deltemplate mods and optionally follows delvariants.
+   * Returns all css module namespaces that might be needed to render this template. This follows
+   * css through deltemplate mods and optionally follows delvariants.
+   *
+   * <p>NOTE: this will return a superset of the namespaces that will actually be used at runtime;
+   * this is because it doesn't take conditional logic into account. Additionally, this treats all
+   * references to template literals as though they may be called.
    */
   ImmutableList<String> getAllRequiredCssNamespaces(
       String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);

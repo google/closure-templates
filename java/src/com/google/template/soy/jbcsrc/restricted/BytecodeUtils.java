@@ -80,6 +80,8 @@ public final class BytecodeUtils {
   public static final Type LOGGING_ADVISING_BUILDER_TYPE =
       Type.getType(LoggingAdvisingAppendable.BufferingAppendable.class);
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
+  public static final Type COMPILED_TEMPLATE_FACTORY_TYPE =
+      Type.getType(CompiledTemplate.Factory.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);
@@ -500,6 +502,7 @@ public final class BytecodeUtils {
     thisVar.tableEntry(mg);
     mg.endMethod();
   }
+
 
   // TODO(lukes): some of these branch operators are a little too branchy.  For example, the
   // expression a == b || a == c, could be implemented by

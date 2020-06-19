@@ -58,6 +58,7 @@ import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -134,7 +135,8 @@ public class ExpressionCompilerTest {
               getRenderMethod()),
           fields,
           ErrorReporter.exploding(),
-          SoyTypeRegistryBuilder.create());
+          SoyTypeRegistryBuilder.create(),
+          new CompiledTemplateRegistry(TemplateRegistry.EMPTY));
 
   private static Method getRenderMethod() {
     try {

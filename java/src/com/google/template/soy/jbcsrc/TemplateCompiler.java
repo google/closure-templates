@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
@@ -54,7 +55,6 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -63,7 +63,6 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
@@ -144,12 +143,10 @@ final class TemplateCompiler {
     List<ClassData> classes = new ArrayList<>();
 
     // first generate the factory
-    if (templateNode.getVisibility() != Visibility.PRIVATE) {
-      // Don't generate factory if the template is private.  The factories are only
-      // useful to instantiate templates for calls from java.  Soy->Soy calls should invoke
-      // constructors directly.
-      new TemplateFactoryCompiler(template, templateNode, innerClasses).compile();
-    }
+    // TODO(lukes): consider conditionally generating the factory only if it is referenced as a
+    // template literal; this would reduce the amount of generated code.
+    new TemplateFactoryCompiler(template, templateNode, innerClasses, templateNode.getVisibility())
+        .compile();
 
     // TODO(lukes): change the flow of this method so these methods return method bodies and we only
     // write the methods to the writer after generating everything.
@@ -165,7 +162,8 @@ final class TemplateCompiler {
             new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
             fields,
             reporter,
-            soyTypeRegistry);
+            soyTypeRegistry,
+            registry);
     generateTemplateMetadata();
     generateKindMethod();
 
@@ -205,8 +203,9 @@ final class TemplateCompiler {
     }
 
     Set<String> callees = new LinkedHashSet<>();
-    for (CallBasicNode call : getAllNodesOfType(templateNode, CallBasicNode.class)) {
-      callees.add(call.getCalleeName());
+    for (TemplateLiteralNode templateLiteralNode :
+        getAllNodesOfType(templateNode, TemplateLiteralNode.class)) {
+      callees.add(templateLiteralNode.getResolvedName());
     }
 
     Set<String> delCallees = new LinkedHashSet<>();

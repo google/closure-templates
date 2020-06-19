@@ -353,7 +353,7 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
-                  lookup, variableSet, fields, reporter, typeRegistry)
+                  lookup, variableSet, fields, reporter, typeRegistry, registry)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -399,7 +399,8 @@ final class LazyClosureCompiler {
               new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
               fields,
               reporter,
-              typeRegistry);
+              typeRegistry,
+              registry);
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RENDER);
       LazyClosureParameterLookup lookup =
