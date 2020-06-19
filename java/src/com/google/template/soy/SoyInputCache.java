@@ -16,9 +16,14 @@
 
 package com.google.template.soy;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.google.template.soy.base.internal.SoyFileSupplier;
+import com.google.template.soy.shared.SoyAstCache;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Map;
+import javax.annotation.Nullable;
 
 /** A simple cache interface for reading soy compiler inputs. */
 public interface SoyInputCache {
@@ -26,13 +31,9 @@ public interface SoyInputCache {
   SoyInputCache DEFAULT =
       new SoyInputCache() {
         @Override
-        public <T> T read(
-            File file,
-            CacheLoader<T> loader,
-            SoyCompilerFileReader reader,
-            Map<String, String> generatedFiles)
+        public <T> T read(File file, CacheLoader<T> loader, SoyCompilerFileReader reader)
             throws IOException {
-          T value = loader.read(file, reader, this, generatedFiles);
+          T value = loader.read(file, reader, this);
           // everything is always immediately evicted
           loader.onEvict(value);
           return value;
@@ -40,17 +41,25 @@ public interface SoyInputCache {
 
         @Override
         public void declareDependency(File file, File dependency) {}
+
+        @Override
+        public SoyAstCache astCache() {
+          // null is interpreted as 'no cache' throughout the compiler.
+          return null;
+        }
+
+        @Override
+        public SoyFileSupplier createFileSupplier(
+            File file, String pathToUse, SoyCompilerFileReader reader)
+            throws FileNotFoundException {
+          return SoyFileSupplier.Factory.create(reader.read(file).asCharSource(UTF_8), pathToUse);
+        }
       };
 
   /** A Reader can read a file as a structured object. */
   interface CacheLoader<T> {
     /** Reads an object from the file using the given file reader. */
-    T read(
-        File file,
-        SoyCompilerFileReader fileReader,
-        SoyInputCache cache,
-        Map<String, String> generatedFiles)
-        throws IOException;
+    T read(File file, SoyCompilerFileReader fileReader, SoyInputCache cache) throws IOException;
 
     /**
      * Called when the item is removed from the cache.
@@ -74,16 +83,27 @@ public interface SoyInputCache {
    * @param reader The reader to use to open the file
    * @return the result of reaeding the file, possibly from a cache.
    */
-  <T> T read(
-      File file,
-      CacheLoader<T> loader,
-      SoyCompilerFileReader reader,
-      Map<String, String> generatedFiles)
-      throws IOException;
+  <T> T read(File file, CacheLoader<T> loader, SoyCompilerFileReader reader) throws IOException;
 
   /**
    * Declares that one file depends on another. Therefore if {@code dependency} changes then {@code
    * file} should be evicted.
    */
   void declareDependency(File file, File dependency);
+
+  /**
+   * Returns the cache to use for Soy ASTs.
+   *
+   * <p>May return null if ASTs should not be cached.
+   */
+  @Nullable
+  SoyAstCache astCache();
+
+  /**
+   * Returns a SoyFileSupplier to read the given source file.
+   *
+   * <p>This supplier will use versioning information supplied by the cache implementation
+   */
+  SoyFileSupplier createFileSupplier(File file, String pathToUse, SoyCompilerFileReader reader)
+      throws FileNotFoundException;
 }

@@ -212,7 +212,7 @@ public final class SoyTreeUtilsTest {
   public final void testCloneWithNewIds() throws Exception {
 
     IdGenerator nodeIdGen = new IncrementingIdGenerator();
-    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen);
 
     SoyFileNode soyFile =
         SoyFileSetParserBuilder.forFileContents(SOY_SOURCE_FOR_TESTING_CLONING)

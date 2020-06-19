@@ -24,6 +24,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -52,6 +53,10 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind MSG_ALTERNATE_ID_NOT_ALLOWED =
       SoyErrorKind.of("Soy msg alternate ids are not available for general use.");
+
+  private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
+      SoyErrorKind.of(
+          "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -94,6 +99,14 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
             reporter.report(attr.getValueLocation(), MSG_ALTERNATE_ID_NOT_ALLOWED);
           }
         }
+      }
+    }
+    // TOOD(b/22389927): enable the non-null assertion operator once we're ready to use for
+    // fixing proto nullability.
+    if (!features.contains("enableNonNullAssertionOperator")) {
+      for (AssertNonNullOpNode assertNonNullOpNode :
+          SoyTreeUtils.getAllNodesOfType(file, AssertNonNullOpNode.class)) {
+        reporter.report(assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED);
       }
     }
   }

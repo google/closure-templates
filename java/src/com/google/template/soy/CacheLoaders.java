@@ -16,50 +16,35 @@
 
 package com.google.template.soy;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
-import com.google.common.io.CharSource;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
-import com.google.template.soy.base.internal.FixedIdGenerator;
-import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SoyFileSupplier;
-import com.google.template.soy.base.internal.StableSoyFileSupplier;
+import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.data.restricted.PrimitiveData;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CompilationUnit;
-import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
-import javax.annotation.Nullable;
 
 /** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
 final class CacheLoaders {
   static final SoyInputCache.CacheLoader<LoggingConfig> LOGGING_CONFIG_LOADER =
       new SoyInputCache.CacheLoader<LoggingConfig>() {
         @Override
-        public LoggingConfig read(
-            File file,
-            SoyCompilerFileReader reader,
-            SoyInputCache cache,
-            Map<String, String> generatedFilesToNormalizedPath)
+        public LoggingConfig read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
             throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
             return LoggingConfig.parseFrom(stream);
@@ -71,11 +56,7 @@ final class CacheLoaders {
       new SoyInputCache.CacheLoader<ImmutableMap<String, PrimitiveData>>() {
         @Override
         public ImmutableMap<String, PrimitiveData> read(
-            File file,
-            SoyCompilerFileReader reader,
-            SoyInputCache cache,
-            Map<String, String> generatedFilesToNormalizedPath)
-            throws IOException {
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
         }
       };
@@ -194,11 +175,7 @@ final class CacheLoaders {
       new SoyInputCache.CacheLoader<CachedDescriptorSet>() {
         @Override
         public CachedDescriptorSet read(
-            File file,
-            SoyCompilerFileReader reader,
-            SoyInputCache cache,
-            Map<String, String> generatedFilesToNormalizedPath)
-            throws IOException {
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
             return new CachedDescriptorSet(
                 file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
@@ -211,98 +188,12 @@ final class CacheLoaders {
   static final SoyInputCache.CacheLoader<CompilationUnit> COMPILATION_UNIT_LOADER =
       new SoyInputCache.CacheLoader<CompilationUnit>() {
         @Override
-        public CompilationUnit read(
-            File file,
-            SoyCompilerFileReader reader,
-            SoyInputCache cache,
-            Map<String, String> generatedFilesToNormalizedPath)
+        public CompilationUnit read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
             throws IOException {
           try (InputStream is =
               new GZIPInputStream(reader.read(file).openStream(), /* bufferSize */ 32 * 1024)) {
-            return CompilationUnit.parseFrom(is);
+            return CompilationUnit.parseFrom(is, ExtensionRegistry.getEmptyRegistry());
           }
-        }
-      };
-
-  /**
-   * A special SoyFileSupplier that implements {@link HasAstOrErrors} to support caching.
-   *
-   * <p>This stores an ErrorReporter and a nullable SoyFileNode so that the results of a parse can
-   * always be replayed in the context of any compile that gets a cache hit.
-   */
-  private static final class CachedSoyFileSupplier
-      implements SoyFileSupplier, SoyFileSetParser.HasAstOrErrors {
-    private final SoyFileSupplier delegate;
-    private final ErrorReporter errors;
-    @Nullable private final SoyFileNode file;
-
-    CachedSoyFileSupplier(SoyFileSupplier delegate, ErrorReporter errors, SoyFileNode file) {
-      this.delegate = checkNotNull(delegate);
-      this.errors = checkNotNull(errors);
-      this.file = file;
-      if (file == null) {
-        checkArgument(errors.hasErrors()); // sanity check
-      }
-    }
-
-    @Override
-    public SoyFileNode getAst(IdGenerator nodeIdGen, ErrorReporter other) {
-      errors.copyTo(other);
-      if (file != null) {
-        // we need to make a copy, since the AST is mutable
-        // we need to assign new ids using the id generator for the current compile to ensure that
-        // all ids are unique across a compile.
-        return SoyTreeUtils.cloneWithNewIds(file, nodeIdGen);
-      }
-      return null;
-    }
-
-    // boring delegate methods
-
-    @Override
-    public String getFilePath() {
-      return delegate.getFilePath();
-    }
-
-    @Override
-    public CharSource asCharSource() {
-      return delegate.asCharSource();
-    }
-
-    @Override
-    public Reader open() throws IOException {
-      return delegate.open();
-    }
-
-    @Override
-    public Version getVersion() {
-      return delegate.getVersion();
-    }
-  }
-
-  static final SoyInputCache.CacheLoader<CachedSoyFileSupplier> SOY_FILE_LOADER =
-      new SoyInputCache.CacheLoader<CachedSoyFileSupplier>() {
-        private final FixedIdGenerator idGenerator = new FixedIdGenerator(-1);
-
-        @Override
-        public CachedSoyFileSupplier read(
-            File file,
-            SoyCompilerFileReader reader,
-            SoyInputCache cache,
-            Map<String, String> generatedFilesToNormalizedPath)
-            throws IOException {
-          CharSource source = reader.read(file).asCharSource(UTF_8);
-          String path =
-              generatedFilesToNormalizedPath.containsKey(file.getPath())
-                  ? generatedFilesToNormalizedPath.get(file.getPath())
-                  : file.getPath();
-          SoyFileSupplier delegate = new StableSoyFileSupplier(source, path);
-          ErrorReporter errors = ErrorReporter.create(/*fileSuppliers*/ ImmutableMap.of());
-          SoyFileNode fileNode;
-          try (Reader charReader = source.openStream()) {
-            fileNode = new SoyFileParser(idGenerator, charReader, path, errors).parseSoyFile();
-          }
-          return new CachedSoyFileSupplier(delegate, errors, fileNode);
         }
       };
 }

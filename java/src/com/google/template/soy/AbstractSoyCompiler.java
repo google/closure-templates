@@ -15,7 +15,6 @@
  */
 package com.google.template.soy;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
@@ -34,7 +33,6 @@ import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.base.internal.StableSoyFileSupplier;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.logging.LoggingConfig;
@@ -291,19 +289,14 @@ public abstract class AbstractSoyCompiler {
         // Set experimental features that are not generally available.
         .setExperimentalFeatures(experimentalFeatures)
         .addProtoDescriptors(parseProtos(protoFileDescriptors, cache, soyCompilerFileReader, err))
-        .setCompileTimeGlobals(parseGlobals());
+        .setCompileTimeGlobals(parseGlobals())
+        .setSoyAstCache(cache.astCache());
 
     // add sources
     for (File src : srcs) {
       try {
-        if (cacheAsts()) {
-          sfsBuilder.addFile(
-              cache.read(src, CacheLoaders.SOY_FILE_LOADER, soyCompilerFileReader, generatedFiles));
-        } else {
-          sfsBuilder.addFile(
-              new StableSoyFileSupplier(
-                  soyCompilerFileReader.read(src).asCharSource(UTF_8), src.getPath()));
-        }
+        String normalizedPath = generatedFiles.getOrDefault(src.getPath(), src.getPath());
+        sfsBuilder.addFile(cache.createFileSupplier(src, normalizedPath, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
             "File: " + src.getPath() + " passed to --srcs does not exist", fnfe);
@@ -346,11 +339,7 @@ public abstract class AbstractSoyCompiler {
     for (File protoFileDescriptor : protoFileDescriptors) {
       try {
         CacheLoaders.CachedDescriptorSet cachedDescriptor =
-            cache.read(
-                protoFileDescriptor,
-                CacheLoaders.CACHED_DESCRIPTOR_SET_LOADER,
-                reader,
-                ImmutableMap.of());
+            cache.read(protoFileDescriptor, CacheLoaders.CACHED_DESCRIPTOR_SET_LOADER, reader);
         for (String protoFileName : cachedDescriptor.getProtoFileNames()) {
           protoFileToDescriptor.put(protoFileName, cachedDescriptor);
         }
@@ -411,11 +400,7 @@ public abstract class AbstractSoyCompiler {
         sfsBuilder.addCompilationUnit(
             depKind,
             depFile.getPath(),
-            cache.read(
-                depFile,
-                CacheLoaders.COMPILATION_UNIT_LOADER,
-                soyCompilerFileReader,
-                ImmutableMap.of()));
+            cache.read(depFile, CacheLoaders.COMPILATION_UNIT_LOADER, soyCompilerFileReader));
       } catch (IOException e) {
         throw new CommandLineError(
             "Unable to read header file: " + depFile + ": " + e.getMessage());
@@ -428,11 +413,7 @@ public abstract class AbstractSoyCompiler {
     for (File loggingConfig : loggingConfigs) {
       try {
         configBuilder.mergeFrom(
-            cache.read(
-                loggingConfig,
-                CacheLoaders.LOGGING_CONFIG_LOADER,
-                soyCompilerFileReader,
-                ImmutableMap.of()));
+            cache.read(loggingConfig, CacheLoaders.LOGGING_CONFIG_LOADER, soyCompilerFileReader));
       } catch (IllegalArgumentException e) {
         throw new CommandLineError(
             "Error parsing logging config proto: " + loggingConfig + ": " + e.getMessage());
@@ -453,8 +434,7 @@ public abstract class AbstractSoyCompiler {
     for (File globalsFile : globalsFiles) {
       try {
         ImmutableMap<String, PrimitiveData> parsedGlobals =
-            cache.read(
-                globalsFile, CacheLoaders.GLOBALS_LOADER, soyCompilerFileReader, ImmutableMap.of());
+            cache.read(globalsFile, CacheLoaders.GLOBALS_LOADER, soyCompilerFileReader);
         for (Map.Entry<String, PrimitiveData> entry : parsedGlobals.entrySet()) {
           PrimitiveData oldValue = globals.put(entry.getKey(), entry.getValue());
           if (oldValue != null && !entry.getValue().equals(oldValue)) {
@@ -476,17 +456,6 @@ public abstract class AbstractSoyCompiler {
       }
     }
     return globals;
-  }
-
-  /**
-   * Extension point for subclasses to disable the caching of Soy ASTS.
-   *
-   * <p>TODO(lukes): this is necessary because the way we implemented Soy AST caching is a hack!.
-   * See copious comments SoyFileSetParser.HasAstOrErrors.
-   */
-  @ForOverride
-  protected boolean cacheAsts() {
-    return true;
   }
 
   /**

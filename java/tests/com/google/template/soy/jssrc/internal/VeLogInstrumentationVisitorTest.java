@@ -165,9 +165,9 @@ public final class VeLogInstrumentationVisitorTest {
             "{let $foo : 'data-ved' /}{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_16 kind=\"text\"}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_16}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_16)}"
+                + "{let $soy_logging_function_attribute_9 kind=\"text\"}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_9}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_9)}"
                 + "></span>"
                 + "</div>"
                 + "{/velog}");
@@ -182,12 +182,12 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_19 kind=\"text\"}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_19}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_19)}"
-                + "{let $soy_logging_function_attribute_21 kind=\"text\"}{$bar}{/let} "
-                + "{$soy_logging_function_attribute_21}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_21)}"
+                + "{let $soy_logging_function_attribute_8 kind=\"text\"}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_8}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_8)}"
+                + "{let $soy_logging_function_attribute_12 kind=\"text\"}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_12}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_12)}"
                 + ">"
                 + "</span>"
                 + "</div>"
@@ -207,13 +207,13 @@ public final class VeLogInstrumentationVisitorTest {
             "{velog ve_data(ve(Bar), null)}"
                 + "<div{$$velog(ve_data(ve(Bar), null))}>"
                 + "<span"
-                + "{let $soy_logging_function_attribute_24 kind=\"text\"}{$foo}{/let} "
-                + "{$soy_logging_function_attribute_24}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}"
+                + "{let $soy_logging_function_attribute_8 kind=\"text\"}{$foo}{/let} "
+                + "{$soy_logging_function_attribute_8}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_8)}"
                 + "{let $baz kind=\"html\"}<input>{/let}"
-                + "{let $soy_logging_function_attribute_26 kind=\"text\"}{$bar}{/let} "
-                + "{$soy_logging_function_attribute_26}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_26)}"
+                + "{let $soy_logging_function_attribute_15 kind=\"text\"}{$bar}{/let} "
+                + "{$soy_logging_function_attribute_15}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [1], $soy_logging_function_attribute_15)}"
                 + ">"
                 + "</span>"
                 + "</div>"
@@ -243,9 +243,9 @@ public final class VeLogInstrumentationVisitorTest {
     ((TemplateNode) node.getChild(0).getChild(1)).appendSourceStringForChildren(sb);
     assertThat(sb.toString())
         .isEqualTo(
-            "{let $soy_logging_function_attribute_24 kind=\"text\"}{$foo}{/let}"
-                + "{$soy_logging_function_attribute_24}=\"placeholder\""
-                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_24)}");
+            "{let $soy_logging_function_attribute_16 kind=\"text\"}{$foo}{/let}"
+                + "{$soy_logging_function_attribute_16}=\"placeholder\""
+                + "{$$loggingFunction('currentVed', [], $soy_logging_function_attribute_16)}");
   }
 
   @SoyFunctionSignature(

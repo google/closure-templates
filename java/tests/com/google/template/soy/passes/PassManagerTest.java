@@ -72,16 +72,17 @@ public final class PassManagerTest {
   public void testContinuationRule_stopAfter() throws Exception {
     PassManager manager =
         builder()
-            .addPassContinuationRule(
-                BasicHtmlValidationPass.class, PassContinuationRule.STOP_AFTER_PASS)
+            .addPassContinuationRule(ResolvePluginsPass.class, PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
-    assertThat(names(manager.singleFilePasses))
+    assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
-            "BanNonNullAssertionOperator",
-            "DesugarGroupNodes",
-            "ContentSecurityPolicyNonceInjection",
-            "BasicHtmlValidation");
+            "ResolveProtoImports",
+            "ResolveTemplateImportsFromDeps",
+            "ResolveTemplateNames",
+            "ResolveTemplateParamTypes",
+            "ResolvePlugins")
+        .inOrder();
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -90,14 +91,14 @@ public final class PassManagerTest {
     PassManager manager =
         builder()
             .addPassContinuationRule(
-                BasicHtmlValidationPass.class, PassContinuationRule.STOP_BEFORE_PASS)
+                ResolvePluginsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
-    assertThat(names(manager.singleFilePasses))
+    assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
-            "BanNonNullAssertionOperator",
-            "DesugarGroupNodes",
-            "ContentSecurityPolicyNonceInjection");
+            "ResolveProtoImports", "ResolveTemplateImportsFromDeps",
+            "ResolveTemplateNames", "ResolveTemplateParamTypes")
+        .inOrder();
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -114,7 +115,7 @@ public final class PassManagerTest {
     forAllPassManagers(
         manager -> {
           Streams.<CompilerPass>concat(
-                  manager.singleFilePasses.stream(),
+                  manager.parsePasses.stream(),
                   manager.partialTemplateRegistryPasses.stream(),
                   manager.crossTemplateCheckingPasses.stream())
               .map(this::unwrapPassIfShimClass)
@@ -128,7 +129,6 @@ public final class PassManagerTest {
     ImmutableList<Class<? extends CompilerPass>> unannotatedAllowList =
         ImmutableList.of(
             AutoescaperPass.class,
-            BanNonNullAssertionOperatorPass.class,
             BasicHtmlValidationPass.class,
             CallAnnotationPass.class,
             CheckBadContextualUsagePass.class,

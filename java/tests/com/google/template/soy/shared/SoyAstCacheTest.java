@@ -24,7 +24,6 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.soytree.NamespaceDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -40,12 +39,16 @@ import org.junit.runners.JUnit4;
 public final class SoyAstCacheTest {
   @AutoValue
   abstract static class FakeVersion implements Version {
+    static FakeVersion create(int version) {
+      return new AutoValue_SoyAstCacheTest_FakeVersion(version);
+    }
+
     abstract int version();
   }
 
-  private SoyAstCache cache = new SoyAstCache();
-  private final FakeVersion version1 = new AutoValue_SoyAstCacheTest_FakeVersion(1);
-  private final FakeVersion version2 = new AutoValue_SoyAstCacheTest_FakeVersion(2);
+  private final SoyAstCache cache = new SoyAstCache();
+  private final FakeVersion version1 = FakeVersion.create(1);
+  private final FakeVersion version2 = FakeVersion.create(2);
 
   private final SoyFileNode fileNode1 =
       new SoyFileNode(
@@ -61,31 +64,23 @@ public final class SoyAstCacheTest {
 
   @Test
   public void testGetSet() {
-
     // Matching version.
-    cache.put("foo", VersionedFile.of(fileNode1, version2));
-    VersionedFile versionedFile = cache.get("foo", version2);
-    assertThat(versionedFile.file().getId()).isEqualTo(0xdeadbeef);
-    assertThat(versionedFile.file()).isNotSameInstanceAs(fileNode1);
-    assertThat(versionedFile.version()).isEqualTo(version2);
+    cache.put("foo", version2, fileNode1);
+    SoyFileNode file = cache.get("foo", version2);
+    // ids aren't modified
+    assertThat(file.getId()).isEqualTo(0xdeadbeef);
+    // the cache doesn't make copies
+    assertThat(file).isSameInstanceAs(fileNode1);
 
     assertThat(cache.get("bar", version1)).isNull();
 
-    versionedFile = cache.get("foo", version2);
-    assertThat(versionedFile.file().getId()).isEqualTo(0xdeadbeef);
-    assertThat(versionedFile.file()).isNotSameInstanceAs(fileNode1);
-    assertThat(versionedFile.version()).isEqualTo(version2);
+    file = cache.get("foo", version2);
+    assertThat(file.getId()).isEqualTo(0xdeadbeef);
+    assertThat(file).isSameInstanceAs(fileNode1);
 
     // Non matching version.
-    cache.put("foo", VersionedFile.of(fileNode1, version1));
+    cache.put("foo", version1, fileNode1);
     assertThat(cache.get("foo", version2)).isNull();
     assertThat(cache.get("bar", version1)).isNull();
-  }
-
-  @Test
-  public void testIdGenerator() {
-
-    // Make sure it always returns the same generator.
-    assertThat(cache.getNodeIdGenerator()).isSameInstanceAs(cache.getNodeIdGenerator());
   }
 }

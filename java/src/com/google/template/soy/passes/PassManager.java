@@ -83,22 +83,22 @@ public final class PassManager {
     STOP_AFTER_PASS,
   }
 
-  @VisibleForTesting final ImmutableList<CompilerFilePass> singleFilePasses;
+  @VisibleForTesting final ImmutableList<CompilerFilePass> parsePasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses;
   @VisibleForTesting final ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses;
 
   private PassManager(
-      ImmutableList<CompilerFilePass> singleFilePasses,
+      ImmutableList<CompilerFilePass> parsePasses,
       ImmutableList<CompilerFileSetPass> partialTemplateRegistryPasses,
       ImmutableList<CompilerFileSetPass> crossTemplateCheckingPasses) {
-    this.singleFilePasses = singleFilePasses;
+    this.parsePasses = parsePasses;
     this.partialTemplateRegistryPasses = partialTemplateRegistryPasses;
     this.crossTemplateCheckingPasses = crossTemplateCheckingPasses;
     checkOrdering();
   }
 
-  public void runSingleFilePasses(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (CompilerFilePass pass : singleFilePasses) {
+  public void runParsePasses(SoyFileNode file, IdGenerator nodeIdGen) {
+    for (CompilerFilePass pass : parsePasses) {
       pass.run(file, nodeIdGen);
     }
   }
@@ -137,8 +137,7 @@ public final class PassManager {
   private void checkOrdering() {
     Set<Class<? extends CompilerPass>> executed = new LinkedHashSet<>();
     for (CompilerPass pass :
-        Iterables.concat(
-            singleFilePasses, partialTemplateRegistryPasses, crossTemplateCheckingPasses)) {
+        Iterables.concat(parsePasses, partialTemplateRegistryPasses, crossTemplateCheckingPasses)) {
       prepareToRun(executed, pass);
     }
   }
@@ -338,36 +337,6 @@ public final class PassManager {
       // Note that we try to run all of the single file passes to report as many errors as possible,
       // meaning that errors reported in earlier passes do not prevent running subsequent passes.
       building = true;
-      ImmutableList.Builder<CompilerFilePass> singleFilePassesBuilder = ImmutableList.builder();
-      // TOOD(b/22389927): enable the non-null assertion operator once we're ready to use for
-      // fixing proto nullability.
-      if (!options.getExperimentalFeatures().contains("enableNonNullAssertionOperator")) {
-        addPass(new BanNonNullAssertionOperatorPass(errorReporter), singleFilePassesBuilder);
-      }
-      addPass(new DesugarGroupNodesPass(), singleFilePassesBuilder);
-      // Needs to run after htmlrewriting, before ResolveNames, ResolveTemplateParamTypes and
-      // autoescaping.
-      addPass(new ContentSecurityPolicyNonceInjectionPass(errorReporter), singleFilePassesBuilder);
-      addPass(new BasicHtmlValidationPass(errorReporter), singleFilePassesBuilder);
-
-      // Needs to run after HtmlRewritePass since it produces the HtmlTagNodes that we use
-      // to create placeholders.
-      addPass(new InsertMsgPlaceholderNodesPass(errorReporter), singleFilePassesBuilder);
-
-      // can run anywhere
-      addPass(new CheckEscapingSanityFilePass(errorReporter), singleFilePassesBuilder);
-
-      // TODO(b/157519545): Resolve template imports (and calls to imports) here, once we decouple
-      // the imports pass from the template registry in cl/316826822. Then we won't need to
-      // duplicate these passes.
-      // Until then, we need this to resolve template names for data="all" calls. Normally this
-      // could just be done in the later run of this pass, but if other files in the file set have
-      // parse errors, then the file set passes won't be run, and parser will crash when it tries to
-      // create the DataAllCallSituation for the TemplateRegistry.
-      addPass(
-          new ResolveTemplateNamesPass(errorReporter, /* throwErrorIfCantResolve= */ false),
-          singleFilePassesBuilder);
-
       // Fileset passes run on all sources files and have access to a partial template registry so
       // they can examine information about dependencies.
       // TODO(b/158474755): Try to simplify this pass structure structure once we have template
@@ -558,7 +527,7 @@ public final class PassManager {
             "The following continuation rules don't match any pass: " + passContinuationRegistry);
       }
       return new PassManager(
-          singleFilePassesBuilder.build(),
+          createParsePasses(errorReporter),
           partialTemplateRegistryPassesBuilder.build(),
           crossTemplateCheckingPassesBuilder.build());
     }
@@ -606,6 +575,30 @@ public final class PassManager {
       }
       throw new AssertionError("unhandled rule: " + rule);
     }
+  }
+
+  /**
+   * Passes that operate purely on the AST and depend on no configuration information.
+   *
+   * <p>ASTs run through these passes can be safely cached across compiles to speed up interactive
+   * recompiles so be very careful before adding parameters to this method. As a corrollary, we
+   * definitely want to add passes here if we can since it will speed up interactive recompiles.
+   */
+  private static ImmutableList<CompilerFilePass> createParsePasses(ErrorReporter reporter) {
+    return ImmutableList.of(
+        // TODO(b/157519545): Resolve template imports (and calls to imports) here, once we decouple
+        // the imports pass from the template registry in cl/316826822. Then we won't need to
+        // duplicate these passes.
+        // Until then, we need this to resolve template names for data="all" calls. Normally this
+        // could just be done in the later run of this pass, but if other files in the file set have
+        // parse errors, then the file set passes won't be run, and parser will crash when it tries
+        // to create the DataAllCallSituation for the TemplateRegistry.
+        new ResolveTemplateNamesPass(reporter, /* throwErrorIfCantResolve= */ false),
+        new DesugarGroupNodesPass(),
+        new ContentSecurityPolicyNonceInjectionPass(reporter),
+        new BasicHtmlValidationPass(reporter),
+        new InsertMsgPlaceholderNodesPass(reporter),
+        new CheckEscapingSanityFilePass(reporter));
   }
 
   private static Class<? extends CompilerPass> getPassClass(CompilerPass pass) {

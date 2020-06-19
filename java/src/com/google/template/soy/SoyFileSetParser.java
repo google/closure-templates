@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileKind;
@@ -31,13 +32,13 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
-import com.google.template.soy.shared.SoyAstCache.VersionedFile;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.FileSetTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -54,31 +55,6 @@ import javax.annotation.Nullable;
  */
 @AutoValue
 public abstract class SoyFileSetParser {
-  /**
-   * This interface can be implemented by a SoyFileSupplier to provide access to an AST.
-   *
-   * <p>This is a hack to support our goal of caching AST objects.
-   *
-   * <p>Currently SoyFileSet is responsible for collecting all compiler configuration and
-   * constructing a PassManager. Then it hands the PassManager and all the SoyFileSuppliers to this
-   * class to actually parse the source files and invoke the passes.
-   *
-   * <p>This set up is problematic for the caching strategy implemented by SoyInputCache and used
-   * elsewhere. SoyInputCache uses a File object as the cache key, while intuitive this is
-   * incompatible with the SoyFileSupplier interface which abstracts the File away. For the other
-   * cached objects, they are read/cached prior to being passed to SoyFileSet so this works fine,
-   * but for actual Source files, we are very flexible in how they can be configured. So to pass the
-   * AST through we use this interface that SoyFileSuppliers can implement to share a cached AST
-   * object. So we can 'tunnel' the data through and use a weird downcast to find it later.
-   *
-   * <p>This tightly couples AbstractSoyCompiler and this class, but I (lukes@) believe such a
-   * coupling is reasonable, the thing that makes it awkward is SoyFileSet! Ideally SoyFileSet
-   * wouldn't exist and AbstractSoyCompiler would construct SoyFileSetParser directly.
-   */
-  interface HasAstOrErrors {
-    @Nullable
-    SoyFileNode getAst(IdGenerator nodeIdGen, ErrorReporter errorReporter);
-  }
 
   /**
    * Simple tuple of un an-evaluatied compilation unit containing information about dependencies.
@@ -207,75 +183,79 @@ public abstract class SoyFileSetParser {
    * registry.
    */
   private ParseResult parseWithVersions() throws IOException {
-    IdGenerator nodeIdGen =
-        (cache() != null) ? cache().getNodeIdGenerator() : new IncrementingIdGenerator();
-    SoyFileSetNode soyTree = new SoyFileSetNode(nodeIdGen.genId(), nodeIdGen);
+    SoyFileSetNode soyTree = new SoyFileSetNode(new IncrementingIdGenerator());
     boolean filesWereSkipped = false;
-    // TODO(lukes): there are other places in the compiler (autoescaper) which may use the id
-    // generator but fail to lock on it.  Eliminate the id system to avoid this whole issue.
-    synchronized (nodeIdGen) { // Avoid using the same ID generator in multiple threads.
-      for (SoyFileSupplier fileSupplier : soyFileSuppliers().values()) {
-        SoyFileSupplier.Version version = fileSupplier.getVersion();
-        VersionedFile cachedFile =
-            cache() != null ? cache().get(fileSupplier.getFilePath(), version) : null;
-        SoyFileNode node;
-        if (cachedFile == null) {
-          node = parseSoyFileHelper(fileSupplier, nodeIdGen);
-          // TODO(b/19269289): implement error recovery and keep on trucking in order to display
-          // as many errors as possible. Currently, the later passes just spew NPEs if run on
-          // a malformed parse tree.
-          if (node == null) {
-            filesWereSkipped = true;
-            continue;
-          }
-          // Run passes that are considered part of initial parsing.
-          passManager().runSingleFilePasses(node, nodeIdGen);
-          // Run passes that check the tree.
-          if (cache() != null) {
-            cache().put(fileSupplier.getFilePath(), VersionedFile.of(node, version));
-          }
-        } else {
-          node = cachedFile.file();
+    // Use a fixed id generator for parsing.  This ensures that the ids assigned to nodes are not
+    // dependent on whether or not there was a cache hit.  So we parse with fixed ids and then
+    // assign ids later.
+    // TODO(lukes): this is a good argument for eliminating the id system.  They are only used to
+    // help with assigning unique names in the js and python backends.  We should just move this
+    // into those backends
+    FixedIdGenerator fixedIdGenerator = new FixedIdGenerator(-1);
+    for (SoyFileSupplier fileSupplier : soyFileSuppliers().values()) {
+      SoyFileSupplier.Version version = fileSupplier.getVersion();
+      SoyFileNode node = cache() != null ? cache().get(fileSupplier.getFilePath(), version) : null;
+      if (node == null) {
+        node = parseSoyFileHelper(fileSupplier, fixedIdGenerator);
+        // TODO(b/19269289): implement error recovery and keep on trucking in order to display
+        // as many errors as possible. Currently, the later passes just spew NPEs if run on
+        // a malformed parse tree.
+        if (node == null) {
+          filesWereSkipped = true;
+          continue;
         }
-        soyTree.addChild(node);
-      }
-
-      // If we couldn't parse all the files, we can't run the fileset passes or build the template
-      // registry.
-      if (filesWereSkipped) {
-        return ParseResult.create(
-            soyTree, Optional.empty(), ImmutableList.copyOf(errorReporter().getWarnings()));
-      }
-
-      // Build the template registry for the file set & its dependencies.
-      FileSetTemplateRegistry.Builder builder = FileSetTemplateRegistry.builder(errorReporter());
-
-      // Register templates for each file in the dependencies.
-      for (CompilationUnitAndKind unit : compilationUnits()) {
-        for (SoyFileP file : unit.compilationUnit().getFileList()) {
-          builder.addTemplatesForFile(
-              file.getFilePath(),
-              TemplateMetadataSerializer.templatesFromSoyFileP(
-                  file, unit.fileKind(), typeRegistry(), unit.filePath(), errorReporter()));
+        // Run passes that are considered part of initial parsing.
+        passManager().runParsePasses(node, fixedIdGenerator);
+        // Run passes that check the tree.
+        if (cache() != null) {
+          cache().put(fileSupplier.getFilePath(), version, node);
         }
       }
-
-      passManager().runPartialTemplateRegistryPasses(soyTree, builder.build());
-
-      // Now register the templates in this file set.
-      for (SoyFileNode node : soyTree.getChildren()) {
-        builder.addTemplatesForFile(
-            node.getFilePath(),
-            node.getTemplates().stream()
-                .map(TemplateMetadata::fromTemplate)
-                .collect(toImmutableList()));
-      }
-      TemplateRegistry registry = builder.build();
-
-      passManager().runWholeFilesetPasses(soyTree, registry);
-      return ParseResult.create(
-          soyTree, Optional.of(registry), ImmutableList.copyOf(errorReporter().getWarnings()));
+      // Make a copy here and assign ids.
+      // We need to make a copy because we may have stored a version in the cache or taken a version
+      // out of the cache, the cache does not make defensive copies, so we need to.
+      // Also, we need to assign ids because we performed all parsing with the fixed id generator.
+      // In theory we could optimize the no cache case and avoid this copy, but that is an
+      // increasingly uncommon configuration.
+      node = SoyTreeUtils.cloneWithNewIds(node, soyTree.getNodeIdGenerator());
+      soyTree.addChild(node);
     }
+    // If we couldn't parse all the files, we can't run the fileset passes or build the template
+    // registry.
+    if (filesWereSkipped) {
+      return ParseResult.create(
+          soyTree, Optional.empty(), ImmutableList.copyOf(errorReporter().getWarnings()));
+    }
+    // Build the template registry for the file set & its dependencies.
+    FileSetTemplateRegistry.Builder builder = FileSetTemplateRegistry.builder(errorReporter());
+
+    // Register templates for each file in the dependencies.
+    for (CompilationUnitAndKind unit : compilationUnits()) {
+      for (SoyFileP file : unit.compilationUnit().getFileList()) {
+        builder.addTemplatesForFile(
+            file.getFilePath(),
+            TemplateMetadataSerializer.templatesFromSoyFileP(
+                file, unit.fileKind(), typeRegistry(), unit.filePath(), errorReporter()));
+      }
+    }
+
+    if (!filesWereSkipped) {
+      passManager().runPartialTemplateRegistryPasses(soyTree, builder.build());
+    }
+
+    // Now register the templates in this file set.
+    for (SoyFileNode node : soyTree.getChildren()) {
+      builder.addTemplatesForFile(
+          node.getFilePath(),
+          node.getTemplates().stream()
+              .map(TemplateMetadata::fromTemplate)
+              .collect(toImmutableList()));
+    }
+    TemplateRegistry registry = builder.build();
+
+    passManager().runWholeFilesetPasses(soyTree, registry);
+    return ParseResult.create(
+        soyTree, Optional.of(registry), ImmutableList.copyOf(errorReporter().getWarnings()));
   }
 
   /**
@@ -287,24 +267,18 @@ public abstract class SoyFileSetParser {
    */
   private SoyFileNode parseSoyFileHelper(SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen)
       throws IOException {
-    // See copious comments above on this test
-    if (soyFileSupplier instanceof HasAstOrErrors) {
-      return ((HasAstOrErrors) soyFileSupplier).getAst(nodeIdGen, errorReporter());
-    } else {
-      try (Reader soyFileReader = soyFileSupplier.open()) {
-        String filePath = soyFileSupplier.getFilePath();
-        int lastBangIndex = filePath.lastIndexOf('!');
-        if (lastBangIndex != -1) {
-          // This is a resource in a JAR file. Only keep everything after the bang.
-          filePath = filePath.substring(lastBangIndex + 1);
-        }
-        // Think carefully before adding new parameters to the parser.
-        // Currently the only parameters are the id generator, the file, and the errorReporter.
-        // This
-        // ensures that the file be cached without worrying about other compiler inputs.
-        return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter())
-            .parseSoyFile();
+    try (Reader soyFileReader = soyFileSupplier.open()) {
+      String filePath = soyFileSupplier.getFilePath();
+      // TODO(lukes): this logic should move into relevant SoyFileSupplier implementations
+      int lastBangIndex = filePath.lastIndexOf('!');
+      if (lastBangIndex != -1) {
+        // This is a resource in a JAR file. Only keep everything after the bang.
+        filePath = filePath.substring(lastBangIndex + 1);
       }
+      // Think carefully before adding new parameters to the parser.
+      // Currently the only parameters are the id generator, the file, and the errorReporter.
+      // This ensures that the file be cached without worrying about other compiler inputs.
+      return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter()).parseSoyFile();
     }
   }
 }

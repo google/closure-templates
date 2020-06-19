@@ -16,11 +16,7 @@
 
 package com.google.template.soy.shared;
 
-import com.google.auto.value.AutoValue;
-import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.base.internal.SoyFileSupplier.Version;
-import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyFileNode;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,30 +36,20 @@ import javax.inject.Inject;
  */
 public final class SoyAstCache {
   /** A {@link SoyFileNode} with an associated {@link Version}. */
-  @AutoValue
-  public abstract static class VersionedFile {
-    public static VersionedFile of(SoyFileNode file, Version version) {
-      return new AutoValue_SoyAstCache_VersionedFile(file, version);
-    }
+  private static final class VersionedFile {
+    final SoyFileNode file;
 
-    VersionedFile() {}
+    final Version version;
 
-    public abstract SoyFileNode file();
-
-    public abstract Version version();
-
-    /** Make a defensive copy. */
-    private VersionedFile copy() {
-      return new AutoValue_SoyAstCache_VersionedFile(file().copy(new CopyState()), version());
+    VersionedFile(SoyFileNode file, Version version) {
+      this.file = file;
+      this.version = version;
     }
   }
 
   /** Cache mapping file path to the result of the last parse. */
   @GuardedBy("this")
   private final Map<String, VersionedFile> cache = new HashMap<>();
-
-  /** An ID generator to ensure all versions of all files have unique ID's. */
-  private final IdGenerator idGenerator = new IncrementingIdGenerator();
 
   @Inject
   public SoyAstCache() {}
@@ -74,11 +60,12 @@ public final class SoyAstCache {
    * <p>Please treat this as superpackage-private for Soy internals.
    *
    * @param fileName The name of the file.
-   * @param versionedFile The compiled AST at the particular version. The node is defensively
-   *     copied; the caller is free to modify it.
+   * @param version The version of the file
+   * @param file The parsed file. Caution this is stored as is, callers should take care to make
+   *     defensive copies.
    */
-  public synchronized void put(String fileName, VersionedFile versionedFile) {
-    cache.put(fileName, versionedFile.copy());
+  public synchronized void put(String fileName, Version version, SoyFileNode file) {
+    cache.put(fileName, new VersionedFile(file, version));
   }
 
   /**
@@ -88,15 +75,14 @@ public final class SoyAstCache {
    *
    * @param fileName The name of the file
    * @param version The current file version.
-   * @return A fresh copy of the tree that may be modified by the caller, or null if no entry was
-   *     found in the cache.
+   * @return The stored version of the tree. Callers should take care to make copies to avoid
+   *     corrupting data in the cache.
    */
-  public synchronized VersionedFile get(String fileName, Version version) {
+  public synchronized SoyFileNode get(String fileName, Version version) {
     VersionedFile entry = cache.get(fileName);
     if (entry != null) {
-      if (entry.version().equals(version)) {
-        // Make a defensive copy since the caller might run further passes on it.
-        return entry.copy();
+      if (entry.version.equals(version)) {
+        return entry.file;
       } else {
         // Aggressively purge to save memory.
         cache.remove(fileName);
@@ -106,15 +92,11 @@ public final class SoyAstCache {
   }
 
   /**
-   * Returns an ID generator that must be used for all files in this cache.
-   *
-   * <p>If this ID generator is not used, nodes in the cache will have conflicting ID's. It is
-   * important to use a manual synchronized block over this cache while using the ID generator since
-   * the ID generator is not guaranteed to be thread-safe!
-   *
-   * <p>Please treat this as superpackage-private for Soy internals.
+   * Evicts a file from the cache, normally this is not necessary but it can be used to limit memory
+   * consumption.
    */
-  public IdGenerator getNodeIdGenerator() {
-    return idGenerator;
+  public synchronized boolean evict(String fileName) {
+    VersionedFile entry = cache.remove(fileName);
+    return entry != null;
   }
 }
