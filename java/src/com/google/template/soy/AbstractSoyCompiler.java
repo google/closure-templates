@@ -207,7 +207,6 @@ public abstract class AbstractSoyCompiler {
     System.exit(status);
   }
 
-  @VisibleForTesting
   @CheckReturnValue
   public int run(final String[] args, PrintStream err) {
     try {

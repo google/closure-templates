@@ -31,6 +31,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
@@ -2076,8 +2077,18 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           break;
         case TO_FLOAT: // is added to the AST after this pass
         case REMAINDER:
-        case MSG_WITH_ID: // should have already been removed from the tree
-          throw new AssertionError();
+          node.setType(IntType.getInstance());
+          break;
+        case MSG_WITH_ID:
+          node.setType(
+              RecordType.of(
+                  ImmutableMap.of(
+                      "id",
+                      StringType.getInstance(),
+                      "msg",
+                      node.numChildren() > 0
+                          ? node.getChild(0).getType()
+                          : UnknownType.getInstance())));
       }
     }
 

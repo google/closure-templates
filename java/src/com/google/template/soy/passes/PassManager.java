@@ -191,6 +191,7 @@ public final class PassManager {
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
+    private boolean rewritePlugins = true;
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
@@ -255,6 +256,15 @@ public final class PassManager {
      */
     public Builder allowV1Expression() {
       this.allowV1Expression = true;
+      return this;
+    }
+
+    /**
+     * Determines whether or not built in plugins are rewritten. This is used by analysis tools that
+     * do not want the AST rewritten.
+     */
+    public Builder rewritePlugins(boolean rewritePlugins) {
+      this.rewritePlugins = rewritePlugins;
       return this;
     }
 
@@ -360,16 +370,18 @@ public final class PassManager {
 
       // needs to come before SoyConformancePass
       addPass(
-          new ResolvePluginsPass(pluginResolver, errorReporter),
+          new ResolvePluginsPass(pluginResolver, errorReporter, rewritePlugins),
           partialTemplateRegistryPassesBuilder);
 
       // Must come after ResolvePluginsPass.
-      addPass(new RewriteRemaindersPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      addPass(new RewriteGenderMsgsPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      // Needs to come after any pass that manipulates msg placeholders.
-      addPass(
-          new CalculateMsgSubstitutionInfoPass(errorReporter),
-          partialTemplateRegistryPassesBuilder);
+      if (rewritePlugins) {
+        addPass(new RewriteRemaindersPass(errorReporter), partialTemplateRegistryPassesBuilder);
+        addPass(new RewriteGenderMsgsPass(errorReporter), partialTemplateRegistryPassesBuilder);
+        // Needs to come after any pass that manipulates msg placeholders.
+        addPass(
+            new CalculateMsgSubstitutionInfoPass(errorReporter),
+            partialTemplateRegistryPassesBuilder);
+      }
       addPass(new CheckNonEmptyMsgNodesPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       // Run before the RewriteGlobalsPass as it removes some globals.
@@ -388,7 +400,9 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
       addPass(new ResolveNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to be after ResolveNames and MsgsPass
-      addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      if (rewritePlugins) {
+        addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      }
 
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
       addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);

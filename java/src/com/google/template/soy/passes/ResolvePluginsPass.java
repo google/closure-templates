@@ -47,10 +47,12 @@ final class ResolvePluginsPass implements CompilerFilePass {
 
   private final PluginResolver resolver;
   private final ErrorReporter errorReporter;
+  private final boolean rewritePlugins;
 
-  ResolvePluginsPass(PluginResolver resolver, ErrorReporter errorReporter) {
+  ResolvePluginsPass(PluginResolver resolver, ErrorReporter errorReporter, boolean rewritePlugins) {
     this.resolver = resolver;
     this.errorReporter = errorReporter;
+    this.rewritePlugins = rewritePlugins;
   }
 
   @Override
@@ -86,7 +88,9 @@ final class ResolvePluginsPass implements CompilerFilePass {
       Optional<SoySourceFunction> aliasedFunction =
           resolver.getFunctionCallableAsPrintDirective(name, directiveNode.getSourceLocation());
       if (aliasedFunction.isPresent()) {
-        rewritePrintDirectiveAsFunction(directiveNode, aliasedFunction.get());
+        if (rewritePlugins) {
+          rewritePrintDirectiveAsFunction(directiveNode, aliasedFunction.get());
+        }
       } else {
         directiveNode.setPrintDirective(
             resolver.lookupPrintDirective(
