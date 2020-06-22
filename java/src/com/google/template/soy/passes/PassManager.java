@@ -34,6 +34,7 @@ import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.TemplateNameRegistry;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
@@ -104,15 +105,23 @@ public final class PassManager {
   }
 
   /**
-   * Runs fileset passes that only require partial template registries that only contain
-   * dependencies.
+   * Runs passes that are needed before we can add the fileset's files to the {TemplateRegistry}.
+   *
+   * @param templateNameRegistry a lightweight registry of files to template names, including the
+   *     dep files and the files in the current fileset.
+   * @param partialTemplateRegistryWithJustDeps registry of {@link TemplateMetadata} for just the
+   *     deps (we don't have enough info yet to create the metadata for the current fileset).
    */
   public void runPartialTemplateRegistryPasses(
-      SoyFileSetNode soyTree, TemplateRegistry templateRegistry) {
+      SoyFileSetNode soyTree,
+      TemplateNameRegistry templateNameRegistry,
+      TemplateRegistry partialTemplateRegistryWithJustDeps) {
     ImmutableList<SoyFileNode> sourceFiles = ImmutableList.copyOf(soyTree.getChildren());
     IdGenerator idGenerator = soyTree.getNodeIdGenerator();
     for (CompilerFileSetPass pass : partialTemplateRegistryPasses) {
-      CompilerFileSetPass.Result result = pass.run(sourceFiles, idGenerator, templateRegistry);
+      CompilerFileSetPass.Result result =
+          pass.run(
+              sourceFiles, idGenerator, templateNameRegistry, partialTemplateRegistryWithJustDeps);
       if (result == CompilerFileSetPass.Result.STOP) {
         break;
       }
@@ -356,12 +365,8 @@ public final class PassManager {
       addPass(
           new ResolveProtoImportsPass(registry, errorReporter, disableAllTypeChecking),
           partialTemplateRegistryPassesBuilder);
-      addPass(
-          new ResolveTemplateImportsFromDepsPass(errorReporter),
-          partialTemplateRegistryPassesBuilder);
-      addPass(
-          new ResolveTemplateNamesPass(errorReporter, /* throwErrorIfCantResolve= */ false),
-          partialTemplateRegistryPassesBuilder);
+      addPass(new ResolveTemplateImportsPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(
@@ -481,12 +486,6 @@ public final class PassManager {
       // use.
       ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
           ImmutableList.builder();
-      addPass(
-          new ResolveTemplateImportsFromFileSetPass(errorReporter),
-          crossTemplateCheckingPassesBuilder);
-      addPass(
-          new ResolveTemplateNamesPass(errorReporter, /* throwErrorIfCantResolve= */ true),
-          crossTemplateCheckingPassesBuilder);
 
       addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
@@ -600,14 +599,6 @@ public final class PassManager {
    */
   private static ImmutableList<CompilerFilePass> createParsePasses(ErrorReporter reporter) {
     return ImmutableList.of(
-        // TODO(b/157519545): Resolve template imports (and calls to imports) here, once we decouple
-        // the imports pass from the template registry in cl/316826822. Then we won't need to
-        // duplicate these passes.
-        // Until then, we need this to resolve template names for data="all" calls. Normally this
-        // could just be done in the later run of this pass, but if other files in the file set have
-        // parse errors, then the file set passes won't be run, and parser will crash when it tries
-        // to create the DataAllCallSituation for the TemplateRegistry.
-        new ResolveTemplateNamesPass(reporter, /* throwErrorIfCantResolve= */ false),
         new DesugarGroupNodesPass(),
         new ContentSecurityPolicyNonceInjectionPass(reporter),
         new BasicHtmlValidationPass(reporter),

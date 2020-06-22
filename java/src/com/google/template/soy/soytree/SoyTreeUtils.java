@@ -161,7 +161,7 @@ public final class SoyTreeUtils {
    * Retrieves all nodes in a tree that are an instance of a particular class and match the given
    * predicate.
    */
-  private static <T extends Node> ImmutableList<T> getAllMatchingNodesOfType(
+  public static <T extends Node> ImmutableList<T> getAllMatchingNodesOfType(
       Node rootSoyNode, final Class<T> classObject, final Predicate<T> filter) {
     final ImmutableList.Builder<T> matchedNodesBuilder = ImmutableList.builder();
     // optimization to avoid navigating into expr trees if we can't possibly match anything

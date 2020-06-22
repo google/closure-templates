@@ -16,17 +16,14 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Template registry for a single soy file. This holds metadata for all the templates in the file
@@ -35,12 +32,11 @@ import java.util.Map;
 public final class TemplatesPerFile {
 
   private final String filePath;
-  private final ImmutableMap<TemplateName, TemplateMetadata> templateNamesToValues;
+  private final ImmutableSet<TemplateName> templates;
 
-  private TemplatesPerFile(
-      String filePath, ImmutableMap<TemplateName, TemplateMetadata> templateNamesToValues) {
+  private TemplatesPerFile(String filePath, ImmutableSet<TemplateName> templates) {
     this.filePath = filePath;
-    this.templateNamesToValues = templateNamesToValues;
+    this.templates = templates;
   }
 
   /** The file path for this registry. */
@@ -48,21 +44,14 @@ public final class TemplatesPerFile {
     return filePath;
   }
 
-  /** Returns metadata for all the templates in this file. */
-  public ImmutableList<TemplateMetadata> getAllTemplates() {
-    return ImmutableList.copyOf(templateNamesToValues.values());
-  }
-
   /** Gets the short (unqualified) template names for all the templates in this file. */
   public ImmutableSet<String> getUnqualifiedTemplateNames() {
-    return templateNamesToValues.keySet().stream()
-        .map(TemplateName::unqualifiedName)
-        .collect(toImmutableSet());
+    return templates.stream().map(TemplateName::unqualifiedName).collect(toImmutableSet());
   }
 
   /** Whether this file has a template with the given unqualified name. */
   public boolean hasTemplateWithUnqualifiedName(String unqualifiedTemplateName) {
-    return templateNamesToValues.keySet().stream()
+    return templates.stream()
         .anyMatch(name -> name.unqualifiedName().equals(unqualifiedTemplateName));
   }
 
@@ -77,19 +66,10 @@ public final class TemplatesPerFile {
         filePath,
         unqualifiedTemplateName);
 
-    return templateNamesToValues.keySet().stream()
+    return templates.stream()
         .filter(k -> k.unqualifiedName().equals(unqualifiedTemplateName))
         .findFirst()
         .get();
-  }
-
-  /** Gets metadata for the template with the given fully qualified name. */
-  public TemplateMetadata getTemplateMetadata(String fullyQualifiedTemplateName) {
-    return checkNotNull(
-        templateNamesToValues.get(TemplateName.create(fullyQualifiedTemplateName)),
-        "couldn't find metadata for %s in %s",
-        fullyQualifiedTemplateName,
-        templateNamesToValues);
   }
 
   /** Creates a new builder. */
@@ -101,11 +81,11 @@ public final class TemplatesPerFile {
   public static class Builder {
 
     private final String filePath;
-    private final Map<TemplateName, TemplateMetadata> templateNamesToValues;
+    private final Set<TemplateName> templates;
 
     private Builder(String filePath) {
       this.filePath = filePath;
-      this.templateNamesToValues = new LinkedHashMap<>();
+      this.templates = new LinkedHashSet<>();
     }
 
     public Builder addAllTemplates(List<TemplateMetadata> templateList) {
@@ -114,12 +94,17 @@ public final class TemplatesPerFile {
     }
 
     public Builder addTemplate(TemplateMetadata template) {
-      templateNamesToValues.put(TemplateName.create(template.getTemplateName()), template);
+      addTemplate(template.getTemplateName());
+      return this;
+    }
+
+    public Builder addTemplate(String fullTemplateName) {
+      templates.add(TemplateName.create(fullTemplateName));
       return this;
     }
 
     public TemplatesPerFile build() {
-      return new TemplatesPerFile(filePath, ImmutableMap.copyOf(templateNamesToValues));
+      return new TemplatesPerFile(filePath, ImmutableSet.copyOf(templates));
     }
   }
 
@@ -140,8 +125,8 @@ public final class TemplatesPerFile {
       return new AutoValue_TemplatesPerFile_TemplateName(fullyQualifiedName, unqualifiedName);
     }
 
-    abstract String fullyQualifiedName();
+    public abstract String fullyQualifiedName();
 
-    abstract String unqualifiedName();
+    public abstract String unqualifiedName();
   }
 }

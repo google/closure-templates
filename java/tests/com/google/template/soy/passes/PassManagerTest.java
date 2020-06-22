@@ -78,7 +78,7 @@ public final class PassManagerTest {
     assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
             "ResolveProtoImports",
-            "ResolveTemplateImportsFromDeps",
+            "ResolveTemplateImports",
             "ResolveTemplateNames",
             "ResolveTemplateParamTypes",
             "ResolvePlugins")
@@ -96,7 +96,7 @@ public final class PassManagerTest {
 
     assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
-            "ResolveProtoImports", "ResolveTemplateImportsFromDeps",
+            "ResolveProtoImports", "ResolveTemplateImports",
             "ResolveTemplateNames", "ResolveTemplateParamTypes")
         .inOrder();
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
@@ -155,7 +155,6 @@ public final class PassManagerTest {
             ResolveNamesPass.class,
             ResolvePackageRelativeCssNamesPass.class,
             ResolvePluginsPass.class,
-            ResolveTemplateNamesPass.class, // Needs to run multiple times.
             ResolveTemplateParamTypesPass.class,
             RewriteGenderMsgsPass.class,
             SimplifyAssertNonNullPass.class,

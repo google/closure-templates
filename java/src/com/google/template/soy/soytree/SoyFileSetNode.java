@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.basetree.CopyState;
@@ -35,6 +37,9 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   /** The node id generator for this parse tree. */
   private final IdGenerator nodeIdGen;
 
+  // The file set's template registry; could be partial.
+  private FileSetTemplateRegistry fileSetTemplateRegistry;
+
   /**
    * @param id The id for this node.
    * @param nodeIdGen The node id generator for this parse tree.
@@ -42,6 +47,15 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   public SoyFileSetNode(IdGenerator nodeIdGen) {
     super(nodeIdGen.genId(), /* sourceLocation= */ null);
     this.nodeIdGen = nodeIdGen;
+  }
+
+  public void setFileSetTemplateRegistry(FileSetTemplateRegistry fileSetTemplateRegistry) {
+    this.fileSetTemplateRegistry = fileSetTemplateRegistry;
+  }
+
+  public FileSetTemplateRegistry getFileSetTemplateRegistry() {
+    checkNotNull(fileSetTemplateRegistry, "File set template registry has not been set yet.");
+    return fileSetTemplateRegistry;
   }
 
   /**
@@ -52,6 +66,7 @@ public final class SoyFileSetNode extends AbstractParentSoyNode<SoyFileNode>
   private SoyFileSetNode(SoyFileSetNode orig, CopyState copyState) {
     super(orig, copyState);
     this.nodeIdGen = orig.nodeIdGen.copy();
+    this.fileSetTemplateRegistry = null;
   }
 
   @Override

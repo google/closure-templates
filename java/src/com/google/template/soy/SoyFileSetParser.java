@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -40,10 +41,14 @@ import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNameRegistry;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplatesPerFile;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -220,12 +225,14 @@ public abstract class SoyFileSetParser {
       node = SoyTreeUtils.cloneWithNewIds(node, soyTree.getNodeIdGenerator());
       soyTree.addChild(node);
     }
+
     // If we couldn't parse all the files, we can't run the fileset passes or build the template
     // registry.
     if (filesWereSkipped) {
       return ParseResult.create(
           soyTree, Optional.empty(), ImmutableList.copyOf(errorReporter().getWarnings()));
     }
+
     // Build the template registry for the file set & its dependencies.
     FileSetTemplateRegistry.Builder builder = FileSetTemplateRegistry.builder(errorReporter());
 
@@ -239,9 +246,16 @@ public abstract class SoyFileSetParser {
       }
     }
 
-    if (!filesWereSkipped) {
-      passManager().runPartialTemplateRegistryPasses(soyTree, builder.build());
-    }
+    // Build a registry of all the template names in each file.
+    TemplateNameRegistry templateNamesForEachFile =
+        buildTemplateNameRegistryForDepsAndFileset(builder, soyTree);
+
+    // Run the passes that we need to finish building the template registry.
+    FileSetTemplateRegistry partialRegistryForDeps = builder.build();
+    soyTree.setFileSetTemplateRegistry(partialRegistryForDeps);
+    passManager()
+        .runPartialTemplateRegistryPasses(
+            soyTree, templateNamesForEachFile, partialRegistryForDeps);
 
     // Now register the templates in this file set.
     for (SoyFileNode node : soyTree.getChildren()) {
@@ -251,8 +265,10 @@ public abstract class SoyFileSetParser {
               .map(TemplateMetadata::fromTemplate)
               .collect(toImmutableList()));
     }
-    TemplateRegistry registry = builder.build();
 
+    // Run the whole fileset passes & return the parse result.
+    FileSetTemplateRegistry registry = builder.build();
+    soyTree.setFileSetTemplateRegistry(registry);
     passManager().runWholeFilesetPasses(soyTree, registry);
     return ParseResult.create(
         soyTree, Optional.of(registry), ImmutableList.copyOf(errorReporter().getWarnings()));
@@ -280,5 +296,29 @@ public abstract class SoyFileSetParser {
       // This ensures that the file be cached without worrying about other compiler inputs.
       return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter()).parseSoyFile();
     }
+  }
+
+  /**
+   * Builds a registry of all file names (for deps + current file set) -> template names in each
+   * file.
+   */
+  private static TemplateNameRegistry buildTemplateNameRegistryForDepsAndFileset(
+      FileSetTemplateRegistry.Builder fileSetRegistryWithDeps, SoyFileSetNode fileSet) {
+    Map<String, TemplatesPerFile.Builder> soyFilePathsToTemplates =
+        fileSetRegistryWithDeps.getTemplatesPerFileBuilder();
+
+    for (SoyFileNode file : fileSet.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
+        // If there's already an entry for this file (e.g. for dummy path names), add the template
+        // names to the existing entry).
+        TemplatesPerFile.Builder fileRegistry =
+            soyFilePathsToTemplates.computeIfAbsent(file.getFilePath(), TemplatesPerFile::builder);
+        fileRegistry.addTemplate(template.getTemplateName());
+      }
+    }
+
+    return TemplateNameRegistry.create(
+        soyFilePathsToTemplates.entrySet().stream()
+            .collect(toImmutableMap(Map.Entry::getKey, e -> e.getValue().build())));
   }
 }

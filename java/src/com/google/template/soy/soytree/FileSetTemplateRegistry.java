@@ -69,14 +69,22 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
 
   private final DelTemplateSelector<TemplateMetadata> delTemplateSelector;
 
+  /**
+   * Map of template names to metadata, for all types of templates. For deltemplates, this uses the
+   * generated template name that includes delpackage + variant.
+   */
+  private final ImmutableMap<String, TemplateMetadata> allTemplates;
+
   /** Constructor. */
   private FileSetTemplateRegistry(
       ImmutableMap<String, TemplatesPerFile> templatesPerFile,
       ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap,
-      DelTemplateSelector<TemplateMetadata> delTemplateSelector) {
+      DelTemplateSelector<TemplateMetadata> delTemplateSelector,
+      ImmutableMap<String, TemplateMetadata> allTemplates) {
     this.templatesPerFile = templatesPerFile;
     this.basicTemplatesOrElementsMap = basicTemplatesOrElementsMap;
     this.delTemplateSelector = delTemplateSelector;
+    this.allTemplates = allTemplates;
   }
 
   public static Builder builder(ErrorReporter errorReporter) {
@@ -92,6 +100,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
         new DelTemplateSelector.Builder<>();
     Map<String, TemplateMetadata> basicTemplatesOrElementsMap = new LinkedHashMap<>();
     Multimap<String, TemplateMetadata> delegateTemplates = HashMultimap.create();
+    Map<String, TemplateMetadata> allTemplatesBuilder = new LinkedHashMap<>();
 
     private Builder(ErrorReporter errorReporter) {
       this.errorReporter = errorReporter;
@@ -103,6 +112,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
 
     public void addTemplateForFile(String filePath, TemplateMetadata template) {
       addTemplateToPerFileRegistry(filePath, template);
+      allTemplatesBuilder.put(template.getTemplateName(), template);
 
       switch (template.getTemplateKind()) {
         case BASIC:
@@ -151,6 +161,10 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
       }
     }
 
+    public Map<String, TemplatesPerFile.Builder> getTemplatesPerFileBuilder() {
+      return templatesPerFileBuilder;
+    }
+
     private void addTemplateToPerFileRegistry(String filePath, TemplateMetadata template) {
       TemplatesPerFile.Builder fileRegistry =
           templatesPerFileBuilder.computeIfAbsent(filePath, TemplatesPerFile::builder);
@@ -173,7 +187,8 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
           templatesPerFileBuilder.entrySet().stream()
               .collect(toImmutableMap(Map.Entry::getKey, e -> e.getValue().build())),
           ImmutableMap.copyOf(basicTemplatesOrElementsMap),
-          delTemplateSelectorBuilder.build());
+          delTemplateSelectorBuilder.build(),
+          ImmutableMap.copyOf(allTemplatesBuilder));
     }
   }
 
@@ -246,12 +261,12 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
 
   @Override
   public TemplateMetadata getMetadata(TemplateNode node) {
-    String filePath = node.getParent().getFilePath();
-    Preconditions.checkState(
-        templatesPerFile.containsKey(filePath),
-        "Cannot find template registry for file: %. Are you missing a dependency?",
-        filePath);
-    return templatesPerFile.get(filePath).getTemplateMetadata(checkNotNull(node.getTemplateName()));
+    return checkNotNull(
+        allTemplates.get(checkNotNull(node.getTemplateName())),
+        "Cannot find template metadata for file: %s. Known file names are: %s. Are you missing a"
+            + " dependency?",
+        node,
+        templatesPerFile.keySet());
   }
 
   /**
@@ -260,9 +275,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
    */
   @Override
   public ImmutableList<TemplateMetadata> getAllTemplates() {
-    return templatesPerFile.values().stream()
-        .flatMap(r -> r.getAllTemplates().stream())
-        .collect(toImmutableList());
+    return ImmutableList.copyOf(allTemplates.values());
   }
 
   @Override

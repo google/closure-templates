@@ -27,8 +27,8 @@ import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import java.util.Optional;
 
 /**
@@ -36,7 +36,13 @@ import java.util.Optional;
  * imports are resolved in two passes (once for deps and once for the current fileset), this pass
  * also needs to be run twice for the passes that require a partial template registry.
  */
-public final class ResolveTemplateNamesPass implements CompilerFilePass, CompilerFileSetPass {
+@RunAfter({
+  ResolveTemplateImportsPass.class,
+})
+@RunBefore({
+  SoyElementPass.class, // Needs {@link CallBasicNode#getCalleeName} to be resolved.
+})
+public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
   private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
       SoyErrorKind.of("Call collides with namespace alias ''{0}''.");
 
@@ -47,27 +53,20 @@ public final class ResolveTemplateNamesPass implements CompilerFilePass, Compile
           StyleAllowance.NO_PUNCTUATION);
 
   private final ErrorReporter errorReporter;
-  private final boolean throwErrorIfCantResolve;
 
-  public ResolveTemplateNamesPass(ErrorReporter errorReporter, boolean throwErrorIfCantResolve) {
+  public ResolveTemplateNamesPass(ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
-    this.throwErrorIfCantResolve = throwErrorIfCantResolve;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      run(file, idGenerator);
+      visitFile(
+          file,
+          file.hasTemplateRegistry() ? Optional.of(file.getTemplateRegistry()) : Optional.empty());
     }
 
     return Result.CONTINUE;
-  }
-
-  @Override
-  public void run(SoyFileNode file, IdGenerator idGenerator) {
-    visitFile(
-        file,
-        file.hasTemplateRegistry() ? Optional.of(file.getTemplateRegistry()) : Optional.empty());
   }
 
   private void visitFile(SoyFileNode file, Optional<ImportsTemplateRegistry> templateRegistry) {
@@ -104,22 +103,20 @@ public final class ResolveTemplateNamesPass implements CompilerFilePass, Compile
         if (importsTemplateRegistry.isPresent()) {
           // Case 3: "foo" Source callee name is a single ident (not dotted). Check if it's a known
           // import:
-          TemplateMetadata importedTemplate =
-              importsTemplateRegistry.get().getBasicTemplateOrElement(name);
+          TemplateName importedTemplate =
+              importsTemplateRegistry.get().getSymbolsToTemplateNamesMap().get(name);
           if (importedTemplate != null) {
             templateLiteralNode.resolveTemplateName(
                 Identifier.create(
-                    importedTemplate.getTemplateName(), name, unresolvedIdent.location()));
+                    importedTemplate.fullyQualifiedName(), name, unresolvedIdent.location()));
             return;
           }
-
-          // If this is the last time we're running the pass, throw an error if we
-          // couldn't resolve the name.
-          if (throwErrorIfCantResolve) {
-            reportUnresolveableTemplateNameError(
-                unresolvedIdent, header, importsTemplateRegistry.get());
-          }
         }
+        // If we couldn't resolve the name, report an error but set the "resolved" name to the
+        // original name, so that we can still create the template registry & proceed with future
+        // passes.
+        reportUnresolveableTemplateNameError(unresolvedIdent, header, importsTemplateRegistry);
+        templateLiteralNode.resolveTemplateName(unresolvedIdent);
         return;
     }
     throw new AssertionError(unresolvedIdent.type());
@@ -128,7 +125,7 @@ public final class ResolveTemplateNamesPass implements CompilerFilePass, Compile
   private void reportUnresolveableTemplateNameError(
       Identifier unresolvedTemplateNameIdent,
       SoyFileHeaderInfo header,
-      ImportsTemplateRegistry importsTemplateRegistry) {
+      Optional<ImportsTemplateRegistry> importsTemplateRegistry) {
     String unresolvedName = unresolvedTemplateNameIdent.identifier();
     if (header.hasAlias(unresolvedName)) {
       // This callee collides with a namespace alias, which likely means the alias
@@ -137,19 +134,22 @@ public final class ResolveTemplateNamesPass implements CompilerFilePass, Compile
           unresolvedTemplateNameIdent.location(),
           CALL_COLLIDES_WITH_NAMESPACE_ALIAS,
           unresolvedName);
-    } else {
+      return;
+    }
+    String importSuggestion = "";
+    if (importsTemplateRegistry.isPresent()) {
       //  The callee name needs a namespace, or should have been imported.
-      String importSuggestion =
-          SoyErrors.getClosest(importsTemplateRegistry.getImportedSymbols(), unresolvedName);
+      importSuggestion =
+          SoyErrors.getClosest(importsTemplateRegistry.get().getImportedSymbols(), unresolvedName);
       if (!Strings.isNullOrEmpty(importSuggestion)) {
         importSuggestion = "'" + importSuggestion + "' (with no '.')";
       }
-      errorReporter.report(
-          unresolvedTemplateNameIdent.location(),
-          MISSING_CALLEE_NAMESPACE,
-          unresolvedName,
-          SoyErrors.getDidYouMeanMessage("." + unresolvedName, importSuggestion));
     }
+    errorReporter.report(
+        unresolvedTemplateNameIdent.location(),
+        MISSING_CALLEE_NAMESPACE,
+        unresolvedName,
+        SoyErrors.getDidYouMeanMessage("." + unresolvedName, importSuggestion));
   }
 
   /**

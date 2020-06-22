@@ -30,63 +30,57 @@ import java.util.Optional;
  */
 public abstract class DelegatingTemplateRegistry implements TemplateRegistry {
 
-  private final TemplateRegistry delegate;
+  protected DelegatingTemplateRegistry() {}
 
-  protected DelegatingTemplateRegistry(TemplateRegistry delegate) {
-    this.delegate = delegate;
-  }
-
-  public TemplateRegistry getDelegate() {
-    return this.delegate;
-  }
+  abstract TemplateRegistry getDelegate();
 
   @Override
   public ImmutableMap<String, TemplatesPerFile> getTemplatesPerFile() {
-    return delegate.getTemplatesPerFile();
+    return getDelegate().getTemplatesPerFile();
   }
 
   @Override
   public TemplatesPerFile getTemplatesPerFile(String fileName) {
-    return delegate.getTemplatesPerFile(fileName);
+    return getDelegate().getTemplatesPerFile(fileName);
   }
 
   @Override
   public ImmutableSet<String> getBasicTemplateOrElementNames() {
-    return delegate.getBasicTemplateOrElementNames();
+    return getDelegate().getBasicTemplateOrElementNames();
   }
 
   @Override
   public ImmutableList<TemplateType> getTemplates(CallNode node) {
-    return delegate.getTemplates(node);
+    return getDelegate().getTemplates(node);
   }
 
   @Override
   public TemplateMetadata getBasicTemplateOrElement(String templateName) {
-    return delegate.getBasicTemplateOrElement(templateName);
+    return getDelegate().getBasicTemplateOrElement(templateName);
   }
 
   @Override
   public DelTemplateSelector<TemplateMetadata> getDelTemplateSelector() {
-    return delegate.getDelTemplateSelector();
+    return getDelegate().getDelTemplateSelector();
   }
 
   @Override
   public TemplateMetadata getMetadata(TemplateNode node) {
-    return delegate.getMetadata(node);
+    return getDelegate().getMetadata(node);
   }
 
   @Override
   public ImmutableList<TemplateMetadata> getAllTemplates() {
-    return delegate.getAllTemplates();
+    return getDelegate().getAllTemplates();
   }
 
   @Override
   public ImmutableSet<String> getAllFileNames() {
-    return delegate.getAllFileNames();
+    return getDelegate().getAllFileNames();
   }
 
   @Override
   public Optional<SanitizedContentKind> getCallContentKind(CallNode node) {
-    return delegate.getCallContentKind(node);
+    return getDelegate().getCallContentKind(node);
   }
 }
