@@ -594,6 +594,10 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               new PyExpr(indexVarName + " == len(" + listVarName + ") - 1", eqPrecedence))
           .addVariable(baseVarName + "__index", new PyExpr(indexVarName, Integer.MAX_VALUE));
 
+      if (node.getIndexVar() != null) {
+        localVarExprs.addVariable(
+            node.getIndexVarName(), new PyExpr(indexVarName, Integer.MAX_VALUE));
+      }
       // Generate the code for the loop body.
       visitChildren(node);
 

@@ -119,7 +119,7 @@ public final class ExprEquivalenceTest {
             .addSoyFunction(ASSERT_REFLEXIVE_FUNCTION)
             .addSoyFunction(ASSERT_EQUALS_FUNCTION)
             .addSoyFunction(ASSERT_NOT_EQUALS_FUNCTION)
-            .enableExperimentalFeatures(ImmutableList.of("indices_for_list_comprehension"))
+            .enableExperimentalFeatures(ImmutableList.of("indices_for_list"))
             .typeRegistry(TYPE_REGISTRY)
             .parse()
             .fileSet();

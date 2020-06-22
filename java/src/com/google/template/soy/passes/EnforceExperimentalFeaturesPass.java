@@ -26,6 +26,8 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -48,8 +50,8 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind IMPORTS_NOT_ALLOWED =
       SoyErrorKind.of("Soy imports of type {0} are not available for general use.");
 
-  private static final SoyErrorKind INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED =
-      SoyErrorKind.of("Soy indices for list comprehensions are not available for general use.");
+  private static final SoyErrorKind INDICES_FOR_LIST_NOT_ALLOWED =
+      SoyErrorKind.of("Soy indices for list are not available for general use.");
 
   private static final SoyErrorKind MSG_ALTERNATE_ID_NOT_ALLOWED =
       SoyErrorKind.of("Soy msg alternate ids are not available for general use.");
@@ -82,13 +84,18 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
         }
       }
     }
-    if (!features.contains("indices_for_list_comprehension")) {
+    if (!features.contains("indices_for_list")) {
       for (ListComprehensionNode listComprehensionNode :
           SoyTreeUtils.getAllNodesOfType(file, ListComprehensionNode.class)) {
         if (listComprehensionNode.getIndexVar() != null) {
           reporter.report(
-              listComprehensionNode.getIndexVar().nameLocation(),
-              INDICES_FOR_LIST_COMPREHENSION_NOT_ALLOWED);
+              listComprehensionNode.getIndexVar().nameLocation(), INDICES_FOR_LIST_NOT_ALLOWED);
+        }
+      }
+      for (ForNode forNode : SoyTreeUtils.getAllNodesOfType(file, ForNode.class)) {
+        ForNonemptyNode nonemptyNode = (ForNonemptyNode) forNode.getChild(0);
+        if (nonemptyNode.getIndexVar() != null) {
+          reporter.report(nonemptyNode.getIndexVar().nameLocation(), INDICES_FOR_LIST_NOT_ALLOWED);
         }
       }
     }

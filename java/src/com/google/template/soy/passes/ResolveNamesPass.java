@@ -196,6 +196,9 @@ public final class ResolveNamesPass implements CompilerFilePass {
       // Create a scope to hold the iteration variable
       localVariables.enterScope();
       localVariables.define(node.getVar(), node);
+      if (node.getIndexVar() != null) {
+        localVariables.define(node.getIndexVar(), node);
+      }
 
       // Visit the node body
       visitChildren(node);

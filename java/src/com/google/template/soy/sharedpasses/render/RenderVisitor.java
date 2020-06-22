@@ -32,6 +32,7 @@ import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
@@ -451,6 +452,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   private void executeForeachBody(ForNonemptyNode child, int i, SoyValueProvider value, int size) {
     env.bindLoopPosition(child.getVar(), value, i, size - 1 == i);
+    if (child.getIndexVar() != null) {
+      env.bind(child.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
+    }
     visitChildren(child);
   }
 

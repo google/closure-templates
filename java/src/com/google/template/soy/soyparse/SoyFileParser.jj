@@ -3098,7 +3098,9 @@ private ForNode ForStmt() :
 {
   Token tagBegin, tagClose, ifemptyTag, nameTok;
   Token tagBeginEnd = null;
+  Token indexTok = null;
   Identifier nameId = null;
+  Identifier indexId = null;
   ExprNode expr = null;
   String name = null;
   List<StandaloneNode> templateBlock;
@@ -3108,8 +3110,14 @@ private ForNode ForStmt() :
   tagBegin = <CMD_BEGIN_FOR>
   try {
     nameTok = <DOLLAR_IDENT>
+    [
+      <COMMA>
+      indexTok = <DOLLAR_IDENT>
+    ]
     {
         nameId = Identifier.create(nameTok.image, createSrcLoc(nameTok));
+        indexId =
+            indexTok == null ? null : Identifier.create(indexTok.image, createSrcLoc(indexTok));
     }
     <IN>
     expr = Expr()
@@ -3118,7 +3126,8 @@ private ForNode ForStmt() :
   } catch (ParseException e) {
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(
         e,
-        "\nFor-loops should be formatted as: \"{for $foo in <listExpression>}\".",
+        "\nFor-loops should be formatted as: \"{for $foo in <listExpression>}\" or " +
+            "\"{for $foo, $i in <listExpression>}\".",
         CMD_END);
 
     if (nameId == null) {
@@ -3135,6 +3144,7 @@ private ForNode ForStmt() :
         new ForNonemptyNode(
             nodeIdGen.genId(),
             nameId,
+            indexId,
             createSrcLoc(tagBegin, templateBlock));
     nonEmpty.addChildren(templateBlock);
   }

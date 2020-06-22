@@ -544,6 +544,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       // Set the inferred type of the loop variable.
       node.getVar().setType(getElementType(node.getExpr().getType(), node));
       // Visit the node body
+      if (node.getIndexVar() != null) {
+        // Set the type of the optional index to integer.
+        node.getIndexVar().setType(IntType.getInstance());
+      }
       visitChildren(node);
     }
 

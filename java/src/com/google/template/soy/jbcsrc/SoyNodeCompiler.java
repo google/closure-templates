@@ -355,6 +355,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     final List<Statement> initializers = new ArrayList<>();
     final Variable sizeVar;
     final Variable itemVar;
+    final Variable userIndexVar;
     if (exprAsRangeArgs.isPresent()) {
       final CompiledForeachRangeArgs compiledArgs = calculateRangeArgs(node, scope);
       initializers.addAll(compiledArgs.initStatements());
@@ -369,6 +370,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       indexVar =
           scope.createSynthetic(
               SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
+      userIndexVar =
+          nonEmptyNode.getIndexVar() == null
+              ? null
+              : scope.create(
+                  nonEmptyNode.getIndexVarName(),
+                  SoyExpression.forInt(
+                          BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE))
+                      .boxAsSoyValueProvider()
+                      .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+                  DERIVED);
       itemVar =
           scope.create(
               nonEmptyNode.getVarName(),
@@ -398,6 +409,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       indexVar =
           scope.createSynthetic(
               SyntheticVarName.foreachLoopIndex(nonEmptyNode), constant(0), STORE);
+      userIndexVar =
+          nonEmptyNode.getIndexVar() == null
+              ? null
+              : scope.create(
+                  nonEmptyNode.getIndexVarName(),
+                  SoyExpression.forInt(
+                          BytecodeUtils.numericConversion(indexVar.local(), Type.LONG_TYPE))
+                      .boxAsSoyValueProvider()
+                      .checkedCast(SOY_VALUE_PROVIDER_TYPE),
+                  DERIVED);
       itemVar =
           scope.create(
               nonEmptyNode.getVarName(),
@@ -425,6 +446,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         indexVar.initializer().gen(adapter);
         Label loopStart = adapter.mark();
         itemVar.initializer().gen(adapter);
+        if (userIndexVar != null) {
+          userIndexVar.initializer().gen(adapter);
+        }
 
         loopBody.gen(adapter);
 

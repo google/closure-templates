@@ -23,6 +23,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.SoyNode.ConditionalBlockNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarBlockNode;
 import com.google.template.soy.soytree.defn.LocalVar;
+import javax.annotation.Nullable;
 
 /**
  * Node representing the loop portion of a 'for' statement.
@@ -34,16 +35,30 @@ public final class ForNonemptyNode extends AbstractBlockNode
     implements ConditionalBlockNode, LocalVarBlockNode {
 
   private final LocalVar var;
+  @Nullable private final LocalVar indexVar;
 
   /**
    * @param id The id for this node.
-   * @param varIdentifier An identifier for the loop index variable.
+   * @param varIdentifier An identifier for the loop item variable.
+   * @param indexVarIdentifier An identifier for the loop index variable.
    * @param contentLocation The source location of the main content of the {for} tag.
    */
-  public ForNonemptyNode(int id, Identifier varIdentifier, SourceLocation contentLocation) {
+  public ForNonemptyNode(
+      int id,
+      Identifier varIdentifier,
+      Identifier indexVarIdentifier,
+      SourceLocation contentLocation) {
     super(id, contentLocation);
     this.var =
         new LocalVar(varIdentifier.identifier(), varIdentifier.location(), this, /* type= */ null);
+    this.indexVar =
+        indexVarIdentifier == null
+            ? null
+            : new LocalVar(
+                indexVarIdentifier.identifier(),
+                indexVarIdentifier.location(),
+                this,
+                /* type= */ null);
   }
 
   /**
@@ -54,7 +69,11 @@ public final class ForNonemptyNode extends AbstractBlockNode
   private ForNonemptyNode(ForNonemptyNode orig, CopyState copyState) {
     super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
+    this.indexVar = orig.indexVar == null ? null : new LocalVar(orig.indexVar, this);
     copyState.updateRefs(orig.var, this.var);
+    if (orig.indexVar != null) {
+      copyState.updateRefs(orig.indexVar, this.indexVar);
+    }
   }
 
   @Override
@@ -74,6 +93,16 @@ public final class ForNonemptyNode extends AbstractBlockNode
   @Override
   public final String getVarName() {
     return var.name();
+  }
+
+  @Nullable
+  public final LocalVar getIndexVar() {
+    return indexVar;
+  }
+
+  @Nullable
+  public final String getIndexVarName() {
+    return indexVar.name();
   }
 
   /** Returns the expression we're iterating over. */

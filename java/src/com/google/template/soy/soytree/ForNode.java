@@ -86,7 +86,14 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
 
   @Override
   public String getCommandText() {
-    return "$" + ((ForNonemptyNode) getChild(0)).getVarName() + " in " + expr.toSourceString();
+    return ((ForNonemptyNode) getChild(0)).getIndexVar() == null
+        ? String.format(
+            "$%s in %s", ((ForNonemptyNode) getChild(0)).getVarName(), expr.toSourceString())
+        : String.format(
+            "$%s, $%s in %s",
+            ((ForNonemptyNode) getChild(0)).getVarName(),
+            ((ForNonemptyNode) getChild(0)).getIndexVarName(),
+            expr.toSourceString());
   }
 
   @Override

@@ -1279,6 +1279,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .put(varName + "__isLast", loopIndex.doubleEquals(limit.minus(number(1))))
         .put(varName + "__index", loopIndex);
 
+    if (node.getIndexVar() != null) {
+      templateTranslationContext
+          .soyToJsVariableMappings()
+          .put(node.getIndexVarName(), id(loopIndexName));
+    }
+
     // Generate the loop body.
     Statement foreachBody = Statement.of(data, visitChildrenReturningCodeChunk(node));
 
