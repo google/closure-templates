@@ -373,7 +373,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Not computable as Python expressions, so generate full code.
       TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
       for (SoyNode child : node.getChildren()) {
         if (child instanceof IfCondNode) {
           IfCondNode icn = (IfCondNode) child;
@@ -436,7 +436,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     protected void visitSwitchNode(SwitchNode node) {
       // Run the switch value creation first to ensure side effects always occur.
       TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
       String switchValueVarName = "switchValue";
       PyExpr switchValuePyExpr = translator.exec(node.getExpr());
       pyCodeBuilder.appendLine(switchValueVarName, " = ", switchValuePyExpr.getText());
@@ -520,7 +520,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Define list variable
       TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
       PyExpr dataRefPyExpr = translator.exec(node.getExpr());
       pyCodeBuilder.appendLine(listVarName, " = ", dataRefPyExpr.getText());
 
@@ -631,7 +631,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // Generate code to define the local var.
       TranslateToPyExprVisitor translator =
-          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+          new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
       PyExpr valuePyExpr = translator.exec(node.getExpr());
       pyCodeBuilder.appendLine(generatedVarName, " = ", valuePyExpr.getText());
 
@@ -725,7 +725,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     protected void visitVeLogNode(VeLogNode node) {
       if (node.getLogonlyExpression() != null) {
         TranslateToPyExprVisitor translator =
-            new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+            new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
         PyExpr isLogonly = translator.exec(node.getLogonlyExpression());
         pyCodeBuilder.appendLine("if ", isLogonly.getText(), ":");
         pyCodeBuilder.increaseIndent();

@@ -180,7 +180,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
   @Override
   protected void visitPrintNode(PrintNode node) {
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
 
     PyExpr pyExpr = translator.exec(node.getExpr());
 
@@ -272,7 +272,7 @@ public final class GenPyExprsVisitor extends AbstractSoyNodeVisitor<List<PyExpr>
     GenPyExprsVisitor genPyExprsVisitor =
         genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
     TranslateToPyExprVisitor translator =
-        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, errorReporter);
+        new TranslateToPyExprVisitor(localVarExprs, pluginValueFactory, node, errorReporter);
 
     StringBuilder pyExprTextSb = new StringBuilder();
 

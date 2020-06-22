@@ -53,6 +53,7 @@ import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
@@ -68,6 +69,11 @@ import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.TemplateBasicNode;
+import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -163,13 +169,16 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private final ErrorReporter errorReporter;
   private final PythonValueFactoryImpl pluginValueFactory;
+  private final SoyFileNode containingFile;
 
   TranslateToPyExprVisitor(
       LocalVariableStack localVarExprs,
       PythonValueFactoryImpl pluginValueFactory,
+      SoyNode containingNode,
       ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.pluginValueFactory = pluginValueFactory;
+    this.containingFile = containingNode.getNearestAncestor(SoyFileNode.class);
     this.localVarExprs = localVarExprs;
   }
 
@@ -798,5 +807,36 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   @Override
   protected PyExpr visitVeLiteralNode(VeLiteralNode node) {
     return NONE;
+  }
+
+  @Override
+  protected PyExpr visitTemplateLiteralNode(TemplateLiteralNode node) {
+    String name;
+    TemplateNode template = getTemplateIfInSameFile(node);
+    if (template != null) {
+      name = GenPyCallExprVisitor.getLocalTemplateName(template);
+    } else {
+      String resolvedName = node.getResolvedName();
+      int secondToLastDotIndex = resolvedName.lastIndexOf('.', resolvedName.lastIndexOf('.') - 1);
+      name = resolvedName.substring(secondToLastDotIndex + 1);
+    }
+    PyExpr calleeExpr = new PyExpr(name, Integer.MAX_VALUE);
+    return node.isSynthetic()
+        ? calleeExpr
+        : new PyFunctionExprBuilder("runtime.create_template_type")
+            .addArg(calleeExpr)
+            .addArg(new PyStringExpr("'" + node.getResolvedName() + "'"))
+            .asPyExpr();
+  }
+
+  @Nullable
+  private TemplateNode getTemplateIfInSameFile(TemplateLiteralNode templateLiteralNode) {
+    for (TemplateNode template : containingFile.getTemplates()) {
+      if ((template instanceof TemplateBasicNode || template instanceof TemplateElementNode)
+          && template.getTemplateName().equals(templateLiteralNode.getResolvedName())) {
+        return template;
+      }
+    }
+    return null;
   }
 }

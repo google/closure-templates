@@ -644,3 +644,33 @@ def _find_modules(name):
 
 def _gen_delegate_id(template_id, variant=''):
   return 'key_%s:%s' % (template_id, variant)
+
+
+def create_template_type(template, name):
+  """Returns a wrapper object for a given template function.
+
+  The wrapper object forwards calls to the underlying template, but overrides
+  the __str__ method.
+
+  Args:
+    template: The underlying template function.
+    name: The fully-qualified template name.
+
+  Returns:
+    A wrapper object that can be called like the underlying template.
+  """
+  return _TemplateWrapper(template, name)
+
+
+class _TemplateWrapper:
+  """A wrapper object that forwards to the underlying template."""
+
+  def __init__(self, template, name):
+    self.template = template
+    self.name = name
+
+  def __call__(self, *args):
+    return self.template(*args)
+
+  def __str__(self):
+    return '** FOR DEBUGGING ONLY: template(%s) **' % self.name

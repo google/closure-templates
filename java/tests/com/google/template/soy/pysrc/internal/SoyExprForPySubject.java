@@ -182,6 +182,7 @@ public final class SoyExprForPySubject extends Subject {
         new TranslateToPyExprVisitor(
                 localVarExprs,
                 new PythonValueFactoryImpl(ErrorReporter.exploding(), BidiGlobalDir.LTR),
+                node,
                 ErrorReporter.exploding())
             .exec(exprNode);
     assertThat(actualPyExpr.getText()).isEqualTo(expectedPyExpr.getText());
