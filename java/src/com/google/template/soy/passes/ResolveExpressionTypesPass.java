@@ -240,10 +240,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of("Unknown proto type ''{0}''.");
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of("Proto field ''{0}'' does not exist.{1}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind PROTO_EXTENSION_DOES_NOT_EXIST =
-      SoyErrorKind.of(
-          "Proto extension field ''{0}'' does not exist on the proto ''{1}''.{2}",
-          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
@@ -278,9 +274,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of("Method ''{0}'' called with {1} parameter(s) but expected {2}.");
   private static final SoyErrorKind METHOD_INVALID_PARAM_TYPES =
       SoyErrorKind.of("Method ''{0}'' called with parameter types ({1}) but expected ({2}).");
-  private static final SoyErrorKind GET_EXTENSION_GLOBAL_REQUIRED =
-      SoyErrorKind.of(
-          "The parameter of method ''getExtension'' must be a dotted identifier. Found ''{0}''");
   private static final SoyErrorKind METHOD_BASE_TYPE_NULL_SAFE_REQUIRED =
       SoyErrorKind.of(
           "Method calls are not allowed on objects with nullable types (''{0}''). Either ensure"
@@ -1013,19 +1006,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       node.setSoyMethod(method);
 
       if (method instanceof BuiltinMethod) {
-        BuiltinMethod builtinMethod = (BuiltinMethod) method;
-
-        switch (builtinMethod) {
-          case GET_EXTENSION:
-            if (checkHasExtension(node, baseType)) {
-              node.setType(builtinMethod.getReturnType(node));
-            } else {
-              node.setType(ErrorType.getInstance());
-            }
-            break;
-          default:
-            node.setType(builtinMethod.getReturnType(node));
-        }
+        node.setType(((BuiltinMethod) method).getReturnType(node, typeRegistry, errorReporter));
       } else if (method instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;
         SoySourceFunction sourceFunction = sourceMethod.getImpl();
@@ -1044,36 +1025,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       } else {
         throw new AssertionError();
       }
-    }
-
-    private boolean checkHasExtension(MethodCallNode node, SoyType baseType) {
-      SoyProtoType protoType = (SoyProtoType) baseType;
-      ExprNode child = node.getChild(1);
-      // Fully qualified name parameter should initially be parsed as a global node.
-      if (child.getKind() != ExprNode.Kind.GLOBAL_NODE) {
-        errorReporter.report(
-            child.getSourceLocation(), GET_EXTENSION_GLOBAL_REQUIRED, child.getType().toString());
-        return false;
-      }
-
-      GlobalNode parameter = (GlobalNode) node.getChild(1);
-      ImmutableSet<String> fields = protoType.getExtensionFieldNames();
-      String fieldName = parameter.getName();
-
-      if (!fields.contains(fieldName)) {
-        String extraErrorMessage =
-            SoyErrors.getDidYouMeanMessageForProtoFields(
-                fields, protoType.getDescriptor(), fieldName);
-        errorReporter.report(
-            parameter.getSourceLocation(),
-            PROTO_EXTENSION_DOES_NOT_EXIST,
-            fieldName,
-            protoType.getDescriptor().getFullName(),
-            extraErrorMessage);
-        return false;
-      }
-
-      return true;
     }
 
     @Nullable
