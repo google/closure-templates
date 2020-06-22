@@ -56,6 +56,7 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.CodeChunkUtils;
@@ -71,9 +72,8 @@ import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.passes.ShouldEnsureDataIsDefinedVisitor;
 import com.google.template.soy.shared.RangeArgs;
-import com.google.template.soy.shared.internal.FindCalleesNotInFileVisitor;
+import com.google.template.soy.shared.internal.FindCalleesNotInFile;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -556,8 +556,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     // Get all the unique calls in the file.
     Set<String> calls = new HashSet<>();
-    for (CallBasicNode callNode : SoyTreeUtils.getAllNodesOfType(soyFile, CallBasicNode.class)) {
-      calls.add(callNode.getCalleeName());
+    for (TemplateLiteralNode templateLiteralNode :
+        SoyTreeUtils.getAllNodesOfType(soyFile, TemplateLiteralNode.class)) {
+      calls.add(templateLiteralNode.getResolvedName());
     }
 
     // Map all the unique namespaces to the templates in those namespaces.
@@ -625,8 +626,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
     String prevCalleeNamespace = null;
     Set<String> calleeNamespaces = new TreeSet<>();
-    for (CallBasicNode node : new FindCalleesNotInFileVisitor().exec(soyFile)) {
-      String calleeNotInFile = node.getCalleeName();
+    for (TemplateLiteralNode templateLiteralNode :
+        FindCalleesNotInFile.findCalleesNotInFile(soyFile)) {
+      String calleeNotInFile = templateLiteralNode.getResolvedName();
       int lastDotIndex = calleeNotInFile.lastIndexOf('.');
       calleeNamespaces.add(calleeNotInFile.substring(0, lastDotIndex));
     }
@@ -1116,7 +1118,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new TranslateExprNodeVisitor(
-        javaScriptValueFactory, templateTranslationContext, errorReporter);
+        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
   }
 
   protected Expression translateExpr(ExprNode expr) {

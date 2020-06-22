@@ -891,7 +891,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   @Override
   protected TranslateExprNodeVisitor getExprTranslator() {
     return new IncrementalDomTranslateExprNodeVisitor(
-        javaScriptValueFactory, templateTranslationContext, errorReporter);
+        javaScriptValueFactory, templateTranslationContext, templateAliases, errorReporter);
   }
 
   @Override

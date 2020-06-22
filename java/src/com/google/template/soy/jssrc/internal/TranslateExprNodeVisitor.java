@@ -34,6 +34,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
 import static com.google.template.soy.jssrc.internal.JsRuntime.JS_TO_PROTO_PACK_FN;
+import static com.google.template.soy.jssrc.internal.JsRuntime.MARK_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_IJ_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SERIALIZE_KEY;
@@ -91,6 +92,7 @@ import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
@@ -196,15 +198,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private final JavaScriptValueFactoryImpl javascriptValueFactory;
   private final ErrorReporter errorReporter;
   private final CodeChunk.Generator codeGenerator;
+  private final TemplateAliases templateAliases;
 
   public TranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javascriptValueFactory,
       TranslationContext translationContext,
+      TemplateAliases templateAliases,
       ErrorReporter errorReporter) {
     this.javascriptValueFactory = javascriptValueFactory;
     this.errorReporter = errorReporter;
     this.variableMappings = translationContext.soyToJsVariableMappings();
     this.codeGenerator = translationContext.codeGenerator();
+    this.templateAliases = templateAliases;
   }
 
   /**
@@ -940,5 +945,18 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 Expression.stringLiteral(node.getName().identifier())))
         .setElse(construct(SOY_VISUAL_ELEMENT, Expression.number(node.getId())))
         .build(codeGenerator);
+  }
+
+  @Override
+  protected Expression visitTemplateLiteralNode(TemplateLiteralNode node) {
+    // TODO(b/80597216): remove the call to dottedIdNoRequire here by calculating the goog.require
+    // this will require knowing the current require strategy and whether or not the template is
+    // defined in this file.
+    Expression templateLiteral =
+        Expression.dottedIdNoRequire(templateAliases.get(node.getResolvedName()));
+    // Skip checks for the common case of synthetic template literals.
+    return node.isSynthetic()
+        ? templateLiteral
+        : MARK_TEMPLATE.call(templateLiteral, Expression.stringLiteral(node.getResolvedName()));
   }
 }

@@ -19,7 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -98,9 +98,9 @@ final class AliasUtils {
     }
 
     // Go through all call sites looking for foreign template calls and create an alias for them.
-    for (CallBasicNode callBasicNode :
-        SoyTreeUtils.getAllNodesOfType(fileNode, CallBasicNode.class)) {
-      String fullyQualifiedName = callBasicNode.getCalleeName();
+    for (TemplateLiteralNode templateLiteralNode :
+        SoyTreeUtils.getAllNodesOfType(fileNode, TemplateLiteralNode.class)) {
+      String fullyQualifiedName = templateLiteralNode.getResolvedName();
 
       // We could have either encountered the foreign fully qualified name before or it could belong
       // to a local template.

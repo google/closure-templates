@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -29,11 +29,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link FindCalleesNotInFileVisitor}.
+ * Unit tests for {@link FindCalleesNotInFile}.
  *
  */
 @RunWith(JUnit4.class)
-public final class FindCalleesNotInFileVisitorTest {
+public final class FindCalleesNotInFileTest {
 
   @Test
   public void testFindCalleesNotInFile() {
@@ -77,7 +77,8 @@ public final class FindCalleesNotInFileVisitorTest {
 
     Iterable<String> calleesNotInFile =
         Iterables.transform(
-            new FindCalleesNotInFileVisitor().exec(soyFile), CallBasicNode::getCalleeName);
+            FindCalleesNotInFile.findCalleesNotInFile(soyFile),
+            TemplateLiteralNode::getResolvedName);
     assertThat(calleesNotInFile)
         .containsExactly("boo.woo.hoo", "boo.foo.too", "boo.foo.zoo", "boo.hoo.roo");
   }

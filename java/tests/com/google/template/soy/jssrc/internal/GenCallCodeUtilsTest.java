@@ -104,9 +104,9 @@ public final class GenCallCodeUtilsTest {
     assertWithMessage("Actual result: " + callExprText)
         .that(
             callExprText.matches(
-                "some[.]func[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo: soydata.VERY_UNSAFE.[$][$]"
-                    + "ordainSanitizedHtmlForInternalBlocks["
-                    + "(]param[0-9]+[)][}][)], opt_ijData[)];"))
+                "some[.]func[(]/[*][*] @type [{?}]{3} [*]/ [(][{]goo:"
+                    + " soydata.VERY_UNSAFE.[$][$]ordainSanitizedHtmlForInternalBlocks[(]param[0-9]+[)][}][)],"
+                    + " opt_ijData[)];"))
         .isTrue();
   }
 
@@ -235,6 +235,7 @@ public final class GenCallCodeUtilsTest {
         new TranslateExprNodeVisitor(
             new JavaScriptValueFactoryImpl(BidiGlobalDir.LTR, errorReporter),
             translationContext,
+            AliasUtils.IDENTITY_ALIASES,
             errorReporter);
     CodeChunk call =
         genCallCodeUtils.gen(

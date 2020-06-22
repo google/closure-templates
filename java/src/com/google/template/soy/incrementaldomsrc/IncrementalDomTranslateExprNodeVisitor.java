@@ -30,6 +30,7 @@ import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
+import com.google.template.soy.jssrc.internal.TemplateAliases;
 import com.google.template.soy.jssrc.internal.TranslateExprNodeVisitor;
 import com.google.template.soy.jssrc.internal.TranslationContext;
 import com.google.template.soy.logging.LoggingFunction;
@@ -43,8 +44,9 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
   public IncrementalDomTranslateExprNodeVisitor(
       JavaScriptValueFactoryImpl javaScriptValueFactory,
       TranslationContext translationContext,
+      TemplateAliases templateAliases,
       ErrorReporter errorReporter) {
-    super(javaScriptValueFactory, translationContext, errorReporter);
+    super(javaScriptValueFactory, translationContext, templateAliases, errorReporter);
   }
 
   @Override

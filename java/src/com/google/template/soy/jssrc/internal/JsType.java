@@ -53,6 +53,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -426,13 +427,77 @@ public final class JsType {
         return VE_TYPE;
       case VE_DATA:
         return VE_DATA_TYPE;
-      case NAMED_TEMPLATE:
       case TEMPLATE:
-        throw new UnsupportedOperationException("Not implemented!");
+        {
+          TemplateType templateType = (TemplateType) soyType;
+          Builder builder = builder();
+          Map<String, String> parameters = new LinkedHashMap<>();
+          for (TemplateType.Parameter parameter : templateType.getParameters()) {
+            JsType forSoyType = forSoyType(parameter.getType(), isIncrementalDom, isStrict);
+            builder.addRequires(forSoyType.getGoogRequires());
+            parameters.put(
+                parameter.getName(),
+                forSoyType.typeExprForRecordMember(!parameter.isRequired() /* isOptional */));
+          }
+          JsType forReturnType =
+              templateReturnType(templateType.getContentKind(), isIncrementalDom);
+          builder.addRequires(forReturnType.getGoogRequires());
+          // Trailing comma is important to prevent parsing ambiguity for the unknown type
+          String parametersType =
+              parameters.isEmpty()
+                  ? "null"
+                  : "{" + Joiner.on(", ").withKeyValueSeparator(": ").join(parameters) + ",}";
+          String ijType = "?goog.soy.IjData";
+          String returnType = forReturnType.typeExpr();
+          if (isIncrementalDom) {
+            builder.addRequire(
+                GoogRequire.createWithAlias(
+                    "google3.javascript.template.soy.api_idom", "incrementaldomlib"));
+            builder.addType(
+                String.format(
+                    "function(!incrementaldomlib.IncrementalDomRenderer, %s, %s):(%s)",
+                    parametersType, ijType, returnType));
+          } else {
+            builder.addType(
+                String.format("function(%s, %s):(%s)", parametersType, ijType, returnType));
+          }
+          builder.setPredicate(GOOG_IS_FUNCTION);
+          return builder.build();
+        }
+      case NAMED_TEMPLATE:
       case ERROR:
         // continue
     }
     throw new AssertionError("unhandled soytype: " + soyType);
+  }
+
+  private static JsType templateReturnType(
+      SanitizedContentKind templateReturnType, boolean isIncrementalDom) {
+    switch (templateReturnType) {
+      case TEXT:
+        return STRING_TYPE;
+      case ATTRIBUTES:
+      case CSS:
+      case HTML:
+      case JS:
+      case URI:
+      case TRUSTED_RESOURCE_URI:
+        Builder builder = builder();
+        String type = NodeContentKinds.toJsSanitizedContentCtorName(templateReturnType);
+        if (isIncrementalDom
+            && (templateReturnType == SanitizedContentKind.HTML
+                || templateReturnType == SanitizedContentKind.ATTRIBUTES)) {
+          builder.addType("void");
+        } else {
+          builder.addType("!" + type);
+        }
+        // Type predicate is not used for template return types.
+        builder.setPredicate(TypePredicate.NO_OP);
+        return builder.build();
+    }
+    throw new IllegalStateException(
+        "Unsupported return type found for template type; this should have been caught earlier"
+            + " in parsing.");
   }
 
   /** Can generate code chunks which validate the 'type' of a given code chunk. */

@@ -111,7 +111,7 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
    * Used for looking up the local name for a given template call to a fully qualified template
    * name.
    */
-  private final TemplateAliases templateAliases;
+  protected final TemplateAliases templateAliases;
 
   /**
    * @param jsExprTranslator Instance of JsExprTranslator to use.
@@ -252,7 +252,8 @@ public class GenJsExprsVisitor extends AbstractSoyNodeVisitor<List<Expression>> 
   }
 
   protected TranslateExprNodeVisitor getExprTranslator() {
-    return new TranslateExprNodeVisitor(javaScriptValueFactory, translationContext, errorReporter);
+    return new TranslateExprNodeVisitor(
+        javaScriptValueFactory, translationContext, templateAliases, errorReporter);
   }
 
   private Expression translateExpr(ExprRootNode argNode) {

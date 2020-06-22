@@ -24,6 +24,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
 import static com.google.template.soy.jssrc.dsl.Expression.fromExpr;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.ASSERT_TEMPLATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ASSIGN_DEFAULTS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_GET_DELEGATE_FN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.sanitizedContentOrdainerFunctionForInternalBlocks;
@@ -185,12 +186,11 @@ public class GenCallCodeUtils {
     Expression callee;
     if (callNode instanceof CallBasicNode) {
       // Case 1: Basic call.
-      // TODO(b/80597216): remove the call to dottedIdNoRequire here by calculating the goog.require
-      // this will require knowing the current require strategy and whether or not the template is
-      // defined in this file.
+      CallBasicNode callBasicNode = (CallBasicNode) callNode;
+      Expression calleeExpression = exprTranslator.exec(callBasicNode.getCalleeExpr());
+      // Skip checks for the common case of static calls.
       callee =
-          Expression.dottedIdNoRequire(
-              templateAliases.get(((CallBasicNode) callNode).getCalleeName()));
+          callBasicNode.isStaticCall() ? calleeExpression : ASSERT_TEMPLATE.call(calleeExpression);
     } else {
       // Case 2: Delegate call.
       CallDelegateNode callDelegateNode = (CallDelegateNode) callNode;
