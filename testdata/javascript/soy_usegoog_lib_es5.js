@@ -1515,9 +1515,6 @@ goog.dom.TagName.VAR = new goog.dom.TagName("VAR");
 goog.dom.TagName.VIDEO = new goog.dom.TagName("VIDEO");
 goog.dom.TagName.WBR = new goog.dom.TagName("WBR");
 goog.object = {};
-goog.object.is = function(v, v2) {
-  return v === v2 ? 0 !== v || 1 / v === 1 / v2 : v !== v && v2 !== v2;
-};
 goog.object.forEach = function(obj, f, opt_obj) {
   for (var key in obj) {
     f.call(opt_obj, obj[key], key, obj);
