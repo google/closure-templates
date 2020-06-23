@@ -23,6 +23,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ComparisonChain;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -36,6 +37,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
  */
 @ParametersAreNonnullByDefault
 @Immutable
+@CheckReturnValue
 public final class SourceLocation implements Comparable<SourceLocation> {
 
   /** A file path or URI useful for error messages. */

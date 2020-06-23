@@ -374,12 +374,13 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
 
       // needs to come before SoyConformancePass
-      addPass(
-          new ResolvePluginsPass(pluginResolver, errorReporter, rewritePlugins),
-          partialTemplateRegistryPassesBuilder);
+      addPass(new ResolvePluginsPass(pluginResolver), partialTemplateRegistryPassesBuilder);
 
       // Must come after ResolvePluginsPass.
       if (rewritePlugins) {
+        addPass(
+            new RewriteDirectivesCallableAsFunctionsPass(errorReporter),
+            partialTemplateRegistryPassesBuilder);
         addPass(new RewriteRemaindersPass(errorReporter), partialTemplateRegistryPassesBuilder);
         addPass(new RewriteGenderMsgsPass(errorReporter), partialTemplateRegistryPassesBuilder);
         // Needs to come after any pass that manipulates msg placeholders.

@@ -187,25 +187,30 @@ public final class PassManagerTest {
                 for (boolean optimize : bools()) {
                   for (boolean insertEscapingDirectives : bools()) {
                     for (boolean addHtmlAttributesForDebugging : bools()) {
-                      PassManager.Builder builder = builder().setGeneralOptions(soyGeneralOptions);
-                      if (allowUnknownGlobals) {
-                        builder.allowUnknownGlobals();
+                      for (boolean rewritePlugins : bools()) {
+                        PassManager.Builder builder =
+                            builder()
+                                .setGeneralOptions(soyGeneralOptions)
+                                .rewritePlugins(rewritePlugins);
+                        if (allowUnknownGlobals) {
+                          builder.allowUnknownGlobals();
+                        }
+                        if (allowV1Expression) {
+                          builder.allowV1Expression();
+                        }
+                        if (allowUnknownJsGlobals) {
+                          builder.allowUnknownJsGlobals();
+                        }
+                        if (disableAllTypeChecking) {
+                          builder.disableAllTypeChecking();
+                        }
+                        builder
+                            .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
+                            .optimize(optimize)
+                            .insertEscapingDirectives(insertEscapingDirectives)
+                            .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
+                        consumer.accept(builder.build());
                       }
-                      if (allowV1Expression) {
-                        builder.allowV1Expression();
-                      }
-                      if (allowUnknownJsGlobals) {
-                        builder.allowUnknownJsGlobals();
-                      }
-                      if (disableAllTypeChecking) {
-                        builder.disableAllTypeChecking();
-                      }
-                      builder
-                          .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
-                          .optimize(optimize)
-                          .insertEscapingDirectives(insertEscapingDirectives)
-                          .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
-                      consumer.accept(builder.build());
                     }
                   }
                 }

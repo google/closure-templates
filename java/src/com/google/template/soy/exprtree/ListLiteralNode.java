@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A node representing a list literal (with items as children).
@@ -29,7 +30,7 @@ import java.util.List;
  */
 public final class ListLiteralNode extends AbstractParentExprNode {
 
-  private final List<SourceLocation.Point> commaLocations;
+  private final Optional<ImmutableList<SourceLocation.Point>> commaLocations;
 
   /** @param items The expressions for the items in this list. */
   public ListLiteralNode(
@@ -38,14 +39,14 @@ public final class ListLiteralNode extends AbstractParentExprNode {
       List<SourceLocation.Point> commaLocations) {
     super(sourceLocation);
     addChildren(items);
-    this.commaLocations = commaLocations;
+    this.commaLocations = Optional.of(ImmutableList.copyOf(commaLocations));
   }
 
   /** @param items The expressions for the items in this list. */
   public ListLiteralNode(List<ExprNode> items, SourceLocation sourceLocation) {
     super(sourceLocation);
     addChildren(items);
-    this.commaLocations = ImmutableList.of();
+    this.commaLocations = Optional.empty();
   }
 
   /**
@@ -55,10 +56,10 @@ public final class ListLiteralNode extends AbstractParentExprNode {
    */
   private ListLiteralNode(ListLiteralNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.commaLocations = ImmutableList.copyOf(orig.commaLocations);
+    this.commaLocations = orig.commaLocations;
   }
 
-  public List<SourceLocation.Point> getCommaLocations() {
+  public Optional<ImmutableList<SourceLocation.Point>> getCommaLocations() {
     return commaLocations;
   }
 

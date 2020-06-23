@@ -2748,7 +2748,7 @@ private PrintDirectiveNode PrintDirective() :
     SourceLocation loc = createSrcLoc(vbar, directive);
     Identifier ident = Identifier.create("|" + directive.image, loc);
     if (!args.isEmpty()) {
-      loc.extend(args.get(args.size() - 1).getSourceLocation());
+      loc = loc.extend(args.get(args.size() - 1).getSourceLocation());
     }
     return new PrintDirectiveNode(nodeIdGen.genId(), /* name= */ ident, /* location= */ loc, args);
   }

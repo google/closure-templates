@@ -30,6 +30,7 @@ import com.google.template.soy.shared.restricted.SoyFunctions;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import com.google.template.soy.types.SoyType;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -41,7 +42,7 @@ import javax.annotation.Nullable;
 public final class FunctionNode extends AbstractParentExprNode {
 
   private final Identifier name;
-  private final List<SourceLocation.Point> commaLocations;
+  private final Optional<ImmutableList<SourceLocation.Point>> commaLocations;
 
   /**
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
@@ -63,7 +64,9 @@ public final class FunctionNode extends AbstractParentExprNode {
   }
 
   public FunctionNode(Identifier name, Object soyFunction, SourceLocation sourceLocation) {
-    this(name, sourceLocation, ImmutableList.of());
+    super(sourceLocation);
+    this.name = name;
+    this.commaLocations = Optional.empty();
     setSoyFunction(soyFunction);
   }
 
@@ -71,7 +74,7 @@ public final class FunctionNode extends AbstractParentExprNode {
       Identifier name, SourceLocation sourceLocation, List<SourceLocation.Point> commaLocations) {
     super(sourceLocation);
     this.name = name;
-    this.commaLocations = commaLocations;
+    this.commaLocations = Optional.of(ImmutableList.copyOf(commaLocations));
   }
 
   /**
@@ -84,10 +87,10 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.name = orig.name;
     this.soyFunction = orig.soyFunction;
     this.allowedParamTypes = orig.allowedParamTypes;
-    this.commaLocations = ImmutableList.copyOf(orig.commaLocations);
+    this.commaLocations = orig.commaLocations;
   }
 
-  public List<SourceLocation.Point> getCommaLocations() {
+  public Optional<ImmutableList<SourceLocation.Point>> getCommaLocations() {
     return commaLocations;
   }
 

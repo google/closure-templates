@@ -19,16 +19,10 @@ package com.google.template.soy.passes;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.PrintDirectiveNode;
-import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
@@ -39,20 +33,10 @@ import java.util.Optional;
  * rewrites some ambiguous function nodes to {@link ProtoInitNode}.
  */
 final class ResolvePluginsPass implements CompilerFilePass {
-
-  private static final SoyErrorKind NOT_FIRST_PRINT_DIRECTIVE =
-      SoyErrorKind.of(
-          "Function ''{0}'' cannot be called as a print directive when preceded by print directive"
-              + " ''{1}''.");
-
   private final PluginResolver resolver;
-  private final ErrorReporter errorReporter;
-  private final boolean rewritePlugins;
 
-  ResolvePluginsPass(PluginResolver resolver, ErrorReporter errorReporter, boolean rewritePlugins) {
+  ResolvePluginsPass(PluginResolver resolver) {
     this.resolver = resolver;
-    this.errorReporter = errorReporter;
-    this.rewritePlugins = rewritePlugins;
   }
 
   @Override
@@ -88,49 +72,12 @@ final class ResolvePluginsPass implements CompilerFilePass {
       Optional<SoySourceFunction> aliasedFunction =
           resolver.getFunctionCallableAsPrintDirective(name, directiveNode.getSourceLocation());
       if (aliasedFunction.isPresent()) {
-        if (rewritePlugins) {
-          rewritePrintDirectiveAsFunction(directiveNode, aliasedFunction.get());
-        }
+        directiveNode.setPrintDirectiveFunction(aliasedFunction.get());
       } else {
         directiveNode.setPrintDirective(
             resolver.lookupPrintDirective(
                 name, directiveNode.getExprList().size(), directiveNode.getSourceLocation()));
       }
     }
-  }
-
-  private void rewritePrintDirectiveAsFunction(
-      PrintDirectiveNode directiveNode, SoySourceFunction function) {
-    PrintNode printNode = (PrintNode) directiveNode.getParent();
-    // printNode.
-    String functionName = function.getClass().getAnnotation(SoyFunctionSignature.class).name();
-
-    // Only rewrite the print directive if it is the first in the chain. This avoids having to
-    // create new let nodes.
-    int directiveIndex = printNode.getChildIndex(directiveNode);
-    if (directiveIndex != 0) {
-      errorReporter.report(
-          directiveNode.getSourceLocation(),
-          NOT_FIRST_PRINT_DIRECTIVE,
-          functionName,
-          printNode.getChild(directiveIndex - 1).getName());
-      return;
-    }
-
-    ExprRootNode originalExprRoot = printNode.getExpr();
-    ExprNode originalExpr = originalExprRoot.getRoot();
-    FunctionNode newExpr =
-        new FunctionNode(
-            Identifier.create(functionName, directiveNode.getNameLocation()),
-            function,
-            originalExpr.getSourceLocation().extend(directiveNode.getSourceLocation()));
-    // Add the original expression of the print directive as the first argument to the function.
-    newExpr.addChild(originalExpr);
-    // Add the 0-n arguments to the print directive as the 1-(n+1) arguments of the function.
-    newExpr.addChildren(directiveNode.getArgs());
-    originalExprRoot.addChild(newExpr);
-
-    // Remove the print directive.
-    printNode.removeChild(directiveIndex);
   }
 }
