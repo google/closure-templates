@@ -76,6 +76,9 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   public SourceLocation(String filePath, Point begin, Point end) {
+    checkNotNull(filePath, "filePath is null");
+    checkNotNull(begin, "begin is null");
+    checkNotNull(end, "end is null");
     checkArgument(
         begin.isKnown() == end.isKnown(),
         "Either both the begin and end locations should be known, or neither should be. Got [%s,"
@@ -88,9 +91,9 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         begin,
         end,
         filePath);
-    this.filePath = checkNotNull(filePath);
-    this.begin = checkNotNull(begin);
-    this.end = checkNotNull(end);
+    this.filePath = filePath;
+    this.begin = begin;
+    this.end = end;
   }
 
   /**

@@ -18,6 +18,7 @@ package com.google.template.soy.error;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
@@ -85,6 +86,14 @@ final class ErrorReporterImpl extends ErrorReporter {
   @Override
   int getCurrentNumberOfErrors() {
     return errorCount;
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(getClass())
+        .add("errors", errorCount)
+        .add("warnings", reports.size() - errorCount)
+        .toString();
   }
 
   private static final class RecordedError {

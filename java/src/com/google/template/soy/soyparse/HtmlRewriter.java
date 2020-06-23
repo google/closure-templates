@@ -187,6 +187,11 @@ final class HtmlRewriter {
           "Found the end of a tag that was started in another block. Html tags should be opened "
               + "and closed in the same block.");
 
+  private static final SoyErrorKind FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK =
+      SoyErrorKind.of(
+          "Found the end of an html comment that was started in another block. Html comments"
+              + " should be opened and closed in the same block.");
+
   private static final SoyErrorKind FOUND_EQ_WITH_ATTRIBUTE_IN_ANOTHER_BLOCK =
       SoyErrorKind.of("Found an ''='' character in a different block than the attribute name.");
 
@@ -700,7 +705,7 @@ final class HtmlRewriter {
     }
 
     /** Reparents {nil} nodes in states where we've inserted new ast nodes (like HTML_OPEN_TAG). */
-    protected void maybeReparentNilNode(RawTextNode node) {
+    void maybeReparentNilNode(RawTextNode node) {
       if (!node.isNilCommandChar()) {
         return;
       }
@@ -896,16 +901,23 @@ final class HtmlRewriter {
           }
 
           // Consume the suffix here ("-->"), but keep track of the ">" location.
+          SourceLocation.Point beginEndBracketLocation = currentPoint();
           advance(2);
           consume();
-          SourceLocation.Point endBracketLocation = currentPointOrEnd();
+          SourceLocation.Point endBracketLocation = currentPoint();
           advance(1);
           consume();
 
           // At this point we haven't remove the current raw text node (which contains -->) yet.
           edits.remove(currentRawTextNode);
-
-          context.setState(context.createHtmlComment(endBracketLocation), currentPointOrEnd());
+          if (context.hasCommentBegin()) {
+            context.setState(context.createHtmlComment(endBracketLocation), currentPointOrEnd());
+          } else {
+            errorReporter.report(
+                new SourceLocation(filePath, beginEndBracketLocation, endBracketLocation),
+                FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK);
+            throw new AbortParsingBlockError();
+          }
         } else {
           advance();
         }
@@ -2151,6 +2163,10 @@ final class HtmlRewriter {
       return tagStartNode != null && tagStartPoint != null;
     }
 
+    boolean hasCommentBegin() {
+      return commentStartPoint != null && commentStartNode != null;
+    }
+
     /** Sets the given node as a direct child of the tag currently being built. */
     void addTagChild(StandaloneNode node) {
       maybeFinishPendingAttribute(node.getSourceLocation().getBeginPoint());
@@ -2497,9 +2513,8 @@ final class HtmlRewriter {
           return State.RCDATA_TITLE;
         case XMP:
           return State.RCDATA_XMP;
-        default:
-          throw new AssertionError(tagName.getRcDataTagName());
       }
+      throw new AssertionError(tagName.getRcDataTagName());
     }
 
     void maybeFinishPendingAttribute(SourceLocation.Point currentPoint) {
