@@ -4800,7 +4800,7 @@ goog.uri.utils.setParam = function(uri, keyEncoded, value) {
 };
 goog.uri.utils.setParamsFromMap = function(uri, params) {
   var parts = goog.uri.utils.splitQueryData_(uri), queryData = parts[1], buffer = [];
-  queryData && goog.array.forEach(queryData.split("&"), function(pair) {
+  queryData && queryData.split("&").forEach(function(pair) {
     var indexOfEquals = pair.indexOf("=");
     params.hasOwnProperty(0 <= indexOfEquals ? pair.substr(0, indexOfEquals) : pair) || buffer.push(pair);
   });
