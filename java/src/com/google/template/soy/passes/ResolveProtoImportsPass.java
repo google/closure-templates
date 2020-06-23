@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
@@ -31,7 +32,9 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder.ProtoSoyTypeRegistry;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -81,8 +84,8 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
     private final SoyTypeRegistry typeRegistry;
     private final boolean disableAllTypeChecking;
     private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
-    private final ImmutableMap.Builder<String, String> messagesAndEnums = ImmutableMap.builder();
-    private final ImmutableMap.Builder<String, String> extensions = ImmutableMap.builder();
+    private final Map<String, String> messagesAndEnums = new HashMap<>();
+    private final Map<String, String> extensions = new HashMap<>();
 
     ProtoImportVisitor(
         SoyFileNode file,
@@ -122,10 +125,17 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
         }
 
         if (extensionNames.contains(name)) {
-          extensions.put(symbol.aliasOrName(), fd.getPackage() + "." + name);
+          putDistinct(extensions, symbol.aliasOrName(), fd.getPackage() + "." + name);
         } else {
-          messagesAndEnums.put(symbol.aliasOrName(), fd.getPackage() + "." + name);
+          putDistinct(messagesAndEnums, symbol.aliasOrName(), fd.getPackage() + "." + name);
         }
+      }
+    }
+
+    private static void putDistinct(Map<String, String> into, String key, String value) {
+      String old = into.put(key, value);
+      if (old != null) {
+        Preconditions.checkArgument(value.equals(old));
       }
     }
 
@@ -145,7 +155,9 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
               disableAllTypeChecking
                   ? typeRegistry
                   : new ImportsTypeRegistry(
-                      typeRegistry, messagesAndEnums.build(), extensions.build()));
+                      typeRegistry,
+                      ImmutableMap.copyOf(messagesAndEnums),
+                      ImmutableMap.copyOf(extensions)));
     }
 
     @Override

@@ -26,6 +26,8 @@ import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Abstract base class for an imports pass. Verifies that import paths are valid and symbols are
@@ -45,7 +47,10 @@ abstract class ImportsPass {
   private static final SoyErrorKind SYMBOLS_REQUIRED =
       SoyErrorKind.of("One or more imported symbols are required for import type {0}.");
 
-  /** Visits a Soy file, validating its imports and updating the file's {@link ImportContext}. */
+  /**
+   * Visits a Soy file, validating its imports and updating the file's {@link
+   * com.google.template.soy.soytree.ImportsContext}.
+   */
   void visitFile(SoyFileNode file) {
     createImportVisitorForFile(file).exec();
   }
@@ -58,6 +63,11 @@ abstract class ImportsPass {
     final SoyFileNode file;
     final ErrorReporter errorReporter;
     private final ImmutableSet<ImportType> importTypesToVisit;
+    /**
+     * Map from unique imported symbol (aliasOrName) to "path//name". Used to determine whether
+     * imported symbol collisions are real collisions or just duplicates.
+     */
+    private final Map<String, String> uniqueImports = new HashMap<>();
 
     ImportVisitor(
         SoyFileNode file,
@@ -68,7 +78,10 @@ abstract class ImportsPass {
       this.errorReporter = errorReporter;
     }
 
-    /** Visits all of the file's imports, and then updates the file's {@link ImportContext}. */
+    /**
+     * Visits all of the file's imports, and then updates the file's {@link
+     * com.google.template.soy.soytree.ImportsContext}.
+     */
     final void exec() {
       for (ImportNode importNode : file.getImports()) {
         visit(importNode);
@@ -77,14 +90,15 @@ abstract class ImportsPass {
     }
 
     /**
-     * Updates the {@link SoyFileNode}'s {@link ImportsContext} after the visitor has been executed.
+     * Updates the {@link SoyFileNode}'s {@link com.google.template.soy.soytree.ImportsContext}
+     * after the visitor has been executed.
      */
     abstract void updateImportsContext();
 
     /**
      * Whether to visit the node. Will only be called if the nodes has a type in {@link
-     * importTypesToVisit}. This can be used if there are additional criteria for whether to visit a
-     * node or not (e.g. template imports are visited in two phases, one for deps and one for the
+     * #importTypesToVisit}. This can be used if there are additional criteria for whether to visit
+     * a node or not (e.g. template imports are visited in two phases, one for deps and one for the
      * current file set).
      */
     boolean shouldVisit(ImportNode node) {
@@ -94,7 +108,7 @@ abstract class ImportsPass {
     /**
      * Visits an import node. First, validates that the import path exists and the symbol names
      * and/or optional aliases do not collide with other import symbols. Then, delegates to the
-     * abstract {@link visitImportNodeWithValidPathAndSymbol}.
+     * abstract {@link #visitImportNodeWithValidPathAndSymbol}.
      */
     private void visit(ImportNode node) {
       if (!importTypesToVisit.contains(node.getImportType()) || !shouldVisit(node)) {
@@ -119,6 +133,15 @@ abstract class ImportsPass {
 
         for (ImportedVar symbol : node.getIdentifiers()) {
           String name = symbol.aliasOrName();
+
+          // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
+          // to not have a compilation error on duplicates.
+          String path = node.getPath() + "//" + symbol.name();
+          String duplicatePath = uniqueImports.put(name, path);
+          if (path.equals(duplicatePath)) {
+            continue;
+          }
+
           if (!file.getImportsContext().addImportedSymbol(name)) {
             errorReporter.report(symbol.nameLocation(), IMPORT_COLLISION, name);
             return;
@@ -135,20 +158,20 @@ abstract class ImportsPass {
 
     /**
      * Whether the path exists and is valid for the given import type. Will only be called for nodes
-     * of type {@link importTypesToVisit}.
+     * of type {@link #importTypesToVisit}.
      */
     abstract boolean importExists(ImportType importType, String path);
 
     /**
      * Visits an import node that has already been verified to have a valid import path and symbol
      * (+ optional alias) that doesn't collide with other imports (yet). Will only be called for
-     * nodes of type {@link importTypesToVisit}.
+     * nodes of type {@link #importTypesToVisit}.
      */
     abstract void visitImportNodeWithValidPathAndSymbol(ImportNode node);
 
     /**
      * Gets the list of valid paths for a given import type, used for "Did you mean?" error
-     * messages. Will only be called for nodes of type {@link importTypesToVisit}.
+     * messages. Will only be called for nodes of type {@link #importTypesToVisit}.
      */
     abstract ImmutableSet<String> getValidImportPathsForType(ImportType importType);
 
