@@ -28,7 +28,8 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.AnnotatedLoggingConfig;
+import com.google.template.soy.logging.LoggingConfigOuterClass;
 import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
 import java.io.IOException;
@@ -41,13 +42,16 @@ import java.util.zip.GZIPInputStream;
 
 /** Implementations of {@link SoyInputCache.CacheLoader} for common compiler inputs. */
 final class CacheLoaders {
-  static final SoyInputCache.CacheLoader<LoggingConfig> LOGGING_CONFIG_LOADER =
-      new SoyInputCache.CacheLoader<LoggingConfig>() {
+  static final SoyInputCache.CacheLoader<AnnotatedLoggingConfig> LOGGING_CONFIG_LOADER =
+      new SoyInputCache.CacheLoader<AnnotatedLoggingConfig>() {
         @Override
-        public LoggingConfig read(File file, SoyCompilerFileReader reader, SoyInputCache cache)
-            throws IOException {
+        public AnnotatedLoggingConfig read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
           try (InputStream stream = reader.read(file).openStream()) {
-            return LoggingConfig.parseFrom(stream);
+            // This could include VE metadata with extensions, but those are processed separately
+            // (via SoyAnnotatedLoggingConfigGenerator) and aren't needed here, so just pass an
+            // empty extension registry.
+            return AnnotatedLoggingConfig.parseFrom(stream, ExtensionRegistry.getEmptyRegistry());
           }
         }
       };
@@ -60,6 +64,16 @@ final class CacheLoaders {
           return SoyUtils.parseCompileTimeGlobals(reader.read(file).asCharSource(UTF_8));
         }
       };
+
+  // A map of proto file name to the FileDescriptor from that proto's Java class. When matching
+  // descriptors (like to see if an extension exists on a message) proto uses reference equality, so
+  // this allows us to register the FileDescriptors for the compiled protos, rather than ones read
+  // at runtime from descriptor files passed to the Soy compiler, and means that all references
+  // (even from runtime protos) point to the same (compile time) descriptors.
+  private static final ImmutableMap<String, FileDescriptor> WELL_KNOWN_PROTOS =
+      ImmutableMap.of(
+          LoggingConfigOuterClass.getDescriptor().getName(),
+          LoggingConfigOuterClass.getDescriptor());
 
   /**
    * A cached descriptor set.
@@ -81,7 +95,6 @@ final class CacheLoaders {
     private final File file;
     private final Map<String, FileDescriptorProto> protosByFileName;
     private final Map<String, FileDescriptor> fileNameToDescriptors = new LinkedHashMap<>();
-    ;
 
     CachedDescriptorSet(File file, FileDescriptorSet proto) {
       this.file = checkNotNull(file);
@@ -89,6 +102,10 @@ final class CacheLoaders {
           ImmutableMap.builder();
       for (FileDescriptorProto fileProto : proto.getFileList()) {
         protosByFileNameBuilder.put(fileProto.getName(), fileProto);
+        if (WELL_KNOWN_PROTOS.containsKey(fileProto.getName())) {
+          fileNameToDescriptors.put(
+              fileProto.getName(), WELL_KNOWN_PROTOS.get(fileProto.getName()));
+        }
       }
       this.protosByFileName = protosByFileNameBuilder.build();
     }

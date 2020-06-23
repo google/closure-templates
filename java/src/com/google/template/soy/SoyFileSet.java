@@ -52,6 +52,8 @@ import com.google.template.soy.jbcsrc.api.SoySauceImpl;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
+import com.google.template.soy.logging.AnnotatedLoggingConfig;
+import com.google.template.soy.logging.AnnotatedLoggingConfigGenerator;
 import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
@@ -555,7 +557,19 @@ public final class SoyFileSet {
      *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
      *     identifier.
      */
+    // TODO(b/149593990): Remove this, it's only called from tests.
     public Builder setLoggingConfig(LoggingConfig config) {
+      return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
+    }
+
+    /**
+     * Sets the logging config to use.
+     *
+     * @throws IllegalArgumentException if the config proto is invalid. For example, if there are
+     *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
+     *     identifier.
+     */
+    public Builder setLoggingConfig(AnnotatedLoggingConfig config) {
       return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
     }
 
@@ -792,6 +806,13 @@ public final class SoyFileSet {
                   .addPassContinuationRule(
                       SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS));
         });
+  }
+
+  AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
+      CharSource rawLoggingConfig, String javaPackage, String className) throws IOException {
+    return new AnnotatedLoggingConfigGenerator(
+            rawLoggingConfig, javaPackage, className, typeRegistry)
+        .generate();
   }
 
   /**

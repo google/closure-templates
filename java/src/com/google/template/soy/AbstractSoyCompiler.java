@@ -35,7 +35,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
-import com.google.template.soy.logging.LoggingConfig;
+import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
@@ -408,7 +408,7 @@ public abstract class AbstractSoyCompiler {
   }
 
   private ValidatedLoggingConfig parseLoggingConfig() {
-    LoggingConfig.Builder configBuilder = LoggingConfig.newBuilder();
+    AnnotatedLoggingConfig.Builder configBuilder = AnnotatedLoggingConfig.newBuilder();
     for (File loggingConfig : loggingConfigs) {
       try {
         configBuilder.mergeFrom(

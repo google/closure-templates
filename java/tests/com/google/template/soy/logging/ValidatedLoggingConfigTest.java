@@ -19,6 +19,7 @@ package com.google.template.soy.logging;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
+import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -46,12 +47,14 @@ public final class ValidatedLoggingConfigTest {
             () ->
                 ValidatedLoggingConfig.create(
                     LoggingConfig.newBuilder()
-                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(1))
-                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(2))
+                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(287545))
+                        .addElement(LoggableElement.newBuilder().setName("Foo").setId(923456))
                         .build()));
     assertThat(expected)
         .hasMessageThat()
-        .isEqualTo("Found 2 LoggableElements with the same name Foo, their ids are 1 and 2");
+        .startsWith("Found 2 LoggableElements with the same name Foo:");
+    assertThat(expected).hasMessageThat().contains("287545");
+    assertThat(expected).hasMessageThat().contains("923456");
   }
 
   @Test
@@ -67,7 +70,9 @@ public final class ValidatedLoggingConfigTest {
                         .build()));
     assertThat(expected)
         .hasMessageThat()
-        .isEqualTo("Found 2 LoggableElements with the same id 1: Foo and Bar");
+        .startsWith("Found 2 LoggableElements with the same id 1:");
+    assertThat(expected).hasMessageThat().contains("Foo");
+    assertThat(expected).hasMessageThat().contains("Bar");
   }
 
   @Test
@@ -140,12 +145,84 @@ public final class ValidatedLoggingConfigTest {
                         .build()));
     assertThat(expected)
         .hasMessageThat()
-        .isEqualTo("Found 2 LoggableElements with the same id -1: UndefinedVe and BadVe");
+        .startsWith("Found 2 LoggableElements with the same id -1:");
+    assertThat(expected).hasMessageThat().contains("UndefinedVe");
+    assertThat(expected).hasMessageThat().contains("BadVe");
+  }
+
+  @Test
+  public void testLoggingValidation_undefinedVeWithMetadata() {
+    IllegalStateException expected =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                ValidatedLoggingConfig.create(
+                    AnnotatedLoggingConfig.newBuilder()
+                        .addElement(
+                            AnnotatedLoggableElement.newBuilder()
+                                .setElement(
+                                    LoggableElement.newBuilder().setId(-1).setName("UndefinedVe"))
+                                .setHasMetadata(true))
+                        .build()));
+    assertThat(expected).hasMessageThat().isEqualTo("UndefinedVe cannot have metadata.");
+  }
+
+  @Test
+  public void testLoggingValidation_allowsDuplicatesWithDifferentMetadataDetails() {
+    ValidatedLoggingConfig.create(
+        AnnotatedLoggingConfig.newBuilder()
+            .addElement(ValidatedLoggingConfig.UNDEFINED_VE)
+            .addElement(
+                AnnotatedLoggableElement.newBuilder()
+                    .setElement(LoggableElement.newBuilder().setId(23786).setName("AnElement"))
+                    .setHasMetadata(true)
+                    .setJavaPackage("some.java.package")
+                    .setClassName("SomeClass"))
+            .addElement(
+                AnnotatedLoggableElement.newBuilder()
+                    .setElement(LoggableElement.newBuilder().setId(23786).setName("AnElement"))
+                    .setHasMetadata(true)
+                    .setJavaPackage("different.java.package")
+                    .setClassName("DifferentClass"))
+            .build());
   }
 
   @Test
   public void testEmptyHasUndefinedVe() {
     assertThat(ValidatedLoggingConfig.EMPTY.allKnownIdentifiers()).containsExactly("UndefinedVe");
     assertThat(ValidatedLoggingConfig.EMPTY.getElement("UndefinedVe").getId()).isEqualTo(-1);
+  }
+
+  @Test
+  public void testAnnotations() {
+    ValidatedLoggingConfig config =
+        ValidatedLoggingConfig.create(
+            AnnotatedLoggingConfig.newBuilder()
+                .addElement(ValidatedLoggingConfig.UNDEFINED_VE)
+                .addElement(
+                    AnnotatedLoggableElement.newBuilder()
+                        .setElement(LoggableElement.newBuilder().setName("First").setId(1).build())
+                        .setJavaPackage("test.java.package.first")
+                        .setClassName("JavaClassFirst")
+                        .build())
+                .addElement(
+                    AnnotatedLoggableElement.newBuilder()
+                        .setElement(LoggableElement.newBuilder().setName("Second").setId(2).build())
+                        .setJavaPackage("test.java.package.second")
+                        .setClassName("JavaClassSecond")
+                        .build())
+                .build());
+
+    ValidatedLoggableElement first = config.getElement("First");
+    assertThat(first.getName()).isEqualTo("First");
+    assertThat(first.getId()).isEqualTo(1);
+    assertThat(first.getJavaPackage()).isEqualTo("test.java.package.first");
+    assertThat(first.getClassName()).isEqualTo("JavaClassFirst");
+
+    ValidatedLoggableElement second = config.getElement("Second");
+    assertThat(second.getName()).isEqualTo("Second");
+    assertThat(second.getId()).isEqualTo(2);
+    assertThat(second.getJavaPackage()).isEqualTo("test.java.package.second");
+    assertThat(second.getClassName()).isEqualTo("JavaClassSecond");
   }
 }
