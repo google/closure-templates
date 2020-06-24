@@ -2016,9 +2016,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           node.setType(StringType.getInstance());
           break;
         case UNKNOWN_JS_GLOBAL:
-          checkArgIsStringLiteral(node, 0, builtinFunction);
-          node.setType(UnknownType.getInstance());
-          break;
         case V1_EXPRESSION:
           checkArgIsStringLiteral(node, 0, builtinFunction);
           node.setType(UnknownType.getInstance());

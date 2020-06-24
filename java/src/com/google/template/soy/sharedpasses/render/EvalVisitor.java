@@ -585,6 +585,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return BooleanData.forValue(
               ((SoyProtoValue) base)
                   .hasProtoField(BuiltinMethod.getProtoFieldNameFromMethodCall(methodNode)));
+        case BIND:
+          throw new UnsupportedOperationException("Not implemented");
       }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) method;

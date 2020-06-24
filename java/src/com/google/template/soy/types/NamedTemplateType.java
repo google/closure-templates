@@ -15,59 +15,58 @@
  */
 package com.google.template.soy.types;
 
+import com.google.auto.value.AutoValue;
 import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.SoyType.Kind;
-import java.util.Objects;
+import java.util.Optional;
 
 /** Placeholder type for named templates before their signatures have been resolved. */
-public final class NamedTemplateType extends SoyType {
+@AutoValue
+public abstract class NamedTemplateType extends SoyType {
 
-  private final String name;
-
-  public NamedTemplateType(String name) {
-    this.name = name;
+  public static NamedTemplateType create(String templateName) {
+    return new AutoValue_NamedTemplateType(templateName, Optional.empty());
   }
 
+  static NamedTemplateType createWithBoundParameters(
+      String templateName, RecordType boundParameters) {
+    return new AutoValue_NamedTemplateType(templateName, Optional.of(boundParameters));
+  }
+
+  /** Fully-qualified of the template. */
+  public abstract String getTemplateName();
+
+  /** Record type of bound parameters, if any. */
+  public abstract Optional<RecordType> getBoundParameters();
+
   @Override
-  public Kind getKind() {
+  public final Kind getKind() {
     return Kind.NAMED_TEMPLATE;
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  final boolean doIsAssignableFromNonUnionType(SoyType srcType) {
     // Nothing is assignable to this placeholder type.
     return false;
   }
 
   @Override
-  public String toString() {
-    return name;
-  }
-
-  public String getTemplateName() {
-    return name;
+  public final String toString() {
+    if (getBoundParameters().isPresent()) {
+      return String.format("%s.bind(%s)", getTemplateName(), getBoundParameters().get());
+    } else {
+      return getTemplateName();
+    }
   }
 
   @Override
-  void doToProto(SoyTypeP.Builder builder) {
+  final void doToProto(SoyTypeP.Builder builder) {
     throw new UnsupportedOperationException(
         "NamedTemplateType should have been resolved before being written to proto.");
   }
 
   @Override
-  public boolean equals(Object other) {
-    return other != null
-        && other.getClass() == this.getClass()
-        && ((NamedTemplateType) other).name.equals(this.name);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.getClass(), name);
-  }
-
-  @Override
-  public <T> T accept(SoyTypeVisitor<T> visitor) {
+  public final <T> T accept(SoyTypeVisitor<T> visitor) {
     return visitor.visit(this);
   }
 }

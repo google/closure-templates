@@ -42,7 +42,7 @@ public final class TemplateLiteralNode extends AbstractExprNode {
     super(sourceLocation);
     this.templateIdentifier = templateIdentifier;
     this.resolvedName = Optional.empty();
-    this.type = new NamedTemplateType(templateIdentifier.identifier());
+    this.type = NamedTemplateType.create(templateIdentifier.identifier());
     this.isSynthetic = isSynthetic;
   }
 
@@ -65,7 +65,7 @@ public final class TemplateLiteralNode extends AbstractExprNode {
 
     // Only set the type if it hasn't been upgraded already.
     if (type instanceof NamedTemplateType) {
-      type = new NamedTemplateType(resolvedIdent.identifier());
+      type = NamedTemplateType.create(resolvedIdent.identifier());
     }
   }
 

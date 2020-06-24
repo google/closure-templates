@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -44,8 +45,9 @@ final class ValidatePrintExpressionTypes implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(file, PrintNode.class)) {
-      if (SoyTypes.isKindOrUnionOfKind(printNode.getExpr().getType(), SoyType.Kind.NAMED_TEMPLATE)
-          || SoyTypes.isKindOrUnionOfKind(printNode.getExpr().getType(), SoyType.Kind.TEMPLATE)) {
+      if (SoyTypes.isKindOrUnionOfKinds(
+          printNode.getExpr().getType(),
+          ImmutableSet.of(SoyType.Kind.NAMED_TEMPLATE, SoyType.Kind.TEMPLATE))) {
         errorReporter.report(
             printNode.getExpr().getSourceLocation(),
             CANNOT_PRINT_TEMPLATES,

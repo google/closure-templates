@@ -568,6 +568,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               assertNonNull);
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
+        case BIND:
+          throw new UnsupportedOperationException("Not implemented");
       }
       throw new AssertionError(builtinMethod);
     } else if (soyMethod instanceof SoySourceFunctionMethod) {

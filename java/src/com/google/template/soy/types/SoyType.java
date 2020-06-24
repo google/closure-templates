@@ -164,20 +164,7 @@ public abstract class SoyType {
   public final boolean isAssignableFrom(SoyType srcType) {
     // Handle unions generically.  A type is assignable from a union if it is assignable from _all_
     // members.
-    if (srcType instanceof UnionType) {
-      // By construction union types are guaranteed
-      // 1. not to be empty
-      // 2. not to contain union types
-      UnionType asUnion = (UnionType) srcType;
-      for (SoyType member : asUnion.getMembers()) {
-        if (!doIsAssignableFromNonUnionType(member)) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return doIsAssignableFromNonUnionType(srcType);
-    }
+    return SoyTypes.expandUnions(srcType).stream().allMatch(this::doIsAssignableFromNonUnionType);
   }
 
   /**

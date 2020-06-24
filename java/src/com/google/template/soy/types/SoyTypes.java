@@ -262,18 +262,27 @@ public final class SoyTypes {
    * that all match the given kind.
    */
   public static boolean isKindOrUnionOfKind(SoyType type, Kind kind) {
-    if (type.getKind() == kind) {
-      return true;
-    }
+    return isKindOrUnionOfKinds(type, ImmutableSet.of(kind));
+  }
+
+  /**
+   * Returns true if the given type matches one of the given kinds, or if the given type is a union
+   * of types that all match one of the given kinds.
+   */
+  public static boolean isKindOrUnionOfKinds(SoyType type, Set<Kind> kinds) {
+    return expandUnions(type).stream().allMatch((t) -> kinds.contains(t.getKind()));
+  }
+
+  /**
+   * For union types, returns a list of member types; for all other types, returns a list with a
+   * single element containing the type.
+   */
+  public static ImmutableList<SoyType> expandUnions(SoyType type) {
     if (type.getKind() == Kind.UNION) {
-      for (SoyType member : ((UnionType) type).getMembers()) {
-        if (member.getKind() != kind) {
-          return false;
-        }
-      }
-      return true;
+      return ImmutableList.copyOf(((UnionType) type).getMembers());
+    } else {
+      return ImmutableList.of(type);
     }
-    return false;
   }
 
   /**

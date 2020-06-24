@@ -45,6 +45,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeVisitor;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -223,8 +224,18 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
         }
         return ErrorType.getInstance();
       }
-      return typeRegistry.internTemplateType(
-          TemplateMetadata.asTemplateType(basicTemplateOrElement));
+      TemplateType templateType =
+          typeRegistry.internTemplateType(TemplateMetadata.asTemplateType(basicTemplateOrElement));
+      if (type.getBoundParameters().isPresent()) {
+        return TemplateBindingUtil.bindParameters(
+            templateType,
+            type.getBoundParameters().get(),
+            typeRegistry,
+            errorReporter,
+            whereToReportErrors);
+      } else {
+        return templateType;
+      }
     }
 
     @Override

@@ -43,7 +43,7 @@ public abstract class TemplateType extends SoyType {
 
   public abstract ImmutableList<Parameter> getParameters();
 
-  private final ImmutableMap<String, SoyType> getParameterMap() {
+  final ImmutableMap<String, SoyType> getParameterMap() {
     return stream(getParameters()).collect(toImmutableMap(Parameter::getName, Parameter::getType));
   }
 
@@ -52,6 +52,8 @@ public abstract class TemplateType extends SoyType {
   public abstract String getIdentifierForDebugging();
 
   public abstract boolean isInferredType();
+
+  public abstract Builder toBuilder();
 
   public static Builder builder() {
     return new AutoValue_TemplateType.Builder();
@@ -172,7 +174,7 @@ public abstract class TemplateType extends SoyType {
     return stringRepresentation(getParameters(), getContentKind());
   }
 
-  private static String stringRepresentation(
+  static String stringRepresentation(
       Iterable<Parameter> parameters, SanitizedContentKind contentKind) {
     StringBuilder sb = new StringBuilder();
     sb.append("(");

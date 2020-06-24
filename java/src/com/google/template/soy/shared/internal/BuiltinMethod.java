@@ -41,17 +41,20 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ErrorType;
+import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateBindingUtil;
 import java.util.Arrays;
 import java.util.List;
 
 /** Enum of built-in functions supported in Soy expressions. */
 public enum BuiltinMethod implements SoyMethod {
   GET_EXTENSION("getExtension", 1) {
+
     @Override
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
@@ -160,6 +163,38 @@ public enum BuiltinMethod implements SoyMethod {
           .map(BuiltinMethod::fieldToHasMethodName)
           .collect(toImmutableSet());
     }
+  },
+
+  BIND("bind", 1) {
+
+    @Override
+    public boolean appliesToBase(SoyType baseType) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      return SoyTypes.isKindOrUnionOfKinds(
+          baseType, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE));
+    }
+
+    @Override
+    public SoyType getReturnType(
+        String methodName,
+        SoyType baseType,
+        List<ExprNode> params,
+        SoyTypeRegistry soyTypeRegistry,
+        ErrorReporter errorReporter) {
+      Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
+      Preconditions.checkArgument(params.size() == 1);
+      ExprNode param = params.get(0);
+      if (param.getKind() != ExprNode.Kind.RECORD_LITERAL_NODE) {
+        errorReporter.report(param.getSourceLocation(), BIND_PARAMETER_MUST_BE_RECORD_LITERAL);
+        return ErrorType.getInstance();
+      }
+      return TemplateBindingUtil.bindParameters(
+          baseType,
+          (RecordType) param.getType(),
+          soyTypeRegistry,
+          errorReporter,
+          param.getSourceLocation());
+    }
   };
 
   private static final SoyErrorKind GET_EXTENSION_GLOBAL_REQUIRED =
@@ -169,6 +204,8 @@ public enum BuiltinMethod implements SoyMethod {
       SoyErrorKind.of(
           "Proto extension field ''{0}'' does not exist on the proto ''{1}''.{2}",
           StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind BIND_PARAMETER_MUST_BE_RECORD_LITERAL =
+      SoyErrorKind.of("Parameter to bind() must be a record literal.");
 
   public static final SoyMethod.Registry REGISTRY =
       new Registry() {
@@ -274,6 +311,8 @@ public enum BuiltinMethod implements SoyMethod {
                 ((SoyProtoType) SoyTypes.removeNull(methodNode.getBaseExprChild().getType()))
                     .getFieldDescriptor(getProtoExtensionIdFromMethodCall(methodNode))));
       case HAS_PROTO_FIELD:
+        return ImmutableList.of();
+      case BIND:
         return ImmutableList.of();
     }
     throw new AssertionError(this);

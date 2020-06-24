@@ -1174,6 +1174,8 @@ final class ExpressionCompiler {
           case HAS_PROTO_FIELD:
             return ProtoUtils.hasserField(
                 baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node));
+          case BIND:
+            throw new UnsupportedOperationException("Not implemented");
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;
