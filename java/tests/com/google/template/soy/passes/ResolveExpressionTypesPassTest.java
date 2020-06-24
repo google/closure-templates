@@ -28,8 +28,7 @@ import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -881,15 +880,13 @@ public final class ResolveExpressionTypesPassTest {
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
             .setLoggingConfig(
-                ValidatedLoggingConfig.create(
-                    LoggingConfig.newBuilder()
-                        .addElement(
-                            LoggableElement.newBuilder()
-                                .setId(1)
-                                .setName("VeData")
-                                .setProtoType("example.ExampleExtendable"))
-                        .addElement(LoggableElement.newBuilder().setId(2).setName("VeNoData"))
-                        .build()))
+                LoggingConfigs.createLoggingConfig(
+                    LoggableElement.newBuilder()
+                        .setId(1)
+                        .setName("VeData")
+                        .setProtoType("example.ExampleExtendable")
+                        .build(),
+                    LoggableElement.newBuilder().setId(2).setName("VeNoData").build()))
             .parse()
             .fileSet();
     assertTypes(soyTree);
@@ -921,15 +918,13 @@ public final class ResolveExpressionTypesPassTest {
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
             .setLoggingConfig(
-                ValidatedLoggingConfig.create(
-                    LoggingConfig.newBuilder()
-                        .addElement(
-                            LoggableElement.newBuilder()
-                                .setId(1)
-                                .setName("VeData")
-                                .setProtoType("example.ExampleExtendable"))
-                        .addElement(LoggableElement.newBuilder().setId(2).setName("VeNoData"))
-                        .build()))
+                LoggingConfigs.createLoggingConfig(
+                    LoggableElement.newBuilder()
+                        .setId(1)
+                        .setName("VeData")
+                        .setProtoType("example.ExampleExtendable")
+                        .build(),
+                    LoggableElement.newBuilder().setId(2).setName("VeNoData").build()))
             .parse()
             .fileSet();
     assertTypes(soyTree);

@@ -556,6 +556,7 @@
             <!-- Exclude testonly Java sources from the main (non-test) compilation. -->
             <exclude>com/google/template/soy/testing/**</exclude>
             <exclude>com/google/template/soy/exprtree/testing/**</exclude>
+            <exclude>com/google/template/soy/logging/testing/**</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -742,6 +743,7 @@
                 <!-- For compiling the tests, include testonly sources that are in the main source tree, but not compiled with it. -->
                 <source>java/src/com/google/template/soy/testing</source>
                 <source>java/src/com/google/template/soy/exprtree/testing</source>
+                <source>java/src/com/google/template/soy/logging/testing</source>
               </sources>
             </configuration>
           </execution>

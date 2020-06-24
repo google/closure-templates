@@ -37,7 +37,8 @@ import javax.annotation.Nullable;
 public final class ValidatedLoggingConfig {
 
   private static final String UNDEFINED_VE_NAME = "UndefinedVe";
-  static final AnnotatedLoggableElement UNDEFINED_VE =
+
+  public static final AnnotatedLoggableElement UNDEFINED_VE =
       AnnotatedLoggableElement.newBuilder()
           .setElement(
               LoggableElement.newBuilder()
@@ -54,24 +55,6 @@ public final class ValidatedLoggingConfig {
 
   /** The minimum safe integer value in JavaScript. */
   private static final long MIN_ID_VALUE = -MAX_ID_VALUE;
-
-  /**
-   * Parses the logging config proto into a {@link ValidatedLoggingConfig}.
-   *
-   * <p>Note that VE metadata won't be accessible if the LoggingConfig is created with this method.
-   * Use {@link #create(AnnotatedLoggingConfig)} for VE metadata support.
-   *
-   * @throws IllegalArgumentException if there is an error during parsing.
-   */
-  // TODO(b/149593990): Remove this, it's only called from tests.
-  public static ValidatedLoggingConfig create(LoggingConfig configProto) {
-    AnnotatedLoggingConfig.Builder annotatedConfig =
-        AnnotatedLoggingConfig.newBuilder().addElement(UNDEFINED_VE);
-    for (LoggableElement element : configProto.getElementList()) {
-      annotatedConfig.addElement(AnnotatedLoggableElement.newBuilder().setElement(element).build());
-    }
-    return create(annotatedConfig.build());
-  }
 
   /**
    * Parses the logging config proto into a {@link ValidatedLoggingConfig}.

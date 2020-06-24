@@ -27,8 +27,7 @@ import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyF
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -258,10 +257,8 @@ public final class TranslateExprNodeVisitorTest {
   public void testVeLiteral() {
     assertThatSoyExpr("ve(MyVe)")
         .withLoggingConfig(
-            ValidatedLoggingConfig.create(
-                LoggingConfig.newBuilder()
-                    .addElement(LoggableElement.newBuilder().setId(8675309).setName("MyVe"))
-                    .build()))
+            LoggingConfigs.createLoggingConfig(
+                LoggableElement.newBuilder().setId(8675309).setName("MyVe").build()))
         .generatesCode(
             "goog.DEBUG "
                 + "? new soy.velog.$$VisualElement(8675309, 'MyVe') "

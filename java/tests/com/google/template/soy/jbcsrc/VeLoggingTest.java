@@ -33,10 +33,10 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -52,28 +52,26 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class VeLoggingTest {
   private static final ValidatedLoggingConfig config =
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Foo")
-                      .setId(1L)
-                      .setProtoType("soy.test.Foo"))
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Bar")
-                      .setId(2L)
-                      .setProtoType("soy.test.Foo"))
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Baz")
-                      .setId(3L)
-                      .setProtoType("soy.test.Foo"))
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Quux")
-                      .setId(4L)
-                      .setProtoType("soy.test.Foo"))
+      LoggingConfigs.createLoggingConfig(
+          LoggableElement.newBuilder()
+              .setName("Foo")
+              .setId(1L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder()
+              .setName("Bar")
+              .setId(2L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder()
+              .setName("Baz")
+              .setId(3L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder()
+              .setName("Quux")
+              .setId(4L)
+              .setProtoType("soy.test.Foo")
               .build());
 
   private static class TestLogger implements SoyLogger {

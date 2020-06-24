@@ -23,9 +23,9 @@ import com.google.common.truth.StringSubject;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -40,17 +40,14 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class VeLogInstrumentationVisitorTest {
   private static final ValidatedLoggingConfig LOGGING_CONFIG =
-      ValidatedLoggingConfig.create(
-          LoggingConfig.newBuilder()
-              .addElement(
-                  LoggableElement.newBuilder()
-                      .setName("Foo")
-                      .setId(1L)
-                      .setProtoType("soy.test.Foo")
-                      .build())
-              .addElement(LoggableElement.newBuilder().setName("Bar").setId(2L).build())
-              .addElement(LoggableElement.newBuilder().setName("Baz").setId(3L).build())
-              .build());
+      LoggingConfigs.createLoggingConfig(
+          LoggableElement.newBuilder()
+              .setName("Foo")
+              .setId(1L)
+              .setProtoType("soy.test.Foo")
+              .build(),
+          LoggableElement.newBuilder().setName("Bar").setId(2L).build(),
+          LoggableElement.newBuilder().setName("Baz").setId(3L).build());
 
   @Test
   public void testVeLogInstrumentation() throws Exception {

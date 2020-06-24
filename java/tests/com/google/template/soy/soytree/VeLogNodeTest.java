@@ -22,8 +22,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
-import com.google.template.soy.logging.LoggingConfig;
-import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
@@ -96,14 +95,11 @@ public final class VeLogNodeTest {
                             ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
                         .build())
                 .setLoggingConfig(
-                    ValidatedLoggingConfig.create(
-                        LoggingConfig.newBuilder()
-                            .addElement(
-                                LoggableElement.newBuilder()
-                                    .setName("Bar")
-                                    .setId(1L)
-                                    .setProtoType("soy.test.Foo")
-                                    .build())
+                    LoggingConfigs.createLoggingConfig(
+                        LoggableElement.newBuilder()
+                            .setName("Bar")
+                            .setId(1L)
+                            .setProtoType("soy.test.Foo")
                             .build()))
                 .errorReporter(reporter)
                 .parse()

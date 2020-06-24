@@ -54,7 +54,6 @@ import com.google.template.soy.jssrc.SoyJsSrcOptions;
 import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.AnnotatedLoggingConfigGenerator;
-import com.google.template.soy.logging.LoggingConfig;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
@@ -548,18 +547,6 @@ public final class SoyFileSet {
     Builder setWarningSink(Appendable warningSink) {
       this.warningSink = checkNotNull(warningSink);
       return this;
-    }
-
-    /**
-     * Sets the logging config to use.
-     *
-     * @throws IllegalArgumentException if the config proto is invalid. For example, if there are
-     *     multiple elements with the same {@code name} or {@code id}, or if the name not a valid
-     *     identifier.
-     */
-    // TODO(b/149593990): Remove this, it's only called from tests.
-    public Builder setLoggingConfig(LoggingConfig config) {
-      return setValidatedLoggingConfig(ValidatedLoggingConfig.create(config));
     }
 
     /**
