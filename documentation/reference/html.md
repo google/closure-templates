@@ -159,7 +159,7 @@ is a simple but common use case.
   {@param i: bool}
   {@param em: bool}
   {if $b}<b>{/if}
-  {if $i}<i></if}
+  {if $i}<i>{/if}
   {if $em}<em>{/if}
     content
   {if $em}</em>{/if}
