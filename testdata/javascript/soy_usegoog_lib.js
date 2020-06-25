@@ -16877,48 +16877,6 @@ goog.string.editDistance = function(a, b) {
   return v1[b.length];
 };
 
-//third_party/javascript/closure/iter/iterable.js
-goog.loadModule(function(exports) {'use strict';/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-goog.module('goog.iter.Iterable');
-
-
-/**
- * Interface for a Closure iterable object.
- * @typedef {{length:number}|{__iterator__}}
- */
-let Iterable;
-
-exports = Iterable;
-
-;return exports;});
-
-//third_party/javascript/closure/iter/stopiteration.js
-goog.loadModule(function(exports) {'use strict';/**
- * @license
- * Copyright The Closure Library Authors.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-goog.module('goog.iter.StopIteration');
-
-goog.module.declareLegacyNamespace();
-
-/**
- * Singleton Error object that is used to terminate iterations.
- * @const {!Error}
- */
-exports = ('StopIteration' in goog.global) ?
-    // For script engines that support legacy iterators.
-    goog.global['StopIteration'] :
-    {message: 'StopIteration', stack: ''};
-
-;return exports;});
-
 //third_party/javascript/closure/math/math.js
 /**
  * @license
@@ -17374,14 +17332,31 @@ goog.math.safeCeil = function(num, opt_epsilon) {
 
 
 goog.provide('goog.iter');
+goog.provide('goog.iter.Iterable');
 goog.provide('goog.iter.Iterator');
+goog.provide('goog.iter.StopIteration');
 
 goog.require('goog.array');
 goog.require('goog.asserts');
 goog.require('goog.functions');
-goog.require('goog.iter.Iterable');
-goog.require('goog.iter.StopIteration');
 goog.require('goog.math');
+
+
+/**
+ * @typedef {{length:number}|{__iterator__}}
+ */
+goog.iter.Iterable;
+
+
+/**
+ * Singleton Error object that is used to terminate iterations.
+ * @const {!Error}
+ */
+goog.iter.StopIteration = ('StopIteration' in goog.global) ?
+    // For script engines that support legacy iterators.
+    goog.global['StopIteration'] :
+    {message: 'StopIteration', stack: ''};
+
 
 
 /**

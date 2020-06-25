@@ -3744,8 +3744,6 @@ goog.string.editDistance = function(a, b) {
   }
   return v1[b.length];
 };
-goog.iter = {};
-goog.iter.StopIteration = "StopIteration" in goog.global ? goog.global.StopIteration : {message:"StopIteration", stack:""};
 goog.math = {};
 goog.math.randomInt = function(a) {
   return Math.floor(Math.random() * a);
@@ -3863,6 +3861,8 @@ goog.math.safeCeil = function(num, opt_epsilon) {
   goog.asserts.assert(void 0 === opt_epsilon || 0 < opt_epsilon);
   return Math.ceil(num - (opt_epsilon || 2e-15));
 };
+goog.iter = {};
+goog.iter.StopIteration = "StopIteration" in goog.global ? goog.global.StopIteration : {message:"StopIteration", stack:""};
 goog.iter.Iterator = function() {
 };
 goog.iter.Iterator.prototype.next = function() {
