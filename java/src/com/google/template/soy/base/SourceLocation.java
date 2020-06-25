@@ -150,6 +150,13 @@ public final class SourceLocation implements Comparable<SourceLocation> {
         && this.getEndColumn() + 1 == that.getBeginColumn();
   }
 
+  public boolean isBefore(SourceLocation that) {
+    if (!this.filePath.equals(that.filePath)) {
+      return false;
+    }
+    return this.getEndPoint().isBefore(that.getBeginPoint());
+  }
+
   /** True iff this location has valid begin and end locations. */
   public boolean isKnown() {
     // our ctor enforces that if begin is known then end is known, so we only need to check one.
