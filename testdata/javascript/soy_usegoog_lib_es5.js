@@ -7433,16 +7433,17 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
   return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-var JSCompiler_inline_result$jscomp$7;
+var JSCompiler_inline_result$jscomp$8;
 if (goog.global.document && goog.userAgent.IE) {
-  var documentMode$jscomp$inline_13 = goog.userAgent.getDocumentMode_();
-  JSCompiler_inline_result$jscomp$7 = documentMode$jscomp$inline_13 ? documentMode$jscomp$inline_13 : parseInt(goog.userAgent.VERSION, 10) || void 0;
+  var documentMode$jscomp$inline_14 = goog.userAgent.getDocumentMode_();
+  JSCompiler_inline_result$jscomp$8 = documentMode$jscomp$inline_14 ? documentMode$jscomp$inline_14 : parseInt(goog.userAgent.VERSION, 10) || void 0;
 } else {
-  JSCompiler_inline_result$jscomp$7 = void 0;
+  JSCompiler_inline_result$jscomp$8 = void 0;
 }
-goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$7;
+goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$8;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
+goog.debug.CHECK_FOR_THROWN_EVENT = !1;
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
   var target = opt_target || goog.global, oldErrorHandler = target.onerror, retVal = !!opt_cancel;
   goog.userAgent.WEBKIT && !goog.userAgent.isVersionOrHigher("535.3") && (retVal = !retVal);
@@ -7547,7 +7548,20 @@ goog.debug.normalizeErrorObject = function(err) {
   }
   if (!(!threwError && err.lineNumber && err.fileName && err.stack && err.message && err.name)) {
     var message = err.message;
-    null == message && (message = err.constructor && err.constructor instanceof Function ? 'Unknown Error of type "' + (err.constructor.name ? err.constructor.name : goog.debug.getFunctionName(err.constructor)) + '"' : "Unknown Error of unknown type");
+    if (null == message) {
+      if (err.constructor && err.constructor instanceof Function) {
+        var ctorName = err.constructor.name ? err.constructor.name : goog.debug.getFunctionName(err.constructor);
+        message = 'Unknown Error of type "' + ctorName + '"';
+        if (goog.debug.CHECK_FOR_THROWN_EVENT && "Event" == ctorName) {
+          try {
+            message = message + ' with Event.type "' + (err.type || "") + '"';
+          } catch (e$6) {
+          }
+        }
+      } else {
+        message = "Unknown Error of unknown type";
+      }
+    }
     return {message:message, name:err.name || "UnknownError", lineNumber:lineNumber, fileName:fileName, stack:err.stack || "Not available"};
   }
   return err;
