@@ -229,7 +229,7 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
       if (type.getBoundParameters().isPresent()) {
         return TemplateBindingUtil.bindParameters(
             templateType,
-            type.getBoundParameters().get(),
+            (RecordType) type.getBoundParameters().get().accept(this),
             typeRegistry,
             errorReporter,
             whereToReportErrors);
