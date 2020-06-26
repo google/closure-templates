@@ -31,6 +31,8 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplatesPerFile;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Resolves Soy template imports; verifies that the imports are valid and populates a local template
@@ -75,8 +77,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     private final TemplateNameRegistry templateNameRegistry;
 
     // Map of imported symbols to full template names.
-    final ImmutableMap.Builder<String, TemplateName> symbolsToTemplatesMap =
-        new ImmutableMap.Builder<>();
+    final Map<String, TemplateName> symbolsToTemplatesMap = new LinkedHashMap<>();
 
     TemplateImportVisitor(
         SoyFileNode file, TemplateNameRegistry templateNameRegistry, ErrorReporter errorReporter) {
@@ -103,6 +104,8 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
               /* validSymbols= */ templatesPerFile.getUnqualifiedTemplateNames());
           continue;
         }
+        // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
+        // compiler error (if they have the same path).
         symbolsToTemplatesMap.put(symbol.aliasOrName(), templatesPerFile.getFullTemplateName(name));
       }
       node.setIsResolved(); // Node has been validated
@@ -124,7 +127,8 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     @Override
     void updateImportsContext() {
       file.getImportsContext()
-          .setTemplateRegistry(new ImportsTemplateRegistry(file, symbolsToTemplatesMap.build()));
+          .setTemplateRegistry(
+              new ImportsTemplateRegistry(file, ImmutableMap.copyOf(symbolsToTemplatesMap)));
     }
   }
 }
