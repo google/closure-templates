@@ -305,6 +305,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private ExprEquivalence exprEquivalence;
   private SoyTypeRegistry typeRegistry;
   private TypeNodeConverter typeNodeConverter;
+  private final PluginResolver.Mode pluginResolutionMode;
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
@@ -312,6 +313,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       PluginResolver pluginResolver) {
     this.errorReporter = errorReporter;
     this.loggingConfig = loggingConfig;
+    this.pluginResolutionMode =
+        pluginResolver == null
+            ? PluginResolver.Mode.REQUIRE_DEFINITIONS
+            : pluginResolver.getPluginResolutionMode();
     this.methodRegistry =
         new CompositeMethodRegistry(
             ImmutableList.of(BuiltinMethod.REGISTRY, new PluginMethodRegistry(pluginResolver)));
@@ -1089,7 +1094,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           didYouMean = SoyErrors.getDidYouMeanMessage(matching, methodName);
         }
         // We did not match base type and method name. No method found.
-        errorReporter.report(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
+        if (pluginResolutionMode == PluginResolver.Mode.REQUIRE_DEFINITIONS) {
+          errorReporter.report(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
+        } else if (pluginResolutionMode == PluginResolver.Mode.ALLOW_UNDEFINED_AND_WARN) {
+          errorReporter.warn(srcLoc, INVALID_METHOD_BASE, methodName, baseType, didYouMean);
+        } else {
+          // :( this is for kythe since we can't load plugin definitions since they are too
+          // heavyweight.
+        }
       }
 
       return null;

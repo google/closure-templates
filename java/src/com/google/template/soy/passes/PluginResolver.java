@@ -123,6 +123,7 @@ public final class PluginResolver {
       ImmutableSet.<String>builder()
           .build();
 
+
   private static final SoySourceFunction ERROR_PLACEHOLDER_FUNCTION = new SoySourceFunction() {};
 
   /** Configures the behavior of the resolver when a lookup fails. */
@@ -264,6 +265,10 @@ public final class PluginResolver {
     this.methods =
         methods.entrySet().stream()
             .collect(toImmutableMap(Map.Entry::getKey, e -> ImmutableMap.copyOf(e.getValue())));
+  }
+
+  public Mode getPluginResolutionMode() {
+    return mode;
   }
 
   /**
