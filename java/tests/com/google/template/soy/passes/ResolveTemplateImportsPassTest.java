@@ -237,10 +237,7 @@ public final class ResolveTemplateImportsPassTest {
     return SoyFileSetParserBuilder.forSuppliers(soyFiles)
         .addCompilationUnits(dependencies)
         .errorReporter(errorReporter)
-        .options(
-            new SoyGeneralOptions()
-                .setAllowExternalCalls(false)
-                .setExperimentalFeatures(ImmutableList.of("enableImports")))
+        .options(new SoyGeneralOptions().setAllowExternalCalls(false))
         .build();
   }
 }

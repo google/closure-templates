@@ -28,7 +28,6 @@ import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
-import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -46,9 +45,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind SOY_TEMPLATE_TYPES_NOT_ALLOWED =
       SoyErrorKind.of("Soy template types are not available for general use.");
-
-  private static final SoyErrorKind IMPORTS_NOT_ALLOWED =
-      SoyErrorKind.of("Soy imports of type {0} are not available for general use.");
 
   private static final SoyErrorKind INDICES_FOR_LIST_NOT_ALLOWED =
       SoyErrorKind.of("Soy indices for list are not available for general use.");
@@ -74,13 +70,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
         if (exprNode.getType() != null && exprNode.getType().getKind() == SoyType.Kind.TEMPLATE) {
           reporter.report(exprNode.getSourceLocation(), SOY_TEMPLATE_TYPES_NOT_ALLOWED);
-        }
-      }
-    }
-    if (!features.contains("enableImports")) {
-      for (ImportNode child : file.getImports()) {
-        if (!child.getImportType().isGa()) {
-          reporter.report(child.getSourceLocation(), IMPORTS_NOT_ALLOWED, child.getImportType());
         }
       }
     }
