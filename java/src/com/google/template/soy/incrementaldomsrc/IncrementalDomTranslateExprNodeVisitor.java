@@ -19,11 +19,13 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -38,6 +40,7 @@ import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType;
 
 /** Translates expressions, overriding methods for special-case idom behavior. */
 public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVisitor {
@@ -69,6 +72,17 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
           Expression.stringLiteral(loggingNode.getPlaceholder()));
     }
     return super.visitFunctionNode(node);
+  }
+
+  @Override
+  protected Expression genCodeForBind(
+      Expression template, Expression paramRecord, TemplateType templateType) {
+    SanitizedContentKind kind = templateType.getContentKind();
+    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
+      return BIND_TEMPLATE_PARAMS_FOR_IDOM.call(template, paramRecord);
+    } else {
+      return super.genCodeForBind(template, paramRecord, templateType);
+    }
   }
 
   @Override

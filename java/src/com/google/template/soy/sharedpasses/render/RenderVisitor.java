@@ -31,6 +31,7 @@ import com.google.template.soy.data.SoyFutureValueProvider;
 import com.google.template.soy.data.SoyFutureValueProvider.FutureBlockCallback;
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -473,14 +474,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitCallBasicNode(CallBasicNode node) {
-    SoyValue calleeExpr = eval(node.getCalleeExpr(), node);
-    TemplateNode callee = basicTemplates.get(((TofuTemplateValue) calleeExpr).getTemplateName());
+    TofuTemplateValue calleeExpr = (TofuTemplateValue) eval(node.getCalleeExpr(), node);
+    TemplateNode callee = basicTemplates.get(calleeExpr.getTemplateName());
     if (callee == null) {
       throw RenderException.createWithSource(
           "Attempting to render undefined template '" + node.getCalleeName() + "'.", node);
     }
 
-    visitCallNodeHelper(node, callee);
+    visitCallNodeHelper(node, callee, calleeExpr.getBoundParameters());
   }
 
   @Override
@@ -521,7 +522,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
 
     if (callee != null) {
-      visitCallNodeHelper(node, callee);
+      visitCallNodeHelper(node, callee, Optional.empty());
 
     } else if (node.allowEmptyDefault()) {
       return; // no active delegate implementation, so the call output is empty string
@@ -536,10 +537,14 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void visitCallNodeHelper(CallNode node, TemplateNode callee) {
+  private void visitCallNodeHelper(
+      CallNode node, TemplateNode callee, Optional<SoyRecord> boundParams) {
 
     // ------ Build the call data. ------
     SoyRecord callData = createCallParams(node);
+    if (boundParams.isPresent()) {
+      callData = SoyRecords.merge(boundParams.get(), callData);
+    }
 
     // ------ Render the callee template with the callData built above. ------
 

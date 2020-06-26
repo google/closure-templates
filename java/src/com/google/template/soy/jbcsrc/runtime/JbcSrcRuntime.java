@@ -41,6 +41,7 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
@@ -842,6 +843,16 @@ public final class JbcSrcRuntime {
       list.add(message.getExtension(extension, i));
     }
     return LazyProtoToSoyValueList.forList(list.build(), protoFieldInterpreter);
+  }
+
+  public static CompiledTemplate.Factory bindTemplateParams(
+      CompiledTemplate.Factory template, SoyRecord boundParams) {
+    return new CompiledTemplate.Factory() {
+      @Override
+      public CompiledTemplate create(SoyRecord params, SoyRecord ij) {
+        return template.create(SoyRecords.merge(boundParams, params), ij);
+      }
+    };
   }
 
   private JbcSrcRuntime() {}

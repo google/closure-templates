@@ -662,6 +662,11 @@ def create_template_type(template, name):
   return _TemplateWrapper(template, name)
 
 
+def bind_template_params(template, params):
+  """Binds the given parameters to the given template."""
+  return lambda data, ij: template(dict(data, **params), ij)
+
+
 class _TemplateWrapper:
   """A wrapper object that forwards to the underlying template."""
 

@@ -30,6 +30,7 @@ import static com.google.template.soy.jssrc.dsl.Expression.not;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.dsl.Expression.operation;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
+import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_ARRAY_MAP;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_GET_CSS_NAME;
@@ -121,6 +122,7 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
@@ -552,24 +554,30 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     SoyMethod soyMethod = methodCallNode.getSoyMethod();
     if (soyMethod instanceof BuiltinMethod) {
       BuiltinMethod builtinMethod = (BuiltinMethod) soyMethod;
-      SoyProtoType baseType = (SoyProtoType) methodCallNode.getBaseType(nullSafe);
+      SoyType baseType = methodCallNode.getBaseType(nullSafe);
       switch (builtinMethod) {
         case GET_EXTENSION:
           String extName = BuiltinMethod.getProtoExtensionIdFromMethodCall(methodCallNode);
           return base.dotAccess(
-              ProtoCall.getField(extName, baseType.getFieldDescriptor(extName)),
+              ProtoCall.getField(extName, ((SoyProtoType) baseType).getFieldDescriptor(extName)),
               nullSafe,
               assertNonNull);
         case HAS_PROTO_FIELD:
           String fieldName = BuiltinMethod.getProtoFieldNameFromMethodCall(methodCallNode);
           return base.dotAccess(
-              ProtoCall.hasField(fieldName, baseType.getFieldDescriptor(fieldName)),
+              ProtoCall.hasField(
+                  fieldName, ((SoyProtoType) baseType).getFieldDescriptor(fieldName)),
               nullSafe,
               assertNonNull);
           // When adding new built-in methods it may be necessary to assert that the base expression
           // is not null in order to prevent a method call on a null instance from ever succeeding.
         case BIND:
-          throw new UnsupportedOperationException("Not implemented");
+          return base.functionCall(
+              nullSafe,
+              assertNonNull,
+              (baseExpr) ->
+                  genCodeForBind(
+                      baseExpr, visit(methodCallNode.getParams().get(0)), (TemplateType) baseType));
       }
       throw new AssertionError(builtinMethod);
     } else if (soyMethod instanceof SoySourceFunctionMethod) {
@@ -592,6 +600,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     } else {
       throw new AssertionError(soyMethod.getClass());
     }
+  }
+
+  protected Expression genCodeForBind(
+      Expression template, Expression paramRecord, TemplateType templateType) {
+    return BIND_TEMPLATE_PARAMS.call(template, paramRecord);
   }
 
   @Override

@@ -50,6 +50,16 @@ public interface CompiledTemplate {
     public final void render(LoggingAdvisingAppendable appendable) {
       throw new IllegalStateException("Printing template types is not allowed.");
     }
+
+    @Override
+    public final boolean equals(Object other) {
+      return this == other;
+    }
+
+    @Override
+    public final int hashCode() {
+      return System.identityHashCode(this);
+    }
   }
 
   /**

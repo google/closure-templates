@@ -1175,7 +1175,10 @@ final class ExpressionCompiler {
             return ProtoUtils.hasserField(
                 baseExpr, BuiltinMethod.getProtoFieldNameFromMethodCall(node));
           case BIND:
-            throw new UnsupportedOperationException("Not implemented");
+            return SoyExpression.forSoyValue(
+                node.getType(),
+                MethodRef.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
+                    visit(node.getChild(0)), visit(node.getChild(1))));
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;

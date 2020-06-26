@@ -275,6 +275,13 @@ public abstract class MethodRef {
           SoyValue.class,
           List.class);
 
+  public static final MethodRef RUNTIME_BIND_TEMPLATE_PARAMS =
+      create(
+          JbcSrcRuntime.class,
+          "bindTemplateParams",
+          CompiledTemplate.Factory.class,
+          SoyRecord.class);
+
   public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
       create(JbcSrcRuntime.class, "callLegacySoyFunction", LegacyFunctionAdapter.class, List.class);
 

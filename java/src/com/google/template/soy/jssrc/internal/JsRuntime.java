@@ -147,6 +147,10 @@ public final class JsRuntime {
       SOY_TEMPLATES.googModuleGet().dotAccess("$$markTemplate");
   public static final Expression ASSERT_TEMPLATE =
       SOY_TEMPLATES.googModuleGet().dotAccess("$$assertTemplate");
+  public static final Expression BIND_TEMPLATE_PARAMS =
+      SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParams");
+  public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =
+      SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParamsForIdom");
 
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =

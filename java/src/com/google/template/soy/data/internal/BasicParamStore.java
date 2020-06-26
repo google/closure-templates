@@ -17,6 +17,7 @@
 package com.google.template.soy.data.internal;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.template.soy.data.SoyValueProvider;
 import java.util.Map;
@@ -52,5 +53,10 @@ public final class BasicParamStore extends ParamStore {
   @Override
   public SoyValueProvider getFieldProvider(String name) {
     return localStore.get(name);
+  }
+
+  @Override
+  public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+    return ImmutableMap.copyOf(localStore);
   }
 }

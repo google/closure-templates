@@ -731,11 +731,21 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     containerExpr = assertNotNull(containerExpr);
 
     if (method instanceof BuiltinMethod) {
-      errorReporter.report(
-          methodCallNode.getAccessSourceLocation(),
-          SOY_PY_SRC_METHOD_NOT_FOUND,
-          methodCallNode.getMethodName());
-      return ".ERROR";
+      switch ((BuiltinMethod) method) {
+        case BIND:
+          return new PyFunctionExprBuilder("runtime.bind_template_params")
+              .addArg(visit(methodCallNode.getChild(0)))
+              .addArg(visit(methodCallNode.getChild(1)))
+              .asPyExpr()
+              .getText();
+        case GET_EXTENSION:
+        case HAS_PROTO_FIELD:
+          errorReporter.report(
+              methodCallNode.getAccessSourceLocation(),
+              SOY_PY_SRC_METHOD_NOT_FOUND,
+              methodCallNode.getMethodName());
+          return ".ERROR";
+      }
     } else if (method instanceof SoySourceFunctionMethod) {
       SoySourceFunction function = ((SoySourceFunctionMethod) method).getImpl();
       if (function instanceof SoyPythonSourceFunction) {

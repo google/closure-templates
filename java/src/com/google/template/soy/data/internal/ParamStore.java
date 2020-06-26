@@ -77,11 +77,6 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
     throw new UnsupportedOperationException();
   }
 
-  @Override
-  public final ImmutableMap<String, SoyValueProvider> recordAsMap() {
-    throw new UnsupportedOperationException();
-  }
-
   /**
    * Arbitrary method override to allow toString to be called without throwing
    * UnsupportedOperationException (since {@link Object#toString} uses {@link #hashCode}.
@@ -114,6 +109,11 @@ public abstract class ParamStore extends SoyAbstractValue implements SoyRecord {
         @Override
         public SoyValue getField(String name) {
           return null;
+        }
+
+        @Override
+        public ImmutableMap<String, SoyValueProvider> recordAsMap() {
+          return ImmutableMap.<String, SoyValueProvider>of();
         }
       };
 }

@@ -26,6 +26,8 @@
 
 goog.module('soy.templates');
 const asserts = goog.require('goog.asserts');
+const incrementaldomlib = goog.requireType('google3.javascript.template.soy.api_idom');
+const {IjData} = goog.requireType('goog.soy');
 
 const /** !Object */ marker = new Object();
 
@@ -62,4 +64,33 @@ exports.$$assertTemplate = function(fn) {
     asserts.assert(fn.isTemplateLiteral == marker);
   }
   return fn;
+};
+
+/**
+ * @param {function(!Object, ?IjData)} fn
+ * @param {!Object} data
+ * @return {function(!Object, ?IjData)}
+ */
+exports.$$bindTemplateParams = function(fn, data) {
+  exports.$$assertTemplate(fn);
+  const boundTemplate = function(opt_data, opt_ijData) {
+    return fn(opt_data == null ? data : {...data, ...opt_data}, opt_ijData);
+  };
+  return exports.$$markTemplate(boundTemplate);
+};
+
+/**
+ * @param {function(!incrementaldomlib.IncrementalDomRenderer, !Object,
+ *     ?IjData)} fn
+ * @param {!Object} data
+ * @return {function(!incrementaldomlib.IncrementalDomRenderer, !Object,
+ *     ?IjData)}
+ */
+exports.$$bindTemplateParamsForIdom = function(fn, data) {
+  exports.$$assertTemplate(fn);
+  const boundTemplate = function(idomRenderer, opt_data, opt_ijData) {
+    fn(idomRenderer, opt_data == null ? data : {...data, ...opt_data},
+       opt_ijData);
+  };
+  return exports.$$markTemplate(boundTemplate);
 };

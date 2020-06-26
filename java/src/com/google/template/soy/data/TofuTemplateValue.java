@@ -16,15 +16,23 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
+import java.util.Optional;
 
 /** Tofu-specific runtime type for templates. */
 @AutoValue
 public abstract class TofuTemplateValue extends SoyAbstractValue {
   public static TofuTemplateValue create(String templateName) {
-    return new AutoValue_TofuTemplateValue(templateName);
+    return new AutoValue_TofuTemplateValue(templateName, Optional.empty());
+  }
+
+  public static TofuTemplateValue createWithBoundParameters(
+      String templateName, SoyRecord boundParameters) {
+    return new AutoValue_TofuTemplateValue(templateName, Optional.of(boundParameters));
   }
 
   public abstract String getTemplateName();
+
+  public abstract Optional<SoyRecord> getBoundParameters();
 
   @Override
   public final boolean coerceToBoolean() {
