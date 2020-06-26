@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
@@ -66,10 +67,12 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
@@ -114,11 +117,20 @@ final class TemplateCompiler {
     for (TemplateParam param : templateNode.getAllParams()) {
       String name = param.name();
       builder.put(
-          name, fields.addFinalField(name, BytecodeUtils.SOY_VALUE_PROVIDER_TYPE).asNonNull());
+          name,
+          shouldResolveParamValueInConstructor(param)
+              ? fields.addFinalField(name, BytecodeUtils.SOY_VALUE_PROVIDER_TYPE).asNonNull()
+              : fields.addField(name, BytecodeUtils.SOY_VALUE_PROVIDER_TYPE).asNonNull());
     }
     this.paramFields = builder.build();
     this.reporter = reporter;
     this.soyTypeRegistry = soyTypeRegistry;
+  }
+
+  private static boolean shouldResolveParamValueInConstructor(TemplateParam param) {
+    // Template-type params with defaults need access to a RenderContext to resolve, so we resolve
+    // them in the render method, not the constructor.
+    return !(param.hasDefault() && param.type().getKind() == SoyType.Kind.TEMPLATE);
   }
 
   /**
@@ -269,6 +281,30 @@ final class TemplateCompiler {
         new TemplateVariableManager(fields, thisVar, template.renderMethod().method());
     TemplateVariables variables =
         new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
+    // We skipped resolving default values for template-type parameters earlier, but now we have
+    // access to the RenderContext and can do so.
+    ExtraCodeCompiler resolveDefaultValuesForTemplateParams =
+        (expressionCompiler, appendable) -> {
+          List<Statement> statements = new ArrayList<>();
+          for (TemplateParam param : templateNode.getAllParams()) {
+            if (!shouldResolveParamValueInConstructor(param)) {
+              Optional<SoyExpression> defaultExpression =
+                  expressionCompiler.compileWithNoDetaches(param.defaultValue());
+              checkState(
+                  defaultExpression.isPresent(),
+                  "Default expression unexpectedly required detachment");
+              Expression paramProvider =
+                  getParam(
+                      variables.getParamsRecordField().accessor(thisVar),
+                      variables.getIjRecordField().accessor(thisVar),
+                      param,
+                      defaultExpression.get());
+              statements.add(
+                  paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
+            }
+          }
+          return Statement.concat(statements);
+        };
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 registry,
@@ -281,7 +317,10 @@ final class TemplateCompiler {
                 constantCompiler,
                 reporter,
                 soyTypeRegistry)
-            .compile(templateNode);
+            .compile(
+                templateNode,
+                /* prefix= */ resolveDefaultValuesForTemplateParams,
+                /* suffix= */ ExtraCodeCompiler.NO_OP);
     final Statement returnDone = Statement.returnExpression(MethodRef.RENDER_RESULT_DONE.invoke());
     new Statement() {
       @Override
@@ -347,15 +386,18 @@ final class TemplateCompiler {
       assignments.add(ijField.putInstanceField(thisVar, ijVar));
     }
     for (TemplateParam param : templateNode.getAllParams()) {
-      Expression paramProvider =
-          getParam(
-              paramsVar,
-              ijVar,
-              param,
-              /* defaultValue=*/ param.hasDefault()
-                  ? getDefaultValueVarRef(param, constantCompiler)
-                  : null);
-      assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
+      // Constructing template types requires a render context, so skip all template types here.
+      if (shouldResolveParamValueInConstructor(param)) {
+        Expression paramProvider =
+            getParam(
+                paramsVar,
+                ijVar,
+                param,
+                /* defaultValue=*/ param.hasDefault()
+                    ? getDefaultValueVarRef(param, constantCompiler)
+                    : null);
+        assignments.add(paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
+      }
     }
     Statement constructorBody =
         new Statement() {
@@ -384,8 +426,8 @@ final class TemplateCompiler {
    * parameter is missing.
    */
   private static Expression getParam(
-      LocalVariable paramsVar,
-      LocalVariable ijVar,
+      Expression paramsVar,
+      Expression ijVar,
       TemplateParam param,
       @Nullable SoyExpression defaultValue) {
     Expression fieldName = BytecodeUtils.constant(param.name());
