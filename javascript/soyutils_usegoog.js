@@ -488,6 +488,13 @@ soy.$$equals = function(valueOne, valueTwo) {
 };
 
 
+/**
+ * @param {?} value
+ * @return {boolean}
+ */
+soy.$$isFunction = function(value) {
+  return typeof value === 'function';
+};
 
 /**
  * Parses the given string into a float. Returns null if parse is unsuccessful.

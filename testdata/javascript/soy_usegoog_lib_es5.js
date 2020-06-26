@@ -8089,6 +8089,9 @@ soy.$$parseInt = function(str) {
 soy.$$equals = function(valueOne, valueTwo) {
   return valueOne && valueTwo && valueOne.isInvokableFn && valueTwo.isInvokableFn ? valueOne.contentKind !== valueTwo.contentKind ? !1 : valueOne.toString() === valueTwo.toString() : valueOne instanceof goog.soy.data.SanitizedContent && valueTwo instanceof goog.soy.data.SanitizedContent ? valueOne.contentKind != valueTwo.contentKind ? !1 : valueOne.toString() == valueTwo.toString() : valueOne == valueTwo;
 };
+soy.$$isFunction = function(value) {
+  return "function" === typeof value;
+};
 soy.$$parseFloat = function(str) {
   var parsed = parseFloat(str);
   return isNaN(parsed) ? null : parsed;

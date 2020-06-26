@@ -75,7 +75,7 @@ public final class JsRuntime {
 
   public static final Expression ARRAY_IS_ARRAY = dottedIdNoRequire("Array.isArray");
 
-  public static final Expression GOOG_IS_FUNCTION = dottedIdNoRequire("goog.isFunction");
+  public static final Expression GOOG_IS_FUNCTION = SOY.dotAccess("$$isFunction");
 
   public static final Expression SOY_EQUALS = SOY.dotAccess("$$equals");
 
