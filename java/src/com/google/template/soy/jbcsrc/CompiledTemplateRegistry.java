@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -31,9 +30,8 @@ final class CompiledTemplateRegistry {
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
     ImmutableMap.Builder<String, CompiledTemplateMetadata> templateToMetadata =
-        ImmutableBiMap.builder();
-    ImmutableMap.Builder<String, CompiledTemplateMetadata> classToMetadata =
-        ImmutableBiMap.builder();
+        ImmutableMap.builder();
+    ImmutableMap.Builder<String, CompiledTemplateMetadata> classToMetadata = ImmutableMap.builder();
     ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
     for (TemplateMetadata template : registry.getAllTemplates()) {
       CompiledTemplateMetadata metadata =
