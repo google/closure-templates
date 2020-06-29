@@ -17,6 +17,7 @@
 package com.google.template.soy.base.internal;
 
 import com.google.common.io.ByteSource;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.jar.Attributes;
@@ -33,7 +34,9 @@ public final class SoyJarFileWriter implements AutoCloseable {
   private final DeterministicJarOutputStream stream;
 
   public SoyJarFileWriter(OutputStream stream) throws IOException {
-    this.stream = new DeterministicJarOutputStream(stream);
+    // Use a buffer size of 64K, this is somewhat arbitrary, but is consistent with buffer sizes
+    // used elsewhere in the compiler.
+    this.stream = new DeterministicJarOutputStream(new BufferedOutputStream(stream, 64 * 1024));
   }
 
   /** Writes a single entry to the jar. */
