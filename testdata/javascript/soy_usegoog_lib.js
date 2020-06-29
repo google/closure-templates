@@ -9637,17 +9637,20 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(
   }
   // Add on parameters to field from key-value object.
   for (var key in params) {
-    var value = params[key];
-    var outputValues = Array.isArray(value) ? value : [value];
-    for (var i = 0; i < outputValues.length; i++) {
-      var outputValue = outputValues[i];
-      if (outputValue != null) {
-        if (!currentString) {
-          currentString = prefix;
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
+    if (Object.prototype.hasOwnProperty.call(params, key)) {
+      var value = params[key];
+      var outputValues = Array.isArray(value) ? value : [value];
+      for (var i = 0; i < outputValues.length; i++) {
+        var outputValue = outputValues[i];
+        if (outputValue != null) {
+          if (!currentString) {
+            currentString = prefix;
+          }
+          currentString += (currentString.length > prefix.length ? '&' : '') +
+              encodeURIComponent(key) + '=' +
+              encodeURIComponent(String(outputValue));
         }
-        currentString += (currentString.length > prefix.length ? '&' : '') +
-            encodeURIComponent(key) + '=' +
-            encodeURIComponent(String(outputValue));
       }
     }
   }
@@ -11190,20 +11193,24 @@ goog.html.SafeStyle.PropertyMap;
 goog.html.SafeStyle.create = function(map) {
   var style = '';
   for (var name in map) {
-    if (!/^[-_a-zA-Z0-9]+$/.test(name)) {
-      throw new Error('Name allows only [-_a-zA-Z0-9], got: ' + name);
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
+    if (Object.prototype.hasOwnProperty.call(map, name)) {
+      if (!/^[-_a-zA-Z0-9]+$/.test(name)) {
+        throw new Error('Name allows only [-_a-zA-Z0-9], got: ' + name);
+      }
+      var value = map[name];
+      if (value == null) {
+        continue;
+      }
+      if (Array.isArray(value)) {
+        value =
+            goog.array.map(value, goog.html.SafeStyle.sanitizePropertyValue_)
+                .join(' ');
+      } else {
+        value = goog.html.SafeStyle.sanitizePropertyValue_(value);
+      }
+      style += name + ':' + value + ';';
     }
-    var value = map[name];
-    if (value == null) {
-      continue;
-    }
-    if (Array.isArray(value)) {
-      value = goog.array.map(value, goog.html.SafeStyle.sanitizePropertyValue_)
-                  .join(' ');
-    } else {
-      value = goog.html.SafeStyle.sanitizePropertyValue_(value);
-    }
-    style += name + ':' + value + ';';
   }
   if (!style) {
     return goog.html.SafeStyle.EMPTY;
@@ -12945,13 +12952,16 @@ goog.html.SafeHtml.createScriptSrc = function(src, opt_attributes) {
  */
 goog.html.SafeHtml.createScript = function(script, opt_attributes) {
   for (var attr in opt_attributes) {
-    var attrLower = attr.toLowerCase();
-    if (attrLower == 'language' || attrLower == 'src' || attrLower == 'text' ||
-        attrLower == 'type') {
-      throw new Error(
-          goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
-              'Cannot set "' + attrLower + '" attribute' :
-              '');
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
+    if (Object.prototype.hasOwnProperty.call(opt_attributes, attr)) {
+      var attrLower = attr.toLowerCase();
+      if (attrLower == 'language' || attrLower == 'src' ||
+          attrLower == 'text' || attrLower == 'type') {
+        throw new Error(
+            goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
+                'Cannot set "' + attrLower + '" attribute' :
+                '');
+      }
     }
   }
 
@@ -13363,18 +13373,21 @@ goog.html.SafeHtml.stringifyAttributes = function(tagName, opt_attributes) {
   var result = '';
   if (opt_attributes) {
     for (var name in opt_attributes) {
-      if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(name)) {
-        throw new Error(
-            goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
-                'Invalid attribute name "' + name + '".' :
-                '');
+      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
+      if (Object.prototype.hasOwnProperty.call(opt_attributes, name)) {
+        if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(name)) {
+          throw new Error(
+              goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
+                  'Invalid attribute name "' + name + '".' :
+                  '');
+        }
+        var value = opt_attributes[name];
+        if (value == null) {
+          continue;
+        }
+        result +=
+            ' ' + goog.html.SafeHtml.getAttrNameAndValue_(tagName, name, value);
       }
-      var value = opt_attributes[name];
-      if (value == null) {
-        continue;
-      }
-      result +=
-          ' ' + goog.html.SafeHtml.getAttrNameAndValue_(tagName, name, value);
     }
   }
   return result;
@@ -13397,28 +13410,35 @@ goog.html.SafeHtml.combineAttributes = function(
   var name;
 
   for (name in fixedAttributes) {
-    goog.asserts.assert(name.toLowerCase() == name, 'Must be lower case');
-    combinedAttributes[name] = fixedAttributes[name];
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
+    if (Object.prototype.hasOwnProperty.call(fixedAttributes, name)) {
+      goog.asserts.assert(name.toLowerCase() == name, 'Must be lower case');
+      combinedAttributes[name] = fixedAttributes[name];
+    }
   }
   for (name in defaultAttributes) {
-    goog.asserts.assert(name.toLowerCase() == name, 'Must be lower case');
-    combinedAttributes[name] = defaultAttributes[name];
+    if (Object.prototype.hasOwnProperty.call(defaultAttributes, name)) {
+      goog.asserts.assert(name.toLowerCase() == name, 'Must be lower case');
+      combinedAttributes[name] = defaultAttributes[name];
+    }
   }
 
   if (opt_attributes) {
     for (name in opt_attributes) {
-      var nameLower = name.toLowerCase();
-      if (nameLower in fixedAttributes) {
-        throw new Error(
-            goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
-                'Cannot override "' + nameLower + '" attribute, got "' + name +
-                    '" with value "' + opt_attributes[name] + '"' :
-                '');
+      if (Object.prototype.hasOwnProperty.call(opt_attributes, name)) {
+        var nameLower = name.toLowerCase();
+        if (nameLower in fixedAttributes) {
+          throw new Error(
+              goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
+                  'Cannot override "' + nameLower + '" attribute, got "' +
+                      name + '" with value "' + opt_attributes[name] + '"' :
+                  '');
+        }
+        if (nameLower in defaultAttributes) {
+          delete combinedAttributes[nameLower];
+        }
+        combinedAttributes[name] = opt_attributes[name];
       }
-      if (nameLower in defaultAttributes) {
-        delete combinedAttributes[nameLower];
-      }
-      combinedAttributes[name] = opt_attributes[name];
     }
   }
 
