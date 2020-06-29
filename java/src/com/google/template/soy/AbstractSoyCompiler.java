@@ -407,6 +407,10 @@ public abstract class AbstractSoyCompiler {
     }
   }
 
+  protected Map<String, String> getGeneratedFiles() {
+    return generatedFiles;
+  }
+
   private ValidatedLoggingConfig parseLoggingConfig() {
     AnnotatedLoggingConfig.Builder configBuilder = AnnotatedLoggingConfig.newBuilder();
     for (File loggingConfig : loggingConfigs) {
