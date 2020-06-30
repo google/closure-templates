@@ -79,7 +79,8 @@ public final class MsgFuncGenerator {
       PythonValueFactoryImpl pluginFactoryImpl,
       MsgNode msgNode,
       LocalVariableStack localVarExprs,
-      ErrorReporter errorReporter) {
+      ErrorReporter errorReporter,
+      boolean useAlternateId) {
     this.msgNode = msgNode;
     this.genPyExprsVisitor = genPyExprsVisitorFactory.create(localVarExprs, errorReporter);
     this.translateToPyExprVisitor =
@@ -105,7 +106,7 @@ public final class MsgFuncGenerator {
     MsgPartsAndIds msgPartsAndIds = MsgUtils.buildMsgPartsAndComputeMsgIdForDualFormat(msgNode);
     Preconditions.checkNotNull(msgPartsAndIds);
 
-    this.msgId = msgPartsAndIds.id;
+    this.msgId = useAlternateId ? this.msgNode.getAlternateId().getAsLong() : msgPartsAndIds.id;
     this.msgParts = msgPartsAndIds.parts;
 
     Preconditions.checkState(!msgParts.isEmpty());

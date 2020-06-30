@@ -55,6 +55,8 @@ public final class SoyExprForPySubject extends Subject {
 
   private final LocalVariableStack localVarExprs;
 
+  private ImmutableList<String> experimentalFeatures = ImmutableList.of();
+
   private SoyExprForPySubject(FailureMetadata failureMetadata, String expr) {
     super(failureMetadata, expr);
     this.actual = expr;
@@ -88,6 +90,11 @@ public final class SoyExprForPySubject extends Subject {
     return this;
   }
 
+  public SoyExprForPySubject withExperimentalFeatures(ImmutableList<String> experimetalFeatures) {
+    this.experimentalFeatures = experimetalFeatures;
+    return this;
+  }
+
   /**
    * Asserts the subject compiles to the correct PyExpr.
    *
@@ -107,7 +114,11 @@ public final class SoyExprForPySubject extends Subject {
    */
   public void compilesTo(List<PyExpr> expectedPyExprs) {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(actual).runAutoescaper(true).parse().fileSet();
+        SoyFileSetParserBuilder.forTemplateContents(actual)
+            .enableExperimentalFeatures(experimentalFeatures)
+            .runAutoescaper(true)
+            .parse()
+            .fileSet();
     SoyNode node = SharedTestUtils.getNode(soyTree, 0);
 
     final IsComputableAsPyExprVisitor isComputableAsPyExprs = new IsComputableAsPyExprVisitor();

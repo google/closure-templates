@@ -18,6 +18,7 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertThatSoyExpr;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -590,5 +591,142 @@ public final class GenPyExprsVisitorTest {
             + ")";
 
     assertThatSoyExpr(soyCode).compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
+  }
+
+  @Test
+  public void testPrimaryAlternateWithFallbackAlternate() {
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\" alternateId=\"123456\"}\n"
+            + "  archive\n"
+            + "{fallbackmsg desc=\"\" alternateId=\"654321\"}\n"
+            + "  ARCHIVE\n"
+            + "{/msg}\n";
+
+    String expectedPyCode =
+        "(translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True))"
+            + " if (translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'),"
+            + " True)) if (translator_impl.is_msg_available(###) or"
+            + " translator_impl.is_msg_available(###) or (not"
+            + " translator_impl.is_msg_available(###) and not"
+            + " translator_impl.is_msg_available(###))) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'ARCHIVE'),"
+            + " True)) if (translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'ARCHIVE'),"
+            + " True))";
+
+    assertThatSoyExpr(soyCode)
+        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
+        .compilesTo(
+            new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testPrimaryAlternateWithFallback() {
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\" alternateId=\"123456\"}\n"
+            + "  archive\n"
+            + "{fallbackmsg desc=\"\"}\n"
+            + "  ARCHIVE\n"
+            + "{/msg}\n";
+
+    String expectedPyCode =
+        "(translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True))"
+            + " if (translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'),"
+            + " True)) if (translator_impl.is_msg_available(###) or"
+            + " translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " translator_impl.render_literal(translator_impl.prepare_literal(###, 'ARCHIVE'),"
+            + " True)";
+
+    assertThatSoyExpr(soyCode)
+        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
+        .compilesTo(
+            new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testPrimaryWithFallbackAlternate() {
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\"}\n"
+            + "  archive\n"
+            + "{fallbackmsg desc=\"\" alternateId=\"654321\"}\n"
+            + "  ARCHIVE\n"
+            + "{/msg}\n";
+
+    String expectedPyCode =
+        "translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True) if"
+            + " (translator_impl.is_msg_available(###) or (not"
+            + " translator_impl.is_msg_available(###) and not"
+            + " translator_impl.is_msg_available(###))) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'ARCHIVE'),"
+            + " True)) if (translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'ARCHIVE'),"
+            + " True))";
+
+    assertThatSoyExpr(soyCode)
+        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
+        .compilesTo(
+            new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testPrimaryWithFallback() {
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\"}\n"
+            + "  archive\n"
+            + "{fallbackmsg desc=\"\"}\n"
+            + "  ARCHIVE\n"
+            + "{/msg}\n";
+
+    String expectedPyCode =
+        "(translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True))"
+            + " if (translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'ARCHIVE'),"
+            + " True))";
+
+    assertThatSoyExpr(soyCode)
+        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
+        .compilesTo(
+            new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testPrimaryAlternate() {
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\" alternateId=\"123456\"}\n"
+            + "  archive\n"
+            + "{/msg}\n";
+
+    String expectedPyCode =
+        "(translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True))"
+            + " if (translator_impl.is_msg_available(###) or not"
+            + " translator_impl.is_msg_available(###)) else"
+            + " (translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'),"
+            + " True))";
+
+    assertThatSoyExpr(soyCode)
+        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
+        .compilesTo(
+            new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
+  }
+
+  @Test
+  public void testPrimary() {
+    String soyCode =
+        "{msg meaning=\"verb\" desc=\"Used as a verb.\"}\n" + "  archive\n" + "{/msg}\n";
+
+    String expectedPyCode =
+        "translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True)";
+
+    assertThatSoyExpr(soyCode)
+        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
+        .compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 }
