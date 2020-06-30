@@ -1034,7 +1034,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Nullable
     private SoyMethod resolveMethodFromBaseType(MethodCallNode node, SoyType baseType) {
-
       if (SoyTypes.isNullable(baseType)) {
         errorReporter.report(
             node.getBaseExprChild().getSourceLocation(),
@@ -1073,7 +1072,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
       if (andMatchArgType.size() == 1) {
         // Matched exactly one method. Success!
-        return andMatchArgCount.get(0);
+        SoyMethod method = andMatchArgCount.get(0);
+        PluginResolver.warnIfDeprecated(errorReporter, methodName, method, srcLoc);
+        return method;
       }
 
       if (!andMatchArgType.isEmpty()) {

@@ -18,8 +18,11 @@ package com.google.template.soy.shared.restricted;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyError;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Set;
 import org.junit.Test;
@@ -30,20 +33,31 @@ import org.junit.runners.JUnit4;
 public final class SoyDeprecatedTest {
 
   @Test
-  public void testSoyDeprecated() throws Exception {
-
+  public void testSoyDeprecated() {
     ErrorReporter reporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forTemplateContents("{deprecatedF() |deprecated}")
+    SoyFileSetParserBuilder.forTemplateContents(
+            "{@param s:string}\n"
+                + "{deprecatedF() |deprecated}\n"
+                + "{deprecatedSrcF($s)}\n"
+                + "{$s.strM()}\n"
+                + "{$s.deprecatedM()}")
         .addSoyFunction(new DeprecatedFunction())
+        .addSoySourceFunction(new DeprecatedSourceFunction())
+        .addSoySourceFunction(new DeprecatedSourceMethod())
         .addPrintDirective(new DeprecatedPrintDirective())
         .errorReporter(reporter)
         .parse();
     assertThat(reporter.getErrors()).isEmpty();
-    assertThat(reporter.getWarnings()).hasSize(2);
-    assertThat(reporter.getWarnings().get(0).message())
+
+    ImmutableList<SoyError> warnings = ImmutableList.sortedCopyOf(reporter.getWarnings());
+    assertThat(warnings).hasSize(4);
+    assertThat(warnings.get(0).message())
         .isEqualTo("deprecatedF is deprecated: please stop using this function.");
-    assertThat(reporter.getWarnings().get(1).message())
+    assertThat(warnings.get(1).message())
         .isEqualTo("|deprecated is deprecated: please stop using this directive.");
+    assertThat(warnings.get(2).message())
+        .isEqualTo("deprecatedSrcF is deprecated: use method syntax instead");
+    assertThat(warnings.get(3).message()).isEqualTo("deprecatedM is deprecated: just stop");
   }
 
   @SoyDeprecated("please stop using this function.")
@@ -58,6 +72,20 @@ public final class SoyDeprecatedTest {
       return ImmutableSet.of(0);
     }
   }
+
+  @SoyFunctionSignature(
+      name = "deprecatedSrcF",
+      deprecatedWarning = "use method syntax instead",
+      value = @Signature(parameterTypes = "string", returnType = "string"))
+  @SoyMethodSignature(baseType = "string", name = "strM", value = @Signature(returnType = "string"))
+  static final class DeprecatedSourceFunction implements SoySourceFunction {}
+
+  @SoyMethodSignature(
+      baseType = "string",
+      name = "deprecatedM",
+      value = @Signature(returnType = "string"),
+      deprecatedWarning = "just stop")
+  static final class DeprecatedSourceMethod implements SoySourceFunction {}
 
   @SoyDeprecated("please stop using this directive.")
   static final class DeprecatedPrintDirective implements SoyPrintDirective {

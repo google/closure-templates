@@ -42,6 +42,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -390,10 +391,50 @@ public final class PluginResolver {
   }
 
   private void warnIfDeprecated(String name, Object plugin, SourceLocation location) {
-    SoyDeprecated deprecatedNotice = plugin.getClass().getAnnotation(SoyDeprecated.class);
-    if (deprecatedNotice != null) {
-      reporter.warn(location, DEPRECATED_PLUGIN, name, deprecatedNotice.value());
+    warnIfDeprecated(reporter, name, plugin, location);
+  }
+
+  static void warnIfDeprecated(
+      ErrorReporter reporter, String name, Object plugin, SourceLocation location) {
+
+    if (plugin instanceof SoySourceFunctionMethod) {
+      // A SoySourceFunction called as a method is deprecated if the implementation is annotated
+      // with @SoyDeprecated or SoyMethodSignature#deprecatedWarning is not empty.
+      SoySourceFunction function = ((SoySourceFunctionMethod) plugin).getImpl();
+      if (warnIfSoyDeprecated(reporter, name, function, location)) {
+        return;
+      }
+      SoyMethodSignature sig = function.getClass().getAnnotation(SoyMethodSignature.class);
+      if (sig != null && !sig.deprecatedWarning().isEmpty()) {
+        reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
+      }
+      return;
     }
+
+    // SoyMethod, SoyPrintDirective, and SoySourceFunction can all be annotated with @SoyDeprecated.
+    if (warnIfSoyDeprecated(reporter, name, plugin, location)) {
+      return;
+    }
+
+    if (plugin instanceof SoySourceFunction) {
+      // A SoySourceFunction called as a function is also deprecated if
+      // SoyFunctionSignature#deprecatedWarning is not empty.
+      SoyFunctionSignature sig = plugin.getClass().getAnnotation(SoyFunctionSignature.class);
+      if (sig != null && !sig.deprecatedWarning().isEmpty()) {
+        reporter.warn(location, DEPRECATED_PLUGIN, name, sig.deprecatedWarning());
+        return;
+      }
+    }
+  }
+
+  private static boolean warnIfSoyDeprecated(
+      ErrorReporter reporter, String name, Object anything, SourceLocation location) {
+    SoyDeprecated deprecatedNotice = anything.getClass().getAnnotation(SoyDeprecated.class);
+    if (deprecatedNotice == null) {
+      return false;
+    }
+    reporter.warn(location, DEPRECATED_PLUGIN, name, deprecatedNotice.value());
+    return true;
   }
 
   private static SoyPrintDirective createPlaceholderPrintDirective(final String name, int arity) {

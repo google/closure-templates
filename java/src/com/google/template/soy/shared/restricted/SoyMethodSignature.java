@@ -33,4 +33,7 @@ public @interface SoyMethodSignature {
 
   /** The different signatures that the method supports. */
   Signature[] value();
+
+  /** Alternate to annotating the method implementation with @SoyDeprecated. */
+  String deprecatedWarning() default "";
 }
