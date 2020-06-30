@@ -314,6 +314,10 @@ public class GenJsCodeVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Voi
     if (msgNode.isHidden()) {
       jsDocBuilder.addAnnotation("hidden");
     }
+    if (msgNode.getAlternateId().isPresent()) {
+      jsDocBuilder.addAnnotation(
+          "alternateMessageId", String.valueOf(msgNode.getAlternateId().getAsLong()));
+    }
 
     // Generate goog.getMsg() call.
     VariableDeclaration.Builder builder =

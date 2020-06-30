@@ -96,7 +96,7 @@ public final class RenderContext {
   }
 
   public ImmutableList<String> getAllRequiredCssNamespaces(String template) {
-      return templates.getAllRequiredCssNamespaces(template, activeDelPackageSelector, false);
+    return templates.getAllRequiredCssNamespaces(template, activeDelPackageSelector, false);
   }
 
   public BidiGlobalDir getBidiGlobalDir() {
@@ -188,11 +188,52 @@ public final class RenderContext {
   }
 
   /** Returns {@code true} if the primary msg should be used instead of the fallback. */
-  public boolean usePrimaryMsg(long msgId, long fallbackId) {
+  public boolean usePrimaryMsgIfFallback(long msgId, long fallbackId) {
     // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
     // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
     // allocation free.
     return !msgBundle.getMsgParts(msgId).isEmpty() || msgBundle.getMsgParts(fallbackId).isEmpty();
+  }
+
+  /**
+   * Returns {@code true} if the primary or alternate msg should be used instead of the fallback.
+   */
+  public boolean usePrimaryOrAlternateIfFallback(long msgId, long alternateId, long fallbackId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty()
+        || !msgBundle.getMsgParts(alternateId).isEmpty()
+        || msgBundle.getMsgParts(fallbackId).isEmpty();
+  }
+
+  /**
+   * Returns {@code true} if the primary msg should be used instead of the fallback or the fallback
+   * alternate.
+   */
+  public boolean usePrimaryIfFallbackOrFallbackAlternate(
+      long msgId, long fallbackId, long fallbackAlternateId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty()
+        || (msgBundle.getMsgParts(fallbackId).isEmpty()
+            && msgBundle.getMsgParts(fallbackAlternateId).isEmpty());
+  }
+
+  /**
+   * Returns {@code true} if the primary or alternate msg should be used instead of the fallback or
+   * the fallback alternate.
+   */
+  public boolean usePrimaryOrAlternateIfFallbackOrFallbackAlternate(
+      long msgId, long alternateId, long fallbackId, long fallbackAlternateId) {
+    // Note: we need to make sure the fallback msg is actually present if we are going to fallback.
+    // use getMsgParts() since if the bundle is a RenderOnlySoyMsgBundleImpl then this will be
+    // allocation free.
+    return !msgBundle.getMsgParts(msgId).isEmpty()
+        || !msgBundle.getMsgParts(alternateId).isEmpty()
+        || (msgBundle.getMsgParts(fallbackId).isEmpty()
+            && msgBundle.getMsgParts(fallbackAlternateId).isEmpty());
   }
 
   /**
@@ -204,6 +245,23 @@ public final class RenderContext {
     ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
     if (msgParts.isEmpty()) {
       return defaultMsgParts;
+    }
+    return msgParts;
+  }
+
+  /**
+   * Returns the {@link SoyMsg} associated with the {@code msgId}, the {@code alternateId} or the
+   * fallback (aka english) translation if there is no such message.
+   */
+  public ImmutableList<SoyMsgPart> getSoyMsgPartsWithAlternateId(
+      long msgId, ImmutableList<SoyMsgPart> defaultMsgParts, long alternateId) {
+    ImmutableList<SoyMsgPart> msgParts = msgBundle.getMsgParts(msgId);
+    if (msgParts.isEmpty()) {
+      ImmutableList<SoyMsgPart> msgPartsByAlternateId = msgBundle.getMsgParts(alternateId);
+      if (msgPartsByAlternateId.isEmpty()) {
+        return defaultMsgParts;
+      }
+      return msgPartsByAlternateId;
     }
     return msgParts;
   }

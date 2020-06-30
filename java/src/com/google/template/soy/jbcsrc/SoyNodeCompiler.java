@@ -836,12 +836,35 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // it would save some lookups.  Right now we will do to 2- 3 calls to
       // SoyMsgBundle.getMsgParts (each of which requires a binary search).  We could reduce that
       // to 1-2 in the worse case by inlining and storing the lists in local variables.
-      IfBlock ifAvailableRenderDefault =
-          IfBlock.create(
-              parameterLookup
-                  .getRenderContext()
-                  .usePrimaryMsg(idAndParts.id, fallbackIdAndParts.id),
-              renderDefault);
+      Expression cond =
+          msg.getAlternateId().isPresent()
+              ? (fallback.getAlternateId().isPresent()
+                  // msg > alternate > fallback > fb alternate
+                  ? parameterLookup
+                      .getRenderContext()
+                      .usePrimaryOrAlternateIfFallbackOrFallbackAlternate(
+                          idAndParts.id,
+                          msg.getAlternateId().getAsLong(),
+                          fallbackIdAndParts.id,
+                          fallback.getAlternateId().getAsLong())
+                  // msg > alternate > fallback
+                  : parameterLookup
+                      .getRenderContext()
+                      .usePrimaryOrAlternateIfFallback(
+                          idAndParts.id, msg.getAlternateId().getAsLong(), fallbackIdAndParts.id))
+              : (fallback.getAlternateId().isPresent()
+                  // msg > fallback > fb alternate
+                  ? parameterLookup
+                      .getRenderContext()
+                      .usePrimaryIfFallbackOrFallbackAlternate(
+                          idAndParts.id,
+                          fallbackIdAndParts.id,
+                          fallback.getAlternateId().getAsLong())
+                  // msg > fallback
+                  : parameterLookup
+                      .getRenderContext()
+                      .usePrimaryMsgIfFallback(idAndParts.id, fallbackIdAndParts.id));
+      IfBlock ifAvailableRenderDefault = IfBlock.create(cond, renderDefault);
       return ControlFlow.ifElseChain(
           ImmutableList.of(ifAvailableRenderDefault),
           Optional.of(

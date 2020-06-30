@@ -1420,7 +1420,7 @@ final class ExpressionCompiler {
       return SoyExpression.forBool(
           parameters
               .getRenderContext()
-              .usePrimaryMsg(
+              .usePrimaryMsgIfFallback(
                   ((IntegerNode) node.getChild(1)).getValue(),
                   ((IntegerNode) node.getChild(2)).getValue()));
     }

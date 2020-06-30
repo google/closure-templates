@@ -57,14 +57,47 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
   private static final MethodRef GET_SOY_MSG_PARTS =
       MethodRef.create(RenderContext.class, "getSoyMsgParts", long.class, ImmutableList.class);
 
+  private static final MethodRef GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID =
+      MethodRef.create(
+          RenderContext.class,
+          "getSoyMsgPartsWithAlternateId",
+          long.class,
+          ImmutableList.class,
+          long.class);
+
   private static final MethodRef RENAME_CSS_SELECTOR =
       MethodRef.create(RenderContext.class, "renameCssSelector", String.class).asNonNullable();
 
   private static final MethodRef RENAME_XID =
       MethodRef.create(RenderContext.class, "renameXid", String.class).asNonNullable();
 
-  private static final MethodRef USE_PRIMARY_MSG =
-      MethodRef.create(RenderContext.class, "usePrimaryMsg", long.class, long.class);
+  private static final MethodRef USE_PRIMARY_MSG_IF_FALLBACK =
+      MethodRef.create(RenderContext.class, "usePrimaryMsgIfFallback", long.class, long.class);
+
+  private static final MethodRef USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK =
+      MethodRef.create(
+          RenderContext.class,
+          "usePrimaryOrAlternateIfFallback",
+          long.class,
+          long.class,
+          long.class);
+
+  private static final MethodRef USE_PRIMARY_IF_FALLBACK_OR_FALLBACK_ALTERNATE =
+      MethodRef.create(
+          RenderContext.class,
+          "usePrimaryIfFallbackOrFallbackAlternate",
+          long.class,
+          long.class,
+          long.class);
+
+  private static final MethodRef USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK_OR_FALLBACK_ALTERNATE =
+      MethodRef.create(
+          RenderContext.class,
+          "usePrimaryOrAlternateIfFallbackOrFallbackAlternate",
+          long.class,
+          long.class,
+          long.class,
+          long.class);
 
   private static final MethodRef GET_DEBUG_SOY_TEMPLATE_INFO =
       MethodRef.create(RenderContext.class, "getDebugSoyTemplateInfo");
@@ -149,6 +182,11 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return delegate.invoke(GET_SOY_MSG_PARTS, constant(id), defaultParts);
   }
 
+  Expression getSoyMsgPartsWithAlternateId(long id, Expression defaultParts, long alternateId) {
+    return delegate.invoke(
+        GET_SOY_MSG_PARTS_WITH_ALTERNATE_ID, constant(id), defaultParts, constant(alternateId));
+  }
+
   Expression getPrintDirective(String name) {
     return delegate.invoke(GET_PRINT_DIRECTIVE, constant(name));
   }
@@ -177,8 +215,35 @@ final class RenderContextExpression extends Expression implements JbcSrcPluginCo
     return value;
   }
 
-  Expression usePrimaryMsg(long msgId, long fallbackId) {
-    return delegate.invoke(USE_PRIMARY_MSG, constant(msgId), constant(fallbackId));
+  Expression usePrimaryMsgIfFallback(long msgId, long fallbackId) {
+    return delegate.invoke(USE_PRIMARY_MSG_IF_FALLBACK, constant(msgId), constant(fallbackId));
+  }
+
+  Expression usePrimaryOrAlternateIfFallback(long msgId, long alternateId, long fallbackId) {
+    return delegate.invoke(
+        USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK,
+        constant(msgId),
+        constant(alternateId),
+        constant(fallbackId));
+  }
+
+  Expression usePrimaryIfFallbackOrFallbackAlternate(
+      long msgId, long fallbackId, long fallbackAlternateId) {
+    return delegate.invoke(
+        USE_PRIMARY_IF_FALLBACK_OR_FALLBACK_ALTERNATE,
+        constant(msgId),
+        constant(fallbackId),
+        constant(fallbackAlternateId));
+  }
+
+  Expression usePrimaryOrAlternateIfFallbackOrFallbackAlternate(
+      long msgId, long alternateId, long fallbackId, long fallbackAlternateId) {
+    return delegate.invoke(
+        USE_PRIMARY_OR_ALTERNATE_IF_FALLBACK_OR_FALLBACK_ALTERNATE,
+        constant(msgId),
+        constant(alternateId),
+        constant(fallbackId),
+        constant(fallbackAlternateId));
   }
 
   public Expression hasLogger() {

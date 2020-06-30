@@ -93,6 +93,15 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
           foundTranslation = true;
           break;
         }
+        ImmutableList<SoyMsgPart> translationByAlternateId =
+            msg.getAlternateId().isPresent()
+                ? msgBundle.getMsgParts(msg.getAlternateId().getAsLong())
+                : ImmutableList.of();
+        if (!translationByAlternateId.isEmpty()) {
+          renderMsgFromTranslation(msg, translationByAlternateId, msgBundle.getLocale());
+          foundTranslation = true;
+          break;
+        }
       }
     }
     if (!foundTranslation) {

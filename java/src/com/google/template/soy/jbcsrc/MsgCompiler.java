@@ -174,7 +174,12 @@ final class MsgCompiler {
       MsgPartsAndIds partsAndId, MsgNode msg, ImmutableList<SoyPrintDirective> escapingDirectives) {
     Expression soyMsgDefaultParts = compileDefaultMessagePartsConstant(partsAndId);
     Expression soyMsgParts =
-        parameterLookup.getRenderContext().getSoyMsgParts(partsAndId.id, soyMsgDefaultParts);
+        msg.getAlternateId().isPresent()
+            ? parameterLookup
+                .getRenderContext()
+                .getSoyMsgPartsWithAlternateId(
+                    partsAndId.id, soyMsgDefaultParts, msg.getAlternateId().getAsLong())
+            : parameterLookup.getRenderContext().getSoyMsgParts(partsAndId.id, soyMsgDefaultParts);
     Statement printMsg;
     if (msg.isRawTextMsg()) {
       // Simplest case, just a static string translation
