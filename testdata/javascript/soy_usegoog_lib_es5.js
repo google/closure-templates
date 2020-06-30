@@ -89,6 +89,11 @@ $jscomp.polyfillIsolated = function(target, polyfill, fromLang) {
   var property = split[split.length - 1], nativeImpl = $jscomp.IS_SYMBOL_NATIVE && "es6" === fromLang ? obj[property] : null, impl = polyfill(nativeImpl);
   null != impl && (isNativeClass ? $jscomp.defineProperty($jscomp.polyfills, property, {configurable:!0, writable:!0, value:impl}) : impl !== nativeImpl && ($jscomp.propertyToPolyfillSymbol[property] = $jscomp.IS_SYMBOL_NATIVE ? $jscomp.global.Symbol(property) : $jscomp.POLYFILL_PREFIX + property, property = $jscomp.propertyToPolyfillSymbol[property], $jscomp.defineProperty(obj, property, {configurable:!0, writable:!0, value:impl})));
 };
+$jscomp.polyfill("Array.prototype.findIndex", function(orig) {
+  return orig ? orig : function(callback, opt_thisArg) {
+    return $jscomp.findInternal(this, callback, opt_thisArg).i;
+  };
+}, "es6", "es3");
 $jscomp.checkStringArgs = function(thisArg, arg, func) {
   if (null == thisArg) {
     throw new TypeError("The 'this' value for String.prototype." + func + " must not be null or undefined");
@@ -98,6 +103,51 @@ $jscomp.checkStringArgs = function(thisArg, arg, func) {
   }
   return thisArg + "";
 };
+$jscomp.polyfill("String.prototype.endsWith", function(orig) {
+  return orig ? orig : function(searchString, opt_position) {
+    var string = $jscomp.checkStringArgs(this, searchString, "endsWith");
+    searchString += "";
+    void 0 === opt_position && (opt_position = string.length);
+    for (var i = Math.max(0, Math.min(opt_position | 0, string.length)), j = searchString.length; 0 < j && 0 < i;) {
+      if (string[--i] != searchString[--j]) {
+        return !1;
+      }
+    }
+    return 0 >= j;
+  };
+}, "es6", "es3");
+$jscomp.polyfill("Array.prototype.find", function(orig) {
+  return orig ? orig : function(callback, opt_thisArg) {
+    return $jscomp.findInternal(this, callback, opt_thisArg).v;
+  };
+}, "es6", "es3");
+$jscomp.polyfill("String.prototype.startsWith", function(orig) {
+  return orig ? orig : function(searchString, opt_position) {
+    var string = $jscomp.checkStringArgs(this, searchString, "startsWith");
+    searchString += "";
+    for (var strLen = string.length, searchLen = searchString.length, i = Math.max(0, Math.min(opt_position | 0, string.length)), j = 0; j < searchLen && i < strLen;) {
+      if (string[i++] != searchString[j++]) {
+        return !1;
+      }
+    }
+    return j >= searchLen;
+  };
+}, "es6", "es3");
+$jscomp.polyfill("String.prototype.repeat", function(orig) {
+  return orig ? orig : function(copies) {
+    var string = $jscomp.checkStringArgs(this, null, "repeat");
+    if (0 > copies || 1342177279 < copies) {
+      throw new RangeError("Invalid count value");
+    }
+    copies |= 0;
+    for (var result = ""; copies;) {
+      if (copies & 1 && (result += string), copies >>>= 1) {
+        string += string;
+      }
+    }
+    return result;
+  };
+}, "es6", "es3");
 $jscomp.initSymbol = function() {
 };
 $jscomp.polyfill("Symbol", function(orig) {
@@ -422,6 +472,19 @@ $jscomp.polyfill("Map", function(NativeMap) {
   }, mapIndex = 0;
   return PolyfillMap;
 }, "es6", "es3");
+$jscomp.polyfill("Array.prototype.values", function(orig) {
+  return orig ? orig : function() {
+    return $jscomp.iteratorFromArray(this, function(k, v) {
+      return v;
+    });
+  };
+}, "es8", "es3");
+$jscomp.polyfill("String.prototype.trimLeft", function(orig) {
+  function polyfill() {
+    return this.replace(/^[\s\xa0]+/, "");
+  }
+  return orig || polyfill;
+}, "es_2019", "es3");
 var goog = goog || {};
 goog.global = this || self;
 goog.exportPath_ = function(name, object, overwriteImplicit, objectToExportTo) {
