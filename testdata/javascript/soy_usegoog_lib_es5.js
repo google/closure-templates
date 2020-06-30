@@ -9036,6 +9036,13 @@ goog.dom.replaceNode = function(newNode, oldNode) {
   var parent = oldNode.parentNode;
   parent && parent.replaceChild(newNode, oldNode);
 };
+goog.dom.copyContents = function(target, source) {
+  goog.asserts.assert(null != target && null != source, "goog.dom.copyContents expects non-null arguments");
+  goog.dom.removeChildren(target);
+  for (var childNodes = source.cloneNode(!0).childNodes; childNodes.length;) {
+    target.appendChild(childNodes[0]);
+  }
+};
 goog.dom.flattenElement = function(element) {
   var child, parent = element.parentNode;
   if (parent && parent.nodeType != goog.dom.NodeType.DOCUMENT_FRAGMENT) {
@@ -9531,6 +9538,7 @@ goog.dom.DomHelper.prototype.insertSiblingAfter = goog.dom.insertSiblingAfter;
 goog.dom.DomHelper.prototype.insertChildAt = goog.dom.insertChildAt;
 goog.dom.DomHelper.prototype.removeNode = goog.dom.removeNode;
 goog.dom.DomHelper.prototype.replaceNode = goog.dom.replaceNode;
+goog.dom.DomHelper.prototype.copyContents = goog.dom.copyContents;
 goog.dom.DomHelper.prototype.flattenElement = goog.dom.flattenElement;
 goog.dom.DomHelper.prototype.getChildren = goog.dom.getChildren;
 goog.dom.DomHelper.prototype.getFirstElementChild = goog.dom.getFirstElementChild;
