@@ -392,13 +392,14 @@ If `$myList` were `[1, 2, 3, 4, 5]`, the expression above would evaluate to:
 
 `[2, 3, 4, 5, 6]`
 
-List comprehensions also accept an optional **filter expression**, such as:
+List comprehensions also accept an optional **position index** and an optional
+**filter expression**, such as:
 
-`[$a + 1 for $a in $myList if $a >= 3]`
+`[$a + $i for $a, $i in $myList if $a >= 3]`
 
 For the original `$myList` value above, this would evaluate to:
 
-`[4, 5, 6]`
+`[5, 7, 9]`
 
 ## Function calls
 

@@ -101,22 +101,13 @@ Syntax:
 ```
 
 The `for` command iterates over a list. The iterator `local_var` is a local
-variable that is defined only in the block. Within the block, you can use three
-special functions that only take the iterator as their argument:
-
--   `isFirst($var)` returns `true` only on the first iteration.
--   `isLast($var)` returns `true` only on the last iteration.
--   `index($var)` returns the current index in the list. List indices are
-    0-based.
-
-The optional `ifempty` command is for a fallback section that is executed when
-the list is empty.
+variable that is defined only in the block. The optional `ifempty` command is
+for a fallback section that is executed when the list is empty.
 
 For example:
 
 ```soy
 {for $operand in $operands}
-  {if not isFirst($operand)} + {/if}
   {$operand}
 {ifempty}
   0
@@ -125,13 +116,50 @@ For example:
 
 Example output (for operands = `['alpha', 'beta', 'gamma']`):
 
-    alpha + beta + gamma
+```
+alphabetagamma
+```
 
 ### Indexed iteration {#for-indexed}
 
-Occasionally, instead of iterating over a list, you may need to use a numerical
-loop. For this you can use the [`range(...)` function](functions.md#range), for
-example
+The `for` command also accepts an optional **position index**, such as:
+
+```soy
+{for $operand, $index in $operands}
+  {if $index != 0} + {/if}
+  {$operand}({$index})
+{ifempty}
+  0
+{/for}
+```
+
+For the original `$operands` = `['alpha', 'beta', 'gamma']`, this would output:
+
+```
+alpha(0) + beta(1) + gamma(2)
+```
+
+Within the block, you can use a special function `isLast($var)` that only takes
+the iterator as its argument and returns `true` only on the last iteration. For
+example:
+
+```soy
+{for $operand in $operands}
+  {$operand}
+  {if not isLast($operand)} - {/if}
+{ifempty}
+  0
+{/for}
+```
+
+Example output:
+
+```
+alpha - beta - gamma
+```
+
+If you only want to iterate over a list of numbers, you can use the
+[`range(...)` function](functions.md#range), for example:
 
 ```soy
 {for $i in range(5)}
