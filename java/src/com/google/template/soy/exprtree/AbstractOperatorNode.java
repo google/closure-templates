@@ -16,9 +16,7 @@
 
 package com.google.template.soy.exprtree;
 
-import static java.util.stream.Collectors.toList;
 
-import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
@@ -40,9 +38,17 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
   /** The operator. */
   private final Operator operator;
 
-  public AbstractOperatorNode(Operator operator, SourceLocation sourceLocation) {
+  private final SourceLocation operatorLocation;
+
+  /**
+   * @param sourceLocation the location of the entire expression
+   * @param operatorLocation the location of the operator
+   */
+  protected AbstractOperatorNode(
+      SourceLocation sourceLocation, Operator operator, SourceLocation operatorLocation) {
     super(sourceLocation);
     this.operator = operator;
+    this.operatorLocation = operatorLocation;
   }
 
   /**
@@ -53,6 +59,7 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
   protected AbstractOperatorNode(AbstractOperatorNode orig, CopyState copyState) {
     super(orig, copyState);
     this.operator = orig.operator;
+    this.operatorLocation = orig.operatorLocation;
   }
 
   @Override
@@ -60,17 +67,9 @@ public abstract class AbstractOperatorNode extends AbstractParentExprNode implem
     return operator;
   }
 
-  @Override
-  public SourceLocation getSourceLocation() {
-    List<SourceLocation> locations =
-        getChildren().stream().map(ExprNode::getSourceLocation).collect(toList());
-    locations.add(super.getSourceLocation());
-    locations.sort((a, b) -> a.compareTo(b));
-    return locations.get(0).extend(Iterables.getLast(locations));
-  }
-
+  /** Returns the location of the operator token */
   public SourceLocation getOperatorLocation() {
-    return super.getSourceLocation();
+    return operatorLocation;
   }
 
   @Override

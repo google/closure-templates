@@ -61,24 +61,24 @@ public final class AbstractOperatorNodeTest {
     //       [VarRefNode] $x
 
     // Root n0.
-    MinusOpNode n0 = new MinusOpNode(X);
+    MinusOpNode n0 = new MinusOpNode(X, X);
     // Children of n0.
-    MinusOpNode n1 = new MinusOpNode(X);
-    MinusOpNode n2 = new MinusOpNode(X);
+    MinusOpNode n1 = new MinusOpNode(X, X);
+    MinusOpNode n2 = new MinusOpNode(X, X);
     n0.addChild(n1);
     n0.addChild(n2);
     // Children of n1.
-    NegativeOpNode n3 = new NegativeOpNode(X);
+    NegativeOpNode n3 = new NegativeOpNode(X, X);
     n1.addChild(x);
     n1.addChild(n3);
     // Child of n3.
     n3.addChild(x.copy(new CopyState()));
     // Children of n2.
-    NegativeOpNode n4 = new NegativeOpNode(X);
+    NegativeOpNode n4 = new NegativeOpNode(X, X);
     n2.addChild(n4);
     n2.addChild(x.copy(new CopyState()));
     // Child of n4.
-    MinusOpNode n5 = new MinusOpNode(X);
+    MinusOpNode n5 = new MinusOpNode(X, X);
     n4.addChild(n5);
     // Children of n5.
     n5.addChild(x.copy(new CopyState()));
@@ -104,11 +104,11 @@ public final class AbstractOperatorNodeTest {
     //       [VarRefNode] $x
 
     // Root n0.
-    ConditionalOpNode n0 = new ConditionalOpNode(X);
+    ConditionalOpNode n0 = new ConditionalOpNode(X, X);
     // Children of n0.
-    NotOpNode n1 = new NotOpNode(X);
-    NotEqualOpNode n2 = new NotEqualOpNode(X);
-    TimesOpNode n3 = new TimesOpNode(X);
+    NotOpNode n1 = new NotOpNode(X, X);
+    NotEqualOpNode n2 = new NotEqualOpNode(X, X);
+    TimesOpNode n3 = new TimesOpNode(X, X);
     n0.addChild(n1);
     n0.addChild(n2);
     n0.addChild(n3);

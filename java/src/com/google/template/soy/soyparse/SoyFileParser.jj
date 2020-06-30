@@ -3524,7 +3524,7 @@ private ExprNode Expr() :
 private ExprNode PrecExpr1() :
 {
   ExprNode expr1, expr2;
-  Token op;
+  Token op, op2;
 }
 {
   { ExprNode expr; }
@@ -3537,15 +3537,15 @@ private ExprNode PrecExpr1() :
     op = <QCOLON>
     expr1 = PrecExpr1()
 
-    { expr = Operator.NULL_COALESCING.createNode(createSrcLoc(op), expr, expr1); }
+    { expr = Operator.NULL_COALESCING.createNode(createSrcLoc(expr, expr1), createSrcLoc(op), expr, expr1); }
   |
-    <QMARK>
+    op = <QMARK>
     expr1 = PrecExpr1()
-    <COLON>
+    op2 = <COLON>
     expr2 = PrecExpr1()
 
     { expr = Operator.CONDITIONAL.createNode(
-        expr.getSourceLocation().extend(expr2.getSourceLocation()), expr, expr1, expr2);
+        expr.getSourceLocation().extend(expr2.getSourceLocation()), createSrcLoc(op, op2), expr, expr1, expr2);
     }
   ]
 
@@ -3570,8 +3570,9 @@ private ExprNode PrecExpr2() :
     rightHand = PrecExpr3()
 
     { expr = createOperatorNode(
-        createSrcLoc(op),
+        createSrcLoc(expr, rightHand),
         op.image,
+        createSrcLoc(op),
         2,
         expr,
         rightHand); }
@@ -3598,8 +3599,9 @@ private ExprNode PrecExpr3() :
     rightHand = PrecExpr4()
 
     { expr = createOperatorNode(
-        createSrcLoc(op),
+        createSrcLoc(expr, rightHand),
         op.image,
+        createSrcLoc(op),
         3,
         expr,
         rightHand);
@@ -3631,8 +3633,9 @@ private ExprNode PrecExpr4() :
     rightHand = PrecExpr5()
 
     { expr = createOperatorNode(
-        createSrcLoc(op),
+        createSrcLoc(expr, rightHand),
         op.image,
+        createSrcLoc(op),
         4,
         expr,
         rightHand);
@@ -3668,8 +3671,9 @@ private ExprNode PrecExpr5() :
     rightHand = PrecExpr6()
 
     { expr = createOperatorNode(
-        createSrcLoc(op),
+        createSrcLoc(expr, rightHand),
         op.image,
+        createSrcLoc(op),
         5,
         expr,
         rightHand);
@@ -3701,8 +3705,9 @@ private ExprNode PrecExpr6() :
     rightHand = PrecExpr7()
 
     { expr = createOperatorNode(
-        createSrcLoc(op),
+        createSrcLoc(expr, rightHand),
         op.image,
+        createSrcLoc(op),
         6,
         expr,
         rightHand);
@@ -3736,8 +3741,9 @@ private ExprNode PrecExpr7() :
     rightHand = PrecExpr8()
 
     { expr = createOperatorNode(
-        createSrcLoc(op),
+        createSrcLoc(expr, rightHand),
         op.image,
+        createSrcLoc(op),
         7,
         expr,
         rightHand);
@@ -3779,18 +3785,20 @@ private ExprNode PrecExpr8() :
     expr = PrecExpr8()
 
     {
+      SourceLocation opLocation = createSrcLoc(op);
+      SourceLocation location = opLocation.extend(expr.getSourceLocation());
+
       if (op.kind == MINUS && expr instanceof IntegerNode) {
-        SourceLocation newLoc = createSrcLoc(op).extend(expr.getSourceLocation());
         long value = -1 * ((IntegerNode) expr).getValue();
-        expr = new IntegerNode(value, newLoc);
+        expr = new IntegerNode(value, location);
       } else if (op.kind == MINUS && expr instanceof FloatNode) {
-        SourceLocation newLoc = createSrcLoc(op).extend(expr.getSourceLocation());
         double value = -1 * ((FloatNode) expr).getValue();
-        expr = new FloatNode(value, newLoc);
+        expr = new FloatNode(value, location);
       } else {
         expr = createOperatorNode(
-            createSrcLoc(op),
+            location,
             op.image,
+            opLocation,
             8,
             expr);
       }
@@ -3866,7 +3874,13 @@ private ExprNode PrecExpr9() :
   |
     op = <ASSERT_NON_NULL>
     {
-      expr = createOperatorNode(createSrcLoc(op), op.image, 10, expr);
+      SourceLocation opLocation = createSrcLoc(op);
+      expr = createOperatorNode(
+          expr.getSourceLocation().extend(opLocation),
+          op.image,
+          opLocation,
+          10,
+          expr);
     }
   )*
 

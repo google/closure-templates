@@ -51,7 +51,7 @@ public final class AbstractExprNodeVisitorTest {
   @Test
   public void testInterfaceImplementation() {
 
-    MinusOpNode expr = new MinusOpNode(LOC);
+    MinusOpNode expr = new MinusOpNode(LOC, LOC);
     expr.addChild(new IntegerNode(17, LOC));
 
     VarRefNode dataRef = new VarRefNode("boo", LOC, null);
@@ -68,7 +68,7 @@ public final class AbstractExprNodeVisitorTest {
   @Test
   public void testNotImplemented() {
 
-    MinusOpNode expr = new MinusOpNode(LOC);
+    MinusOpNode expr = new MinusOpNode(LOC, LOC);
     expr.addChild(new FloatNode(17.0, LOC));
 
     VarRefNode dataRef = new VarRefNode("boo", LOC, null);

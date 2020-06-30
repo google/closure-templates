@@ -169,7 +169,9 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
       msgIdNode = createMsgIdNode(primaryMsgId, fn.getSourceLocation());
     } else {
       long fallbackMsgId = MsgUtils.computeMsgIdForDualFormat(msgNode.getChild(1));
-      ConditionalOpNode condOpNode = new ConditionalOpNode(fn.getSourceLocation());
+      ConditionalOpNode condOpNode =
+          new ConditionalOpNode(
+              fn.getSourceLocation(), /*operatorLocation=*/ fn.getSourceLocation());
       FunctionNode isPrimaryMsgInUse =
           new FunctionNode(
               Identifier.create(

@@ -23,6 +23,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -548,7 +549,10 @@ public final class SimplifyVisitor {
         result = new StringNode("", QuoteStyle.SINGLE, renderUnitNode.getSourceLocation());
       }
       for (ExprNode expr : newExprs) {
-        PlusOpNode op = new PlusOpNode(result.getSourceLocation().extend(expr.getSourceLocation()));
+        PlusOpNode op =
+            new PlusOpNode(
+                result.getSourceLocation().extend(expr.getSourceLocation()),
+                /* operatorLocation=*/ SourceLocation.UNKNOWN);
         op.addChild(result);
         op.addChild(expr);
         op.setType(StringType.getInstance());
