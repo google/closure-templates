@@ -16,49 +16,38 @@
 
 package com.google.template.soy.jbcsrc;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.types.TemplateType;
 
 /** A registry of information about every compiled template. */
 final class CompiledTemplateRegistry {
-  private final ImmutableMap<String, CompiledTemplateMetadata> templateNameToMetadata;
-  private final ImmutableMap<String, CompiledTemplateMetadata> classNameToMetadata;
-  private final ImmutableSet<String> delegateTemplateNames;
+  private final LoadingCache<TemplateMetadata, CompiledTemplateMetadata> templateToMetadata;
+
+  private final TemplateRegistry registry;
 
   CompiledTemplateRegistry(TemplateRegistry registry) {
-    ImmutableMap.Builder<String, CompiledTemplateMetadata> templateToMetadata =
-        ImmutableMap.builder();
-    ImmutableMap.Builder<String, CompiledTemplateMetadata> classToMetadata = ImmutableMap.builder();
-    ImmutableSet.Builder<String> delegateTemplateNames = ImmutableSet.builder();
-    for (TemplateMetadata template : registry.getAllTemplates()) {
-      CompiledTemplateMetadata metadata =
-          CompiledTemplateMetadata.create(template.getTemplateName(), template.getSoyFileKind());
-      templateToMetadata.put(template.getTemplateName(), metadata);
-      classToMetadata.put(metadata.typeInfo().className(), metadata);
-      if (template.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
-        delegateTemplateNames.add(template.getTemplateName());
-      }
-    }
-    this.templateNameToMetadata = templateToMetadata.build();
-    this.classNameToMetadata = classToMetadata.build();
-    this.delegateTemplateNames = delegateTemplateNames.build();
+    this.registry = registry;
+    this.templateToMetadata =
+        CacheBuilder.newBuilder()
+            .<TemplateMetadata, CompiledTemplateMetadata>build(
+                CacheLoader.from(CompiledTemplateRegistry::createMetadata));
   }
 
-  /** Returns the names of all delegate template implementations. */
-  ImmutableSet<String> getDelegateTemplateNames() {
-    return delegateTemplateNames;
+  static CompiledTemplateMetadata createMetadata(TemplateMetadata template) {
+    return CompiledTemplateMetadata.create(template.getTemplateName(), template.getSoyFileKind());
   }
 
   /** Returns information about the generated class for the given fully qualified template name. */
-  CompiledTemplateMetadata getTemplateInfoByTemplateName(String templateName) {
-    return templateNameToMetadata.get(templateName);
+  CompiledTemplateMetadata getBasicTemplateInfoByTemplateName(String templateName) {
+    return templateToMetadata.getUnchecked(registry.getBasicTemplateOrElement(templateName));
   }
 
-  /** Returns information about the generated class for the given fully qualified template name. */
-  CompiledTemplateMetadata getTemplateInfoByClassName(String className) {
-    return classNameToMetadata.get(className);
+  /** Returns information about the generated class for the given template . */
+  CompiledTemplateMetadata getTemplateInfo(TemplateNode template) {
+    return templateToMetadata.getUnchecked(registry.getMetadata(template));
   }
 }

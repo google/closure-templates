@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
@@ -41,9 +42,11 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TemplateType;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
@@ -86,7 +89,11 @@ public final class BytecodeCompiler {
     CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
     CompiledTemplates templates =
         new CompiledTemplates(
-            compilerRegistry.getDelegateTemplateNames(),
+            /* delTemplateNames=*/ registry.getAllTemplates().stream()
+                .filter(
+                    template -> template.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE)
+                .map(TemplateMetadata::getTemplateName)
+                .collect(toImmutableSet()),
             new CompilingClassLoader(
                 compilerRegistry, fileSet, filePathsToSuppliers, typeRegistry));
     if (reporter.errorsSince(checkpoint)) {
@@ -269,8 +276,7 @@ public final class BytecodeCompiler {
       CompilerListener<T> listener) {
     for (SoyFileNode file : fileSet.getChildren()) {
       for (TemplateNode template : file.getTemplates()) {
-        CompiledTemplateMetadata classInfo =
-            registry.getTemplateInfoByTemplateName(template.getTemplateName());
+        CompiledTemplateMetadata classInfo = registry.getTemplateInfo(template);
         try {
           TemplateCompiler templateCompiler =
               new TemplateCompiler(registry, classInfo, template, errorReporter, typeRegistry);

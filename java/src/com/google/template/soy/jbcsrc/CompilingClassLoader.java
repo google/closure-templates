@@ -46,6 +46,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   private final CompiledTemplateRegistry registry;
   private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
   private final ImmutableMap<String, TemplateNode> classNameToTemplateNode;
+  private final ImmutableMap<String, CompiledTemplateMetadata> classNameToTemplateMetadata;
   private final SoyTypeRegistry typeRegistry;
 
   CompilingClassLoader(
@@ -55,14 +56,17 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
       SoyTypeRegistry typeRegistry) {
     this.registry = registry;
     ImmutableMap.Builder<String, TemplateNode> classNameToTemplateNode = ImmutableMap.builder();
+    ImmutableMap.Builder<String, CompiledTemplateMetadata> classNameToTemplateMetadata =
+        ImmutableMap.builder();
     for (SoyFileNode file : fileSet.getChildren()) {
       for (TemplateNode template : file.getTemplates()) {
-        CompiledTemplateMetadata meta =
-            registry.getTemplateInfoByTemplateName(template.getTemplateName());
+        CompiledTemplateMetadata meta = registry.getTemplateInfo(template);
         classNameToTemplateNode.put(meta.typeInfo().className(), template);
+        classNameToTemplateMetadata.put(meta.typeInfo().className(), meta);
       }
     }
     this.classNameToTemplateNode = classNameToTemplateNode.build();
+    this.classNameToTemplateMetadata = classNameToTemplateMetadata.build();
     this.typeRegistry = typeRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
@@ -83,7 +87,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
         isFactory
             ? name.substring(0, name.length() - (StandardNames.FACTORY_CLASS.length() + 1))
             : name;
-    CompiledTemplateMetadata meta = registry.getTemplateInfoByClassName(compiledTemplateName);
+    CompiledTemplateMetadata meta = classNameToTemplateMetadata.get(compiledTemplateName);
     if (meta == null) {
       return null;
     }

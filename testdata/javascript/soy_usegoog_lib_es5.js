@@ -665,9 +665,6 @@ goog.typeOf = function(value) {
   var s = typeof value;
   return "object" != s ? s : value ? Array.isArray(value) ? "array" : s : "null";
 };
-goog.isArray = function(val) {
-  return Array.isArray(val);
-};
 goog.isArrayLike = function(val) {
   var type = goog.typeOf(val);
   return "array" == type || "object" == type && "number" == typeof val.length;

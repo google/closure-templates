@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.truth.Fact.simpleFact;
 
 import com.google.common.base.Joiner;
@@ -61,11 +62,13 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
+import com.google.template.soy.types.TemplateType;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -379,7 +382,7 @@ public final class TemplateTester {
         classData =
             new TemplateCompiler(
                     compilerRegistry,
-                    compilerRegistry.getTemplateInfoByTemplateName(templateName),
+                    compilerRegistry.getBasicTemplateInfoByTemplateName(templateName),
                     template,
                     ErrorReporter.exploding(),
                     typeRegistry)
@@ -387,7 +390,11 @@ public final class TemplateTester {
         checkClasses(classData);
         CompiledTemplates compiledTemplates =
             new CompiledTemplates(
-                compilerRegistry.getDelegateTemplateNames(), new MemoryClassLoader(classData));
+                /* delTemplateNames=*/ registry.getAllTemplates().stream()
+                    .filter(t -> t.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE)
+                    .map(TemplateMetadata::getTemplateName)
+                    .collect(toImmutableSet()),
+                new MemoryClassLoader(classData));
         factory = compiledTemplates.getTemplateFactory(templateName);
         defaultContext =
             defaultContextBuilder

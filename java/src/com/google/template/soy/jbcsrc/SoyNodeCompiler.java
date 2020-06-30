@@ -903,7 +903,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Expression ijRecord = parameterLookup.getIjRecord();
     if (node.isStaticCall()) {
       CompiledTemplateMetadata callee =
-          registry.getTemplateInfoByTemplateName(node.getCalleeName());
+          registry.getBasicTemplateInfoByTemplateName(node.getCalleeName());
       // If possible, use the constructor to instantiate the template, otherwise go through the
       // classloader. We do this for templates that are declared as sources in the same fileset.
       // These are guaranteed to be bundled in the same jar, thus loaded atomically with the same
