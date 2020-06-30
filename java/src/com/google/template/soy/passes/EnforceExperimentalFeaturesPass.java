@@ -23,11 +23,8 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
-import com.google.template.soy.soytree.ForNode;
-import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -45,9 +42,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind SOY_TEMPLATE_TYPES_NOT_ALLOWED =
       SoyErrorKind.of("Soy template types are not available for general use.");
-
-  private static final SoyErrorKind INDICES_FOR_LIST_NOT_ALLOWED =
-      SoyErrorKind.of("Soy indices for list are not available for general use.");
 
   private static final SoyErrorKind MSG_ALTERNATE_ID_NOT_ALLOWED =
       SoyErrorKind.of("Soy msg alternate ids are not available for general use.");
@@ -70,21 +64,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
         if (exprNode.getType() != null && exprNode.getType().getKind() == SoyType.Kind.TEMPLATE) {
           reporter.report(exprNode.getSourceLocation(), SOY_TEMPLATE_TYPES_NOT_ALLOWED);
-        }
-      }
-    }
-    if (!features.contains("indices_for_list")) {
-      for (ListComprehensionNode listComprehensionNode :
-          SoyTreeUtils.getAllNodesOfType(file, ListComprehensionNode.class)) {
-        if (listComprehensionNode.getIndexVar() != null) {
-          reporter.report(
-              listComprehensionNode.getIndexVar().nameLocation(), INDICES_FOR_LIST_NOT_ALLOWED);
-        }
-      }
-      for (ForNode forNode : SoyTreeUtils.getAllNodesOfType(file, ForNode.class)) {
-        ForNonemptyNode nonemptyNode = (ForNonemptyNode) forNode.getChild(0);
-        if (nonemptyNode.getIndexVar() != null) {
-          reporter.report(nonemptyNode.getIndexVar().nameLocation(), INDICES_FOR_LIST_NOT_ALLOWED);
         }
       }
     }
