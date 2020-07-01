@@ -274,11 +274,34 @@ that your message is only translated by non-volunteers.
 ```soy
 {msg desc="Description of the message" hidden="true"}
     Message for a super secret new feature.
-  {/msg}
+{/msg}
 ```
 
 Once your product/feature has been released, you should remove the hidden
 attribute to restore access for all translators.
+
+### Alternate IDs
+
+If you migrate from another message management scheme to Soy, that will likely
+cause all your message IDs to change. In this case, use the `alternateId`
+attribute to leverage the existing translated message. Unlike the `fallbackmsg`
+feature, the `alternateId` is applicable for cases where the message has not
+changed but the ID has.
+
+The compiler chooses the proper version of the message to use. If the new
+message's translation is available, then it is used, else the compiler falls
+back to the alternate translation. If neither is accessible, the compiler then
+uses the `fallbackmsg` (if specified). The `fallbackmsg` attribute can also
+accept an alternate ID, and it follows the fallback mechanism described
+previously.
+
+```soy
+{msg desc="Description of the message" alternateId="582799623638"}
+    Message for a super secret new feature.
+  {fallbackmsg desc="Description" alternateId="4657498615649"}
+    Fallback message for a super secret new feature.
+{/msg}
+```
 
 ## fallbackmsg {#fallbackmsg}
 
