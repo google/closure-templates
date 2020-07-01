@@ -18,7 +18,6 @@ package com.google.template.soy.pysrc.internal;
 
 import static com.google.template.soy.pysrc.internal.SoyExprForPySubject.assertThatSoyExpr;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.pysrc.restricted.PyExpr;
 import com.google.template.soy.pysrc.restricted.PyExprUtils;
@@ -618,7 +617,6 @@ public final class GenPyExprsVisitorTest {
             + " True))";
 
     assertThatSoyExpr(soyCode)
-        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
         .compilesTo(
             new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -644,7 +642,6 @@ public final class GenPyExprsVisitorTest {
             + " True)";
 
     assertThatSoyExpr(soyCode)
-        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
         .compilesTo(
             new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -670,7 +667,6 @@ public final class GenPyExprsVisitorTest {
             + " True))";
 
     assertThatSoyExpr(soyCode)
-        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
         .compilesTo(
             new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -692,7 +688,6 @@ public final class GenPyExprsVisitorTest {
             + " True))";
 
     assertThatSoyExpr(soyCode)
-        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
         .compilesTo(
             new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -712,7 +707,6 @@ public final class GenPyExprsVisitorTest {
             + " True))";
 
     assertThatSoyExpr(soyCode)
-        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
         .compilesTo(
             new PyExpr(expectedPyCode, PyExprUtils.pyPrecedenceForOperator(Operator.CONDITIONAL)));
   }
@@ -726,7 +720,6 @@ public final class GenPyExprsVisitorTest {
         "translator_impl.render_literal(translator_impl.prepare_literal(###, 'archive'), True)";
 
     assertThatSoyExpr(soyCode)
-        .withExperimentalFeatures(ImmutableList.of("msg_alternate_id"))
         .compilesTo(new PyExpr(expectedPyCode, Integer.MAX_VALUE));
   }
 }

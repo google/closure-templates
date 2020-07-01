@@ -24,8 +24,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
-import com.google.template.soy.soytree.CommandTagAttribute;
-import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
@@ -42,9 +40,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind SOY_TEMPLATE_TYPES_NOT_ALLOWED =
       SoyErrorKind.of("Soy template types are not available for general use.");
-
-  private static final SoyErrorKind MSG_ALTERNATE_ID_NOT_ALLOWED =
-      SoyErrorKind.of("Soy msg alternate ids are not available for general use.");
 
   private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
       SoyErrorKind.of(
@@ -64,15 +59,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
         if (exprNode.getType() != null && exprNode.getType().getKind() == SoyType.Kind.TEMPLATE) {
           reporter.report(exprNode.getSourceLocation(), SOY_TEMPLATE_TYPES_NOT_ALLOWED);
-        }
-      }
-    }
-    if (!features.contains("msg_alternate_id")) {
-      for (MsgNode msgNode : SoyTreeUtils.getAllNodesOfType(file, MsgNode.class)) {
-        for (CommandTagAttribute attr : msgNode.getAttributes()) {
-          if (attr.getName().identifier().equals("alternateId")) {
-            reporter.report(attr.getValueLocation(), MSG_ALTERNATE_ID_NOT_ALLOWED);
-          }
         }
       }
     }
