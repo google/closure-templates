@@ -18,10 +18,12 @@ package com.google.template.soy.passes;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
+import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Joiner;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherAccumulatorNode;
 import com.google.template.soy.passes.htmlmatcher.HtmlMatcherConditionNode;
@@ -34,6 +36,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -626,7 +629,10 @@ public final class StrictHtmlValidationPassTest {
   private static void assertThatSwitchCaseCommandEqualTo(
       HtmlMatcherGraphNode node, String commandString) {
     assertThat(node).isInstanceOf(HtmlMatcherConditionNode.class);
-    assertThat(((SwitchCaseNode) node.getSoyNode().get()).getCommandText())
+
+    Stream<ExprRootNode> expressions =
+        ((SwitchCaseNode) node.getSoyNode().get()).getExprList().stream();
+    assertThat(expressions.map(ExprRootNode::toSourceString).collect(joining(", ")))
         .isEqualTo(commandString);
   }
 
