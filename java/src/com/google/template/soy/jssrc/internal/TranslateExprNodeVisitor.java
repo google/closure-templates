@@ -102,7 +102,6 @@ import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
-import com.google.template.soy.jssrc.dsl.Statement;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.ProtoCall;
 import com.google.template.soy.jssrc.restricted.JsExpr;
@@ -118,6 +117,7 @@ import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.ListType;
+import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -357,17 +357,19 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitMapLiteralNode(MapLiteralNode node) {
-    Expression map =
-        codeGenerator.declarationBuilder().setRhs(Expression.construct(id("Map"))).build().ref();
-    ImmutableList.Builder<Statement> setCalls = ImmutableList.builder();
+    Expression map = Expression.constructMap();
+    if (node.getType() != MapType.EMPTY_MAP) {
+      map = map.castAs(JsType.forJsSrc(node.getType()).typeExpr());
+    }
+
     for (int i = 0; i < node.numChildren(); i += 2) {
       ExprNode keyNode = node.getChild(i);
       // Constructing a map literal with a null key is a runtime error.
       Expression key = SOY_CHECK_NOT_NULL.call(genMapKeyCode(keyNode));
       Expression value = visit(node.getChild(i + 1));
-      setCalls.add(map.dotAccess("set").call(key, value).asStatement());
+      map = map.dotAccess("set").call(key, value);
     }
-    return map.withInitialStatements(setCalls.build());
+    return map;
   }
 
   private Expression genMapKeyCode(ExprNode keyNode) {
@@ -767,7 +769,12 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                   ProtoUtils.getMapValueMessageType(fieldDesc));
           fieldValue = SOY_NEWMAPS_TRANSFORM_VALUES.call(fieldValue, sanitizedContentPackFn);
         }
-        proto = SOY_MAP_POPULATE.call(protoVar, protoVar.dotAccess(getFn).call(), fieldValue);
+        // JSCompiler cannot infer that jspb.Map and soy.Map or Map are the same.
+        proto =
+            SOY_MAP_POPULATE.call(
+                protoVar,
+                protoVar.dotAccess(getFn).call().castAs("!soy.map.Map<?,?>"),
+                fieldValue.castAs("!soy.map.Map<?,?>"));
       } else {
         String setFn = "set" + LOWER_CAMEL.to(UPPER_CAMEL, fieldName);
         proto = proto.dotAccess(setFn).call(fieldValue);

@@ -193,6 +193,10 @@ public abstract class Expression extends CodeChunk {
     return New.create(ctor).call(args);
   }
 
+  public static Expression constructMap() {
+    return New.create(id("Map"), GoogRequire.create("soy.map")).call();
+  }
+
   /**
    * Creates a code chunk representing the given Soy operator applied to the given operands.
    *
