@@ -16,6 +16,8 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -31,6 +33,7 @@ public final class NamespaceDeclaration {
   private final ImmutableList<String> requiredCssNamespaces;
   private final ImmutableList<String> requiredCssPaths;
   private final String cssBaseNamespace;
+  private final String cssPrefix;
   private final SourceLocation srcLoc;
 
   final ImmutableList<CommandTagAttribute> attrs;
@@ -43,6 +46,7 @@ public final class NamespaceDeclaration {
     ImmutableList<String> requiredCssNamespaces = ImmutableList.of();
     ImmutableList<String> requiredCssPaths = ImmutableList.of();
     String cssBaseNamespace = null;
+    String cssPrefix = null;
     for (CommandTagAttribute attr : attrs) {
       switch (attr.getName().identifier()) {
         case "requirecss":
@@ -51,8 +55,19 @@ public final class NamespaceDeclaration {
         case "requirecsspath":
           requiredCssPaths = attr.valueAsRequireCssPath();
           break;
+        case "cssprefix":
+          cssPrefix = attr.getValue();
+          if (cssBaseNamespace != null) {
+            errorReporter.report(
+                attr.getSourceLocation(), CommandTagAttribute.CSS_PREFIX_AND_CSS_BASE);
+          }
+          break;
         case "cssbase":
           cssBaseNamespace = attr.getValue();
+          if (cssPrefix != null) {
+            errorReporter.report(
+                attr.getSourceLocation(), CommandTagAttribute.CSS_PREFIX_AND_CSS_BASE);
+          }
           break;
         case "stricthtml":
           errorReporter.report(
@@ -64,7 +79,7 @@ public final class NamespaceDeclaration {
               CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
               attr.getName().identifier(),
               "namespace",
-              ImmutableList.of("cssbase", "requirecss", "requirecsspath"));
+              ImmutableList.of("cssbase", "requirecss", "requirecsspath", "cssprefix"));
           break;
       }
     }
@@ -75,12 +90,13 @@ public final class NamespaceDeclaration {
     this.cssBaseNamespace = cssBaseNamespace;
     this.srcLoc = srcLoc;
     this.attrs = ImmutableList.copyOf(attrs);
+    this.cssPrefix = cssPrefix;
   }
 
   public NamespaceDeclaration copy(CopyState copyState) {
     return new NamespaceDeclaration(
         namespace,
-        attrs.stream().map(attr -> attr.copy(copyState)).collect(ImmutableList.toImmutableList()),
+        attrs.stream().map(attr -> attr.copy(copyState)).collect(toImmutableList()),
         ErrorReporter.exploding(),
         srcLoc);
   }
@@ -100,6 +116,11 @@ public final class NamespaceDeclaration {
   @Nullable
   String getCssBaseNamespace() {
     return cssBaseNamespace;
+  }
+
+  @Nullable
+  String getCssPrefix() {
+    return cssPrefix;
   }
 
   public SourceLocation getSourceLocation() {

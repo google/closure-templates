@@ -149,6 +149,11 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     return namespaceDeclaration.getCssBaseNamespace();
   }
 
+  @Nullable
+  public String getCssPrefix() {
+    return namespaceDeclaration.getCssPrefix();
+  }
+
   /** Returns the syntactic alias directives in the file. */
   public ImmutableList<AliasDeclaration> getAliasDeclarations() {
     return aliasDeclarations;

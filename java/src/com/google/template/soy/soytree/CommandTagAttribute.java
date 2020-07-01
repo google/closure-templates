@@ -68,6 +68,8 @@ public final class CommandTagAttribute {
       SoyErrorKind.of("''stricthtml=\"false\"'' can only be set on individual templates.");
   static final SoyErrorKind EXPLICIT_DEFAULT_ATTRIBUTE =
       SoyErrorKind.of("''{0}=\"{1}\"'' is the default, no need to set it.");
+  static final SoyErrorKind CSS_PREFIX_AND_CSS_BASE =
+      SoyErrorKind.of("Cssbase and cssprefix cannot both be set at the same time.");
 
   private static final Splitter SPLITTER = Splitter.on(',').trimResults();
 

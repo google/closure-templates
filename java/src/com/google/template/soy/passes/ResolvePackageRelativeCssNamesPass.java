@@ -56,10 +56,12 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // Compute the CSS package prefix for this template. The search order is:
     // 1) cssbase on the template
-    // 2) cssbase on the namespace
+    // 2) cssbase or cssprefix on the namespace
     // 3) first requirecss on the namespace
     String namespacePrefix = null;
-    if (file.getCssBaseNamespace() != null) {
+    if (file.getCssPrefix() != null) {
+      namespacePrefix = file.getCssPrefix();
+    } else if (file.getCssBaseNamespace() != null) {
       namespacePrefix = toCamelCase(file.getCssBaseNamespace());
     } else if (!file.getRequiredCssNamespaces().isEmpty()) {
       namespacePrefix = toCamelCase(file.getRequiredCssNamespaces().get(0));
