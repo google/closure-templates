@@ -15,6 +15,7 @@
  */
 package com.google.template.soy.incrementaldomsrc;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EVAL_LOG_FN;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
@@ -23,6 +24,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PAR
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -76,8 +78,13 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
 
   @Override
   protected Expression genCodeForBind(
-      Expression template, Expression paramRecord, TemplateType templateType) {
-    SanitizedContentKind kind = templateType.getContentKind();
+      Expression template, Expression paramRecord, SoyType templateType) {
+    // Unions are enforced to have the same content kind in CheckTemplateCallsPass.
+    SanitizedContentKind kind =
+        Iterables.getOnlyElement(
+            SoyTypes.expandUnions(templateType).stream()
+                .map(type -> ((TemplateType) type).getContentKind())
+                .collect(toImmutableSet()));
     if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
       return BIND_TEMPLATE_PARAMS_FOR_IDOM.call(template, paramRecord);
     } else {

@@ -122,7 +122,6 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import java.util.ArrayList;
@@ -578,8 +577,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
               nullSafe,
               assertNonNull,
               (baseExpr) ->
-                  genCodeForBind(
-                      baseExpr, visit(methodCallNode.getParams().get(0)), (TemplateType) baseType));
+                  genCodeForBind(baseExpr, visit(methodCallNode.getParams().get(0)), baseType));
       }
       throw new AssertionError(builtinMethod);
     } else if (soyMethod instanceof SoySourceFunctionMethod) {
@@ -605,7 +603,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   }
 
   protected Expression genCodeForBind(
-      Expression template, Expression paramRecord, TemplateType templateType) {
+      Expression template, Expression paramRecord, SoyType templateType) {
     return BIND_TEMPLATE_PARAMS.call(template, paramRecord);
   }
 
