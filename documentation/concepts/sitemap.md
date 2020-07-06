@@ -17,3 +17,5 @@
     *   [6. Type System](type-system.md)
 
     *   [7. Injected Data](ij-data.md)
+
+    *   [8. Passing Templates As Parameters](template-types.md)
