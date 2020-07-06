@@ -739,8 +739,7 @@ public final class SoyFileSet {
           TemplateRegistry registry = result.registry();
 
           // Do renaming of package-relative class names.
-          return new GenerateParseInfoVisitor(
-                  javaPackage, javaClassNameSource, registry, typeRegistry)
+          return new GenerateParseInfoVisitor(javaPackage, javaClassNameSource, registry)
               .exec(soyTree);
         });
   }

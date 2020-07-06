@@ -61,7 +61,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -150,8 +149,6 @@ public final class GenerateParseInfoVisitor
 
   private final SoyFileNodeTransformer soyFileNodeTransformer;
 
-  private final SoyTypeRegistry typeRegistry;
-
   /** Cache for results of calls to {@code Utils.convertToUpperUnderscore()}. */
   private final Map<String, String> convertedIdents = Maps.newLinkedHashMap();
 
@@ -169,13 +166,9 @@ public final class GenerateParseInfoVisitor
    *     "namespace", or "generic".
    */
   public GenerateParseInfoVisitor(
-      String javaPackage,
-      String javaClassNameSource,
-      TemplateRegistry registry,
-      SoyTypeRegistry typeRegistry) {
+      String javaPackage, String javaClassNameSource, TemplateRegistry registry) {
     this.javaPackage = javaPackage;
     this.templateRegistry = registry;
-    this.typeRegistry = typeRegistry;
     switch (javaClassNameSource) {
       case "filename":
         this.javaClassNameSource = JavaClassNameSource.SOY_FILE_NAME;
@@ -264,7 +257,7 @@ public final class GenerateParseInfoVisitor
       }
     }
     SortedSet<String> protoTypes =
-        Sets.newTreeSet(JavaGenerationUtils.getProtoTypes(node, typeRegistry));
+        Sets.newTreeSet(JavaGenerationUtils.getProtoTypes(node, node.getSoyTypeRegistry()));
     // allParamKeysMap is a map from upper-underscore key to original key.
     SortedMap<String, String> allParamKeysMap = Maps.newTreeMap();
     for (String key : allParamKeys) {
