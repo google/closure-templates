@@ -20,7 +20,11 @@ import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.types.SoyType.Kind;
 import java.util.Optional;
 
-/** Placeholder type for named templates before their signatures have been resolved. */
+/**
+ * Placeholder type for named templates before their signatures have been resolved.
+ * TODO(b/158474755) This can be removed once partial template registries can be resolved in
+ * filepath order.
+ */
 @AutoValue
 public abstract class NamedTemplateType extends SoyType {
 

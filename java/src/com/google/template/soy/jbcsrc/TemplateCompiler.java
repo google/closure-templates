@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
@@ -72,7 +71,6 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
@@ -281,6 +279,7 @@ final class TemplateCompiler {
         new TemplateVariableManager(fields, thisVar, template.renderMethod().method());
     TemplateVariables variables =
         new TemplateVariables(variableSet, thisVar, new RenderContextExpression(contextVar));
+    DetachState detachState = new DetachState(variableSet, thisVar, fields);
     // We skipped resolving default values for template-type parameters earlier, but now we have
     // access to the RenderContext and can do so.
     ExtraCodeCompiler resolveDefaultValuesForTemplateParams =
@@ -288,17 +287,14 @@ final class TemplateCompiler {
           List<Statement> statements = new ArrayList<>();
           for (TemplateParam param : templateNode.getAllParams()) {
             if (!shouldResolveParamValueInConstructor(param)) {
-              Optional<SoyExpression> defaultExpression =
-                  expressionCompiler.compileWithNoDetaches(param.defaultValue());
-              checkState(
-                  defaultExpression.isPresent(),
-                  "Default expression unexpectedly required detachment");
+              SoyExpression defaultExpression =
+                  expressionCompiler.compile(param.defaultValue(), detachState);
               Expression paramProvider =
                   getParam(
                       variables.getParamsRecordField().accessor(thisVar),
                       variables.getIjRecordField().accessor(thisVar),
                       param,
-                      defaultExpression.get());
+                      defaultExpression);
               statements.add(
                   paramFields.get(param.name()).putInstanceField(thisVar, paramProvider));
             }
