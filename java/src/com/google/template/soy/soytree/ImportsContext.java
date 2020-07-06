@@ -18,9 +18,11 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Streams.stream;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -163,6 +165,14 @@ public final class ImportsContext {
       return delegate instanceof TypeRegistry.ProtoRegistry
           ? ((TypeRegistry.ProtoRegistry) delegate).getFileDescriptors()
           : ImmutableSet.of();
+    }
+
+    @Override
+    public Iterable<String> getAllSortedTypeNames() {
+      return () ->
+          Streams.concat(messagesAndEnums.keySet().stream(), stream(super.getAllSortedTypeNames()))
+              .sorted()
+              .iterator();
     }
   }
 
