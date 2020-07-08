@@ -279,7 +279,7 @@ For example:
 {template .foo}
   {@param tpl: (count: int, greeting: string) => html}
 
-  {call $partiallyBound}
+  {call $tpl}
     {param count: 5 /}
     {param greeting: 'Hello!' /}
   {/call}
