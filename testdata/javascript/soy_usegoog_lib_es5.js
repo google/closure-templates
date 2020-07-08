@@ -9098,8 +9098,8 @@ goog.dom.replaceNode = function(newNode, oldNode) {
 };
 goog.dom.copyContents = function(target, source) {
   goog.asserts.assert(null != target && null != source, "goog.dom.copyContents expects non-null arguments");
-  goog.dom.removeChildren(target);
-  for (var childNodes = source.cloneNode(!0).childNodes; childNodes.length;) {
+  var childNodes = source.cloneNode(!0).childNodes;
+  for (goog.dom.removeChildren(target); childNodes.length;) {
     target.appendChild(childNodes[0]);
   }
 };
