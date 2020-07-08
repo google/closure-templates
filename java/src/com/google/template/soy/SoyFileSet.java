@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
+import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
@@ -55,6 +56,7 @@ import com.google.template.soy.jssrc.internal.JsSrcMain;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
 import com.google.template.soy.logging.AnnotatedLoggingConfigGenerator;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.VeMetadataGenerator;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.SoyMsgBundleHandler;
 import com.google.template.soy.msgs.SoyMsgBundleHandler.OutputFileOptions;
@@ -799,6 +801,10 @@ public final class SoyFileSet {
     return new AnnotatedLoggingConfigGenerator(
             rawLoggingConfig, javaPackage, className, typeRegistry)
         .generate();
+  }
+
+  String generateVeMetadata(ByteSource loggingConfigBytes, String generator) throws IOException {
+    return new VeMetadataGenerator(loggingConfigBytes, generator, typeRegistry).generate();
   }
 
   /**
