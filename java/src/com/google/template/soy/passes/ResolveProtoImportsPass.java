@@ -124,10 +124,11 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
           continue;
         }
 
+        String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
         if (extensionNames.contains(name)) {
-          putDistinct(extensions, symbol.aliasOrName(), fd.getPackage() + "." + name);
+          putDistinct(extensions, symbol.aliasOrName(), fullName);
         } else {
-          putDistinct(messagesAndEnums, symbol.aliasOrName(), fd.getPackage() + "." + name);
+          putDistinct(messagesAndEnums, symbol.aliasOrName(), fullName);
         }
       }
     }
