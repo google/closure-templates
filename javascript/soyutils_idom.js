@@ -220,11 +220,12 @@ exports.$$callDynamicAttributes = callDynamicAttributes;
  */
 function printDynamicAttr(incrementaldom, expr) {
     var e_1, _a;
-    if (goog.isFunction(expr) &&
-        expr.contentKind === goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
-        // tslint:disable-next-line:no-any
-        expr(incrementaldom);
-        return;
+    if (typeof expr === 'function' &&
+        expr.contentKind ===
+            goog_goog_soy_data_SanitizedContentKind_1.ATTRIBUTES) {
+      // tslint:disable-next-line:no-any
+      expr(incrementaldom);
+      return;
     }
     var attributes = splitAttributes(expr.toString());
     var isExprAttribute = goog_soy_checks_1.isAttribute(expr);

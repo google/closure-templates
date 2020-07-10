@@ -137,9 +137,9 @@ function $$populateMap(proto, jspbMap, map) {
  * @suppress {missingProperties}
  */
 function $$isSoyMap(map) {
-  return goog.isObject(map) && goog.isFunction(map.get) &&
-      goog.isFunction(map.set) && goog.isFunction(map.keys) &&
-      goog.isFunction(map.entries);
+  return goog.isObject(map) && typeof map.get === 'function' &&
+      typeof map.set === 'function' && typeof map.keys === 'function' &&
+      typeof map.entries === 'function';
 }
 
 exports = {

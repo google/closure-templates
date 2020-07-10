@@ -7243,7 +7243,7 @@ soy.map.$$getMapKeys = function(map) {
   return keys;
 };
 soy.map.$$isSoyMap = function(map) {
-  return goog.isObject(map) && goog.isFunction(map.get) && goog.isFunction(map.set) && goog.isFunction(map.keys) && goog.isFunction(map.entries);
+  return goog.isObject(map) && "function" === typeof map.get && "function" === typeof map.set && "function" === typeof map.keys && "function" === typeof map.entries;
 };
 soy.map.Map = module$contents$soy$map_SoyMap;
 soy.newmaps = {};

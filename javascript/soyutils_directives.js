@@ -24,7 +24,7 @@ var goog_soydata_VERY_UNSAFE_1 = goog.require('soydata.VERY_UNSAFE'); // from //
 function isIdomFunctionType(
 // tslint:disable-next-line:no-any
 value, type) {
-    return goog.isFunction(value) && value.contentKind === type;
+  return typeof value === 'function' && value.contentKind === type;
 }
 exports.$$isIdomFunctionType = isIdomFunctionType;
 /**
