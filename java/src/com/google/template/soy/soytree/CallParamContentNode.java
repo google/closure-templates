@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -25,6 +26,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +37,8 @@ import java.util.Optional;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class CallParamContentNode extends CallParamNode implements RenderUnitNode {
+public final class CallParamContentNode extends CallParamNode
+    implements RenderUnitNode, CommandTagAttributesHolder {
 
   /** The mixin object that implements the ParentNode functionality. */
   private final MixinParentNode<StandaloneNode> parentMixin;
@@ -44,6 +47,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
   private final SanitizedContentKind contentKind;
 
   private final SourceLocation openTagLocation;
+  private final CommandTagAttribute kindAttr;
 
   public CallParamContentNode(
       int id,
@@ -66,6 +70,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     } else {
       parsedKind = kindAttr.valueAsContentKind(errorReporter);
     }
+    this.kindAttr = kindAttr;
     this.contentKind = parsedKind.orElse(SanitizedContentKind.HTML);
     this.openTagLocation = openTagLocation;
   }
@@ -80,6 +85,7 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.contentKind = orig.contentKind;
     this.openTagLocation = orig.openTagLocation;
+    this.kindAttr = orig.kindAttr.copy(copyState);
   }
 
   @Override
@@ -106,6 +112,11 @@ public final class CallParamContentNode extends CallParamNode implements RenderU
     appendSourceStringForChildren(sb);
     sb.append("{/").append(getCommandName()).append('}');
     return sb.toString();
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return ImmutableList.of(kindAttr);
   }
 
   @Override

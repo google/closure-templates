@@ -27,7 +27,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.Identifier.Type;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
@@ -115,7 +114,8 @@ public final class CommandTagAttribute {
       String value,
       SourceLocation valueLocation,
       SourceLocation wholeAttributeLocation) {
-    checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
+    checkArgument(
+        key.type() == Identifier.Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     this.key = checkNotNull(key);
     this.quoteStyle = checkNotNull(quoteStyle);
     this.sourceLocation = wholeAttributeLocation;
@@ -129,7 +129,8 @@ public final class CommandTagAttribute {
       QuoteStyle quoteStyle,
       ImmutableList<ExprNode> valueExprList,
       SourceLocation sourceLocation) {
-    checkArgument(key.type() == Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
+    checkArgument(
+        key.type() == Identifier.Type.SINGLE_IDENT, "expected a single identifier, got: %s", key);
     checkArgument(valueExprList.size() >= 1);
     this.key = checkNotNull(key);
     this.quoteStyle = checkNotNull(quoteStyle);

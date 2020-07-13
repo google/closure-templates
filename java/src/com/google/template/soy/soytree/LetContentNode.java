@@ -18,12 +18,16 @@ package com.google.template.soy.soytree;
 
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.MixinParentNode;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.types.SanitizedType;
 import java.util.List;
@@ -36,7 +40,8 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class LetContentNode extends LetNode implements RenderUnitNode {
+public final class LetContentNode extends LetNode
+    implements RenderUnitNode, CommandTagAttributesHolder {
 
   /**
    * Creates a LetContentNode for a compiler-generated variable. Use this in passes that rewrite the
@@ -61,6 +66,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   private final SanitizedContentKind contentKind;
 
   private final SourceLocation openTagLocation;
+  private final CommandTagAttribute kindAttr;
 
   public LetContentNode(
       int id,
@@ -85,6 +91,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     } else {
       parsedKind = kindAttr.valueAsContentKind(errorReporter);
     }
+    this.kindAttr = kindAttr;
     this.contentKind = parsedKind.orElse(SanitizedContentKind.HTML);
   }
 
@@ -98,6 +105,13 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     this.parentMixin = new MixinParentNode<>(this);
     this.contentKind = contentKind;
     this.openTagLocation = SourceLocation.UNKNOWN;
+    this.kindAttr =
+        new CommandTagAttribute(
+            Identifier.create("kind", SourceLocation.UNKNOWN),
+            QuoteStyle.DOUBLE,
+            contentKind.asAttributeValue(),
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN);
   }
 
   /**
@@ -110,6 +124,7 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
     this.parentMixin = new MixinParentNode<>(orig.parentMixin, this, copyState);
     this.contentKind = orig.contentKind;
     this.openTagLocation = orig.openTagLocation;
+    this.kindAttr = orig.kindAttr == null ? null : orig.kindAttr.copy(copyState);
   }
 
   @Override
@@ -125,6 +140,11 @@ public final class LetContentNode extends LetNode implements RenderUnitNode {
   @Override
   public SourceLocation getOpenTagLocation() {
     return openTagLocation;
+  }
+
+  @Override
+  public ImmutableList<CommandTagAttribute> getAttributes() {
+    return ImmutableList.of(kindAttr);
   }
 
   @Override
