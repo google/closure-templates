@@ -17,7 +17,10 @@ import {isTaggedForSkip} from './global';
 /** Function that executes Idom instructions */
 export type PatchFunction = (a?: unknown) => void;
 
-/** Function that executes before a patch and determines whether to proceed. */
+/**
+ * Function that executes before a patch and determines whether to proceed. If
+ * the return value is true, the element is skipped, otherwise it is rendered.
+ */
 export type SkipHandler = <T>(prev: T, next: T) => boolean;
 
 /**  Getter for skip handler */
@@ -172,6 +175,14 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     return false;
   }
 
+  /**
+   * Sets the skip handler.
+   *
+   * The given function return value means:
+   *
+   *   - true: skip the element
+   *   - false: renders the element
+   */
   setSkipHandler(skipHandler: (prev: TInterface, next: TInterface) => boolean) {
     assert(!this.skipHandler, 'Only one skip handler is allowed.');
     this.skipHandler = skipHandler;
