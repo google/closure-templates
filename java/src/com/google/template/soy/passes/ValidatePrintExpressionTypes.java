@@ -36,6 +36,18 @@ final class ValidatePrintExpressionTypes implements CompilerFilePass {
           "Printing template-type expressions is not allowed (found expression of type: `{0}`)."
               + " Did you mean to '{'call'}' it instead?");
 
+  private static final SoyErrorKind UNPRINTABLE_TYPE =
+      SoyErrorKind.of(
+          "Printing values of type `{0}` is not allowed because it has inconsistent behavior"
+              + " across backends.");
+
+  private static final ImmutableSet<SoyType.Kind> TEMPLATE_TYPES =
+      ImmutableSet.of(SoyType.Kind.NAMED_TEMPLATE, SoyType.Kind.TEMPLATE);
+
+  // Other types should be made unprintable, like list<>, map<>, etc.
+  private static final ImmutableSet<SoyType.Kind> UNPRINTABLE_TYPES =
+      ImmutableSet.of(SoyType.Kind.MESSAGE);
+
   private final ErrorReporter errorReporter;
 
   ValidatePrintExpressionTypes(ErrorReporter errorReporter) {
@@ -45,13 +57,14 @@ final class ValidatePrintExpressionTypes implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (PrintNode printNode : SoyTreeUtils.getAllNodesOfType(file, PrintNode.class)) {
-      if (SoyTypes.isKindOrUnionOfKinds(
-          printNode.getExpr().getType(),
-          ImmutableSet.of(SoyType.Kind.NAMED_TEMPLATE, SoyType.Kind.TEMPLATE))) {
+      SoyType printType = printNode.getExpr().getType();
+      if (SoyTypes.isKindOrUnionOfKinds(printType, TEMPLATE_TYPES)) {
         errorReporter.report(
-            printNode.getExpr().getSourceLocation(),
-            CANNOT_PRINT_TEMPLATES,
-            printNode.getExpr().getType());
+            printNode.getExpr().getSourceLocation(), CANNOT_PRINT_TEMPLATES, printType);
+      }
+
+      if (SoyTypes.isKindOrUnionOfKinds(printType, UNPRINTABLE_TYPES)) {
+        errorReporter.report(printNode.getExpr().getSourceLocation(), UNPRINTABLE_TYPE, printType);
       }
     }
   }

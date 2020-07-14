@@ -40,4 +40,6 @@ public interface SoyTypeVisitor<T> {
   T visit(UnionType type);
 
   T visit(VeType type);
+
+  T visit(MessageType type);
 }

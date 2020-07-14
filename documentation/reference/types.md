@@ -417,6 +417,21 @@ SoySauce   | `java.util.Map`, `com.google.template.soy.data.SoyRecord`
 Tofu       | `com.google.template.soy.data.SoyRecord`
 Python     | `dict`
 
+### `Message` {#message}
+
+The `Message` type is the generic base class of all protos. This is mostly
+useful for Soy plugins which are able to use platform specific generic proto
+features.
+
+Backend    | type in host language
+---------- | --------------------------------------------
+JavaScript | `jspb.Message`
+SoySauce   | `com.google.protobuf.Message`
+Tofu       | `com.google.template.soy.data.SoyProtoValue`
+Python     | unsupported
+
+See the [dev guide](../dev/protos.md) for more information on how protos work.
+
 ### protos: `foo.bar.BazProto` {#proto}
 
 Protocol buffers are supported in Soy. They can be accessed as though they were

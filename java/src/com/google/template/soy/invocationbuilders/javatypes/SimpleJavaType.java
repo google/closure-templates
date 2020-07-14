@@ -118,6 +118,12 @@ public class SimpleJavaType extends JavaType {
           /* asReference=*/ castFunction("asCss"),
           /* asNullableReference=*/ castFunction("asNullableCss"));
 
+  public static final SimpleJavaType MESSAGE =
+      new SimpleJavaType(
+          "com.google.protobuf.Message",
+          /* asReference=*/ castFunction("asProto"),
+          /* asNullableReference=*/ castFunction("asNullableProto"));
+
   private final String javaTypeString;
   private final String genericsTypeArgumentString;
   final CodeGenUtils.Member asReference;

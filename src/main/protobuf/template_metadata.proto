@@ -86,6 +86,7 @@ message SoyTypeP {
     UnionTypeP union = 8;
     string ve = 9;
     TemplateTypeP template = 10;
+    bool message = 11;
   }
 }
 

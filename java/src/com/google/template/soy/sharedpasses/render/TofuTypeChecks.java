@@ -143,6 +143,8 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value instanceof SoyLegacyObjectMap);
       case NULL:
         return CheckResult.fromBool(value == NullData.INSTANCE || value == UndefinedData.INSTANCE);
+      case MESSAGE:
+        return CheckResult.fromBool(value instanceof SoyProtoValue);
       case PROTO:
         // proto descriptors use instance equality.
         return CheckResult.fromBool(

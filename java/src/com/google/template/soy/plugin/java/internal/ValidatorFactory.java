@@ -123,6 +123,9 @@ final class ValidatorFactory extends JavaValueFactory {
   private static final ImmutableSet<Class<?>> VE_DATA_TYPES =
       ImmutableSet.of(SoyValue.class, SoyVisualElementData.class);
 
+  private static final ImmutableSet<Class<?>> MESSAGE_TYPES =
+      ImmutableSet.of(SoyValue.class, SoyProtoValue.class, Message.class);
+
   private final ValidatorErrorReporter reporter;
 
   ValidatorFactory(ValidatorErrorReporter reporter) {
@@ -381,6 +384,9 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case NULL:
         expectedClasses = NULL_TYPES;
+        break;
+      case MESSAGE:
+        expectedClasses = MESSAGE_TYPES;
         break;
       case PROTO:
         expectedClasses = PROTO_TYPES;

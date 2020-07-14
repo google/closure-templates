@@ -72,6 +72,7 @@ public abstract class SoyType {
    *         <li>RECORD: Open-ended record type.
    *         <li>LEGACY_OBJECT_MAP: Deprecated map type.
    *         <li>MAP: Map type that supports proto map (and ES6 map in JS backend).
+   *         <li>BASE_PROTO: A generic proto, this type is mostly useful for plugins
    *         <li>PROTO: Protobuf object.
    *         <li>PROTO_ENUM: Protobuf enum object.
    *         <li>UNION: Used to indicate a parameter that can accept multiple alternatives, e.g.
@@ -104,6 +105,7 @@ public abstract class SoyType {
     LEGACY_OBJECT_MAP,
     MAP,
     NAMED_TEMPLATE,
+    MESSAGE,
     PROTO,
     PROTO_ENUM,
     TEMPLATE,

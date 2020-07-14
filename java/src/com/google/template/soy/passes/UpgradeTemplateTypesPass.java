@@ -36,6 +36,7 @@ import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.PrimitiveType;
 import com.google.template.soy.types.RecordType;
@@ -282,6 +283,11 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
 
     @Override
     public SoyType visit(VeType type) {
+      return type;
+    }
+
+    @Override
+    public SoyType visit(MessageType type) {
       return type;
     }
   }

@@ -190,6 +190,7 @@ final class TypeRegistries {
             .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
             .put("js", JsType.getInstance())
             .put("ve_data", VeDataType.getInstance())
+            .put("Message", MessageType.getInstance())
             .build();
 
     private BuiltinTypeRegistry() {}

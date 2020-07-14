@@ -735,16 +735,24 @@ public class SoyTypesTest {
         .isTrue();
   }
 
-  static SoyTypeSubject assertThatSoyType(String typeString) {
-    return Truth.assertAbout(SoyTypeSubject::new).that(typeString);
+  static SoyTypeSubject assertThatSoyType(String typeString, SoyTypeRegistry registry) {
+    return Truth.<SoyTypeSubject, String>assertAbout(
+            (meta, subject) -> new SoyTypeSubject(meta, subject, registry))
+        .that(typeString);
   }
 
-  private static final class SoyTypeSubject extends Subject {
-    private final String actual;
+  static SoyTypeSubject assertThatSoyType(String typeString) {
+    return assertThatSoyType(typeString, SoyTypeRegistryBuilder.create());
+  }
 
-    protected SoyTypeSubject(FailureMetadata metadata, String actual) {
+  static final class SoyTypeSubject extends Subject {
+    private final String actual;
+    private final SoyTypeRegistry registry;
+
+    SoyTypeSubject(FailureMetadata metadata, String actual, SoyTypeRegistry registry) {
       super(metadata, actual);
       this.actual = actual;
+      this.registry = registry;
     }
 
     void isAssignableFrom(String other) {
@@ -809,11 +817,12 @@ public class SoyTypesTest {
       }
     }
 
-    private static SoyType parseType(String input) {
+    private SoyType parseType(String input) {
       TemplateNode template =
           (TemplateNode)
               SoyFileSetParserBuilder.forTemplateContents(
                       "{@param p : " + input + "|string}\n{$p ? 't' : 'f'}")
+                  .typeRegistry(registry)
                   .parse()
                   .fileSet()
                   .getChild(0)

@@ -45,6 +45,7 @@ public class TypeParserTest {
     assertTypeEquals(IntType.getInstance(), "int");
     assertTypeEquals(BoolType.getInstance(), "bool");
     assertTypeEquals(UnknownType.getInstance(), "?");
+    assertTypeEquals(MessageType.getInstance(), "Message");
   }
 
   @Test

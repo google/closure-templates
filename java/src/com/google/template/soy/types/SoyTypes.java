@@ -381,6 +381,11 @@ public final class SoyTypes {
           public Boolean visit(VeType type) {
             return type.getKind() == kind;
           }
+
+          @Override
+          public Boolean visit(MessageType type) {
+            return type.getKind() == kind;
+          }
         });
   }
 

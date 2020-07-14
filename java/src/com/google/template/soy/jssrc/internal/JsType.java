@@ -118,6 +118,14 @@ public final class JsType {
   private static final JsType STRING_TYPE =
       builder().addType("string").setPredicate(typeofTypePredicate("string")).build();
 
+  private static final JsType MESSAGE_TYPE =
+      builder()
+          .addType("!jspb.Message")
+          .setPredicate(
+              (value, codeGenerator) ->
+                  Optional.of(value.instanceOf(GoogRequire.create("jspb.Message").reference())))
+          .addRequire(GoogRequire.create("jspb.Message"))
+          .build();
   private static final JsType RAW_ARRAY_TYPE =
       builder().addType("!Array").setPredicate(ARRAY_IS_ARRAY).build();
 
@@ -343,6 +351,8 @@ public final class JsType {
               .setPredicate(SOY_MAP_IS_SOY_MAP)
               .build();
         }
+      case MESSAGE:
+        return MESSAGE_TYPE;
       case PROTO:
         final SoyProtoType protoType = (SoyProtoType) soyType;
         final String protoTypeName = protoType.getNameForBackend(SoyBackendKind.JS_SRC);

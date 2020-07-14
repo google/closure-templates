@@ -1852,6 +1852,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case TEMPLATE:
         case VE:
         case VE_DATA:
+        case MESSAGE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }
@@ -1958,6 +1959,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case TEMPLATE:
         case VE:
         case VE_DATA:
+        case MESSAGE:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return ErrorType.getInstance();
       }

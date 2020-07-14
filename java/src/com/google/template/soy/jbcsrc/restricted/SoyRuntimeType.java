@@ -192,6 +192,9 @@ public abstract class SoyRuntimeType {
       case TRUSTED_RESOURCE_URI:
         // sanitized strings cannot be unboxed
         return null;
+      case MESSAGE:
+        return new PrimitiveSoyType(
+            soyType, BytecodeUtils.MESSAGE_TYPE, BytecodeUtils.SOY_PROTO_VALUE_TYPE);
       case PROTO:
         return soyTypeFromProto((SoyProtoType) soyType);
       case LIST:

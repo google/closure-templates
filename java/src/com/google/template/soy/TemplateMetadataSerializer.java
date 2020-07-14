@@ -50,6 +50,7 @@ import com.google.template.soy.types.BoolType;
 import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
+import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
@@ -307,6 +308,8 @@ public final class TemplateMetadataSerializer {
         return typeRegistry.getOrCreateMapType(
             fromProto(proto.getMap().getKey(), typeRegistry, filePath, errorReporter),
             fromProto(proto.getMap().getValue(), typeRegistry, filePath, errorReporter));
+      case MESSAGE:
+        return MessageType.getInstance();
       case PROTO:
         {
           SoyType type = typeRegistry.getType(proto.getProto());

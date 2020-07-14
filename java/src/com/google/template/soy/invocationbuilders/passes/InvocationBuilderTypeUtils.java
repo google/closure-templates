@@ -91,6 +91,9 @@ final class InvocationBuilderTypeUtils {
       case TRUSTED_RESOURCE_URI:
         types = ImmutableList.of(SimpleJavaType.TRUSTED_RESOURCE_URL);
         break;
+      case MESSAGE:
+        types = ImmutableList.of(SimpleJavaType.MESSAGE);
+        break;
       case PROTO:
         SoyProtoType asProto = (SoyProtoType) soyType;
         types = ImmutableList.of(new ProtoJavaType(asProto.getDescriptor()));
