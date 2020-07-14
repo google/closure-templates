@@ -1633,6 +1633,14 @@ final class ExpressionCompiler {
     }
 
     @Override
+    protected Boolean visitMethodCallNode(MethodCallNode node) {
+      if (node.getMethodName().toString().equals("bind")) {
+        return areAllChildrenConstant(node);
+      }
+      return false;
+    }
+
+    @Override
     protected Boolean visitDataAccessNode(DataAccessNode node) {
       // If this could be compiled to a constant expression, then the optimizer should have already
       // evaluated it.  So don't bother.
@@ -1714,6 +1722,19 @@ final class ExpressionCompiler {
 
     @Override
     Boolean visitLetNodeVar(VarRefNode node, LocalVar local) {
+      return true;
+    }
+
+    @Override
+    protected Boolean visitMethodCallNode(MethodCallNode node) {
+      if (node.getMethodName().toString().equals("bind")) {
+        for (Boolean childRequiresDetach : visitChildren(node)) {
+          if (childRequiresDetach) {
+            return true;
+          }
+        }
+        return false;
+      }
       return true;
     }
 
