@@ -72,6 +72,10 @@ public abstract class Identifier {
 
   public abstract SourceLocation location();
 
+  public boolean isRenamed() {
+    return !identifier().equals(originalName());
+  }
+
   @Override
   public final String toString() {
     return identifier();
