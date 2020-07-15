@@ -1,0 +1,18 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "defn",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/types",
+        "//java/src/com/google/template/soy/types/ast",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)

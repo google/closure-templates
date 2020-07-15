@@ -1,0 +1,6 @@
+package_group(
+    name = "soy_internal",
+    packages = [
+        "//...",
+    ],
+)

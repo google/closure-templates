@@ -1,0 +1,66 @@
+# Copyright 2018 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+ANNOTATION_SRCS = [
+    "Signature.java",
+    "SoyFunctionSignature.java",
+    "TypedSoyFunction.java",
+]
+
+METHOD_ANNOTATION_SRCS = [
+    "SoyMethodSignature.java",
+]
+
+java_library(
+    name = "restricted",
+    visibility = ["//visibility:public"],
+    exports = [
+        ":annotations_private",
+        ":restricted_internal",
+    ],
+)
+
+java_library(
+    name = "restricted_internal",
+    srcs = glob(
+        ["*.java"],
+        exclude = ANNOTATION_SRCS + METHOD_ANNOTATION_SRCS,
+    ),
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/types",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "annotations",
+    visibility = [
+        "//java/src/com/google/template/soy/plugin/internal:__pkg__",
+        "//java/src/com/google/template/soy/plugin/java/internal:__pkg__",
+        "//java/src/com/google/template/soy/soyparse:__pkg__",
+    ],
+    exports = [":annotations_private"],
+)
+
+java_library(
+    name = "annotations_private",
+    srcs = ANNOTATION_SRCS,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":restricted_internal",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "method_annotation",
+    srcs = METHOD_ANNOTATION_SRCS,
+    deps = [
+        ":annotations_private",
+    ],
+)

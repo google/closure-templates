@@ -1,0 +1,22 @@
+# Copyright 2009 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "conformance",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//src/main/protobuf:conformance_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)

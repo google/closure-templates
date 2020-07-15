@@ -1,0 +1,20 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "passes",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/invocationbuilders/javatypes",
+        "//java/src/com/google/template/soy/passes",
+        "//java/src/com/google/template/soy/shared/internal/gencode",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_guava_guava",
+    ],
+)

@@ -1,0 +1,37 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "json_ordainer",
+    srcs = ["JsonOrdainer.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "@maven//:org_json_json",
+    ],
+)
+
+java_library(
+    name = "js_identifier_ordainer",
+    srcs = ["JsIdentifierOrdainer.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "gson_ordainer",
+    srcs = ["GsonOrdainer.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "@maven//:com_google_code_gson_gson",
+        "@maven//:com_google_guava_guava",
+    ],
+)

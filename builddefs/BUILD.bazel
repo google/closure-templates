@@ -1,0 +1,11 @@
+load("@rules_java//java:defs.bzl", "java_binary")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_binary(
+    name = "javacc",
+    main_class = "javacc",
+    runtime_deps = [
+        "@maven//:net_java_dev_javacc_javacc",
+    ],
+)

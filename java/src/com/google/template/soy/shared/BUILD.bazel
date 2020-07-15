@@ -1,0 +1,42 @@
+# Copyright 2009 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+RENAMING_MAPS = [
+    "SoyCssRenamingMap.java",
+    "SoyIdRenamingMap.java",
+]
+
+java_library(
+    name = "shared",
+    srcs = glob(
+        ["*.java"],
+        exclude = RENAMING_MAPS,
+    ),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy:soy_utils",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/basicfunctions",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data/internalutils",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/soytree",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_inject_guice",
+        "@maven//:javax_inject_javax_inject",
+    ],
+)
+
+java_library(
+    name = "interfaces",
+    srcs = RENAMING_MAPS,
+    visibility = ["//visibility:public"],
+    deps = [
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)

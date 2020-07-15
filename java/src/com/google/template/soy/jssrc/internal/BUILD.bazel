@@ -1,0 +1,64 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+GEN_SOYUTILS_SRCS = ["GenerateSoyUtilsEscapingDirectiveCode.java"]
+
+java_library(
+    name = "internal",
+    srcs = glob(
+        ["*.java"],
+        exclude = GEN_SOYUTILS_SRCS,
+    ),
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/data/internalutils",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/jssrc",
+        "//java/src/com/google/template/soy/jssrc/dsl",
+        "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/msgs/internal",
+        "//java/src/com/google/template/soy/passes",
+        "//java/src/com/google/template/soy/plugin/javascript/restricted",
+        "//java/src/com/google/template/soy/shared",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal:builtin_function",
+        "//java/src/com/google/template/soy/shared/internal:builtin_method",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "gen_soyutils_library",
+    srcs = GEN_SOYUTILS_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/shared/internal:escaping_library",
+        "//java/src/com/google/template/soy/shared/internal:gen_escaping_library",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)
+
+# Used to generate JS helper functions for soyutils.js
+java_binary(
+    name = "gen_soyutils",
+    main_class = ("com.google.template.soy.jssrc.internal" +
+                  ".GenerateSoyUtilsEscapingDirectiveCode"),
+    runtime_deps = [":gen_soyutils_library"],
+)

@@ -1,0 +1,18 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "internalutils",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/exprtree",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_guava_guava",
+    ],
+)

@@ -1,0 +1,58 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+TESTING_SRCS = ["TestingEnvironment.java"]
+
+java_library(
+    name = "render",
+    srcs = glob(
+        ["*.java"],
+        exclude = TESTING_SRCS,
+    ),
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jbcsrc/api",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/msgs/internal",
+        "//java/src/com/google/template/soy/plugin/internal",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/shared",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared/internal:builtin_function",
+        "//java/src/com/google/template/soy/shared/internal:builtin_method",
+        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
+        "//java/src/com/google/template/soy/shared/internal:shared_runtime",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_ibm_icu_icu4j",
+    ],
+)
+
+java_library(
+    name = "testing",
+    testonly = 1,
+    srcs = [
+        "TestingEnvironment.java",
+    ],
+    deps = [
+        ":render",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/exprtree",
+        "@maven//:com_google_guava_guava",
+    ],
+)

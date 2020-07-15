@@ -1,0 +1,23 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(
+    default_testonly = True,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "expression_parser",
+    srcs = ["ExpressionParser.java"],
+    deps = [
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/testing:shared_test_utils",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_guava_guava",
+    ],
+)

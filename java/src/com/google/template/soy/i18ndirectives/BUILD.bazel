@@ -1,0 +1,22 @@
+# Copyright 2012 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "i18ndirectives",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/plugin/javascript/restricted",
+        "//java/src/com/google/template/soy/plugin/python/restricted",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/pysrc/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_ibm_icu_icu4j",
+    ],
+)

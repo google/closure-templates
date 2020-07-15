@@ -1,0 +1,19 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "restricted",
+    srcs = glob(["*.java"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data/internalutils",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/targetexpr",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)

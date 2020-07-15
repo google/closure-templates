@@ -1,0 +1,47 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "missing_plugin_instance_exception",
+    srcs = ["MissingPluginInstanceException.java"],
+    visibility = ["//visibility:public"],
+)
+
+java_library(
+    name = "shared",
+    srcs = glob(
+        ["*.java"],
+        exclude = [
+            "Names.java",
+            "MissingPluginInstanceException.java",
+        ],
+    ),
+    deps = [
+        ":missing_plugin_instance_exception",
+        ":names",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jbcsrc/api:helpers",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_ibm_icu_icu4j",
+    ],
+)
+
+java_library(
+    name = "names",
+    srcs = ["Names.java"],
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "@maven//:com_google_guava_guava",
+    ],
+)

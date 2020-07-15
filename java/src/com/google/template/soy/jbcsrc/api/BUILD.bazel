@@ -1,0 +1,150 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "continuations_impl",
+    srcs = ["Continuations.java"],
+    deps = [
+        ":api",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "continuations_testonly",
+    testonly = True,
+    visibility = ["//visibility:public"],
+    exports = [":continuations_impl"],
+)
+
+java_library(
+    name = "internal",
+    srcs = [
+        "SoySauceImpl.java",
+    ],
+    deps = [
+        ":api_impl",
+        ":continuations_impl",
+        ":helpers",
+        ":output_appendable",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "output_appendable",
+    srcs = ["OutputAppendable.java"],
+    deps = [
+        ":appendable_as_advising_appendable",
+        ":helpers",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/logging:public",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "helpers",
+    srcs = [
+        "AdvisingAppendable.java",
+        "RenderResult.java",
+    ],
+    visibility =
+        [
+            "//java/src/com/google/template/soy/data:__pkg__",
+            "//java/src/com/google/template/soy/jbcsrc/shared:__pkg__",
+        ],
+    deps = [
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "appendable_as_advising_appendable",
+    srcs = [
+        "AppendableAsAdvisingAppendable.java",
+    ],
+    deps = [
+        ":helpers",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "api_impl",
+    srcs = [
+        "SoySauce.java",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":appendable_as_advising_appendable",
+        ":helpers",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "api",
+    visibility = ["//visibility:public"],
+    exports = [
+        ":api_impl",
+        ":helpers",
+    ],
+)
+
+java_library(
+    name = "module",
+    srcs = [
+        "PluginInstances.java",
+        "Precompiled.java",
+        "PrecompiledSoyModule.java",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":api_impl",
+        ":builder",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_inject_extensions_guice_multibindings",
+        "@maven//:com_google_inject_guice",
+        "@maven//:javax_inject_javax_inject",
+    ],
+)
+
+java_library(
+    name = "builder",
+    srcs = [
+        "SoySauceBuilder.java",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":api_impl",
+        ":internal",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@maven//:com_google_guava_guava",
+    ],
+)

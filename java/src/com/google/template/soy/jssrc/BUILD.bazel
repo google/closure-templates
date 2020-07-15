@@ -1,0 +1,12 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "jssrc",
+    srcs = glob(["*.java"]),
+    visibility = ["//visibility:public"],
+    deps = ["@maven//:com_google_guava_guava"],
+)

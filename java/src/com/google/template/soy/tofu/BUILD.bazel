@@ -1,0 +1,21 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "tofu",
+    srcs = glob(["*.java"]),
+    deprecation = "Soy Tofu rendering is deprecated, use SoySauce (JBC SRC) instead.",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/sharedpasses/render",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)

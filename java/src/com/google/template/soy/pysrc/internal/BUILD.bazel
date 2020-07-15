@@ -1,0 +1,58 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+GEN_SANITIZE_SRCS = ["GeneratePySanitizeEscapingDirectiveCode.java"]
+
+java_library(
+    name = "internal",
+    srcs = glob(
+        ["*.java"],
+        exclude = GEN_SANITIZE_SRCS,
+    ),
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data/internalutils",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/msgs/internal",
+        "//java/src/com/google/template/soy/plugin/python/restricted",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/pysrc",
+        "//java/src/com/google/template/soy/pysrc/restricted",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal:builtin_function",
+        "//java/src/com/google/template/soy/shared/internal:builtin_method",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/types",
+        "//java/src/com/google/template/soy/types/ast",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "gen_py_sanitize_library",
+    srcs = GEN_SANITIZE_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/shared/internal:escaping_library",
+        "//java/src/com/google/template/soy/shared/internal:gen_escaping_library",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_binary(
+    name = "gen_py_sanitize",
+    main_class = ("com.google.template.soy.pysrc.internal" +
+                  ".GeneratePySanitizeEscapingDirectiveCode"),
+    runtime_deps = [":gen_py_sanitize_library"],
+)

@@ -1,0 +1,49 @@
+# Copyright 2015 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+OPTIONS_SRCS = ["SoyIncrementalDomSrcOptions.java"]
+
+java_library(
+    name = "options",
+    srcs = OPTIONS_SRCS,
+    visibility = ["//visibility:public"],
+    deps = ["//java/src/com/google/template/soy/jssrc"],
+)
+
+java_library(
+    name = "incrementaldomsrc",
+    srcs = glob(
+        ["*.java"],
+        exclude = OPTIONS_SRCS,
+    ),
+    deps = [
+        ":options",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/base",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jssrc",
+        "//java/src/com/google/template/soy/jssrc/dsl",
+        "//java/src/com/google/template/soy/jssrc/internal",
+        "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/passes",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal:builtin_function",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_guava_guava",
+    ],
+)

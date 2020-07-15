@@ -12,482 +12,375 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# NOTE: THIS IS A WORK IN PROGRESS AND IS NOT EXPECTED TO WORK AS WE HAVE
-# NO CONTINUOUS INTEGRATION.
 ##
 
 load("@rules_java//java:defs.bzl", "java_binary", "java_library")
 
+package(default_visibility = ["//:soy_internal"])
+
 java_library(
-    name = "AbstractSoyCompiler",
+    name = "cache",
+    srcs = [
+        "SoyCompilerFileReader.java",
+        "SoyInputCache.java",
+    ],
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/shared",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "impl",
+    srcs = [
+        "SoyFileSetParser.java",
+        "TemplateMetadataSerializer.java",
+    ],
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/css",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/passes",
+        "//java/src/com/google/template/soy/shared",
+        "//java/src/com/google/template/soy/soyparse",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_cmdline",
     srcs = [
         "AbstractSoyCompiler.java",
-    ],
-    deps = [
-        ":CommandLineError",
-        ":FileSystemSoyFileReader",
-        ":PluginLoader",
-        ":SoyCmdLineParser",
-        ":SoyCompilerFileReader",
-        ":soy",
-        "//java/src/com/google/template/soy/base",
-        "//java/src/com/google/template/soy/error",
-        "//java/src/com/google/template/soy/plugin/restricted",
-        "//src/main/protobuf:logging_config_java_proto",
-        "@args4j",
-        "@com_google_code_findbugs_jsr305",
-        "@com_google_errorprone_error_prone_annotations",
-        "@com_google_guava_guava",
-        "@com_google_inject_guice",
-        "@com_google_protobuf//:protobuf_java",
-    ],
-)
-
-# CacheLoaders
-
-java_library(
-    name = "CommandLineError",
-    srcs = [
+        "CacheLoaders.java",
         "CommandLineError.java",
-    ],
-)
-
-java_library(
-    name = "FileSystemSoyFileReader",
-    srcs = [
         "FileSystemSoyFileReader.java",
-    ],
-    deps = [
-        ":SoyCompilerFileReader",
-        "@com_google_guava_guava",
-    ],
-)
-
-java_library(
-    name = "PerInputOutputFiles",
-    srcs = [
-        "PerInputOutputFiles.java",
-    ],
-    deps = [
-        ":CommandLineError",
-        ":SoyCmdLineParser",
-        ":soy",
-        "@args4j",
-        "@com_google_code_findbugs_jsr305",
-        "@com_google_guava_guava",
-    ],
-)
-
-java_library(
-    name = "PluginLoader",
-    srcs = [
         "PluginLoader.java",
-    ],
-)
-
-java_library(
-    name = "SoyCmdLineParser",
-    srcs = [
         "SoyCmdLineParser.java",
     ],
     deps = [
-        ":CommandLineError",
-        ":PluginLoader",
+        ":cache",
         ":soy",
+        ":soy_utils",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/conformance",
+        "//java/src/com/google/template/soy/css",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/logging:internal",
+        "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/plugin/restricted",
-        "@args4j",
-        "@com_google_errorprone_error_prone_annotations",
-        "@com_google_guava_guava",
-        "@com_google_inject_guice",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//src/main/protobuf:annotated_logging_config_java_proto",
+        "//src/main/protobuf:logging_config_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_inject_guice",
     ],
 )
 
 java_library(
-    name = "SoyCompilerFileReader",
+    name = "soy",
     srcs = [
-        "SoyCompilerFileReader.java",
+        "SoyFileSet.java",
+        "SoyModule.java",
+    ],
+    # Prefer the below java_binary targets.
+    visibility = [
+        "//visibility:public",
     ],
     deps = [
-        "@com_google_guava_guava",
+        ":impl",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/conformance",
+        "//java/src/com/google/template/soy/css",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/incrementaldomsrc",
+        "//java/src/com/google/template/soy/incrementaldomsrc:options",
+        "//java/src/com/google/template/soy/invocationbuilders/passes",
+        "//java/src/com/google/template/soy/jbcsrc",
+        "//java/src/com/google/template/soy/jbcsrc/api",
+        "//java/src/com/google/template/soy/jbcsrc/api:internal",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/jssrc",
+        "//java/src/com/google/template/soy/jssrc/internal",
+        "//java/src/com/google/template/soy/logging:internal",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/msgs/internal",
+        "//java/src/com/google/template/soy/parseinfo/passes",
+        "//java/src/com/google/template/soy/passes",
+        "//java/src/com/google/template/soy/plugin/internal",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/pysrc",
+        "//java/src/com/google/template/soy/pysrc/internal",
+        "//java/src/com/google/template/soy/shared",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal/gencode",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/shared/restricted:method_annotation",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/tofu",
+        "//java/src/com/google/template/soy/tofu/internal",
+        "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:annotated_logging_config_java_proto",
+        "//src/main/protobuf:logging_config_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_inject_extensions_guice_multibindings",
+        "@maven//:com_google_inject_guice",
     ],
+)
+
+java_library(
+    name = "soy_msg_extractor",
+    srcs = ["SoyMsgExtractor.java"],
+    deps = [
+        ":cache",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/xliffmsgplugin",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_parse_info_generator",
+    srcs = ["SoyParseInfoGenerator.java"],
+    deps = [
+        ":cache",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/shared/internal/gencode",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_header_compiler",
+    srcs = ["SoyHeaderCompiler.java"],
+    deps = [
+        ":cache",
+        ":impl",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/shared/internal:builtin_function",
+        "//java/src/com/google/template/soy/soytree",
+        "//src/main/protobuf:css_metadata_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "per_input_output_files",
+    srcs = ["PerInputOutputFiles.java"],
+    deps = [
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/shared/internal",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_to_incrementaldom_src_compiler",
+    srcs = ["SoyToIncrementalDomSrcCompiler.java"],
+    deps = [
+        ":cache",
+        ":per_input_output_files",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/incrementaldomsrc:options",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_to_js_src_compiler",
+    srcs = ["SoyToJsSrcCompiler.java"],
+    deps = [
+        ":cache",
+        ":per_input_output_files",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/jssrc",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/xliffmsgplugin",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_to_py_src_compiler",
+    srcs = ["SoyToPySrcCompiler.java"],
+    deps = [
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/pysrc",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_to_jbc_src_compiler",
+    srcs = ["SoyToJbcSrcCompiler.java"],
+    deps = [
+        ":cache",
+        ":soy",
+        ":soy_cmdline",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_utils",
+    srcs = ["SoyUtils.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data/internalutils",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/soyparse",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_conformance_checker",
+    srcs = ["SoyConformanceChecker.java"],
+    deps = [
+        ":cache",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/conformance",
+        "//src/main/protobuf:conformance_java_proto",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:args4j_args4j",
+    ],
+)
+
+java_library(
+    name = "soy_plugin_validator",
+    srcs = ["SoyPluginValidator.java"],
+    deps = [
+        ":cache",
+        ":soy",
+        ":soy_cmdline",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_annotated_logging_config_generator",
+    srcs = ["SoyAnnotatedLoggingConfigGenerator.java"],
+    deps = [
+        ":cache",
+        ":soy",
+        ":soy_cmdline",
+        "//src/main/protobuf:annotated_logging_config_java_proto",
+        "@maven//:args4j_args4j",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_binary(
+    name = "SoyAnnotatedLoggingConfigGenerator",
+    main_class = "com.google.template.soy.SoyAnnotatedLoggingConfigGenerator",
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_annotated_logging_config_generator"],
 )
 
 java_binary(
     name = "SoyConformanceChecker",
-    srcs = [
-        "SoyConformanceChecker.java",
-    ],
     main_class = "com.google.template.soy.SoyConformanceChecker",
-    deps = [
-        ":AbstractSoyCompiler",
-        ":CommandLineError",
-        ":PluginLoader",
-        ":SoyCmdLineParser",
-        ":soy",
-        "//src/main/protobuf:conformance_java_proto",
-        "@args4j",
-        "@com_google_protobuf//:protobuf_java",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_conformance_checker"],
 )
-
-# SoyFileSet
-
-# SoyFileSetParser
 
 java_binary(
     name = "SoyHeaderCompiler",
-    srcs = [
-        "SoyHeaderCompiler.java",
-    ],
     main_class = "com.google.template.soy.SoyHeaderCompiler",
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PluginLoader",
-        ":shared/internal/BuiltinFunction",
-        ":soy",
-        "//java/src/com/google/template/soy/exprtree",
-        "//java/src/com/google/template/soy/soytree",
-        "//src/main/protobuf:css_metadata_java_proto",
-        "//src/main/protobuf:template_metadata_java_proto",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_header_compiler"],
 )
-
-# SoyInputCache
-
-# SoyModule
 
 java_binary(
     name = "SoyMsgExtractor",
-    srcs = [
-        "SoyMsgExtractor.java",
-    ],
     main_class = "com.google.template.soy.SoyMsgExtractor",
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PluginLoader",
-        ":soy",
-        "//java/src/com/google/template/soy/xliffmsgplugin",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_msg_extractor"],
 )
 
 java_binary(
     name = "SoyParseInfoGenerator",
-    srcs = [
-        "SoyParseInfoGenerator.java",
-    ],
     main_class = "com.google.template.soy.SoyParseInfoGenerator",
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PluginLoader",
-        ":soy",
-        "//java/src/com/google/template/soy/base",
-        "//java/src/com/google/template/soy/shared/internal/gencode",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_parse_info_generator"],
 )
 
 java_binary(
     name = "SoyPluginValidator",
-    srcs = [
-        "SoyPluginValidator.java",
-    ],
     main_class = "com.google.template.soy.SoyPluginValidator",
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PluginLoader",
-        ":SoyCmdLineParser",
-        ":soy",
-        "//java/src/com/google/template/soy/error",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_plugin_validator"],
 )
 
 java_binary(
     name = "SoyToIncrementalDomSrcCompiler",
-    srcs = [
-        "SoyToIncrementalDomSrcCompiler.java",
-    ],
     main_class = "com.google.template.soy.SoyToIncrementalDomSrcCompiler",
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PerInputOutputFiles",
-        ":PluginLoader",
-        ":soy",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_to_incrementaldom_src_compiler"],
 )
 
 java_binary(
     name = "SoyToJbcSrcCompiler",
-    srcs = [
-        "SoyToJbcSrcCompiler.java",
-    ],
     main_class = "com.google.template.soy.SoyToJbcSrcCompiler",
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PluginLoader",
-        ":soy",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_to_jbc_src_compiler"],
 )
 
 java_binary(
     name = "SoyToJsSrcCompiler",
-    srcs = [
-        "SoyToJsSrcCompiler.java",
-    ],
     main_class = "com.google.template.soy.SoyToJsSrcCompiler",
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":AbstractSoyCompiler",
-        ":PerInputOutputFiles",
-        ":PluginLoader",
-        ":SoyCmdLineParser",
-        ":soy",
-        "//java/src/com/google/template/soy/xliffmsgplugin",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_to_js_src_compiler"],
 )
 
 java_binary(
     name = "SoyToPySrcCompiler",
-    srcs = [
-        "SoyToPySrcCompiler.java",
-    ],
     main_class = "com.google.template.soy.SoyToPySrcCompiler",
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":AbstractSoyCompiler",
-        ":SoyCmdLineParser",
-        ":pysrc/SoyPySrcOptions",
-        ":soy",
-        "@args4j",
-        "@com_google_guava_guava",
-    ],
-)
-
-# SoyUtils
-
-# TemplateMetadataSerializer
-
-java_library(
-    name = "parseinfo_runtime",
-    srcs = glob(["parseinfo/*.java"]),
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        "@com_google_errorprone_error_prone_annotations",
-        "@com_google_guava_guava",
-        "@com_google_protobuf//:protobuf_java",
-    ],
-)
-
-# TODO(yannic): Split into smaller libraries.
-java_library(
-    name = "soy",
-    srcs = glob(
-        [
-            "**/*.java",
-        ],
-        exclude = [
-            "examples/**",
-            "parseinfo/*",
-
-            # ANT tasks.
-            "shared/internal/AbstractGenerateSoyEscapingDirectiveCode.java",
-            "jssrc/internal/GenerateSoyUtilsEscapingDirectiveCode.java",
-            "pysrc/internal/GeneratePySanitizeEscapingDirectiveCode.java",
-
-            # From this package.
-            "AbstractSoyCompiler.java",
-            # "CacheLoaders.java",
-            "CommandLineError.java",
-            "FileSystemSoyFileReader.java",
-            "PerInputOutputFiles.java",
-            "PluginLoader.java",
-            "SoyCompilerFileReader.java",
-            "SoyConformanceChecker.java",
-            # "SoyFileSet.java",
-            # "SoyFileSetParser.java",
-            "SoyCmdLineParser.java",
-            "SoyHeaderCompiler.java",
-            # "SoyInputCache.java",
-            # "SoyModule.java",
-            "SoyMsgExtractor.java",
-            "SoyParseInfoGenerator.java",
-            "SoyPluginValidator.java",
-            "SoyToIncrementalDomSrcCompiler.java",
-            "SoyToJbcSrcCompiler.java",
-            "SoyToJsSrcCompiler.java",
-            "SoyToPySrcCompiler.java",
-            # "SoyUtils.java",
-            # "TemplateMetadataSerializer.java",
-
-            #
-            "pysrc/SoyPySrcOptions.java",
-            "shared/internal/BuiltinFunction.java",
-            "shared/restricted/SoyFunction.java",
-            "shared/restricted/SoyPrintDirective.java",
-            "shared/restricted/SoyPureFunction.java",
-        ],
-    ),
-    visibility = [
-        "//:__subpackages__",
-    ],
-    deps = [
-        ":SoyCompilerFileReader",
-        ":parseinfo_runtime",
-        ":pysrc/SoyPySrcOptions",
-        ":shared/internal/BuiltinFunction",
-        ":shared/restricted/SoyFunction",
-        ":shared/restricted/SoyPrintDirective",
-        ":shared/restricted/SoyPureFunction",
-        "//java/src/com/google/template/soy/base",
-        "//java/src/com/google/template/soy/basetree",
-        "//java/src/com/google/template/soy/error",
-        "//java/src/com/google/template/soy/exprtree",
-        "//java/src/com/google/template/soy/internal/base",
-        "//java/src/com/google/template/soy/internal/proto",
-        "//java/src/com/google/template/soy/internal/targetexpr",
-        "//java/src/com/google/template/soy/plugin/restricted",
-        "//java/src/com/google/template/soy/shared/internal/gencode",
-        "//java/src/com/google/template/soy/soyparse",
-        "//java/src/com/google/template/soy/soytree",
-        "//java/src/com/google/template/soy/types",
-        "//src/main/protobuf:conformance_java_proto",
-        "//src/main/protobuf:css_metadata_java_proto",
-        "//src/main/protobuf:logging_config_java_proto",
-        "//src/main/protobuf:template_metadata_java_proto",
-        "@com_google_auto_value",
-        "@com_google_code_findbugs_jsr305",
-        "@com_google_code_gson",
-        "@com_google_common_html_types",
-        "@com_google_errorprone_error_prone_annotations",
-        "@com_google_guava_guava",
-        "@com_google_inject_extensions_guice_multibindings",
-        "@com_google_inject_guice",
-        "@com_google_protobuf//:protobuf_java",
-        "@com_ibm_icu_icu4j",
-        "@javax_annotation_jsr250_api",
-        "@javax_inject",
-        "@org_json",
-        "@org_ow2_asm",
-        "@org_ow2_asm_commons",
-        "@org_ow2_asm_tree",
-        "@org_ow2_asm_util",
-    ],
-)
-
-java_library(
-    name = "jssrc/SoyJsSrcOptions",
-    srcs = [
-        "jssrc/SoyJsSrcOptions.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
-    deps = [
-        "@com_google_guava_guava",
-    ],
-)
-
-java_library(
-    name = "pysrc/SoyPySrcOptions",
-    srcs = [
-        "pysrc/SoyPySrcOptions.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
-    deps = [
-        "@com_google_code_findbugs_jsr305",
-        "@com_google_guava_guava",
-    ],
-)
-
-java_library(
-    name = "shared/internal/BuiltinFunction",
-    srcs = [
-        "shared/internal/BuiltinFunction.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
-    deps = [
-        ":shared/restricted/SoyFunction",
-        ":shared/restricted/SoyPureFunction",
-        "@com_google_code_findbugs_jsr305",
-        "@com_google_guava_guava",
-    ],
-)
-
-java_library(
-    name = "shared/internal/DelTemplateSelector",
-    srcs = [
-        "shared/internal/DelTemplateSelector.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
-    deps = [
-        "@com_google_code_findbugs_jsr305",
-        "@com_google_errorprone_error_prone_annotations",
-        "@com_google_guava_guava",
-    ],
-)
-
-java_library(
-    name = "shared/restricted/SoyFunction",
-    srcs = [
-        "shared/restricted/SoyFunction.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
-)
-
-java_library(
-    name = "shared/restricted/SoyPrintDirective",
-    srcs = [
-        "shared/restricted/SoyPrintDirective.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
-)
-
-java_library(
-    name = "shared/restricted/SoyPureFunction",
-    srcs = [
-        "shared/restricted/SoyPureFunction.java",
-    ],
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [":soy_to_py_src_compiler"],
 )

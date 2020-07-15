@@ -1,0 +1,138 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+LOCKED_DOWN = ["UnsafeSanitizedContentOrdainer.java"]
+
+ACTUAL_INTERNAL = [
+    "SoyVisualElement.java",
+    "SoyVisualElementData.java",
+    "internal/LazyProtoToSoyValueList.java",
+    "internal/LazyProtoToSoyValueMap.java",
+]
+
+VE_INTERNAL = [
+    "SoyVisualElementFactory.java",
+]
+
+CODE_GENERATION = [
+    "BaseSoyTemplateImpl.java",
+]
+
+CODE_GEN_TEST_ONLY = [
+    "PartialTemplateBuilder.java",
+]
+
+TEMPLATE = [
+    "CssParam.java",
+    "SoyTemplate.java",
+    "SoyTemplateParam.java",
+]
+
+TEMPLATE_UTIL = [
+    "SoyTemplates.java",
+]
+
+java_library(
+    name = "template",
+    srcs = TEMPLATE,
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "template_util",
+    srcs = TEMPLATE_UTIL,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":template",
+        "//java/src/com/google/template/soy/parseinfo",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "data",
+    srcs = glob(
+        [
+            "*.java",
+            "restricted/*.java",
+            "internal/*.java",
+        ],
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE_INTERNAL + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + CODE_GEN_TEST_ONLY,
+    ),
+    visibility = ["//visibility:public"],
+    exports = [
+        ":template",
+    ],
+    deps = [
+        ":template",
+        "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/jbcsrc/api:helpers",
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_inject_guice",
+        "@maven//:javax_inject_javax_inject",
+    ],
+)
+
+java_library(
+    name = "data_internal",
+    srcs = ACTUAL_INTERNAL,
+    deps = [
+        ":data",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_visual_element_factory",
+    srcs = VE_INTERNAL,
+    deps = [":data_internal"],
+)
+
+java_library(
+    name = "codegen",
+    srcs = CODE_GENERATION,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":data",
+        "@com_google_auto_value_auto_value",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "unsafesanitizedcontentordainer_testonly",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    exports = [":unsafesanitizedcontentordainer"],
+)
+
+java_library(
+    name = "unsafesanitizedcontentordainer",
+    srcs = LOCKED_DOWN,
+    deps = [
+        ":data",
+        "@maven//:com_google_code_findbugs_jsr305",
+    ],
+)

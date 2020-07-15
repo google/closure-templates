@@ -1,0 +1,25 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+java_library(
+    name = "internal",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/internal:deltemplate_selector",
+        "//java/src/com/google/template/soy/sharedpasses/render",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/tofu",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)

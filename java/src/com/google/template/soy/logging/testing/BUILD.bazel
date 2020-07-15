@@ -1,0 +1,16 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(
+    default_testonly = True,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "testing",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/logging:internal",
+        "//src/main/protobuf:annotated_logging_config_java_proto",
+        "//src/main/protobuf:logging_config_java_proto",
+    ],
+)

@@ -1,0 +1,148 @@
+# Copyright 2018 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(default_visibility = ["//:soy_internal"])
+
+GEN_ESCAPING_SRCS = [
+    "AbstractGenerateSoyEscapingDirectiveCode.java",
+    "DirectiveDigest.java",
+]
+
+ESCAPING_SRCS = [
+    "AbstractStreamingHtmlEscaper.java",
+    "EscapingConventions.java",
+    "Sanitizers.java",
+    "StreamingEscaper.java",
+    "TagWhitelist.java",
+]
+
+DELTEMPLATE_SELECTOR_SRCS = [
+    "DelTemplateSelector.java",
+]
+
+SHORT_CIRCUITABLE_SRCS = [
+    "ShortCircuitable.java",
+    "ShortCircuitables.java",
+]
+
+SHARED_RUNTIME_SRCS = [
+    "SharedRuntime.java",
+]
+
+BUILTIN_FUNCTION_SRCS = [
+    "BuiltinFunction.java",
+]
+
+BUILTIN_METHOD_SRCS = [
+    "BuiltinMethod.java",
+]
+
+java_library(
+    name = "internal",
+    srcs = glob(
+        ["*.java"],
+        exclude = GEN_ESCAPING_SRCS +
+                  ESCAPING_SRCS +
+                  DELTEMPLATE_SELECTOR_SRCS +
+                  SHORT_CIRCUITABLE_SRCS +
+                  SHARED_RUNTIME_SRCS +
+                  BUILTIN_FUNCTION_SRCS +
+                  BUILTIN_METHOD_SRCS,
+    ),
+    deps = [
+        ":builtin_function",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/basicdirectives",
+        "//java/src/com/google/template/soy/basicfunctions",
+        "//java/src/com/google/template/soy/bididirectives",
+        "//java/src/com/google/template/soy/bidifunctions",
+        "//java/src/com/google/template/soy/coredirectives",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/i18ndirectives",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/shared/restricted:method_annotation",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "shared_runtime",
+    srcs = SHARED_RUNTIME_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/data",
+    ],
+)
+
+java_library(
+    name = "deltemplate_selector",
+    srcs = DELTEMPLATE_SELECTOR_SRCS,
+    deps = [
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "short_circuitable",
+    srcs = SHORT_CIRCUITABLE_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "gen_escaping_library",
+    srcs = GEN_ESCAPING_SRCS,
+    deps = [
+        ":escaping_library",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:org_apache_ant_ant",
+    ],
+)
+
+java_library(
+    name = "escaping_library",
+    srcs = ESCAPING_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "builtin_function",
+    srcs = BUILTIN_FUNCTION_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "builtin_method",
+    srcs = BUILTIN_METHOD_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/shared/restricted:restricted_internal",
+        "//java/src/com/google/template/soy/types",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_guava_guava",
+    ],
+)
