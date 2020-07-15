@@ -117,6 +117,9 @@ public interface ExprNode extends Node {
   public static interface OperatorNode extends ParentExprNode {
 
     public Operator getOperator();
+
+    @Override
+    public OperatorNode copy(CopyState copyState);
   }
 
   // -----------------------------------------------------------------------------------------------

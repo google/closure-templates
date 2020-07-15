@@ -341,7 +341,11 @@ public enum Operator {
   /** Creates a node representing this operator, with the given children. */
   public final OperatorNode createNode(
       SourceLocation location, SourceLocation operatorLocation, ExprNode... children) {
-    checkArgument(children.length == getNumOperands());
+    checkArgument(
+        children.length == getNumOperands(),
+        "expected %s operands, got %s",
+        getNumOperands(),
+        children.length);
     OperatorNode node = createNode(location, operatorLocation);
     for (ExprNode child : children) {
       node.addChild(child);
