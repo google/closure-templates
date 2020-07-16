@@ -1482,144 +1482,135 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       if (type == null) {
         errorReporter.report(node.getSourceLocation(), UNKNOWN_PROTO_TYPE, protoName);
         node.setType(ErrorType.getInstance());
-      } else if (type.getKind() != SoyType.Kind.PROTO) {
+        return;
+      }
+      if (type.getKind() != SoyType.Kind.PROTO) {
         errorReporter.report(node.getSourceLocation(), NOT_A_PROTO_TYPE, protoName, type);
         node.setType(ErrorType.getInstance());
-      } else if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(protoName)) {
+        return;
+      }
+      if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(protoName)) {
         errorReporter.report(
             node.getSourceLocation(),
             TypeNodeConverter.SAFE_PROTO_TYPE,
             SAFE_PROTO_TO_SANITIZED_TYPE.get(protoName),
             protoName);
         node.setType(ErrorType.getInstance());
-      } else {
-        node.setType(type);
+        return;
+      }
 
-        SoyProtoType protoType = (SoyProtoType) type;
-        // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
-        Set<String> givenParams = new HashSet<>();
-        ImmutableSet<String> fields = protoType.getFieldNames();
+      node.setType(type);
 
-        SoyFileNode file = exprHolderNode.getNearestAncestor(SoyFileNode.class);
-        boolean hasAliasedParams = false;
-        List<Identifier> resolvedIdentifiers = new ArrayList<>();
+      SoyProtoType protoType = (SoyProtoType) type;
+      // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
+      Set<String> givenParams = new HashSet<>();
+      ImmutableSet<String> fields = protoType.getFieldNames();
 
-        // Resolve aliases for the given field names of the proto.
-        for (Identifier id : node.getParamNames()) {
-          String originalName = id.identifier();
-          Identifier resolvedName = file.resolveAlias(id);
-          if (!resolvedName.identifier().equals(originalName)) {
-            // Check that the aliased name does not conflict with a field in the proto as we cannot
-            // determine whether the intended field to instantiate is the regular field or the
-            // aliased value.
-            if (fields.contains(originalName)
-                && !protoType.getFieldDescriptor(originalName).isExtension()) {
-              errorReporter.report(
-                  id.location(),
-                  PROTO_FIELD_NAME_ALIAS_CONFLICT,
-                  originalName,
-                  protoType.getDescriptor().getName());
-              node.setType(ErrorType.getInstance());
-              continue;
-            }
-            hasAliasedParams = true;
-            id = resolvedName;
-          }
-          resolvedIdentifiers.add(id);
-          givenParams.add(id.identifier());
-        }
+      SoyFileNode file = exprHolderNode.getNearestAncestor(SoyFileNode.class);
+      boolean hasAliasedParams = false;
+      List<Identifier> resolvedIdentifiers = new ArrayList<>();
 
-        if (node.getType().getKind() == Kind.ERROR) {
-          return;
-        }
-
-        // Replace the ProtoInitNode to have a list of the resolved param names.
-        if (hasAliasedParams) {
-          ProtoInitNode resolvedNode =
-              new ProtoInitNode(
-                  node.getIdentifier(), resolvedIdentifiers, node.getSourceLocation());
-          resolvedNode.setType(node.getType());
-          resolvedNode.addChildren(node.getChildren());
-          node.getParent().replaceChild(node, resolvedNode);
-          node = resolvedNode;
-        }
-
-        // Check that all proto required fields are present.
-        for (String field : fields) {
-          if (protoType.getFieldDescriptor(field).isRequired() && !givenParams.contains(field)) {
-            errorReporter.report(node.getSourceLocation(), PROTO_MISSING_REQUIRED_FIELD, field);
-          }
-        }
-
-        for (int i = 0; i < node.numChildren(); i++) {
-          Identifier fieldName = node.getParamNames().get(i);
-          ExprNode expr = node.getChild(i);
-
-          // Check that each arg exists in the proto.
-          if (!fields.contains(fieldName.identifier())) {
-            String extraErrorMessage;
-            List<String> extensionFieldNames =
-                protoType.getFullyQualifiedExtensionName(fieldName.identifier());
-            if (!extensionFieldNames.isEmpty()) {
-              extraErrorMessage =
-                  String.format(
-                      " Did you mean to initialize an extension field %s with the same name?"
-                          + " Initializing extension fields with their simple name is no longer"
-                          + " supported. Use the fully qualified name instead.",
-                      extensionFieldNames);
-            } else {
-              extraErrorMessage =
-                  SoyErrors.getDidYouMeanMessageForProtoFields(
-                      fields, protoType.getDescriptor(), fieldName.identifier());
-            }
+      // Resolve aliases for the given field names of the proto.
+      for (Identifier id : node.getParamNames()) {
+        String originalName = id.identifier();
+        Identifier resolvedName = file.resolveAlias(id);
+        if (!resolvedName.identifier().equals(originalName)) {
+          // Check that the aliased name does not conflict with a field in the proto as we cannot
+          // determine whether the intended field to instantiate is the regular field or the
+          // aliased value.
+          if (fields.contains(originalName)
+              && !protoType.getFieldDescriptor(originalName).isExtension()) {
             errorReporter.report(
-                fieldName.location(),
-                PROTO_FIELD_DOES_NOT_EXIST,
-                fieldName.identifier(),
-                extraErrorMessage);
+                id.location(),
+                PROTO_FIELD_NAME_ALIAS_CONFLICT,
+                originalName,
+                protoType.getDescriptor().getName());
+            node.setType(ErrorType.getInstance());
             continue;
           }
+          hasAliasedParams = true;
+          id = resolvedName;
+        }
+        resolvedIdentifiers.add(id);
+        givenParams.add(id.identifier());
+      }
 
-          // Check that the arg type is not null and that it matches the expected field type.
-          SoyType argType = expr.getType();
-          if (argType.equals(NullType.getInstance())) {
-            errorReporter.report(
-                expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
-          }
+      if (node.getType().getKind() == Kind.ERROR) {
+        return;
+      }
 
-          SoyType fieldType = protoType.getFieldType(fieldName.identifier());
+      // Replace the ProtoInitNode to have a list of the resolved param names.
+      if (hasAliasedParams) {
+        ProtoInitNode resolvedNode =
+            new ProtoInitNode(node.getIdentifier(), resolvedIdentifiers, node.getSourceLocation());
+        resolvedNode.setType(node.getType());
+        resolvedNode.addChildren(node.getChildren());
+        node.getParent().replaceChild(node, resolvedNode);
+        node = resolvedNode;
+      }
 
-          // Let args with unknown or error types pass
-          if (argType.equals(UnknownType.getInstance())
-              || argType.equals(ErrorType.getInstance())) {
+      // Check that all proto required fields are present.
+      for (String field : fields) {
+        if (protoType.getFieldDescriptor(field).isRequired() && !givenParams.contains(field)) {
+          errorReporter.report(node.getSourceLocation(), PROTO_MISSING_REQUIRED_FIELD, field);
+        }
+      }
+
+      for (int i = 0; i < node.numChildren(); i++) {
+        Identifier fieldName = node.getParamNames().get(i);
+        ExprNode expr = node.getChild(i);
+
+        // Check that each arg exists in the proto.
+        if (!fields.contains(fieldName.identifier())) {
+          String extraErrorMessage =
+              SoyErrors.getDidYouMeanMessageForProtoFields(
+                  fields, protoType.getDescriptor(), fieldName.identifier());
+          errorReporter.report(
+              fieldName.location(),
+              PROTO_FIELD_DOES_NOT_EXIST,
+              fieldName.identifier(),
+              extraErrorMessage);
+          continue;
+        }
+
+        // Check that the arg type is not null and that it matches the expected field type.
+        SoyType argType = expr.getType();
+        if (argType.equals(NullType.getInstance())) {
+          errorReporter.report(
+              expr.getSourceLocation(), PROTO_NULL_ARG_TYPE, fieldName.identifier());
+        }
+
+        SoyType fieldType = protoType.getFieldType(fieldName.identifier());
+
+        // Let args with unknown or error types pass
+        if (argType.equals(UnknownType.getInstance()) || argType.equals(ErrorType.getInstance())) {
+          continue;
+        }
+
+        // Same for List<?>, for repeated fields
+        if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
+          SoyType argElementType = ((ListType) argType).getElementType();
+          if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
             continue;
           }
+        }
 
-          // Same for List<?>, for repeated fields
-          if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
-            SoyType argElementType = ((ListType) argType).getElementType();
-            if (argElementType == null || argElementType.equals(UnknownType.getInstance())) {
-              continue;
-            }
-          }
-
-          SoyType expectedType = SoyTypes.makeNullable(fieldType);
-          if (!expectedType.isAssignableFrom(argType)) {
-            argType =
-                RuntimeTypeCoercion.maybeCoerceType(
-                    expr,
-                    expectedType instanceof UnionType
-                        ? ((UnionType) expectedType).getMembers()
-                        : ImmutableList.of(expectedType));
-          }
-          if (!expectedType.isAssignableFrom(argType)) {
-            errorReporter.report(
-                expr.getSourceLocation(),
-                ARGUMENT_TYPE_MISMATCH,
-                fieldName.identifier(),
-                expectedType,
-                argType);
-          }
+        SoyType expectedType = SoyTypes.makeNullable(fieldType);
+        if (!expectedType.isAssignableFrom(argType)) {
+          argType =
+              RuntimeTypeCoercion.maybeCoerceType(
+                  expr,
+                  expectedType instanceof UnionType
+                      ? ((UnionType) expectedType).getMembers()
+                      : ImmutableList.of(expectedType));
+        }
+        if (!expectedType.isAssignableFrom(argType)) {
+          errorReporter.report(
+              expr.getSourceLocation(),
+              ARGUMENT_TYPE_MISMATCH,
+              fieldName.identifier(),
+              expectedType,
+              argType);
         }
       }
     }
@@ -1759,23 +1750,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             if (fieldType != null) {
               return fieldType;
             } else {
-              String extraErrorMessage;
-
-              List<String> extensionFieldNames =
-                  protoType.getFullyQualifiedExtensionName(fieldName);
-              if (!extensionFieldNames.isEmpty()) {
-                extraErrorMessage =
-                    String.format(
-                        " Did you mean to access an extension field %s with the same name?"
-                            + " Accessing extension fields with their simple name is no longer"
-                            + " supported. Use the 'getExtension' method with the fully qualified"
-                            + " name instead.",
-                        extensionFieldNames);
-              } else {
-                extraErrorMessage =
-                    SoyErrors.getDidYouMeanMessageForProtoFields(
-                        protoType.getFieldNames(), protoType.getDescriptor(), fieldName);
-              }
+              String extraErrorMessage =
+                  SoyErrors.getDidYouMeanMessageForProtoFields(
+                      protoType.getFieldNames(), protoType.getDescriptor(), fieldName);
               errorReporter.report(
                   sourceLocation,
                   UNDEFINED_FIELD_FOR_PROTO_TYPE,
