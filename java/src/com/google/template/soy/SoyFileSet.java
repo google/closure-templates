@@ -1081,13 +1081,7 @@ public final class SoyFileSet {
    * @return A list of strings where each string represents the JS source code that belongs in one
    *     JS file. The generated JS files correspond one-to-one to the original Soy source files.
    * @throws SoyCompilationException If compilation fails.
-   * @deprecated Do not call. Use the command line API.
    */
-  @Deprecated
-  public List<String> compileToIncrementalDomSrc(SoyIncrementalDomSrcOptions jsSrcOptions) {
-    return compileToIncrementalDomSrcInternal(jsSrcOptions);
-  }
-
   List<String> compileToIncrementalDomSrcInternal(SoyIncrementalDomSrcOptions jsSrcOptions) {
     return entryPoint(
         () -> {
