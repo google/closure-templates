@@ -80,11 +80,10 @@ exports.$$bindTemplateParams = function(fn, data) {
 };
 
 /**
- * @param {function(!incrementaldomlib.IncrementalDomRenderer, !Object,
- *     ?IjData)} fn
+ * @param {function(!incrementaldomlib.IncrementalDomRenderer, T, ?IjData)} fn
  * @param {!Object} data
- * @return {function(!incrementaldomlib.IncrementalDomRenderer, !Object,
- *     ?IjData)}
+ * @return {function(!incrementaldomlib.IncrementalDomRenderer, T, ?IjData)}
+ * @template T
  */
 exports.$$bindTemplateParamsForIdom = function(fn, data) {
   exports.$$assertTemplate(fn);
