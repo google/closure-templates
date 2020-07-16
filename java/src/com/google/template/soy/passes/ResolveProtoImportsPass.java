@@ -18,13 +18,13 @@ package com.google.template.soy.passes;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.ImportsContext.ImportsTypeRegistry;
@@ -106,11 +106,7 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
       }
       FileDescriptor fd = pathToDescriptor.get(node.getPath());
       Set<String> extensionNames = new HashSet<>();
-      fd.getExtensions()
-          .forEach(
-              t ->
-                  extensionNames.add(
-                      CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, t.getName())));
+      fd.getExtensions().forEach(t -> extensionNames.add(Field.computeSoyName(t)));
 
       Set<String> validSymbols = new HashSet<>();
       fd.getMessageTypes().forEach(t -> validSymbols.add(t.getName()));

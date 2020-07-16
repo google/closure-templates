@@ -93,7 +93,8 @@ public abstract class Field {
     return fieldDesc;
   }
 
-  private static String computeSoyName(FieldDescriptor field) {
+  /** Converts snake case to lower camel case and appends 'List' or 'Map' if necessary. */
+  public static String computeSoyName(FieldDescriptor field) {
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, field.getName())
         + fieldSuffix(field);
   }
