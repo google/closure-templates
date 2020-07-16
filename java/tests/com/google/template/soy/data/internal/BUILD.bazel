@@ -1,0 +1,27 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:data_internal",
+        "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
+        "//src/test/protobuf:test_protos_java_proto",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

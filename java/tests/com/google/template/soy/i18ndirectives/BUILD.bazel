@@ -1,0 +1,27 @@
+# Copyright 2012 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/i18ndirectives",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:com_ibm_icu_icu4j",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

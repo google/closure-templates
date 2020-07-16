@@ -1,0 +1,20 @@
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    resources = glob(["*.soy"]),
+    deps = [
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

@@ -1,0 +1,38 @@
+# Copyright 2009 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+filegroup(
+    name = "test_data",
+    srcs = glob(["test_data/*"]),
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    # Put the resources in the JAR where the code expects them. Soy uses a
+    # nonstandard project structure which confuses Bazel.
+    # https://docs.bazel.build/versions/master/be/java.html#java_library.resources
+    # has more details. https://github.com/bazelbuild/bazel/issues/6353 would
+    # help here.
+    resource_strip_prefix = "java/tests",
+    resources = [":test_data"],
+    deps = [
+        "//java/src/com/google/template/soy",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/xliffmsgplugin",
+        "@maven//:com_google_guava_guava",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

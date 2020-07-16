@@ -1,0 +1,29 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    runtime_deps = [
+        "//java/src/com/google/template/soy/exprtree",
+    ],
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "@maven//:com_google_guava_guava",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

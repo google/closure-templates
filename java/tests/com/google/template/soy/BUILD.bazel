@@ -1,0 +1,42 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy:impl",
+        "//java/src/com/google/template/soy:per_input_output_files",
+        "//java/src/com/google/template/soy:soy_cmdline",
+        "//java/src/com/google/template/soy:soy_msg_extractor",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/jbcsrc",
+        "//java/src/com/google/template/soy/jbcsrc/api",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/parseinfo",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//java/src/com/google/template/soy/tofu",
+        "//java/src/com/google/template/soy/tofu/internal",
+        "//src/main/protobuf:annotated_logging_config_java_proto",
+        "//src/main/protobuf:css_metadata_java_proto",
+        "//src/main/protobuf:template_metadata_java_proto",
+        "//src/test/protobuf:test_protos_java_proto",
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

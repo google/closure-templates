@@ -29,9 +29,6 @@ proto_library(
 
 java_proto_library(
     name = "conformance_java_proto",
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
     deps = [
         ":conformance_proto",
     ],
@@ -46,9 +43,6 @@ proto_library(
 
 java_proto_library(
     name = "css_metadata_java_proto",
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
     deps = [
         ":css_metadata_proto",
     ],
@@ -90,9 +84,6 @@ proto_library(
 
 java_proto_library(
     name = "template_metadata_java_proto",
-    visibility = [
-        "//java/src/com/google/template/soy:__subpackages__",
-    ],
     deps = [
         ":template_metadata_proto",
     ],

@@ -1,0 +1,21 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "testing",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/jbcsrc/internal",
+        "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_ow2_asm_asm",
+        "@maven//:org_ow2_asm_asm_commons",
+        "@maven//:org_ow2_asm_asm_util",
+    ],
+)

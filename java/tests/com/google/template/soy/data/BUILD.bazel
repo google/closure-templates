@@ -1,0 +1,45 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(
+        ["*.java"],
+        exclude = ["SoyValueConverterUtility.java"],
+    ),
+    deps = [
+        ":soy_value_converter_utility",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer_testonly",
+        "//java/src/com/google/template/soy/jbcsrc/api",
+        "//java/src/com/google/template/soy/parseinfo",
+        "//src/test/protobuf:test_protos_java_proto",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_common_html_types_types",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_guava_guava_testlib",
+        "@maven//:com_google_inject_guice",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_library(
+    name = "soy_value_converter_utility",
+    srcs = ["SoyValueConverterUtility.java"],
+    deps = [
+        "//java/src/com/google/template/soy/data",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

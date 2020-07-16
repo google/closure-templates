@@ -1,0 +1,17 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_proto_library(
+    name = "test_protos_java_proto",
+    deps = [":test_protos"],
+)
+
+proto_library(
+    name = "test_protos",
+    srcs = glob(["*.proto"]),
+)

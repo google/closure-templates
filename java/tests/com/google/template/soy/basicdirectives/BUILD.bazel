@@ -1,0 +1,31 @@
+# Copyright 2009 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/basicdirectives",
+        "//java/src/com/google/template/soy/coredirectives",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer_testonly",
+        "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/pysrc/restricted",
+        "//java/src/com/google/template/soy/shared/internal:escaping_library",
+        "//java/src/com/google/template/soy/testing:abstract_soy_print_directive_test_case",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

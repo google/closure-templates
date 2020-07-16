@@ -1,0 +1,52 @@
+# Copyright 2008 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob([
+        "*.java",
+    ]),
+    deps = [
+        "//java/src/com/google/template/soy:impl",
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/css",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jssrc",
+        "//java/src/com/google/template/soy/jssrc/dsl",
+        "//java/src/com/google/template/soy/jssrc/internal",
+        "//java/src/com/google/template/soy/jssrc/restricted",
+        "//java/src/com/google/template/soy/logging:internal",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/logging/testing",
+        "//java/src/com/google/template/soy/plugin/javascript/restricted",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "//java/src/com/google/template/soy/testing:shared_test_utils",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:logging_config_java_proto",
+        "//src/test/protobuf:test_protos_java_proto",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_errorprone_error_prone_annotations",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

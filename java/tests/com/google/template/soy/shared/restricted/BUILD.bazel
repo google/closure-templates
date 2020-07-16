@@ -1,0 +1,28 @@
+# Copyright 2009 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/shared/restricted:method_annotation",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

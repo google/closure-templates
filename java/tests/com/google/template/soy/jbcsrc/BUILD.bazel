@@ -1,0 +1,83 @@
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+TESTING_SRCS = ["JbcSrcJavaValues.java"]
+
+java_library(
+    name = "testing",
+    srcs = TESTING_SRCS,
+    deps = [
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/jbcsrc",
+        "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/plugin/internal",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/types",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(
+        ["*.java"],
+        exclude = TESTING_SRCS,
+    ),
+    deps = [
+        "//java/src/com/google/template/soy:impl",
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/coredirectives",
+        "//java/src/com/google/template/soy/css",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/jbcsrc",
+        "//java/src/com/google/template/soy/jbcsrc/api",
+        "//java/src/com/google/template/soy/jbcsrc/api:builder",
+        "//java/src/com/google/template/soy/jbcsrc/api:output_appendable",
+        "//java/src/com/google/template/soy/jbcsrc/internal",
+        "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/logging:internal",
+        "//java/src/com/google/template/soy/logging:public",
+        "//java/src/com/google/template/soy/logging/testing",
+        "//java/src/com/google/template/soy/msgs",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared",
+        "//java/src/com/google/template/soy/shared:interfaces",
+        "//java/src/com/google/template/soy/shared/internal",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree/defn",
+        "//java/src/com/google/template/soy/testing:shared_test_utils",
+        "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
+        "//java/src/com/google/template/soy/types",
+        "//java/tests/com/google/template/soy/data:soy_value_converter_utility",
+        "//java/tests/com/google/template/soy/jbcsrc/restricted/testing",
+        "//src/main/protobuf:logging_config_java_proto",
+        "//src/test/protobuf:test_protos_java_proto",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+        "@maven//:org_ow2_asm_asm",
+        "@maven//:org_ow2_asm_asm_commons",
+    ],
+)
+
+java_individual_tests(
+    # triggers additional checks in the compiler
+    jvm_flags = [
+        "-Dsoy_jbcsrc_debug_mode=true",
+    ],
+    deps = [":tests"],
+)

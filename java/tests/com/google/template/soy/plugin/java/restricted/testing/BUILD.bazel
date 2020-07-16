@@ -1,0 +1,33 @@
+load("@rules_java//java:defs.bzl", "java_library")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "testing",
+    srcs = glob(["*.java"]),
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/jbcsrc/restricted",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/plugin/javascript/restricted",
+        "//java/src/com/google/template/soy/plugin/python/restricted",
+        "//java/src/com/google/template/soy/plugin/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/soyparse",
+        "//java/src/com/google/template/soy/types",
+        "//java/src/com/google/template/soy/types/ast",
+        "//java/tests/com/google/template/soy/jbcsrc:testing",
+        "//java/tests/com/google/template/soy/jbcsrc/restricted/testing",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_ibm_icu_icu4j",
+    ],
+)

@@ -1,0 +1,53 @@
+# Copyright 2018 Google Inc. All Rights Reserved.
+
+load("@rules_java//java:defs.bzl", "java_library")
+load("//builddefs:internal.bzl", "java_individual_tests")
+
+package(
+    default_testonly = 1,
+    default_visibility = ["//:soy_internal"],
+)
+
+java_library(
+    name = "tests",
+    srcs = glob(
+        [
+            "*.java",
+        ],
+        exclude = [
+            "TestUtils.java",
+        ],
+    ),
+    deps = [
+        ":test_utils",
+        "//java/src/com/google/template/soy/passes/htmlmatcher",
+        "//java/src/com/google/template/soy/soytree",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_extensions_truth_java8_extension",
+        "@maven//:com_google_truth_truth",
+        "@maven//:junit_junit",
+    ],
+)
+
+java_library(
+    name = "test_utils",
+    srcs = [
+        "TestUtils.java",
+    ],
+    deps = [
+        "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
+        "//java/src/com/google/template/soy/passes/htmlmatcher",
+        "//java/src/com/google/template/soy/soyparse",
+        "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/soytree:soynode",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_truth_truth",
+    ],
+)
+
+java_individual_tests(
+    deps = [":tests"],
+)

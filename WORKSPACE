@@ -47,6 +47,12 @@ maven_install(
         "com.google.errorprone:error_prone_annotations:2.4.0",
         "com.google.escapevelocity:escapevelocity:0.9.1",
         "com.google.guava:guava:29.0-jre",
+        maven.artifact(
+            "com.google.guava",
+            "guava-testlib",
+            "29.0-jre",
+            testonly = True
+        ),
         "com.google.inject.extensions:guice-multibindings:4.1.0",
         "com.google.inject:guice:4.1.0",
         maven.artifact(
@@ -55,12 +61,18 @@ maven_install(
             "1.0.1",
             testonly = True,
         ),
+        maven.artifact(
+            "com.google.truth.extensions",
+            "truth-java8-extension",
+            "1.0.1",
+            testonly = True
+        ),
         "com.ibm.icu:icu4j:57.1",
         "javax.inject:javax.inject:1",
         maven.artifact(
             "junit",
             "junit",
-            "4.12",
+            "4.13",
             testonly = True,
         ),
         "net.java.dev.javacc:javacc:6.1.2",
