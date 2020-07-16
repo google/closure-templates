@@ -31,6 +31,7 @@ http_archive(
 )
 
 load("@rules_jvm_external//:defs.bzl", "maven_install")
+load("@rules_jvm_external//:specs.bzl", "maven")
 
 SERVER_URLS = [
     "https://mirror.bazel.build/repo1.maven.org/maven2",
@@ -48,14 +49,29 @@ maven_install(
         "com.google.guava:guava:29.0-jre",
         "com.google.inject.extensions:guice-multibindings:4.1.0",
         "com.google.inject:guice:4.1.0",
-        "com.google.truth:truth:1.0.1",
+        maven.artifact(
+            "com.google.truth",
+            "truth",
+            "1.0.1",
+            testonly = True,
+        ),
         "com.ibm.icu:icu4j:57.1",
         "javax.inject:javax.inject:1",
-        "junit:junit:4.12",
+        maven.artifact(
+            "junit",
+            "junit",
+            "4.12",
+            testonly = True,
+        ),
         "net.java.dev.javacc:javacc:6.1.2",
         "org.apache.ant:ant:1.10.7",
         "org.json:json:20160212",
-        "org.mozilla:rhino:1.7.11",
+        maven.artifact(
+            "org.mozilla",
+            "rhino",
+            "1.7.11",
+            testonly = True,
+        ),
         "org.ow2.asm:asm:7.0",
         "org.ow2.asm:asm-commons:7.0",
         "org.ow2.asm:asm-tree:7.0",
