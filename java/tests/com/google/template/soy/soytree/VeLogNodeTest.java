@@ -23,6 +23,7 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.testing.LoggingConfigs;
+import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
@@ -91,8 +92,7 @@ public final class VeLogNodeTest {
             SoyFileSetParserBuilder.forTemplateContents(true, veLog)
                 .typeRegistry(
                     new SoyTypeRegistryBuilder()
-                        .addDescriptors(
-                            ImmutableList.of(com.google.template.soy.testing.Foo.getDescriptor()))
+                        .addDescriptors(ImmutableList.of(Foo.getDescriptor().getFile()))
                         .build())
                 .setLoggingConfig(
                     LoggingConfigs.createLoggingConfig(

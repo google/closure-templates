@@ -42,6 +42,7 @@ import com.google.template.soy.testing.ProtoMap;
 import com.google.template.soy.testing.ProtoMap.InnerMessage;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
+import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.testing3.Proto3;
 import com.google.template.soy.testing3.Proto3Message;
@@ -65,14 +66,14 @@ public final class ProtoSupportTest {
       new SoyTypeRegistryBuilder()
           .addDescriptors(
               ImmutableList.of(
-                  Example.getDescriptor(),
+                  Example.getDescriptor().getFile(),
                   Proto3.getDescriptor()))
           .build();
 
   @Test
   public void testSimpleProto() {
     assertThatTemplateBody(
-            "{@param proto : example.KvPair}",
+            "{@param proto : KvPair}",
             "{$proto.key}{\\n}",
             "{$proto.value}{\\n}",
             "{$proto.anotherValue}")
@@ -85,13 +86,11 @@ public final class ProtoSupportTest {
 
   @Test
   public void testSimpleProto_nullCoalescing() {
-    assertThatTemplateBody("{@param? proto : example.KvPair}", "{$proto?.value ?: 'bar'}")
-        .rendersAs("bar");
+    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.value ?: 'bar'}").rendersAs("bar");
 
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param proto : example.ProtoMap}",
-            "{$proto.mapMessageFieldMap?[2390]?.field ?: 'bar'}");
+            "{@param proto : ProtoMap}", "{$proto.mapMessageFieldMap?[2390]?.field ?: 'bar'}");
     tester.rendersAs(
         "4837",
         ImmutableMap.of(
@@ -106,8 +105,8 @@ public final class ProtoSupportTest {
     tester.rendersAs("bar", ImmutableMap.of("proto", ProtoMap.getDefaultInstance()));
 
     assertThatTemplateBody(
-            "{@param? proto : example.KvPair}",
-            "{@param? proto2 : example.KvPair}",
+            "{@param? proto : KvPair}",
+            "{@param? proto2 : KvPair}",
             "{$proto?.value ?: $proto2?.value}")
         .rendersAs("null");
   }
@@ -117,13 +116,9 @@ public final class ProtoSupportTest {
   // values
   @Test
   public void testSimpleProto_nullSafePrimitive() {
-    assertThatTemplateBody("{@param? proto : example.KvPair}", "{$proto?.anotherValue}")
-        .rendersAs("null");
+    assertThatTemplateBody("{@param? proto : KvPair}", "{$proto?.anotherValue}").rendersAs("null");
     assertThatTemplateBody(
-            "{@param? proto : example.ExampleExtendable}",
-            "{if not $proto?.boolField}",
-            "  foo",
-            "{/if}")
+            "{@param? proto : ExampleExtendable}", "{if not $proto?.boolField}", "  foo", "{/if}")
         .rendersAs("foo");
   }
 
@@ -131,7 +126,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafeReference() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : example.ExampleExtendable}",
+            "{@param? proto : ExampleExtendable}",
             "{if $proto?.someEmbeddedMessage}",
             "  foo",
             "{/if}");
@@ -149,7 +144,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafeProtoLetVar() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : example.ExampleExtendable}",
+            "{@param? proto : ExampleExtendable}",
             "{let $foo : $proto?.someEmbeddedMessage /}",
             "{$foo ? 'true' : 'false'}");
     tester.rendersAs("false", ImmutableMap.of());
@@ -166,7 +161,7 @@ public final class ProtoSupportTest {
   public void testSimpleProto_nullSafeStringLetVar() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : example.ExampleExtendable}",
+            "{@param? proto : ExampleExtendable}",
             "{let $foo : $proto?.someEmbeddedMessage?.someEmbeddedString /}",
             "{$foo}");
     tester.rendersAs("null", ImmutableMap.of());
@@ -184,7 +179,7 @@ public final class ProtoSupportTest {
   public void testMathOnNullableValues() {
     CompiledTemplateSubject tester =
         assertThatTemplateBody(
-            "{@param? proto : example.ExampleExtendable}",
+            "{@param? proto : ExampleExtendable}",
             "{let $foo : $proto?.someEmbeddedMessage?.someEmbeddedString /}",
             "{$foo}");
     tester.rendersAs("null", ImmutableMap.of());
@@ -200,8 +195,7 @@ public final class ProtoSupportTest {
 
   @Test
   public void testInnerMessageProto() {
-    assertThatTemplateBody(
-            "{@param proto : example.ExampleExtendable.InnerMessage}", "{$proto.field}")
+    assertThatTemplateBody("{@param proto : ExampleExtendable.InnerMessage}", "{$proto.field}")
         .rendersAs(
             "12",
             ImmutableMap.of(
@@ -211,7 +205,7 @@ public final class ProtoSupportTest {
   @Test
   public void testRepeatedFields() {
     assertThatTemplateBody(
-            "{@param e : example.ExampleExtendable}",
+            "{@param e : ExampleExtendable}",
             "{for $m in $e.repeatedEmbeddedMessageList}",
             "  {$m.someEmbeddedString}",
             "{/for}")
@@ -229,7 +223,7 @@ public final class ProtoSupportTest {
   @Test
   public void testRepeatedFields_ofNullable() {
     assertThatTemplateBody(
-            "{@param e : example.ExampleExtendable}",
+            "{@param e : ExampleExtendable}",
             "{for $str in $e.someEmbeddedMessage.someEmbeddedRepeatedStringList}",
             "  {$str}",
             "{/for}")
@@ -250,7 +244,7 @@ public final class ProtoSupportTest {
 
   @Test
   public void testMathOnProtoFields() {
-    assertThatTemplateBody("{@param pair : example.KvPair}", "{$pair.anotherValue * 5}")
+    assertThatTemplateBody("{@param pair : KvPair}", "{$pair.anotherValue * 5}")
         .rendersAs("10", ImmutableMap.of("pair", KvPair.newBuilder().setAnotherValue(2)));
   }
 
@@ -260,9 +254,10 @@ public final class ProtoSupportTest {
     String file =
         JOINER.join(
             "{namespace ns}",
+            "import {KvPair} from" + " '" + KvPair.getDescriptor().getFile().getName() + "';\n",
             "",
             "{template .caller}",
-            "  {@param pair : example.KvPair}",
+            "  {@param pair : KvPair}",
             "  {let $closeUrl : $pair.value /}",
             "  {call .callee}{param str : $closeUrl ? $closeUrl : '' /}{/call}",
             "{/template}",
@@ -295,33 +290,31 @@ public final class ProtoSupportTest {
   @Test
   public void testProto3Fields_int() {
     CompiledTemplateSubject tester =
-        assertThatTemplateBody("{@param msg : soy.test3.Proto3Message}", "{$msg.intField * 5}");
+        assertThatTemplateBody("{@param msg : Proto3Message}", "{$msg.intField * 5}");
     tester.rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setIntField(2)));
     tester.rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
 
   @Test
   public void testProto3Fields_message() {
-    assertThatTemplateBody("{@param msg : soy.test3.Proto3Message}", "{$msg.intField * 5}")
+    assertThatTemplateBody("{@param msg : Proto3Message}", "{$msg.intField * 5}")
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setIntField(2)));
   }
 
   @Test
   public void testProto3Fields_oneof() {
-    assertThatTemplateBody(
-            "{@param msg: soy.test3.Proto3Message}", "{$msg.anotherMessageField.field * 5}")
+    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherMessageField.field * 5}")
         .rendersAs(
             "10",
             ImmutableMap.of(
                 "msg",
                 Proto3Message.newBuilder()
                     .setAnotherMessageField(Proto3Message.InnerMessage.newBuilder().setField(2))));
-    assertThatTemplateBody("{@param msg: soy.test3.Proto3Message}", "{$msg.anotherIntField * 5}")
+    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherIntField * 5}")
         .rendersAs("10", ImmutableMap.of("msg", Proto3Message.newBuilder().setAnotherIntField(2)))
         // missing int from a oneof returns 0
         .rendersAs("0", ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
-    assertThatTemplateBody(
-            "{@param msg: soy.test3.Proto3Message}", "{$msg.anotherMessageField.field}")
+    assertThatTemplateBody("{@param msg: Proto3Message}", "{$msg.anotherMessageField.field}")
         .failsToRenderWith(
             NullPointerException.class, ImmutableMap.of("msg", Proto3Message.getDefaultInstance()));
   }
@@ -332,7 +325,7 @@ public final class ProtoSupportTest {
     // in proto2 this is a non-issue since unknown enum values automatically get mapped to 0 when
     // being parsed.
     assertThatTemplateBody(
-            "{@param msg: soy.test3.Proto3Message}",
+            "{@param msg: Proto3Message}",
             "{$msg.anEnum} {$msg.anEnumsList}"
             )
         .rendersAs(
@@ -355,8 +348,8 @@ public final class ProtoSupportTest {
             .build();
 
     assertThatTemplateBody(
-            "{@param bs: example.ExampleExtendable}",
-            "{let $p: example.ExampleExtendable(",
+            "{@param bs: ExampleExtendable}",
+            "{let $p: ExampleExtendable(",
             "  byteField: $bs.byteField) /}",
             "{$p.byteField}")
         .rendersAs("AH+A", ImmutableMap.of("bs", proto));
@@ -365,9 +358,9 @@ public final class ProtoSupportTest {
   @Test
   public void testProtoInitMessageConstants() {
     assertThatTemplateBody(
-            "{let $p: example.ExampleExtendable(",
+            "{let $p: ExampleExtendable(",
             "  someEmbeddedMessage:",
-            "    example.SomeEmbeddedMessage(someEmbeddedNum: 1)",
+            "    SomeEmbeddedMessage(someEmbeddedNum: 1)",
             "  ) /}",
             "{$p}")
         .rendersAs(JOINER.join("some_embedded_message {", "  some_embedded_num: 1", "}", ""));
@@ -376,8 +369,8 @@ public final class ProtoSupportTest {
   @Test
   public void testProtoInitMessageVars() {
     assertThatTemplateBody(
-            "{@param e: example.SomeEmbeddedMessage}",
-            "{let $p: example.ExampleExtendable(",
+            "{@param e: SomeEmbeddedMessage}",
+            "{let $p: ExampleExtendable(",
             "  someEmbeddedMessage: $e) /}",
             "{$p}")
         .rendersAs(
@@ -387,34 +380,28 @@ public final class ProtoSupportTest {
 
   @Test
   public void testProtoInitEnumConstants() {
-    assertThatTemplateBody(
-            "{let $p: example.ExampleExtendable(",
-            "  someEnum: example.SomeEnum.SECOND) /}",
-            "{$p}")
+    assertThatTemplateBody("{let $p: ExampleExtendable(", "  someEnum: SomeEnum.SECOND) /}", "{$p}")
         .rendersAs(JOINER.join("some_enum: SECOND", ""));
   }
 
   @Test
   public void testProtoInitEnumVars() {
     assertThatTemplateBody(
-            "{@param e: example.SomeEnum}",
-            "{let $p: example.ExampleExtendable(",
-            "  someEnum: $e) /}",
-            "{$p}")
+            "{@param e: SomeEnum}", "{let $p: ExampleExtendable(", "  someEnum: $e) /}", "{$p}")
         .rendersAs(JOINER.join("some_enum: LAST", ""), ImmutableMap.of("e", SomeEnum.LAST));
   }
 
   @Test
   public void testProtoInitEnumBadEnum() {
     assertThatTemplateBody(
-            "{@param e: ?}", "{let $p: example.ExampleExtendable(", "  someEnum: $e) /}", "{$p}")
+            "{@param e: ?}", "{let $p: ExampleExtendable(", "  someEnum: $e) /}", "{$p}")
         .failsToRenderWith(NullPointerException.class, ImmutableMap.of("e", 99999));
   }
 
   @Test
   public void testProtoInitRepeatedFieldConstants() {
     assertThatTemplateBody(
-            "{let $p: example.ExampleExtendable(",
+            "{let $p: ExampleExtendable(",
             "  repeatedLongWithInt52JsTypeList: [1000, 2000]) /}",
             "{$p.repeatedLongWithInt52JsTypeList}{\\n}",
             "{$p.repeatedLongWithInt52JsTypeList[0]}{\\n}",
@@ -426,7 +413,7 @@ public final class ProtoSupportTest {
   public void testProtoInitRepeatedFieldVars() {
     assertThatTemplateBody(
             "{@param l: list<int>}",
-            "{let $p: example.ExampleExtendable(",
+            "{let $p: ExampleExtendable(",
             "  repeatedLongWithInt52JsTypeList: $l) /}",
             "{$p.repeatedLongWithInt52JsTypeList}{\\n}",
             "{$p.repeatedLongWithInt52JsTypeList[0]}{\\n}",
@@ -440,7 +427,7 @@ public final class ProtoSupportTest {
   public void testProtoInitRepeatedFieldNullList() {
     assertThatTemplateBody(
             "{@param? l: list<int>|null}",
-            "{let $p: example.ExampleExtendable(",
+            "{let $p: ExampleExtendable(",
             "  repeatedLongWithInt52JsTypeList: $l) /}",
             "{$p.repeatedLongWithInt52JsTypeList}")
         .rendersAs("[]");
@@ -450,13 +437,28 @@ public final class ProtoSupportTest {
   public void testProtoInitRepeatedFieldListWithNullElement() {
     assertThatTemplateBody(
             "{@param l: ?}",
-            "{let $p: example.ExampleExtendable(repeatedLongWithInt52JsTypeList: $l) /}",
+            "{let $p: ExampleExtendable(repeatedLongWithInt52JsTypeList: $l) /}",
             "{$p.repeatedLongWithInt52JsTypeList}")
         .rendersAs("[]");
   }
 
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
-    return TemplateTester.assertThatTemplateBody(body).withTypeRegistry(types);
+    StringBuilder builder = new StringBuilder();
+    builder
+        .append("{namespace ns}\n")
+        .append(
+            "import {ExampleExtendable, KvPair, ProtoMap, SomeEnum, SomeEmbeddedMessage,"
+                + " SomeExtension, someBoolExtension, someIntExtension} from '"
+                + KvPair.getDescriptor().getFile().getName()
+                + "';\n")
+        .append(
+            "import {Proto3Message} from '"
+                + Proto3Message.getDescriptor().getFile().getName()
+                + "';\n")
+        .append("{template .foo}\n");
+    Joiner.on("\n").appendTo(builder, body);
+    builder.append("\n{/template}\n");
+    return TemplateTester.assertThatFile(builder.toString()).withTypeRegistry(types);
   }
 
   private String render(CompiledTemplates templates, String name, SoyRecord params) {

@@ -377,7 +377,7 @@ public final class TemplateTester {
         TemplateRegistry registry = parseResult.registry();
         CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
-        TemplateNode template = (TemplateNode) fileSet.getChild(0).getChild(0);
+        TemplateNode template = SoyTreeUtils.getAllNodesOfType(fileSet, TemplateNode.class).get(0);
         String templateName = template.getTemplateName();
         classData =
             new TemplateCompiler(

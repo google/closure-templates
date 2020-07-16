@@ -22,11 +22,7 @@ import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.testing.Example;
-import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.Foo;
-import com.google.template.soy.testing.KvPair;
-import com.google.template.soy.testing.SomeExtension;
-import com.google.template.soy.testing.SomeNestedExtension;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
@@ -49,14 +45,9 @@ public final class JspbTest {
       new SoyTypeRegistryBuilder()
           .addDescriptors(
               ImmutableList.of(
-                  Example.getDescriptor(),
-                  ExampleExtendable.getDescriptor(),
-                  ExampleExtendable.InnerMessage.getDescriptor(),
-                  KvPair.getDescriptor(),
-                  Proto3Message.getDescriptor(),
-                  SomeExtension.getDescriptor(),
-                  SomeNestedExtension.getDescriptor(),
-                  Foo.getDescriptor()))
+                  Example.getDescriptor().getFile(),
+                  Proto3Message.getDescriptor().getFile(),
+                  Foo.getDescriptor().getFile()))
           .build();
 
   // Proto field access tests
