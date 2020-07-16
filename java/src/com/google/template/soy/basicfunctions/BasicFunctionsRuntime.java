@@ -275,12 +275,19 @@ public final class BasicFunctionsRuntime {
 
   public static String strSub(SoyValue str, int start) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
-    return str.stringValue().substring(start);
+    String string = str.stringValue();
+    int length = string.length();
+    start = Math.max(0, Math.min(length, start));
+    return string.substring(start);
   }
 
   public static String strSub(SoyValue str, int start, int end) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
-    return str.stringValue().substring(start, end);
+    String string = str.stringValue();
+    int length = string.length();
+    start = Math.max(0, Math.min(length, start));
+    end = Math.max(0, Math.min(length, end));
+    return string.substring(start, end);
   }
 
   public static boolean strStartsWith(String str, String arg) {
