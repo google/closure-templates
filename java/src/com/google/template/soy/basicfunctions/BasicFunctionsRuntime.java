@@ -283,6 +283,9 @@ public final class BasicFunctionsRuntime {
 
   public static String strSub(SoyValue str, int start, int end) {
     // TODO(b/74259210) -- Change the first param to String & avoid using stringValue().
+    if (start > end) {
+      return strSub(str, end, start);
+    }
     String string = str.stringValue();
     int length = string.length();
     start = Math.max(0, Math.min(length, start));
