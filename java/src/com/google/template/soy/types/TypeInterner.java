@@ -16,7 +16,10 @@
 
 package com.google.template.soy.types;
 
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
 import java.util.Collection;
+import java.util.function.Function;
 
 /**
  * Factory of {@link SoyType} instances allowing use of the == operator when comparing instances.
@@ -38,4 +41,9 @@ public interface TypeInterner {
   TemplateType internTemplateType(TemplateType typeToIntern);
 
   VeType getOrCreateVeType(String dataType);
+
+  SoyProtoType getOrComputeProtoType(
+      Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper);
+
+  SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor);
 }

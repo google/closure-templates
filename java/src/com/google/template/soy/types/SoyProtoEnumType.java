@@ -16,6 +16,7 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import com.google.template.soy.base.SoyBackendKind;
@@ -88,5 +89,22 @@ public final class SoyProtoEnumType extends SoyType {
   @Override
   public <T> T accept(SoyTypeVisitor<T> visitor) {
     return visitor.visit(this);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SoyProtoEnumType that = (SoyProtoEnumType) o;
+    return Objects.equal(descriptor.getFullName(), that.descriptor.getFullName());
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hashCode(descriptor.getFullName());
   }
 }

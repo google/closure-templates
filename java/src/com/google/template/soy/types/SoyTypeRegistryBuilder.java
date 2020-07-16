@@ -19,9 +19,6 @@ package com.google.template.soy.types;
 import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.naturalOrder;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -304,26 +301,6 @@ public final class SoyTypeRegistryBuilder {
   public static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry
       implements TypeRegistry.ProtoRegistry {
 
-    /**
-     * Map of SoyTypes that have been created from the type descriptors. Gets filled in lazily as
-     * types are requested.
-     */
-    private final LoadingCache<String, SoyType> protoTypeCache =
-        CacheBuilder.newBuilder()
-            .build(
-                new CacheLoader<String, SoyType>() {
-                  @Override
-                  public SoyType load(String key) {
-                    GenericDescriptor descriptor = descriptors.get(key);
-                    if (descriptor instanceof EnumDescriptor) {
-                      return new SoyProtoEnumType((EnumDescriptor) descriptor);
-                    } else {
-                      return new SoyProtoType(
-                          ProtoSoyTypeRegistry.this, (Descriptor) descriptor, extensions.get(key));
-                    }
-                  }
-                });
-
     /** Map of all the protobuf type descriptors that we've discovered. */
     private final ImmutableMap<String, GenericDescriptor> descriptors;
 
@@ -332,7 +309,8 @@ public final class SoyTypeRegistryBuilder {
 
     /**
      * Map of the first dotted prefix in a type to its full type name (e.g. "foo." ->
-     * "foo.bar.Baz"). Used to check for namespace conflicts in {@link ValidateAliasesPass}.
+     * "foo.bar.Baz"). Used to check for namespace conflicts in {@link
+     * com.google.template.soy.passes.ValidateAliasesPass}.
      */
     private final ImmutableMap<String, String> prefixesToTypeNames;
 
@@ -373,10 +351,16 @@ public final class SoyTypeRegistryBuilder {
       if (type != null) {
         return type;
       }
-      if (!descriptors.containsKey(typeName)) {
+      GenericDescriptor descriptor = descriptors.get(typeName);
+      if (descriptor instanceof EnumDescriptor) {
+        return getOrCreateProtoEnumType((EnumDescriptor) descriptor);
+      } else if (descriptor instanceof Descriptor) {
+        Descriptor d = (Descriptor) descriptor;
+        return getOrComputeProtoType(
+            d, name -> new SoyProtoType(this, d, extensions.get(typeName)));
+      } else {
         return null;
       }
-      return protoTypeCache.getUnchecked(typeName);
     }
 
     @Override

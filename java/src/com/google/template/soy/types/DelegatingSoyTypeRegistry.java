@@ -16,8 +16,11 @@
 
 package com.google.template.soy.types;
 
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.template.soy.types.RecordType.Member;
 import java.util.Collection;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
@@ -30,6 +33,10 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
 
   protected DelegatingSoyTypeRegistry(SoyTypeRegistry delegate) {
     this.delegate = delegate;
+  }
+
+  protected SoyTypeRegistry getDelegate() {
+    return delegate;
   }
 
   @Override
@@ -70,6 +77,17 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   @Override
   public VeType getOrCreateVeType(String dataType) {
     return delegate.getOrCreateVeType(dataType);
+  }
+
+  @Override
+  public SoyProtoType getOrComputeProtoType(
+      Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper) {
+    return delegate.getOrComputeProtoType(descriptor, mapper);
+  }
+
+  @Override
+  public SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
+    return delegate.getOrCreateProtoEnumType(descriptor);
   }
 
   @Override

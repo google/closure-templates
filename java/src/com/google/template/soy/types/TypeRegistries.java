@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
@@ -33,6 +35,9 @@ import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Implementations of {@link TypeRegistry} and {@link TypeInterner}. */
@@ -64,6 +69,8 @@ final class TypeRegistries {
     private final Interner<RecordType> recordTypes = Interners.newStrongInterner();
     private final Interner<TemplateType> templateTypes = Interners.newStrongInterner();
     private final Interner<VeType> veTypes = Interners.newStrongInterner();
+    private final Map<String, SoyProtoType> protoTypes = new ConcurrentHashMap<>();
+    private final Interner<SoyProtoEnumType> enumTypes = Interners.newStrongInterner();
 
     public TypeInternerImpl() {
       // Register the special number type so == comparisons work
@@ -168,6 +175,17 @@ final class TypeRegistries {
     @Override
     public VeType getOrCreateVeType(String dataType) {
       return veTypes.intern(VeType.of(dataType));
+    }
+
+    @Override
+    public SoyProtoType getOrComputeProtoType(
+        Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper) {
+      return protoTypes.computeIfAbsent(descriptor.getFullName(), mapper);
+    }
+
+    @Override
+    public SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
+      return enumTypes.intern(new SoyProtoEnumType(descriptor));
     }
   }
 
@@ -276,6 +294,17 @@ final class TypeRegistries {
     @Override
     public VeType getOrCreateVeType(String dataType) {
       return typeInterner.getOrCreateVeType(dataType);
+    }
+
+    @Override
+    public SoyProtoType getOrComputeProtoType(
+        Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper) {
+      return typeInterner.getOrComputeProtoType(descriptor, mapper);
+    }
+
+    @Override
+    public SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
+      return typeInterner.getOrCreateProtoEnumType(descriptor);
     }
   }
 }

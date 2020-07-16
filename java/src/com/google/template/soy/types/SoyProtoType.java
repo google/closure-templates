@@ -18,6 +18,7 @@ package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -310,5 +311,22 @@ public final class SoyProtoType extends SoyType {
   @Override
   public <T> T accept(SoyTypeVisitor<T> visitor) {
     return visitor.visit(this);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SoyProtoType that = (SoyProtoType) o;
+    return Objects.equal(typeDescriptor.getFullName(), that.typeDescriptor.getFullName());
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hashCode(typeDescriptor.getFullName());
   }
 }
