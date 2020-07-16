@@ -27,7 +27,6 @@ java_library(
     deps = [
         ":features_soy_java_infos",
         "//java/src/com/google/template/soy",
-        "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/tofu",
         "//java/src/com/google/template/soy/xliffmsgplugin",
