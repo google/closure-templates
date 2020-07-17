@@ -91,16 +91,27 @@ class FormatNumFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   private static final String DEFAULT_FORMAT = "decimal";
-
   private static final ImmutableMap<String, String> JS_ARGS_TO_ENUM =
       ImmutableMap.<String, String>builder()
-          .put(DEFAULT_FORMAT, "goog.i18n.NumberFormat.Format.DECIMAL")
-          .put("currency", "goog.i18n.NumberFormat.Format.CURRENCY")
-          .put("percent", "goog.i18n.NumberFormat.Format.PERCENT")
-          .put("scientific", "goog.i18n.NumberFormat.Format.SCIENTIFIC")
-          .put("compact_short", "goog.i18n.NumberFormat.Format.COMPACT_SHORT")
-          .put("compact_long", "goog.i18n.NumberFormat.Format.COMPACT_LONG")
+          .put(DEFAULT_FORMAT, "DECIMAL")
+          .put("currency", "CURRENCY")
+          .put("percent", "PERCENT")
+          .put("scientific", "SCIENTIFIC")
+          .put("compact_short", "COMPACT_SHORT")
+          .put("compact_long", "COMPACT_LONG")
           .build();
+
+  private static final JavaScriptValue jsArgToValue(String arg, JavaScriptValueFactory factory) {
+    String formatEnum = JS_ARGS_TO_ENUM.get(arg);
+    if (formatEnum == null) {
+      throw new IllegalArgumentException(
+          "The second parameter to formatNum must be one of {"
+              + Joiner.on(", ").join(JS_ARGS_TO_ENUM.keySet())
+              + "} but was "
+              + arg);
+    }
+    return factory.getModuleExport("goog.i18n.NumberFormat.Format", formatEnum);
+  }
 
   FormatNumFunction() {}
 
@@ -136,22 +147,14 @@ class FormatNumFunction
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
     List<JavaScriptValue> jsArgs = new ArrayList<>(args);
     if (jsArgs.size() == 1) {
-      jsArgs.add(factory.global(JS_ARGS_TO_ENUM.get(DEFAULT_FORMAT)));
+      jsArgs.add(jsArgToValue(DEFAULT_FORMAT, factory));
     } else {
       Optional<String> formatArg = args.get(1).asStringLiteral();
       if (!formatArg.isPresent()) {
         throw new IllegalArgumentException(
             "The second parameter to formatNum must be a string literal");
       }
-      String formatEnum = JS_ARGS_TO_ENUM.get(formatArg.get());
-      if (formatEnum == null) {
-        throw new IllegalArgumentException(
-            "The second parameter to formatNum must be one of {"
-                + Joiner.on(", ").join(JS_ARGS_TO_ENUM.keySet())
-                + "} but was "
-                + formatArg.get());
-      }
-      jsArgs.set(1, factory.global(formatEnum));
+      jsArgs.set(1, jsArgToValue(formatArg.get(), factory));
     }
 
     if (jsArgs.size() > 2) {
