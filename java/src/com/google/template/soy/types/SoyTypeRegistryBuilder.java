@@ -26,8 +26,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
-import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.EnumDescriptor;
@@ -35,11 +33,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,13 +51,6 @@ public final class SoyTypeRegistryBuilder {
         TypeRegistries.builtinTypeRegistry(), TypeRegistries.newTypeInterner());
   }
 
-  /**
-   * Map of proto file name ({@link FileDescriptorProto#getName()}}) to descriptor. This needs to be
-   * insertion order-preserving. The descriptors will tend to be in dependency order, so by
-   * constructing in the provided order we will limit the depth of the recursion below.
-   */
-  private final Map<String, FileDescriptorProto> nameToProtos = new LinkedHashMap<>();
-
   private final List<GenericDescriptor> descriptors = new ArrayList<>();
 
   /**
@@ -77,27 +63,6 @@ public final class SoyTypeRegistryBuilder {
   private boolean areAllDescriptorsFileDescriptors = true;
 
   public SoyTypeRegistryBuilder() {}
-
-  /**
-   * Read a file descriptor set from a file and register any proto types found within.
-   *
-   * @deprecated Pass Descriptor objects to {@link #addDescriptors} instead.
-   */
-  @Deprecated
-  public SoyTypeRegistryBuilder addFileDescriptorSetFromFile(File descriptorFile)
-      throws IOException {
-    // TODO(lukes): if we called buildDescriptors here we could force callers to pass files in
-    // dependency order (and also throw DescriptorValidationException here).  This would improve
-    // performance (slightly, due to less recursion and no need for the nameToProtos map), but
-    // more importantly it would improve error locality.
-    try (InputStream inputStream = new BufferedInputStream(new FileInputStream(descriptorFile))) {
-      for (FileDescriptorProto file :
-          FileDescriptorSet.parseFrom(inputStream, ProtoUtils.REGISTRY).getFileList()) {
-        nameToProtos.put(file.getName(), file);
-      }
-    }
-    return this;
-  }
 
   /** Registers a collection of descriptors of any type. */
   public SoyTypeRegistryBuilder addDescriptors(
@@ -112,39 +77,9 @@ public final class SoyTypeRegistryBuilder {
   }
 
   private void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
-    Map<String, FileDescriptor> parsedDescriptors = new HashMap<>();
-    for (String name : nameToProtos.keySet()) {
-      visitor.visitFile(
-          buildDescriptor(null, name, parsedDescriptors, nameToProtos),
-          /*onlyVisitingFiles=*/ areAllDescriptorsFileDescriptors);
-    }
     for (GenericDescriptor descriptor : descriptors) {
       visitor.visitGeneric(descriptor, /*onlyVisitingFiles=*/ areAllDescriptorsFileDescriptors);
     }
-  }
-
-  private static FileDescriptor buildDescriptor(
-      String requestor,
-      String name,
-      Map<String, FileDescriptor> descriptors,
-      Map<String, FileDescriptorProto> nameToProtos)
-      throws DescriptorValidationException {
-    FileDescriptor file = descriptors.get(name);
-    if (file != null) {
-      return file;
-    }
-    FileDescriptorProto proto = nameToProtos.get(name);
-    if (proto == null) {
-      throw new IllegalStateException(
-          "Cannot find proto descriptor for " + name + " which is a dependency of " + requestor);
-    }
-    FileDescriptor[] deps = new FileDescriptor[proto.getDependencyCount()];
-    for (int i = 0; i < proto.getDependencyCount(); i++) {
-      deps[i] = buildDescriptor(name, proto.getDependency(i), descriptors, nameToProtos);
-    }
-    file = FileDescriptor.buildFrom(proto, deps);
-    descriptors.put(name, file);
-    return file;
   }
 
   public SoyTypeRegistry build() {
@@ -198,9 +133,8 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitFiles(List<FileDescriptor> descriptors, boolean onlyVisitingFiles) {
-      final int size = descriptors.size();
-      for (int i = 0; i < size; i++) {
-        visitFile(descriptors.get(i), onlyVisitingFiles);
+      for (FileDescriptor descriptor : descriptors) {
+        visitFile(descriptor, onlyVisitingFiles);
       }
     }
 
@@ -222,9 +156,8 @@ public final class SoyTypeRegistryBuilder {
 
     private void visitMessages(
         List<Descriptor> descriptors, boolean exploreDependencies, boolean onlyVisitingFiles) {
-      final int size = descriptors.size();
-      for (int i = 0; i < size; i++) {
-        visitMessage(descriptors.get(i), exploreDependencies, onlyVisitingFiles);
+      for (Descriptor descriptor : descriptors) {
+        visitMessage(descriptor, exploreDependencies, onlyVisitingFiles);
       }
     }
 
@@ -244,9 +177,8 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitEnums(List<EnumDescriptor> enumDescriptors, boolean onlyVisitingFiles) {
-      final int size = enumDescriptors.size();
-      for (int i = 0; i < size; i++) {
-        visitEnum(enumDescriptors.get(i), onlyVisitingFiles);
+      for (EnumDescriptor enumDescriptor : enumDescriptors) {
+        visitEnum(enumDescriptor, onlyVisitingFiles);
       }
     }
 
@@ -261,9 +193,8 @@ public final class SoyTypeRegistryBuilder {
         List<FieldDescriptor> fieldDescriptors,
         boolean exploreDependencies,
         boolean onlyVisitingFiles) {
-      final int size = fieldDescriptors.size();
-      for (int i = 0; i < size; i++) {
-        visitField(fieldDescriptors.get(i), exploreDependencies, onlyVisitingFiles);
+      for (FieldDescriptor fieldDescriptor : fieldDescriptors) {
+        visitField(fieldDescriptor, exploreDependencies, onlyVisitingFiles);
       }
     }
 
@@ -389,7 +320,7 @@ public final class SoyTypeRegistryBuilder {
         if (indexOfFirstDot >= 0 && indexOfFirstDot < typeName.length() - 1) {
           prefix = typeName.substring(0, indexOfFirstDot + 1);
         }
-        prefixesToTypeNamesBuilder.computeIfAbsent(prefix, key -> typeName);
+        prefixesToTypeNamesBuilder.putIfAbsent(prefix, typeName);
       }
       return ImmutableMap.copyOf(prefixesToTypeNamesBuilder);
     }

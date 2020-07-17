@@ -492,19 +492,6 @@ public final class SoyFileSet {
     }
 
     /**
-     * Add all proto descriptors found in the file to the type registry.
-     *
-     * @param descriptorFile A file containing FileDescriptorSet binary protos. These typically end
-     *     in {@code .proto.bin}. Note that this isn't the same as a {@code .proto} source file.
-     * @deprecated Call {@link #addProtoDescriptors} instead
-     */
-    @Deprecated
-    public Builder addProtoDescriptorsFromFile(File descriptorFile) throws IOException {
-      typeRegistryBuilder.addFileDescriptorSetFromFile(descriptorFile);
-      return this;
-    }
-
-    /**
      * Registers a collection of protocol buffer descriptors. This makes all the types defined in
      * the provided descriptors available to use in soy.
      */
