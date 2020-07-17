@@ -85,7 +85,9 @@ final class StrSubFunction
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
     // Coerce SanitizedContent args to strings.
     PythonValue str = args.get(0).coerceToString();
-    return str.slice(args.get(1), args.size() == 3 ? args.get(2) : null);
+    return factory
+        .global("runtime.str_substring")
+        .call(str, args.get(1), args.size() == 3 ? args.get(2) : factory.constantNull());
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.

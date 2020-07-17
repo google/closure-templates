@@ -545,6 +545,19 @@ def str_split(s, sep):
   return s.split(sep) if sep else list(s)
 
 
+def str_substring(s, start, end):
+  """Implements the substring method according to the JavaScript spec."""
+  if start < 0:
+    start = 0
+  if end is not None:
+    if end < 0:
+      end = 0
+    if start > end:
+      # pylint: disable=arguments-out-of-order
+      return str_substring(s, end, start)
+  return s[start:end]
+
+
 def soy_round(num, precision=0):
   """Implements the soy rounding logic for the round() function.
 
