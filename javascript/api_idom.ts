@@ -51,6 +51,7 @@ interface IdomRendererApi {
   getCurrentKeyStack(): string;
   elementClose(): void|Element;
   close(): void|Element;
+  closeTextArea(el: void|Element): void|Element;
   text(value: string): void|Text;
   attr(name: string, value: string): void;
   currentPointer(): Node|null;
@@ -163,6 +164,13 @@ export class IncrementalDomRenderer implements IdomRendererApi {
    */
   popManualKey() {
     this.keyStackHolder.pop();
+  }
+
+  closeTextArea(el: void|Element): void|Element {
+    if (el instanceof HTMLTextAreaElement && el.textContent) {
+      el.value = el.textContent;
+    }
+    return el;
   }
 
   /**
@@ -326,6 +334,9 @@ export class NullRenderer extends IncrementalDomRenderer {
 
   close() {}
   elementClose() {}
+  closeTextArea(el: void|Element): void|Element {
+    return el;
+  }
 
   text(value: string) {}
 
@@ -431,6 +442,9 @@ export class FalsinessRenderer implements IdomRendererApi {
   popKey(oldKey: string): void {}
   getCurrentKeyStack(): string {
     return '';
+  }
+  closeTextArea(el: void|Element): void|Element {
+    return el;
   }
   enter(): void {}
   exit(): void {}

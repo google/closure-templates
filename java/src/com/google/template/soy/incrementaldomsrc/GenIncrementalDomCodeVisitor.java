@@ -22,6 +22,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_APPLY_STATICS;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ATTR;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE;
+import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_CLOSE_TEXTAREA;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ELEMENT_CLOSE;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_ENTER;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.INCREMENTAL_DOM_EXIT;
@@ -1234,14 +1235,19 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       }
     }
 
-    Expression close = INCREMENTAL_DOM_CLOSE;
+    Expression close = INCREMENTAL_DOM_CLOSE.call();
     if (node.getTaggedPairs().size() == 1
         && ((HtmlOpenTagNode) node.getTaggedPairs().get(0)).isElementRoot()) {
-      close = INCREMENTAL_DOM_ELEMENT_CLOSE;
+      close = INCREMENTAL_DOM_ELEMENT_CLOSE.call();
     }
 
     if (!node.getTagName().isDefinitelyVoid()) {
-      getJsCodeBuilder().append(close.call().asStatement());
+      if (node.getTagName().getRcDataTagName() == TagName.RcDataTagName.TEXTAREA) {
+        // We need a special close call for textarea because if we change the content we need to
+        // synchronize the new content with the 'value' property.
+        close = INCREMENTAL_DOM_CLOSE_TEXTAREA.call(close);
+      }
+      getJsCodeBuilder().append(close.asStatement());
     }
   }
 
