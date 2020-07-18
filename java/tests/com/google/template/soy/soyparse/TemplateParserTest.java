@@ -948,7 +948,7 @@ public final class TemplateParserTest {
 
     PrintNode pn0 = (PrintNode) nodes.get(0);
     assertEquals("$boo.foo", pn0.getExpr().toSourceString());
-    assertEquals(0, pn0.getChildren().size());
+    assertEquals(0, pn0.numChildren());
     assertEquals("FOO", pn0.genBasePhName());
     assertEquals("{$boo.foo}", pn0.toSourceString());
     assertTrue(pn0.getExpr().getRoot() instanceof FieldAccessNode);
@@ -959,13 +959,13 @@ public final class TemplateParserTest {
 
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertEquals("$goo + 1", pn2.getExpr().toSourceString());
-    assertEquals(0, pn2.getChildren().size());
+    assertEquals(0, pn2.numChildren());
     assertEquals("XXX", pn2.genBasePhName());
     assertTrue(pn2.getExpr().getRoot() instanceof PlusOpNode);
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
     assertEquals("'blah    blahblahblah'", pn3.getExpr().toSourceString());
-    assertEquals(1, pn3.getChildren().size());
+    assertEquals(1, pn3.numChildren());
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
     assertEquals("|insertWordBreaks", pn3d0.getName());
     assertEquals(8, ((IntegerNode) pn3d0.getArgs().get(0).getRoot()).getValue());
@@ -1003,7 +1003,7 @@ public final class TemplateParserTest {
     assertEquals("$boo.foo", pn1.getExpr().toSourceString());
     assertEquals("BOO_FOO", pn1.genBasePhName());
     assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
-    assertEquals(0, pn1.getChildren().size());
+    assertEquals(0, pn1.numChildren());
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);

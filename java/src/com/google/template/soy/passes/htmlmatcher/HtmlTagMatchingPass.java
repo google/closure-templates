@@ -253,7 +253,7 @@ public final class HtmlTagMatchingPass {
             TagExistence.SYNTHETIC);
     // If destination is null, then insert at the end of the template.
     if (destinationTag == null) {
-      int i = optionalOpenTag.getParent().getChildren().size();
+      int i = optionalOpenTag.getParent().numChildren();
       optionalOpenTag.getParent().addChild(i, syntheticClose);
     } else {
       // This inserts the synthetic close tag right before the open tag.

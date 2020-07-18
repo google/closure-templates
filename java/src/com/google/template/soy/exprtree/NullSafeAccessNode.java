@@ -149,7 +149,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
         MethodCallNode childMethodCall =
             new MethodCallNode(
                 basePlaceholder,
-                node.getChildren().subList(1, node.getChildren().size()),
+                node.getChildren().subList(1, node.numChildren()),
                 ((MethodCallNode) node).getMethodName(),
                 node.getAccessSourceLocation(),
                 /* isNullSafe= */ false);

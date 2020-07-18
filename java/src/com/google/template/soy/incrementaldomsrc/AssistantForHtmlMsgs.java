@@ -196,7 +196,7 @@ final class AssistantForHtmlMsgs extends GenJsCodeVisitorAssistantForMsgs {
           Preconditions.checkState(state.logOnlyConditional == null);
           value = Statement.of(state.enterStatement, value);
         }
-        if (parent.getChild(parent.getChildren().size() - 1) == phNode) {
+        if (parent.getChild(parent.numChildren() - 1) == phNode) {
           value = Statement.of(value, idomMaster.exitVeLogNode(parent, null));
         }
       }

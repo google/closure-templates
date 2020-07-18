@@ -728,7 +728,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     @Override
     protected void visitListLiteralNode(ListLiteralNode node) {
       visitChildren(node);
-      List<SoyType> elementTypes = new ArrayList<>(node.getChildren().size());
+      List<SoyType> elementTypes = new ArrayList<>(node.numChildren());
       for (ExprNode child : node.getChildren()) {
         requireNodeType(child);
         elementTypes.add(child.getType());
@@ -2209,7 +2209,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Override
     protected void visitAndOpNode(AndOpNode node) {
-      Preconditions.checkArgument(node.getChildren().size() == 2);
+      Preconditions.checkArgument(node.numChildren() == 2);
       // Create two separate visitors to analyze each side of the expression.
       TypeNarrowingConditionVisitor leftVisitor = new TypeNarrowingConditionVisitor();
       TypeNarrowingConditionVisitor rightVisitor = new TypeNarrowingConditionVisitor();
@@ -2231,7 +2231,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     @Override
     protected void visitOrOpNode(OrOpNode node) {
-      Preconditions.checkArgument(node.getChildren().size() == 2);
+      Preconditions.checkArgument(node.numChildren() == 2);
       // Create two separate visitors to analyze each side of the expression.
       TypeNarrowingConditionVisitor leftVisitor = new TypeNarrowingConditionVisitor();
       TypeNarrowingConditionVisitor rightVisitor = new TypeNarrowingConditionVisitor();

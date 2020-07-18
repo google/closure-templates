@@ -443,7 +443,7 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
       // If a Switch with only a default is provided (no case statements), just execute the inner
       // code directly.
-      if (node.getChildren().size() == 1 && node.getChild(0) instanceof SwitchDefaultNode) {
+      if (node.numChildren() == 1 && node.getChild(0) instanceof SwitchDefaultNode) {
         visitChildren(node.getChild(0));
         return;
       }

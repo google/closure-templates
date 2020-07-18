@@ -95,7 +95,7 @@ public final class MethodCallNode extends DataAccessNode {
 
   /** Returns the method's parameters. */
   public List<ExprNode> getParams() {
-    return getChildren().subList(1, getChildren().size()); // First child is the method's base expr.
+    return getChildren().subList(1, numChildren()); // First child is the method's base expr.
   }
 
   public int numParams() {

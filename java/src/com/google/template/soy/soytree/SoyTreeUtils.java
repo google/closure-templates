@@ -99,7 +99,7 @@ public final class SoyTreeUtils {
     int index = parent.getChildIndex(node);
     Preconditions.checkState(index >= 0);
     int nextIndex = index + 1;
-    return parent.getChildren().size() > nextIndex ? parent.getChild(nextIndex) : null;
+    return parent.numChildren() > nextIndex ? parent.getChild(nextIndex) : null;
   }
 
   /** An enum that allows a {#visitAllNodes} visitor to control how the AST is traversed. */
