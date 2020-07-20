@@ -2959,7 +2959,7 @@ private IfNode IfStmt() :
   tagClose = <CMD_CLOSE_IF>
 
   {
-    IfNode ifNode = new IfNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose));
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), createSrcLoc(tagClose), createSrcLoc(tagBegin, tagClose));
     ifNode.addChildren(condNodes);
     return ifNode;
   }

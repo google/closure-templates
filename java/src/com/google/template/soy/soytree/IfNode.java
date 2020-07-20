@@ -41,10 +41,18 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
         StatementNode {
 
   @Nullable private HtmlContext htmlContext;
+  private final SourceLocation closeTagLocation;
+
+  /** @param id The id for this node. */
+  public IfNode(int id, SourceLocation closeTagLocation, SourceLocation sourceLocation) {
+    super(id, sourceLocation);
+    this.closeTagLocation = closeTagLocation;
+  }
 
   /** @param id The id for this node. */
   public IfNode(int id, SourceLocation sourceLocation) {
     super(id, sourceLocation);
+    this.closeTagLocation = SourceLocation.UNKNOWN;
   }
 
   /**
@@ -55,6 +63,7 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
   private IfNode(IfNode orig, CopyState copyState) {
     super(orig, copyState);
     this.htmlContext = orig.htmlContext;
+    this.closeTagLocation = orig.closeTagLocation;
   }
 
   @Override
@@ -65,6 +74,10 @@ public final class IfNode extends AbstractParentSoyNode<BlockNode>
 
   public void setHtmlContext(HtmlContext value) {
     this.htmlContext = value;
+  }
+
+  public SourceLocation getCloseTagLocation() {
+    return closeTagLocation;
   }
 
   @Override
