@@ -396,6 +396,7 @@ function isTruthy(expr: unknown): boolean {
 }
 
 export {
+  SoyTemplate as $SoyTemplate,
   SoyElement as $SoyElement,
   isTruthy as $$isTruthy,
   print as $$print,
