@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.restricted;
 import static com.google.common.truth.Fact.fact;
 import static com.google.common.truth.Fact.simpleFact;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
@@ -43,7 +42,6 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
@@ -88,9 +86,7 @@ public class SoyRuntimeTypeTest {
           .isBoxedAs(SanitizedContent.class)
           .isNotUnboxable();
     }
-    assertThat(
-            new SoyProtoType(
-                SoyTypeRegistryBuilder.create(), Proto3Message.getDescriptor(), ImmutableSet.of()))
+    assertThat(SoyProtoType.newForTest(Proto3Message.getDescriptor()))
         .isBoxedAs(SoyProtoValue.class)
         .isUnboxedAs(Proto3Message.class);
     assertThat(ListType.of(IntType.getInstance())).isBoxedAs(SoyList.class).isUnboxedAs(List.class);

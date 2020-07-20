@@ -34,38 +34,37 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
-/**
- * A {@link SoyType} subclass which describes a protocol buffer type.
- *
- */
+/** A {@link SoyType} subclass which describes a protocol buffer type. */
 public final class SoyProtoType extends SoyType {
   private static final class TypeVisitor extends FieldVisitor<SoyType> {
-    private final SoyTypeRegistry registry;
+    private final TypeInterner interner;
+    private final ProtoTypeRegistry registry;
 
-    TypeVisitor(SoyTypeRegistry registry) {
+    TypeVisitor(TypeInterner interner, ProtoTypeRegistry registry) {
+      this.interner = interner;
       this.registry = registry;
     }
 
     @Override
     protected SoyType visitMap(FieldDescriptor mapField, SoyType keyType, SoyType valueType) {
-      return registry.getOrCreateMapType(keyType, valueType);
+      return interner.getOrCreateMapType(keyType, valueType);
     }
 
     @Override
     protected SoyType visitRepeated(SoyType value) {
-      return registry.getOrCreateListType(value);
+      return interner.getOrCreateListType(value);
     }
 
     // For these we could directly invoke the constructor, but by recursing back through the
     // registry we can ensure that we return the cached instance
     @Override
     protected SoyType visitMessage(Descriptor messageType) {
-      return registry.getType(messageType.getFullName());
+      return registry.getProtoType(messageType.getFullName());
     }
 
     @Override
     protected SoyType visitEnum(EnumDescriptor enumType, FieldDescriptor fieldType) {
-      return registry.getType(enumType.getFullName());
+      return registry.getProtoType(enumType.getFullName());
     }
 
     @Override
@@ -172,25 +171,28 @@ public final class SoyProtoType extends SoyType {
     }
   }
 
+  public static SoyProtoType newForTest(Descriptor d) {
+    return new SoyProtoType(TypeRegistries.newTypeInterner(), (fqn) -> null, d, ImmutableSet.of());
+  }
+
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, FieldWithType> fields;
   private final ImmutableSet<String> extensionFieldNames;
 
-  public SoyProtoType(
-      final SoyTypeRegistry typeRegistry, Descriptor descriptor, Set<FieldDescriptor> extensions) {
+  SoyProtoType(
+      TypeInterner interner,
+      ProtoTypeRegistry registry,
+      Descriptor descriptor,
+      Set<FieldDescriptor> extensions) {
+    this(new TypeVisitor(interner, registry), descriptor, extensions);
+  }
+
+  private SoyProtoType(
+      TypeVisitor visitor, Descriptor descriptor, Set<FieldDescriptor> extensions) {
     this.typeDescriptor = descriptor;
     this.fields =
         Field.getFieldsForType(
-            descriptor,
-            extensions,
-            new Field.Factory<FieldWithType>() {
-              TypeVisitor visitor = new TypeVisitor(typeRegistry);
-
-              @Override
-              public FieldWithType create(FieldDescriptor fieldDescriptor) {
-                return new FieldWithType(fieldDescriptor, visitor);
-              }
-            });
+            descriptor, extensions, fieldDescriptor -> new FieldWithType(fieldDescriptor, visitor));
     this.extensionFieldNames =
         fields.keySet().stream()
             .filter(

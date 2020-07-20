@@ -16,13 +16,11 @@
 
 package com.google.template.soy.logging;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.common.io.CharSource;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.TextFormat;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.TypeRegistry;
 import java.io.IOException;
 import java.io.Reader;
 
@@ -33,7 +31,7 @@ public final class AnnotatedLoggingConfigGenerator {
   private final String javaPackage;
   private final String jsPackage;
   private final String className;
-  private final TypeRegistry.ProtoRegistry typeRegistry;
+  private final SoyTypeRegistry typeRegistry;
 
   public AnnotatedLoggingConfigGenerator(
       CharSource rawLoggingConfig,
@@ -45,8 +43,7 @@ public final class AnnotatedLoggingConfigGenerator {
     this.javaPackage = javaPackage;
     this.jsPackage = jsPackage;
     this.className = className;
-    checkArgument(typeRegistry instanceof TypeRegistry.ProtoRegistry);
-    this.typeRegistry = (TypeRegistry.ProtoRegistry) typeRegistry;
+    this.typeRegistry = typeRegistry;
   }
 
   private LoggingConfig parseLoggingConfig() throws IOException {

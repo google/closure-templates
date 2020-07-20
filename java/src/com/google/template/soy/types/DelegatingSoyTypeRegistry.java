@@ -16,8 +16,10 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.types.RecordType.Member;
 import java.util.Collection;
 import java.util.function.Function;
@@ -37,6 +39,11 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
 
   protected SoyTypeRegistry getDelegate() {
     return delegate;
+  }
+
+  @Override
+  public ImmutableSet<FileDescriptor> getProtoDescriptors() {
+    return delegate.getProtoDescriptors();
   }
 
   @Override

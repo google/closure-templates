@@ -18,22 +18,8 @@ package com.google.template.soy.types;
 
 import javax.annotation.Nullable;
 
-/** Repository of registered types. */
-public interface TypeRegistry {
-
-  /**
-   * Looks up a simple type by name.
-   *
-   * @param typeName "string", "bool", "pkg.proto.Message", etc.
-   */
+/** A repository of proto descriptors that can lookup a type by its FQN. */
+public interface ProtoTypeRegistry {
   @Nullable
-  SoyType getType(String typeName);
-
-  /** Returns the first type in this registry whose name begins with "prefix.". */
-  @Nullable
-  String findTypeWithMatchingNamespace(String prefix);
-
-  /** Returns the sorted set of all types in this registry. */
-  Iterable<String> getAllSortedTypeNames();
-
+  SoyType getProtoType(String protoFqn);
 }

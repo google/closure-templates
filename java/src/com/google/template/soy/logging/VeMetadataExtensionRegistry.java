@@ -21,27 +21,27 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.ExtensionRegistry;
-import com.google.template.soy.types.TypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.List;
 
 /**
  * Creates an {@link ExtensionRegistry} for proto parsing VE metadata extensions from the extensions
- * in the given {@link TypeRegistry.ProtoRegistry}.
+ * in the given {@link SoyTypeRegistry}.
  *
  * <p>This traverses the descriptors for all protos in the type registry and adds their extensions
  * to the extension registry.
  */
 final class VeMetadataExtensionRegistry {
 
-  private final TypeRegistry.ProtoRegistry typeRegistry;
+  private final SoyTypeRegistry typeRegistry;
 
-  VeMetadataExtensionRegistry(TypeRegistry.ProtoRegistry typeRegistry) {
+  VeMetadataExtensionRegistry(SoyTypeRegistry typeRegistry) {
     this.typeRegistry = typeRegistry;
   }
 
   ExtensionRegistry createRegistry() {
     ExtensionRegistry registry = ExtensionRegistry.newInstance();
-    for (FileDescriptor descriptor : typeRegistry.getFileDescriptors()) {
+    for (FileDescriptor descriptor : typeRegistry.getProtoDescriptors()) {
       addAllExtensions(registry, descriptor.getExtensions());
       visitAllMessages(registry, descriptor.getMessageTypes());
     }

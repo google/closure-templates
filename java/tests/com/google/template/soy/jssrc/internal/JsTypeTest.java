@@ -23,7 +23,6 @@ import static com.google.template.soy.jssrc.internal.JsType.forJsSrc;
 import static com.google.template.soy.types.SoyTypes.makeNullable;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.testing3.Proto3Message;
@@ -38,7 +37,6 @@ import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.UnionType;
@@ -135,9 +133,7 @@ public final class JsTypeTest {
     assertThatTypeExprStrict(new SoyProtoEnumType(Proto3Message.AnEnum.getDescriptor()))
         .isEqualTo("!proto.soy.test3.Proto3Message.AnEnum");
 
-    assertThatTypeExprStrict(
-            new SoyProtoType(
-                SoyTypeRegistryBuilder.create(), Proto3Message.getDescriptor(), ImmutableSet.of()))
+    assertThatTypeExprStrict(SoyProtoType.newForTest(Proto3Message.getDescriptor()))
         .isEqualTo("!proto.soy.test3.Proto3Message");
 
     assertThatTypeExprStrict(HtmlType.getInstance())

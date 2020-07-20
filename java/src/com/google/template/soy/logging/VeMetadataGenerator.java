@@ -16,7 +16,6 @@
 
 package com.google.template.soy.logging;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -29,7 +28,6 @@ import com.google.common.primitives.Bytes;
 import com.google.escapevelocity.Template;
 import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.TypeRegistry;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,15 +74,14 @@ public final class VeMetadataGenerator {
   private final Mode mode;
   private final ByteSource loggingConfigBytes;
   private final String generator;
-  private final TypeRegistry.ProtoRegistry typeRegistry;
+  private final SoyTypeRegistry typeRegistry;
 
   public VeMetadataGenerator(
       Mode mode, ByteSource loggingConfigBytes, String generator, SoyTypeRegistry typeRegistry) {
     this.mode = mode;
     this.loggingConfigBytes = loggingConfigBytes;
     this.generator = generator;
-    checkArgument(typeRegistry instanceof TypeRegistry.ProtoRegistry);
-    this.typeRegistry = (TypeRegistry.ProtoRegistry) typeRegistry;
+    this.typeRegistry = typeRegistry;
   }
 
   public String generate() throws IOException {

@@ -23,14 +23,13 @@ import static com.google.common.collect.Streams.stream;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
-import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
+import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.TypeRegistry;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -100,21 +99,18 @@ public final class ImportsContext {
   /**
    * A {@link SoyTypeRegistry} that includes imported symbols (possibly aliased) in a given file.
    */
-  public static final class ImportsTypeRegistry extends DelegatingSoyTypeRegistry
-      implements TypeRegistry.ProtoRegistry {
+  public static final class ImportsTypeRegistry extends DelegatingSoyTypeRegistry {
 
     // Map of symbol (possibly aliased) to fully qualified proto name (messages and enums).
     private final ImmutableMap<String, String> messagesAndEnums;
     // Map of symbol (possibly aliased) to fully qualified proto name (extensions).
     private final ImmutableMap<String, String> extensions;
-    private final SoyTypeRegistry delegate;
 
     public ImportsTypeRegistry(
         SoyTypeRegistry delegate,
         ImmutableMap<String, String> messagesAndEnums,
         ImmutableMap<String, String> extensions) {
       super(delegate);
-      this.delegate = delegate;
       this.messagesAndEnums = messagesAndEnums;
       this.extensions = extensions;
     }
@@ -128,17 +124,15 @@ public final class ImportsContext {
       String baseRefType = index >= 0 ? typeName.substring(0, index) : typeName;
       String baseType = messagesAndEnums.get(baseRefType);
 
-      if (baseType == null) {
+      if (baseType == null || !(getDelegate() instanceof ProtoTypeRegistry)) {
         return super.getType(typeName);
       }
 
       String fullType = index >= 0 ? baseType + typeName.substring(index) : baseType;
 
       // Pass the FQ proto message name to the delegate. The delegate should be a
-      // ProtoSoyTypeRegistry, which can resolve any registered FQ proto name. Once we remove the
-      // global proto type registration we will need to implement this here rather than delegating
-      // to super.
-      return super.getType(fullType);
+      // ProtoTypeRegistry.
+      return ((ProtoTypeRegistry) getDelegate()).getProtoType(fullType);
     }
 
     /** Resolves a potentially-aliased identifier against the known extension symbols. */
@@ -158,13 +152,6 @@ public final class ImportsContext {
         }
       }
       return null;
-    }
-
-    @Override
-    public ImmutableSet<FileDescriptor> getFileDescriptors() {
-      return delegate instanceof TypeRegistry.ProtoRegistry
-          ? ((TypeRegistry.ProtoRegistry) delegate).getFileDescriptors()
-          : ImmutableSet.of();
     }
 
     @Override

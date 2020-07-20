@@ -16,30 +16,32 @@
 
 package com.google.template.soy.types;
 
-import static java.util.Comparator.comparingInt;
 import static java.util.Comparator.naturalOrder;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.internal.proto.ProtoUtils;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Helper class that assists in the construction of {@link SoyTypeRegistry}. */
@@ -51,228 +53,169 @@ public final class SoyTypeRegistryBuilder {
         TypeRegistries.builtinTypeRegistry(), TypeRegistries.newTypeInterner());
   }
 
-  private final List<GenericDescriptor> descriptors = new ArrayList<>();
-
-  /**
-   * Whether or not all the descriptors added to {@link #descriptors} are {@link FileDescriptor}
-   * objects. If they are we can optimize traversal in the {@link DescriptorVisitor}.
-   *
-   * <p>This case is always true when using the command line compiler. It is only possibly not true
-   * when using the SoyFileSet apis directly.
-   */
-  private boolean areAllDescriptorsFileDescriptors = true;
+  private final ImmutableList.Builder<GenericDescriptor> descriptors = ImmutableList.builder();
 
   public SoyTypeRegistryBuilder() {}
 
   /** Registers a collection of descriptors of any type. */
   public SoyTypeRegistryBuilder addDescriptors(
       Iterable<? extends GenericDescriptor> descriptorsToAdd) {
-    for (GenericDescriptor descriptorToAdd : descriptorsToAdd) {
-      if (areAllDescriptorsFileDescriptors && !(descriptorToAdd instanceof FileDescriptor)) {
-        areAllDescriptorsFileDescriptors = false;
-      }
-      descriptors.add(descriptorToAdd);
-    }
+    descriptors.addAll(descriptorsToAdd);
     return this;
   }
 
-  private void accept(DescriptorVisitor visitor) throws DescriptorValidationException {
-    for (GenericDescriptor descriptor : descriptors) {
-      visitor.visitGeneric(descriptor, /*onlyVisitingFiles=*/ areAllDescriptorsFileDescriptors);
-    }
-  }
-
-  public SoyTypeRegistry build() {
-    DescriptorVisitor visitor = new DescriptorVisitor();
-    try {
-      accept(visitor);
-    } catch (DescriptorValidationException e) {
-      throw new RuntimeException("Malformed descriptor set", e);
-    }
-
+  public SoyTypeRegistryImpl build() {
+    ImmutableList<GenericDescriptor> tmp = descriptors.build();
+    ProtoFqnRegistryBuilder builder = new ProtoFqnRegistryBuilder(tmp);
     SoyTypeRegistry base = create();
-    return new ProtoSoyTypeRegistry(
-        base,
-        ImmutableMap.copyOf(visitor.descriptors),
-        ImmutableSetMultimap.copyOf(visitor.extensions),
-        ImmutableSet.copyOf(visitor.files));
+    ProtoFqnTypeRegistry registry = (ProtoFqnTypeRegistry) builder.build(base);
+    return new SoyTypeRegistryImpl(base, ImmutableSet.copyOf(builder.files.values()), registry);
   }
 
-  /** Walks a descriptor tree to build the descriptors, and extensions maps. */
-  private static final class DescriptorVisitor {
-    final Set<String> visited = new HashSet<>();
-    final Map<String, GenericDescriptor> descriptors = new LinkedHashMap<>();
-    final SetMultimap<String, FieldDescriptor> extensions =
-        MultimapBuilder.linkedHashKeys()
-            // We need a custom comparator since FieldDescriptor doesn't implement equals/hashCode
-            // reasonably.  We don't really care about the order, just deduplication.
-            .treeSetValues(
-                comparingInt(FieldDescriptor::getNumber)
-                    .thenComparing(left -> left.getContainingType().getFullName()))
-            .build();
-    final Set<FileDescriptor> files = new HashSet<>();
+  static class ProtoFqnRegistryBuilder {
+    private final ImmutableSet<GenericDescriptor> inputs;
+    private final Predicate<GenericDescriptor> alreadyVisited;
+    private final Map<String, GenericDescriptor> msgAndEnumFqnToDesc = new HashMap<>();
+    private final SetMultimap<String, FieldDescriptor> msgFqnToExts = HashMultimap.create();
+    private final Map<String, FileDescriptor> files = new LinkedHashMap<>();
 
-    /**
-     * Collect all enum, message, and extension descriptors referenced by the given descriptor
-     *
-     * @param descriptor the descriptor to explore
-     * @param onlyVisitingFiles whether or not we are only visiting files descriptors, in this
-     *     scenario we can optimize our exploration to avoid visiting the same descriptors multiple
-     *     times.
-     */
-    void visitGeneric(GenericDescriptor descriptor, boolean onlyVisitingFiles) {
-      if (descriptor instanceof FileDescriptor) {
-        visitFile((FileDescriptor) descriptor, onlyVisitingFiles);
-      } else if (descriptor instanceof Descriptor) {
-        visitMessage((Descriptor) descriptor, /*exploreDependencies=*/ true, onlyVisitingFiles);
+    public ProtoFqnRegistryBuilder(List<GenericDescriptor> inputs) {
+      this.inputs = ImmutableSet.copyOf(inputs); // maintain order
+      Set<GenericDescriptor> visited = new HashSet<>();
+      alreadyVisited = d -> !visited.add(d);
+    }
+
+    public ProtoTypeRegistry build(TypeInterner interner) {
+      Set<FileDescriptor> fileInputs =
+          inputs.stream()
+              .filter(d -> d instanceof FileDescriptor)
+              .map(FileDescriptor.class::cast)
+              .collect(Collectors.toSet());
+
+      // Visit all the file descriptors explicitly passed.
+      fileInputs.forEach(this::visitFile);
+      // Visit all descriptors explicitly passed not descending from any of the file inputs.
+      inputs.stream().filter(d -> !fileInputs.contains(d.getFile())).forEach(this::visitGeneric);
+      // Visit to collection extensions any file of any input not already visited.
+      inputs.stream()
+          .map(GenericDescriptor::getFile)
+          .distinct()
+          .filter(d -> !fileInputs.contains(d))
+          .forEach(this::visitFileForExtensions);
+
+      return new ProtoFqnTypeRegistry(
+          interner,
+          ImmutableMap.copyOf(msgAndEnumFqnToDesc),
+          ImmutableSetMultimap.copyOf(msgFqnToExts));
+    }
+
+    private void visitGeneric(GenericDescriptor descriptor) {
+      if (descriptor instanceof Descriptor) {
+        visitMessage((Descriptor) descriptor);
       } else if (descriptor instanceof FieldDescriptor) {
-        visitField((FieldDescriptor) descriptor, /*exploreDependencies=*/ true, onlyVisitingFiles);
+        visitField((FieldDescriptor) descriptor);
       } else if (descriptor instanceof EnumDescriptor) {
-        visitEnum((EnumDescriptor) descriptor, onlyVisitingFiles);
+        visitEnum((EnumDescriptor) descriptor);
+      } else if (descriptor instanceof FileDescriptor) {
+        throw new IllegalArgumentException();
       } // services, etc. not needed thus far so neither gathered nor dispatched
     }
 
-    private void visitFiles(List<FileDescriptor> descriptors, boolean onlyVisitingFiles) {
-      for (FileDescriptor descriptor : descriptors) {
-        visitFile(descriptor, onlyVisitingFiles);
-      }
-    }
-
-    void visitFile(FileDescriptor fileDescriptor, boolean onlyVisitingFiles) {
-      if (!shouldVisitDescriptor(fileDescriptor, onlyVisitingFiles)) {
+    private void visitFile(FileDescriptor fd) {
+      if (alreadyVisited.test(fd)) {
         return;
       }
-      files.add(fileDescriptor);
-      visitFiles(fileDescriptor.getDependencies(), onlyVisitingFiles);
-      // disable exploring dependencies when visiting all declarations in a file. Because we have
-      // already visited all the file level dependencies we don't need to do more explorations
-      // since we will just visit the same things over and over.
-      visitMessages(
-          fileDescriptor.getMessageTypes(), /* exploreDependencies=*/ false, onlyVisitingFiles);
-      visitFields(
-          fileDescriptor.getExtensions(), /* exploreDependencies=*/ false, onlyVisitingFiles);
-      visitEnums(fileDescriptor.getEnumTypes(), onlyVisitingFiles);
+      files.putIfAbsent(fd.getName(), fd);
+      fd.getDependencies().forEach(this::visitFile);
+      fd.getExtensions().forEach(this::visitExtension);
+      fd.getMessageTypes().forEach(this::visitMessage);
+      fd.getEnumTypes().forEach(this::visitEnum);
     }
 
-    private void visitMessages(
-        List<Descriptor> descriptors, boolean exploreDependencies, boolean onlyVisitingFiles) {
-      for (Descriptor descriptor : descriptors) {
-        visitMessage(descriptor, exploreDependencies, onlyVisitingFiles);
-      }
-    }
-
-    private void visitMessage(
-        Descriptor messageDescriptor, boolean exploreDependencies, boolean onlyVisitingFiles) {
-      if (!shouldVisitDescriptor(messageDescriptor, onlyVisitingFiles)) {
+    private void visitFileForExtensions(FileDescriptor fd) {
+      if (alreadyVisited.test(fd)) {
         return;
       }
-      descriptors.put(messageDescriptor.getFullName(), messageDescriptor);
-      visitEnums(messageDescriptor.getEnumTypes(), onlyVisitingFiles);
-      visitFields(messageDescriptor.getExtensions(), exploreDependencies, onlyVisitingFiles);
-      visitMessages(messageDescriptor.getNestedTypes(), exploreDependencies, onlyVisitingFiles);
-      // we only need to visit fields to collect field types when we are exploring dependencies
-      if (exploreDependencies) {
-        visitFields(messageDescriptor.getFields(), exploreDependencies, onlyVisitingFiles);
-      }
+      files.putIfAbsent(fd.getName(), fd);
+      fd.getDependencies().forEach(this::visitFileForExtensions);
+      fd.getExtensions().forEach(this::visitExtension);
+      fd.getMessageTypes().forEach(this::visitMessageForExtensions);
     }
 
-    private void visitEnums(List<EnumDescriptor> enumDescriptors, boolean onlyVisitingFiles) {
-      for (EnumDescriptor enumDescriptor : enumDescriptors) {
-        visitEnum(enumDescriptor, onlyVisitingFiles);
-      }
+    private void visitMessageForExtensions(Descriptor d) {
+      d.getExtensions().forEach(this::visitExtension);
+      d.getNestedTypes().forEach(this::visitMessageForExtensions);
     }
 
-    private void visitEnum(EnumDescriptor enumDescriptor, boolean onlyVisitingFiles) {
-      if (!shouldVisitDescriptor(enumDescriptor, onlyVisitingFiles)) {
+    private void visitMessage(Descriptor m) {
+      if (alreadyVisited.test(m)) {
         return;
       }
-      descriptors.put(enumDescriptor.getFullName(), enumDescriptor);
+      msgAndEnumFqnToDesc.put(m.getFullName(), m);
+
+      m.getEnumTypes().forEach(this::visitEnum);
+      m.getExtensions().forEach(this::visitExtension);
+      m.getNestedTypes().forEach(this::visitMessage);
+      m.getFields().forEach(this::visitField);
     }
 
-    private void visitFields(
-        List<FieldDescriptor> fieldDescriptors,
-        boolean exploreDependencies,
-        boolean onlyVisitingFiles) {
-      for (FieldDescriptor fieldDescriptor : fieldDescriptors) {
-        visitField(fieldDescriptor, exploreDependencies, onlyVisitingFiles);
+    private void visitField(FieldDescriptor f) {
+      Preconditions.checkArgument(!f.isExtension());
+      if (f.getType() == FieldDescriptor.Type.MESSAGE) {
+        visitMessage(f.getMessageType());
       }
-    }
-
-    private void visitField(
-        FieldDescriptor fieldDescriptor, boolean exploreDependencies, boolean onlyVisitingFiles) {
-      if (!shouldVisitDescriptor(fieldDescriptor, onlyVisitingFiles)) {
-        return;
-      }
-      if (exploreDependencies && fieldDescriptor.getType() == FieldDescriptor.Type.MESSAGE) {
-        visitMessage(fieldDescriptor.getMessageType(), exploreDependencies, onlyVisitingFiles);
-      }
-      if (exploreDependencies && fieldDescriptor.getType() == FieldDescriptor.Type.ENUM) {
-        visitEnum(fieldDescriptor.getEnumType(), onlyVisitingFiles);
-      }
-      if (fieldDescriptor.isExtension() && !ProtoUtils.shouldJsIgnoreField(fieldDescriptor)) {
-        extensions.put(fieldDescriptor.getContainingType().getFullName(), fieldDescriptor);
+      if (f.getType() == FieldDescriptor.Type.ENUM) {
+        visitEnum(f.getEnumType());
       }
     }
 
-    private boolean shouldVisitDescriptor(GenericDescriptor descriptor, boolean onlyVisitingFiles) {
-      // if we are only visiting files, then we don't need to check the visited hash set unless
-      // this
-      // descriptor is a file, this is because the traversal strategy (where we disable
-      // 'exploreDependencies') means that we are guaranteed to visit each descriptor exactly
-      // once.
-      // So checking the visited set is redundant.
-      if (onlyVisitingFiles && !(descriptor instanceof FileDescriptor)) {
-        return true;
+    private void visitEnum(EnumDescriptor e) {
+      msgAndEnumFqnToDesc.put(e.getFullName(), e);
+    }
+
+    private void visitExtension(FieldDescriptor f) {
+      Preconditions.checkArgument(f.isExtension());
+      if (!ProtoUtils.shouldJsIgnoreField(f)) {
+        msgFqnToExts.put(f.getContainingType().getFullName(), f);
       }
-      return visited.add(descriptor.getFullName());
     }
   }
 
   /** The standard implementation of SoyTypeRegistry, which supports protobuf types. */
-  public static class ProtoSoyTypeRegistry extends DelegatingSoyTypeRegistry
-      implements TypeRegistry.ProtoRegistry {
-
-    /** Map of all the protobuf type descriptors that we've discovered. */
-    private final ImmutableMap<String, GenericDescriptor> descriptors;
+  static class SoyTypeRegistryImpl extends DelegatingSoyTypeRegistry implements ProtoTypeRegistry {
 
     /** All of the known type names for this registry (including its delegate), sorted. */
-    private final Iterable<String> allSortedTypeNames;
+    private final Supplier<Iterable<String>> allSortedTypeNames;
 
     /**
      * Map of the first dotted prefix in a type to its full type name (e.g. "foo." ->
      * "foo.bar.Baz"). Used to check for namespace conflicts in {@link
      * com.google.template.soy.passes.ValidateAliasesPass}.
      */
-    private final ImmutableMap<String, String> prefixesToTypeNames;
-
-    /* Multimap of all known extensions of a given proto */
-    private final ImmutableSetMultimap<String, FieldDescriptor> extensions;
+    private final Supplier<ImmutableMap<String, String>> prefixesToTypeNames;
 
     private final ImmutableSet<FileDescriptor> fileDescriptors;
+    private final ProtoFqnTypeRegistry protoFqnRegistry;
 
-    public ProtoSoyTypeRegistry(
+    public SoyTypeRegistryImpl(
         SoyTypeRegistry delegate,
-        ImmutableMap<String, GenericDescriptor> descriptors,
-        ImmutableSetMultimap<String, FieldDescriptor> extensions,
-        ImmutableSet<FileDescriptor> fileDescriptors) {
+        ImmutableSet<FileDescriptor> fileDescriptors,
+        ProtoFqnTypeRegistry protoFqnRegistry) {
       super(delegate);
-      this.descriptors = descriptors;
-
-      this.allSortedTypeNames =
-          Iterables.mergeSorted(
-              ImmutableList.of(
-                  super.getAllSortedTypeNames(), ImmutableList.sortedCopyOf(descriptors.keySet())),
-              naturalOrder());
-
-      prefixesToTypeNames = getPrefixToTypeNamesMap(allSortedTypeNames);
-
-      this.extensions = extensions;
+      this.protoFqnRegistry = protoFqnRegistry;
       this.fileDescriptors = fileDescriptors;
+
+      this.allSortedTypeNames = Suppliers.memoize(this::buildAllSortedTypeNames);
+      this.prefixesToTypeNames = Suppliers.memoize(this::buildPrefixToTypeNamesMap);
     }
 
     @Override
-    public ImmutableSet<FileDescriptor> getFileDescriptors() {
+    public ImmutableSet<FileDescriptor> getProtoDescriptors() {
       return fileDescriptors;
+    }
+
+    ProtoTypeRegistry getProtoFqnRegistry() {
+      return protoFqnRegistry;
     }
 
     @Nullable
@@ -282,26 +225,31 @@ public final class SoyTypeRegistryBuilder {
       if (type != null) {
         return type;
       }
-      GenericDescriptor descriptor = descriptors.get(typeName);
-      if (descriptor instanceof EnumDescriptor) {
-        return getOrCreateProtoEnumType((EnumDescriptor) descriptor);
-      } else if (descriptor instanceof Descriptor) {
-        Descriptor d = (Descriptor) descriptor;
-        return getOrComputeProtoType(
-            d, name -> new SoyProtoType(this, d, extensions.get(typeName)));
-      } else {
-        return null;
-      }
+      return protoFqnRegistry.getProtoType(typeName);
     }
 
     @Override
     public String findTypeWithMatchingNamespace(String prefix) {
-      return prefixesToTypeNames.get(prefix + ".");
+      return prefixesToTypeNames.get().get(prefix + ".");
     }
 
     @Override
     public Iterable<String> getAllSortedTypeNames() {
-      return allSortedTypeNames;
+      return allSortedTypeNames.get();
+    }
+
+    @Nullable
+    @Override
+    public SoyType getProtoType(String protoFqn) {
+      return protoFqnRegistry.getProtoType(protoFqn);
+    }
+
+    private Iterable<String> buildAllSortedTypeNames() {
+      return Iterables.mergeSorted(
+          ImmutableList.of(
+              super.getAllSortedTypeNames(),
+              ImmutableList.sortedCopyOf(protoFqnRegistry.getAllTypeNames())),
+          naturalOrder());
     }
 
     /**
@@ -309,10 +257,9 @@ public final class SoyTypeRegistryBuilder {
      * first dotted prefix to each full name (e.g. "foo." -> "foo.bar.Baz"). If multiple types have
      * the same prefix, the map will store the first one.
      */
-    private static ImmutableMap<String, String> getPrefixToTypeNamesMap(
-        Iterable<String> fullTypeNames) {
+    private ImmutableMap<String, String> buildPrefixToTypeNamesMap() {
       Map<String, String> prefixesToTypeNamesBuilder = new HashMap<>();
-      for (String typeName : fullTypeNames) {
+      for (String typeName : allSortedTypeNames.get()) {
         String prefix = typeName;
         int indexOfFirstDot = typeName.indexOf(".");
         // If there was no dot, or a dot was the last char, return the whole string.
@@ -323,6 +270,45 @@ public final class SoyTypeRegistryBuilder {
         prefixesToTypeNamesBuilder.putIfAbsent(prefix, typeName);
       }
       return ImmutableMap.copyOf(prefixesToTypeNamesBuilder);
+    }
+  }
+
+  private static class ProtoFqnTypeRegistry implements ProtoTypeRegistry {
+
+    private final TypeInterner interner;
+    /** Map of FQN to descriptor for all message and enum descendants of imported symbols. */
+    private final ImmutableMap<String, GenericDescriptor> msgAndEnumFqnToDesc;
+    /** Multimap of FQN to extensions descriptor for all message descendants of imported symbols. */
+    private final ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts;
+
+    public ProtoFqnTypeRegistry(
+        TypeInterner interner,
+        ImmutableMap<String, GenericDescriptor> msgAndEnumFqnToDesc,
+        ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts) {
+      this.interner = interner;
+      this.msgAndEnumFqnToDesc = msgAndEnumFqnToDesc;
+      this.msgFqnToExts = msgFqnToExts;
+    }
+
+    @Nullable
+    @Override
+    public SoyType getProtoType(String protoFqn) {
+      GenericDescriptor descriptor = msgAndEnumFqnToDesc.get(protoFqn);
+      if (descriptor == null) {
+        return null;
+      } else if (descriptor instanceof EnumDescriptor) {
+        return interner.getOrCreateProtoEnumType((EnumDescriptor) descriptor);
+      } else {
+        return interner.getOrComputeProtoType(
+            (Descriptor) descriptor,
+            name ->
+                new SoyProtoType(
+                    interner, this, (Descriptor) descriptor, msgFqnToExts.get(protoFqn)));
+      }
+    }
+
+    ImmutableSet<String> getAllTypeNames() {
+      return msgAndEnumFqnToDesc.keySet();
     }
   }
 }

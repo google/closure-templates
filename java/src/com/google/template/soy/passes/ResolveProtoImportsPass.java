@@ -31,7 +31,6 @@ import com.google.template.soy.soytree.ImportsContext.ImportsTypeRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder.ProtoSoyTypeRegistry;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -62,11 +61,8 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
     this.pathToDescriptor =
-        typeRegistry instanceof ProtoSoyTypeRegistry
-            ? ((ProtoSoyTypeRegistry) typeRegistry)
-                .getFileDescriptors().stream()
-                    .collect(toImmutableMap(FileDescriptor::getName, d -> d))
-            : ImmutableMap.of();
+        typeRegistry.getProtoDescriptors().stream()
+            .collect(toImmutableMap(FileDescriptor::getName, d -> d));
   }
 
   @Override
