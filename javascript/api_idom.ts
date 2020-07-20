@@ -36,7 +36,8 @@ export const patch = patchInner;
 /** Type for HTML templates */
 export type Template<T> =
     // tslint:disable-next-line:no-any
-    (renderer: IncrementalDomRenderer, args: T, ijData?: googSoy.IjData) => any;
+    (renderer: IncrementalDomRenderer, args: T, ijData?: googSoy.IjData|null) =>
+        void;
 
 interface IdomRendererApi {
   open(nameOrCtor: string, key?: string): void|HTMLElement;
