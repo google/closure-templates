@@ -308,7 +308,7 @@ java_library(
     ],
 )
 
-# TODO(user): Split into smaller libraries.
+# TODO(yannic): Split into smaller libraries.
 java_library(
     name = "soy",
     srcs = glob(
