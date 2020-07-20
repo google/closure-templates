@@ -157,12 +157,14 @@ public final class ValidatedLoggingConfigTest {
             .setElement(LoggableElement.newBuilder().setId(23786).setName("AnElement"))
             .setHasMetadata(true)
             .setJavaPackage("some.java.package")
+            .setJsPackage("root.some.js.package")
             .setClassName("SomeClass")
             .build(),
         AnnotatedLoggableElement.newBuilder()
             .setElement(LoggableElement.newBuilder().setId(23786).setName("AnElement"))
             .setHasMetadata(true)
             .setJavaPackage("different.java.package")
+            .setJsPackage("root.another.js.package")
             .setClassName("DifferentClass")
             .build());
   }
@@ -180,11 +182,13 @@ public final class ValidatedLoggingConfigTest {
             AnnotatedLoggableElement.newBuilder()
                 .setElement(LoggableElement.newBuilder().setName("First").setId(1).build())
                 .setJavaPackage("test.java.package.first")
+                .setJsPackage("root.test.js.packge.first.logging_config")
                 .setClassName("JavaClassFirst")
                 .build(),
             AnnotatedLoggableElement.newBuilder()
                 .setElement(LoggableElement.newBuilder().setName("Second").setId(2).build())
                 .setJavaPackage("test.java.package.second")
+                .setJsPackage("root.test.js.packge.second.logging_config")
                 .setClassName("JavaClassSecond")
                 .build());
 
@@ -192,12 +196,14 @@ public final class ValidatedLoggingConfigTest {
     assertThat(first.getName()).isEqualTo("First");
     assertThat(first.getId()).isEqualTo(1);
     assertThat(first.getJavaPackage()).isEqualTo("test.java.package.first");
+    assertThat(first.getJsPackage()).isEqualTo("root.test.js.packge.first.logging_config");
     assertThat(first.getClassName()).isEqualTo("JavaClassFirst");
 
     ValidatedLoggableElement second = config.getElement("Second");
     assertThat(second.getName()).isEqualTo("Second");
     assertThat(second.getId()).isEqualTo(2);
     assertThat(second.getJavaPackage()).isEqualTo("test.java.package.second");
+    assertThat(second.getJsPackage()).isEqualTo("root.test.js.packge.second.logging_config");
     assertThat(second.getClassName()).isEqualTo("JavaClassSecond");
   }
 }

@@ -38,6 +38,11 @@ public final class SoyAnnotatedLoggingConfigGenerator extends AbstractSoyCompile
   private String javaPackage;
 
   @Option(
+      name = "--js_package",
+      usage = "The VE metadata JS package to use with the given logging config.")
+  private String jsPackage;
+
+  @Option(
       name = "--class_name",
       usage = "The VE metadata class name to use with the given logging config.")
   private String className;
@@ -61,7 +66,7 @@ public final class SoyAnnotatedLoggingConfigGenerator extends AbstractSoyCompile
         sfsBuilder
             .build()
             .generateAnnotatedLoggingConfig(
-                Files.asCharSource(rawLoggingConfigFile, UTF_8), javaPackage, className);
+                Files.asCharSource(rawLoggingConfigFile, UTF_8), javaPackage, jsPackage, className);
 
     try (OutputStream output = new FileOutputStream(outputFile)) {
       loggingConfig.writeTo(output);

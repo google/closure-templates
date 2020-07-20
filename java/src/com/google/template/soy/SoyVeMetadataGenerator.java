@@ -19,6 +19,7 @@ package com.google.template.soy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.io.Files;
+import com.google.template.soy.logging.VeMetadataGenerator;
 import java.io.File;
 import java.io.IOException;
 import org.kohsuke.args4j.Option;
@@ -30,6 +31,9 @@ import org.kohsuke.args4j.Option;
  * reference these constants and access the VE metadata.
  */
 public final class SoyVeMetadataGenerator extends AbstractSoyCompiler {
+
+  @Option(name = "--mode", usage = "Which VE metadata type to output.")
+  private VeMetadataGenerator.Mode mode;
 
   @Option(name = "--generator", usage = "The build label that is generating this metadata.")
   private String generator;
@@ -57,7 +61,7 @@ public final class SoyVeMetadataGenerator extends AbstractSoyCompiler {
     String contents =
         sfsBuilder
             .build()
-            .generateVeMetadata(Files.asByteSource(annotatedLoggingConfigFile), generator);
+            .generateVeMetadata(mode, Files.asByteSource(annotatedLoggingConfigFile), generator);
 
     Files.asCharSink(outputFile, UTF_8).write(contents);
   }

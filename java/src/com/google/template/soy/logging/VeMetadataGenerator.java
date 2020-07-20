@@ -34,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.function.Function;
 
 /**
  * Generates VE metadata files.
@@ -43,14 +44,43 @@ import java.io.InputStreamReader;
  */
 public final class VeMetadataGenerator {
 
+  /** The kind of rendering to produce VE metadata for. */
+  public enum Mode {
+    SERVER("server_ve_metadata.vm"),
+    CLIENT("client_ve_metadata.vm");
+
+    private final String templateFileName;
+
+    private Mode(String templateFileName) {
+      this.templateFileName = templateFileName;
+    }
+
+    private String getTemplateFilename() {
+      return templateFileName;
+    }
+
+    private Function<LoggableElementMetadata, String> getEncodingFunction(
+        ExtensionRegistry extensionRegistry) {
+      switch (this) {
+        case SERVER:
+          return (metadata) -> COMMA.join(Bytes.asList(metadata.toByteArray()));
+        case CLIENT:
+          return (metadata) -> java.util.Arrays.toString(metadata.toByteArray());
+      }
+      throw new AssertionError();
+    }
+  }
+
   private static final Joiner COMMA = Joiner.on(", ");
 
+  private final Mode mode;
   private final ByteSource loggingConfigBytes;
   private final String generator;
   private final TypeRegistry.ProtoRegistry typeRegistry;
 
   public VeMetadataGenerator(
-      ByteSource loggingConfigBytes, String generator, SoyTypeRegistry typeRegistry) {
+      Mode mode, ByteSource loggingConfigBytes, String generator, SoyTypeRegistry typeRegistry) {
+    this.mode = mode;
     this.loggingConfigBytes = loggingConfigBytes;
     this.generator = generator;
     checkArgument(typeRegistry instanceof TypeRegistry.ProtoRegistry);
@@ -66,9 +96,10 @@ public final class VeMetadataGenerator {
     String javaPackage = loggingConfig.getElement(0).getJavaPackage();
     String className = loggingConfig.getElement(0).getClassName();
 
-    ImmutableList<VeMetadata> veMetadatas = getVeMetadatas(loggingConfig, javaPackage, className);
+    ImmutableList<VeMetadata> veMetadatas =
+        getVeMetadatas(mode, loggingConfig, javaPackage, className, registry);
 
-    return generateMetadataFile(javaPackage, className, generator, veMetadatas);
+    return generateMetadataFile(mode, javaPackage, className, generator, veMetadatas);
   }
 
   private AnnotatedLoggingConfig parseLoggingConfig(ExtensionRegistry registry) throws IOException {
@@ -78,7 +109,12 @@ public final class VeMetadataGenerator {
   }
 
   private static ImmutableList<VeMetadata> getVeMetadatas(
-      AnnotatedLoggingConfig loggingConfig, String javaPackage, String className) {
+      Mode mode,
+      AnnotatedLoggingConfig loggingConfig,
+      String javaPackage,
+      String className,
+      ExtensionRegistry registry) {
+    Function<LoggableElementMetadata, String> encodingFunction = mode.getEncodingFunction(registry);
     ImmutableList.Builder<VeMetadata> veMetadatas = ImmutableList.builder();
 
     for (AnnotatedLoggableElement element : loggingConfig.getElementList()) {
@@ -93,7 +129,7 @@ public final class VeMetadataGenerator {
           className,
           element.getClassName());
       if (element.getHasMetadata()) {
-        veMetadatas.add(VeMetadata.create(element));
+        veMetadatas.add(VeMetadata.create(element, encodingFunction));
       }
     }
 
@@ -101,13 +137,17 @@ public final class VeMetadataGenerator {
   }
 
   private String generateMetadataFile(
-      String javaPackage, String className, String generator, ImmutableList<VeMetadata> veMetadatas)
+      Mode mode,
+      String javaPackage,
+      String className,
+      String generator,
+      ImmutableList<VeMetadata> veMetadatas)
       throws IOException {
     Template template =
         Template.parseFrom(
             new BufferedReader(
                 new InputStreamReader(
-                    getClass().getResourceAsStream("server_ve_metadata.vm"), UTF_8)));
+                    getClass().getResourceAsStream(mode.getTemplateFilename()), UTF_8)));
 
     ImmutableMap<String, Object> vars =
         ImmutableMap.of(
@@ -125,10 +165,11 @@ public final class VeMetadataGenerator {
   /** The information needed to generate a metadata constant for a VE. */
   @AutoValue
   public abstract static class VeMetadata {
-    private static VeMetadata create(AnnotatedLoggableElement element) {
+    private static VeMetadata create(
+        AnnotatedLoggableElement element,
+        Function<LoggableElementMetadata, String> encodingFunction) {
       return new AutoValue_VeMetadataGenerator_VeMetadata(
-          element.getElement().getId(),
-          COMMA.join(Bytes.asList(element.getElement().getMetadata().toByteArray())));
+          element.getElement().getId(), encodingFunction.apply(element.getElement().getMetadata()));
     }
 
     public abstract long id();

@@ -445,6 +445,17 @@
     <sourceDirectory>${project.basedir}/java/src</sourceDirectory>
     <testSourceDirectory>${project.basedir}/java/tests</testSourceDirectory>
 
+    <!-- Make sure the metadata templates are where the Java code expects them to be. -->
+    <resources>
+      <resource>
+      <targetPath>com/google/template/soy/logging</targetPath>
+      <directory>java/src/com/google/template/soy/logging</directory>
+      <includes>
+        <include>*.vm</include>
+      </includes>
+      </resource>
+    </resources>
+
     <testResources>
       <testResource>
         <directory>${project.basedir}/java/tests</directory>

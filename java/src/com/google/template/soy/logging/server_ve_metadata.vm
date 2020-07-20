@@ -1,0 +1,34 @@
+#macro ( veMetadata $veMetadata )
+  #set( $veClassName = "V$veMetadata.id()" )
+  private static final class $veClassName {
+    private static final LoggableElementMetadata METADATA = ${veClassName}.metadata();
+
+    private static LoggableElementMetadata metadata() {
+      try {
+        return LoggableElementMetadata.parseFrom(
+            new byte[] {$veMetadata.encodedMetadata()},
+            ExtensionRegistry.getGeneratedRegistry());
+      } catch (InvalidProtocolBufferException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  public static LoggableElementMetadata v$veMetadata.id()() {
+    return ${veClassName}.METADATA;
+  }
+#end
+package $package;
+
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.template.soy.logging.LoggableElementMetadata;
+import javax.annotation.Generated;
+
+@Generated("$generator")
+public final class $className {
+#foreach ( $veMetadata in $veMetadatas )
+
+#veMetadata( $veMetadata )
+#end
+}

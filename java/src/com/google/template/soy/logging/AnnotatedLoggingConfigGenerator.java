@@ -31,16 +31,19 @@ public final class AnnotatedLoggingConfigGenerator {
 
   private final CharSource rawLoggingConfig;
   private final String javaPackage;
+  private final String jsPackage;
   private final String className;
   private final TypeRegistry.ProtoRegistry typeRegistry;
 
   public AnnotatedLoggingConfigGenerator(
       CharSource rawLoggingConfig,
       String javaPackage,
+      String jsPackage,
       String className,
       SoyTypeRegistry typeRegistry) {
     this.rawLoggingConfig = rawLoggingConfig;
     this.javaPackage = javaPackage;
+    this.jsPackage = jsPackage;
     this.className = className;
     checkArgument(typeRegistry instanceof TypeRegistry.ProtoRegistry);
     this.typeRegistry = (TypeRegistry.ProtoRegistry) typeRegistry;
@@ -67,6 +70,7 @@ public final class AnnotatedLoggingConfigGenerator {
                 ValidatedLoggingConfig.UNDEFINED_VE.toBuilder()
                     .setHasMetadata(false)
                     .setJavaPackage(javaPackage)
+                    .setJsPackage(jsPackage)
                     .setClassName(className)
                     .build());
     for (LoggableElement element : loggingConfig.getElementList()) {
@@ -75,6 +79,7 @@ public final class AnnotatedLoggingConfigGenerator {
               .setHasMetadata(element.getMetadata().getSerializedSize() > 0)
               .setElement(element)
               .setJavaPackage(javaPackage)
+              .setJsPackage(jsPackage)
               .setClassName(className));
     }
 

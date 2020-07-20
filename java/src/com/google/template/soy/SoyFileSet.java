@@ -784,14 +784,17 @@ public final class SoyFileSet {
   }
 
   AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
-      CharSource rawLoggingConfig, String javaPackage, String className) throws IOException {
+      CharSource rawLoggingConfig, String javaPackage, String jsPackage, String className)
+      throws IOException {
     return new AnnotatedLoggingConfigGenerator(
-            rawLoggingConfig, javaPackage, className, typeRegistry)
+            rawLoggingConfig, javaPackage, jsPackage, className, typeRegistry)
         .generate();
   }
 
-  String generateVeMetadata(ByteSource loggingConfigBytes, String generator) throws IOException {
-    return new VeMetadataGenerator(loggingConfigBytes, generator, typeRegistry).generate();
+  String generateVeMetadata(
+      VeMetadataGenerator.Mode mode, ByteSource loggingConfigBytes, String generator)
+      throws IOException {
+    return new VeMetadataGenerator(mode, loggingConfigBytes, generator, typeRegistry).generate();
   }
 
   /**

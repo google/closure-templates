@@ -27,6 +27,9 @@ message AnnotatedLoggableElement {
   // The Java package name to use for the generated VE metadata file.
   optional string java_package = 3;
 
+  // The JS package name to use to reference the generated VE metadata file.
+  optional string js_package = 5;
+
   // The class name to use for the generated VE metadata file.
   optional string class_name = 4;
 }
