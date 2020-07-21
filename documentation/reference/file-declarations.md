@@ -34,7 +34,45 @@ and Closure Compiler do not allow it, so if you're using Soy in JavaScript
 together with other Closure technologies, avoid having the same namespace in
 multiple files.
 
-## alias {#alias}
+## import
+
+This command allows you to import protos and templates from other Soy files.
+
+Syntax:
+
+```soy
+import {button, render as fooRender} from 'path/to/soy/file/foo.soy'
+```
+
+**Note:** Always prefer imports over referencing fully qualified names or using
+aliases (both are now deprecated and will soon be banned; we are in the process
+of migrating all existing users to use imports).
+
+### Template Imports
+
+In the above example, `'foo.soy'` needs to contain:
+
+```soy
+{template .button}
+  ...
+{/template}
+
+{template .render}
+  ...
+{/template}
+```
+
+The syntax for calling imported templates is:
+
+```soy
+{call button /}
+{call fooRender /}
+```
+
+(with no dot (".") in the call)
+
+
+## alias (DEPRECATED; will be deleted soon) {#alias}
 
 Syntax:
 

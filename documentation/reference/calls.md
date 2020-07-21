@@ -293,26 +293,39 @@ If a call includes a `param` command with the same name as a field in the `data`
 record, the value from the `param` command is used. In subsequent calls that use
 `data="all"`, the value of the field is the `param` value.
 
-### Calling a template in a different namespace
+### Calling a template in a different file
 
-All of the above examples demonstrate calling a template in the same namespace,
-hence the partial template name (beginning with a dot) used in the `call`
-command text. To call a template from a different namespace, use the full
-template name including namespace. For example:
+All of the above examples demonstrate calling a template in the same file, hence
+the partial template name (beginning with a dot) used in the `call` command
+text.
+
+To call a template in a different file, you must
+[import the template](file-declarations.md#import), and then you can call it
+using the usual syntax:
 
 ```soy
-{call myproject.mymodule.myfeature.exampleCallee}
-  {param pair: $pair /}
-{/call}
+import {button, dialog} from 'path/to/soy/file/foo.soy'
+
+{template .myTemplate}
+  {call button /}
+  {call dialog}
+    {param someParam: 1 /}
+  {/call}
+{/template}
 ```
 
-Or, if you've aliased the namespace of the template you're calling to its last
-identifier, then
+Note that there is no "." dot in the call, since the imported template symbol is
+not relative to the current namespace.
+
+In case of naming collisions, or if the imported template name is unclear from a
+readability perspective (e.g. "content"), you can alias the imported template:
 
 ```soy
-{call myfeature.exampleCallee}
-  {param pair: $pair /}
-{/call}
+import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy'
+
+{template .myTemplate}
+  {call hotelReviewContent /}
+{/template}
 ```
 
 ### Aliasing
