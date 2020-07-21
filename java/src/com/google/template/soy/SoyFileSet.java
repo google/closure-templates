@@ -872,7 +872,11 @@ public final class SoyFileSet {
    *
    * @return The resulting {@code SoyTofu} object.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Use SoySauce instead. All users should be able to switch from
+   *     SoyFileSet.compileToTofu() to SoyFileSet.compileTemplates(). To use the support for
+   *     precompilation see SoySauceBuilder.
    */
+  @Deprecated
   public SoyTofu compileToTofu() {
     return compileToTofu(ImmutableMap.of());
   }
@@ -882,7 +886,11 @@ public final class SoyFileSet {
    *
    * @return The resulting {@code SoyTofu} object.
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Use SoySauce instead. All users should be able to switch from
+   *     SoyFileSet.compileToTofu() to SoyFileSet.compileTemplates(). To use the support for
+   *     precompilation see SoySauceBuilder.
    */
+  @Deprecated
   public SoyTofu compileToTofu(Map<String, Supplier<Object>> pluginInstances) {
     return entryPoint(
         () -> {
