@@ -7643,7 +7643,7 @@ goog.debug.serializeErrorStack_ = function(e, seen) {
   seen || (seen = {});
   seen[goog.debug.serializeErrorAsKey_(e)] = !0;
   var stack = e.stack || "", cause = e.cause;
-  cause && !seen[goog.debug.serializeErrorAsKey_(cause)] && (stack += "\nCaused by: ", cause.stack && 0 == cause.stack.indexOf(cause.message) || (stack += "string" === typeof cause ? cause : cause.message + "\n"), stack += goog.debug.serializeErrorStack_(cause, seen));
+  cause && !seen[goog.debug.serializeErrorAsKey_(cause)] && (stack += "\nCaused by: ", cause.stack && 0 == cause.stack.indexOf(cause.toString()) || (stack += "string" === typeof cause ? cause : cause.message + "\n"), stack += goog.debug.serializeErrorStack_(cause, seen));
   return stack;
 };
 goog.debug.serializeErrorAsKey_ = function(e) {
