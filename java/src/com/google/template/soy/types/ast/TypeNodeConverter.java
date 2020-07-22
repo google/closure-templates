@@ -20,6 +20,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -32,12 +33,16 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ErrorType;
+import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TypeInterner;
+import com.google.template.soy.types.TypeRegistries;
+import com.google.template.soy.types.TypeRegistry;
 import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -92,29 +97,29 @@ public final class TypeNodeConverter
           "list",
           new GenericTypeInfo(1) {
             @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateListType(types.get(0));
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.getOrCreateListType(types.get(0));
             }
           },
           "legacy_object_map",
           new GenericTypeInfo(2) {
             @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.getOrCreateLegacyObjectMapType(types.get(0), types.get(1));
             }
           },
           "map",
           new GenericTypeInfo(2) {
             @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateMapType(types.get(0), types.get(1));
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.getOrCreateMapType(types.get(0), types.get(1));
             }
           },
           "ve",
           new GenericTypeInfo(1) {
             @Override
-            SoyType create(List<SoyType> types, SoyTypeRegistry registry) {
-              return registry.getOrCreateVeType(types.get(0).toString());
+            SoyType create(List<SoyType> types, TypeInterner interner) {
+              return interner.getOrCreateVeType(types.get(0).toString());
             }
           });
 
@@ -133,17 +138,77 @@ public final class TypeNodeConverter
     /**
      * Creates the given type. There are guaranteed to be exactly {@link #numParams} in the list.
      */
-    abstract SoyType create(List<SoyType> types, SoyTypeRegistry registry);
+    abstract SoyType create(List<SoyType> types, TypeInterner interner);
+  }
+
+  public static Builder builder(ErrorReporter errorReporter) {
+    return new Builder().setErrorReporter(errorReporter);
+  }
+
+  /** Builder pattern for {@link TypeNodeConverter}. */
+  public static class Builder {
+    private ErrorReporter errorReporter;
+    private TypeInterner interner;
+    private TypeRegistry typeRegistry;
+    private ProtoTypeRegistry protoRegistry;
+    private boolean disableAllTypeChecking = false;
+    private boolean systemExternal = false;
+
+    private Builder() {}
+
+    public Builder setErrorReporter(ErrorReporter errorReporter) {
+      this.errorReporter = Preconditions.checkNotNull(errorReporter);
+      return this;
+    }
+
+    public Builder setDisableAllTypeChecking(boolean disableAllTypeChecking) {
+      this.disableAllTypeChecking = disableAllTypeChecking;
+      return this;
+    }
+
+    /**
+     * Set to true if {@link TypeNode} inputs will be parsed from non-template sources. If true then
+     * FQ proto names will be supported.
+     */
+    public Builder setSystemExternal(boolean systemExternal) {
+      this.systemExternal = systemExternal;
+      return this;
+    }
+
+    public Builder setTypeRegistry(SoyTypeRegistry typeRegistry) {
+      this.interner = typeRegistry;
+      this.typeRegistry = typeRegistry;
+      this.protoRegistry = typeRegistry.getProtoRegistry();
+      return this;
+    }
+
+    public TypeNodeConverter build() {
+      Preconditions.checkState(interner != null);
+      return new TypeNodeConverter(
+          errorReporter,
+          interner,
+          systemExternal ? TypeRegistries.builtinTypeRegistry() : typeRegistry,
+          systemExternal ? protoRegistry : null,
+          disableAllTypeChecking);
+    }
   }
 
   private final ErrorReporter errorReporter;
-  private final SoyTypeRegistry typeRegistry;
+  private final TypeInterner interner;
+  private final TypeRegistry typeRegistry;
+  private final ProtoTypeRegistry protoRegistry;
   private final boolean disableAllTypeChecking;
 
-  public TypeNodeConverter(
-      ErrorReporter errorReporter, SoyTypeRegistry typeRegistry, boolean disableAllTypeChecking) {
+  private TypeNodeConverter(
+      ErrorReporter errorReporter,
+      TypeInterner interner,
+      TypeRegistry typeRegistry,
+      ProtoTypeRegistry protoRegistry,
+      boolean disableAllTypeChecking) {
     this.errorReporter = errorReporter;
+    this.interner = interner;
     this.typeRegistry = typeRegistry;
+    this.protoRegistry = protoRegistry;
     this.disableAllTypeChecking = disableAllTypeChecking;
   }
 
@@ -165,6 +230,9 @@ public final class TypeNodeConverter
       errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
     }
     SoyType type = typeRegistry.getType(name);
+    if (type == null && protoRegistry != null) {
+      type = protoRegistry.getProtoType(name);
+    }
     if (type == null) {
       GenericTypeInfo genericType = GENERIC_TYPES.get(name);
       if (genericType != null) {
@@ -218,7 +286,7 @@ public final class TypeNodeConverter
       return ErrorType.getInstance();
     }
 
-    SoyType type = genericType.create(Lists.transform(args, this), typeRegistry);
+    SoyType type = genericType.create(Lists.transform(args, this), interner);
     node.setResolvedType(type);
     return type;
   }
@@ -231,7 +299,7 @@ public final class TypeNodeConverter
     // result (which the transform documentation recommends to avoid lazy evaluation), we ensure
     // that all type nodes are visited.
     SoyType type =
-        typeRegistry.getOrCreateUnionType(
+        interner.getOrCreateUnionType(
             node.candidates().stream().map(this).collect(toImmutableList()));
     node.setResolvedType(type);
     return type;
@@ -251,7 +319,7 @@ public final class TypeNodeConverter
         map.put(property.name(), oldType);
       }
     }
-    SoyType type = typeRegistry.getOrCreateRecordType(map.values());
+    SoyType type = interner.getOrCreateRecordType(map.values());
     node.setResolvedType(type);
     return type;
   }
@@ -277,7 +345,7 @@ public final class TypeNodeConverter
       errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
     }
     SoyType type =
-        typeRegistry.internTemplateType(TemplateType.declaredTypeOf(map.values(), returnType));
+        interner.internTemplateType(TemplateType.declaredTypeOf(map.values(), returnType));
     node.setResolvedType(type);
     return type;
   }

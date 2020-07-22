@@ -38,4 +38,8 @@ public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
   default ImmutableSet<FileDescriptor> getProtoDescriptors() {
     return ImmutableSet.of();
   }
+
+  default ProtoTypeRegistry getProtoRegistry() {
+    return (fqn) -> null;
+  }
 }

@@ -304,7 +304,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
   private ExprEquivalence exprEquivalence;
   private SoyTypeRegistry typeRegistry;
-  private TypeNodeConverter typeNodeConverter;
+  private TypeNodeConverter pluginTypeConverter;
   private final PluginResolver.Mode pluginResolutionMode;
 
   ResolveExpressionTypesPass(
@@ -327,8 +327,11 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     substitutions = null; // make sure substitutions don't leak across files
     exprEquivalence = new ExprEquivalence();
     typeRegistry = file.getSoyTypeRegistry();
-    typeNodeConverter =
-        new TypeNodeConverter(errorReporter, typeRegistry, /* disableAllTypeChecking= */ false);
+    pluginTypeConverter =
+        TypeNodeConverter.builder(errorReporter)
+            .setTypeRegistry(typeRegistry)
+            .setSystemExternal(true)
+            .build();
     new TypeAssignmentSoyVisitor().exec(file);
   }
 
@@ -1336,7 +1339,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         if (paramType == null) {
           return null;
         }
-        paramTypes.add(typeNodeConverter.getOrCreateType(paramType));
+        paramTypes.add(pluginTypeConverter.getOrCreateType(paramType));
       }
       TypeNode returnType =
           SoyFileParser.parseType(signature.returnType(), className, errorReporter);
@@ -1345,7 +1348,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
       resolvedSignature =
           ResolvedSignature.create(
-              paramTypes.build(), typeNodeConverter.getOrCreateType(returnType));
+              paramTypes.build(), pluginTypeConverter.getOrCreateType(returnType));
       signatureMap.put(signature, resolvedSignature);
       return resolvedSignature;
     }
@@ -2484,7 +2487,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                     TypeNode typeNode =
                         SoyFileParser.parseType(t, fct.getClass().getName(), errorReporter);
                     return typeNode != null
-                        ? typeNodeConverter.getOrCreateType(typeNode)
+                        ? pluginTypeConverter.getOrCreateType(typeNode)
                         : ErrorType.getInstance();
                   }
                 });

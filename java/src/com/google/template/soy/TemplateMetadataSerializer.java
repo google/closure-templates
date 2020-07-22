@@ -312,7 +312,7 @@ public final class TemplateMetadataSerializer {
         return MessageType.getInstance();
       case PROTO:
         {
-          SoyType type = typeRegistry.getType(proto.getProto());
+          SoyType type = typeRegistry.getProtoRegistry().getProtoType(proto.getProto());
           if (type == null) {
             errorReporter.report(
                 new SourceLocation(filePath), UNABLE_TO_FIND_TYPE, "proto", proto.getProto());
@@ -333,7 +333,7 @@ public final class TemplateMetadataSerializer {
         }
       case PROTO_ENUM:
         {
-          SoyType type = typeRegistry.getType(proto.getProtoEnum());
+          SoyType type = typeRegistry.getProtoRegistry().getProtoType(proto.getProtoEnum());
           if (type == null) {
             errorReporter.report(
                 new SourceLocation(filePath),

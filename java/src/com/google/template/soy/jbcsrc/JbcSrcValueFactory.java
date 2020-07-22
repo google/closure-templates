@@ -423,6 +423,6 @@ final class JbcSrcValueFactory extends JavaValueFactory {
 
   /** Returns the SoyType for a proto or proto enum. */
   private SoyType soyTypeForProtoOrEnum(Class<?> type) {
-    return registry.getType(nameFromDescriptor(type));
+    return registry.getProtoRegistry().getProtoType(nameFromDescriptor(type));
   }
 }
