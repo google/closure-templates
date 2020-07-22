@@ -20,6 +20,7 @@ java_library(
         "//java/src/com/google/template/soy/jbcsrc",
         "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/jbcsrc/shared",
+        "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/parseinfo",
         "//java/src/com/google/template/soy/shared/internal",
         "//java/src/com/google/template/soy/shared/restricted",

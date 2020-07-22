@@ -49,6 +49,7 @@ import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import java.io.Closeable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -113,6 +114,8 @@ public final class BytecodeUtils {
   public static final Type INTEGER_TYPE = Type.getType(Integer.class);
   public static final Type BOXED_LONG_TYPE = Type.getType(Long.class);
   public static final Type BOXED_BOOLEAN_TYPE = Type.getType(Boolean.class);
+  public static final Type LOGGABLE_ELEMENT_METADATA_TYPE =
+      Type.getType(LoggableElementMetadata.class);
 
   public static final Method CLASS_INIT = Method.getMethod("void <clinit>()");
   public static final Method NULLARY_INIT = Method.getMethod("void <init>()");

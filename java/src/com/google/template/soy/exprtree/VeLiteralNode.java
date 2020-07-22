@@ -15,9 +15,12 @@
  */
 package com.google.template.soy.exprtree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.types.SoyType;
 import javax.annotation.Nullable;
 
@@ -26,7 +29,7 @@ public final class VeLiteralNode extends AbstractExprNode {
 
   private final Identifier veIdentifier;
   private final Identifier name;
-  @Nullable private Long id;
+  @Nullable private ValidatedLoggableElement loggableElement;
   private SoyType type;
 
   public VeLiteralNode(Identifier veIdentifier, Identifier name, SourceLocation srcLoc) {
@@ -39,7 +42,7 @@ public final class VeLiteralNode extends AbstractExprNode {
     super(orig, copyState);
     this.veIdentifier = orig.veIdentifier;
     this.name = orig.name;
-    this.id = orig.id;
+    this.loggableElement = orig.loggableElement;
     this.type = orig.type;
   }
 
@@ -51,13 +54,17 @@ public final class VeLiteralNode extends AbstractExprNode {
     return name;
   }
 
-  public void setId(long id) {
-    this.id = id;
+  public void setLoggableElement(ValidatedLoggableElement loggableElement) {
+    this.loggableElement = loggableElement;
   }
 
   @Nullable
   public Long getId() {
-    return id;
+    return loggableElement == null ? null : loggableElement.getId();
+  }
+
+  public ValidatedLoggableElement getLoggableElement() {
+    return checkNotNull(loggableElement);
   }
 
   public void setType(SoyType type) {

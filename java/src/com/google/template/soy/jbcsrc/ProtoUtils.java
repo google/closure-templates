@@ -108,7 +108,6 @@ final class ProtoUtils {
   private static final Type BYTE_STRING_TYPE = Type.getType(ByteString.class);
   private static final Type EXTENSION_TYPE = Type.getType(GeneratedExtension.class);
 
-  private static final Type[] NO_METHOD_ARGS = {};
   private static final Type[] ONE_INT_ARG = {Type.INT_TYPE};
 
   private static final MethodRef BASE_ENCODING_BASE_64 =
@@ -1440,7 +1439,7 @@ final class ProtoUtils {
                     + (isProto3Enum ? "Value" : "")
                     + repeatedType,
                 runtimeType,
-                NO_METHOD_ARGS))
+                MethodRef.NO_METHOD_ARGS))
         // All protos are guaranteed to never return null
         .asNonNullable()
         .asCheap();
@@ -1470,7 +1469,10 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor.getContainingType());
     return MethodRef.createInstanceMethod(
             message,
-            new Method("has" + getFieldName(descriptor, true), Type.BOOLEAN_TYPE, NO_METHOD_ARGS))
+            new Method(
+                "has" + getFieldName(descriptor, true),
+                Type.BOOLEAN_TYPE,
+                MethodRef.NO_METHOD_ARGS))
         .asCheap();
   }
 
@@ -1482,7 +1484,7 @@ final class ProtoUtils {
             new Method(
                 "get" + underscoresToCamelCase(descriptor.getName(), true) + "Case",
                 TypeInfo.createClass(JavaQualifiedNames.getCaseEnumClassName(descriptor)).type(),
-                NO_METHOD_ARGS))
+                MethodRef.NO_METHOD_ARGS))
         .asCheap();
   }
 
@@ -1491,7 +1493,7 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
-            message, new Method("newBuilder", builder.type(), NO_METHOD_ARGS))
+            message, new Method("newBuilder", builder.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
   }
 
@@ -1499,7 +1501,7 @@ final class ProtoUtils {
   private static MethodRef getDefaultInstanceMethod(Descriptor descriptor) {
     TypeInfo message = messageRuntimeType(descriptor);
     return MethodRef.createStaticMethod(
-            message, new Method("getDefaultInstance", message.type(), NO_METHOD_ARGS))
+            message, new Method("getDefaultInstance", message.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
   }
 
@@ -1536,7 +1538,7 @@ final class ProtoUtils {
     TypeInfo message = messageRuntimeType(descriptor);
     TypeInfo builder = builderRuntimeType(descriptor);
     return MethodRef.createInstanceMethod(
-            builder, new Method("build", message.type(), NO_METHOD_ARGS))
+            builder, new Method("build", message.type(), MethodRef.NO_METHOD_ARGS))
         .asNonNullable();
   }
 

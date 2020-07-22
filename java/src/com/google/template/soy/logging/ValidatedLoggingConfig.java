@@ -168,7 +168,8 @@ public final class ValidatedLoggingConfig {
           Optional.ofNullable(Strings.emptyToNull(element.getProtoType())),
           annotatedElement.getJavaPackage(),
           annotatedElement.getJsPackage(),
-          annotatedElement.getClassName());
+          annotatedElement.getClassName(),
+          annotatedElement.getHasMetadata());
     }
 
     ValidatedLoggableElement() {}
@@ -184,5 +185,12 @@ public final class ValidatedLoggingConfig {
     public abstract String getJsPackage();
 
     public abstract String getClassName();
+
+    public abstract boolean hasMetadata();
+
+    /** The name of the generated method to access the VE metadata for this VE ID. */
+    public final String getGeneratedVeMetadataMethodName() {
+      return String.format("v%s", getId());
+    }
   }
 }

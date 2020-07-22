@@ -22,6 +22,7 @@ java_library(
         "//java/src/com/google/template/soy/shared/internal:shared_runtime",
         "//java/src/com/google/template/soy/shared/restricted",
         "//java/src/com/google/template/soy/types",
+        "//src/main/protobuf:logging_config_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",

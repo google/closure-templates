@@ -17,19 +17,29 @@
 package com.google.template.soy.data;
 
 import com.google.auto.value.AutoValue;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import java.io.IOException;
 
 /** Soy's runtime representation of objects of the Soy {@code ve} type. */
 @AutoValue
 public abstract class SoyVisualElement extends SoyAbstractValue {
 
+  private static final LoggableElementMetadata EMPTY_METADATA =
+      LoggableElementMetadata.getDefaultInstance();
+
   static SoyVisualElement create(long id, String name) {
-    return new AutoValue_SoyVisualElement(id, name);
+    return create(id, name, EMPTY_METADATA);
+  }
+
+  static SoyVisualElement create(long id, String name, LoggableElementMetadata metadata) {
+    return new AutoValue_SoyVisualElement(id, name, metadata);
   }
 
   public abstract long id();
 
   public abstract String name();
+
+  public abstract LoggableElementMetadata metadata();
 
   @Override
   public boolean coerceToBoolean() {

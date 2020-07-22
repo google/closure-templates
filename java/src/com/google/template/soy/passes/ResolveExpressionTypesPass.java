@@ -1632,7 +1632,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         } else {
           type = VeType.NO_DATA;
         }
-        node.setId(config.getId());
+        node.setLoggableElement(config);
       }
       node.setType(type);
     }

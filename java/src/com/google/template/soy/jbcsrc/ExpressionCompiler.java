@@ -96,7 +96,9 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
+import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
@@ -120,6 +122,7 @@ import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 /**
  * Compiles an {@link ExprNode} to a {@link SoyExpression}.
@@ -1520,10 +1523,29 @@ final class ExpressionCompiler {
 
     @Override
     protected SoyExpression visitVeLiteralNode(VeLiteralNode node) {
-      return SoyExpression.forSoyValue(
-          node.getType(),
-          MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(
-              constant(node.getId()), constant(node.getName().identifier())));
+      Expression visualElement;
+      ValidatedLoggableElement element = node.getLoggableElement();
+      if (element.hasMetadata()) {
+        MethodRef metadata =
+            MethodRef.createStaticMethod(
+                    TypeInfo.create(
+                        String.format("%s.%s", element.getJavaPackage(), element.getClassName()),
+                        /* isInterface= */ false),
+                    new Method(
+                        element.getGeneratedVeMetadataMethodName(),
+                        BytecodeUtils.LOGGABLE_ELEMENT_METADATA_TYPE,
+                        MethodRef.NO_METHOD_ARGS))
+                .asNonNullable()
+                .asCheap();
+        visualElement =
+            MethodRef.SOY_VISUAL_ELEMENT_CREATE_METADATA.invoke(
+                constant(node.getId()), constant(node.getName().identifier()), metadata.invoke());
+      } else {
+        visualElement =
+            MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(
+                constant(node.getId()), constant(node.getName().identifier()));
+      }
+      return SoyExpression.forSoyValue(node.getType(), visualElement);
     }
 
     @Override

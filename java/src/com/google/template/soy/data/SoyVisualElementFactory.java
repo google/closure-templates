@@ -16,6 +16,8 @@
 
 package com.google.template.soy.data;
 
+import com.google.template.soy.logging.LoggableElementMetadata;
+
 /**
  * Creates SoyVisualElement instances. In a separate file so that it can be visibility-restricted.
  */
@@ -23,6 +25,10 @@ public final class SoyVisualElementFactory {
 
   public static SoyVisualElement create(long id, String name) {
     return SoyVisualElement.create(id, name);
+  }
+
+  public static SoyVisualElement create(long id, String name, LoggableElementMetadata metadata) {
+    return SoyVisualElement.create(id, name, metadata);
   }
 
   /** Non-instantiable */
