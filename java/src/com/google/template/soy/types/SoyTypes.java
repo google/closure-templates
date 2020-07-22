@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -558,5 +559,25 @@ public final class SoyTypes {
       SoyType root, @Nullable SoyTypeRegistry registry) {
     return new BreadthFirstIterator<>(
         ImmutableList.of(root), new SoyTypeSuccessorsFunction(registry));
+  }
+
+  /**
+   * Resolves a local symbol to a fully-qualified name. Supports dotted local symbols so e.g.:
+   * {@code localToFqn("A", ImmutableMap.of("A", "pkg.A")) == "pkg.A"} and {@code localToFqn("A.B",
+   * ImmutableMap.of("A", "pkg.A")) == "pkg.A.B"}.
+   *
+   * @return {@code null} if no match exists in {@code localToFqn}.
+   */
+  @Nullable
+  public static String localToFqn(String localSymbol, Map<String, String> localToFqn) {
+    // Support nested messages by resolving the first token against the map and then appending
+    // subsequent tokens.
+    int index = localSymbol.indexOf('.');
+    String localRoot = index >= 0 ? localSymbol.substring(0, index) : localSymbol;
+    String fqnRoot = localToFqn.get(localRoot);
+    if (fqnRoot == null) {
+      return null;
+    }
+    return index >= 0 ? fqnRoot + localSymbol.substring(index) : fqnRoot;
   }
 }

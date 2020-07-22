@@ -20,12 +20,15 @@ import static com.google.template.soy.exprtree.Operator.TIMES;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.expr;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.testing.Example;
+import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.KvPair;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SomeEmbeddedMessage;
+import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -42,33 +45,36 @@ import org.junit.runners.JUnit4;
 public final class JspbTest {
 
   private static final SoyTypeRegistry REGISTRY =
-      new SoyTypeRegistryBuilder()
-          .addDescriptors(
-              ImmutableList.of(
-                  Example.getDescriptor().getFile(),
-                  Proto3Message.getDescriptor().getFile(),
-                  Foo.getDescriptor().getFile()))
-          .build();
+      SharedTestUtils.importing(
+          Example.getDescriptor(),
+          ExampleExtendable.getDescriptor(),
+          Proto3Message.getDescriptor(),
+          Foo.getDescriptor(),
+          KvPair.getDescriptor(),
+          SomeEmbeddedMessage.getDescriptor(),
+          SomeEnum.getDescriptor(),
+          Example.listExtension.getDescriptor(),
+          Example.someIntExtension.getDescriptor());
 
   // Proto field access tests
 
   @Test
   public void testProtoMessage() {
-    assertThatSoyExpr(expr("$protoMessage").withParam("{@param protoMessage: soy.test.Foo}"))
+    assertThatSoyExpr(expr("$protoMessage").withParam("{@param protoMessage: Foo}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.protoMessage;");
   }
 
   @Test
   public void testProtoEnum() {
-    assertThatSoyExpr(expr("$protoEnum").withParam("{@param protoEnum: soy.test.Foo.InnerEnum}"))
+    assertThatSoyExpr(expr("$protoEnum").withParam("{@param protoEnum: Foo.InnerEnum}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.protoEnum;");
   }
 
   @Test
   public void testSimpleProto() {
-    assertThatSoyExpr(expr("$proto.key").withParam("{@param proto: example.KvPair}"))
+    assertThatSoyExpr(expr("$proto.key").withParam("{@param proto: KvPair}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.proto.getKey();");
   }
@@ -76,15 +82,14 @@ public final class JspbTest {
   @Test
   public void testInnerMessage() {
     assertThatSoyExpr(
-            expr("$proto.field")
-                .withParam("{@param proto : example.ExampleExtendable.InnerMessage}"))
+            expr("$proto.field").withParam("{@param proto : ExampleExtendable.InnerMessage}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.proto.getField();");
   }
 
   @Test
   public void testMath() {
-    assertThatSoyExpr(expr("$pair.anotherValue * 5").withParam("{@param pair : example.KvPair}"))
+    assertThatSoyExpr(expr("$pair.anotherValue * 5").withParam("{@param pair : KvPair}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.pair.getAnotherValue() * 5;")
         .withPrecedence(TIMES);
@@ -92,7 +97,7 @@ public final class JspbTest {
 
   @Test
   public void testProto3Fields_int() {
-    assertThatSoyExpr(expr("$msg.intField * 5").withParam("{@param msg : soy.test3.Proto3Message}"))
+    assertThatSoyExpr(expr("$msg.intField * 5").withParam("{@param msg : Proto3Message}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.msg.getIntField() * 5;")
         .withPrecedence(TIMES);
@@ -101,8 +106,7 @@ public final class JspbTest {
   @Test
   public void testProto3Fields_oneof() {
     assertThatSoyExpr(
-            expr("$msg.anotherMessageField.field * 5")
-                .withParam("{@param msg: soy.test3.Proto3Message}"))
+            expr("$msg.anotherMessageField.field * 5").withParam("{@param msg: Proto3Message}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.msg.getAnotherMessageField().getField() * 5;")
         .withPrecedence(TIMES);
@@ -111,13 +115,13 @@ public final class JspbTest {
   @Test
   public void testGetExtension() {
     assertThatSoyExpr(
-            expr("$proto.getExtension(example.someIntExtension)")
-                .withParam("{@param proto: example.ExampleExtendable}"))
+            expr("$proto.getExtension(someIntExtension)")
+                .withParam("{@param proto: ExampleExtendable}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.proto.getExtension(proto.example.someIntExtension);");
     assertThatSoyExpr(
-            expr("$proto.getExtension(example.listExtensionList)")
-                .withParam("{@param proto: example.ExampleExtendable}"))
+            expr("$proto.getExtension(listExtensionList)")
+                .withParam("{@param proto: ExampleExtendable}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("opt_data.proto.getExtension(proto.example.listExtensionList);");
   }
@@ -126,7 +130,7 @@ public final class JspbTest {
 
   @Test
   public void testProtoInit_empty() {
-    assertThatSoyExpr("example.ExampleExtendable()")
+    assertThatSoyExpr("ExampleExtendable()")
         .withTypeRegistry(REGISTRY)
         .generatesCode("new proto.example.ExampleExtendable();");
   }
@@ -134,9 +138,9 @@ public final class JspbTest {
   @Test
   public void testProtoInit_messageField() {
     assertThatSoyExpr(
-            "example.ExampleExtendable(",
+            "ExampleExtendable(",
             "  someEmbeddedMessage:",
-            "    example.SomeEmbeddedMessage(someEmbeddedNum: 1000)",
+            "    SomeEmbeddedMessage(someEmbeddedNum: 1000)",
             "  )")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
@@ -144,23 +148,21 @@ public final class JspbTest {
                 + " proto.example.SomeEmbeddedMessage().setSomeEmbeddedNum(1000));");
 
     assertThatSoyExpr(
-            expr("example.ExampleExtendable(someEmbeddedMessage: $e)")
-                .withParam("{@param e: example.SomeEmbeddedMessage}"))
+            expr("ExampleExtendable(someEmbeddedMessage: $e)")
+                .withParam("{@param e: SomeEmbeddedMessage}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode("new proto.example.ExampleExtendable().setSomeEmbeddedMessage(opt_data.e);");
   }
 
   @Test
   public void testProtoInit_enumField() {
-    assertThatSoyExpr("example.ExampleExtendable(someEnum: example.SomeEnum.SECOND)")
+    assertThatSoyExpr("ExampleExtendable(someEnum: SomeEnum.SECOND)")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setSomeEnum(/** @type {?proto.example.SomeEnum}"
                 + " */ (2));");
 
-    assertThatSoyExpr(
-            expr("example.ExampleExtendable(someEnum: $e)")
-                .withParam("{@param e: example.SomeEnum}"))
+    assertThatSoyExpr(expr("ExampleExtendable(someEnum: $e)").withParam("{@param e: SomeEnum}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setSomeEnum(/** @type"
@@ -169,14 +171,14 @@ public final class JspbTest {
 
   @Test
   public void testProtoInit_repeatedField() {
-    assertThatSoyExpr("example.ExampleExtendable(repeatedLongWithInt52JsTypeList: [1000, 2000])")
+    assertThatSoyExpr("ExampleExtendable(repeatedLongWithInt52JsTypeList: [1000, 2000])")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setRepeatedLongWithInt52JsTypeList([1000,"
                 + " 2000]);");
 
     assertThatSoyExpr(
-            expr("example.ExampleExtendable(repeatedLongWithInt52JsTypeList: $l)")
+            expr("ExampleExtendable(repeatedLongWithInt52JsTypeList: $l)")
                 .withParam("{@param l: list<int>}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
@@ -186,15 +188,13 @@ public final class JspbTest {
 
   @Test
   public void testProtoInit_extensionField() {
-    assertThatSoyExpr("example.ExampleExtendable(example.someIntExtension: 1000)")
+    assertThatSoyExpr("ExampleExtendable(someIntExtension: 1000)")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
                 + " 1000);");
 
-    assertThatSoyExpr(
-            expr("example.ExampleExtendable(example.someIntExtension: $i)")
-                .withParam("{@param i: int}"))
+    assertThatSoyExpr(expr("ExampleExtendable(someIntExtension: $i)").withParam("{@param i: int}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setExtension(proto.example.someIntExtension,"
@@ -203,15 +203,14 @@ public final class JspbTest {
 
   @Test
   public void testProtoInit_extensionRepeatedField() {
-    assertThatSoyExpr("example.ExampleExtendable(example.listExtensionList: [1000, 2000, 3000])")
+    assertThatSoyExpr("ExampleExtendable(listExtensionList: [1000, 2000, 3000])")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
                 + " [1000, 2000, 3000]);");
 
     assertThatSoyExpr(
-            expr("example.ExampleExtendable(example.listExtensionList: $l)")
-                .withParam("{@param l: list<int>}"))
+            expr("ExampleExtendable(listExtensionList: $l)").withParam("{@param l: list<int>}"))
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"

@@ -45,10 +45,12 @@ final class ResolvePluginsPass implements CompilerFilePass {
       // Functions with 0 arguments are ambiguous with proto init nodes with no arguments, check the
       // type registry first to see if this is such a case
       if (function.numChildren() == 0) {
-        String name = function.getFunctionName();
-        Identifier resolvedName =
-            file.resolveAlias(Identifier.create(name, function.getFunctionNameLocation()));
+        Identifier resolvedName = function.getIdentifier();
         SoyType type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
+        if (type == null) {
+          resolvedName = file.resolveAlias(resolvedName);
+          type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
+        }
         if (type != null && type.getKind() == SoyType.Kind.PROTO) {
           ProtoInitNode protoInit =
               new ProtoInitNode(resolvedName, ImmutableList.of(), function.getSourceLocation());

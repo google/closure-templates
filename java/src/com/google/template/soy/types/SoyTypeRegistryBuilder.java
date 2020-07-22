@@ -36,7 +36,6 @@ import com.google.template.soy.internal.proto.ProtoUtils;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -64,7 +63,7 @@ public final class SoyTypeRegistryBuilder {
     return this;
   }
 
-  public SoyTypeRegistryImpl build() {
+  public SoyTypeRegistry build() {
     ImmutableList<GenericDescriptor> tmp = descriptors.build();
     ProtoFqnRegistryBuilder builder = new ProtoFqnRegistryBuilder(tmp);
     SoyTypeRegistry base = create();
@@ -72,14 +71,15 @@ public final class SoyTypeRegistryBuilder {
     return new SoyTypeRegistryImpl(base, ImmutableSet.copyOf(builder.files.values()), registry);
   }
 
-  static class ProtoFqnRegistryBuilder {
+  /** Builder for {@link ProtoTypeRegistry}. */
+  public static class ProtoFqnRegistryBuilder {
     private final ImmutableSet<GenericDescriptor> inputs;
     private final Predicate<GenericDescriptor> alreadyVisited;
     private final Map<String, GenericDescriptor> msgAndEnumFqnToDesc = new HashMap<>();
     private final SetMultimap<String, FieldDescriptor> msgFqnToExts = HashMultimap.create();
     private final Map<String, FileDescriptor> files = new LinkedHashMap<>();
 
-    public ProtoFqnRegistryBuilder(List<GenericDescriptor> inputs) {
+    public ProtoFqnRegistryBuilder(Iterable<GenericDescriptor> inputs) {
       this.inputs = ImmutableSet.copyOf(inputs); // maintain order
       Set<GenericDescriptor> visited = new HashSet<>();
       alreadyVisited = d -> !visited.add(d);
@@ -113,7 +113,11 @@ public final class SoyTypeRegistryBuilder {
       if (descriptor instanceof Descriptor) {
         visitMessage((Descriptor) descriptor);
       } else if (descriptor instanceof FieldDescriptor) {
-        visitField((FieldDescriptor) descriptor);
+        FieldDescriptor fd = (FieldDescriptor) descriptor;
+        if (fd.isExtension()) {
+          visitExtension(fd);
+        }
+        visitField(fd);
       } else if (descriptor instanceof EnumDescriptor) {
         visitEnum((EnumDescriptor) descriptor);
       } else if (descriptor instanceof FileDescriptor) {
@@ -160,7 +164,6 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitField(FieldDescriptor f) {
-      Preconditions.checkArgument(!f.isExtension());
       if (f.getType() == FieldDescriptor.Type.MESSAGE) {
         visitMessage(f.getMessageType());
       }
@@ -294,17 +297,16 @@ public final class SoyTypeRegistryBuilder {
     @Override
     public SoyType getProtoType(String protoFqn) {
       GenericDescriptor descriptor = msgAndEnumFqnToDesc.get(protoFqn);
-      if (descriptor == null) {
-        return null;
-      } else if (descriptor instanceof EnumDescriptor) {
+      if (descriptor instanceof EnumDescriptor) {
         return interner.getOrCreateProtoEnumType((EnumDescriptor) descriptor);
-      } else {
+      } else if (descriptor instanceof Descriptor) {
         return interner.getOrComputeProtoType(
             (Descriptor) descriptor,
             name ->
                 new SoyProtoType(
                     interner, this, (Descriptor) descriptor, msgFqnToExts.get(protoFqn)));
       }
+      return null;
     }
 
     ImmutableSet<String> getAllTypeNames() {

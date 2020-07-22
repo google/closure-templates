@@ -16,23 +16,39 @@
 
 package com.google.template.soy.testing;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.collect.Streams.stream;
 import static com.google.common.truth.Truth.assertWithMessage;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.types.DelegatingSoyTypeRegistry;
+import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypeRegistryBuilder;
+import com.google.template.soy.types.SoyTypeRegistryBuilder.ProtoFqnRegistryBuilder;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.UnknownType;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -106,10 +122,7 @@ public final class SharedTestUtils {
   /** Returns a template body for the given soy expression. With type specializations. */
   public static String createTemplateBodyForExpression(
       String soyExpr, final Map<String, SoyType> typeMap) {
-    ExprNode expr =
-        SoyFileParser.parseExpression(
-            soyExpr,
-            ErrorReporter.exploding());
+    ExprNode expr = SoyFileParser.parseExpression(soyExpr, ErrorReporter.exploding());
     final Set<String> loopVarNames = new HashSet<>();
     final Set<String> names = new HashSet<>();
     new AbstractExprNodeVisitor<Void>() {
@@ -202,5 +215,87 @@ public final class SharedTestUtils {
             "These files are missing tests methods. Delete the files or add test methods for them.")
         .that(Sets.difference(Sets.difference(testFiles, filesWithoutTestMethods), testMethods))
         .isEmpty();
+  }
+
+  public static SoyTypeRegistry importing(GenericDescriptor... descriptors) {
+    return importing(Arrays.asList(descriptors));
+  }
+
+  /**
+   * Creates a type registry that will resolve every message, enum, or extension in {@code
+   * descriptors} as though a corresponding import statement were included in the template source.
+   */
+  public static SoyTypeRegistry importing(Iterable<GenericDescriptor> descriptors) {
+    SoyTypeRegistry baseTypes = SoyTypeRegistryBuilder.create();
+    ProtoTypeRegistry fqnRegistry = new ProtoFqnRegistryBuilder(descriptors).build(baseTypes);
+    ImmutableMap<String, String> localToFqn =
+        stream(descriptors)
+            .filter(
+                d ->
+                    d instanceof Descriptor
+                        || d instanceof EnumDescriptor
+                        || (d instanceof FieldDescriptor && ((FieldDescriptor) d).isExtension()))
+            .collect(toImmutableMap(SharedTestUtils::localName, SharedTestUtils::fqnName));
+    ImmutableSet<FileDescriptor> files =
+        stream(descriptors).map(GenericDescriptor::getFile).collect(toImmutableSet());
+    return new TestSoyTypeRegistry(baseTypes, localToFqn, fqnRegistry, files);
+  }
+
+  private static String localName(GenericDescriptor d) {
+    if (d instanceof FieldDescriptor) {
+      return Field.computeSoyName((FieldDescriptor) d);
+    }
+    String pkg = d.getFile().getPackage();
+    return pkg.isEmpty() ? d.getFullName() : d.getFullName().substring(pkg.length() + 1);
+  }
+
+  private static String fqnName(GenericDescriptor d) {
+    if (d instanceof FieldDescriptor) {
+      return Field.computeSoyFullyQualifiedName((FieldDescriptor) d);
+    }
+    return d.getFullName();
+  }
+
+  private static class TestSoyTypeRegistry extends DelegatingSoyTypeRegistry {
+    private final ImmutableMap<String, String> localToFqn;
+    private final ProtoTypeRegistry fqnRegistry;
+    private final ImmutableSet<FileDescriptor> files;
+
+    public TestSoyTypeRegistry(
+        SoyTypeRegistry baseTypes,
+        ImmutableMap<String, String> localToFqn,
+        ProtoTypeRegistry fqnRegistry,
+        ImmutableSet<FileDescriptor> files) {
+      super(baseTypes);
+      this.localToFqn = localToFqn;
+      this.fqnRegistry = fqnRegistry;
+      this.files = files;
+    }
+
+    @Override
+    public SoyType getType(String typeName) {
+      SoyType type = super.getType(typeName);
+      if (type == null) {
+        String fqn = SoyTypes.localToFqn(typeName, localToFqn);
+        if (fqn != null) {
+          type = fqnRegistry.getProtoType(fqn);
+        }
+      }
+      return type;
+    }
+
+    @Override
+    public Identifier resolve(Identifier id) {
+      String resolved = SoyTypes.localToFqn(id.identifier(), localToFqn);
+      if (resolved != null) {
+        return Identifier.create(resolved, id.location());
+      }
+      return super.resolve(id);
+    }
+
+    @Override
+    public ImmutableSet<FileDescriptor> getProtoDescriptors() {
+      return files;
+    }
   }
 }

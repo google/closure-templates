@@ -99,7 +99,7 @@ public abstract class Field {
         + fieldSuffix(field);
   }
 
-  private static String computeSoyFullyQualifiedName(FieldDescriptor field) {
+  public static String computeSoyFullyQualifiedName(FieldDescriptor field) {
     String fieldPath;
     if (!field.isExtension()) {
       fieldPath = field.getContainingType().getFullName();

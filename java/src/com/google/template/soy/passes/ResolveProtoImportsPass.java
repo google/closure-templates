@@ -80,8 +80,8 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
     private final SoyTypeRegistry typeRegistry;
     private final boolean disableAllTypeChecking;
     private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
-    private final Map<String, String> messagesAndEnums = new HashMap<>();
-    private final Map<String, String> extensions = new HashMap<>();
+    private final Map<String, String> msgAndEnumLocalToFqn = new HashMap<>();
+    private final Map<String, String> extLocalToFqn = new HashMap<>();
 
     ProtoImportVisitor(
         SoyFileNode file,
@@ -118,9 +118,9 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
 
         String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
         if (extensionNames.contains(name)) {
-          putDistinct(extensions, symbol.aliasOrName(), fullName);
+          putDistinct(extLocalToFqn, symbol.aliasOrName(), fullName);
         } else {
-          putDistinct(messagesAndEnums, symbol.aliasOrName(), fullName);
+          putDistinct(msgAndEnumLocalToFqn, symbol.aliasOrName(), fullName);
         }
       }
     }
@@ -149,8 +149,11 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
                   ? typeRegistry
                   : new ImportsTypeRegistry(
                       typeRegistry,
-                      ImmutableMap.copyOf(messagesAndEnums),
-                      ImmutableMap.copyOf(extensions)));
+                      ImmutableMap.copyOf(msgAndEnumLocalToFqn),
+                      ImmutableMap.<String, String>builder()
+                          .putAll(msgAndEnumLocalToFqn)
+                          .putAll(extLocalToFqn)
+                          .build()));
     }
 
     @Override

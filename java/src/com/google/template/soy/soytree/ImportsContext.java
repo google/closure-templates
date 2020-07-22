@@ -30,6 +30,7 @@ import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypes;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -86,14 +87,8 @@ public final class ImportsContext {
   public Identifier resolveAlias(Identifier id, SoyFileHeaderInfo headerInfo) {
     // If we have an imports type registry, try to resolve the potentially-aliased identifier as a
     // proto extension.
-    if ((typeRegistry instanceof ImportsTypeRegistry)) {
-      Identifier resolvedProtoExtension =
-          ((ImportsTypeRegistry) typeRegistry).resolveExtensionAlias(id);
-      if (resolvedProtoExtension != null) {
-        return resolvedProtoExtension;
-      }
-    }
-    return headerInfo.resolveAlias(id);
+    Identifier resolved = typeRegistry.resolve(id);
+    return resolved.equals(id) ? headerInfo.resolveAlias(id) : resolved;
   }
 
   /**
@@ -101,63 +96,47 @@ public final class ImportsContext {
    */
   public static final class ImportsTypeRegistry extends DelegatingSoyTypeRegistry {
 
-    // Map of symbol (possibly aliased) to fully qualified proto name (messages and enums).
-    private final ImmutableMap<String, String> messagesAndEnums;
-    // Map of symbol (possibly aliased) to fully qualified proto name (extensions).
-    private final ImmutableMap<String, String> extensions;
+    /** Map of all imported names to FQN (messages and enums). */
+    private final ImmutableMap<String, String> msgAndEnumLocalToFqn;
+    /** Map of all imported names to FQN (top-level messages, enums, and extensions). */
+    private final ImmutableMap<String, String> allLocalToFqn;
 
     public ImportsTypeRegistry(
         SoyTypeRegistry delegate,
-        ImmutableMap<String, String> messagesAndEnums,
-        ImmutableMap<String, String> extensions) {
+        ImmutableMap<String, String> msgAndEnumLocalToFqn,
+        ImmutableMap<String, String> allLocalToFqn) {
       super(delegate);
-      this.messagesAndEnums = messagesAndEnums;
-      this.extensions = extensions;
+      this.msgAndEnumLocalToFqn = msgAndEnumLocalToFqn;
+      this.allLocalToFqn = allLocalToFqn;
     }
 
     @Nullable
     @Override
     public SoyType getType(String typeName) {
-      // Support nested messages by resolving the first token against the map and then appending
-      // subsequent tokens.
-      int index = typeName.indexOf('.');
-      String baseRefType = index >= 0 ? typeName.substring(0, index) : typeName;
-      String baseType = messagesAndEnums.get(baseRefType);
-
-      if (baseType == null || !(getDelegate() instanceof ProtoTypeRegistry)) {
+      String fullType = SoyTypes.localToFqn(typeName, msgAndEnumLocalToFqn);
+      if (fullType == null || !(getDelegate() instanceof ProtoTypeRegistry)) {
         return super.getType(typeName);
       }
-
-      String fullType = index >= 0 ? baseType + typeName.substring(index) : baseType;
 
       // Pass the FQ proto message name to the delegate. The delegate should be a
       // ProtoTypeRegistry.
       return ((ProtoTypeRegistry) getDelegate()).getProtoType(fullType);
     }
 
-    /** Resolves a potentially-aliased identifier against the known extension symbols. */
-    private Identifier resolveExtensionAlias(Identifier id) {
-      String localSymbol = id.identifier();
-      int dotIndex = localSymbol.indexOf('.');
-      if (dotIndex >= 0) {
-        // Extensions may be nested under top-level messages.
-        String fullName = messagesAndEnums.get(localSymbol.substring(0, dotIndex));
-        if (fullName != null) {
-          return Identifier.create(fullName + localSymbol.substring(dotIndex), id.location());
-        }
-      } else {
-        String fullName = extensions.get(localSymbol);
-        if (fullName != null) {
-          return Identifier.create(fullName, id.location());
-        }
+    @Override
+    public Identifier resolve(Identifier id) {
+      String resolved = SoyTypes.localToFqn(id.identifier(), allLocalToFqn);
+      if (resolved != null) {
+        return Identifier.create(resolved, id.location());
       }
-      return null;
+      return super.resolve(id);
     }
 
     @Override
     public Iterable<String> getAllSortedTypeNames() {
       return () ->
-          Streams.concat(messagesAndEnums.keySet().stream(), stream(super.getAllSortedTypeNames()))
+          Streams.concat(
+                  msgAndEnumLocalToFqn.keySet().stream(), stream(super.getAllSortedTypeNames()))
               .sorted()
               .iterator();
     }

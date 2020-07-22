@@ -18,6 +18,7 @@ package com.google.template.soy.types;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.template.soy.base.internal.Identifier;
 import javax.annotation.Nullable;
 
 /** Registry of types which can be looked up by name. */
@@ -37,5 +38,9 @@ public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
   /** Returns the list of proto file descriptors with which this registry was created. */
   default ImmutableSet<FileDescriptor> getProtoDescriptors() {
     return ImmutableSet.of();
+  }
+
+  default Identifier resolve(Identifier id) {
+    return id;
   }
 }

@@ -35,9 +35,10 @@ public class SoyProtoTypeTest {
   @Test
   public void testExtensionFieldNames() {
     SoyTypeRegistryImpl typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(Example.getDescriptor()))
-            .build();
+        (SoyTypeRegistryImpl)
+            new SoyTypeRegistryBuilder()
+                .addDescriptors(ImmutableList.of(Example.getDescriptor()))
+                .build();
 
     ImmutableSet<FieldDescriptor> extensions =
         ImmutableSet.of(
