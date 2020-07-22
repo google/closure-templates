@@ -163,10 +163,9 @@ public class SoyJavaSourceFunctionTester {
   private SoyType parseType(String type) {
     TypeNode parsed =
         SoyFileParser.parseType(type, fn.getClass().getName(), ErrorReporter.exploding());
-    return new TypeNodeConverter(
-            ErrorReporter.exploding(),
-            SoyTypeRegistryBuilder.create(),
-            /* disableAllTypeChecking= */ false)
+    return TypeNodeConverter.builder(ErrorReporter.exploding())
+        .setTypeRegistry(SoyTypeRegistryBuilder.create())
+        .build()
         .getOrCreateType(parsed);
   }
 

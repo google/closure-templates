@@ -217,7 +217,8 @@ public final class SoyTypeRegistryBuilder {
       return fileDescriptors;
     }
 
-    ProtoTypeRegistry getProtoFqnRegistry() {
+    @Override
+    public ProtoTypeRegistry getProtoRegistry() {
       return protoFqnRegistry;
     }
 

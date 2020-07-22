@@ -79,7 +79,7 @@ public final class TemplateMetadataSerializer {
   private static final SoyErrorKind UNABLE_TO_PARSE_TEMPLATE_HEADER =
       SoyErrorKind.of("Unable to parse template header for {0} from Soy file {1}: {2}.");
   private static final SoyErrorKind UNABLE_TO_FIND_TYPE =
-      SoyErrorKind.of("Unable to {0}: {1} referenced by dependency.");
+      SoyErrorKind.of("Unable to find {0}: {1} referenced by dependency.");
   private static final SoyErrorKind UNEXPECTED_TYPE =
       SoyErrorKind.of("Expected {0} to be a {1} but it was a {2}.");
 
@@ -312,7 +312,7 @@ public final class TemplateMetadataSerializer {
         return MessageType.getInstance();
       case PROTO:
         {
-          SoyType type = typeRegistry.getType(proto.getProto());
+          SoyType type = typeRegistry.getProtoRegistry().getProtoType(proto.getProto());
           if (type == null) {
             errorReporter.report(
                 new SourceLocation(filePath), UNABLE_TO_FIND_TYPE, "proto", proto.getProto());
@@ -333,7 +333,7 @@ public final class TemplateMetadataSerializer {
         }
       case PROTO_ENUM:
         {
-          SoyType type = typeRegistry.getType(proto.getProtoEnum());
+          SoyType type = typeRegistry.getProtoRegistry().getProtoType(proto.getProtoEnum());
           if (type == null) {
             errorReporter.report(
                 new SourceLocation(filePath),

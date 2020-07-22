@@ -53,6 +53,11 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   }
 
   @Override
+  public ProtoTypeRegistry getProtoRegistry() {
+    return delegate.getProtoRegistry();
+  }
+
+  @Override
   public ListType getOrCreateListType(SoyType elementType) {
     return delegate.getOrCreateListType(elementType);
   }

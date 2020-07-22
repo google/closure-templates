@@ -33,6 +33,11 @@ public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
           SoyType type = super.getType(typeName);
           return type != null ? type : UnknownType.getInstance();
         }
+
+        @Override
+        public ProtoTypeRegistry getProtoRegistry() {
+          return (fqn) -> UnknownType.getInstance();
+        }
       };
 
   /** Returns the list of proto file descriptors with which this registry was created. */
@@ -42,5 +47,9 @@ public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
 
   default Identifier resolve(Identifier id) {
     return id;
+  }
+
+  default ProtoTypeRegistry getProtoRegistry() {
+    return (fqn) -> null;
   }
 }
