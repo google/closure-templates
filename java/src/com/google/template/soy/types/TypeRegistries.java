@@ -41,7 +41,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /** Implementations of {@link TypeRegistry} and {@link TypeInterner}. */
-public final class TypeRegistries {
+final class TypeRegistries {
 
   private TypeRegistries() {}
 

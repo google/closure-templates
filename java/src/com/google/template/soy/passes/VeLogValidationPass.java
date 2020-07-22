@@ -304,8 +304,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
               veType,
               dataType);
         } else {
-          SoyType veDataType =
-              typeRegistry.getProtoRegistry().getProtoType(veType.getDataType().get());
+          SoyType veDataType = typeRegistry.getType(veType.getDataType().get());
           if (veDataType == null) {
             reporter.report(veExpr.getSourceLocation(), UNKNOWN_PROTO, veType.getDataType().get());
           } else if (veDataType.getKind() != Kind.PROTO) {

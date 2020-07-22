@@ -100,8 +100,7 @@ class SoyTypeGraphUtils {
         case VE:
           VeType veType = (VeType) type;
           if (typeRegistry != null && veType.getDataType().isPresent()) {
-            return ImmutableList.of(
-                typeRegistry.getProtoRegistry().getProtoType(veType.getDataType().get()));
+            return ImmutableList.of(typeRegistry.getType(veType.getDataType().get()));
           }
           // fall through
         default:

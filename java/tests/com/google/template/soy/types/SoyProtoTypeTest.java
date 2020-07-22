@@ -49,7 +49,7 @@ public class SoyProtoTypeTest {
     SoyProtoType protoType =
         new SoyProtoType(
             typeRegistry.getDelegate(),
-            typeRegistry.getProtoRegistry(),
+            typeRegistry.getProtoFqnRegistry(),
             ExampleExtendable.getDescriptor(),
             extensions);
 

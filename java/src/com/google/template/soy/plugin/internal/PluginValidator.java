@@ -106,10 +106,8 @@ public final class PluginValidator {
     SoyType type =
         typeNode == null
             ? UnknownType.getInstance()
-            : TypeNodeConverter.builder(localReporter)
-                .setTypeRegistry(typeRegistry)
-                .setSystemExternal(true)
-                .build()
+            : new TypeNodeConverter(
+                    localReporter, typeRegistry, /* disableAllTypeChecking= */ false)
                 .getOrCreateType(typeNode);
     // If any errors occurred while parsing the signature, wrap the errors in a more meaningful
     // message tailored to the plugin implementation.
