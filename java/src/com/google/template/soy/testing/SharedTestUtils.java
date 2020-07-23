@@ -297,5 +297,10 @@ public final class SharedTestUtils {
     public ImmutableSet<FileDescriptor> getProtoDescriptors() {
       return files;
     }
+
+    @Override
+    public ProtoTypeRegistry getProtoRegistry() {
+      return fqnRegistry;
+    }
   }
 }

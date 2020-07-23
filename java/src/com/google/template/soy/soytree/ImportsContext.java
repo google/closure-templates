@@ -27,7 +27,6 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
-import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
@@ -114,13 +113,12 @@ public final class ImportsContext {
     @Override
     public SoyType getType(String typeName) {
       String fullType = SoyTypes.localToFqn(typeName, msgAndEnumLocalToFqn);
-      if (fullType == null || !(getDelegate() instanceof ProtoTypeRegistry)) {
+      if (fullType == null) {
         return super.getType(typeName);
       }
 
-      // Pass the FQ proto message name to the delegate. The delegate should be a
-      // ProtoTypeRegistry.
-      return ((ProtoTypeRegistry) getDelegate()).getProtoType(fullType);
+      // Pass the FQ proto message name to the delegate.
+      return getProtoRegistry().getProtoType(fullType);
     }
 
     @Override

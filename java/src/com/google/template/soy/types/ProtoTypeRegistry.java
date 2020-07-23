@@ -16,10 +16,15 @@
 
 package com.google.template.soy.types;
 
+import com.google.common.collect.ImmutableList;
 import javax.annotation.Nullable;
 
 /** A repository of proto descriptors that can lookup a type by its FQN. */
 public interface ProtoTypeRegistry {
   @Nullable
   SoyType getProtoType(String protoFqn);
+
+  default Iterable<String> getAllKeys() {
+    return ImmutableList.of();
+  }
 }

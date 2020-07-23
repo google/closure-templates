@@ -193,7 +193,7 @@ public class JavaPluginValidator {
       reporter.incompatibleReturnType(actualType, expectedType, method);
       return Optional.empty();
     }
-    SoyType returnType = typeRegistry.getType(fullName.get());
+    SoyType returnType = typeRegistry.getProtoRegistry().getProtoType(fullName.get());
     if (returnType == null) {
       reporter.incompatibleReturnType(actualType, expectedType, method);
       return Optional.empty();

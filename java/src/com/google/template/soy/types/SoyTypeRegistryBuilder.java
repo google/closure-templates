@@ -85,7 +85,7 @@ public final class SoyTypeRegistryBuilder {
       alreadyVisited = d -> !visited.add(d);
     }
 
-    public ProtoTypeRegistry build(TypeInterner interner) {
+    public ProtoTypeRegistry build(SoyTypeRegistry interner) {
       Set<FileDescriptor> fileInputs =
           inputs.stream()
               .filter(d -> d instanceof FileDescriptor)
@@ -185,7 +185,7 @@ public final class SoyTypeRegistryBuilder {
   }
 
   /** The standard implementation of SoyTypeRegistry, which supports protobuf types. */
-  static class SoyTypeRegistryImpl extends DelegatingSoyTypeRegistry implements ProtoTypeRegistry {
+  static class SoyTypeRegistryImpl extends DelegatingSoyTypeRegistry {
 
     /** All of the known type names for this registry (including its delegate), sorted. */
     private final Supplier<Iterable<String>> allSortedTypeNames;
@@ -242,17 +242,11 @@ public final class SoyTypeRegistryBuilder {
       return allSortedTypeNames.get();
     }
 
-    @Nullable
-    @Override
-    public SoyType getProtoType(String protoFqn) {
-      return protoFqnRegistry.getProtoType(protoFqn);
-    }
-
     private Iterable<String> buildAllSortedTypeNames() {
       return Iterables.mergeSorted(
           ImmutableList.of(
               super.getAllSortedTypeNames(),
-              ImmutableList.sortedCopyOf(protoFqnRegistry.getAllTypeNames())),
+              ImmutableList.sortedCopyOf(protoFqnRegistry.getAllKeys())),
           naturalOrder());
     }
 
@@ -277,7 +271,26 @@ public final class SoyTypeRegistryBuilder {
     }
   }
 
-  private static class ProtoFqnTypeRegistry implements ProtoTypeRegistry {
+  private abstract static class DelegatingProtoTypeRegistry implements ProtoTypeRegistry {
+
+    private final ProtoTypeRegistry delegate;
+
+    protected DelegatingProtoTypeRegistry(ProtoTypeRegistry delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public SoyType getProtoType(String protoFqn) {
+      return delegate.getProtoType(protoFqn);
+    }
+
+    @Override
+    public Iterable<String> getAllKeys() {
+      return delegate.getAllKeys();
+    }
+  }
+
+  private static class ProtoFqnTypeRegistry extends DelegatingProtoTypeRegistry {
 
     private final TypeInterner interner;
     /** Map of FQN to descriptor for all message and enum descendants of imported symbols. */
@@ -286,10 +299,11 @@ public final class SoyTypeRegistryBuilder {
     private final ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts;
 
     public ProtoFqnTypeRegistry(
-        TypeInterner interner,
+        SoyTypeRegistry delegate,
         ImmutableMap<String, GenericDescriptor> msgAndEnumFqnToDesc,
         ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts) {
-      this.interner = interner;
+      super(delegate.getProtoRegistry());
+      this.interner = delegate;
       this.msgAndEnumFqnToDesc = msgAndEnumFqnToDesc;
       this.msgFqnToExts = msgFqnToExts;
     }
@@ -307,10 +321,11 @@ public final class SoyTypeRegistryBuilder {
                 new SoyProtoType(
                     interner, this, (Descriptor) descriptor, msgFqnToExts.get(protoFqn)));
       }
-      return null;
+      return super.getProtoType(protoFqn);
     }
 
-    ImmutableSet<String> getAllTypeNames() {
+    @Override
+    public ImmutableSet<String> getAllKeys() {
       return msgAndEnumFqnToDesc.keySet();
     }
   }
