@@ -239,7 +239,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind UNKNOWN_PROTO_TYPE =
       SoyErrorKind.of("Unknown proto type ''{0}''.");
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
-      SoyErrorKind.of("Proto field ''{0}'' does not exist.{1}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Proto field ''{0}'' does not exist on {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind PROTO_MISSING_REQUIRED_FIELD =
       SoyErrorKind.of("Missing required proto field ''{0}''.");
   private static final SoyErrorKind PROTO_NULL_ARG_TYPE =
@@ -1572,6 +1573,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               fieldName.location(),
               PROTO_FIELD_DOES_NOT_EXIST,
               fieldName.identifier(),
+              protoType,
               extraErrorMessage);
           continue;
         }
