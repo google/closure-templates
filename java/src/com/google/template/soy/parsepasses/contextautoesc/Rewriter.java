@@ -27,6 +27,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.internal.ShortCircuitables;
@@ -195,6 +196,17 @@ final class Rewriter {
       if (!param.type().getKind().isKnownSanitizedContent()) {
         return null; // only care about sanitized types
       }
+      if (!SoyTreeUtils.getAllMatchingNodesOfType(
+              template.getParent(),
+              TemplateLiteralNode.class,
+              (templateLiteral) ->
+                  !templateLiteral.isSynthetic()
+                      && templateLiteral.getResolvedName().equals(template.getTemplateName()))
+          .isEmpty()) {
+        // If a template is passed around into other templates, we cannot be sure of the trusted
+        // content kind.
+        return null;
+      }
       SanitizedContentKind expectedKind = ((SanitizedType) param.type()).getContentKind();
 
       // if it is private we know that all callers are in this file.  Find them and check
@@ -204,7 +216,8 @@ final class Rewriter {
       }
       for (CallBasicNode callNode :
           SoyTreeUtils.getAllNodesOfType(template.getParent(), CallBasicNode.class)) {
-        if (callNode.getCalleeName().equals(template.getTemplateName())
+        if (callNode.isStaticCall()
+            && callNode.getCalleeName().equals(template.getTemplateName())
             && !doesCallPassCompatibleContentForParameter(callNode, expectedKind, param.name())) {
           return null;
         }
