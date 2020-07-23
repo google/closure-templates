@@ -207,15 +207,6 @@ enum TopLevelEnum {
   THREE = 3;
 }
 
-message ImportedMessage {
-  message SubMessage {
-    optional string subname = 1;
-  }
-
-  optional string name = 1;
-  optional TopLevelEnum e = 2;
-}
-
 message SameName {
   optional string name = 1;
 }
