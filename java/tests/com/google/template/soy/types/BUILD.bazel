@@ -14,6 +14,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/soytree",
+        "//java/src/com/google/template/soy/testing:shared_test_utils",
         "//java/src/com/google/template/soy/testing:soy_file_set_parser_builder",
         "//java/src/com/google/template/soy/types",
         "//src/test/protobuf:test_protos_java_proto",

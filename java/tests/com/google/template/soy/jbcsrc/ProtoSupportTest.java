@@ -40,14 +40,13 @@ import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.ProtoMap;
 import com.google.template.soy.testing.ProtoMap.InnerMessage;
+import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import com.google.template.soy.testing3.Proto3;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.IOException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,12 +62,17 @@ public final class ProtoSupportTest {
   private static final Joiner JOINER = Joiner.on('\n');
 
   final SoyTypeRegistry types =
-      new SoyTypeRegistryBuilder()
-          .addDescriptors(
-              ImmutableList.of(
-                  Example.getDescriptor().getFile(),
-                  Proto3.getDescriptor()))
-          .build();
+      SharedTestUtils.importing(
+          Example.getDescriptor(),
+          ExampleExtendable.getDescriptor(),
+          KvPair.getDescriptor(),
+          ProtoMap.getDescriptor(),
+          SomeEmbeddedMessage.getDescriptor(),
+          SomeEnum.getDescriptor(),
+          SomeExtension.getDescriptor(),
+          Proto3Message.getDescriptor(),
+          Example.someBoolExtension.getDescriptor(),
+          Example.someIntExtension.getDescriptor());
 
   @Test
   public void testSimpleProto() {
@@ -254,7 +258,6 @@ public final class ProtoSupportTest {
     String file =
         JOINER.join(
             "{namespace ns}",
-            "import {KvPair} from" + " '" + KvPair.getDescriptor().getFile().getName() + "';\n",
             "",
             "{template .caller}",
             "  {@param pair : KvPair}",
@@ -444,18 +447,7 @@ public final class ProtoSupportTest {
 
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
     StringBuilder builder = new StringBuilder();
-    builder
-        .append("{namespace ns}\n")
-        .append(
-            "import {ExampleExtendable, KvPair, ProtoMap, SomeEnum, SomeEmbeddedMessage,"
-                + " SomeExtension, someBoolExtension, someIntExtension} from '"
-                + KvPair.getDescriptor().getFile().getName()
-                + "';\n")
-        .append(
-            "import {Proto3Message} from '"
-                + Proto3Message.getDescriptor().getFile().getName()
-                + "';\n")
-        .append("{template .foo}\n");
+    builder.append("{namespace ns}\n").append("{template .foo}\n");
     Joiner.on("\n").appendTo(builder, body);
     builder.append("\n{/template}\n");
     return TemplateTester.assertThatFile(builder.toString()).withTypeRegistry(types);

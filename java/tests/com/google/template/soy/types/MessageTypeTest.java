@@ -18,7 +18,8 @@ package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.collect.ImmutableList;
+import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SharedTestUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,10 +31,7 @@ public final class MessageTypeTest {
 
   @Before
   public void setUp() {
-    typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(com.google.template.soy.testing.Test.getDescriptor()))
-            .build();
+    typeRegistry = SharedTestUtils.importing(Foo.getDescriptor());
   }
 
   SoyTypesTest.SoyTypeSubject assertThatType(String type) {
@@ -48,7 +46,7 @@ public final class MessageTypeTest {
   @Test
   public void testBaseProtoAssignability() throws Exception {
     assertThatType("Message").isAssignableFrom("Message");
-    assertThatType("Message").isAssignableFrom("soy.test.Foo");
-    assertThatType("soy.test.Foo").isNotAssignableFrom("Message");
+    assertThatType("Message").isAssignableFrom("Foo");
+    assertThatType("Foo").isNotAssignableFrom("Message");
   }
 }

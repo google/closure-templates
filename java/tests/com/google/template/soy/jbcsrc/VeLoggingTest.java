@@ -20,7 +20,6 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -40,9 +39,9 @@ import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.shared.restricted.Signature;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.io.IOException;
 import java.util.Map;
 import org.junit.Test;
@@ -306,16 +305,10 @@ public final class VeLoggingTest {
   private void renderTemplate(
       Map<String, ?> params, OutputAppendable output, SoyLogger logger, String... templateBodyLines)
       throws IOException {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(Foo.getDescriptor().getFile()))
-            .build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(Foo.getDescriptor());
     SoyFileSetParser parser =
         SoyFileSetParserBuilder.forFileContents(
                 "{namespace ns}\n"
-                    + "import {Foo} from '"
-                    + Foo.getDescriptor().getFile().getName()
-                    + "';\n"
                     + "{template .foo}\n"
                     + Joiner.on("\n").join(templateBodyLines)
                     + "\n{/template}")

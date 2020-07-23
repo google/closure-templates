@@ -40,6 +40,8 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.testing.Example;
 import com.google.template.soy.testing.ExampleExtendable;
+import com.google.template.soy.testing.SharedTestUtils;
+import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
@@ -154,17 +156,14 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testStateTypeInference() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(ExampleExtendable.getDescriptor());
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructElementSource(
                     "{@state pa:= true}",
                     "{@state pb:= [1,2,3]}",
-                    "{@state proto:= example.ExampleExtendable()}",
+                    "{@state proto:= ExampleExtendable()}",
                     "<div>",
                     "{assertType('bool', $pa)}",
                     "{assertType('list<int>', $pb)}",
@@ -176,7 +175,8 @@ public final class ResolveExpressionTypesPassTest {
             .parse()
             .fileSet();
     assertTypes(soyTree);
-    TemplateElementNode node = (TemplateElementNode) soyTree.getChild(0).getChild(0);
+    TemplateElementNode node =
+        SoyTreeUtils.getAllNodesOfType(soyTree, TemplateElementNode.class).get(0);
     List<TemplateStateVar> stateVars = node.getStateVars();
 
     assertThat(stateVars.get(0).name()).isEqualTo("pa");
@@ -186,8 +186,7 @@ public final class ResolveExpressionTypesPassTest {
     assertThat(stateVars.get(1).type()).isEqualTo(ListType.of(IntType.getInstance()));
 
     assertThat(stateVars.get(2).name()).isEqualTo("proto");
-    assertThat(stateVars.get(2).type())
-        .isEqualTo(typeRegistry.getType("example.ExampleExtendable"));
+    assertThat(stateVars.get(2).type()).isEqualTo(typeRegistry.getType("ExampleExtendable"));
   }
 
   @Test
@@ -266,17 +265,18 @@ public final class ResolveExpressionTypesPassTest {
   @Test
   public void testGetExtensionMethodTyping() {
     SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(Example.getDescriptor()))
-            .build();
+        SharedTestUtils.importing(
+            ExampleExtendable.getDescriptor(),
+            SomeExtension.getDescriptor(),
+            Example.someBoolExtension.getDescriptor());
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{@param proto: example.ExampleExtendable}",
-                    "{assertType('bool', $proto.getExtension(example.someBoolExtension))}",
-                    "{assertType('int',"
-                        + " $proto.getExtension(example.SomeExtension.someExtensionField).someExtensionNum)}"))
+                    "{@param proto: ExampleExtendable}",
+                    "{assertType('bool', $proto.getExtension(someBoolExtension))}",
+                    "{assertType('int', $proto.getExtension("
+                        + "SomeExtension.someExtensionField).someExtensionNum)}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
             .parse()
@@ -772,15 +772,12 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testProtoInitTyping() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(ExampleExtendable.getDescriptor());
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{let $proto: example.ExampleExtendable() /}",
+                    "{let $proto: ExampleExtendable() /}",
                     "{assertType('example.ExampleExtendable', $proto)}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)
@@ -867,10 +864,8 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testVeLiteral() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(ExampleExtendable.getDescriptor());
+    ;
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
@@ -905,15 +900,12 @@ public final class ResolveExpressionTypesPassTest {
 
   @Test
   public void testVeDataLiteral() {
-    SoyTypeRegistry typeRegistry =
-        new SoyTypeRegistryBuilder()
-            .addDescriptors(ImmutableList.of(ExampleExtendable.getDescriptor()))
-            .build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(ExampleExtendable.getDescriptor());
 
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forFileContents(
                 constructTemplateSource(
-                    "{assertType('ve_data', ve_data(ve(VeData), example.ExampleExtendable()))}",
+                    "{assertType('ve_data', ve_data(ve(VeData), ExampleExtendable()))}",
                     "{assertType('ve_data', ve_data(ve(VeNoData), null))}"))
             .addSoyFunction(ASSERT_TYPE_FUNCTION)
             .typeRegistry(typeRegistry)

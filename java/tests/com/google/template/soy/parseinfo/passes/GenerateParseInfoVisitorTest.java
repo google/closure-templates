@@ -39,7 +39,6 @@ import com.google.template.soy.testing.Foo;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -93,9 +92,7 @@ public final class GenerateParseInfoVisitorTest {
   public void testFindsProtoFromMap() {
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()),
-            "{@param map: map<string, soy.test.Foo>}",
-            "{$map}");
+            ImmutableList.of(Foo.getDescriptor()), "{@param map: map<string, Foo>}", "{$map}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -105,7 +102,7 @@ public final class GenerateParseInfoVisitorTest {
     String parseInfoContent =
         createParseInfo(
             ImmutableList.of(Foo.getDescriptor()),
-            "{@param map: legacy_object_map<string, soy.test.Foo>}",
+            "{@param map: legacy_object_map<string, Foo>}",
             "{$map}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
@@ -115,9 +112,7 @@ public final class GenerateParseInfoVisitorTest {
   public void testFindsProtoEnum() {
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()),
-            "{@param enum: soy.test.Foo.InnerEnum}",
-            "{$enum}");
+            ImmutableList.of(Foo.getDescriptor()), "{@param enum: Foo.InnerEnum}", "{$enum}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -126,9 +121,9 @@ public final class GenerateParseInfoVisitorTest {
   public void testFindsProtoInit() {
     String parseInfoContent =
         createParseInfo(
-            ImmutableList.of(Foo.InnerMessage.getDescriptor()),
+            ImmutableList.of(Foo.getDescriptor()),
             "{@param proto: bool}",
-            "{$proto ? soy.test.Foo.InnerMessage(field: 27) : null}");
+            "{$proto ? Foo.InnerMessage(field: 27) : null}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -138,8 +133,8 @@ public final class GenerateParseInfoVisitorTest {
     String parseInfoContent =
         createParseInfo(
             ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
-            "{@param extendable: soy.test.Extendable}",
-            "{$extendable.getExtension(soy.test.Extension.extension).enumField}");
+            "{@param extendable: Extendable}",
+            "{$extendable.getExtension(Extension.extension).enumField}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -149,8 +144,8 @@ public final class GenerateParseInfoVisitorTest {
     String parseInfoContent =
         createParseInfo(
             ImmutableList.of(Extendable.getDescriptor(), Extension.getDescriptor()),
-            "{@param extendable: soy.test.Extendable}",
-            "{$extendable.getExtension(soy.test.Extension.extension).enumField}");
+            "{@param extendable: Extendable}",
+            "{$extendable.getExtension(Extension.extension).enumField}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -158,8 +153,7 @@ public final class GenerateParseInfoVisitorTest {
   @Test
   public void testFindsProtoEnumUse() {
     String parseInfoContent =
-        createParseInfo(
-            ImmutableList.of(Foo.InnerEnum.getDescriptor()), "{soy.test.Foo.InnerEnum.THREE}");
+        createParseInfo(ImmutableList.of(Foo.getDescriptor()), "{Foo.InnerEnum.THREE}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -167,8 +161,7 @@ public final class GenerateParseInfoVisitorTest {
   @Test
   public void testFindsVe() {
     String parseInfoContent =
-        createParseInfo(
-            ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<soy.test.Foo>}", "{$ve}");
+        createParseInfo(ImmutableList.of(Foo.getDescriptor()), "{@param ve: ve<Foo>}", "{$ve}");
 
     assertThat(parseInfoContent).contains("com.google.template.soy.testing.Test.getDescriptor()");
   }
@@ -216,7 +209,7 @@ public final class GenerateParseInfoVisitorTest {
 
   private static String createParseInfo(
       ImmutableList<GenericDescriptor> protos, String... templateLines) {
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistryBuilder().addDescriptors(protos).build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(protos);
     ParseResult parseResult =
         SoyFileSetParserBuilder.forFileContents(
                 SharedTestUtils.buildTestSoyFileContent(

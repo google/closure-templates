@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.template.soy.exprtree.testing.ExpressionParser;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Foo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +37,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo?.someString")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo?.someString");
@@ -50,9 +51,10 @@ public class NullSafeAccessNodeTest {
         .isEqualTo("$list?[$index]");
 
     assertThat(
-            new ExpressionParser("$extendable?.getExtension(soy.test.boolField)")
-                .withParam("extendable", "soy.test.Extendable")
-                .withProto(com.google.template.soy.testing.Test.getDescriptor())
+            new ExpressionParser("$extendable?.getExtension(boolField)")
+                .withParam("extendable", "Extendable")
+                .withProto(Extendable.getDescriptor())
+                .withProto(com.google.template.soy.testing.Test.boolField.getDescriptor())
                 .parse()
                 .toSourceString())
         .isEqualTo("$extendable?.getExtension(\"soy.test.boolField\")");
@@ -63,7 +65,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo?.messageField?.foo?.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo?.messageField?.foo?.messageField");
@@ -71,7 +73,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo?.messageField.foo.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo?.messageField.foo.messageField");
@@ -79,7 +81,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo.messageField?.foo.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo.messageField?.foo.messageField");
@@ -87,7 +89,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo.messageField.foo?.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo.messageField.foo?.messageField");
@@ -95,7 +97,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo?.messageField?.foo.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo?.messageField?.foo.messageField");
@@ -103,7 +105,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo?.messageField.foo?.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo?.messageField.foo?.messageField");
@@ -111,7 +113,7 @@ public class NullSafeAccessNodeTest {
     assertThat(
             new ExpressionParser("$foo.messageField?.foo?.messageField")
                 .withProto(Foo.getDescriptor())
-                .withParam("foo", "soy.test.Foo")
+                .withParam("foo", "Foo")
                 .parse()
                 .toSourceString())
         .isEqualTo("$foo.messageField?.foo?.messageField");
@@ -131,10 +133,12 @@ public class NullSafeAccessNodeTest {
   public void testNestedNullSafe() {
     assertThat(
             new ExpressionParser(
-                    "$extendable?.getExtension(soy.test.fooRepeatedList)"
-                        + "?[$extendable?.getExtension(soy.test.intRepeatedList)?[0]]")
-                .withProto(com.google.template.soy.testing.Test.getDescriptor())
-                .withParam("extendable", "soy.test.Extendable")
+                    "$extendable?.getExtension(fooRepeatedList)"
+                        + "?[$extendable?.getExtension(intRepeatedList)?[0]]")
+                .withProto(Extendable.getDescriptor())
+                .withProto(com.google.template.soy.testing.Test.intRepeated.getDescriptor())
+                .withProto(com.google.template.soy.testing.Test.fooRepeated.getDescriptor())
+                .withParam("extendable", "Extendable")
                 .parse()
                 .toSourceString())
         .isEqualTo(
@@ -147,7 +151,7 @@ public class NullSafeAccessNodeTest {
     ExprNode expr =
         new ExpressionParser("$foo?.someString")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     String exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -166,7 +170,7 @@ public class NullSafeAccessNodeTest {
     ExprNode expr =
         new ExpressionParser("$foo?.messageField?.foo?.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     String exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -189,7 +193,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo?.messageField.foo.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -207,7 +211,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo.messageField?.foo.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -225,7 +229,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo.messageField.foo?.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -243,7 +247,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo?.messageField?.foo.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -264,7 +268,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo?.messageField.foo?.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -285,7 +289,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo.messageField?.foo?.messageField")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .parse();
     exprString =
         SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
@@ -308,7 +312,7 @@ public class NullSafeAccessNodeTest {
     ExprNode expr =
         new ExpressionParser("$foo?.messageField!")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .withExperimentalFeatures("enableNonNullAssertionOperator")
             .parse();
     String exprString =
@@ -326,7 +330,7 @@ public class NullSafeAccessNodeTest {
     expr =
         new ExpressionParser("$foo!.messageField?.foo")
             .withProto(Foo.getDescriptor())
-            .withParam("foo", "soy.test.Foo")
+            .withParam("foo", "Foo")
             .withExperimentalFeatures("enableNonNullAssertionOperator")
             .parse();
     exprString =

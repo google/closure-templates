@@ -33,11 +33,12 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.types.SoyTypeRegistry;
-import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Parses expressions, running all passes of the compiler so that the resulting expression node is
@@ -49,7 +50,7 @@ public final class ExpressionParser {
   private final List<String> vars;
   private final List<String> params;
   private final List<SoySourceFunction> functions;
-  private final List<GenericDescriptor> protos;
+  private final Set<GenericDescriptor> protos;
   private final List<String> experimentalFeatures;
 
   /** Constructs a new {@link ExpressionParser} to parse the given expression. */
@@ -58,7 +59,7 @@ public final class ExpressionParser {
     vars = new ArrayList<>();
     params = new ArrayList<>();
     functions = new ArrayList<>();
-    protos = new ArrayList<>();
+    protos = new HashSet<>();
     experimentalFeatures = new ArrayList<>();
   }
 
@@ -122,7 +123,7 @@ public final class ExpressionParser {
     lines.add(String.format("{%s}", expression));
     String contents = Joiner.on('\n').join(lines);
 
-    SoyTypeRegistry typeRegistry = new SoyTypeRegistryBuilder().addDescriptors(protos).build();
+    SoyTypeRegistry typeRegistry = SharedTestUtils.importing(protos);
 
     SoyFileSetNode fileSet =
         SoyFileSetParserBuilder.forFileContents(SharedTestUtils.buildTestSoyFileContent(contents))
