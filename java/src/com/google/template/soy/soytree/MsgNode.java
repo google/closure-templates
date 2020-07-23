@@ -670,7 +670,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = new LinkedHashMap<>();
 
-    for (String baseName : representativeNodes.baseNameToRepNodesMap().keys()) {
+    for (String baseName : representativeNodes.baseNameToRepNodesMap().keySet()) {
       List<MsgSubstUnitNode> nodesWithSameBaseName =
           representativeNodes.baseNameToRepNodesMap().get(baseName);
       if (nodesWithSameBaseName.size() == 1) {
