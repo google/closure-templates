@@ -28,6 +28,7 @@
 goog.module('soy.velog');
 goog.module.declareLegacyNamespace();
 
+const LoggableElementMetadata = goog.require('proto.soy.LoggableElementMetadata');
 const Message = goog.require('jspb.Message');
 const {assert} = goog.require('goog.asserts');
 const {startsWith} = goog.require('goog.string');
@@ -382,11 +383,14 @@ const UNDEFINED_VE_ID = -1;
 class $$VisualElement {
   /**
    * @param {number} id
+   * @param {!LoggableElementMetadata|undefined} metadata
    * @param {string=} name
    */
-  constructor(id, name = undefined) {
+  constructor(id, metadata, name = undefined) {
     /** @private @const {number} */
     this.id_ = id;
+    /** @private @const {!LoggableElementMetadata|undefined} */
+    this.metadata_ = metadata;
     /** @private @const {string|undefined} */
     this.name_ = name;
   }
@@ -394,6 +398,12 @@ class $$VisualElement {
   /** @return {number} */
   getId() {
     return this.id_;
+  }
+
+  /** @return {!LoggableElementMetadata} */
+  getMetadata() {
+    return this.metadata_ === undefined ? new LoggableElementMetadata() :
+                                          this.metadata_;
   }
 
   /** @package @return {string} */
