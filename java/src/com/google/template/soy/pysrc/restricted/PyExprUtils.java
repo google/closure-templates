@@ -256,7 +256,19 @@ public final class PyExprUtils {
     // Generate code for "[transformExpr for $foo, $index in listExpr".
     String genCodeString =
         indexName == null
-            ? "[" + transformExpr.getText() + " for " + varName + " in " + listExpr.getText()
+            ? "["
+                // The transformer takes any expression
+                // https://docs.python.org/3/reference/expressions.html#displays-for-lists-sets-and-dictionaries
+                // so no protection is necessry
+                + transformExpr.getText()
+                + " for "
+                + varName
+                + " in "
+                // In the python grammar, comprehension in
+                // https://docs.python.org/3/reference/expressions.html#grammar-token-comprehension
+                // takes an 'or_test' expression which is basically any expression except
+                // conditional expression
+                + maybeProtect(listExpr, pyPrecedenceForOperator(Operator.OR)).getText()
             : "["
                 + transformExpr.getText()
                 + " for "
@@ -269,7 +281,12 @@ public final class PyExprUtils {
 
     // Add the "if filterExpr", if present.
     if (filterExpr != null) {
-      genCodeString += " if " + filterExpr.getText();
+      // In the python grammar, comprehension if
+      // https://docs.python.org/3/reference/expressions.html#grammar-token-comp-if
+      // takes an 'expression_nocond' expression which is basically any expression except a
+      // conditional expression
+      genCodeString +=
+          " if " + maybeProtect(filterExpr, pyPrecedenceForOperator(Operator.OR)).getText();
     }
 
     // Close the list comprehension.
