@@ -286,7 +286,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         env.bind(node.getIndexVar(), SoyValueConverter.INSTANCE.convert(i));
       }
       if (filterExpr != null) {
-        if (!visit(filterExpr).booleanValue()) {
+        if (!visit(filterExpr).coerceToBoolean()) {
           continue;
         }
       }

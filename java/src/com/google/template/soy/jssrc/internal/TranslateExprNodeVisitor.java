@@ -324,11 +324,24 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       filterAndIndexBase =
           SOY_FILTER_AND_MAP.call(
               base,
-              arrowFunction(doc, visit(node.getFilterExpr())),
+              arrowFunction(
+                  doc,
+                  maybeCoerceToBoolean(
+                      node.getFilterExpr().getType(),
+                      visit(node.getFilterExpr()),
+                      /*force=*/ false)),
               arrowFunction(doc, visit(node.getListItemTransformExpr())));
     }
     if (node.getFilterExpr() != null) {
-      base = base.dotAccess("filter").call(arrowFunction(doc, visit(node.getFilterExpr())));
+      base =
+          base.dotAccess("filter")
+              .call(
+                  arrowFunction(
+                      doc,
+                      maybeCoerceToBoolean(
+                          node.getFilterExpr().getType(),
+                          visit(node.getFilterExpr()),
+                          /*force=*/ false)));
     }
     // handle a special case for trivial transformations
     if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
@@ -683,9 +696,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
    * Wraps an arbitrary expression to be checked for truthiness.
    *
    * @param force {@code true} to always coerce to boolean; {@code false} to only coerce for idom.
-   *     TODO(b/74192616): Remove this parameter and always convert.
    */
   protected Expression maybeCoerceToBoolean(SoyType type, Expression chunk, boolean force) {
+    // TODO(lukes): we can have smarter logic here,  most types have trivial boolean coercions
+    // we only need to be careful about ?,any and the sanitized types
     if (force && type.getKind() != Kind.BOOL) {
       return SOY_COERCE_TO_BOOLEAN.call(chunk);
     }

@@ -175,10 +175,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind BAD_LIST_COMP_TYPE =
       SoyErrorKind.of("Bad list comprehension type. {0} has type: {1}, but should be a list.");
 
-  private static final SoyErrorKind BAD_LIST_COMP_FILTER_TYPE =
-      SoyErrorKind.of(
-          "List comprehension filter must evaluate to a boolean. {0} has type: {1}, but should be"
-              + " a boolean.");
   private static final SoyErrorKind BRACKET_ACCESS_NOT_SUPPORTED =
       SoyErrorKind.of("Type {0} does not support bracket access.");
   private static final SoyErrorKind BRACKET_ACCESS_NULLABLE_UNION =
@@ -758,6 +754,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       visit(node.getListExpr());
 
       // Report an error if listExpr did not actually evaluate to a list.
+      // TODO(lukes): Should we allow iterating over the unknown type?  We do for for-loops.
       if (!(node.getListExpr().getType() instanceof ListType)) {
         errorReporter.report(
             node.getListExpr().getSourceLocation(),
@@ -779,13 +776,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       if (node.getFilterExpr() != null) {
         // Visit the optional filter expr, and make sure it evaluates to a boolean.
         visit(node.getFilterExpr());
-        if (!(node.getFilterExpr().getType() instanceof BoolType)) {
-          errorReporter.report(
-              node.getFilterExpr().getSourceLocation(),
-              BAD_LIST_COMP_FILTER_TYPE,
-              node.getFilterExpr().toSourceString(),
-              node.getFilterExpr().getType());
-        }
       }
 
       // Resolve the type of the itemMapExpr, and use it to determine the comprehension's resulting
