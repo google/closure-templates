@@ -174,8 +174,8 @@ public final class JspbTest {
     assertThatSoyExpr("ExampleExtendable(repeatedLongWithInt52JsTypeList: [1000, 2000])")
         .withTypeRegistry(REGISTRY)
         .generatesCode(
-            "new proto.example.ExampleExtendable().setRepeatedLongWithInt52JsTypeList([1000,"
-                + " 2000]);");
+            "new proto.example.ExampleExtendable().setRepeatedLongWithInt52JsTypeList(soy.$$makeArray(1000,"
+                + " 2000));");
 
     assertThatSoyExpr(
             expr("ExampleExtendable(repeatedLongWithInt52JsTypeList: $l)")
@@ -207,7 +207,7 @@ public final class JspbTest {
         .withTypeRegistry(REGISTRY)
         .generatesCode(
             "new proto.example.ExampleExtendable().setExtension(proto.example.listExtensionList,"
-                + " [1000, 2000, 3000]);");
+                + " soy.$$makeArray(1000, 2000, 3000));");
 
     assertThatSoyExpr(
             expr("ExampleExtendable(listExtensionList: $l)").withParam("{@param l: list<int>}"))

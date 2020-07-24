@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_FALSE;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_NULL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.Expression.arrayLiteral;
 import static com.google.template.soy.jssrc.dsl.Expression.arrowFunction;
 import static com.google.template.soy.jssrc.dsl.Expression.construct;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
@@ -43,6 +42,7 @@ import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_CHECK_NOT_NUL
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_COERCE_TO_BOOLEAN;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_EQUALS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_FILTER_AND_MAP;
+import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAKE_ARRAY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_MAP_POPULATE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_NEWMAPS_TRANSFORM_VALUES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_VISUAL_ELEMENT;
@@ -288,7 +288,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitListLiteralNode(ListLiteralNode node) {
-    return arrayLiteral(visitChildren(node));
+    return SOY_MAKE_ARRAY.call(visitChildren(node));
   }
 
   @Override

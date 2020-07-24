@@ -7504,14 +7504,14 @@ goog.userAgent.isDocumentModeOrHigher = function(documentMode) {
   return Number(goog.userAgent.DOCUMENT_MODE) >= documentMode;
 };
 goog.userAgent.isDocumentMode = goog.userAgent.isDocumentModeOrHigher;
-var JSCompiler_inline_result$jscomp$8;
+var JSCompiler_inline_result$jscomp$9;
 if (goog.global.document && goog.userAgent.IE) {
-  var documentMode$jscomp$inline_14 = goog.userAgent.getDocumentMode_();
-  JSCompiler_inline_result$jscomp$8 = documentMode$jscomp$inline_14 ? documentMode$jscomp$inline_14 : parseInt(goog.userAgent.VERSION, 10) || void 0;
+  var documentMode$jscomp$inline_15 = goog.userAgent.getDocumentMode_();
+  JSCompiler_inline_result$jscomp$9 = documentMode$jscomp$inline_15 ? documentMode$jscomp$inline_15 : parseInt(goog.userAgent.VERSION, 10) || void 0;
 } else {
-  JSCompiler_inline_result$jscomp$8 = void 0;
+  JSCompiler_inline_result$jscomp$9 = void 0;
 }
-goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$8;
+goog.userAgent.DOCUMENT_MODE = JSCompiler_inline_result$jscomp$9;
 goog.debug.LOGGING_ENABLED = goog.DEBUG;
 goog.debug.FORCE_SLOPPY_STACKS = !1;
 goog.debug.CHECK_FOR_THROWN_EVENT = !1;
@@ -7633,6 +7633,7 @@ goog.debug.normalizeErrorObject = function(err) {
       } else {
         message = "Unknown Error of unknown type";
       }
+      "function" === typeof err.toString && Object.prototype.toString !== err.toString && (message += ": " + err.toString());
     }
     return {message:message, name:err.name || "UnknownError", lineNumber:lineNumber, fileName:fileName, stack:stack || "Not available"};
   }
@@ -7643,7 +7644,7 @@ goog.debug.serializeErrorStack_ = function(e, seen) {
   seen || (seen = {});
   seen[goog.debug.serializeErrorAsKey_(e)] = !0;
   var stack = e.stack || "", cause = e.cause;
-  cause && !seen[goog.debug.serializeErrorAsKey_(cause)] && (stack += "\nCaused by: ", cause.stack && 0 == cause.stack.indexOf(cause.message) || (stack += "string" === typeof cause ? cause : cause.message + "\n"), stack += goog.debug.serializeErrorStack_(cause, seen));
+  cause && !seen[goog.debug.serializeErrorAsKey_(cause)] && (stack += "\nCaused by: ", cause.stack && 0 == cause.stack.indexOf(cause.toString()) || (stack += "string" === typeof cause ? cause : cause.message + "\n"), stack += goog.debug.serializeErrorStack_(cause, seen));
   return stack;
 };
 goog.debug.serializeErrorAsKey_ = function(e) {
@@ -8507,6 +8508,12 @@ soy.$$listIndexOf = function(list, val) {
 };
 soy.$$listSlice = function(list, from, to) {
   return null == to ? goog.array.slice(list, from) : goog.array.slice(list, from, to);
+};
+soy.$$makeArray = function(args) {
+  for (var $jscomp$restParams = [], $jscomp$restIndex = 0; $jscomp$restIndex < arguments.length; ++$jscomp$restIndex) {
+    $jscomp$restParams[$jscomp$restIndex - 0] = arguments[$jscomp$restIndex];
+  }
+  return $jscomp$restParams;
 };
 soy.$$filterAndMap = function(list, filter, map) {
   for (var array = [], i = 0; i < list.length; i++) {

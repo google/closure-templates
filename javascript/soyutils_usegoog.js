@@ -1801,6 +1801,15 @@ soy.$$listSlice = function(list, from, to) {
 };
 
 /**
+ * @param {...T} args
+ * @return {!Array<T>}
+ * @template T
+ */
+soy.$$makeArray = function(...args) {
+  return args;
+};
+
+/**
  * A helper for list comprehension.
  * @param {!IArrayLike<T>} list
  * @param {function(T,number):boolean} filter
