@@ -401,7 +401,7 @@ For example,
 
 ```soy
 {template .foo}
-  {@param person: [age:int, name:string]}
+  {@param person: [age: int, name: string]}
   Name: {$person.name}
   Age: {$person.age}
 {/template}
