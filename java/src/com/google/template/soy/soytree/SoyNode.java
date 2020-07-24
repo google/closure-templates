@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -269,6 +270,17 @@ public interface SoyNode extends Node {
    */
   interface MsgSubstUnitNode extends StandaloneNode {
 
+    @AutoValue
+    abstract static class BaseVar {
+      static BaseVar create(String name, boolean isUserSupplied) {
+        return new AutoValue_SoyNode_MsgSubstUnitNode_BaseVar(name, isUserSupplied);
+      }
+
+      public abstract String name();
+
+      public abstract boolean isUserSupplied();
+    }
+
     @Override
     MsgBlockNode getParent();
 
@@ -280,7 +292,7 @@ public interface SoyNode extends Node {
      * substitution unit in the future could have multiple vars. But until that happens, this
      * simpler model is sufficient.
      */
-    String getBaseVarName();
+    BaseVar getBaseVar();
 
     /**
      * Returns whether this substitution unit should use the same var name as another substitution

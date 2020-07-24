@@ -119,8 +119,9 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
   /** Returns the base plural var name (what the translator sees). */
   @Override
-  public String getBaseVarName() {
-    return basePluralVarName;
+  public BaseVar getBaseVar() {
+    // TODO(b/321792522): Set `isUserSuppliedPhName` if applicable.
+    return BaseVar.create(basePluralVarName, /* isUserSuppliedPhName */ false);
   }
 
   @Override

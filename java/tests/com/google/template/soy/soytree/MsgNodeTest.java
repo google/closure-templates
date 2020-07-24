@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
@@ -38,6 +39,22 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class MsgNodeTest {
+
+  private static void assertInvalidRenamedVarNameInfo(MsgNode msg) {
+    assertInvalidRenamedVarNameInfo(msg, ImmutableSet.of());
+  }
+
+  private static void assertInvalidRenamedVarNameInfo(
+      MsgNode msg, Set<String> expectedVarNamesOverridingUserSuppliedNames) {
+    assertThrows(
+        IllegalStateException.class,
+        () -> {
+          msg.ensureSubstUnitInfoHasNotBeenAccessed();
+        });
+    assertEquals(
+        expectedVarNamesOverridingUserSuppliedNames,
+        msg.getSubstUnitInfo().invalidRenamedVarNameToRepNodeMap.keySet());
+  }
 
   @Test
   public void testGenPlaceholderNames() throws Exception {
@@ -94,6 +111,11 @@ public class MsgNodeTest {
             + "{/msg}";
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(
+        msg,
+        /* expectedVarNamesOverridingUserSuppliedNames */ ImmutableSet.of(
+            "ZOO_1", "ZOO_2", "ZOO_4", "ZOO_5", "ZOO_6"));
+
     List<MsgPlaceholderNode> placeholders = getAllNodesOfType(msg, MsgPlaceholderNode.class);
 
     assertEquals("START_LINK_1", msg.getPlaceholder(placeholders.get(0)).name());
@@ -180,6 +202,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -235,6 +258,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -282,6 +306,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -345,6 +370,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -382,6 +408,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     MsgSelectNode nodeSelect = (MsgSelectNode) msg.getChild(0);
@@ -389,11 +416,15 @@ public class MsgNodeTest {
     assertSame(nodeSelect, msg.getRepSelectNode("GENDER"));
 
     CaseOrDefaultNode firstCase = nodeSelect.getChild(0);
-    assertEquals("PERSON", ((MsgPlaceholderNode) firstCase.getChild(0)).getBaseVarName());
+    assertEquals(
+        MsgPlaceholderNode.BaseVar.create("PERSON", /* isUserSupplied */ false),
+        ((MsgPlaceholderNode) firstCase.getChild(0)).getBaseVar());
     assertEquals(
         " invited you to a group conversation with ",
         ((RawTextNode) firstCase.getChild(1)).getRawText());
-    assertEquals("XXX", ((MsgPlaceholderNode) firstCase.getChild(2)).getBaseVarName());
+    assertEquals(
+        MsgPlaceholderNode.BaseVar.create("XXX", /* isUserSupplied */ false),
+        ((MsgPlaceholderNode) firstCase.getChild(2)).getBaseVar());
     Set<String> placeholders = new TreeSet<>();
     for (MsgPlaceholderNode placeholder :
         SoyTreeUtils.getAllNodesOfType(msg, MsgPlaceholderNode.class)) {
@@ -420,6 +451,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     assertFalse(msg.isPluralMsg());
@@ -441,6 +473,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     assertTrue(msg.isPluralMsg());
@@ -454,6 +487,7 @@ public class MsgNodeTest {
 
     TemplateNode templateNode = assertThatTemplateContent(template).getTemplateNode();
     MsgNode msg = getAllNodesOfType(templateNode, MsgFallbackGroupNode.class).get(0).getMsg();
+    assertInvalidRenamedVarNameInfo(msg);
 
     // Test.
     assertTrue(msg.isRawTextMsg());

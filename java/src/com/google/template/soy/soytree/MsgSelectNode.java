@@ -125,11 +125,14 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   /** Returns the base select var name (what the translator sees). */
   @Override
-  public String getBaseVarName() {
-    return (baseSelectVarName != null)
-        ? baseSelectVarName
-        : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-            selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME);
+  public BaseVar getBaseVar() {
+    // TODO(b/321792522): Set `isUserSuppliedPhName` if applicable.
+    return BaseVar.create(
+        (baseSelectVarName != null)
+            ? baseSelectVarName
+            : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+                selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME),
+        /* isUserSuppliedPhName */ false);
   }
 
   @Override
