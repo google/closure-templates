@@ -480,7 +480,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       commandText.append(" genders=\"").append(genderExprsString).append('"');
     }
     if (alternateId.isPresent()) {
-      commandText.append(" alternate=\"").append(alternateId).append('"');
+      commandText.append(" alternateId=\"").append(alternateId).append('"');
     }
     return commandText.toString().trim();
   }
