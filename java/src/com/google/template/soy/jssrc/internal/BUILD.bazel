@@ -22,7 +22,6 @@ java_library(
         "//java/src/com/google/template/soy/jssrc",
         "//java/src/com/google/template/soy/jssrc/dsl",
         "//java/src/com/google/template/soy/jssrc/restricted",
-        "//java/src/com/google/template/soy/logging:internal",
         "//java/src/com/google/template/soy/logging:public",
         "//java/src/com/google/template/soy/msgs",
         "//java/src/com/google/template/soy/msgs/internal",

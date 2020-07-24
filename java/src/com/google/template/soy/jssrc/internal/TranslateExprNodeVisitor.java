@@ -100,7 +100,6 @@ import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.jssrc.dsl.GoogRequire;
 import com.google.template.soy.jssrc.dsl.JsDoc;
 import com.google.template.soy.jssrc.dsl.SoyJsPluginUtils;
 import com.google.template.soy.jssrc.internal.NullSafeAccumulator.FieldAccess;
@@ -108,7 +107,6 @@ import com.google.template.soy.jssrc.internal.NullSafeAccumulator.ProtoCall;
 import com.google.template.soy.jssrc.restricted.JsExpr;
 import com.google.template.soy.jssrc.restricted.SoyJsSrcFunction;
 import com.google.template.soy.logging.LoggingFunction;
-import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.javascript.restricted.SoyJavaScriptSourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
@@ -973,26 +971,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitVeLiteralNode(VeLiteralNode node) {
-    ValidatedLoggableElement element = node.getLoggableElement();
-    Expression metadata;
-    if (element.hasMetadata()) {
-      metadata =
-          GoogRequire.create(element.getJsPackage())
-              .googModuleGet()
-              .dotAccess(element.getClassName())
-              .dotAccess(element.getGeneratedVeMetadataMethodName())
-              .call();
-    } else {
-      metadata = Expression.LITERAL_UNDEFINED;
-    }
     return Expression.ifExpression(
             GOOG_DEBUG,
             construct(
                 SOY_VISUAL_ELEMENT,
                 Expression.number(node.getId()),
-                metadata,
                 Expression.stringLiteral(node.getName().identifier())))
-        .setElse(construct(SOY_VISUAL_ELEMENT, Expression.number(node.getId()), metadata))
+        .setElse(construct(SOY_VISUAL_ELEMENT, Expression.number(node.getId())))
         .build(codeGenerator);
   }
 
