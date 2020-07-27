@@ -122,7 +122,6 @@ public final class SoyValueConverter {
     expensiveConverterMap.put(
         ByteString.class,
         input -> StringData.forValue(BaseEncoding.base64().encode(input.toByteArray())));
-    expensiveConverterMap.put(SoyGlobalsValue.class, input -> convert(input.getSoyGlobalValue()));
     expensiveConverterMap.putStringMap(this::newDictFromMap);
     expensiveConverterMap.put(MarkAsSoyMap.class, input -> newSoyMapFromJavaMap(input.delegate()));
     expensiveConverterMap.put(Collection.class, this::newListFromIterable);

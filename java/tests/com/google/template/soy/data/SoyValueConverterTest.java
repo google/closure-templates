@@ -99,22 +99,6 @@ public class SoyValueConverterTest {
   }
 
   @Test
-  public void testConvertSoyGlobalsValue() {
-    assertThat(
-            CONVERTER
-                .convert(
-                    new SoyGlobalsValue() {
-                      @Override
-                      public Object getSoyGlobalValue() {
-                        return "foo";
-                      }
-                    })
-                .resolve()
-                .stringValue())
-        .isEqualTo("foo");
-  }
-
-  @Test
   public void testRejectNullKeysInLegacyObjectMap() {
     Map<String, String> mapWithNullKey = new HashMap<>();
     mapWithNullKey.put(null, "");

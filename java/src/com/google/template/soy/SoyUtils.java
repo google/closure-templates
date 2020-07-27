@@ -17,7 +17,6 @@
 package com.google.template.soy;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.io.CharSource;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
@@ -95,7 +94,7 @@ public final class SoyUtils {
    */
   public static ImmutableMap<String, PrimitiveData> parseCompileTimeGlobals(CharSource inputSource)
       throws IOException {
-    Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
+    ImmutableMap.Builder<String, PrimitiveData> compileTimeGlobalsBuilder = ImmutableMap.builder();
     ErrorReporter errorReporter = ErrorReporter.exploding();
 
     try (BufferedReader reader = inputSource.openBufferedStream()) {
