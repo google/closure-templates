@@ -69,6 +69,7 @@ import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.BooleanNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
+import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -439,8 +440,6 @@ public class SoyFileParser {
       SoyErrorKind.of("Plural case ''{0}'' must be a nonnegative integer.");
   private static final SoyErrorKind PLURAL_CASE_MALFORMED =
       SoyErrorKind.of("Invalid number in ''plural case'' command text.");
-  private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
-      SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_AFTER =
       SoyErrorKind.of("Unexpected content after ''{0}'', expected only comments or whitespace.");
   private static final SoyErrorKind UNEXPECTED_CONTENT_BEFORE =
@@ -489,6 +488,20 @@ public class SoyFileParser {
   /** Names of attributes whose values should be parsed as expressions. */
   private static final ImmutableSet<String> EXPR_ATTR_NAMES =
       ImmutableSet.of("data", "genders", "key", "logonly", "variant");
+
+  // TODO(b/162252599): Move this to `Attributes` or `Attribute` call below.
+  private static void validateAttributes(
+      ExprNode expr, List<CommandTagAttribute> attributes, ErrorReporter errorReporter) {
+    for (CommandTagAttribute attribute : attributes) {
+      if (expr.getSourceLocation().isJustBefore(attribute.getName().location())) {
+        errorReporter.report(
+            attribute.getName().location(),
+            PARSER_ERROR,
+            attribute.getName().identifier(),
+            "whitespace");
+      }
+    }
+  }
 
   /** Attempts to parse the given input as a Soy expression. */
   public static ExprNode parseExprOrDie(String exprText) {
@@ -2454,50 +2467,24 @@ private MsgPluralNode MsgPlural() :
   Token tagBegin, tagEnd, caseBeginTag, caseBeginEnd, tagClose;
   ExprNode pluralExpr;
   ExprNode caseExpr;
-  CommandTagAttribute offsetAttr = null;
+  List<CommandTagAttribute> attributes;
   List<StandaloneNode> templateBlock;
 }
 {
   tagBegin = <CMD_BEGIN_PLURAL>
   try {
     pluralExpr = Expr()
-    [ offsetAttr = Attribute() ]
+    attributes = Attributes()
     tagEnd = <CMD_END>
   } catch (ParseException e) {
     pluralExpr = errorExpr(tagBegin);
+    attributes = ImmutableList.of();
     tagEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
-    int offset = 0;
+    validateAttributes(pluralExpr, attributes, errorReporter);
 
-    if (offsetAttr != null) {
-      if (pluralExpr.getSourceLocation().isJustBefore(offsetAttr.getName().location())) {
-        errorReporter.report(
-            offsetAttr.getName().location(),
-            PARSER_ERROR,
-            offsetAttr.getName().identifier(),
-            "whitespace");
-      }
-
-      if (!offsetAttr.getName().identifier().equals("offset")) {
-        errorReporter.report(
-            offsetAttr.getName().location(),
-            CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY_SINGLE,
-            offsetAttr.getName().identifier(),
-            "plural",
-            "offset");
-        offsetAttr = null;
-      }
-    }
-
-    if (offsetAttr != null) {
-      offset = offsetAttr.valueAsInteger(errorReporter, 0);
-      if (offset <= 0) {
-        errorReporter.report(offsetAttr.getValueLocation(), PLURAL_OFFSET_OUT_OF_BOUNDS);
-        offset = 0;
-      }
-    }
     List<CaseOrDefaultNode> caseNodes = new ArrayList<CaseOrDefaultNode>();
   }
 
@@ -2568,13 +2555,13 @@ private MsgPluralNode MsgPlural() :
 
   {
     MsgPluralNode pluralNode =
-        new MsgPluralNode(
+        MsgPluralNode.fromPluralExpr(
             nodeIdGen.genId(),
             createSrcLoc(tagBegin, tagClose),
             createSrcLoc(tagBegin, tagEnd),
             pluralExpr,
-            offsetAttr == null ? ImmutableList.of() : ImmutableList.of(offsetAttr),
-            offset);
+            attributes,
+            errorReporter);
     pluralNode.addChildren(caseNodes);
     return pluralNode;
   }
@@ -2592,19 +2579,24 @@ private MsgSelectNode MsgSelect() :
   Token tagBeginEnd = null;
   ExprNode selectExpr;
   ExprNode caseExpr;
+  List<CommandTagAttribute> attributes;
   List<StandaloneNode> templateBlock;
 }
 {
   tagBegin = <CMD_BEGIN_SELECT>
   try {
     selectExpr = Expr()
+    attributes = Attributes()
     tagBeginEnd = <CMD_END>
   } catch (ParseException e) {
     selectExpr = errorExpr(tagBegin);
+    attributes = ImmutableList.of();
     tagBeginEnd = reportTemplateBodyErrorAndSkipTo(e, CMD_END);
   }
 
   {
+    validateAttributes(selectExpr, attributes, errorReporter);
+
     List<CaseOrDefaultNode> caseNodes = new ArrayList<CaseOrDefaultNode>();
   }
 
@@ -2646,10 +2638,13 @@ private MsgSelectNode MsgSelect() :
   }
 
   {
-    MsgSelectNode selectNode =
-        new MsgSelectNode(nodeIdGen.genId(), createSrcLoc(tagBegin, tagClose),
-            tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
-            selectExpr);
+    MsgSelectNode selectNode = MsgSelectNode.fromSelectExpr(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagClose),
+        tagBeginEnd == null ? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagBeginEnd),
+        new ExprRootNode(selectExpr),
+        attributes,
+        errorReporter);
     selectNode.addChildren(caseNodes);
     return selectNode;
   }

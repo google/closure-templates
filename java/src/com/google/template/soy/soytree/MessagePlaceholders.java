@@ -20,6 +20,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import javax.annotation.Nullable;
 
 /** Constants and utilities for message placeholders */
 public final class MessagePlaceholders {
@@ -30,7 +31,12 @@ public final class MessagePlaceholders {
   private static final SoyErrorKind INVALID_PHNAME_EXAMPLE =
       SoyErrorKind.of("Placeholder examples must be non-empty.");
 
-  static String validatePlaceholderName(
+  /**
+   * Returns {@code placeholderName} if it's valid; otherwise, returns {@code null} and reports the
+   * error.
+   */
+  @Nullable
+  public static String validatePlaceholderName(
       String placeholderName, SourceLocation location, ErrorReporter reporter) {
     if (BaseUtils.isIdentifier(placeholderName)) {
       return placeholderName;

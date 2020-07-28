@@ -150,7 +150,7 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
     defaultCase.addChildren(copyWhilePresevingPlaceholderIdentity(origChildren, nodeIdGen));
 
     MsgSelectNode selectNode =
-        new MsgSelectNode(
+        MsgSelectNode.fromGenderExpr(
             nodeIdGen.genId(),
             msg.getSourceLocation(),
             msg.getOpenTagLocation(),

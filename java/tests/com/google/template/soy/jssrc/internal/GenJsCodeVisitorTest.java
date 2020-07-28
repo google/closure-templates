@@ -1051,6 +1051,64 @@ public final class GenJsCodeVisitorTest {
             + "output += msg_s;\n";
     assertGeneratedJsCode(soyNodeCode, expectedJsCode);
 
+    // Plurals, nested inside a select, with plural name fallbacks, using the `phname` attribute.
+    soyNodeCode =
+        "{@param person : ?}\n"
+            + "{@param values : ?}\n"
+            + "{msg desc=\"A sample nested message\"}\n"
+            + "  {select $values.gender[0] phname=\"GENDER_0\"}\n"
+            + "    {case 'female'}\n"
+            + "      {plural $values.people[0] phname=\"PERSON_0_FEMALE\"}\n"
+            + "        {case 1}{$person} added one person to her circle.\n"
+            + "        {default}{$person} added {$values.people[0]} to her circle.\n"
+            + "      {/plural}\n"
+            + "    {case 'male'}\n"
+            + "      {plural $values.people[1] phname=\"PERSON_1_MALE\"}\n"
+            + "        {case 1}{$person} added one person to his circle.\n"
+            + "        {default}{$person} added {$values.people[1]} to his circle.\n"
+            + "      {/plural}\n"
+            + "    {default}\n"
+            + "      {plural $values.people[1] phname=\"PERSON_1_DEFAULT\"}\n"
+            + "        {case 1}{$person} added one person to his/her circle.\n"
+            + "        {default}{$person} added {$values.people[1]} to his/her circle.\n"
+            + "      {/plural}\n"
+            + "  {/select}\n"
+            + "{/msg}\n";
+    expectedJsCode =
+        ""
+            + "/** @desc A sample nested message */\n"
+            + "const MSG_UNNAMED = goog.getMsg("
+            + "'{GENDER_0,select,"
+            + "female{"
+            + "{PERSON_0_FEMALE,plural,"
+            + "=1{{PERSON} added one person to her circle.}"
+            + "other{{PERSON} added {XXX_1} to her circle.}"
+            + "}"
+            + "}"
+            + "male{"
+            + "{PERSON_1_MALE,plural,"
+            + "=1{{PERSON} added one person to his circle.}"
+            + "other{{PERSON} added {XXX_2} to his circle.}"
+            + "}"
+            + "}"
+            + "other{"
+            + "{PERSON_1_DEFAULT,plural,"
+            + "=1{{PERSON} added one person to his/her circle.}"
+            + "other{{PERSON} added {XXX_2} to his/her circle.}"
+            + "}"
+            + "}"
+            + "}', {}, {html: true});\n"
+            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "{'GENDER_0': opt_data.values.gender[/** @type {?} */ (0)], "
+            + "'PERSON_0_FEMALE': opt_data.values.people[/** @type {?} */ (0)], "
+            + "'PERSON_1_MALE': opt_data.values.people[/** @type {?} */ (1)], "
+            + "'PERSON_1_DEFAULT': opt_data.values.people[/** @type {?} */ (1)], "
+            + "'PERSON': opt_data.person, "
+            + "'XXX_1': opt_data.values.people[/** @type {?} */ (0)], "
+            + "'XXX_2': opt_data.values.people[/** @type {?} */ (1)]});\n"
+            + "output += msg_s;\n";
+    assertGeneratedJsCode(soyNodeCode, expectedJsCode);
+
     // Plurals nested inside select, with conflicts between select var name, plural var names
     // and placeholder names.
     soyNodeCode =

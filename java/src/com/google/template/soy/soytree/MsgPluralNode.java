@@ -17,10 +17,15 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.soytree.MessagePlaceholders.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholders.validatePlaceholderName;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -29,6 +34,9 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import java.util.List;
+import java.util.Objects;
+import java.util.OptionalInt;
+import javax.annotation.Nullable;
 
 /**
  * Node representing a 'plural' block.
@@ -41,6 +49,9 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         SplitLevelTopNode<CaseOrDefaultNode>,
         ExprHolderNode,
         CommandTagAttributesHolder {
+
+  private static final SoyErrorKind PLURAL_OFFSET_OUT_OF_BOUNDS =
+      SoyErrorKind.of("The ''offset'' for plural must be a positive integer.");
 
   /** Fallback base plural var name. */
   public static final String FALLBACK_BASE_PLURAL_VAR_NAME = "NUM";
@@ -59,20 +70,25 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   /** The base plural var name (what the translator sees). */
   private final String basePluralVarName;
 
-  public MsgPluralNode(
+  /** The user-supplied placeholder name, if provided. */
+  @Nullable private final String userSuppliedPhName;
+
+  private MsgPluralNode(
       int id,
       SourceLocation location,
       SourceLocation openTagLocation,
-      ExprNode expr,
+      ExprRootNode pluralExpr,
       List<CommandTagAttribute> attributes,
-      int offset) {
+      int offset,
+      String basePluralVarName,
+      @Nullable String userSuppliedPhName) {
     super(id, location, "plural");
     this.openTagLocation = openTagLocation;
-    this.pluralExpr = new ExprRootNode(expr);
+    this.pluralExpr = pluralExpr;
     this.attributes = ImmutableList.copyOf(attributes);
     this.offset = offset;
-    this.basePluralVarName =
-        MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLURAL_VAR_NAME);
+    this.basePluralVarName = basePluralVarName;
+    this.userSuppliedPhName = userSuppliedPhName;
   }
 
   /**
@@ -88,7 +104,68 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     this.offset = orig.offset;
     this.basePluralVarName = orig.basePluralVarName;
+    this.userSuppliedPhName = orig.userSuppliedPhName;
     copyState.updateRefs(orig, this);
+  }
+
+  /**
+   * Creates a plural node specified directly via `plural` expression in a Soy file.
+   *
+   * @param id The id for this node.
+   * @param location The node's source location.
+   * @param openTagLocation The location of the {plural ...} tag.
+   * @param expr Expression containing plural.
+   * @param attributes Attributes of plural expression.
+   * @param errorReporter For reporting parse errors.
+   */
+  public static MsgPluralNode fromPluralExpr(
+      int id,
+      SourceLocation location,
+      SourceLocation openTagLocation,
+      ExprNode expr,
+      List<CommandTagAttribute> attributes,
+      ErrorReporter errorReporter) {
+    int offset = 0;
+    String userSuppliedPhName = null;
+    for (CommandTagAttribute attribute : attributes) {
+      switch (attribute.getName().identifier()) {
+        case "offset":
+          OptionalInt optionalOffset = attribute.valueAsOptionalInt(errorReporter);
+          if (optionalOffset.isPresent()) {
+            offset = optionalOffset.getAsInt();
+            if (offset <= 0) {
+              errorReporter.report(attribute.getValueLocation(), PLURAL_OFFSET_OUT_OF_BOUNDS);
+              offset = 0;
+            }
+          }
+          break;
+        case PHNAME_ATTR:
+          userSuppliedPhName =
+              validatePlaceholderName(
+                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          break;
+        default:
+          errorReporter.report(
+              attribute.getName().location(),
+              CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY,
+              attribute.getName().identifier(),
+              "plural",
+              ImmutableSet.of("offset", PHNAME_ATTR));
+      }
+    }
+
+    return new MsgPluralNode(
+        id,
+        location,
+        openTagLocation,
+        new ExprRootNode(expr),
+        attributes,
+        offset,
+        /* basePluralVarName */ (userSuppliedPhName == null)
+            ? MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
+                expr, FALLBACK_BASE_PLURAL_VAR_NAME)
+            : userSuppliedPhName,
+        userSuppliedPhName);
   }
 
   /** The location of the {plural ...} tag. */
@@ -120,8 +197,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
   /** Returns the base plural var name (what the translator sees). */
   @Override
   public BaseVar getBaseVar() {
-    // TODO(b/321792522): Set `isUserSuppliedPhName` if applicable.
-    return BaseVar.create(basePluralVarName, /* isUserSuppliedPhName */ false);
+    return BaseVar.create(basePluralVarName, /* isUserSuppliedPhName */ userSuppliedPhName != null);
   }
 
   @Override
@@ -132,14 +208,20 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
     MsgPluralNode that = (MsgPluralNode) other;
     return exprEquivalence.equivalent(this.pluralExpr, that.pluralExpr)
-        && this.offset == that.offset;
+        && this.offset == that.offset
+        && Objects.equals(this.basePluralVarName, that.basePluralVarName);
   }
 
   @Override
   public String getCommandText() {
-    return (offset > 0)
-        ? pluralExpr.toSourceString() + " offset=\"" + offset + "\""
-        : pluralExpr.toSourceString();
+    StringBuilder builder = new StringBuilder(pluralExpr.toSourceString());
+    if (offset > 0) {
+      builder.append(" offset=\"").append(offset).append("\"");
+    }
+    if (userSuppliedPhName != null) {
+      builder.append(" phname=\"").append(userSuppliedPhName).append("\"");
+    }
+    return builder.toString();
   }
 
   @Override
