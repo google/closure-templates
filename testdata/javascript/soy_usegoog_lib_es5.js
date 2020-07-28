@@ -1884,7 +1884,7 @@ module$contents$goog$html$SafeScript_SafeScript.createSafeScriptSecurityPrivateD
   return (new module$contents$goog$html$SafeScript_SafeScript).initSecurityPrivateDoNotAccessOrElse_(script);
 };
 module$contents$goog$html$SafeScript_SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(script) {
-  var policy = (0,goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse)();
+  var policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
   this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = policy ? policy.createScript(script) : script;
   return this;
 };
