@@ -160,14 +160,14 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testWhitelistedFileDoesNotCauseErrors() {
+  public void testExemptedFileDoesNotCauseErrors() {
     assertNoViolation(
         "requirement: {\n"
             + "  banned_function {\n"
             + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foo'"
-            + "  whitelist: 'foo/bar/baz.soy'\n"
+            + "  exempt: 'foo/bar/baz.soy'\n"
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
@@ -179,14 +179,14 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testWhitelistEntriesAreSubstrings() {
+  public void testExemptedEntriesAreSubstrings() {
     assertNoViolation(
         "requirement: {\n"
             + "  banned_function {\n"
             + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foo'"
-            + "  whitelist: 'c/foo/bar/baz.soy'\n"
+            + "  exempt: 'c/foo/bar/baz.soy'\n"
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
@@ -198,14 +198,14 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testWhitelistedSubstringsAreContiguous() {
+  public void testExemptedSubstringsAreContiguous() {
     assertViolation(
         "requirement: {\n"
             + "  banned_function {\n"
             + "    function: 'checkNotNull'\n"
             + "  }\n"
             + "  error_message: 'foooo'"
-            + "  whitelist: 'foo/c/bar/baz.soy'\n"
+            + "  exempt: 'foo/c/bar/baz.soy'\n"
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
@@ -794,7 +794,7 @@ public class SoyConformanceTest {
     builder.setConformanceConfig(config).errorReporter(errorReporter).parse();
     ImmutableList<SoyError> errors = errorReporter.getErrors();
     Set<SoyErrorKind> expectedErrorKinds = new HashSet<>();
-    for (RuleWithWhitelists rule : config.getRules()) {
+    for (RuleWithExemptions rule : config.getRules()) {
       expectedErrorKinds.add(rule.getRule().error);
     }
     for (SoyError actualError : errors) {

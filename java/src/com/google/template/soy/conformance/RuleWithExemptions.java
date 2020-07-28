@@ -26,24 +26,24 @@ import com.google.template.soy.basetree.Node;
  * @author brndn@google.com (Brendan Linn)
  */
 @AutoValue
-abstract class RuleWithWhitelists {
-  static RuleWithWhitelists create(
+abstract class RuleWithExemptions {
+  static RuleWithExemptions create(
       Rule<? extends Node> rule,
-      ImmutableList<String> whitelistedPaths,
+      ImmutableList<String> exemptedPaths,
       ImmutableList<String> onlyApplyToPaths) {
-    return new AutoValue_RuleWithWhitelists(rule, whitelistedPaths, onlyApplyToPaths);
+    return new AutoValue_RuleWithExemptions(rule, exemptedPaths, onlyApplyToPaths);
   }
 
   abstract Rule<? extends Node> getRule();
 
-  abstract ImmutableList<String> getWhitelistedPaths();
+  abstract ImmutableList<String> getExemptedPaths();
 
   abstract ImmutableList<String> getOnlyApplyToPaths();
 
-  /** A file should be checked against a rule unless it contains one of the whitelisted paths. */
+  /** A file should be checked against a rule unless it contains one of the exempted paths. */
   boolean shouldCheckConformanceFor(String filePath) {
-    for (String whitelistedPath : getWhitelistedPaths()) {
-      if (filePath.contains(whitelistedPath)) {
+    for (String exemptedPath : getExemptedPaths()) {
+      if (filePath.contains(exemptedPath)) {
         return false;
       }
     }

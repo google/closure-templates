@@ -41,7 +41,7 @@ abstract class Rule<T extends Node> {
    * errorReporter.report(someSourceLocation, error)} to report conformance errors.
    */
   Rule(SoyErrorKind error) {
-    // SoyFileSetNode leaves no way to whitelist exceptions.
+    // SoyFileSetNode leaves no way to exempt exceptions.
     if (nodeClass == SoyFileSetNode.class) {
       throw new IllegalStateException(
           "Rule<SoyFileSetNode> does not work with whitelists. Use Rule<SoyFileNode> instead.");

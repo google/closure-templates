@@ -271,7 +271,7 @@ Returns a copy of a string with leading and trailing whitespace removed.
 ### `v1Expression(stringLiteral)` {#v1Expression}
 
 The `v1Expression` function is part of the support for deprecated V1 syntax.
-This function can only be used by the JavaScript backend in legacy whitelisted
+This function can only be used by the JavaScript backend in legacy exempted
 files. When used the function must take a
 [string literal](expressions.md#string-literal) that contains some pseudo Soy
 code. The JavaScript backend will perform some simple textual replacements to
@@ -283,10 +283,9 @@ JavaScript.
 The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
 access JavaScript global values outside of the normal support for globals.
 
-This function can only be used by the JavaScript backend in whitelisted files.
-When used the function must take a
-[string literal](expressions.md#string-literal) that contains some JS identifier
-reference.
+This function can only be used by the JavaScript backend. When used the function
+must take a [string literal](expressions.md#string-literal) that contains some
+JS identifier reference.
 
 ### `css([baseClass,] selector)` {#css}
 

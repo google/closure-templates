@@ -43,9 +43,9 @@ public final class SoyConformance {
     return new SoyConformance(conformanceConfig.getRules());
   }
 
-  private final ImmutableList<RuleWithWhitelists> rules;
+  private final ImmutableList<RuleWithExemptions> rules;
 
-  SoyConformance(ImmutableList<RuleWithWhitelists> rules) {
+  SoyConformance(ImmutableList<RuleWithExemptions> rules) {
     this.rules = rules;
   }
 
@@ -54,7 +54,7 @@ public final class SoyConformance {
     // first filter to only the rules that need to be checked for this file.
     final List<Rule<?>> rulesForFile = new ArrayList<>(rules.size());
     String filePath = file.getFilePath();
-    for (RuleWithWhitelists rule : rules) {
+    for (RuleWithExemptions rule : rules) {
       if (rule.shouldCheckConformanceFor(filePath)) {
         rulesForFile.add(rule.getRule());
       }
