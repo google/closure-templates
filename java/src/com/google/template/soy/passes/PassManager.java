@@ -363,9 +363,11 @@ public final class PassManager {
       ImmutableList.Builder<CompilerFileSetPass> partialTemplateRegistryPassesBuilder =
           ImmutableList.builder();
       addPass(
-          new ResolveProtoImportsPass(registry, errorReporter, disableAllTypeChecking),
+          new ResolveProtoImportsPass(registry, options, errorReporter, disableAllTypeChecking),
           partialTemplateRegistryPassesBuilder);
-      addPass(new ResolveTemplateImportsPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(
+          new ResolveTemplateImportsPass(options, errorReporter),
+          partialTemplateRegistryPassesBuilder);
       addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation

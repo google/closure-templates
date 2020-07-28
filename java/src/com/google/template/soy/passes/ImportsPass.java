@@ -16,16 +16,20 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TypeRegistries;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,12 +44,20 @@ abstract class ImportsPass {
       SoyErrorKind.of("Unknown import dep {0}.{1}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNKNOWN_SYMBOL =
       SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind IMPORT_COLLISION =
-      SoyErrorKind.of("Imported symbol {0} conflicts with previously imported symbol.");
   private static final SoyErrorKind SYMBOLS_NOT_ALLOWED =
       SoyErrorKind.of("Imported symbols are not allowed from import type {0}.");
   private static final SoyErrorKind SYMBOLS_REQUIRED =
       SoyErrorKind.of("One or more imported symbols are required for import type {0}.");
+
+  // Naming conflict errors:
+  private static final SoyErrorKind IMPORT_COLLISION =
+      SoyErrorKind.of("Imported symbol {0} conflicts with previously imported symbol.");
+  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_GLOBAL =
+      SoyErrorKind.of("Import ''{0}'' conflicts with a global of the same name.");
+  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_GLOBAL_PREFIX =
+      SoyErrorKind.of("Import ''{0}'' conflicts with namespace for global ''{1}''.");
+  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TYPE_NAME =
+      SoyErrorKind.of("Import ''{0}'' conflicts with a builtin type of the same name.");
 
   /**
    * Visits a Soy file, validating its imports and updating the file's {@link
@@ -61,6 +73,7 @@ abstract class ImportsPass {
   /** Visitor for imports in a single soy file. */
   abstract static class ImportVisitor {
     final SoyFileNode file;
+    private final SoyGeneralOptions options;
     final ErrorReporter errorReporter;
     private final ImmutableSet<ImportType> importTypesToVisit;
     /**
@@ -69,11 +82,15 @@ abstract class ImportsPass {
      */
     private final Map<String, String> uniqueImports = new HashMap<>();
 
+    private Map<String, String> globalPrefixToFullNameMap = null;
+
     ImportVisitor(
         SoyFileNode file,
         ImmutableSet<ImportType> importTypesToVisit,
+        SoyGeneralOptions options,
         ErrorReporter errorReporter) {
       this.file = file;
+      this.options = options;
       this.importTypesToVisit = importTypesToVisit;
       this.errorReporter = errorReporter;
     }
@@ -131,6 +148,7 @@ abstract class ImportsPass {
           return;
         }
 
+        boolean foundSymbolErrors = false;
         for (ImportedVar symbol : node.getIdentifiers()) {
           String name = symbol.aliasOrName();
 
@@ -142,10 +160,15 @@ abstract class ImportsPass {
             continue;
           }
 
-          if (!file.getImportsContext().addImportedSymbol(name)) {
-            errorReporter.report(symbol.nameLocation(), IMPORT_COLLISION, name);
-            return;
+          // Import naming collisions. Report errors but continue checking the other symbols so we
+          // can report all of the errors at once.
+          if (reportErrorIfSymbolInvalid(file, name, symbol.nameLocation())) {
+            foundSymbolErrors = true;
+            continue;
           }
+        }
+        if (foundSymbolErrors) {
+          return;
         }
       } else if (!node.getIdentifiers().isEmpty()) {
         errorReporter.report(
@@ -187,6 +210,76 @@ abstract class ImportsPass {
           incorrectName,
           importPath,
           SoyErrors.getDidYouMeanMessage(validSymbols, incorrectName));
+    }
+
+    /**
+     * Reports naming collisions with built-in types, globals, VEs, etc.
+     *
+     * <p>Note that collisions between aliases and imports are reported in {@link
+     * ValidateAliasesPass}.
+     *
+     * <p>Returns true if any errors were reported.
+     */
+    boolean reportErrorIfSymbolInvalid(
+        SoyFileNode file, String importSymbolName, SourceLocation nameLocation) {
+      boolean foundErrors = false;
+
+      // Name collides with another import symbol.
+      if (!file.getImportsContext().addImportedSymbol(importSymbolName)) {
+        errorReporter.report(nameLocation, IMPORT_COLLISION, importSymbolName);
+        foundErrors = true;
+      }
+
+      // Name conflicts with a global.
+      if (options.getCompileTimeGlobals().containsKey(importSymbolName)) {
+        foundErrors = true;
+        errorReporter.report(nameLocation, IMPORT_CONFLICTS_WITH_GLOBAL, importSymbolName);
+      }
+
+      // Name conflicts with a built-in type.
+      SoyType type = TypeRegistries.builtinTypeRegistry().getType(importSymbolName);
+      if (type != null) {
+        foundErrors = true;
+        errorReporter.report(nameLocation, IMPORT_CONFLICTS_WITH_TYPE_NAME, importSymbolName);
+      }
+
+      // Name conflicts with the namespace for a global.
+      String prefix = importSymbolName + ".";
+      if (globalPrefixToFullNameMap == null) {
+        globalPrefixToFullNameMap = buildGlobalPrefixToFullNameMap();
+      }
+      if (globalPrefixToFullNameMap.containsKey(prefix)) {
+        foundErrors = true;
+        errorReporter.report(
+            nameLocation,
+            IMPORT_CONFLICTS_WITH_GLOBAL_PREFIX,
+            importSymbolName,
+            globalPrefixToFullNameMap.get(prefix));
+      }
+
+      // TODO(b/161005145): Add VE naming collision check.
+      return foundErrors;
+    }
+
+    /**
+     * Builds a map that contains, for each compile time global, the first dotted prefix mapped to
+     * the full global name (e.g. "foo." -> "foo.bar.Baz"). If multiple types have the same prefix,
+     * the map will store the first one.
+     */
+    private ImmutableMap<String, String> buildGlobalPrefixToFullNameMap() {
+      Map<String, String> prefixesToGlobalNamesBuilder = new HashMap<>();
+
+      for (String fullName : options.getCompileTimeGlobals().keySet()) {
+        String prefix = fullName;
+        int indexOfFirstDot = fullName.indexOf(".");
+        // If there was no dot, or a dot was the last char, return the whole string.
+        // Otherwise, return "foo." in "foo.bar.baz".
+        if (indexOfFirstDot >= 0 && indexOfFirstDot < fullName.length() - 1) {
+          prefix = fullName.substring(0, indexOfFirstDot + 1);
+        }
+        prefixesToGlobalNamesBuilder.putIfAbsent(prefix, fullName);
+      }
+      return ImmutableMap.copyOf(prefixesToGlobalNamesBuilder);
     }
   }
 }

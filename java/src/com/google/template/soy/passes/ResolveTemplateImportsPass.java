@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
@@ -43,10 +44,12 @@ import java.util.Map;
 })
 public final class ResolveTemplateImportsPass extends ImportsPass implements CompilerFileSetPass {
   private TemplateNameRegistry templateNameRegistry;
+  private final SoyGeneralOptions options;
   private final ErrorReporter errorReporter;
 
-  ResolveTemplateImportsPass(ErrorReporter errorReporter) {
+  ResolveTemplateImportsPass(SoyGeneralOptions options, ErrorReporter errorReporter) {
     this.templateNameRegistry = null;
+    this.options = options;
     this.errorReporter = errorReporter;
   }
 
@@ -69,7 +72,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
 
   @Override
   TemplateImportVisitor createImportVisitorForFile(SoyFileNode file) {
-    return new TemplateImportVisitor(file, templateNameRegistry, errorReporter);
+    return new TemplateImportVisitor(file, templateNameRegistry, options, errorReporter);
   }
 
   static final class TemplateImportVisitor extends ImportVisitor {
@@ -80,8 +83,12 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     final Map<String, TemplateName> symbolsToTemplatesMap = new LinkedHashMap<>();
 
     TemplateImportVisitor(
-        SoyFileNode file, TemplateNameRegistry templateNameRegistry, ErrorReporter errorReporter) {
-      super(file, ImmutableSet.of(ImportType.TEMPLATE), errorReporter);
+        SoyFileNode file,
+        TemplateNameRegistry templateNameRegistry,
+        SoyGeneralOptions options,
+        ErrorReporter errorReporter) {
+      super(file, ImmutableSet.of(ImportType.TEMPLATE), options, errorReporter);
+
       this.templateNameRegistry = templateNameRegistry;
     }
 

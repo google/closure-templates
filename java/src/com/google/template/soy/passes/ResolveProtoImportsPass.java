@@ -25,6 +25,7 @@ import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.Field;
+import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.ImportsContext.ImportsTypeRegistry;
@@ -51,13 +52,18 @@ import java.util.Set;
 })
 final class ResolveProtoImportsPass extends ImportsPass implements CompilerFilePass {
   private final SoyTypeRegistry typeRegistry;
+  private final SoyGeneralOptions options;
   private final ErrorReporter errorReporter;
   private final boolean disableAllTypeChecking;
   private final ImmutableMap<String, FileDescriptor> pathToDescriptor;
 
   ResolveProtoImportsPass(
-      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean disableAllTypeChecking) {
+      SoyTypeRegistry typeRegistry,
+      SoyGeneralOptions options,
+      ErrorReporter errorReporter,
+      boolean disableAllTypeChecking) {
     this.typeRegistry = typeRegistry;
+    this.options = options;
     this.errorReporter = errorReporter;
     this.disableAllTypeChecking = disableAllTypeChecking;
     this.pathToDescriptor =
@@ -73,7 +79,7 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
   @Override
   ImportVisitor createImportVisitorForFile(SoyFileNode file) {
     return new ProtoImportVisitor(
-        file, typeRegistry, pathToDescriptor, errorReporter, disableAllTypeChecking);
+        file, typeRegistry, pathToDescriptor, options, errorReporter, disableAllTypeChecking);
   }
 
   private static final class ProtoImportVisitor extends ImportVisitor {
@@ -87,9 +93,10 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
         SoyFileNode file,
         SoyTypeRegistry typeRegistry,
         ImmutableMap<String, FileDescriptor> pathToDescriptor,
+        SoyGeneralOptions options,
         ErrorReporter errorReporter,
         boolean disableAllTypeChecking) {
-      super(file, ImmutableSet.of(ImportType.PROTO), errorReporter);
+      super(file, ImmutableSet.of(ImportType.PROTO), options, errorReporter);
       this.pathToDescriptor = pathToDescriptor;
       this.typeRegistry = typeRegistry;
       this.disableAllTypeChecking = disableAllTypeChecking;
