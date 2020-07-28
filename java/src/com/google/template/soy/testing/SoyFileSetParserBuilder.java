@@ -62,6 +62,7 @@ public final class SoyFileSetParserBuilder {
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
+  private boolean allowUnknownJsGlobals;
   private boolean allowV1Expression;
   // disable optimization by default
   private boolean runOptimizer = false;
@@ -239,6 +240,11 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  public SoyFileSetParserBuilder allowUnknownJsGlobals(boolean allowUnknownJsGlobals) {
+    this.allowUnknownJsGlobals = allowUnknownJsGlobals;
+    return this;
+  }
+
   public SoyFileSetParserBuilder allowV1Expression(boolean allowV1Expression) {
     this.allowV1Expression = allowV1Expression;
     return this;
@@ -341,6 +347,9 @@ public final class SoyFileSetParserBuilder {
         .setLoggingConfig(loggingConfig);
     if (allowUnboundGlobals) {
       passManager.allowUnknownGlobals();
+    }
+    if (allowUnknownJsGlobals) {
+      passManager.allowUnknownJsGlobals();
     }
     if (allowV1Expression) {
       passManager.allowV1Expression();

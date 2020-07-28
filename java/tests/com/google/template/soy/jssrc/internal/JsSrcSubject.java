@@ -162,6 +162,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
             .allowV1Expression(true)
             .typeRegistry(typeRegistry)
             .setLoggingConfig(loggingConfig)
+            .allowUnknownJsGlobals(true)
             .enableExperimentalFeatures(experimentalFeatures);
     for (SoyFunction soyFunction : soyFunctions) {
       builder.addSoyFunction(soyFunction);

@@ -285,4 +285,10 @@ public final class TranslateExprNodeVisitorTest {
                 + " goog.module.get('root.this.is.a.package.logging_config').MyTestLoggingConfig"
                 + ".v2383());");
   }
+
+  @Test
+  public void tesUnknownJsGlobal() {
+    assertThatSoyExpr("unknownJsGlobal('foo.Bar')")
+        .generatesCode("/** @suppress {missingRequire} */", "const $tmp = foo.Bar;", "$tmp;");
+  }
 }

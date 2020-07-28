@@ -283,9 +283,30 @@ JavaScript.
 The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
 access JavaScript global values outside of the normal support for globals.
 
-This function can only be used by the JavaScript backend. When used the function
-must take a [string literal](expressions.md#string-literal) that contains some
-JS identifier reference.
+This function can only be used by the JavaScript backend, as such files that use
+it are incompatible with the other backends. When used the function must take a
+[string literal](expressions.md#string-literal) that contains some JS identifier
+reference.
+
+```soy
+{unknownJsGlobal('some.javascript.Identifier')}
+```
+
+This will compile to something like:
+
+```js
+/** @suppress {missingRequire} */ (foo.Bar)
+```
+
+This pattern is provided for backwards compatibility with old versions of the
+Soy compiler that didn't require globals definitions to be provided. Users
+should consider replacing the use of this function with one of the following:
+
+*   a custom soy plugin to represent the needed functionality.
+*   a globals definition for the referenced global.
+*   representing the value as a proto enum
+
+NOTE: b/162340156 is in progress enforcing that this is used
 
 ### `css([baseClass,] selector)` {#css}
 
