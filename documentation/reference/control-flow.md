@@ -122,7 +122,8 @@ alphabetagamma
 
 ### Indexed iteration {#for-indexed}
 
-The `for` command also accepts an optional **position index**, such as:
+The `for` command also accepts an optional, zero-based **position index**, such
+as:
 
 ```soy
 {for $operand, $index in $operands}

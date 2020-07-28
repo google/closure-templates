@@ -392,8 +392,8 @@ If `$myList` were `[1, 2, 3, 4, 5]`, the expression above would evaluate to:
 
 `[2, 3, 4, 5, 6]`
 
-List comprehensions also accept an optional **position index** and an optional
-**filter expression**, such as:
+List comprehensions also accept an optional, zero-based **position index** and
+an optional **filter expression**, such as:
 
 `[$a + $i for $a, $i in $myList if $a >= 3]`
 
