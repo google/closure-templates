@@ -51,11 +51,7 @@ public final class ValidatedConformanceConfig {
           requirement.getRequirementTypeCase() != RequirementTypeCase.REQUIREMENTTYPE_NOT_SET,
           "requirement missing type");
       Rule<? extends Node> rule = forRequirement(requirement);
-      ImmutableList<String> exemptedFilePaths =
-          ImmutableList.<String>builder()
-              .addAll(requirement.getWhitelistList())
-              .addAll(requirement.getExemptList())
-              .build();
+      ImmutableList<String> exemptedFilePaths = ImmutableList.copyOf(requirement.getExemptList());
       ImmutableList<String> onlyApplyToPaths =
           ImmutableList.copyOf(requirement.getOnlyApplyToList());
       rulesBuilder.add(RuleWithExemptions.create(rule, exemptedFilePaths, onlyApplyToPaths));

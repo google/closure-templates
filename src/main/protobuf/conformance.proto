@@ -90,9 +90,6 @@ message Requirement {
   // and contacts.
   string error_message = 8;
 
-  // Optional: A list of whitelisted substrings. Any source path that contains
-  // a whitelisted substring is exempt from the requirement.
-  repeated string whitelist = 9;
   // Optional: Any source path that contains a exempted substring is exempt
   // from the requirement.
   repeated string exempt = 16;
@@ -102,5 +99,5 @@ message Requirement {
   // exmempted sources will still be exempted.
   repeated string only_apply_to = 15;
 
-  reserved 10;
+  reserved 9, 10;
 }

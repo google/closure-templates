@@ -515,14 +515,14 @@ public class SoyConformanceTest {
   }
 
   @Test
-  public void testBanInlineEventHandlersWhitelisting() {
+  public void testBanInlineEventHandlersExemptions() {
     assertNoViolation(
         "requirement: {\n"
             + "  custom: {\n"
             + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
             + "  }\n"
             + "  error_message: 'foo'"
-            + "  whitelist: 'foo/bar/baz.soy'"
+            + "  exempt: 'foo/bar/baz.soy'"
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
@@ -533,17 +533,17 @@ public class SoyConformanceTest {
             "foo/bar/baz.soy"));
   }
 
-  // Regression test for a bug where we used to essentially ignore whitelisting if there were
+  // Regression test for a bug where we used to essentially ignore exemptions if there were
   // multiple files in a compilation unit
   @Test
-  public void testBanInlineEventHandlersIsTooAggressiveWithWhitelists() {
+  public void testBanInlineEventHandlersIsTooAggressiveWithExemptions() {
     assertNoViolation(
         "requirement: {\n"
             + "  custom: {\n"
             + "    java_class: 'com.google.template.soy.conformance.BanInlineEventHandlers'\n"
             + "  }\n"
             + "  error_message: 'foo'"
-            + "  whitelist: 'foo/bar/baz.soy'"
+            + "  exempt: 'foo/bar/baz.soy'"
             + "}",
         new StableSoyFileSupplier(
             CharSource.wrap(
