@@ -1858,9 +1858,8 @@ goog.string.Const.from = function(s) {
 goog.string.Const.TYPE_MARKER_ = {};
 goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 goog.string.Const.EMPTY = goog.string.Const.from("");
-var module$contents$goog$html$SafeScript_SafeScript = function() {
-  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = "";
-  this.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = module$contents$goog$html$SafeScript_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE;
+var module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE = {}, module$contents$goog$html$SafeScript_SafeScript = function(value, token) {
+  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = token === module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE ? value : "";
   this.implementsGoogStringTypedString = !0;
 };
 module$contents$goog$html$SafeScript_SafeScript.fromConstant = function(script) {
@@ -1874,24 +1873,19 @@ module$contents$goog$html$SafeScript_SafeScript.unwrap = function(safeScript) {
   return module$contents$goog$html$SafeScript_SafeScript.unwrapTrustedScript(safeScript).toString();
 };
 module$contents$goog$html$SafeScript_SafeScript.unwrapTrustedScript = function(safeScript) {
-  if (safeScript instanceof module$contents$goog$html$SafeScript_SafeScript && safeScript.constructor === module$contents$goog$html$SafeScript_SafeScript && safeScript.SAFE_SCRIPT_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ === module$contents$goog$html$SafeScript_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE) {
+  if (safeScript instanceof module$contents$goog$html$SafeScript_SafeScript && safeScript.constructor === module$contents$goog$html$SafeScript_SafeScript) {
     return safeScript.privateDoNotAccessOrElseSafeScriptWrappedValue_;
   }
   (0,goog.asserts.fail)("expected object of type SafeScript, got '" + safeScript + "' of type " + goog.typeOf(safeScript));
   return "type_error:SafeScript";
 };
 module$contents$goog$html$SafeScript_SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse = function(script) {
-  return (new module$contents$goog$html$SafeScript_SafeScript).initSecurityPrivateDoNotAccessOrElse_(script);
-};
-module$contents$goog$html$SafeScript_SafeScript.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(script) {
-  var policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
-  this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = policy ? policy.createScript(script) : script;
-  return this;
+  var policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(), trustedScript = policy ? policy.createScript(script) : script;
+  return new module$contents$goog$html$SafeScript_SafeScript(trustedScript, module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE);
 };
 goog.DEBUG && (module$contents$goog$html$SafeScript_SafeScript.prototype.toString = function() {
   return "SafeScript{" + this.privateDoNotAccessOrElseSafeScriptWrappedValue_ + "}";
 });
-var module$contents$goog$html$SafeScript_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE = {};
 module$contents$goog$html$SafeScript_SafeScript.EMPTY = module$contents$goog$html$SafeScript_SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse("");
 goog.html.SafeScript = module$contents$goog$html$SafeScript_SafeScript;
 goog.fs = {};
