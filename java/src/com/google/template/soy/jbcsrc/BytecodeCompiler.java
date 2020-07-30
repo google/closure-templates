@@ -20,7 +20,6 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
@@ -28,8 +27,6 @@ import com.google.common.io.ByteSource;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.restricted.Flags;
@@ -56,17 +53,6 @@ import java.util.TreeSet;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
-
-  private static final SoyErrorKind UNEXPECTED_COMPILER_FAILURE =
-      SoyErrorKind.of(
-          "Unexpected error while compiling template: ''{0}''\n"
-              + "Soy Stack:\n{1}\n"
-              + "Compiler Stack:\n{2}",
-          StyleAllowance.NO_PUNCTUATION);
-
-  private static final SoyErrorKind UNEXPECTED_ERROR =
-      SoyErrorKind.of(
-          "Unexpected error while compiling template: ''{0}''\n{1}", StyleAllowance.NO_PUNCTUATION);
 
   /**
    * Compiles all the templates in the given registry.
@@ -140,7 +126,7 @@ public final class BytecodeCompiler {
           fileSet,
           reporter,
           typeRegistry,
-          new CompilerListener<Void>() {
+          new CompilerListener<Void, IOException>() {
             @Override
             void onCompile(ClassData clazz) throws IOException {
               writer.writeEntry(
@@ -238,9 +224,9 @@ public final class BytecodeCompiler {
     }
   }
 
-  private abstract static class CompilerListener<T> {
+  private abstract static class CompilerListener<T, E extends Throwable> {
     /** Callback for for class data that was generated. */
-    abstract void onCompile(ClassData newClass) throws Exception;
+    abstract void onCompile(ClassData newClass) throws E;
 
     /**
      * Callback to notify a deltemplate was compiled.
@@ -268,48 +254,33 @@ public final class BytecodeCompiler {
     }
   }
 
-  private static <T> T compileTemplates(
+  private static <T, E extends Throwable> T compileTemplates(
       CompiledTemplateRegistry registry,
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
-      CompilerListener<T> listener) {
+      CompilerListener<T, E> listener)
+      throws E {
     for (SoyFileNode file : fileSet.getChildren()) {
       for (TemplateNode template : file.getTemplates()) {
         CompiledTemplateMetadata classInfo = registry.getTemplateInfo(template);
-        try {
-          TemplateCompiler templateCompiler =
-              new TemplateCompiler(registry, classInfo, template, errorReporter, typeRegistry);
-          for (ClassData clazz : templateCompiler.compile()) {
-            if (Flags.DEBUG) {
-              clazz.checkClass();
-            }
-            listener.onCompile(clazz);
+        TemplateCompiler templateCompiler =
+            new TemplateCompiler(registry, classInfo, template, errorReporter, typeRegistry);
+        for (ClassData clazz : templateCompiler.compile()) {
+          if (Flags.DEBUG) {
+            clazz.checkClass();
           }
-          if (template instanceof TemplateDelegateNode) {
-            listener.onCompileDelTemplate(template.getTemplateName());
-          } else {
-            listener.onCompileTemplate(template.getTemplateName());
-          }
+          listener.onCompile(clazz);
+        }
+        if (template instanceof TemplateDelegateNode) {
+          listener.onCompileDelTemplate(template.getTemplateName());
+        } else {
+          listener.onCompileTemplate(template.getTemplateName());
+        }
 
-          /** For each function call in the template, trigger the function call listener. */
-          for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
-            listener.onFunctionCallFound(fnNode);
-          }
-          // Report unexpected errors and keep going to try to collect more.
-        } catch (UnexpectedCompilerFailureException e) {
-          errorReporter.report(
-              e.getOriginalLocation(),
-              UNEXPECTED_COMPILER_FAILURE,
-              template.getTemplateNameForUserMsgs(),
-              e.printSoyStack(),
-              Throwables.getStackTraceAsString(e));
-        } catch (Throwable t) {
-          errorReporter.report(
-              template.getSourceLocation(),
-              UNEXPECTED_ERROR,
-              template.getTemplateNameForUserMsgs(),
-              Throwables.getStackTraceAsString(t));
+        /** For each function call in the template, trigger the function call listener. */
+        for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
+          listener.onFunctionCallFound(fnNode);
         }
       }
     }
