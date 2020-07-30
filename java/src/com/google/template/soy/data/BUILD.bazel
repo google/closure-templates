@@ -93,7 +93,7 @@ java_library(
     srcs = ACTUAL_INTERNAL,
     deps = [
         ":data",
-        "//src/main/protobuf:logging_config_java_proto",
+        "//src/main/protobuf:ve_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
@@ -106,7 +106,7 @@ java_library(
     srcs = VE_INTERNAL,
     deps = [
         ":data_internal",
-        "//src/main/protobuf:logging_config_java_proto",
+        "//src/main/protobuf:ve_metadata_java_proto",
     ],
 )
 

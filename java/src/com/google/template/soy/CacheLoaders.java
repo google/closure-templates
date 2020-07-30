@@ -29,7 +29,7 @@ import com.google.protobuf.ExtensionRegistry;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.logging.AnnotatedLoggingConfig;
-import com.google.template.soy.logging.LoggingConfigOuterClass;
+import com.google.template.soy.logging.VeMetadata;
 import com.google.template.soy.soytree.CompilationUnit;
 import java.io.File;
 import java.io.IOException;
@@ -71,9 +71,7 @@ final class CacheLoaders {
   // at runtime from descriptor files passed to the Soy compiler, and means that all references
   // (even from runtime protos) point to the same (compile time) descriptors.
   private static final ImmutableMap<String, FileDescriptor> WELL_KNOWN_PROTOS =
-      ImmutableMap.of(
-          LoggingConfigOuterClass.getDescriptor().getName(),
-          LoggingConfigOuterClass.getDescriptor());
+      ImmutableMap.of(VeMetadata.getDescriptor().getName(), VeMetadata.getDescriptor());
 
   /**
    * A cached descriptor set.

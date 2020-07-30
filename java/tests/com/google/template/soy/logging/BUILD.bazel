@@ -15,6 +15,7 @@ java_library(
         "//java/src/com/google/template/soy/testing:shared_test_utils",
         "//src/main/protobuf:annotated_logging_config_java_proto",
         "//src/main/protobuf:logging_config_java_proto",
+        "//src/main/protobuf:ve_metadata_java_proto",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
         "@maven//:junit_junit",

@@ -54,6 +54,7 @@ proto_library(
         "logging_config.proto",
     ],
     visibility = ["//visibility:public"],
+    deps = [":ve_metadata_proto"],
 )
 
 java_proto_library(
@@ -62,6 +63,18 @@ java_proto_library(
     deps = [
         ":logging_config_proto",
     ],
+)
+
+proto_library(
+    name = "ve_metadata_proto",
+    srcs = ["ve_metadata.proto"],
+    visibility = ["//visibility:public"],
+)
+
+java_proto_library(
+    name = "ve_metadata_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":ve_metadata_proto"],
 )
 
 proto_library(

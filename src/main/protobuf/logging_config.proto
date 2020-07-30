@@ -17,6 +17,9 @@
 syntax = "proto2";
 
 package soy;
+
+import "src/main/protobuf/ve_metadata.proto";
+
 option java_package = "com.google.template.soy.logging";
 option java_multiple_files = true;
 
@@ -28,7 +31,8 @@ message LoggingConfig {
   // unit.
   repeated LoggableElement element = 1;
 }
-  // Defines a loggable element
+
+// Defines a loggable element
 message LoggableElement {
   // The name specified by users in the soy file.  This should be a valid
   // soy identifier (it should match:
@@ -45,15 +49,4 @@ message LoggableElement {
   // set compile-time constant VE metadata, that will be available from Soy
   // source code.
   optional LoggableElementMetadata metadata = 4;
-}
-
-// Additional metadata to be included with a loggable element. Extend this and
-// set the metadata in your logging config. Note that metadata will be
-// serialized in JS and sent to the client, so copious metadata could bloat JS
-// size. To keep JS code size down, we recommend using smart defaults for
-// metadata (so metadata only has to be sent to the client if the value is
-// different than the default) and only setting the metadata on a VE if that
-// metadata is different from the default.
-message LoggableElementMetadata {
-  extensions 1000 to max;
 }
