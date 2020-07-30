@@ -17,6 +17,7 @@
 package com.google.template.soy.types;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
@@ -204,7 +205,7 @@ public final class SoyProtoType extends SoyType {
                   return field.getDescriptor().isExtension()
                       && fieldName.equals(field.getFullyQualifiedName());
                 })
-            .collect(ImmutableSet.toImmutableSet());
+            .collect(toImmutableSet());
   }
 
   @Override
@@ -233,7 +234,17 @@ public final class SoyProtoType extends SoyType {
 
   /** Returns the {@link FieldDescriptor} of the given field. */
   public FieldDescriptor getFieldDescriptor(String fieldName) {
-    return fields.get(fieldName).getDescriptor();
+    FieldWithType field = fields.get(fieldName);
+    if (field == null) {
+      throw new IllegalArgumentException(
+          "Cannot find descriptor for: "
+              + fieldName
+              + ", known fields are: "
+              + getFieldNames()
+              + ", for proto: "
+              + typeDescriptor.getFullName());
+    }
+    return field.getDescriptor();
   }
 
   /** Returns the {@link SoyType} of the given field, or null if the field does not exist. */
