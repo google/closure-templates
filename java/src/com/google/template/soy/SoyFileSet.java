@@ -1169,18 +1169,15 @@ public final class SoyFileSet {
    * builders.
    */
   private ParseResult parseForGenJava() {
-    // TODO(lukes): see if we can enforce that globals are provided at compile time here.
-    // given that types have to be, this should be possible.  Currently it is disabled for
-    // backwards compatibility
     // N.B. we do not run the optimizer here for 2 reasons:
     // 1. it would just waste time, since we are not running code generation the optimization
     //    work doesn't help anything
     // 2. it potentially removes metadata from the tree by precalculating expressions. For
     //     example, trivial print nodes are evaluated, which can remove globals from the tree,
-    //     but the
+    //     but the gencode needs to find these so that their proto types can be used to bootstrap
+    // development mode compilation.
     return parse(
         passManagerBuilder()
-            .allowUnknownGlobals()
             .optimize(false)
             // Don't desugar, this is a bit of a waste of time and it destroys type
             // information about @state parameters
