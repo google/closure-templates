@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
  */
 public final class ValidatedLoggingConfig {
 
-  private static final String UNDEFINED_VE_NAME = "UndefinedVe";
+  public static final String UNDEFINED_VE_NAME = "UndefinedVe";
 
   public static final AnnotatedLoggableElement UNDEFINED_VE =
       AnnotatedLoggableElement.newBuilder()

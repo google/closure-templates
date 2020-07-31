@@ -44,6 +44,9 @@ import com.google.template.soy.data.SoyRecords;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.SoyVisualElementFactory;
 import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -101,6 +104,8 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.logging.SoyLogger;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.restricted.JavaValueFactory;
@@ -136,6 +141,13 @@ import javax.annotation.Nullable;
  *
  */
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
+
+  static final SoyVisualElement UNDEFINED_VE =
+      SoyVisualElementFactory.create(
+          SoyLogger.UNDEFINED_VE_ID, ValidatedLoggingConfig.UNDEFINED_VE_NAME);
+
+  static final SoyVisualElementData UNDEFINED_VE_DATA =
+      SoyVisualElementData.create(UNDEFINED_VE, /* data= */ null);
 
   /** Defines how we deal with and produce UndefinedData instanes. */
   public enum UndefinedDataHandlingMode {
@@ -777,7 +789,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
         case DEBUG_SOY_TEMPLATE_INFO:
           return BooleanData.forValue(debugSoyTemplateInfo);
         case VE_DATA:
-          return NullData.INSTANCE;
+          return UNDEFINED_VE_DATA;
         case MSG_WITH_ID:
         case REMAINDER:
           // should have been removed earlier in the compiler
@@ -962,7 +974,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   @Override
   protected SoyValue visitVeLiteralNode(VeLiteralNode node) {
-    return NullData.INSTANCE;
+    return UNDEFINED_VE;
   }
 
   @Override
