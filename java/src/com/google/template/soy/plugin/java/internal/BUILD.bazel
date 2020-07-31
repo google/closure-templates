@@ -9,7 +9,7 @@ java_library(
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
-        "//java/src/com/google/template/soy/data:data_internal",
+        "//java/src/com/google/template/soy/data:ve",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/internal/proto",

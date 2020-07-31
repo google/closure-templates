@@ -7,10 +7,13 @@ package(default_visibility = ["//:soy_internal"])
 LOCKED_DOWN = ["UnsafeSanitizedContentOrdainer.java"]
 
 ACTUAL_INTERNAL = [
-    "SoyVisualElement.java",
-    "SoyVisualElementData.java",
     "internal/LazyProtoToSoyValueList.java",
     "internal/LazyProtoToSoyValueMap.java",
+]
+
+VE = [
+    "SoyVisualElement.java",
+    "SoyVisualElementData.java",
 ]
 
 VE_INTERNAL = [
@@ -66,7 +69,7 @@ java_library(
             "restricted/*.java",
             "internal/*.java",
         ],
-        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE_INTERNAL + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + CODE_GEN_TEST_ONLY,
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + VE_INTERNAL + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + CODE_GEN_TEST_ONLY,
     ),
     visibility = ["//visibility:public"],
     exports = [
@@ -93,11 +96,20 @@ java_library(
     srcs = ACTUAL_INTERNAL,
     deps = [
         ":data",
+        "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "ve",
+    srcs = VE,
+    deps = [
+        ":data",
         "//src/main/protobuf:ve_metadata_java_proto",
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
     ],
 )
 
@@ -105,7 +117,7 @@ java_library(
     name = "soy_visual_element_factory",
     srcs = VE_INTERNAL,
     deps = [
-        ":data_internal",
+        ":ve",
         "//src/main/protobuf:ve_metadata_java_proto",
     ],
 )
