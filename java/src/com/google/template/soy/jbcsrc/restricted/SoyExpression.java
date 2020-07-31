@@ -113,6 +113,14 @@ public final class SoyExpression extends Expression {
     return BytecodeUtils.asList(childExprs);
   }
 
+  public static Expression asBoxedValueProviderList(List<SoyExpression> items) {
+    List<Expression> childExprs = new ArrayList<>(items.size());
+    for (SoyExpression child : items) {
+      childExprs.add(child.boxAsSoyValueProvider());
+    }
+    return BytecodeUtils.asList(childExprs);
+  }
+
   public static final SoyExpression NULL =
       new SoyExpression(
           getUnboxedType(NullType.getInstance()),

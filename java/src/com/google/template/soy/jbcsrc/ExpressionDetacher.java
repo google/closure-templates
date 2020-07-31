@@ -74,8 +74,7 @@ interface ExpressionDetacher {
   /**
    * An {@link ExpressionDetacher} for use by the {@link ExpressionCompiler#createConstantCompiler}.
    *
-   * <p>This assumes that all SoyValueProviders will be already resolved and simply adds runtime
-   * assertions they are SoyValue objects.
+   * <p>This assumes that all SoyValueProviders will be already resolved and simply calls resolve().
    */
   static final class NullDetatcher implements ExpressionDetacher, Factory {
     static final NullDetatcher INSTANCE = new NullDetatcher();
@@ -88,7 +87,11 @@ interface ExpressionDetacher {
     @Override
     public Expression resolveSoyValueProvider(Expression soyValueProvider) {
       soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
-      return soyValueProvider.checkedCast(BytecodeUtils.SOY_VALUE_TYPE);
+      // can't do a checkedCast directly to SoyValue bc null literal will fail (it's represented as
+      // SoyValueProvider<null>)
+      return soyValueProvider
+          .checkedCast(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE)
+          .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
     }
 
     @Override

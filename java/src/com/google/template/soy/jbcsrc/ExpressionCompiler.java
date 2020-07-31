@@ -436,7 +436,7 @@ final class ExpressionCompiler {
       // TODO(lukes): this should really box the children as SoyValueProviders, we are boxing them
       // anyway and could additionally delay detach generation. Ditto for RecordLiteralNode.
       return SoyExpression.forList(
-          (ListType) node.getType(), SoyExpression.asBoxedList(visitChildren(node)));
+          (ListType) node.getType(), SoyExpression.asBoxedValueProviderList(visitChildren(node)));
     }
 
     @Override
@@ -445,12 +445,7 @@ final class ExpressionCompiler {
       // invocation, as we do for regular loops.
       ExprNode listExpr = node.getListExpr();
       SoyExpression soyList = visit(listExpr);
-      Expression javaList;
-      if (soyList.isBoxed()) {
-        javaList = soyList.unboxAsList();
-      } else {
-        javaList = soyList.checkedCast(LIST_TYPE);
-      }
+      SoyExpression javaList = soyList.unboxAsList();
       ExprNode mapExpr = node.getListItemTransformExpr();
       ExprNode filterExpr = node.getFilterExpr();
 
@@ -485,7 +480,9 @@ final class ExpressionCompiler {
                       .checkedCast(SOY_VALUE_PROVIDER_TYPE),
                   userIndexVar.start());
 
-      SoyExpression visitedMap = visit(mapExpr).box();
+      // TODO: Consider compiling to a SoyValueProvider instead of boxing.
+      Expression visitedMap = visit(mapExpr).boxAsSoyValueProvider();
+
       SoyExpression visitedFilter = filterExpr != null ? visit(filterExpr).coerceToBoolean() : null;
 
       Statement exitScope = scope.exitScope();
