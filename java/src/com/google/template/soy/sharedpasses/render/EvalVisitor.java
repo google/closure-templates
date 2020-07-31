@@ -46,7 +46,6 @@ import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
-import com.google.template.soy.data.SoyVisualElementFactory;
 import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
@@ -143,8 +142,7 @@ import javax.annotation.Nullable;
 public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
   static final SoyVisualElement UNDEFINED_VE =
-      SoyVisualElementFactory.create(
-          SoyLogger.UNDEFINED_VE_ID, ValidatedLoggingConfig.UNDEFINED_VE_NAME);
+      SoyVisualElement.create(SoyLogger.UNDEFINED_VE_ID, ValidatedLoggingConfig.UNDEFINED_VE_NAME);
 
   static final SoyVisualElementData UNDEFINED_VE_DATA =
       SoyVisualElementData.create(UNDEFINED_VE, /* data= */ null);

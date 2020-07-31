@@ -32,7 +32,6 @@ java_library(
         ":runtime",
         "//java/src/com/google/template/soy/basicfunctions",
         "//java/src/com/google/template/soy/data",
-        "//java/src/com/google/template/soy/data:soy_visual_element_factory",
         "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/msgs",

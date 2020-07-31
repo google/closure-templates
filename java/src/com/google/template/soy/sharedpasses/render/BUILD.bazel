@@ -14,7 +14,6 @@ java_library(
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
-        "//java/src/com/google/template/soy/data:soy_visual_element_factory",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "//java/src/com/google/template/soy/data:ve",
         "//java/src/com/google/template/soy/exprtree",

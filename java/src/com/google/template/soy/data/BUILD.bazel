@@ -16,10 +16,6 @@ VE = [
     "SoyVisualElementData.java",
 ]
 
-VE_INTERNAL = [
-    "SoyVisualElementFactory.java",
-]
-
 CODE_GENERATION = [
     "BaseSoyTemplateImpl.java",
 ]
@@ -69,7 +65,7 @@ java_library(
             "restricted/*.java",
             "internal/*.java",
         ],
-        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + VE_INTERNAL + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + CODE_GEN_TEST_ONLY,
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + CODE_GEN_TEST_ONLY,
     ),
     visibility = ["//visibility:public"],
     exports = [
@@ -110,15 +106,6 @@ java_library(
         "@com_google_auto_value_auto_value",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_code_findbugs_jsr305",
-    ],
-)
-
-java_library(
-    name = "soy_visual_element_factory",
-    srcs = VE_INTERNAL,
-    deps = [
-        ":ve",
-        "//src/main/protobuf:ve_metadata_java_proto",
     ],
 )
 

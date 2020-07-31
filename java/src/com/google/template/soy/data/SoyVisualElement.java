@@ -27,11 +27,11 @@ public abstract class SoyVisualElement extends SoyAbstractValue {
   private static final LoggableElementMetadata EMPTY_METADATA =
       LoggableElementMetadata.getDefaultInstance();
 
-  static SoyVisualElement create(long id, String name) {
+  public static SoyVisualElement create(long id, String name) {
     return create(id, name, EMPTY_METADATA);
   }
 
-  static SoyVisualElement create(long id, String name, LoggableElementMetadata metadata) {
+  public static SoyVisualElement create(long id, String name, LoggableElementMetadata metadata) {
     return new AutoValue_SoyVisualElement(id, name, metadata);
   }
 
