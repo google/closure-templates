@@ -464,12 +464,6 @@ public final class BaseTofu implements SoyTofu {
     }
 
     @Override
-    public RendererImpl setContentKind(SanitizedContent.ContentKind contentKind) {
-      this.expectedContentKind = checkNotNull(contentKind);
-      return this;
-    }
-
-    @Override
     @Deprecated
     public String render() {
       StringBuilder sb = new StringBuilder();
