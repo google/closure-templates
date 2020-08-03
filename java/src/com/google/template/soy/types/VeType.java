@@ -50,7 +50,14 @@ public final class VeType extends SoyType {
 
   @Override
   boolean doIsAssignableFromNonUnionType(SoyType srcType) {
-    return srcType.getKind() == Kind.VE && this.dataType.equals(((VeType) srcType).dataType);
+    if (srcType.getKind() == Kind.VE) {
+      VeType otherVe = (VeType) srcType;
+      if (dataType.isPresent() && dataType.get().equals(AnyType.getInstance().toString())) {
+        return true;
+      }
+      return dataType.equals(otherVe.dataType);
+    }
+    return false;
   }
 
   @Override

@@ -43,3 +43,28 @@ filegroup(
     name = "metadata_templates",
     srcs = glob(["*.vm"]),
 )
+
+java_library(
+    name = "methods",
+    srcs = [
+        "GetMetadataMethod.java",
+    ],
+    deps = [
+        "//java/src/com/google/template/soy/data:ve",
+        "//java/src/com/google/template/soy/plugin/java/restricted",
+        "//java/src/com/google/template/soy/plugin/javascript/restricted",
+        "//java/src/com/google/template/soy/shared/restricted",
+        "//java/src/com/google/template/soy/shared/restricted:method_annotation",
+        "//src/main/protobuf:ve_metadata_java_proto",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "methods_runtime",
+    srcs = ["LoggingMethodsRuntime.java"],
+    deps = [
+        "//java/src/com/google/template/soy/data:ve",
+        "//src/main/protobuf:ve_metadata_java_proto",
+    ],
+)
