@@ -249,10 +249,6 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
 
   @Override
   public String getCommandText() {
-    return doGetCommandText(true);
-  }
-
-  private String doGetCommandText(boolean includePhExample) {
     StringBuilder sb = new StringBuilder();
     sb.append(expr.toSourceString());
     for (PrintDirectiveNode child : getChildren()) {
@@ -261,7 +257,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     if (userSuppliedPlaceholderName != null) {
       sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
     }
-    if (includePhExample && userSuppliedPlaceholderExample != null) {
+    if (userSuppliedPlaceholderExample != null) {
       sb.append(" phex=\"").append(userSuppliedPlaceholderExample).append('"');
     }
     return sb.toString();
