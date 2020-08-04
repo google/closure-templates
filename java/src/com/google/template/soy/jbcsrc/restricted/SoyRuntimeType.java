@@ -21,9 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.google.common.base.Objects;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
@@ -61,51 +59,14 @@ public abstract class SoyRuntimeType {
    * <p>Types will fail to have unboxed representations mostly for unknown, any and union types.
    */
   public static Optional<SoyRuntimeType> getUnboxedType(SoyType soyType) {
-    // Optional is immutable so Optional<Subclass> can always be safely cast to Optional<SuperClass>
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    Optional<SoyRuntimeType> typed = (Optional) primitiveTypeCache.getUnchecked(soyType);
-    return typed;
+    return Optional.ofNullable(unboxedTypeImpl(soyType));
   }
 
   /** Returns the boxed representation of the given type. */
   public static SoyRuntimeType getBoxedType(SoyType soyType) {
-    return boxedTypeCache.getUnchecked(soyType);
-  }
-
-  // These caches should have a relatively fixed size (the universe of SoyTypes).  One potential
-  // source of concern is that in the case of protos, if a user is hot swapping in new class
-  // definitions and adding/removing fields.  We won't modify the SoyType definitions (or
-  // SoyRuntimeType) definitions in these caches.  This is a limitation in the design of the proto
-  // type definition (because we never try to re-read the proto descriptors).  In theory this could
-  // be fixed by flushing the whole type registry between compiles.  This would solve the problem,
-  // but then these caches would start leaking!  Any easy fix would be to give these caches weak
-  // keys.
-
-  private static final LoadingCache<SoyType, Optional<PrimitiveSoyType>> primitiveTypeCache =
-      CacheBuilder.newBuilder()
-          .build(
-              new CacheLoader<SoyType, Optional<PrimitiveSoyType>>() {
-                @Override
-                public Optional<PrimitiveSoyType> load(SoyType key) throws Exception {
-                  return Optional.ofNullable(unboxedTypeImpl(key));
-                }
-              });
-
-  private static final LoadingCache<SoyType, BoxedSoyType> boxedTypeCache =
-      CacheBuilder.newBuilder()
-          .build(
-              new CacheLoader<SoyType, BoxedSoyType>() {
-                @Override
-                public BoxedSoyType load(SoyType key) throws Exception {
-                  return boxedSoyTypeImpl(key);
-                }
-              });
-
-  @Nullable
-  private static BoxedSoyType boxedSoyTypeImpl(SoyType soyType) {
-    Optional<PrimitiveSoyType> primitive = primitiveTypeCache.getUnchecked(soyType);
-    if (primitive.isPresent()) {
-      return primitive.get().box();
+    PrimitiveSoyType primitive = unboxedTypeImpl(soyType);
+    if (primitive != null) {
+      return primitive.box();
     }
     switch (soyType.getKind()) {
       case ATTRIBUTES:
@@ -431,8 +392,24 @@ public abstract class SoyRuntimeType {
 
   public abstract SoyRuntimeType box();
 
-  // NOTE: we have identity semantics.  This is fine because our caches ensure we never produce
-  // two otherwise identical objects
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SoyRuntimeType)) {
+      return false;
+    }
+    SoyRuntimeType that = (SoyRuntimeType) o;
+    return Objects.equal(soyType, that.soyType)
+        && Objects.equal(runtimeType, that.runtimeType)
+        && isBoxed() == that.isBoxed();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(soyType, runtimeType, isBoxed());
+  }
 
   @Override
   public String toString() {
