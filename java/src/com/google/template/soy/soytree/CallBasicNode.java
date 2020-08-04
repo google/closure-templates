@@ -88,7 +88,7 @@ public final class CallBasicNode extends CallNode {
               ident,
               "call",
               ImmutableList.of(
-                  "data", MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
+                  "data", "key", MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
       }
     }
     if (isPassingData() && !isStaticCall()) {
