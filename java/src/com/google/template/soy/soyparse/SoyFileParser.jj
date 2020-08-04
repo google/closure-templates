@@ -997,6 +997,7 @@ TOKEN_MGR_DECLS: {
 | < LCURLY: "{"      >
 | < RCURLY: "}"      >
 | < FROM: "from" >
+| < STAR: "*" >
 }
 
 
@@ -1463,36 +1464,61 @@ private AliasDeclaration Alias() :
   }
 }
 
-private ImportNode Import() :
+/** Matches a module import var ("* as Foo"), and throws an error if the alias is missing . */
+private ImportedVar ModuleImportVar() :
 {
-  Token open, close;
-  StringNode path = null;
+  Token star = null;
+  Token identifier = null;
+  Token alias = null;
+}
+{
+  star = <STAR>
+
+  // The "as Foo" is NOT optional. This is just so we can catch all "import *" in this block and
+  // throw a better error.
+  [
+     Keyword("as")
+     alias = <IDENT>
+  ]
+  {
+    if (alias == null) {
+      errorReporter.report(createSrcLoc(star), PARSER_ERROR, star.image, "'import * as Foo'");
+      return new ImportedVar("*", "ERROR", createSrcLoc(star));
+    } else {
+      return new ImportedVar("*", alias.image, createSrcLoc(star, alias));
+    }
+  }
+}
+
+/**
+ * Matches a list of imported symbols (e.g. "foo, bar as myBar, baz"). Also matches a single
+ * imported symbol.
+ */
+private ImmutableList<ImportedVar> SymbolImportVarList() :
+{
+  Token star = null;
   Token identifier = null;
   Token alias = null;
   SourceLocation loc;
-  ImmutableList.Builder<ImportedVar> identifiers = new ImmutableList.Builder<ImportedVar>();
+  ImmutableList.Builder<ImportedVar> importedVars = new ImmutableList.Builder<ImportedVar>();
 }
 {
-  (
-    open = <IMPORT_OPEN>
-    [
-    <LCURLY>
-    identifier = <IDENT>
-    [
-      Keyword("as")
-      alias = <IDENT>
-    ]
-    {
-      String a1 = null;
-      loc = createSrcLoc(identifier);
-      if (alias != null) {
-        a1 = alias.image;
-        loc = loc.extend(createSrcLoc(alias));
-      }
-      identifiers.add(new ImportedVar(identifier.image, a1, loc));
-      alias = null;
+  identifier = <IDENT>
+  [
+    Keyword("as")
+    alias = <IDENT>
+  ]
+  {
+    String a1 = null;
+    loc = createSrcLoc(identifier);
+    if (alias != null) {
+      a1 = alias.image;
+      loc = loc.extend(createSrcLoc(alias));
     }
-    (
+    importedVars.add(new ImportedVar(identifier.image, a1, loc));
+    alias = null;
+  }
+  (
     <DEFAULT_COMMA>
     identifier = <IDENT>
     [
@@ -1506,18 +1532,45 @@ private ImportNode Import() :
         a2 = alias.image;
         loc = loc.extend(createSrcLoc(alias));
       }
-      identifiers.add(new ImportedVar(identifier.image, a2, loc));
+      importedVars.add(new ImportedVar(identifier.image, a2, loc));
       alias = null;
     }
-    )*
-    <RCURLY>
+  )*
+  { return importedVars.build(); }
+}
+
+private ImportNode Import() :
+{
+  Token open, close;
+  StringNode path = null;
+  ImportedVar moduleImportVar;
+  ImmutableList<ImportedVar> identifiers = ImmutableList.of();
+}
+{
+  (
+    open = <IMPORT_OPEN>
+    [
+    (
+      // Module import ("import * as Foo from 'path/file.soy'").
+      (
+        moduleImportVar = ModuleImportVar()
+        {identifiers = ImmutableList.of(moduleImportVar);}
+      )
+      |
+      (
+        <LCURLY>
+        // Individual symbol imports ("import {foo, bar as myBar} from 'path.file.soy'").
+        identifiers = SymbolImportVarList()
+        <RCURLY>
+      )
+    )
     <FROM>
     ]
     path = StringLiteral()
     close = <SEMICOLON>
     {
       return new ImportNode(nodeIdGen.genId(), createSrcLoc(open, close), path,
-          identifiers.build());
+          identifiers);
     }
   )
 }
