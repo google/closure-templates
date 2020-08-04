@@ -123,6 +123,7 @@ public final class CallDelegateNode extends CallNode {
               "call",
               ImmutableList.of(
                   "data",
+                  "key",
                   MessagePlaceholders.PHNAME_ATTR,
                   MessagePlaceholders.PHEX_ATTR,
                   "variant",
