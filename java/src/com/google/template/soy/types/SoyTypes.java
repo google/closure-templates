@@ -562,22 +562,54 @@ public final class SoyTypes {
   }
 
   /**
-   * Resolves a local symbol to a fully-qualified name. Supports dotted local symbols so e.g.:
-   * {@code localToFqn("A", ImmutableMap.of("A", "pkg.A")) == "pkg.A"} and {@code localToFqn("A.B",
-   * ImmutableMap.of("A", "pkg.A")) == "pkg.A.B"}.
+   * Resolves a local symbol to a fully-qualified name. Supports dotted local symbols for module
+   * imports or nested types. e.g.: {@code localToFqn("A", ImmutableMap.of("A", "pkg.A")) ==
+   * "pkg.A"} and {@code localToFqn("A.B", ImmutableMap.of("A", "pkg.A")) == "pkg.A.B"}.
    *
    * @return {@code null} if no match exists in {@code localToFqn}.
    */
   @Nullable
   public static String localToFqn(String localSymbol, Map<String, String> localToFqn) {
-    // Support nested messages by resolving the first token against the map and then appending
-    // subsequent tokens.
-    int index = localSymbol.indexOf('.');
-    String localRoot = index >= 0 ? localSymbol.substring(0, index) : localSymbol;
+    // If the local symbol is an imported top-level message, or an "ImportedModule.TopLevelMessage",
+    // then we can just look up the fqn directly.
+    if (localToFqn.containsKey(localSymbol)) {
+      return localToFqn.get(localSymbol);
+    }
+
+    // Support nested messages by resolving the top level proto (e.g. "FooProto" or
+    // "myProtosModule.FooProto") against the map, and then appending subsequent tokens.
+    String localRoot = getFirstSegment(localSymbol);
+    if (!localToFqn.containsKey(localRoot)) {
+      // Module import case.
+      localRoot = getFirstTwoSegments(localSymbol);
+    }
+
     String fqnRoot = localToFqn.get(localRoot);
     if (fqnRoot == null) {
       return null;
     }
-    return index >= 0 ? fqnRoot + localSymbol.substring(index) : fqnRoot;
+    return localSymbol.replaceFirst(localRoot, fqnRoot);
+  }
+
+  /**
+   * Gets the first segment in a dotted string (e.g. "foo" in "foo.bar.baz"), or the whole string if
+   * there are not dots.
+   */
+  private static String getFirstSegment(String symbol) {
+    int index = symbol.indexOf('.');
+    return index >= 0 ? symbol.substring(0, index) : symbol;
+  }
+
+  /**
+   * Gets the first two segments in a dotted string (e.g. "foo.bar" in "foo.bar.baz"), or the whole
+   * string if there are fewer than 2 dots.
+   */
+  private static String getFirstTwoSegments(String symbol) {
+    int firstDot = symbol.indexOf('.');
+    int secondDot = symbol.indexOf('.', firstDot + 1);
+    if (secondDot >= 0) {
+      return symbol.substring(0, secondDot);
+    }
+    return symbol;
   }
 }

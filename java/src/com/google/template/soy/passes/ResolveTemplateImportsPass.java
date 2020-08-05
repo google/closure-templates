@@ -93,12 +93,13 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     }
 
     /**
-     * Visits a template import node: verifies that the template names are valid and stores a
-     * mapping from the imported symbol to the template info. Note that this is only called after
-     * we've verified that the import path exists and any alias symbols are valid.
+     * Registers the imported templates for a symbol-level import node (as opposed to a module-level
+     * import node). Verifies that the template names are valid and stores a mapping from the
+     * imported symbol to the template info. Note that this is only called after we've verified that
+     * the import path exists and any alias symbols are valid.
      */
     @Override
-    void visitImportNodeWithValidPathAndSymbol(ImportNode node) {
+    void processImportedSymbols(ImportNode node) {
       TemplatesPerFile templatesPerFile = templateNameRegistry.getTemplatesForFile(node.getPath());
       for (ImportedVar symbol : node.getIdentifiers()) {
         String name = symbol.name();
@@ -115,7 +116,25 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
         // compiler error (if they have the same path).
         symbolsToTemplatesMap.put(symbol.aliasOrName(), templatesPerFile.getFullTemplateName(name));
       }
-      node.setIsResolved(); // Node has been validated
+    }
+
+    /**
+     * Visits a template module import (e.g. "import * as fooTemplates from foo.soy"). Registers all
+     * the templates in the imported file (e.g. "fooTemplates.render"). Note that this is only
+     * called after we've verified that the import path exists and the module alias symbol is valid
+     * (doesn't collide with other import symbol aliases).
+     */
+    @Override
+    void processImportedModule(ImportNode node) {
+      TemplatesPerFile templatesPerFile = templateNameRegistry.getTemplatesForFile(node.getPath());
+      // For each template, add a mapping from "ModuleName.templateName" -> templateFqn.
+      templatesPerFile
+          .getUnqualifiedTemplateNames()
+          .forEach(
+              template ->
+                  symbolsToTemplatesMap.put(
+                      node.getModuleAlias() + "." + template,
+                      templatesPerFile.getFullTemplateName(template)));
     }
 
     @Override

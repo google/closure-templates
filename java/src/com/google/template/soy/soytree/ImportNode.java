@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.stream.Collectors.joining;
 
@@ -40,12 +41,6 @@ public final class ImportNode extends AbstractSoyNode {
   private final StringNode path;
 
   private final ImportType importType;
-
-  /**
-   * Whether the import has been resolved/validated yet (some import types need to be processed in
-   * multiple passes).
-   */
-  private boolean isResolved;
 
   /** Only Proto is supported right now. */
   public enum ImportType {
@@ -77,7 +72,6 @@ public final class ImportNode extends AbstractSoyNode {
     this.identifiers = ImmutableList.copyOf(defns);
     this.path = path;
     this.importType = importTypeForPath(path.getValue());
-    this.isResolved = false;
   }
 
   /**
@@ -90,7 +84,6 @@ public final class ImportNode extends AbstractSoyNode {
     this.identifiers = orig.identifiers.stream().map(ImportedVar::clone).collect(toImmutableList());
     this.path = orig.path.copy(copyState);
     this.importType = orig.importType;
-    this.isResolved = orig.isResolved;
   }
 
   @Override
@@ -128,12 +121,25 @@ public final class ImportNode extends AbstractSoyNode {
     return path.getValue();
   }
 
-  public boolean isResolved() {
-    return isResolved;
+  /**
+   * Whether this is a module import (e.g. "import * as foo from ..."), as opposed to a symbol
+   * import node (e.g. "import {foo,bar,baz} from ...").
+   */
+  public boolean isModuleImport() {
+    return identifiers.size() == 1 && identifiers.get(0).name().equals("*");
   }
 
-  public void setIsResolved() {
-    this.isResolved = true;
+  /**
+   * Returns the module alias (e.g. "foo" if the import is "import * as foo from 'my_foo.soy';").
+   * This should only be called on module import nodes (i.e. if {@link #isModuleImport} node is
+   * true).
+   */
+  public String getModuleAlias() {
+    checkState(
+        isModuleImport(),
+        "Module alias can only be retrieved for module imports (e.g. \"import * as fooTemplates"
+            + " from 'my_foo.soy';\")");
+    return identifiers.get(0).getAlias();
   }
 
   public SourceLocation getPathSourceLocation() {

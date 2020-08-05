@@ -88,6 +88,20 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
 
     Identifier unresolvedIdent = templateLiteralNode.getIdentifier();
     String name = unresolvedIdent.identifier();
+
+    // First, check if the symbol is imported. This could be a module import (e.g.
+    // "fooTemplates.render") or a regular template symbol import ("render").
+    if (importsTemplateRegistry.isPresent()) {
+      TemplateName importedTemplate =
+          importsTemplateRegistry.get().getSymbolsToTemplateNamesMap().get(name);
+      if (importedTemplate != null) {
+        templateLiteralNode.resolveTemplateName(
+            Identifier.create(
+                importedTemplate.fullyQualifiedName(), name, unresolvedIdent.location()));
+        return;
+      }
+    }
+
     switch (unresolvedIdent.type()) {
       case DOT_IDENT:
         // Case 1: ".foo" Source callee name is partial.
@@ -100,21 +114,11 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
         templateLiteralNode.resolveTemplateName(header.resolveAlias(unresolvedIdent));
         return;
       case SINGLE_IDENT:
-        if (importsTemplateRegistry.isPresent()) {
-          // Case 3: "foo" Source callee name is a single ident (not dotted). Check if it's a known
-          // import:
-          TemplateName importedTemplate =
-              importsTemplateRegistry.get().getSymbolsToTemplateNamesMap().get(name);
-          if (importedTemplate != null) {
-            templateLiteralNode.resolveTemplateName(
-                Identifier.create(
-                    importedTemplate.fullyQualifiedName(), name, unresolvedIdent.location()));
-            return;
-          }
-        }
-        // If we couldn't resolve the name, report an error but set the "resolved" name to the
-        // original name, so that we can still create the template registry & proceed with future
-        // passes.
+        // Since we already know the symbol wasn't imported, there's no other valid reason for an
+        // un-dotted identifier. Report an error but set the "resolved" name to the original name,
+        // so that we can still create the template registry / report better errors (we can't create
+        // the template registry for data="all" calls without "resolving" template call names; it
+        // will crash).
         reportUnresolveableTemplateNameError(unresolvedIdent, header, importsTemplateRegistry);
         templateLiteralNode.resolveTemplateName(unresolvedIdent);
         return;

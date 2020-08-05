@@ -185,7 +185,11 @@ abstract class ImportsPass {
         return;
       }
 
-      visitImportNodeWithValidPathAndSymbol(node);
+      if (node.isModuleImport()) {
+        processImportedModule(node);
+      } else {
+        processImportedSymbols(node);
+      }
     }
 
     /**
@@ -195,11 +199,20 @@ abstract class ImportsPass {
     abstract boolean importExists(ImportType importType, String path);
 
     /**
-     * Visits an import node that has already been verified to have a valid import path and symbol
-     * (+ optional alias) that doesn't collide with other imports (yet). Will only be called for
-     * nodes of type {@link #importTypesToVisit}.
+     * Registers a module-level import (e.g. import * as fooTemplates from 'my_foo.soy'); This will
+     * only be called after the node's path has been verified, and them module alias has been
+     * checked for collisions against other imports. Will only be called for nodes of type {@link
+     * #importTypesToVisit}.
      */
-    abstract void visitImportNodeWithValidPathAndSymbol(ImportNode node);
+    abstract void processImportedModule(ImportNode node);
+
+    /**
+     * Registers the symbols in a symbol-level import node (e.g. import {foo,bar as myBar} from
+     * '...';). This will only be called after the node's path has been verified, and the symbol
+     * aliases have been checked for collisions against other imports. Will only be called for nodes
+     * of type {@link #importTypesToVisit}.
+     */
+    abstract void processImportedSymbols(ImportNode node);
 
     /**
      * Gets the list of valid paths for a given import type, used for "Did you mean?" error

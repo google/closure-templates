@@ -103,7 +103,7 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
     }
 
     @Override
-    void visitImportNodeWithValidPathAndSymbol(ImportNode node) {
+    void processImportedSymbols(ImportNode node) {
       if (disableAllTypeChecking) {
         return;
       }
@@ -129,6 +129,37 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
         } else {
           putDistinct(msgAndEnumLocalToFqn, symbol.aliasOrName(), fullName);
         }
+      }
+    }
+
+    @Override
+    void processImportedModule(ImportNode node) {
+      if (disableAllTypeChecking) {
+        return;
+      }
+
+      // Collect all the messages, extensions, and enum names for the imported file.
+      FileDescriptor fd = pathToDescriptor.get(node.getPath());
+      Set<String> extensionNames = new HashSet<>();
+      fd.getExtensions().forEach(t -> extensionNames.add(Field.computeSoyName(t)));
+      Set<String> messagesAndEnums = new HashSet<>();
+      fd.getMessageTypes().forEach(t -> messagesAndEnums.add(t.getName()));
+      fd.getEnumTypes().forEach(t -> messagesAndEnums.add(t.getName()));
+
+      // Add a mapping from "moduleName.ExtensionName" -> fqn, for every top-level extension in the
+      // file.
+      for (String symbol : extensionNames) {
+        String moduleRelativeName = node.getModuleAlias() + "." + symbol;
+        String fullName = fd.getPackage().isEmpty() ? symbol : fd.getPackage() + "." + symbol;
+        putDistinct(extLocalToFqn, moduleRelativeName, fullName);
+      }
+
+      // Add a mapping from "moduleName.ProtoName" -> protoFqn, for every top-level message and enum
+      // in the file.
+      for (String symbol : messagesAndEnums) {
+        String moduleRelativeName = node.getModuleAlias() + "." + symbol;
+        String fullName = fd.getPackage().isEmpty() ? symbol : fd.getPackage() + "." + symbol;
+        putDistinct(msgAndEnumLocalToFqn, moduleRelativeName, fullName);
       }
     }
 
