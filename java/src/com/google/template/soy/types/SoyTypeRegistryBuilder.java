@@ -16,8 +16,10 @@
 
 package com.google.template.soy.types;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Comparator.naturalOrder;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultimap;
@@ -32,6 +34,10 @@ import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyInternalCompilerException;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,11 +46,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 /** Helper class that assists in the construction of {@link SoyTypeRegistry}. */
 public final class SoyTypeRegistryBuilder {
+
+  private static final SoyErrorKind PROTO_FQN_COLLISION =
+      SoyErrorKind.of(
+          "Identical protobuf message FQN ''{0}'' found in multiple dependencies: {1} and {2}.");
 
   /** Creates a type registry with only the built-in types. Mostly used for testing. */
   public static SoyTypeRegistry create() {
@@ -71,18 +80,38 @@ public final class SoyTypeRegistryBuilder {
     return new SoyTypeRegistryImpl(base, ImmutableSet.copyOf(builder.files.values()), registry);
   }
 
+  @AutoValue
+  abstract static class DescriptorKey {
+    public static DescriptorKey of(GenericDescriptor d) {
+      if (d instanceof FileDescriptor) {
+        return new AutoValue_SoyTypeRegistryBuilder_DescriptorKey(d.getName(), "");
+      } else {
+        return new AutoValue_SoyTypeRegistryBuilder_DescriptorKey(
+            d.getFile().getName(), d.getFullName());
+      }
+    }
+
+    abstract String filePath();
+
+    abstract String fullName();
+  }
+
   /** Builder for {@link ProtoTypeRegistry}. */
   public static class ProtoFqnRegistryBuilder {
+    private final ErrorReporter errorReporter = ErrorReporter.create(ImmutableMap.of());
     private final ImmutableSet<GenericDescriptor> inputs;
-    private final Predicate<GenericDescriptor> alreadyVisited;
+    private final Predicate<GenericDescriptor> alreadyVisitedKey;
+    private final Predicate<GenericDescriptor> alreadyVisitedIdentity;
     private final Map<String, GenericDescriptor> msgAndEnumFqnToDesc = new HashMap<>();
     private final SetMultimap<String, FieldDescriptor> msgFqnToExts = HashMultimap.create();
     private final Map<String, FileDescriptor> files = new LinkedHashMap<>();
 
     public ProtoFqnRegistryBuilder(Iterable<GenericDescriptor> inputs) {
       this.inputs = ImmutableSet.copyOf(inputs); // maintain order
-      Set<GenericDescriptor> visited = new HashSet<>();
-      alreadyVisited = d -> !visited.add(d);
+      Set<DescriptorKey> visitedKeys = new HashSet<>();
+      alreadyVisitedKey = d -> !visitedKeys.add(DescriptorKey.of(d));
+      Set<GenericDescriptor> visitedDescriptors = new HashSet<>();
+      alreadyVisitedIdentity = d -> !visitedDescriptors.add(d);
     }
 
     public ProtoTypeRegistry build(SoyTypeRegistry interner) {
@@ -90,18 +119,22 @@ public final class SoyTypeRegistryBuilder {
           inputs.stream()
               .filter(d -> d instanceof FileDescriptor)
               .map(FileDescriptor.class::cast)
-              .collect(Collectors.toSet());
+              .collect(toImmutableSet()); // maintain order
 
       // Visit all the file descriptors explicitly passed.
       fileInputs.forEach(this::visitFile);
       // Visit all descriptors explicitly passed not descending from any of the file inputs.
       inputs.stream().filter(d -> !fileInputs.contains(d.getFile())).forEach(this::visitGeneric);
-      // Visit to collection extensions any file of any input not already visited.
+      // Visit to collect extensions any file of any input not already visited.
       inputs.stream()
           .map(GenericDescriptor::getFile)
           .distinct()
           .filter(d -> !fileInputs.contains(d))
           .forEach(this::visitFileForExtensions);
+
+      if (errorReporter.hasErrors()) {
+        throw new SoyInternalCompilerException(errorReporter.getErrors(), null);
+      }
 
       return new ProtoFqnTypeRegistry(
           interner,
@@ -126,7 +159,7 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitFile(FileDescriptor fd) {
-      if (alreadyVisited.test(fd)) {
+      if (alreadyVisitedIdentity.test(fd)) {
         return;
       }
       files.putIfAbsent(fd.getName(), fd);
@@ -137,9 +170,6 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitFileForExtensions(FileDescriptor fd) {
-      if (alreadyVisited.test(fd)) {
-        return;
-      }
       files.putIfAbsent(fd.getName(), fd);
       fd.getDependencies().forEach(this::visitFileForExtensions);
       fd.getExtensions().forEach(this::visitExtension);
@@ -152,10 +182,12 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitMessage(Descriptor m) {
-      if (alreadyVisited.test(m)) {
+      if (alreadyVisitedIdentity.test(m)) {
         return;
       }
-      msgAndEnumFqnToDesc.put(m.getFullName(), m);
+      if (!alreadyVisitedKey.test(m)) {
+        putAndWarnCollision(m);
+      }
 
       m.getEnumTypes().forEach(this::visitEnum);
       m.getExtensions().forEach(this::visitExtension);
@@ -173,13 +205,29 @@ public final class SoyTypeRegistryBuilder {
     }
 
     private void visitEnum(EnumDescriptor e) {
-      msgAndEnumFqnToDesc.put(e.getFullName(), e);
+      if (alreadyVisitedKey.test(e)) {
+        return;
+      }
+      putAndWarnCollision(e);
     }
 
     private void visitExtension(FieldDescriptor f) {
       Preconditions.checkArgument(f.isExtension());
       if (!ProtoUtils.shouldJsIgnoreField(f)) {
         msgFqnToExts.put(f.getContainingType().getFullName(), f);
+      }
+    }
+
+    private void putAndWarnCollision(GenericDescriptor d) {
+      // Since we use FQN as a primary key in several data structures, collisions are errors.
+      GenericDescriptor previous = msgAndEnumFqnToDesc.put(d.getFullName(), d);
+      if (previous != null) {
+        errorReporter.report(
+            SourceLocation.UNKNOWN,
+            PROTO_FQN_COLLISION,
+            d.getFullName(),
+            previous.getFile().getName(),
+            d.getFile().getName());
       }
     }
   }

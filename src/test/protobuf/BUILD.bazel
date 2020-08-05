@@ -11,7 +11,20 @@ java_proto_library(
     deps = [":test_protos"],
 )
 
+java_proto_library(
+    name = "test_collision_protos_java_proto",
+    deps = [":test_collision_protos"],
+)
+
 proto_library(
     name = "test_protos",
-    srcs = glob(["*.proto"]),
+    srcs = glob(
+        ["*.proto"],
+        exclude = ["collision.proto"],
+    ),
+)
+
+proto_library(
+    name = "test_collision_protos",
+    srcs = ["collision.proto"],
 )

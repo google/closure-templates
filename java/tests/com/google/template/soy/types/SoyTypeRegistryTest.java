@@ -17,8 +17,10 @@
 package com.google.template.soy.types;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.error.SoyInternalCompilerException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -124,5 +126,23 @@ public class SoyTypeRegistryTest {
             typeRegistry.getOrCreateUnionType(FloatType.getInstance(), IntType.getInstance()));
     assertThat(SoyTypes.NUMBER_TYPE)
         .isSameInstanceAs(typeRegistry.getOrCreateUnionType(SoyTypes.NUMBER_TYPE));
+  }
+
+  @Test
+  public void testProtoFqnCollision() {
+    SoyTypeRegistryBuilder builder =
+        new SoyTypeRegistryBuilder()
+            .addDescriptors(
+                ImmutableList.of(
+                    com.google.template.soy.testing.KvPair.getDescriptor().getFile(),
+                    com.google.template.soy.testing.collision.KvPair.getDescriptor().getFile()));
+
+    SoyInternalCompilerException e =
+        assertThrows(SoyInternalCompilerException.class, builder::build);
+    assertThat(e)
+        .hasMessageThat()
+        .contains("Identical protobuf message FQN 'example.KvPair' found in multiple dependencies");
+    assertThat(e).hasMessageThat().contains("collision.proto");
+    assertThat(e).hasMessageThat().contains("example.proto");
   }
 }
