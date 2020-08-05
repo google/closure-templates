@@ -176,6 +176,7 @@ public final class SoyProtoType extends SoyType {
     return new SoyProtoType(TypeRegistries.newTypeInterner(), (fqn) -> null, d, ImmutableSet.of());
   }
 
+  private final Object scope; // the type registry that owns this instance
   private final Descriptor typeDescriptor;
   private final ImmutableMap<String, FieldWithType> fields;
   private final ImmutableSet<String> extensionFieldNames;
@@ -185,11 +186,12 @@ public final class SoyProtoType extends SoyType {
       ProtoTypeRegistry registry,
       Descriptor descriptor,
       Set<FieldDescriptor> extensions) {
-    this(new TypeVisitor(interner, registry), descriptor, extensions);
+    this(interner, new TypeVisitor(interner, registry), descriptor, extensions);
   }
 
   private SoyProtoType(
-      TypeVisitor visitor, Descriptor descriptor, Set<FieldDescriptor> extensions) {
+      Object scope, TypeVisitor visitor, Descriptor descriptor, Set<FieldDescriptor> extensions) {
+    this.scope = scope;
     this.typeDescriptor = descriptor;
     this.fields =
         Field.getFieldsForType(
@@ -237,12 +239,9 @@ public final class SoyProtoType extends SoyType {
     FieldWithType field = fields.get(fieldName);
     if (field == null) {
       throw new IllegalArgumentException(
-          "Cannot find descriptor for: "
-              + fieldName
-              + ", known fields are: "
-              + getFieldNames()
-              + ", for proto: "
-              + typeDescriptor.getFullName());
+          String.format(
+              "Cannot find field %s in %s. Known fields are %s.",
+              fieldName, this, getFieldNames()));
     }
     return field.getDescriptor();
   }
@@ -316,6 +315,13 @@ public final class SoyProtoType extends SoyType {
       return false;
     }
     SoyProtoType that = (SoyProtoType) o;
+    if (scope != that.scope) {
+      // Defence-in-depth against types leaking across compilation runs.
+      throw new IllegalArgumentException(
+          String.format(
+              "Illegal comparison of two SoyProtoType's from different type registries %s and %s.",
+              scope, that.scope));
+    }
     return Objects.equal(typeDescriptor.getFullName(), that.typeDescriptor.getFullName());
   }
 
