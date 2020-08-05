@@ -77,6 +77,12 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.commaLocations = Optional.of(ImmutableList.copyOf(commaLocations));
   }
 
+  public FunctionNode(Identifier name, SourceLocation sourceLocation) {
+    super(sourceLocation);
+    this.name = name;
+    this.commaLocations = Optional.empty();
+  }
+
   /**
    * Copy constructor.
    *
