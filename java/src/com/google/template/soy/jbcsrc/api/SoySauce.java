@@ -402,34 +402,6 @@ public interface SoySauce {
      */
     @CheckReturnValue
     Continuation<String> renderText();
-
-    /**
-     * Renders the template to a string.
-     *
-     * <p>The rendering semantics are the same as for {@link #render(AdvisingAppendable out)} with
-     * the following 2 caveats.
-     *
-     * <ul>
-     *   <li>The returned continuation will never have a result of {@code RenderResult.Type#LIMITED}
-     *   <li>This api doesn't throw {@link IOException}
-     * </ul>
-     *
-     * <p>Checks the content kind of the template. {@code kind="html"} templates are allowed, unless
-     * {@link #setExpectedContentKind} was called. The goal is to prevent accidental rendering of
-     * unescaped {@code kind="text"} in contexts where that could lead to XSS.
-     *
-     * <p>It is safe to call this method multiple times, but each call will initiate a new render of
-     * the configured template. To continue rendering a template you must use the returned
-     * continuation.
-     *
-     * @deprecated For text content, use {@link #renderText()} directly. Otherwise, use {@link
-     *     #renderHtml()}, {@link #renderCss()}, etc. to verify the content type, and then call
-     *     toString() to get a string. TODO(b/129547159): Remove this method. Now that
-     *     setExpectedContentKind is gone, it can only be used to render HTML.
-     */
-    @CheckReturnValue
-    @Deprecated
-    Continuation<String> render();
   }
 
   /**

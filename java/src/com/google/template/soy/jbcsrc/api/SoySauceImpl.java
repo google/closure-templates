@@ -337,15 +337,6 @@ public final class SoySauceImpl implements SoySauce {
       }
     }
 
-    @Override
-    @Deprecated
-    // TODO(b/129547159): Remove this method. Now that setExpectedContentKind is gone,
-    // it can only be used to render HTML.
-    public Continuation<String> render() {
-      enforceContentKind(ContentKind.HTML);
-      return renderText();
-    }
-
     /**
      * Renders sanitized content, enforcing that the content matches the given {@link ContentKind}.
      */

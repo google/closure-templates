@@ -248,8 +248,9 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             .compileTemplates()
             .renderTemplate("ns.foo")
             .setIj(ImmutableMap.of("csp_nonce", "\">alert('hello')</script><script data-foo=\""))
-            .render()
-            .get();
+            .renderHtml()
+            .get()
+            .getContent();
     assertThat(renderedValue)
         .isEqualTo(
             "<script nonce=\"&quot;&gt;alert(&#39;hello&#39;)&lt;/script&gt;&lt;script "
@@ -272,8 +273,9 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             .compileTemplates()
             .renderTemplate("ns.foo")
             .setIj(ImmutableMap.of("csp_nonce", "*/alert('hello');/*"))
-            .render()
-            .get();
+            .renderHtml()
+            .get()
+            .getContent();
     // We don't inject into inline event handlers anymore
     assertThat(renderedValue).isEqualTo("<a href='#' onmouseover='foo()'>click me</a>");
   }

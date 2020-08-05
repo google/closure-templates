@@ -267,19 +267,6 @@ public class SoySauceTest {
   }
 
   @Test
-  public void testDeprecatedRenderMethod_requiresHtmlType() {
-    try {
-      sauce.renderTemplate("strict_test.helloJs").render();
-      fail();
-    } catch (IllegalStateException e) {
-      assertThat(e)
-          .hasMessageThat()
-          .isEqualTo(
-              "Expected template 'strict_test.helloJs' to be kind=\"html\" but was kind=\"js\"");
-    }
-  }
-
-  @Test
   public void testDetaching_string() {
     SoySauce.Renderer tmpl = sauce.renderTemplate("strict_test.withParam");
 
