@@ -459,6 +459,14 @@ function $$getMetadata(ve) {
   return ve.getMetadata();
 }
 
+/**
+ * @param {!$$VisualElementData} veData
+ * @return {!LoggableElementMetadata}
+ */
+function $$getVeMetadata(veData) {
+  return $$getMetadata(veData.getVe());
+}
+
 exports = {
   $$hasMetadata,
   $$getLoggingAttribute,
@@ -477,4 +485,5 @@ exports = {
   setUpLogging,
   tearDownLogging,
   $$getMetadata,
+  $$getVeMetadata,
 };

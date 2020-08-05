@@ -17,12 +17,17 @@
 package com.google.template.soy.logging;
 
 import com.google.template.soy.data.SoyVisualElement;
+import com.google.template.soy.data.SoyVisualElementData;
 
 /** Runtime implementations of the Soy VE metadata methods. */
 public final class LoggingMethodsRuntime {
 
   public static LoggableElementMetadata getMetadata(SoyVisualElement ve) {
     return ve.metadata();
+  }
+
+  public static LoggableElementMetadata getVeMetadata(SoyVisualElementData veData) {
+    return getMetadata(veData.ve());
   }
 
   private LoggingMethodsRuntime() {}

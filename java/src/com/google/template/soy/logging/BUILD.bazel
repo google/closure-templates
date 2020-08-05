@@ -48,6 +48,7 @@ java_library(
     name = "methods",
     srcs = [
         "GetMetadataMethod.java",
+        "GetVeMetadataMethod.java",
     ],
     deps = [
         "//java/src/com/google/template/soy/data:ve",
