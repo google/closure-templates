@@ -1549,13 +1549,10 @@ final class ExpressionCompiler {
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
       CompiledTemplateMetadata callee =
           compiledTemplateRegistry.getBasicTemplateInfoByTemplateName(node.getResolvedName());
-      // TODO(cwgordon): It used to be that factories were only ever constructed by
-      // CompiledTemplates, which would cache them. If this turns out to be too expensive, consider
-      // always using CompiledTemplates to create them, or otherwise 'singletonify' them.
       return SoyExpression.forSoyValue(
           node.getType(),
           callee.filekind() == SoyFileKind.SRC
-              ? callee.factoryConstructor().construct()
+              ? callee.factoryInstance().accessor()
               : parameters.getRenderContext().getTemplateFactory(node.getResolvedName()));
     }
 

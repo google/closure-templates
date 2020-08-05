@@ -26,6 +26,8 @@ import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
+import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -33,9 +35,12 @@ import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
+import java.util.ArrayList;
+import java.util.List;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 /**
@@ -45,6 +50,7 @@ import org.objectweb.asm.commons.Method;
  *
  * <pre>{@code
  * public final class FooFactory implements CompiledTemplate.Factory {
+ *   public static final FooFactory INSTANCE = new FooFactory();
  *   public CompiledTemplate create(SoyRecord params) {
  *     return new Foo(params);
  *   }
@@ -55,7 +61,8 @@ import org.objectweb.asm.commons.Method;
  */
 final class TemplateFactoryCompiler {
   private static final TypeInfo FACTORY_TYPE = TypeInfo.create(CompiledTemplate.Factory.class);
-
+  private static final Method FACTORY_CONSTRUCTOR =
+      new Method("<init>", Type.getMethodDescriptor(Type.VOID_TYPE));
   private static final Method CREATE_METHOD;
 
   static {
@@ -97,8 +104,12 @@ final class TemplateFactoryCompiler {
             .sourceFileName(templateNode.getSourceLocation().getFileName())
             .build();
     innerClasses.registerAsInnerClass(cw, factoryType);
-
-    generateStaticInitializer(cw);
+    // static final <FactoryType> INSTANCE
+    FieldRef instanceField =
+        FieldRef.create(
+            factoryType, "INSTANCE", factoryType.type(), factoryAccess | Opcodes.ACC_STATIC);
+    instanceField.defineField(cw);
+    generateStaticInitializer(cw, factoryType, instanceField);
     defineFactoryConstructor(cw, factoryType);
     generateCreateMethod(cw, factoryType);
     cw.visitEnd();
@@ -115,17 +126,26 @@ final class TemplateFactoryCompiler {
    * }
    * }</pre>
    */
-  private void generateStaticInitializer(ClassVisitor cv) {
+  private void generateStaticInitializer(
+      ClassVisitor cv, TypeInfo factoryType, FieldRef instanceField) {
+    List<Statement> initStatements = new ArrayList<>();
+    initStatements.add(
+        instanceField.putStaticField(
+            ConstructorRef.create(factoryType, FACTORY_CONSTRUCTOR).construct()));
+    initStatements.add(Statement.RETURN);
     if (Flags.DEBUG) {
-      new Statement() {
-        @Override
-        protected void doGen(CodeBuilder adapter) {
-          adapter.pushType(template.typeInfo().type());
-          adapter.visitVarInsn(Opcodes.ASTORE, 0);
-          adapter.returnValue();
-        }
-      }.writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, cv);
+      initStatements.add(
+          new Statement() {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+
+              adapter.pushType(template.typeInfo().type());
+              adapter.visitVarInsn(Opcodes.ASTORE, 0);
+              adapter.returnValue();
+            }
+          });
     }
+    Statement.concat(initStatements).writeMethod(Opcodes.ACC_STATIC, BytecodeUtils.CLASS_INIT, cv);
   }
 
   /**
@@ -134,11 +154,7 @@ final class TemplateFactoryCompiler {
    */
   private void defineFactoryConstructor(ClassVisitor cv, TypeInfo factoryType) {
     CodeBuilder mg =
-        new CodeBuilder(
-            visibility == Visibility.PRIVATE ? 0 : Opcodes.ACC_PUBLIC,
-            BytecodeUtils.NULLARY_INIT,
-            null,
-            cv);
+        new CodeBuilder(Opcodes.ACC_PRIVATE, BytecodeUtils.NULLARY_INIT, /* exceptions=*/ null, cv);
     mg.visitCode();
     Label start = mg.mark();
     Label end = mg.newLabel();

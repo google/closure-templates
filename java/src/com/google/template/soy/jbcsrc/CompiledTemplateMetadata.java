@@ -22,11 +22,13 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
+import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -45,13 +47,6 @@ abstract class CompiledTemplateMetadata {
   private static final Method GENERATED_CONSTRUCTOR =
       new Method(
           "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, SOY_RECORD_TYPE, SOY_RECORD_TYPE));
-
-  /**
-   * The {@link Method} signature of all generated constructors for the {@link
-   * CompiledTemplate.Factory} classes.
-   */
-  private static final Method FACTORY_CONSTRUCTOR =
-      new Method("<init>", Type.getMethodDescriptor(Type.VOID_TYPE));
 
   /**
    * The {@link Method} signature of the {@link CompiledTemplate#render(AdvisingAppendable,
@@ -81,7 +76,12 @@ abstract class CompiledTemplateMetadata {
     TypeInfo factoryType = TypeInfo.createClass(factoryClassName);
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
-        ConstructorRef.create(factoryType, FACTORY_CONSTRUCTOR),
+        FieldRef.create(
+            factoryType,
+            "INSTANCE",
+            factoryType.type(),
+            /*modifiers=*/ Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PUBLIC,
+            /*isNullable=*/ false),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
         MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
         type,
@@ -100,7 +100,7 @@ abstract class CompiledTemplateMetadata {
    * The constructor for the generated factory class. Used for template types in expressions /
    * dyanmic calls.
    */
-  abstract ConstructorRef factoryConstructor();
+  abstract FieldRef factoryInstance();
 
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();

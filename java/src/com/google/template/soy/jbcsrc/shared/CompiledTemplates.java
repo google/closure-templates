@@ -267,15 +267,15 @@ public final class CompiledTemplates {
       CompiledTemplate.Factory localFactory = null;
       for (Class<?> innerClass : template.getClasses()) {
         if (innerClass.getSimpleName().equals("Factory")) {
-          // We construct the factories via reflection to bridge the gap between generated and
-          // non-generated code.  However, each factory only needs to be constructed once so the
-          // reflective cost isn't paid on a per render basis.
+          // Every generated factory has a static final INSTANCE field containing an instance of the
+          // factory.
           try {
             localFactory =
-                innerClass
-                    .asSubclass(CompiledTemplate.Factory.class)
-                    .getDeclaredConstructor()
-                    .newInstance();
+                (CompiledTemplate.Factory)
+                    innerClass
+                        .asSubclass(CompiledTemplate.Factory.class)
+                        .getField("INSTANCE")
+                        .get(null);
           } catch (ReflectiveOperationException e) {
             // this should be impossible since our factories are public with a default constructor.
             // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
