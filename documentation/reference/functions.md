@@ -415,8 +415,9 @@ See the documentation for the [ve_data literal](expressions.md#ve_data).
 
 Binds one or more parameters to the given template-type expression. The
 parameter record must be a record literal, and each member must match the name
-and type of an unbound parameter in the template-type expression. Parmeters
+and type of an unbound parameter in the template-type expression. Parameters
 already bound to the template type may not be bound again.
+
 
 ## Localization (l10n) Functions
 
