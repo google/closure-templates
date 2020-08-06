@@ -30,7 +30,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyRecord;
@@ -98,6 +97,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
+import com.google.template.soy.jbcsrc.shared.TemplateCallFactory;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
@@ -115,10 +115,13 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -1545,15 +1548,33 @@ final class ExpressionCompiler {
       return SoyExpression.forSoyValue(node.getType(), visualElement);
     }
 
+    private static final Handle GETFACTORY_HANDLE =
+        MethodRef.create(
+                TemplateCallFactory.class,
+                "bootstrapFactoryLookup",
+                MethodHandles.Lookup.class,
+                String.class,
+                MethodType.class,
+                String.class)
+            .asHandle();
+
+    private static final String TEMPLATE_FACTORY_SIGNATURE =
+        Type.getMethodDescriptor(
+            BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
+
     @Override
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
-      CompiledTemplateMetadata callee =
-          compiledTemplateRegistry.getBasicTemplateInfoByTemplateName(node.getResolvedName());
+      Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
-          callee.filekind() == SoyFileKind.SRC
-              ? callee.factoryInstance().accessor()
-              : parameters.getRenderContext().getTemplateFactory(node.getResolvedName()));
+          new Expression(BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              renderContext.gen(adapter);
+              adapter.visitInvokeDynamicInsn(
+                  "create", TEMPLATE_FACTORY_SIGNATURE, GETFACTORY_HANDLE, node.getResolvedName());
+            }
+          });
     }
 
     // Catch-all for unimplemented nodes

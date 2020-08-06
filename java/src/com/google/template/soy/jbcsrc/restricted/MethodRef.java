@@ -75,6 +75,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -596,6 +597,29 @@ public abstract class MethodRef {
   abstract ImmutableList<Type> argTypes();
 
   public abstract Features features();
+
+  public Handle asHandle() {
+    int tag;
+    switch (opcode()) {
+      case Opcodes.INVOKESTATIC:
+        tag = Opcodes.H_INVOKESTATIC;
+        break;
+      case Opcodes.INVOKEINTERFACE:
+        tag = Opcodes.H_INVOKEINTERFACE;
+        break;
+      case Opcodes.INVOKEVIRTUAL:
+        tag = Opcodes.H_INVOKEVIRTUAL;
+        break;
+      default:
+        throw new AssertionError("unsupported opcode: " + opcode());
+    }
+    return new Handle(
+        tag,
+        owner().internalName(),
+        method().getName(),
+        method().getDescriptor(),
+        owner().isInterface());
+  }
 
   // TODO(lukes): consider different names.  'invocation'? invoke() makes it sounds like we are
   // actually calling the method rather than generating an expression that will output code that

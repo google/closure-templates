@@ -36,7 +36,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
@@ -67,6 +66,7 @@ import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.jbcsrc.shared.TemplateCallFactory;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -109,9 +109,12 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -918,6 +921,23 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return renderCallNode(reattachPoint, node, calleeExpression);
   }
 
+  private static final Handle CONSTRUCTION_HANDLE =
+      MethodRef.create(
+              TemplateCallFactory.class,
+              "bootstrapConstruction",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              String.class)
+          .asHandle();
+
+  private static final String TEMPLATE_CONSTRUCTION_SIGNATURE =
+      Type.getMethodDescriptor(
+          BytecodeUtils.COMPILED_TEMPLATE_TYPE,
+          BytecodeUtils.RENDER_CONTEXT_TYPE,
+          BytecodeUtils.SOY_RECORD_TYPE,
+          BytecodeUtils.SOY_RECORD_TYPE);
+
   @Override
   protected Statement visitCallBasicNode(CallBasicNode node) {
     Expression calleeExpression;
@@ -931,13 +951,21 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       // classloader. We do this for templates that are declared as sources in the same fileset.
       // These are guaranteed to be bundled in the same jar, thus loaded atomically with the same
       // classloader.
+      Expression renderContext = parameterLookup.getRenderContext();
       calleeExpression =
-          callee.filekind() == SoyFileKind.SRC
-              ? callee.constructor().construct(params, ijRecord)
-              : parameterLookup
-                  .getRenderContext()
-                  .getTemplateFactory(node.getCalleeName())
-                  .invoke(MethodRef.COMPILED_TEMPLATE_FACTORY_CREATE, params, ijRecord);
+          new Expression(callee.typeInfo().type()) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              renderContext.gen(adapter);
+              params.gen(adapter);
+              ijRecord.gen(adapter);
+              adapter.visitInvokeDynamicInsn(
+                  "create",
+                  TEMPLATE_CONSTRUCTION_SIGNATURE,
+                  CONSTRUCTION_HANDLE,
+                  node.getCalleeName());
+            }
+          };
     } else {
       calleeExpression =
           exprCompiler
