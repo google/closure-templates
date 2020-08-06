@@ -21,7 +21,13 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.proto.Field;
@@ -33,9 +39,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Resolves Soy proto imports; verifies that the imports are valid and populates a local type
@@ -108,27 +112,41 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
         return;
       }
       FileDescriptor fd = pathToDescriptor.get(node.getPath());
-      Set<String> extensionNames = new HashSet<>();
-      fd.getExtensions().forEach(t -> extensionNames.add(Field.computeSoyName(t)));
 
-      Set<String> validSymbols = new HashSet<>();
-      fd.getMessageTypes().forEach(t -> validSymbols.add(t.getName()));
-      fd.getEnumTypes().forEach(t -> validSymbols.add(t.getName()));
-      validSymbols.addAll(extensionNames);
+      ImmutableMap<String, Descriptor> messages =
+          fd.getMessageTypes().stream().collect(toImmutableMap(Descriptor::getName, f -> f));
+      ImmutableMap<String, EnumDescriptor> enums =
+          fd.getEnumTypes().stream().collect(toImmutableMap(EnumDescriptor::getName, f -> f));
+      ImmutableMap<String, FieldDescriptor> extensions =
+          fd.getExtensions().stream().collect(toImmutableMap(Field::computeSoyName, f -> f));
 
       for (ImportedVar symbol : node.getIdentifiers()) {
         String name = symbol.name();
-        if (!validSymbols.contains(name)) {
-          reportUnknownSymbolError(symbol.nameLocation(), name, node.getPath(), validSymbols);
+        String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
+
+        Descriptor messageDesc = messages.get(name);
+        if (messageDesc != null) {
+          putDistinct(msgAndEnumLocalToFqn, symbol.aliasOrName(), fullName);
           continue;
         }
 
-        String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
-        if (extensionNames.contains(name)) {
-          putDistinct(extLocalToFqn, symbol.aliasOrName(), fullName);
-        } else {
+        EnumDescriptor enumDesc = enums.get(name);
+        if (enumDesc != null) {
           putDistinct(msgAndEnumLocalToFqn, symbol.aliasOrName(), fullName);
+          continue;
         }
+
+        FieldDescriptor extDesc = extensions.get(name);
+        if (extDesc != null) {
+          putDistinct(this.extLocalToFqn, symbol.aliasOrName(), fullName);
+          continue;
+        }
+
+        reportUnknownSymbolError(
+            symbol.nameLocation(),
+            name,
+            node.getPath(),
+            Sets.union(messages.keySet(), Sets.union(enums.keySet(), extensions.keySet())));
       }
     }
 
@@ -138,17 +156,12 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
         return;
       }
 
-      // Collect all the messages, extensions, and enum names for the imported file.
       FileDescriptor fd = pathToDescriptor.get(node.getPath());
-      Set<String> extensionNames = new HashSet<>();
-      fd.getExtensions().forEach(t -> extensionNames.add(Field.computeSoyName(t)));
-      Set<String> messagesAndEnums = new HashSet<>();
-      fd.getMessageTypes().forEach(t -> messagesAndEnums.add(t.getName()));
-      fd.getEnumTypes().forEach(t -> messagesAndEnums.add(t.getName()));
 
       // Add a mapping from "moduleName.ExtensionName" -> fqn, for every top-level extension in the
       // file.
-      for (String symbol : extensionNames) {
+      for (FieldDescriptor ext : fd.getExtensions()) {
+        String symbol = Field.computeSoyName(ext);
         String moduleRelativeName = node.getModuleAlias() + "." + symbol;
         String fullName = fd.getPackage().isEmpty() ? symbol : fd.getPackage() + "." + symbol;
         putDistinct(extLocalToFqn, moduleRelativeName, fullName);
@@ -156,15 +169,17 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
 
       // Add a mapping from "moduleName.ProtoName" -> protoFqn, for every top-level message and enum
       // in the file.
-      for (String symbol : messagesAndEnums) {
+      for (GenericDescriptor descriptor :
+          Iterables.concat(fd.getMessageTypes(), fd.getEnumTypes())) {
+        String symbol = descriptor.getName();
         String moduleRelativeName = node.getModuleAlias() + "." + symbol;
         String fullName = fd.getPackage().isEmpty() ? symbol : fd.getPackage() + "." + symbol;
         putDistinct(msgAndEnumLocalToFqn, moduleRelativeName, fullName);
       }
     }
 
-    private static void putDistinct(Map<String, String> into, String key, String value) {
-      String old = into.put(key, value);
+    private static <K, V> void putDistinct(Map<K, V> into, K key, V value) {
+      V old = into.put(key, value);
       if (old != null) {
         Preconditions.checkArgument(value.equals(old));
       }

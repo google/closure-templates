@@ -225,33 +225,36 @@ public final class TypeNodeConverter
   public SoyType visit(NamedTypeNode node) {
     String name = node.name().identifier();
     SanitizedType safeProtoType = SAFE_PROTO_TO_SANITIZED_TYPE.get(name);
+    SoyType type;
     if (safeProtoType != null) {
       String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();
       errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
-    }
-    SoyType type = typeRegistry.getType(name);
-    if (type == null && protoRegistry != null) {
-      type = protoRegistry.getProtoType(name);
-    }
-    if (type == null) {
-      GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-      if (genericType != null) {
-        errorReporter.report(
-            node.sourceLocation(),
-            MISSING_GENERIC_TYPE_PARAMETERS,
-            name,
-            genericType.formatNumTypeParams());
-        type = ErrorType.getInstance();
-      } else {
-        if (disableAllTypeChecking) {
-          type = UnknownType.getInstance();
-        } else {
+      type = ErrorType.getInstance();
+    } else {
+      type = typeRegistry.getType(name);
+      if (type == null && protoRegistry != null) {
+        type = protoRegistry.getProtoType(name);
+      }
+      if (type == null) {
+        GenericTypeInfo genericType = GENERIC_TYPES.get(name);
+        if (genericType != null) {
           errorReporter.report(
               node.sourceLocation(),
-              UNKNOWN_TYPE,
+              MISSING_GENERIC_TYPE_PARAMETERS,
               name,
-              SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
+              genericType.formatNumTypeParams());
           type = ErrorType.getInstance();
+        } else {
+          if (disableAllTypeChecking) {
+            type = UnknownType.getInstance();
+          } else {
+            errorReporter.report(
+                node.sourceLocation(),
+                UNKNOWN_TYPE,
+                name,
+                SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
+            type = ErrorType.getInstance();
+          }
         }
       }
     }

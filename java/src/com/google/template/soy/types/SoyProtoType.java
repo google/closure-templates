@@ -197,16 +197,9 @@ public final class SoyProtoType extends SoyType {
         Field.getFieldsForType(
             descriptor, extensions, fieldDescriptor -> new FieldWithType(fieldDescriptor, visitor));
     this.extensionFieldNames =
-        fields.keySet().stream()
-            .filter(
-                fieldName -> {
-                  FieldWithType field = fields.get(fieldName);
-                  // The fields map currently maps both the simple name and the fully qualified name
-                  // of an extension field to the FieldWithType. The extensionFieldNames set
-                  // should only have the fully qualified names of the fields.
-                  return field.getDescriptor().isExtension()
-                      && fieldName.equals(field.getFullyQualifiedName());
-                })
+        extensions.stream()
+            .map(Field::computeSoyFullyQualifiedName)
+            .sorted()
             .collect(toImmutableSet());
   }
 

@@ -97,7 +97,7 @@ public final class ImportsContext {
 
     /** Map of all imported names to FQN (messages and enums). */
     private final ImmutableMap<String, String> msgAndEnumLocalToFqn;
-    /** Map of all imported names to FQN (top-level messages, enums, and extensions). */
+    /** Map of all imported names to FQN (messages, enums, and extensions). */
     private final ImmutableMap<String, String> allLocalToFqn;
 
     public ImportsTypeRegistry(
@@ -113,12 +113,7 @@ public final class ImportsContext {
     @Override
     public SoyType getType(String typeName) {
       String fullType = SoyTypes.localToFqn(typeName, msgAndEnumLocalToFqn);
-      if (fullType == null) {
-        return super.getType(typeName);
-      }
-
-      // Pass the FQ proto message name to the delegate.
-      return getProtoRegistry().getProtoType(fullType);
+      return fullType != null ? getProtoRegistry().getProtoType(fullType) : super.getType(typeName);
     }
 
     @Override
