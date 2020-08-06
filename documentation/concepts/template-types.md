@@ -85,6 +85,7 @@ In the following example, the type of the template returned by `bind` is
 
 <br>
 
+
 --------------------------------------------------------------------------------
 
 You're done with basic Soy concepts! Next, we suggest working through the
