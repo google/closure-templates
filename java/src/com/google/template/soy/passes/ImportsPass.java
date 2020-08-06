@@ -48,9 +48,6 @@ abstract class ImportsPass {
       SoyErrorKind.of("Imported symbols are not allowed from import type {0}.");
   private static final SoyErrorKind SYMBOLS_REQUIRED =
       SoyErrorKind.of("One or more imported symbols are required for import type {0}.");
-  private static final SoyErrorKind IMPORT_MODULE_NOT_GA =
-      SoyErrorKind.of(
-          "Importing modules (i.e. \"import * as Foo\") is not available for general use.");
 
   // Naming conflict errors:
   private static final SoyErrorKind IMPORT_COLLISION =
@@ -153,12 +150,6 @@ abstract class ImportsPass {
 
         boolean foundSymbolErrors = false;
         for (ImportedVar symbol : node.getIdentifiers()) {
-          // Import "*" is not GA yet.
-          if (!options.getExperimentalFeatures().contains("enableImportModule")
-              && symbol.name().equals("*")) {
-            errorReporter.report(node.getSourceLocation(), IMPORT_MODULE_NOT_GA);
-            return;
-          }
           String name = symbol.aliasOrName();
 
           // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
