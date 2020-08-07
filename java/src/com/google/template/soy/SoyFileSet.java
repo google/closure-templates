@@ -771,13 +771,12 @@ public final class SoyFileSet {
           // SoyConformance pass.
           parse(
               passManagerBuilder()
-                  // TODO(lukes): kill the pass continuation mechanism
-                  .allowUnknownGlobals()
                   .allowUnknownJsGlobals()
                   .allowV1Expression()
                   .desugarHtmlAndStateNodes(false)
                   .optimize(false)
                   .addHtmlAttributesForDebugging(false)
+                  // TODO(lukes): kill the pass continuation mechanism
                   .addPassContinuationRule(
                       SoyConformancePass.class, PassContinuationRule.STOP_AFTER_PASS));
         });
@@ -1052,13 +1051,8 @@ public final class SoyFileSet {
       SoyJsSrcOptions jsSrcOptions, @Nullable SoyMsgBundle msgBundle) {
     return entryPoint(
         () -> {
-          // JS has traditionally allowed unknown globals, as a way for soy to reference normal js
-          // enums and constants. For consistency/reusability of templates it would be nice to not
-          // allow that but the cat is out of the bag.
           PassManager.Builder builder =
               passManagerBuilder()
-                  // TODO(lukes): remove this in favor of allowUnknownJsGlobals
-                  .allowUnknownGlobals()
                   .allowV1Expression()
                   .allowUnknownJsGlobals()
                   .desugarHtmlAndStateNodes(false);
@@ -1128,8 +1122,6 @@ public final class SoyFileSet {
               passManagerBuilder()
                   // Because we allow this for JS generated templates, we allow this for
                   // headers.
-                  // TODO(lukes): remove this in favor of allowUnknownJsGlobals
-                  .allowUnknownGlobals()
                   .allowUnknownJsGlobals()
                   // Only run passes that not cross template checking.
                   .addPassContinuationRule(
@@ -1155,8 +1147,7 @@ public final class SoyFileSet {
                   // skip the autoescaper
                   .insertEscapingDirectives(false)
                   .desugarHtmlAndStateNodes(false)
-                  // TODO(lukes): other passes should be disabled, basically anything that mutates
-                  // the AST
+                  // TODO(lukes): This is needed for kythe apparently
                   .allowUnknownGlobals()
                   .allowUnknownJsGlobals()
                   .allowV1Expression(),
