@@ -272,6 +272,10 @@ public interface SoyNode extends Node {
 
     @AutoValue
     abstract static class BaseVar {
+      static BaseVar create(String name) {
+        return create(name, /* isUserSupplied */ false);
+      }
+
       static BaseVar create(String name, boolean isUserSupplied) {
         return new AutoValue_SoyNode_MsgSubstUnitNode_BaseVar(name, isUserSupplied);
       }

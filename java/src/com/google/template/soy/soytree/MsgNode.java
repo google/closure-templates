@@ -75,6 +75,17 @@ public final class MsgNode extends AbstractBlockCommandNode
   private static final SoyErrorKind WRONG_NUMBER_OF_GENDER_EXPRS =
       SoyErrorKind.of("Attribute ''genders'' should contain 1-3 expressions.");
 
+  private static final SoyErrorKind BASE_NAME_COLLISION_SINGLE =
+      SoyErrorKind.of(
+          "Placeholder ''{0}'' collision with ''{1}'' at {2},"
+              + " please change `phname` of at last one to avoid conflict (go/soy-msg#msg).");
+
+  private static final SoyErrorKind BASE_NAME_COLLISION_MULTIPLE =
+      SoyErrorKind.of(
+          "Placeholder ''{0}'' collision with ''{1}'' at {2},"
+              + " please change `phname`  of at last one to avoid conflict,"
+              + " ditto for these {3} (go/soy-msg#msg).");
+
   private static final SoyErrorKind INCOMPATIBLE_PLACEHOLDER_EXAMPLES =
       SoyErrorKind.of(
           "The example set on this placeholder is incompatible with other examples for "
@@ -113,14 +124,6 @@ public final class MsgNode extends AbstractBlockCommandNode
     public final ImmutableMap<String, MsgSubstUnitNode> varNameToRepNodeMap;
 
     /**
-     * Subset of {@code varNameToRepNodeMap} entries which were renamed to avoid a naming collision,
-     * and whose original name was set explicitly by the caller. This will be used in an LSC to set
-     * the explicit name to the rename (for backward comaptibility with existing translations).
-     * TODO(b/161453282): Remove this and just fail in thie case (after LSC).
-     */
-    public final ImmutableMap<String, MsgSubstUnitNode> invalidRenamedVarNameToRepNodeMap;
-
-    /**
      * The generated map from substitution unit node to var name.
      *
      * <p>There may be multiple nodes that map to the same var name.
@@ -129,11 +132,8 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     public SubstUnitInfo(
         Map<String, MsgSubstUnitNode> varNameToRepNodeMap,
-        Map<String, MsgSubstUnitNode> invalidRenamedVarNameToRepNodeMap,
         Map<MsgSubstUnitNode, PlaceholderInfo> nodeToVarNameMap) {
       this.varNameToRepNodeMap = ImmutableMap.copyOf(varNameToRepNodeMap);
-      this.invalidRenamedVarNameToRepNodeMap =
-          ImmutableMap.copyOf(invalidRenamedVarNameToRepNodeMap);
       this.nodeToVarNameMap = ImmutableMap.copyOf(nodeToVarNameMap);
     }
 
@@ -145,7 +145,6 @@ public final class MsgNode extends AbstractBlockCommandNode
       }
       return new SubstUnitInfo(
           Maps.transformValues(varNameToRepNodeMap, oldToNewFunction),
-          invalidRenamedVarNameToRepNodeMap,
           builder.build());
     }
   }
@@ -530,7 +529,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    */
   private static SubstUnitInfo genSubstUnitInfo(MsgNode msgNode, ErrorReporter errorReporter) {
     return genFinalSubstUnitInfoMapsHelper(
-        RepresentativeNodes.createFromNode(msgNode, errorReporter));
+        RepresentativeNodes.createFromNode(msgNode, errorReporter), errorReporter);
   }
 
   /**
@@ -543,8 +542,8 @@ public final class MsgNode extends AbstractBlockCommandNode
    *
    * <p>The baseNameToRepNodesMap is a multimap from each base name to its list of representative
    * nodes (they all generate the same base var name, but should not have the same final var name).
-   * If we encounter a non-representative node, then we insert it into nonRepNodeToRepNodeMap,
-   * mapping it to its corresponding representative node.
+   * If we encounter a non-representative node, then we insert it into repNodeToNonRepNodesMap,
+   * mapping from its corresponding representative node.
    *
    * <p>The base var names are preliminary because some of the final var names will be the base
    * names plus a unique suffix.
@@ -553,7 +552,8 @@ public final class MsgNode extends AbstractBlockCommandNode
   abstract static class RepresentativeNodes {
     static RepresentativeNodes createFromNode(MsgNode msgNode, ErrorReporter reporter) {
       ListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap = LinkedListMultimap.create();
-      Map<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap = new HashMap<>();
+      ListMultimap<MsgSubstUnitNode, MsgSubstUnitNode> repNodeToNonRepNodesMap =
+          LinkedListMultimap.create();
       Map<MsgSubstUnitNode, String> repNodeToExample = new HashMap<>();
       Deque<SoyNode> traversalQueue = new ArrayDeque<>();
       ExprEquivalence exprEquivalence = new ExprEquivalence();
@@ -592,13 +592,13 @@ public final class MsgNode extends AbstractBlockCommandNode
             }
           } else {
             boolean isNew = true;
-            for (MsgSubstUnitNode other : baseNameToRepNodesMap.get(baseName)) {
-              if (substUnit.shouldUseSameVarNameAs(other, exprEquivalence)) {
+            for (MsgSubstUnitNode repNode : baseNameToRepNodesMap.get(baseName)) {
+              if (substUnit.shouldUseSameVarNameAs(repNode, exprEquivalence)) {
                 // Case 2: Should use same var name as another node we've seen.
-                nonRepNodeToRepNodeMap.put(substUnit, other);
-                String example = checkCompatibleExamples(substUnit, other, reporter);
+                repNodeToNonRepNodesMap.put(repNode, substUnit);
+                String example = checkCompatibleExamples(substUnit, repNode, reporter);
                 if (example != null) {
-                  repNodeToExample.put(other, example);
+                  repNodeToExample.put(repNode, example);
                 }
                 isNew = false;
                 break;
@@ -618,7 +618,7 @@ public final class MsgNode extends AbstractBlockCommandNode
       }
       return new AutoValue_MsgNode_RepresentativeNodes(
           ImmutableListMultimap.copyOf(baseNameToRepNodesMap),
-          ImmutableMap.copyOf(nonRepNodeToRepNodeMap),
+          ImmutableListMultimap.copyOf(repNodeToNonRepNodesMap),
           ImmutableMap.copyOf(Maps.filterValues(repNodeToExample, Objects::nonNull)));
     }
 
@@ -660,9 +660,22 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     abstract ImmutableListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap();
 
-    abstract ImmutableMap<MsgSubstUnitNode, MsgSubstUnitNode> nonRepNodeToRepNodeMap();
+    abstract ImmutableListMultimap<MsgSubstUnitNode, MsgSubstUnitNode> repNodeToNonRepNodesMap();
 
     abstract ImmutableMap<MsgSubstUnitNode, String> repNodeToPhExample();
+  }
+
+  /** @return Location of `phname` attribute value, if found; otherwise, node location. */
+  @Nullable
+  private static SourceLocation phnameLocation(SoyNode node) {
+    if (node instanceof CommandTagAttributesHolder) {
+      for (CommandTagAttribute attribute : ((CommandTagAttributesHolder) node).getAttributes()) {
+        if (attribute.hasName(MessagePlaceholders.PHNAME_ATTR)) {
+          return attribute.getValueLocation();
+        }
+      }
+    }
+    return node.getSourceLocation();
   }
 
   /**
@@ -672,7 +685,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @return The generated SubstUnitInfo.
    */
   private static SubstUnitInfo genFinalSubstUnitInfoMapsHelper(
-      RepresentativeNodes representativeNodes) {
+      RepresentativeNodes representativeNodes, ErrorReporter errorReporter) {
 
     // ------ Step 1: Build final map of var name to representative node. ------
     //
@@ -685,18 +698,20 @@ public final class MsgNode extends AbstractBlockCommandNode
     // that is the same as an existing base name.
 
     Map<String, MsgSubstUnitNode> substUnitVarNameToRepNodeMap = new LinkedHashMap<>();
-    ImmutableMap.Builder<String, MsgSubstUnitNode> invalidRenamedVarNameToRepNodeMap =
-        ImmutableMap.builder();
 
     for (String baseName : representativeNodes.baseNameToRepNodesMap().keySet()) {
       List<MsgSubstUnitNode> nodesWithSameBaseName =
           representativeNodes.baseNameToRepNodesMap().get(baseName);
+      checkState(
+          !nodesWithSameBaseName.isEmpty(), "%s not found in `baseNameToRepNodesMap`.", baseName);
       if (nodesWithSameBaseName.size() == 1) {
+        // Expected success case, one node per base name.
         substUnitVarNameToRepNodeMap.put(baseName, nodesWithSameBaseName.get(0));
       } else {
         // Case 2: Multiple nodes generate this base name. Need number suffixes.
         int nextSuffix = 1;
-        for (MsgSubstUnitNode repNode : nodesWithSameBaseName) {
+        for (int i = 0; i < nodesWithSameBaseName.size(); ++i) {
+          MsgSubstUnitNode repNode = nodesWithSameBaseName.get(i);
           String newName;
           do {
             newName = baseName + "_" + nextSuffix;
@@ -704,7 +719,25 @@ public final class MsgNode extends AbstractBlockCommandNode
           } while (representativeNodes.baseNameToRepNodesMap().containsKey(newName));
           substUnitVarNameToRepNodeMap.put(newName, repNode);
           if (repNode.getBaseVar().isUserSupplied()) {
-            invalidRenamedVarNameToRepNodeMap.put(newName, repNode);
+            MsgSubstUnitNode exampleCollidingNode = nodesWithSameBaseName.get(i == 0 ? 1 : 0);
+            if (representativeNodes.repNodeToNonRepNodesMap().containsKey(repNode)) {
+              errorReporter.report(
+                  phnameLocation(repNode),
+                  BASE_NAME_COLLISION_MULTIPLE,
+                  baseName,
+                  exampleCollidingNode.toSourceString(),
+                  phnameLocation(exampleCollidingNode).toLineColumnString(),
+                  representativeNodes.repNodeToNonRepNodesMap().get(repNode).stream()
+                      .map(node -> phnameLocation(node).toLineColumnString())
+                      .collect(toImmutableList()));
+            } else {
+              errorReporter.report(
+                  phnameLocation(repNode),
+                  BASE_NAME_COLLISION_SINGLE,
+                  baseName,
+                  exampleCollidingNode.toSourceString(),
+                  phnameLocation(exampleCollidingNode).toLineColumnString());
+            }
           }
         }
       }
@@ -724,15 +757,14 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     // Add mappings for the non-representative nodes.
     for (Map.Entry<MsgSubstUnitNode, MsgSubstUnitNode> entry :
-        representativeNodes.nonRepNodeToRepNodeMap().entrySet()) {
-      MsgSubstUnitNode nonRepNode = entry.getKey();
-      MsgSubstUnitNode repNode = entry.getValue();
+        representativeNodes.repNodeToNonRepNodesMap().entries()) {
+      MsgSubstUnitNode repNode = entry.getKey();
+      MsgSubstUnitNode nonRepNode = entry.getValue();
       substUnitNodeToVarNameMap.put(nonRepNode, substUnitNodeToVarNameMap.get(repNode));
     }
 
     return new SubstUnitInfo(
         ImmutableMap.copyOf(substUnitVarNameToRepNodeMap),
-        invalidRenamedVarNameToRepNodeMap.build(),
         ImmutableMap.copyOf(substUnitNodeToVarNameMap));
   }
 
