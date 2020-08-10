@@ -193,21 +193,10 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   @Override
   public String toString() {
-    String lineColumnString = toLineColumnString();
-    return (lineColumnString == null)
-        ? filePath
-        : String.format("%s:%s", filePath, lineColumnString);
-  }
-
-  /**
-   * Returns string representing the line:col range of the location, or null if line numbers are not
-   * available.
-   */
-  @Nullable
-  public String toLineColumnString() {
-    return (begin.line() == -1)
-        ? null
-        : String.format("%s:%s-%s:%s", begin.line(), begin.column(), end.line(), end.column());
+    return begin.line() != -1
+        ? String.format(
+            "%s:%s:%s-%s:%s", filePath, begin.line(), begin.column(), end.line(), end.column())
+        : filePath;
   }
 
   public SourceLocation offsetStartCol(int offset) {

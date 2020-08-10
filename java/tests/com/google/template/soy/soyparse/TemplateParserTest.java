@@ -467,8 +467,8 @@ public final class TemplateParserTest {
             + "  <a phname=\"begin_link\" href=\"{$fooUrl}\">\n"
             + "    {$foo phname=\"booFoo\" }\n"
             + "  </a phname=\"END_LINK\" >.\n"
-            + "  {call .aaa data=\"all\"\nphname=\"AaaBbb1\"/}\n"
-            + "  {call .aaa phname=\"AaaBbb2\" data=\"all\"}{/call}\n"
+            + "  {call .aaa data=\"all\"\nphname=\"AaaBbb\"/}\n"
+            + "  {call .aaa phname=\"AaaBbb\" data=\"all\"}{/call}\n"
             + "{/msg}");
     assertValidTemplate("{log}Blah blah.{/log}");
     assertValidTemplate("{debugger}");
@@ -983,9 +983,9 @@ public final class TemplateParserTest {
         "{@param boo : ?}\n"
             + "{msg desc=\"...\"}\n"
             + "  {$boo.foo}\n"
-            + "  {$boo.foo phname=\"booFooA\"}\n"
-            + "  {$boo.foo    phname=\"booFooA\"    }\n"
-            + "    {print $boo.foo phname=\"boo_foo_b\"}\n"
+            + "  {$boo.foo phname=\"booFoo\"}\n"
+            + "  {$boo.foo    phname=\"booFoo\"    }\n"
+            + "    {print $boo.foo phname=\"boo_foo\"}\n"
             + "{/msg}";
 
     List<StandaloneNode> nodes =
@@ -1001,20 +1001,20 @@ public final class TemplateParserTest {
 
     PrintNode pn1 = (PrintNode) ((MsgPlaceholderNode) nodes.get(1)).getChild(0);
     assertEquals("$boo.foo", pn1.getExpr().toSourceString());
-    assertEquals("BOO_FOOA", pn1.genBasePhName());
-    assertEquals("{$boo.foo phname=\"booFooA\"}", pn1.toSourceString());
+    assertEquals("BOO_FOO", pn1.genBasePhName());
+    assertEquals("{$boo.foo phname=\"booFoo\"}", pn1.toSourceString());
     assertEquals(0, pn1.numChildren());
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);
     assertEquals("$boo.foo", pn2.getExpr().toSourceString());
-    assertEquals("BOO_FOOA", pn2.genBasePhName());
-    assertEquals("{$boo.foo phname=\"booFooA\"}", pn2.toSourceString());
+    assertEquals("BOO_FOO", pn2.genBasePhName());
+    assertEquals("{$boo.foo phname=\"booFoo\"}", pn2.toSourceString());
 
     PrintNode pn3 = (PrintNode) ((MsgPlaceholderNode) nodes.get(3)).getChild(0);
     assertEquals("$boo.foo", pn3.getExpr().toSourceString());
-    assertEquals("BOO_FOO_B", pn3.genBasePhName());
-    assertEquals("{print $boo.foo phname=\"boo_foo_b\"}", pn3.toSourceString());
+    assertEquals("BOO_FOO", pn3.genBasePhName());
+    assertEquals("{print $boo.foo phname=\"boo_foo\"}", pn3.toSourceString());
 
     assertFalse(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
     assertTrue(pn1.genSamenessKey().equals(pn2.genSamenessKey()));
@@ -1098,7 +1098,7 @@ public final class TemplateParserTest {
             + "      Learn more\n"
             + "    </A phname=\"end_LearnMore_LINK\">\n"
             + "    <br phname=\"breakTag\" /><br phname=\"breakTag\" />"
-            + "<br phname=\"breakTag\" />\n"
+            + "<br phname=\"break_tag\" />\n"
             + "  {/msg}\n";
 
     List<StandaloneNode> nodes = parseTemplateContent(templateBody, FAIL).getChildren();
@@ -1133,12 +1133,12 @@ public final class TemplateParserTest {
     MsgHtmlTagNode mhtn5 = (MsgHtmlTagNode) mpn5.getChild(0);
     assertEquals("br", mhtn5.getLcTagName());
     assertEquals("BREAK_TAG", mhtn5.genBasePhName());
-    assertEquals("<br phname=\"breakTag\"/>", mhtn5.toSourceString());
+    assertEquals("<br phname=\"break_tag\"/>", mhtn5.toSourceString());
 
     assertFalse(mhtn0.genSamenessKey().equals(mhtn2.genSamenessKey()));
     assertFalse(mhtn0.genSamenessKey().equals(mhtn3.genSamenessKey()));
     assertTrue(mhtn3.genSamenessKey().equals(mhtn4.genSamenessKey()));
-    assertTrue(mhtn3.genSamenessKey().equals(mhtn5.genSamenessKey()));
+    assertFalse(mhtn3.genSamenessKey().equals(mhtn5.genSamenessKey()));
   }
 
   @Test
@@ -1537,8 +1537,8 @@ public final class TemplateParserTest {
     String templateBody =
         "{@param animals:?}\n"
             + "{msg desc=\"...\"}\n"
-            + "  {call .booTemplate_ phname=\"booTemplate1_\" /}\n"
-            + "  {call .booTemplate_ phname=\"booTemplate2_\" /}\n"
+            + "  {call .booTemplate_ phname=\"booTemplate_\" /}\n"
+            + "  {call .booTemplate_ phname=\"booTemplate_\" /}\n"
             + "  {delcall MySecretFeature.zooTemplate data=\"$animals\" phname=\"secret_zoo\"}\n"
             + "    {param zoo: 0 /}\n"
             + "  {/delcall}\n"
@@ -1551,7 +1551,7 @@ public final class TemplateParserTest {
     assertEquals(3, nodes.size());
 
     CallBasicNode cn0 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
-    assertEquals("BOO_TEMPLATE_1", cn0.genBasePhName());
+    assertEquals("BOO_TEMPLATE", cn0.genBasePhName());
     assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSourceCalleeName());
     assertEquals(false, cn0.isPassingData());
