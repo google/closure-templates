@@ -44,6 +44,10 @@ public final class TemplatesPerFile {
     return filePath;
   }
 
+  public ImmutableSet<TemplateName> getTemplateNames() {
+    return templates;
+  }
+
   /** Gets the short (unqualified) template names for all the templates in this file. */
   public ImmutableSet<String> getUnqualifiedTemplateNames() {
     return templates.stream().map(TemplateName::unqualifiedName).collect(toImmutableSet());
