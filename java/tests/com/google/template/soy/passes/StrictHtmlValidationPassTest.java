@@ -249,50 +249,6 @@ public final class StrictHtmlValidationPassTest {
   }
 
   @Test
-  public void testMethodConditions() {
-    // Arrange: set up the template under test.
-    SoyFileNode template =
-        parseTemplateBody(
-            Joiner.on("\n")
-                .join(
-                    "{@param proto: soytest.TestProto}",
-                    "{if $proto.hasFoo()}<div>{/if}",
-                    "{if $proto.hasFoo()}</div>{/if}"));
-
-    // Act: execute the graph builder.
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(errorReporter);
-    matcherPass.run(template, new IncrementingIdGenerator());
-
-    // Verify that the template validates.
-    assertThat(errorReporter.getErrors()).isEmpty();
-  }
-
-  @Test
-  public void testMethodConditionsDifferentVars() {
-    // Arrange: set up the template under test.
-    SoyFileNode template =
-        parseTemplateBody(
-            Joiner.on("\n")
-                .join(
-                    "{@param proto1: soytest.TestProto}",
-                    "{@param proto2: soytest.TestProto}",
-                    "{if $proto1.hasFoo()}<div>{/if}",
-                    "{if $proto2.hasFoo()}</div>{/if}"));
-
-    // Act: execute the graph builder.
-    ErrorReporter errorReporter = ErrorReporter.createForTest();
-    StrictHtmlValidationPass matcherPass = new StrictHtmlValidationPass(errorReporter);
-    matcherPass.run(template, new IncrementingIdGenerator());
-
-    // Verify that the template throws a validation error.
-    assertThat(errorReporter.getErrors()).hasSize(2);
-    assertThat(errorReporter.getErrors().get(0).message()).isEqualTo("Unexpected HTML close tag.");
-    assertThat(errorReporter.getErrors().get(1).message())
-        .isEqualTo("This HTML open tag does not consistently match with a close tag.");
-  }
-
-  @Test
   public void testIfElseifElseif() {
     // Arrange: set up the template under test.
     SoyFileNode template =
