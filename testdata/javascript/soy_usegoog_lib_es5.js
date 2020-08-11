@@ -5270,7 +5270,7 @@ goog.soy.data.SanitizedHtml = function() {
 goog.inherits(goog.soy.data.SanitizedHtml, goog.soy.data.SanitizedContent);
 goog.soy.data.SanitizedHtml.prototype.contentKind = goog.soy.data.SanitizedContentKind.HTML;
 goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
-  return "string" === typeof value || value instanceof goog.soy.data.SanitizedHtml || value instanceof goog.html.SafeHtml;
+  return "string" === typeof value || goog.soy.data.SanitizedHtml.isCompatibleWithStrict(value);
 };
 goog.soy.data.SanitizedHtml.isCompatibleWithStrict = function(value) {
   return value instanceof goog.soy.data.SanitizedHtml || value instanceof goog.html.SafeHtml;
@@ -5282,10 +5282,10 @@ goog.inherits(goog.soy.data.SanitizedJs, goog.soy.data.SanitizedContent);
 goog.soy.data.SanitizedJs.prototype.contentKind = goog.soy.data.SanitizedContentKind.JS;
 goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
-  return "string" === typeof value || value instanceof goog.soy.data.SanitizedJs || value instanceof module$contents$goog$html$SafeScript_SafeScript;
+  return "string" === typeof value || goog.soy.data.SanitizedJs.isCompatibleWithStrict(value);
 };
 goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
-  return value instanceof goog.soy.data.SanitizedJs || value instanceof goog.html.SafeHtml;
+  return value instanceof goog.soy.data.SanitizedJs || value instanceof module$contents$goog$html$SafeScript_SafeScript;
 };
 goog.soy.data.SanitizedUri = function() {
   goog.soy.data.SanitizedContent.call(this);
@@ -5294,7 +5294,7 @@ goog.inherits(goog.soy.data.SanitizedUri, goog.soy.data.SanitizedContent);
 goog.soy.data.SanitizedUri.prototype.contentKind = goog.soy.data.SanitizedContentKind.URI;
 goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
-  return "string" === typeof value || value instanceof goog.soy.data.SanitizedUri || value instanceof goog.html.SafeUrl || value instanceof goog.html.TrustedResourceUrl || value instanceof goog.Uri;
+  return "string" === typeof value || goog.soy.data.SanitizedUri.isCompatibleWithStrict(value);
 };
 goog.soy.data.SanitizedUri.isCompatibleWithStrict = function(value) {
   return value instanceof goog.soy.data.SanitizedUri || value instanceof goog.html.SafeUrl || value instanceof goog.html.TrustedResourceUrl || value instanceof goog.Uri;
@@ -5306,7 +5306,7 @@ goog.inherits(goog.soy.data.SanitizedTrustedResourceUri, goog.soy.data.Sanitized
 goog.soy.data.SanitizedTrustedResourceUri.prototype.contentKind = goog.soy.data.SanitizedContentKind.TRUSTED_RESOURCE_URI;
 goog.soy.data.SanitizedTrustedResourceUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
-  return "string" === typeof value || value instanceof goog.soy.data.SanitizedTrustedResourceUri || value instanceof goog.html.TrustedResourceUrl;
+  return "string" === typeof value || goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict(value);
 };
 goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict = function(value) {
   return value instanceof goog.soy.data.SanitizedTrustedResourceUri || value instanceof goog.html.TrustedResourceUrl;
@@ -5318,7 +5318,7 @@ goog.inherits(goog.soy.data.SanitizedHtmlAttribute, goog.soy.data.SanitizedConte
 goog.soy.data.SanitizedHtmlAttribute.prototype.contentKind = goog.soy.data.SanitizedContentKind.ATTRIBUTES;
 goog.soy.data.SanitizedHtmlAttribute.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
-  return "string" === typeof value || value instanceof goog.soy.data.SanitizedHtmlAttribute;
+  return "string" === typeof value || goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict(value);
 };
 goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict = function(value) {
   return value instanceof goog.soy.data.SanitizedHtmlAttribute;
@@ -5330,7 +5330,7 @@ goog.inherits(goog.soy.data.SanitizedCss, goog.soy.data.SanitizedContent);
 goog.soy.data.SanitizedCss.prototype.contentKind = goog.soy.data.SanitizedContentKind.CSS;
 goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
 goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
-  return "string" === typeof value || value instanceof goog.soy.data.SanitizedCss || value instanceof goog.html.SafeStyle || value instanceof module$contents$goog$html$SafeStyleSheet_SafeStyleSheet;
+  return "string" === typeof value || goog.soy.data.SanitizedCss.isCompatibleWithStrict(value);
 };
 goog.soy.data.SanitizedCss.isCompatibleWithStrict = function(value) {
   return value instanceof goog.soy.data.SanitizedCss || value instanceof goog.html.SafeStyle || value instanceof module$contents$goog$html$SafeStyleSheet_SafeStyleSheet;

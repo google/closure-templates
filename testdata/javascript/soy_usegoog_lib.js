@@ -22109,8 +22109,7 @@ goog.soy.data.SanitizedHtml.prototype.contentKind =
  */
 goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
   return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedHtml ||
-      value instanceof goog.html.SafeHtml;
+      goog.soy.data.SanitizedHtml.isCompatibleWithStrict(value);
 };
 
 
@@ -22157,8 +22156,7 @@ goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  */
 goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
   return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedJs ||
-      value instanceof goog.html.SafeScript;
+      goog.soy.data.SanitizedJs.isCompatibleWithStrict(value);
 };
 
 /**
@@ -22169,7 +22167,7 @@ goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
  */
 goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
   return value instanceof goog.soy.data.SanitizedJs ||
-      value instanceof goog.html.SafeHtml;
+      value instanceof goog.html.SafeScript;
 };
 
 
@@ -22203,10 +22201,7 @@ goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  */
 goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
   return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedUri ||
-      value instanceof goog.html.SafeUrl ||
-      value instanceof goog.html.TrustedResourceUrl ||
-      value instanceof goog.Uri;
+      goog.soy.data.SanitizedUri.isCompatibleWithStrict(value);
 };
 
 
@@ -22274,8 +22269,7 @@ goog.soy.data.SanitizedTrustedResourceUri.prototype.toTrustedResourceUrl =
  */
 goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
   return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
-      value instanceof goog.html.TrustedResourceUrl;
+      goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict(value);
 };
 
 
@@ -22326,7 +22320,7 @@ goog.soy.data.SanitizedHtmlAttribute.prototype.contentDir =
  */
 goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
   return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedHtmlAttribute;
+      goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict(value);
 };
 
 
@@ -22373,9 +22367,7 @@ goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  */
 goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
   return typeof value === 'string' ||
-      value instanceof goog.soy.data.SanitizedCss ||
-      value instanceof goog.html.SafeStyle ||
-      value instanceof goog.html.SafeStyleSheet;
+      goog.soy.data.SanitizedCss.isCompatibleWithStrict(value);
 };
 
 
