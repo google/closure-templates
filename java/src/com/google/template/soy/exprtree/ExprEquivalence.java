@@ -88,7 +88,7 @@ public final class ExprEquivalence {
 
         @Override
         protected Integer visitMethodCallNode(MethodCallNode node) {
-          return 31 * (node.getMethodName().hashCode() * 31 + hashChildren(node))
+          return 31 * (node.getMethodName().identifier().hashCode() * 31 + hashChildren(node))
               + Boolean.hashCode(node.isNullSafe());
         }
 
@@ -242,7 +242,7 @@ public final class ExprEquivalence {
     @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       MethodCallNode typedOther = (MethodCallNode) other;
-      return node.getMethodName().equals(typedOther.getMethodName())
+      return node.getMethodName().identifier().equals(typedOther.getMethodName().identifier())
           && node.isNullSafe() == typedOther.isNullSafe()
           && compareChildren(node);
     }
