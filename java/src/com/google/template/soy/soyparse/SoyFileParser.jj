@@ -554,6 +554,10 @@ public class SoyFileParser {
   /** The header info for the file we are parsing. */
   private SoyFileHeaderInfo headerInfo;
 
+  // The names of all import symbols that can be referenced, (e.g. "foo" and "myBar" in:
+  // "import {foo, bar as myBar} from ...").
+  public List<String> importSymbols = new ArrayList<String>();
+
   /**
    * Constructor that takes a reader object providing the input.
    *
@@ -1398,7 +1402,7 @@ private SoyFileNode SoyFile() :
 
   {
     headerInfo = new SoyFileHeaderInfo(errorReporter, delpackageDecl, namespace,
-        aliases.build());
+        aliases.build(), importSymbols);
     List<TemplateNode> templates = new ArrayList<TemplateNode>();
   }
 
@@ -1485,6 +1489,7 @@ private ImportedVar ModuleImportVar() :
       errorReporter.report(createSrcLoc(star), PARSER_ERROR, star.image, "'import * as Foo'");
       return new ImportedVar("*", "ERROR", createSrcLoc(star));
     } else {
+      importSymbols.add(alias.image);
       return new ImportedVar("*", alias.image, createSrcLoc(star, alias));
     }
   }
@@ -1514,6 +1519,9 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
     if (alias != null) {
       a1 = alias.image;
       loc = loc.extend(createSrcLoc(alias));
+      importSymbols.add(alias.image);
+    } else {
+      importSymbols.add(identifier.image);
     }
     importedVars.add(new ImportedVar(identifier.image, a1, loc));
     alias = null;
@@ -1531,6 +1539,9 @@ private ImmutableList<ImportedVar> SymbolImportVarList() :
       if (alias != null) {
         a2 = alias.image;
         loc = loc.extend(createSrcLoc(alias));
+        importSymbols.add(alias.image);
+      } else {
+        importSymbols.add(identifier.image);
       }
       importedVars.add(new ImportedVar(identifier.image, a2, loc));
       alias = null;
