@@ -13393,6 +13393,7 @@ goog.require('goog.html.SafeUrl');
 goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.string.Const');
 goog.require('goog.string.internal');
+goog.requireType('goog.i18n.bidi.Dir');
 
 
 /**
@@ -46919,6 +46920,7 @@ goog.require('goog.dom.TagName');
 goog.require('goog.dom.safe');
 goog.require('goog.html.SafeHtml');
 goog.require('goog.soy.data.SanitizedContent');
+goog.requireType('goog.soy.data.SanitizedHtml');
 
 /**
  * A structural interface for injected data.

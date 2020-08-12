@@ -129,7 +129,7 @@ public interface SoyFileSupplier {
         } catch (URISyntaxException ex) {
           throw new RuntimeException(ex);
         }
-        return new VolatileSoyFileSupplier(new File(inputFileUri));
+        return new VolatileSoyFileSupplier(new File(inputFileUri), filePath);
       } else {
         return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
       }

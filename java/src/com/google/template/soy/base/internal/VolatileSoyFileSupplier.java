@@ -43,7 +43,11 @@ public final class VolatileSoyFileSupplier extends AbstractSoyFileSupplier {
    * @param file The underlying file to read.
    */
   public VolatileSoyFileSupplier(File file) {
-    super(file.getPath());
+    this(file, file.getPath());
+  }
+
+  public VolatileSoyFileSupplier(File file, String path) {
+    super(path);
     this.file = file;
   }
 
