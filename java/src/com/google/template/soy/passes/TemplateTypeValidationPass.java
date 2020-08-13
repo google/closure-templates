@@ -26,6 +26,7 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 
 /**
  * Runs validation checks skipped earlier in parsing now that template types have been resolved.
@@ -49,7 +50,7 @@ final class TemplateTypeValidationPass implements CompilerFileSetPass {
     for (SoyFileNode file : sourceFiles) {
       for (TemplateNode templateNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
         for (TemplateHeaderVarDefn headerVar : templateNode.getHeaderParams()) {
-          if (headerVar.type().getKind() == SoyType.Kind.TEMPLATE
+          if (SoyTypes.transitivelyContainsKind(headerVar.type(), SoyType.Kind.TEMPLATE)
               && headerVar.defaultValue() != null) {
             SoyType declaredType = headerVar.type();
             SoyType actualType = headerVar.defaultValue().getType();

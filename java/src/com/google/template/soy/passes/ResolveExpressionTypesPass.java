@@ -396,8 +396,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             SoyType declaredType = headerVar.type();
             // Validation for template types happens later, it's intentional that it is not
             // assignable at this stage in parsing.
-            if (!(declaredType.getKind() == SoyType.Kind.TEMPLATE
-                && actualType.getKind() == SoyType.Kind.NAMED_TEMPLATE)) {
+            if (!(SoyTypes.transitivelyContainsKind(declaredType, SoyType.Kind.TEMPLATE)
+                && SoyTypes.transitivelyContainsKind(actualType, SoyType.Kind.NAMED_TEMPLATE))) {
               if (!declaredType.isAssignableFrom(actualType)) {
                 actualType =
                     RuntimeTypeCoercion.maybeCoerceType(

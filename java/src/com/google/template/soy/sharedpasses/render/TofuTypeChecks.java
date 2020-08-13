@@ -28,6 +28,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyProtoValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.TofuTemplateValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
@@ -182,8 +183,9 @@ public final class TofuTypeChecks {
               value instanceof SoyString || value instanceof SanitizedContent);
         }
       case NAMED_TEMPLATE:
+        throw new AssertionError("Named template types should be resolved in the compiler.");
       case TEMPLATE:
-        throw new UnsupportedOperationException("Not implemented!");
+        return CheckResult.fromBool(value instanceof TofuTemplateValue);
       case TRUSTED_RESOURCE_URI:
         return isSanitizedofKind(value, ContentKind.TRUSTED_RESOURCE_URI);
       case UNION:

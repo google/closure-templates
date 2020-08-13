@@ -69,6 +69,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.SoyTypes;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -130,7 +131,8 @@ final class TemplateCompiler {
   private static boolean shouldResolveParamValueInConstructor(TemplateParam param) {
     // Template-type params with defaults need access to a RenderContext to resolve, so we resolve
     // them in the render method, not the constructor.
-    return !(param.hasDefault() && param.type().getKind() == SoyType.Kind.TEMPLATE);
+    return !(param.hasDefault()
+        && SoyTypes.transitivelyContainsKind(param.type(), SoyType.Kind.TEMPLATE));
   }
 
   /**
