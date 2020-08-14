@@ -783,11 +783,22 @@ public final class SoyFileSet {
   }
 
   AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
-      CharSource rawLoggingConfig, String javaPackage, String jsPackage, String className)
-      throws IOException {
-    return new AnnotatedLoggingConfigGenerator(
-            rawLoggingConfig, javaPackage, jsPackage, className, typeRegistry)
-        .generate();
+      CharSource rawLoggingConfig, String javaPackage, String jsPackage, String className) {
+    return entryPoint(
+        () -> {
+          try {
+            return new AnnotatedLoggingConfigGenerator(
+                    rawLoggingConfig,
+                    javaPackage,
+                    jsPackage,
+                    className,
+                    typeRegistry,
+                    errorReporter)
+                .generate();
+          } catch (IOException e) {
+            throw new IllegalStateException(e);
+          }
+        });
   }
 
   String generateVeMetadata(

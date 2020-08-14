@@ -13,7 +13,9 @@ java_library(
     resources = [":metadata_templates"],
     deps = [
         ":public",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/types",
         "//src/main/protobuf:annotated_logging_config_java_proto",
         "//src/main/protobuf:logging_config_java_proto",
