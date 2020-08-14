@@ -92,8 +92,8 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
             idGenerator,
             /** inCondition */
             false,
-            /** inForeignContent */
-            false,
+            /** foreignContentTagDepth */
+            0,
             /** parentBlockType */
             null)
         .run(htmlMatcherGraph);
@@ -252,8 +252,8 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
               idGenerator,
               /** inCondition */
               false,
-              /** inForeignContent */
-              false,
+              /** foreignContentTagDepth */
+              0,
               "let content")
           .run(htmlMatcherGraph);
     }
@@ -266,8 +266,8 @@ public final class StrictHtmlValidationPass implements CompilerFilePass {
               idGenerator,
               /** inCondition */
               false,
-              /** inForeignContent */
-              false,
+              /** foreignContentTagDepth */
+              0,
               "call param content")
           .run(htmlMatcherGraph);
     }

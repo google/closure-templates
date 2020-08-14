@@ -58,7 +58,7 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
     return this.expression;
   }
 
-  public boolean isInternallyBalanced(boolean inForeignContent, IdGenerator idGenerator) {
+  public boolean isInternallyBalanced(int foreignContentTagDepth, IdGenerator idGenerator) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     HtmlTagMatchingPass pass =
         new HtmlTagMatchingPass(
@@ -66,9 +66,9 @@ public final class HtmlMatcherConditionNode extends HtmlMatcherGraphNode {
             idGenerator,
             /** inCondition */
             true,
-            inForeignContent,
+            foreignContentTagDepth,
             "condition");
-    if (inForeignContent) {
+    if (foreignContentTagDepth > 0) {
       if (!isInternallyBalancedForForeignContent.isPresent()) {
         pass.run(graph);
         isInternallyBalancedForForeignContent = Optional.of(errorReporter.getErrors().isEmpty());

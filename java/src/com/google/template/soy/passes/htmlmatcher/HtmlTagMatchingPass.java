@@ -68,8 +68,6 @@ public final class HtmlTagMatchingPass {
   private static final String UNEXPECTED_CLOSE_TAG_KNOWN =
       "Unexpected HTML close tag. Expected to match the ''<{0}>'' at {1}.";
 
-  private static final String NESTED_SVG = "Nested SVG tags are disallowed.";
-
   private static final String BLOCK_QUALIFIER = " Tags within a %s must be internally balanced.";
 
   private static final String UNEXPECTED_OPEN_TAG_ALWAYS =
@@ -89,10 +87,10 @@ public final class HtmlTagMatchingPass {
   private final boolean inCondition;
 
   /**
-   * This pass runs itself recursively on block nodes. If inside foreign content, various rules
-   * apply.
+   * Keeps track of the current depth within HTML tags containing foreign content. This pass runs
+   * itself recursively on block nodes. If inside foreign content, various rules apply.
    */
-  private final boolean inForeignContent;
+  private final int foreignContentTagDepth;
 
   /** Used for error messages to detail what context an error is in. */
   @Nullable private final String parentBlockType;
@@ -110,9 +108,9 @@ public final class HtmlTagMatchingPass {
       ErrorReporter errorReporter,
       IdGenerator idGenerator,
       boolean inCondition,
-      boolean inForeignContent,
+      int foreignContentTagDepth,
       String parentBlockType) {
-    this.inForeignContent = inForeignContent;
+    this.foreignContentTagDepth = foreignContentTagDepth;
     this.parentBlockType = parentBlockType;
     this.errorReporter = errorReporter;
     this.idGenerator = idGenerator;
@@ -132,17 +130,17 @@ public final class HtmlTagMatchingPass {
    */
   class HtmlStack {
     final HtmlOpenTagNode tagNode;
-    final boolean inForeignContent;
+    final int foreignContentTagDepth;
     final HtmlStack prev;
 
-    HtmlStack(HtmlOpenTagNode tagNode, boolean inForeignContent, HtmlStack prev) {
+    HtmlStack(HtmlOpenTagNode tagNode, int foreignContentTagDepth, HtmlStack prev) {
       this.tagNode = tagNode;
-      this.inForeignContent = inForeignContent;
+      this.foreignContentTagDepth = foreignContentTagDepth;
       this.prev = prev;
     }
 
-    HtmlStack push(HtmlOpenTagNode tagNode, boolean inForeignContent) {
-      return new HtmlStack(tagNode, inForeignContent, this);
+    HtmlStack push(HtmlOpenTagNode tagNode, int foreignContentTagDepth) {
+      return new HtmlStack(tagNode, foreignContentTagDepth, this);
     }
 
     HtmlStack pop() {
@@ -286,7 +284,7 @@ public final class HtmlTagMatchingPass {
         // For void tags, we don't care if they are self-closing or not. But when we visit
         // a HtmlCloseTagNode we will throw an error if it is a void tag.
         // Ignore this check if we are currently in a foreign content (svg).
-        if (!stack.inForeignContent
+        if (stack.foreignContentTagDepth == 0
             && !openTagName.isDefinitelyVoid()
             && voidTag.isSelfClosing()
             && openTagName.isStatic()) {
@@ -298,9 +296,6 @@ public final class HtmlTagMatchingPass {
         break;
       case OPEN_TAG:
         HtmlOpenTagNode openTag = (HtmlOpenTagNode) tag;
-        if (openTagName.isForeignContent() && stack.inForeignContent) {
-          errorReporter.report(openTag.getSourceLocation(), makeSoyErrorKind(NESTED_SVG));
-        }
         // In a case where an open tag can close another open tag (ie <p><p> or <li><li>),
         // check if this is possible by peeking the stack and inject a tag before the open tag.
         if (!prev.isEmpty()) {
@@ -314,7 +309,9 @@ public final class HtmlTagMatchingPass {
           }
         }
         prev =
-            prev.push(openTag, stack.inForeignContent || openTag.getTagName().isForeignContent());
+            prev.push(
+                openTag,
+                stack.foreignContentTagDepth + (openTag.getTagName().isForeignContent() ? 1 : 0));
         break;
       case CLOSE_TAG:
         HtmlCloseTagNode closeTag = (HtmlCloseTagNode) tag;
@@ -378,7 +375,7 @@ public final class HtmlTagMatchingPass {
               errorReporter,
               idGenerator,
               false,
-              stack.inForeignContent,
+              stack.foreignContentTagDepth,
               blockNode.getParentBlockType())
           .run(blockNode.getGraph());
     }
@@ -410,7 +407,7 @@ public final class HtmlTagMatchingPass {
     Optional<HtmlMatcherGraphNode> nextNode = condNode.getNodeForEdgeKind(EdgeKind.TRUE_EDGE);
     Optional<HtmlMatcherGraphNode> nextAltNode = condNode.getNodeForEdgeKind(EdgeKind.FALSE_EDGE);
     ImmutableList.Builder<QueuedTask> tasks = ImmutableList.builder();
-    if (!condNode.isInternallyBalanced(stack.inForeignContent, idGenerator)
+    if (!condNode.isInternallyBalanced(stack.foreignContentTagDepth, idGenerator)
         && nextNode.isPresent()
         && !Boolean.FALSE.equals(originalState)) {
       Map<ExprEquivalence.Wrapper, Boolean> lMap = new HashMap<>(exprValueMap);
@@ -438,7 +435,8 @@ public final class HtmlTagMatchingPass {
   public void visit(HtmlMatcherGraphNode node) {
     Queue<QueuedTask> stack = new ArrayDeque<>();
     stack.add(
-        visit(Optional.of(node), new HashMap<>(), new HtmlStack(null, inForeignContent, null)));
+        visit(
+            Optional.of(node), new HashMap<>(), new HtmlStack(null, foreignContentTagDepth, null)));
     while (!stack.isEmpty()) {
       QueuedTask task = stack.remove();
       List<QueuedTask> newTasks = task.run();
