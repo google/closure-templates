@@ -16,6 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genCandidateBaseNamesForExpr;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNoncollidingBaseNamesForExprs;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genShortestBaseNameForExpr;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -29,11 +33,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Unit tests for {@link MsgSubstUnitBaseVarNameUtils}.
+ * Unit tests for {@link MsgSubstUnitPlaceholderNameUtils}.
  *
  */
 @RunWith(JUnit4.class)
-public final class MsgSubstUnitBaseVarNameUtilsTest {
+public final class MsgSubstUnitPlaceholderNameUtilsTest {
 
   @Test
   public void testGenBaseNames() {
@@ -82,20 +86,17 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
 
   private void assertNaiveBaseNameForExpr(String expected, String exprText) {
     ExprNode exprRoot = parse(exprText);
-    String actual = MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(exprRoot, "FALLBACK");
-    assertEquals(expected, actual);
+    assertEquals(expected, genNaiveBaseNameForExpr(exprRoot, "FALLBACK"));
   }
 
   private void assertShortestBaseNameForExpr(String expected, String exprText) {
     ExprNode exprRoot = parse(exprText);
-    String actual = MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(exprRoot, "FALLBACK");
-    assertEquals(expected, actual);
+    assertEquals(expected, genShortestBaseNameForExpr(exprRoot, "FALLBACK"));
   }
 
   private void assertCandidateBaseNamesForExpr(List<String> expected, String exprText) {
     ExprNode exprRoot = parse(exprText);
-    List<String> actual = MsgSubstUnitBaseVarNameUtils.genCandidateBaseNamesForExpr(exprRoot);
-    assertEquals(expected, actual);
+    assertEquals(expected, genCandidateBaseNamesForExpr(exprRoot));
   }
 
   @Test
@@ -123,10 +124,8 @@ public final class MsgSubstUnitBaseVarNameUtilsTest {
       exprs.add(parse(exprText));
     }
 
-    List<String> actual =
-        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
-            exprs, "FALLBACK", ErrorReporter.exploding());
-    assertEquals(expected, actual);
+    assertEquals(
+        expected, genNoncollidingBaseNamesForExprs(exprs, "FALLBACK", ErrorReporter.exploding()));
   }
 
   private ExprNode parse(String exprText) {

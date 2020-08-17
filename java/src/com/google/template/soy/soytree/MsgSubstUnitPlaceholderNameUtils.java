@@ -42,7 +42,7 @@ import java.util.List;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class MsgSubstUnitBaseVarNameUtils {
+public final class MsgSubstUnitPlaceholderNameUtils {
 
   private static final SoyErrorKind COLLIDING_EXPRESSIONS =
       SoyErrorKind.of(
@@ -51,7 +51,7 @@ public final class MsgSubstUnitBaseVarNameUtils {
               + "Add explicit base names with the ''phname'' attribute.");
 
   // Disallow instantiation.
-  private MsgSubstUnitBaseVarNameUtils() {}
+  private MsgSubstUnitPlaceholderNameUtils() {}
 
   /**
    * Helper function to generate a base placeholder (or plural/select var) name from an expression,
@@ -122,9 +122,7 @@ public final class MsgSubstUnitBaseVarNameUtils {
    * @return The generated base name.
    */
   public static String genShortestBaseNameForExpr(ExprNode exprNode, String fallbackBaseName) {
-
-    List<String> candidateBaseNames = genCandidateBaseNamesForExpr(exprNode);
-    return Iterables.getFirst(candidateBaseNames, fallbackBaseName);
+    return Iterables.getFirst(genCandidateBaseNamesForExpr(exprNode), fallbackBaseName);
   }
 
   /**
@@ -244,14 +242,14 @@ public final class MsgSubstUnitBaseVarNameUtils {
    * @return The list of all candidate base names, from shortest to longest.
    */
   @VisibleForTesting
-  static List<String> genCandidateBaseNamesForExpr(ExprNode exprNode) {
+  static ImmutableList<String> genCandidateBaseNamesForExpr(ExprNode exprNode) {
     if (exprNode instanceof NullSafeAccessNode) {
       throw new IllegalStateException(
           "Msg placeholders cannot be generated for NullSafeAccessNodes; they must be created"
               + " before the NullSafeAccessPass");
     }
     if (exprNode instanceof VarRefNode || exprNode instanceof DataAccessNode) {
-      List<String> baseNames = Lists.newArrayList();
+      ImmutableList.Builder<String> baseNames = ImmutableList.builder();
       String baseName = null;
 
       while (exprNode != null) {
@@ -290,11 +288,13 @@ public final class MsgSubstUnitBaseVarNameUtils {
                 + ((baseName != null) ? "_" + baseName : "");
         baseNames.add(baseName); // new candidate base name whenever we encounter a key
       }
-      return baseNames;
-    } else if (exprNode instanceof GlobalNode) {
+      return baseNames.build();
+    }
+
+    if (exprNode instanceof GlobalNode) {
       String[] globalNameParts = ((GlobalNode) exprNode).getName().split("\\.");
 
-      List<String> baseNames = Lists.newArrayList();
+      ImmutableList.Builder<String> baseNames = ImmutableList.builder();
       String baseName = null;
       for (int i = globalNameParts.length - 1; i >= 0; i--) {
         baseName =
@@ -302,11 +302,10 @@ public final class MsgSubstUnitBaseVarNameUtils {
                 + ((baseName != null) ? "_" + baseName : "");
         baseNames.add(baseName);
       }
-      return baseNames;
-
-    } else {
-      // We don't handle expressions other than data refs and globals.
-      return ImmutableList.of();
+      return baseNames.build();
     }
+
+    // We don't handle expressions other than data refs and globals.
+    return ImmutableList.of();
   }
 }

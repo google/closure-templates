@@ -25,8 +25,8 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
+import com.google.template.soy.soytree.MessagePlaceholder;
 import com.google.template.soy.soytree.MsgNode;
-import com.google.template.soy.soytree.MsgNode.PlaceholderInfo;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralCaseNode;
 import com.google.template.soy.soytree.MsgPluralDefaultNode;
@@ -185,7 +185,7 @@ public class MsgUtils {
         String rawText = ((RawTextNode) child).getRawText();
         msgParts.add(SoyMsgRawTextPart.of(rawText));
       } else if (child instanceof MsgPlaceholderNode) {
-        PlaceholderInfo placeholder = msgNode.getPlaceholder((MsgPlaceholderNode) child);
+        MessagePlaceholder.Summary placeholder = msgNode.getPlaceholder((MsgPlaceholderNode) child);
         msgParts.add(new SoyMsgPlaceholderPart(placeholder.name(), placeholder.example()));
       } else if (child instanceof MsgPluralNode) {
         msgParts.add(buildMsgPartForPlural((MsgPluralNode) child, msgNode));

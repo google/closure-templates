@@ -17,8 +17,9 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.template.soy.soytree.MessagePlaceholders.PHNAME_ATTR;
-import static com.google.template.soy.soytree.MessagePlaceholders.validatePlaceholderName;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -162,8 +163,7 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
         attributes,
         offset,
         /* basePluralVarName */ (userSuppliedPhName == null)
-            ? MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-                expr, FALLBACK_BASE_PLURAL_VAR_NAME)
+            ? genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLURAL_VAR_NAME)
             : userSuppliedPhName,
         userSuppliedPhName);
   }
@@ -196,8 +196,9 @@ public final class MsgPluralNode extends AbstractParentCommandNode<CaseOrDefault
 
   /** Returns the base plural var name (what the translator sees). */
   @Override
-  public BaseVar getBaseVar() {
-    return BaseVar.create(basePluralVarName, /* isUserSuppliedPhName */ userSuppliedPhName != null);
+  public MessagePlaceholder getPlaceholder() {
+    return MessagePlaceholder.create(
+        basePluralVarName, /* isUserSupplied */ userSuppliedPhName != null);
   }
 
   @Override

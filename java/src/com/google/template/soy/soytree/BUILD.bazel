@@ -18,7 +18,10 @@ load("@rules_java//java:defs.bzl", "java_library")
 
 package(default_visibility = ["//:soy_internal"])
 
-SOY_NODE_SRCS = ["SoyNode.java"]
+SOY_NODE_SRCS = [
+    "MessagePlaceholder.java",
+    "SoyNode.java",
+]
 
 java_library(
     name = "soytree",
@@ -53,6 +56,7 @@ java_library(
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basetree",
+        "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/exprtree",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",

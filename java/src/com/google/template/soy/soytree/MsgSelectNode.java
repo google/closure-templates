@@ -16,8 +16,9 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.template.soy.soytree.MessagePlaceholders.PHNAME_ATTR;
-import static com.google.template.soy.soytree.MessagePlaceholders.validatePlaceholderName;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -176,12 +177,11 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   /** Returns the base select var name (what the translator sees). */
   @Override
-  public BaseVar getBaseVar() {
-    return BaseVar.create(
+  public MessagePlaceholder getPlaceholder() {
+    return MessagePlaceholder.create(
         (baseSelectVarName != null)
             ? baseSelectVarName
-            : MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-                selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME),
+            : genNaiveBaseNameForExpr(selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME),
         isUserSuppliedPhName);
   }
 

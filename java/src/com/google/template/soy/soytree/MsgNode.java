@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
@@ -100,19 +101,6 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** We don't use different content types. It may be a historical artifact in the TC. */
   private static final String DEFAULT_CONTENT_TYPE = "text/html";
 
-  /** Data about a message placeholder. */
-  @AutoValue
-  public abstract static class PlaceholderInfo {
-    static PlaceholderInfo create(String name, @Nullable String example) {
-      return new AutoValue_MsgNode_PlaceholderInfo(name, example);
-    }
-
-    public abstract String name();
-
-    @Nullable
-    public abstract String example();
-  }
-
   @VisibleForTesting
   static final class SubstUnitInfo {
 
@@ -130,19 +118,21 @@ public final class MsgNode extends AbstractBlockCommandNode
      *
      * <p>There may be multiple nodes that map to the same var name.
      */
-    public final ImmutableMap<MsgSubstUnitNode, PlaceholderInfo> nodeToVarNameMap;
+    public final ImmutableMap<MsgSubstUnitNode, MessagePlaceholder.Summary> nodeToVarNameMap;
 
     public SubstUnitInfo(
         Map<String, MsgSubstUnitNode> varNameToRepNodeMap,
-        Map<MsgSubstUnitNode, PlaceholderInfo> nodeToVarNameMap) {
+        Map<MsgSubstUnitNode, MessagePlaceholder.Summary> nodeToVarNameMap) {
       this.varNameToRepNodeMap = ImmutableMap.copyOf(varNameToRepNodeMap);
       this.nodeToVarNameMap = ImmutableMap.copyOf(nodeToVarNameMap);
     }
 
     public SubstUnitInfo copy(Map<MsgSubstUnitNode, MsgSubstUnitNode> oldToNew) {
       Function<MsgSubstUnitNode, MsgSubstUnitNode> oldToNewFunction = Functions.forMap(oldToNew);
-      ImmutableMap.Builder<MsgSubstUnitNode, PlaceholderInfo> builder = ImmutableMap.builder();
-      for (Map.Entry<MsgSubstUnitNode, PlaceholderInfo> entry : nodeToVarNameMap.entrySet()) {
+      ImmutableMap.Builder<MsgSubstUnitNode, MessagePlaceholder.Summary> builder =
+          ImmutableMap.builder();
+      for (Map.Entry<MsgSubstUnitNode, MessagePlaceholder.Summary> entry :
+          nodeToVarNameMap.entrySet()) {
         builder.put(oldToNew.get(entry.getKey()), entry.getValue());
       }
       return new SubstUnitInfo(
@@ -432,7 +422,7 @@ public final class MsgNode extends AbstractBlockCommandNode
    * @param placeholderNode The placeholder node.
    * @return The placeholder name for the given placeholder node.
    */
-  public PlaceholderInfo getPlaceholder(MsgPlaceholderNode placeholderNode) {
+  public MessagePlaceholder.Summary getPlaceholder(MsgPlaceholderNode placeholderNode) {
     return getSubstUnitInfo().nodeToVarNameMap.get(placeholderNode);
   }
 
@@ -584,7 +574,7 @@ public final class MsgNode extends AbstractBlockCommandNode
 
         if (node instanceof MsgSubstUnitNode) {
           MsgSubstUnitNode substUnit = (MsgSubstUnitNode) node;
-          String baseName = substUnit.getBaseVar().name();
+          String baseName = substUnit.getPlaceholder().name();
           if (!baseNameToRepNodesMap.containsKey(baseName)) {
             // Case 1: First occurrence of this base name.
             baseNameToRepNodesMap.put(baseName, substUnit);
@@ -672,7 +662,7 @@ public final class MsgNode extends AbstractBlockCommandNode
   private static SourceLocation phnameLocation(SoyNode node) {
     if (node instanceof CommandTagAttributesHolder) {
       for (CommandTagAttribute attribute : ((CommandTagAttributesHolder) node).getAttributes()) {
-        if (attribute.hasName(MessagePlaceholders.PHNAME_ATTR)) {
+        if (attribute.hasName(PHNAME_ATTR)) {
           return attribute.getValueLocation();
         }
       }
@@ -720,7 +710,7 @@ public final class MsgNode extends AbstractBlockCommandNode
             ++nextSuffix;
           } while (representativeNodes.baseNameToRepNodesMap().containsKey(newName));
           substUnitVarNameToRepNodeMap.put(newName, repNode);
-          if (repNode.getBaseVar().isUserSupplied()) {
+          if (repNode.getPlaceholder().isUserSupplied()) {
             MsgSubstUnitNode exampleCollidingNode = nodesWithSameBaseName.get(i == 0 ? 1 : 0);
             if (representativeNodes.repNodeToNonRepNodesMap().containsKey(repNode)) {
               errorReporter.report(
@@ -747,13 +737,14 @@ public final class MsgNode extends AbstractBlockCommandNode
 
     // ------ Step 2: Create map of every node to its var name. ------
 
-    Map<MsgSubstUnitNode, PlaceholderInfo> substUnitNodeToVarNameMap = new LinkedHashMap<>();
+    Map<MsgSubstUnitNode, MessagePlaceholder.Summary> substUnitNodeToVarNameMap =
+        new LinkedHashMap<>();
 
     // Reverse the map of names to representative nodes.
     for (Map.Entry<String, MsgSubstUnitNode> entry : substUnitVarNameToRepNodeMap.entrySet()) {
       substUnitNodeToVarNameMap.put(
           entry.getValue(),
-          PlaceholderInfo.create(
+          MessagePlaceholder.Summary.create(
               entry.getKey(), representativeNodes.repNodeToPhExample().get(entry.getValue())));
     }
 

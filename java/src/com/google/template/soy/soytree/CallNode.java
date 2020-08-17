@@ -18,6 +18,10 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -133,15 +137,11 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
         case "key":
           this.keyExpr = attr.valueAsExpr(reporter);
           break;
-        case MessagePlaceholders.PHNAME_ATTR:
-          phname =
-              MessagePlaceholders.validatePlaceholderName(
-                  attr.getValue(), attr.getValueLocation(), reporter);
+        case PHNAME_ATTR:
+          phname = validatePlaceholderName(attr.getValue(), attr.getValueLocation(), reporter);
           break;
-        case MessagePlaceholders.PHEX_ATTR:
-          phex =
-              MessagePlaceholders.validatePlaceholderExample(
-                  attr.getValue(), attr.getValueLocation(), reporter);
+        case PHEX_ATTR:
+          phex = validatePlaceholderExample(attr.getValue(), attr.getValueLocation(), reporter);
           break;
         default:
           // do nothing, validated by subclasses

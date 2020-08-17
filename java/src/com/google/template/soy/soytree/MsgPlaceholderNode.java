@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSubstUnitNode {
 
   /** The base placeholder name (what the translator sees). */
-  private final BaseVar baseVar;
+  private final MessagePlaceholder placeholder;
 
   /** A user supplied example for the placeholder, or null if it doesn't exist. */
   @Nullable private final String phExample;
@@ -56,8 +56,9 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    */
   public MsgPlaceholderNode(int id, MsgPlaceholderInitialNode initialNode) {
     super(id, initialNode.getSourceLocation());
-    this.baseVar =
-        BaseVar.create(initialNode.genBasePhName(), initialNode.getUserSuppliedPhName() != null);
+    this.placeholder =
+        MessagePlaceholder.create(
+            initialNode.genBasePhName(), initialNode.getUserSuppliedPhName() != null);
     this.phExample = initialNode.getUserSuppliedPhExample();
     this.initialNodeKind = initialNode.getKind();
     this.samenessKey = initialNode.genSamenessKey();
@@ -71,7 +72,7 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
    */
   private MsgPlaceholderNode(MsgPlaceholderNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.baseVar = orig.baseVar;
+    this.placeholder = orig.placeholder;
     this.phExample = orig.phExample;
     this.initialNodeKind = orig.initialNodeKind;
     this.samenessKey = orig.samenessKey.copy(copyState);
@@ -95,8 +96,8 @@ public final class MsgPlaceholderNode extends AbstractBlockNode implements MsgSu
 
   /** Returns the base placeholder name (what the translator sees). */
   @Override
-  public BaseVar getBaseVar() {
-    return baseVar;
+  public MessagePlaceholder getPlaceholder() {
+    return placeholder;
   }
 
   @Nullable

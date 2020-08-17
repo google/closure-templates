@@ -16,6 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -31,7 +34,6 @@ import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
@@ -183,10 +185,8 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
    * <p>Later passes validate that phnames for close tags only appear in messages.
    */
   private void checkCloseTagChildren(HtmlCloseTagNode closeTag) {
-    HtmlAttributeNode phNameAttribute =
-        closeTag.getDirectAttributeNamed(MessagePlaceholders.PHNAME_ATTR);
-    HtmlAttributeNode phExAttribute =
-        closeTag.getDirectAttributeNamed(MessagePlaceholders.PHEX_ATTR);
+    HtmlAttributeNode phNameAttribute = closeTag.getDirectAttributeNamed(PHNAME_ATTR);
+    HtmlAttributeNode phExAttribute = closeTag.getDirectAttributeNamed(PHEX_ATTR);
     // the child at index 0 is the tag name
     for (int i = 1; i < closeTag.numChildren(); i++) {
       StandaloneNode child = closeTag.getChild(i);

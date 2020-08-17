@@ -17,6 +17,9 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNoncollidingBaseNamesForExprs;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genShortestBaseNameForExpr;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
@@ -33,7 +36,6 @@ import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectCaseNode;
 import com.google.template.soy.soytree.MsgSelectDefaultNode;
 import com.google.template.soy.soytree.MsgSelectNode;
-import com.google.template.soy.soytree.MsgSubstUnitBaseVarNameUtils;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -88,7 +90,7 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
 
     Checkpoint checkpoint = errorReporter.checkpoint();
     List<String> baseSelectVarNames =
-        MsgSubstUnitBaseVarNameUtils.genNoncollidingBaseNamesForExprs(
+        genNoncollidingBaseNamesForExprs(
             ExprRootNode.unwrap(genderExprs), FALLBACK_BASE_SELECT_VAR_NAME, errorReporter);
     if (errorReporter.errorsSince(checkpoint)) {
       return; // To prevent an IndexOutOfBoundsException below.
@@ -100,11 +102,9 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
 
       // Check whether the generated base name would be the same (both for the old naive algorithm
       // and the new algorithm). If so, then there's no need to specify the baseSelectVarName.
-      if (MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-                  genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
+      if (genNaiveBaseNameForExpr(genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)
-          && MsgSubstUnitBaseVarNameUtils.genShortestBaseNameForExpr(
-                  genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
+          && genShortestBaseNameForExpr(genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME)
               .equals(baseSelectVarName)) {
         baseSelectVarName = null;
       }

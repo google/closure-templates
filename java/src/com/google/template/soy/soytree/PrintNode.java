@@ -19,6 +19,11 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
+import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.genNaiveBaseNameForExpr;
 
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
@@ -92,14 +97,14 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.attributes = ImmutableList.copyOf(attributes);
     for (CommandTagAttribute attribute : attributes) {
       switch (attribute.getName().identifier()) {
-        case MessagePlaceholders.PHNAME_ATTR:
+        case PHNAME_ATTR:
           placeholderName =
-              MessagePlaceholders.validatePlaceholderName(
+              validatePlaceholderName(
                   attribute.getValue(), attribute.getValueLocation(), errorReporter);
           break;
-        case MessagePlaceholders.PHEX_ATTR:
+        case PHEX_ATTR:
           placeholderExample =
-              MessagePlaceholders.validatePlaceholderExample(
+              validatePlaceholderExample(
                   attribute.getValue(), attribute.getValueLocation(), errorReporter);
           break;
         default:
@@ -108,7 +113,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
               UNSUPPORTED_ATTRIBUTE_KEY,
               attribute.getName().identifier(),
               "print",
-              ImmutableList.of(MessagePlaceholders.PHNAME_ATTR, MessagePlaceholders.PHEX_ATTR));
+              ImmutableList.of(PHNAME_ATTR, PHEX_ATTR));
       }
     }
     this.userSuppliedPlaceholderName = placeholderName;
@@ -196,8 +201,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
       return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
     }
 
-    return MsgSubstUnitBaseVarNameUtils.genNaiveBaseNameForExpr(
-        expr.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
+    return genNaiveBaseNameForExpr(expr.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
   }
 
   @Override

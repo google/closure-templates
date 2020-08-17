@@ -18,7 +18,6 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -270,33 +269,19 @@ public interface SoyNode extends Node {
    */
   interface MsgSubstUnitNode extends StandaloneNode {
 
-    @AutoValue
-    abstract static class BaseVar {
-      static BaseVar create(String name) {
-        return create(name, /* isUserSupplied */ false);
-      }
-
-      static BaseVar create(String name, boolean isUserSupplied) {
-        return new AutoValue_SoyNode_MsgSubstUnitNode_BaseVar(name, isUserSupplied);
-      }
-
-      public abstract String name();
-
-      public abstract boolean isUserSupplied();
-    }
-
     @Override
     MsgBlockNode getParent();
 
     /**
-     * Returns the base var name for this substitution unit. (For a placeholder, this is the base
-     * placeholder name.)
+     * Returns the placeholder meta data for this substitution unit. {@code
+     * MessagePlaceholder::name} is the base placeholder name, it might have a suffix appended if it
+     * collides with another.
      *
      * <p>Note: This isn't quite correct semantically. It's conceivable that a new type of
      * substitution unit in the future could have multiple vars. But until that happens, this
      * simpler model is sufficient.
      */
-    BaseVar getBaseVar();
+    MessagePlaceholder getPlaceholder();
 
     /**
      * Returns whether this substitution unit should use the same var name as another substitution

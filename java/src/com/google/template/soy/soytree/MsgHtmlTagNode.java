@@ -16,6 +16,10 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
+import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderName;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Ascii;
@@ -54,23 +58,21 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   public static MsgHtmlTagNode fromNode(
       int id, HtmlTagNode tagNode, @Nullable VeLogNode velogParent, ErrorReporter errorReporter) {
-    RawTextNode userSpecifiedPhExample =
-        getAttributeValue(tagNode, MessagePlaceholders.PHEX_ATTR, errorReporter);
+    RawTextNode userSpecifiedPhExample = getAttributeValue(tagNode, PHEX_ATTR, errorReporter);
     String phExample = null;
 
     if (userSpecifiedPhExample != null) {
       phExample =
-          MessagePlaceholders.validatePlaceholderExample(
+          validatePlaceholderExample(
               userSpecifiedPhExample.getRawText(),
               userSpecifiedPhExample.getSourceLocation(),
               errorReporter);
     }
-    RawTextNode userSpecifiedPhName =
-        getAttributeValue(tagNode, MessagePlaceholders.PHNAME_ATTR, errorReporter);
+    RawTextNode userSpecifiedPhName = getAttributeValue(tagNode, PHNAME_ATTR, errorReporter);
     String phName = null;
     if (userSpecifiedPhName != null) {
       phName =
-          MessagePlaceholders.validatePlaceholderName(
+          validatePlaceholderName(
               userSpecifiedPhName.getRawText(),
               userSpecifiedPhName.getSourceLocation(),
               errorReporter);

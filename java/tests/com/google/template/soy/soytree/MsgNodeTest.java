@@ -408,14 +408,14 @@ public class MsgNodeTest {
 
     CaseOrDefaultNode firstCase = nodeSelect.getChild(0);
     assertEquals(
-        MsgPlaceholderNode.BaseVar.create("PERSON"),
-        ((MsgPlaceholderNode) firstCase.getChild(0)).getBaseVar());
+        MessagePlaceholder.create("PERSON"),
+        ((MsgPlaceholderNode) firstCase.getChild(0)).getPlaceholder());
     assertEquals(
         " invited you to a group conversation with ",
         ((RawTextNode) firstCase.getChild(1)).getRawText());
     assertEquals(
-        MsgPlaceholderNode.BaseVar.create("XXX"),
-        ((MsgPlaceholderNode) firstCase.getChild(2)).getBaseVar());
+        MessagePlaceholder.create("XXX"),
+        ((MsgPlaceholderNode) firstCase.getChild(2)).getPlaceholder());
     Set<String> placeholders = new TreeSet<>();
     for (MsgPlaceholderNode placeholder :
         SoyTreeUtils.getAllNodesOfType(msg, MsgPlaceholderNode.class)) {

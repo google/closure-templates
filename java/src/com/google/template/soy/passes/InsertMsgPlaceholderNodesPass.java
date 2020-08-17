@@ -16,6 +16,9 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -27,7 +30,6 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
-import com.google.template.soy.soytree.MessagePlaceholders;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -262,15 +264,10 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
           }
         }
         if (node.getUserSuppliedPhName() != null) {
-          errorReporter.report(
-              node.getSourceLocation(),
-              INVALID_PLACEHOLDER,
-              MessagePlaceholders.PHNAME_ATTR,
-              extra);
+          errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER, PHNAME_ATTR, extra);
         }
         if (node.getUserSuppliedPhExample() != null) {
-          errorReporter.report(
-              node.getSourceLocation(), INVALID_PLACEHOLDER, MessagePlaceholders.PHEX_ATTR, extra);
+          errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER, PHEX_ATTR, extra);
         }
       }
     }

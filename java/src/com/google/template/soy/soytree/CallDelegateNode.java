@@ -19,6 +19,8 @@ package com.google.template.soy.soytree;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
+import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -93,8 +95,8 @@ public final class CallDelegateNode extends CallNode {
       switch (name) {
         case "data":
         case "key":
-        case MessagePlaceholders.PHNAME_ATTR:
-        case MessagePlaceholders.PHEX_ATTR:
+        case PHNAME_ATTR:
+        case PHEX_ATTR:
           // Parsed in CallNode.
           break;
         case "variant":
@@ -122,12 +124,7 @@ public final class CallDelegateNode extends CallNode {
               name,
               "call",
               ImmutableList.of(
-                  "data",
-                  "key",
-                  MessagePlaceholders.PHNAME_ATTR,
-                  MessagePlaceholders.PHEX_ATTR,
-                  "variant",
-                  "allowemptydefault"));
+                  "data", "key", PHNAME_ATTR, PHEX_ATTR, "variant", "allowemptydefault"));
       }
     }
 
