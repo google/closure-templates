@@ -7619,7 +7619,11 @@ const TypedString = goog.require('goog.string.TypedString');
 const trustedtypes = goog.require('goog.html.trustedtypes');
 const {fail} = goog.require('goog.asserts');
 
-/** @const {!Object} */
+/**
+ * Token used to ensure that object is created only from this file. No code
+ * outside of this file can access this token.
+ * @const {!Object}
+ */
 const CONSTRUCTOR_TOKEN_PRIVATE = {};
 
 /**
@@ -7629,10 +7633,10 @@ const CONSTRUCTOR_TOKEN_PRIVATE = {};
  * in a browser.
  *
  * Instances of this type must be created via the factory method
- * `SafeScript.fromConstant` and not by invoking its
- * constructor. The constructor intentionally takes no parameters and the type
- * is immutable; hence only a default instance corresponding to the empty string
- * can be obtained via constructor invocation.
+ * `SafeScript.fromConstant` and not by invoking its constructor. The
+ * constructor intentionally takes an extra parameter that cannot be constructed
+ * outside of this file and the type is immutable; hence only a default instance
+ * corresponding to the empty string can be obtained via constructor invocation.
  *
  * A SafeScript's string representation can safely be interpolated as the
  * content of a script element within HTML. The SafeScript string should not be
@@ -9017,11 +9021,11 @@ goog.require('goog.string.TypedString');
  * this type.
  *
  * Instances of this type must be created via the factory method,
- * (`fromConstant`, `fromConstants`, `format` or
- * `formatWithParams`), and not by invoking its constructor. The constructor
- * is organized in a way that only methods from that file can call it and
- * initialize with non-empty values. Anyone else calling constructor will
- * get default instance with empty value.
+ * (`fromConstant`, `fromConstants`, `format` or `formatWithParams`), and not by
+ * invoking its constructor. The constructor intentionally takes an extra
+ * parameter that cannot be constructed outside of this file and the type is
+ * immutable; hence only a default instance corresponding to the empty string
+ * can be obtained via constructor invocation.
  *
  * Creating TrustedResourceUrl objects HAS SIDE-EFFECTS due to calling
  * Trusted Types Web API.
@@ -9034,11 +9038,10 @@ goog.require('goog.string.TypedString');
  */
 goog.html.TrustedResourceUrl = class {
   /**
-   * @param {!Object=} opt_token package-internal implementation detail.
-   * @param {!TrustedScriptURL|string=} opt_content package-internal
-   *     implementation detail.
+   * @param {!TrustedScriptURL|string} value
+   * @param {!Object} token package-internal implementation detail.
    */
-  constructor(opt_token, opt_content) {
+  constructor(value, token) {
     /**
      * The contained value of this TrustedResourceUrl.  The field has a
      * purposely ugly name to make (non-compiled) code that attempts to directly
@@ -9047,19 +9050,9 @@ goog.html.TrustedResourceUrl = class {
      * @private {!TrustedScriptURL|string}
      */
     this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
-        ((opt_token ===
-          goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_) &&
-         opt_content) ||
+        (token === goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_) ?
+        value :
         '';
-
-    /**
-     * A type marker used to implement additional run-time type checking.
-     * @see goog.html.TrustedResourceUrl#unwrap
-     * @const {!Object}
-     * @private
-     */
-    this.TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-        goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
   }
 };
 
@@ -9195,15 +9188,8 @@ goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function(
   // Specifically, the following checks are performed:
   // 1. The object is an instance of the expected type.
   // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
   if (trustedResourceUrl instanceof goog.html.TrustedResourceUrl &&
-      trustedResourceUrl.constructor === goog.html.TrustedResourceUrl &&
-      trustedResourceUrl
-              .TRUSTED_RESOURCE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-          goog.html.TrustedResourceUrl
-              .TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+      trustedResourceUrl.constructor === goog.html.TrustedResourceUrl) {
     return trustedResourceUrl
         .privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_;
   } else {
@@ -9427,12 +9413,12 @@ goog.html.TrustedResourceUrl.fromSafeScript = function(safeScript) {
 
 
 /**
- * Type marker for the TrustedResourceUrl type, used to implement additional
- * run-time type checking.
- * @const {!Object}
- * @private
+ * Token used to ensure that object is created only from this file. No code
+ * outside of this file can access this token.
+ * @private {!Object}
+ * @const
  */
-goog.html.TrustedResourceUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 
 /**
@@ -9449,7 +9435,7 @@ goog.html.TrustedResourceUrl
   const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
   var value = policy ? policy.createScriptURL(url) : url;
   return new goog.html.TrustedResourceUrl(
-      goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_, value);
+      value, goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_);
 };
 
 
@@ -9508,14 +9494,6 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function(
   }
   return currentString;
 };
-
-/**
- * Token used to ensure that object is created only from this file. No code
- * outside of this file can access this token.
- * @private {!Object}
- * @const
- */
-goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 //third_party/javascript/closure/string/internal.js
 /**
@@ -9948,10 +9926,10 @@ goog.require('goog.string.internal');
  *
  * Instances of this type must be created via the factory methods
  * (`goog.html.SafeUrl.fromConstant`, `goog.html.SafeUrl.sanitize`),
- * etc and not by invoking its constructor. The constructor is organized in a
- * way that only methods from that file can call it and initialize with
- * non-empty values. Anyone else calling constructor will get default instance
- * with empty value.
+ * etc and not by invoking its constructor. The constructor intentionally takes
+ * an extra parameter that cannot be constructed outside of this file and the
+ * type is immutable; hence only a default instance corresponding to the empty
+ * string can be obtained via constructor invocation.
  *
  * @see goog.html.SafeUrl#fromConstant
  * @see goog.html.SafeUrl#from
@@ -9963,10 +9941,10 @@ goog.require('goog.string.internal');
  */
 goog.html.SafeUrl = class {
   /**
-   * @param {!Object=} opt_token package-internal implementation detail.
-   * @param {string=} opt_content package-internal implementation detail.
+   * @param {string} value
+   * @param {!Object} token package-internal implementation detail.
    */
-  constructor(opt_token, opt_content) {
+  constructor(value, token) {
     /**
      * The contained value of this SafeUrl.  The field has a purposely ugly
      * name to make (non-compiled) code that attempts to directly access this
@@ -9974,18 +9952,7 @@ goog.html.SafeUrl = class {
      * @private {string}
      */
     this.privateDoNotAccessOrElseSafeUrlWrappedValue_ =
-        ((opt_token === goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_) &&
-         opt_content) ||
-        '';
-
-    /**
-     * A type marker used to implement additional run-time type checking.
-     * @see goog.html.SafeUrl#unwrap
-     * @const {!Object}
-     * @private
-     */
-    this.SAFE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-        goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+        (token === goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_) ? value : '';
   };
 };
 
@@ -10100,13 +10067,8 @@ goog.html.SafeUrl.unwrap = function(safeUrl) {
   // Specifically, the following checks are performed:
   // 1. The object is an instance of the expected type.
   // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
   if (safeUrl instanceof goog.html.SafeUrl &&
-      safeUrl.constructor === goog.html.SafeUrl &&
-      safeUrl.SAFE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-          goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+      safeUrl.constructor === goog.html.SafeUrl) {
     return safeUrl.privateDoNotAccessOrElseSafeUrlWrappedValue_;
   } else {
     goog.asserts.fail('expected object of type SafeUrl, got \'' +
@@ -10656,16 +10618,13 @@ goog.html.SafeUrl.sanitizeAssertUnchanged = function(url, opt_allowDataUrl) {
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url);
 };
 
-
-
 /**
- * Type marker for the SafeUrl type, used to implement additional run-time
- * type checking.
- * @const {!Object}
- * @private
+ * Token used to ensure that object is created only from this file. No code
+ * outside of this file can access this token.
+ * @private {!Object}
+ * @const
  */
-goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
-
+goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 /**
  * Package-internal utility method to create SafeUrl instances.
@@ -10677,7 +10636,7 @@ goog.html.SafeUrl.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(
     url) {
   return new goog.html.SafeUrl(
-      goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_, url);
+      url, goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_);
 };
 
 
@@ -10697,14 +10656,6 @@ goog.html.SafeUrl.INNOCUOUS_URL =
 goog.html.SafeUrl.ABOUT_BLANK =
     goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
         'about:blank');
-
-/**
- * Token used to ensure that object is created only from this file. No code
- * outside of this file can access this token.
- * @private {!Object}
- * @const
- */
-goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 //third_party/javascript/closure/html/safestyle.js
 /**
@@ -10738,9 +10689,9 @@ goog.require('goog.string.internal');
  * browser.
  *
  * Instances of this type must be created via the factory methods
- * (`goog.html.SafeStyle.create` or
- * `goog.html.SafeStyle.fromConstant`) and not by invoking its
- * constructor. The constructor intentionally takes no parameters and the type
+ * (`goog.html.SafeStyle.create` or `goog.html.SafeStyle.fromConstant`)
+ * and not by invoking its constructor. The constructor intentionally takes an
+ * extra parameter that cannot be constructed outside of this file and the type
  * is immutable; hence only a default instance corresponding to the empty string
  * can be obtained via constructor invocation.
  *
@@ -10816,23 +10767,19 @@ goog.require('goog.string.internal');
  * @implements {goog.string.TypedString}
  */
 goog.html.SafeStyle = class {
-  constructor() {
+  /**
+   * @param {string} value
+   * @param {!Object} token package-internal implementation detail.
+   */
+  constructor(value, token) {
     /**
      * The contained value of this SafeStyle.  The field has a purposely
      * ugly name to make (non-compiled) code that attempts to directly access
      * this field stand out.
      * @private {string}
      */
-    this.privateDoNotAccessOrElseSafeStyleWrappedValue_ = '';
-
-    /**
-     * A type marker used to implement additional run-time type checking.
-     * @see goog.html.SafeStyle#unwrap
-     * @const {!Object}
-     * @private
-     */
-    this.SAFE_STYLE_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-        goog.html.SafeStyle.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+    this.privateDoNotAccessOrElseSafeStyleWrappedValue_ =
+        (token === goog.html.SafeStyle.CONSTRUCTOR_TOKEN_PRIVATE_) ? value : '';
   }
 };
 
@@ -10842,15 +10789,6 @@ goog.html.SafeStyle = class {
  * @const
  */
 goog.html.SafeStyle.prototype.implementsGoogStringTypedString = true;
-
-
-/**
- * Type marker for the SafeStyle type, used to implement additional
- * run-time type checking.
- * @const {!Object}
- * @private
- */
-goog.html.SafeStyle.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
 
 
 /**
@@ -10950,20 +10888,25 @@ goog.html.SafeStyle.unwrap = function(safeStyle) {
   // Specifically, the following checks are performed:
   // 1. The object is an instance of the expected type.
   // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
   if (safeStyle instanceof goog.html.SafeStyle &&
-      safeStyle.constructor === goog.html.SafeStyle &&
-      safeStyle.SAFE_STYLE_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-          goog.html.SafeStyle.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+      safeStyle.constructor === goog.html.SafeStyle) {
     return safeStyle.privateDoNotAccessOrElseSafeStyleWrappedValue_;
   } else {
-    goog.asserts.fail('expected object of type SafeStyle, got \'' +
-        safeStyle + '\' of type ' + goog.typeOf(safeStyle));
+    goog.asserts.fail(
+        'expected object of type SafeStyle, got \'' + safeStyle +
+        '\' of type ' + goog.typeOf(safeStyle));
     return 'type_error:SafeStyle';
   }
 };
+
+
+/**
+ * Token used to ensure that object is created only from this file. No code
+ * outside of this file can access this token.
+ * @private {!Object}
+ * @const
+ */
+goog.html.SafeStyle.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 
 /**
@@ -10975,22 +10918,8 @@ goog.html.SafeStyle.unwrap = function(safeStyle) {
  */
 goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse = function(
     style) {
-  return new goog.html.SafeStyle().initSecurityPrivateDoNotAccessOrElse_(style);
-};
-
-
-/**
- * Called from createSafeStyleSecurityPrivateDoNotAccessOrElse(). This
- * method exists only so that the compiler can dead code eliminate static
- * fields (like EMPTY) when they're not accessed.
- * @param {string} style
- * @return {!goog.html.SafeStyle}
- * @private
- */
-goog.html.SafeStyle.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
-    style) {
-  this.privateDoNotAccessOrElseSafeStyleWrappedValue_ = style;
-  return this;
+  return new goog.html.SafeStyle(
+      style, goog.html.SafeStyle.CONSTRUCTOR_TOKEN_PRIVATE_);
 };
 
 
@@ -11149,7 +11078,7 @@ goog.html.SafeStyle.hasBalancedQuotes_ = function(value) {
   var outsideDouble = true;
   for (var i = 0; i < value.length; i++) {
     var c = value.charAt(i);
-    if (c == "'" && outsideDouble) {
+    if (c == '\'' && outsideDouble) {
       outsideSingle = !outsideSingle;
     } else if (c == '"' && outsideSingle) {
       outsideDouble = !outsideDouble;
@@ -11352,15 +11281,22 @@ const {assert, fail} = goog.require('goog.asserts');
 const {contains} = goog.require('goog.string.internal');
 
 /**
+ * Token used to ensure that object is created only from this file. No code
+ * outside of this file can access this token.
+ * @const {!Object}
+ */
+const CONSTRUCTOR_TOKEN_PRIVATE = {};
+
+/**
  * A string-like object which represents a CSS style sheet and that carries the
  * security type contract that its value, as a string, will not cause untrusted
  * script execution (XSS) when evaluated as CSS in a browser.
  *
  * Instances of this type must be created via the factory method
- * `SafeStyleSheet.fromConstant` and not by invoking its
- * constructor. The constructor intentionally takes no parameters and the type
- * is immutable; hence only a default instance corresponding to the empty string
- * can be obtained via constructor invocation.
+ * `SafeStyleSheet.fromConstant` and not by invoking its constructor. The
+ * constructor intentionally takes an extra parameter that cannot be constructed
+ * outside of this file and the type is immutable; hence only a default instance
+ * corresponding to the empty string can be obtained via constructor invocation.
  *
  * A SafeStyleSheet's string representation can safely be interpolated as the
  * content of a style element within HTML. The SafeStyleSheet string should
@@ -11392,23 +11328,19 @@ const {contains} = goog.require('goog.string.internal');
  * @implements {TypedString}
  */
 class SafeStyleSheet {
-  constructor() {
+  /**
+   * @param {string} value
+   * @param {!Object} token package-internal implementation detail.
+   */
+  constructor(value, token) {
     /**
      * The contained value of this SafeStyleSheet.  The field has a purposely
      * ugly name to make (non-compiled) code that attempts to directly access
      * this field stand out.
      * @private {string}
      */
-    this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_ = '';
-
-    /**
-     * A type marker used to implement additional run-time type checking.
-     * @see SafeStyleSheet#unwrap
-     * @const {!Object}
-     * @private
-     */
-    this.SAFE_STYLE_SHEET_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-        TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE;
+    this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_ =
+        (token === CONSTRUCTOR_TOKEN_PRIVATE) ? value : '';
 
     /**
      * @override
@@ -11575,14 +11507,8 @@ class SafeStyleSheet {
     // Specifically, the following checks are performed:
     // 1. The object is an instance of the expected type.
     // 2. The object is not an instance of a subclass.
-    // 3. The object carries a type marker for the expected type. "Faking" an
-    // object requires a reference to the type marker, which has names intended
-    // to stand out in code reviews.
     if (safeStyleSheet instanceof SafeStyleSheet &&
-        safeStyleSheet.constructor === SafeStyleSheet &&
-        safeStyleSheet
-                .SAFE_STYLE_SHEET_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-            TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE) {
+        safeStyleSheet.constructor === SafeStyleSheet) {
       return safeStyleSheet.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_;
     } else {
       fail(
@@ -11601,21 +11527,7 @@ class SafeStyleSheet {
    * @package
    */
   static createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(styleSheet) {
-    return new SafeStyleSheet().initSecurityPrivateDoNotAccessOrElse_(
-        styleSheet);
-  }
-
-  /**
-   * Called from createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(). This
-   * method exists only so that the compiler can dead code eliminate static
-   * fields (like EMPTY) when they're not accessed.
-   * @param {string} styleSheet
-   * @return {!SafeStyleSheet}
-   * @private
-   */
-  initSecurityPrivateDoNotAccessOrElse_(styleSheet) {
-    this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_ = styleSheet;
-    return this;
+    return new SafeStyleSheet(styleSheet, CONSTRUCTOR_TOKEN_PRIVATE);
   }
 }
 
@@ -11634,14 +11546,6 @@ if (goog.DEBUG) {
         this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_ + '}';
   };
 }
-
-
-/**
- * Type marker for the SafeStyleSheet type, used to implement additional
- * run-time type checking.
- * @const {!Object}
- */
-const TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE = {};
 
 
 /**
@@ -12218,9 +12122,10 @@ goog.require('goog.string.internal');
  *
  * Instances of this type must be created via the factory methods
  * (`goog.html.SafeHtml.create`, `goog.html.SafeHtml.htmlEscape`),
- * etc and not by invoking its constructor.  The constructor intentionally
- * takes no parameters and the type is immutable; hence only a default instance
- * corresponding to the empty string can be obtained via constructor invocation.
+ * etc and not by invoking its constructor. The constructor intentionally takes
+ * an extra parameter that cannot be constructed outside of this file and the
+ * type is immutable; hence only a default instance corresponding to the empty
+ * string can be obtained via constructor invocation.
  *
  * Creating SafeHtml objects HAS SIDE-EFFECTS due to calling Trusted Types Web
  * API.
@@ -12246,29 +12151,26 @@ goog.require('goog.string.internal');
  * @implements {goog.string.TypedString}
  */
 goog.html.SafeHtml = class {
-  constructor() {
+  /**
+   * @param {!TrustedHTML|string} value
+   * @param {?goog.i18n.bidi.Dir} dir
+   * @param {!Object} token package-internal implementation detail.
+   */
+  constructor(value, dir, token) {
     /**
      * The contained value of this SafeHtml.  The field has a purposely ugly
      * name to make (non-compiled) code that attempts to directly access this
      * field stand out.
      * @private {!TrustedHTML|string}
      */
-    this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = '';
-
-    /**
-     * A type marker used to implement additional run-time type checking.
-     * @see goog.html.SafeHtml.unwrap
-     * @const {!Object}
-     * @private
-     */
-    this.SAFE_HTML_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ =
-        goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_;
+    this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ =
+        (token === goog.html.SafeHtml.CONSTRUCTOR_TOKEN_PRIVATE_) ? value : '';
 
     /**
      * This SafeHtml's directionality, or null if unknown.
      * @private {?goog.i18n.bidi.Dir}
      */
-    this.dir_ = null;
+    this.dir_ = dir;
   }
 };
 
@@ -12380,17 +12282,13 @@ goog.html.SafeHtml.unwrapTrustedHTML = function(safeHtml) {
   // Specifically, the following checks are performed:
   // 1. The object is an instance of the expected type.
   // 2. The object is not an instance of a subclass.
-  // 3. The object carries a type marker for the expected type. "Faking" an
-  // object requires a reference to the type marker, which has names intended
-  // to stand out in code reviews.
   if (safeHtml instanceof goog.html.SafeHtml &&
-      safeHtml.constructor === goog.html.SafeHtml &&
-      safeHtml.SAFE_HTML_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ ===
-          goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_) {
+      safeHtml.constructor === goog.html.SafeHtml) {
     return safeHtml.privateDoNotAccessOrElseSafeHtmlWrappedValue_;
   } else {
-    goog.asserts.fail('expected object of type SafeHtml, got \'' +
-        safeHtml + '\' of type ' + goog.typeOf(safeHtml));
+    goog.asserts.fail(
+        'expected object of type SafeHtml, got \'' + safeHtml + '\' of type ' +
+        goog.typeOf(safeHtml));
     return 'type_error:SafeHtml';
   }
 };
@@ -12871,7 +12769,6 @@ goog.html.SafeHtml.createStyle = function(styleSheet, opt_attributes) {
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
  */
 goog.html.SafeHtml.createMetaRefresh = function(url, opt_secs) {
-
   // Note that sanitize is a no-op on SafeUrl.
   var unwrappedUrl = goog.html.SafeUrl.unwrap(goog.html.SafeUrl.sanitize(url));
 
@@ -12893,7 +12790,7 @@ goog.html.SafeHtml.createMetaRefresh = function(url, opt_secs) {
     // URIs, so this could do the wrong thing, but at least it will do the wrong
     // thing in only rare cases.
     if (goog.string.internal.contains(unwrappedUrl, ';')) {
-      unwrappedUrl = "'" + unwrappedUrl.replace(/'/g, '%27') + "'";
+      unwrappedUrl = '\'' + unwrappedUrl.replace(/'/g, '%27') + '\'';
     }
   }
   var attributes = {
@@ -13080,12 +12977,12 @@ goog.html.SafeHtml.concatWithDir = function(dir, var_args) {
 
 
 /**
- * Type marker for the SafeHtml type, used to implement additional run-time
- * type checking.
- * @const {!Object}
- * @private
+ * Token used to ensure that object is created only from this file. No code
+ * outside of this file can access this token.
+ * @private {!Object}
+ * @const
  */
-goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+goog.html.SafeHtml.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
 
 
 /**
@@ -13099,61 +12996,10 @@ goog.html.SafeHtml.TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
  */
 goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
     html, dir) {
-  return new goog.html.SafeHtml().initSecurityPrivateDoNotAccessOrElse_(
-      html, dir);
-};
-
-/**
- * Package-internal utility method to create SafeHtml instances, skipping
- * Trusted Type policy. This method exists only so that the compiler can
- * dead code eliminate static fields (like EMPTY) when they're not accessed.
- * @param {!TrustedHTML|string} trustedHtml
- * @return {!goog.html.SafeHtml} The initialized SafeHtml object.
- * @package
- */
-goog.html.SafeHtml
-    .createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse = function(
-    trustedHtml) {
-  return new goog.html.SafeHtml()
-      .initSecurityFromTrustedHtmlPrivateDoNotAccessOrElse_(
-          trustedHtml, goog.i18n.bidi.Dir.NEUTRAL);
-};
-
-
-/**
- * Called from createSafeHtmlSecurityPrivateDoNotAccessOrElse(). This
- * method exists only so that the compiler can dead code eliminate static
- * fields (like EMPTY) when they're not accessed.
- * @param {string} html
- * @param {?goog.i18n.bidi.Dir} dir
- * @return {!goog.html.SafeHtml}
- * @private
- */
-goog.html.SafeHtml.prototype.initSecurityPrivateDoNotAccessOrElse_ = function(
-    html, dir) {
   const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
-  this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ =
-      policy ? policy.createHTML(html) : html;
-  this.dir_ = dir;
-  return this;
-};
-
-
-/**
- * Called from createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse().
- * This method exists only so that the compiler can dead code eliminate static
- * fields (like EMPTY) when they're not accessed.
- * @param {!TrustedHTML|string} trustedHtml
- * @param {?goog.i18n.bidi.Dir} dir
- * @return {!goog.html.SafeHtml}
- * @private
- */
-goog.html.SafeHtml.prototype
-    .initSecurityFromTrustedHtmlPrivateDoNotAccessOrElse_ = function(
-    trustedHtml, dir) {
-  this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = trustedHtml;
-  this.dir_ = dir;
-  return this;
+  const trustedHtml = policy ? policy.createHTML(html) : html;
+  return new goog.html.SafeHtml(
+      trustedHtml, dir, goog.html.SafeHtml.CONSTRUCTOR_TOKEN_PRIVATE_);
 };
 
 
@@ -13303,9 +13149,6 @@ goog.html.SafeHtml.DOCTYPE_HTML = /** @type {!goog.html.SafeHtml} */ ({
   // NOTE: this compiles to nothing, but hides the possible side effect of
   // SafeHtml creation (due to calling trustedTypes.createPolicy) from the
   // compiler so that the entire call can be removed if the result is not used.
-  // MOE:begin_strip
-  // TODO(b/155299094): Refactor after adding compiler support.
-  // MOE:end_strip
   valueOf: function() {
     return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<!DOCTYPE html>', goog.i18n.bidi.Dir.NEUTRAL);
@@ -13316,24 +13159,9 @@ goog.html.SafeHtml.DOCTYPE_HTML = /** @type {!goog.html.SafeHtml} */ ({
  * A SafeHtml instance corresponding to the empty string.
  * @const {!goog.html.SafeHtml}
  */
-goog.html.SafeHtml.EMPTY =
-    goog.html.SafeHtml
-        .createSafeHtmlFromTrustedHtmlSecurityPrivateDoNotAccessOrElse(
-            // NOTE: This constant uses a different builder function, that
-            // accepts TrustedHTML to avoid creating a Trusted Types policy.
-            // Using trustedTypes.emptyHTML if available, and an empty string if
-            // not. This typecast is safe - if trustedTypes are not available,
-            // policy creation would not happen anyway, and DOM sinks accept
-            // string values.
-            // MOE:begin_strip
-            // TODO(b/155299094): Refactor after adding compiler support.
-            // Check emptyHTML existence to workaround
-            // https://crbug.com/1081632.
-            // MOE:end_strip
-            goog.global.trustedTypes && goog.global.trustedTypes.emptyHTML ?
-                goog.global.trustedTypes.emptyHTML :
-                '');
-
+goog.html.SafeHtml.EMPTY = new goog.html.SafeHtml(
+    (goog.global.trustedTypes && goog.global.trustedTypes.emptyHTML) || '',
+    goog.i18n.bidi.Dir.NEUTRAL, goog.html.SafeHtml.CONSTRUCTOR_TOKEN_PRIVATE_);
 
 /**
  * A SafeHtml instance corresponding to the <br> tag.
@@ -13343,9 +13171,6 @@ goog.html.SafeHtml.BR = /** @type {!goog.html.SafeHtml} */ ({
   // NOTE: this compiles to nothing, but hides the possible side effect of
   // SafeHtml creation (due to calling trustedTypes.createPolicy) from the
   // compiler so that the entire call can be removed if the result is not used.
-  // MOE:begin_strip
-  // TODO(b/155299094): Refactor after adding compiler support.
-  // MOE:end_strip
   valueOf: function() {
     return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<br>', goog.i18n.bidi.Dir.NEUTRAL);
@@ -13370,15 +13195,7 @@ goog.html.SafeHtml.BR = /** @type {!goog.html.SafeHtml} */ ({
  * prefer to create instances of goog.html types using inherently safe builders
  * or template systems.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
- * MOE:begin_intracomment_strip
- * MAINTAINERS: Use of these functions is detected with a Tricorder analyzer.
- * If adding functions here also add them to analyzer's list at
- * j/c/g/devtools/staticanalysis/pipeline/analyzers/shared/SafeHtmlAnalyzers.java.
- * MOE:end_intracomment_strip
  */
 
 
@@ -13404,9 +13221,6 @@ goog.requireType('goog.i18n.bidi.Dir');
  * that the value of `html` satisfies the SafeHtml type contract in all
  * possible program states.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -13442,9 +13256,6 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  * that the value of `script` satisfies the SafeScript type contract in
  * all possible program states.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -13476,9 +13287,6 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
  * that the value of `style` satisfies the SafeStyle type contract in all
  * possible program states.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -13510,9 +13318,6 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
  * that the value of `styleSheet` satisfies the SafeStyleSheet type
  * contract in all possible program states.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -13545,9 +13350,6 @@ goog.html.uncheckedconversions
  * that the value of `url` satisfies the SafeUrl type contract in all
  * possible program states.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
@@ -13578,9 +13380,6 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
  * that the value of `url` satisfies the TrustedResourceUrl type contract
  * in all possible program states.
  *
- * MOE:begin_intracomment_strip
- * See http://go/safehtml-unchecked for guidelines on using these functions.
- * MOE:end_intracomment_strip
  *
  * @param {!goog.string.Const} justification A constant string explaining why
  *     this use of this method is safe. May include a security review ticket
