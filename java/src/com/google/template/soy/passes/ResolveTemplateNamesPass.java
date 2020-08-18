@@ -155,13 +155,4 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
         unresolvedName,
         SoyErrors.getDidYouMeanMessage("." + unresolvedName, importSuggestion));
   }
-
-  /**
-   * Resolves aliases for Soy Shovel. Since shovel doesn't run any passes, we don't have a template
-   * registry and can't resolve imports. This is a special util to allow call names for non-imports
-   * to be resolved, and should not be called by anything other than Soy Shovel.
-   */
-  public void resolveForSoyShovel(SoyFileNode file) {
-    visitFile(file, Optional.empty());
-  }
 }
