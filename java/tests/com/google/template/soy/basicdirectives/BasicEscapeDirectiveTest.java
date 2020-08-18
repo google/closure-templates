@@ -47,18 +47,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput("\\x27\\x27", "''", escapeJsString);
     assertTofuOutput("\\x22foo\\x22", "\"foo\"", escapeJsString);
     assertTofuOutput("42", 42, escapeJsString);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("", " '' ", escapeJsString)
-        .addTest("foo", " 'foo' ", escapeJsString)
-        .addTest("a\\\\b", " 'a\\\\b' ", escapeJsString)
-        .addTest(
-            "foo\\\\bar", " soydata.VERY_UNSAFE.ordainSanitizedHtml('foo\\\\bar') ", escapeJsString)
-        .addTest("\\x27\\x27", " '\\'\\'' ", escapeJsString)
-        .addTest("\\x22foo\\x22", " '\"foo\"' ", escapeJsString)
-        .addTest("\\r\\n \\u2028", " '\\r\\n \\u2028' ", escapeJsString)
-        .addTest("42", "42", escapeJsString)
-        .runTests();
   }
 
   @Test
@@ -75,18 +63,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput(" null ", null, escapeJsValue);
     assertTofuOutput(" 42.0 ", 42, escapeJsValue);
     assertTofuOutput(" true ", true, escapeJsValue);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("''", " '' ", escapeJsValue)
-        .addTest("'foo'", " 'foo' ", escapeJsValue)
-        .addTest("'a\\\\b'", " 'a\\\\b' ", escapeJsValue)
-        .addTest("'\\x27\\x27'", " '\\'\\'' ", escapeJsValue)
-        .addTest("'\\x22foo\\x22'", " '\"foo\"' ", escapeJsValue)
-        .addTest("'\\r\\n \\u2028'", " '\\r\\n \\u2028' ", escapeJsValue)
-        .addTest(" null ", "null", escapeJsValue)
-        .addTest(" 42 ", "42", escapeJsValue)
-        .addTest(" true ", "true", escapeJsValue)
-        .runTests();
   }
 
   @Test
@@ -95,12 +71,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
     assertTofuOutput("", "", escapeHtml);
     assertTofuOutput("1 &lt; 2 &amp;amp;&amp;amp; 3 &lt; 4", "1 < 2 &amp;&amp; 3 < 4", escapeHtml);
     assertTofuOutput("42", 42, escapeHtml);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("", " '' ", escapeHtml)
-        .addTest("1 &lt; 2 &amp;amp;&amp;amp; 3 &lt; 4", " '1 < 2 &amp;&amp; 3 < 4' ", escapeHtml)
-        .addTest("42", " 42 ", escapeHtml)
-        .runTests();
   }
 
   @Test
@@ -111,13 +81,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         "http://www.google.com/a%20b", "http://www.google.com/a b", filterNormalizeUri);
     assertTofuOutput("about:invalid#zSoyz", "javascript:alert(1337)", filterNormalizeUri);
     assertTofuOutput("42", 42, filterNormalizeUri);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("", " '' ", filterNormalizeUri)
-        .addTest("http://www.google.com/a%20b", " 'http://www.google.com/a b' ", filterNormalizeUri)
-        .addTest("about:invalid#zSoyz", " 'javascript:alert(1337)' ", filterNormalizeUri)
-        .addTest("42", " 42 ", filterNormalizeUri)
-        .runTests();
   }
 
   @Test
@@ -143,21 +106,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         // But JS_STR_CHARS are.
         UnsafeSanitizedContentOrdainer.ordainAsSafe("<foo>", SanitizedContent.ContentKind.JS),
         htmlNospaceDirective);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("", "''", htmlNospaceDirective)
-        .addTest("a&amp;b&#32;&gt;&#32;c", " 'a&b > c' ", htmlNospaceDirective)
-        .addTest(
-            "&lt;script&gt;alert(&#39;boo&#39;);&lt;&#47;script&gt;",
-            " '<script>alert(\\'boo\\');</script>' ",
-            htmlNospaceDirective)
-        .addTest(
-            "&#32;&lt;&#32;",
-            "soydata.VERY_UNSAFE.ordainSanitizedHtml('<foo> < <bar>')",
-            htmlNospaceDirective)
-        .addTest(
-            "&lt;foo&gt;", "soydata.VERY_UNSAFE.ordainSanitizedJs('<foo>')", htmlNospaceDirective)
-        .runTests();
   }
 
   @Test
@@ -175,15 +123,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         "a%25bc%20%3E%20d",
         UnsafeSanitizedContentOrdainer.ordainAsSafe("a%bc > d", SanitizedContent.ContentKind.URI),
         escapeUri);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("", "''", escapeUri)
-        .addTest("a%25b%20%3E%20c", " 'a%b > c' ", escapeUri)
-        .addTest(
-            "a%25bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedHtml('a%bc > d')", escapeUri)
-        .addTest(
-            "a%25bc%20%3E%20d", "soydata.VERY_UNSAFE.ordainSanitizedUri('a%bc > d')", escapeUri)
-        .runTests();
   }
 
   @Test
@@ -203,20 +142,6 @@ public class BasicEscapeDirectiveTest extends AbstractSoyPrintDirectiveTestCase 
         UnsafeSanitizedContentOrdainer.ordainAsSafe(
             "color:expression('foo')", SanitizedContent.ContentKind.CSS),
         filterCssValue);
-
-    new JsSrcPrintDirectiveTestBuilder()
-        .addTest("", "''", filterCssValue)
-        .addTest("green", "'green'", filterCssValue)
-        .addTest("zSoyz", "'color:expression(\\'foo\\')'", filterCssValue)
-        .addTest(
-            "zSoyz",
-            "soydata.VERY_UNSAFE.ordainSanitizedHtml('color:expression(\\'foo\\')')",
-            filterCssValue)
-        .addTest(
-            "color:expression('foo')",
-            "soydata.VERY_UNSAFE.ordainSanitizedCss('color:expression(\\'foo\\')')",
-            filterCssValue)
-        .runTests();
   }
 
   @Test

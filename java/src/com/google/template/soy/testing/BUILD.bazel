@@ -24,9 +24,6 @@ package(
 java_library(
     name = "abstract_soy_print_directive_test_case",
     srcs = ["AbstractSoyPrintDirectiveTestCase.java"],
-    data = [
-        "//testdata/javascript:soy_usegoog_lib_es5.js",
-    ],
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/jssrc/restricted",

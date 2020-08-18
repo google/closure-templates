@@ -1,3 +1,1 @@
 package(default_visibility = ["//:soy_internal"])
-
-exports_files(["soy_usegoog_lib_es5.js"])

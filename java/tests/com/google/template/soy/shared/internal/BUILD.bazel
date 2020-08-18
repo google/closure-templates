@@ -13,10 +13,6 @@ licenses(["notice"])
 java_library(
     name = "tests",
     srcs = glob(["*.java"]),
-    # needed by EscapingConventionsTest
-    data = [
-        "//testdata/javascript:soy_usegoog_lib_es5.js",
-    ],
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
