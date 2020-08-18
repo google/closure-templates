@@ -83,7 +83,7 @@ import org.objectweb.asm.Label;
  */
 final class MsgCompiler {
   private static final ConstructorRef SOY_MSG_PLACEHOLDER_PART =
-      ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class, String.class);
+      ConstructorRef.create(SoyMsgPlaceholderPart.class, String.class);
   private static final ConstructorRef SOY_MSG_PLURAL_REMAINDER_PART =
       ConstructorRef.create(SoyMsgPluralRemainderPart.class, String.class);
   private static final ConstructorRef SOY_MSG_PURAL_PART =
@@ -227,7 +227,7 @@ final class MsgCompiler {
   private Expression partToPartExpression(SoyMsgPart part) {
     if (part instanceof SoyMsgPlaceholderPart) {
       return SOY_MSG_PLACEHOLDER_PART.construct(
-          constant(((SoyMsgPlaceholderPart) part).getPlaceholderName()), constantNull(STRING_TYPE));
+          constant(((SoyMsgPlaceholderPart) part).getPlaceholderName()));
     } else if (part instanceof SoyMsgPluralPart) {
       SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) part;
       List<Expression> caseExprs = new ArrayList<>(pluralPart.getCases().size());

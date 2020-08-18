@@ -139,10 +139,10 @@ public final class InsertMsgsVisitorTest {
             .setLocaleString("x-zz")
             .setParts(
                 ImmutableList.of(
-                    new SoyMsgPlaceholderPart("START_LINK", /* placeholderExample= */ null),
+                    new SoyMsgPlaceholderPart("START_LINK"),
                     SoyMsgRawTextPart.of("zslimy"),
-                    new SoyMsgPlaceholderPart("END_LINK", /* placeholderExample= */ null),
-                    new SoyMsgPlaceholderPart("FOO", /* placeholderExample= */ null),
+                    new SoyMsgPlaceholderPart("END_LINK"),
+                    new SoyMsgPlaceholderPart("FOO"),
                     SoyMsgRawTextPart.of("zrandom")))
             .build());
     // Note: This bundle has no translation for the message "dairy{$moo}".

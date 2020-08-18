@@ -194,15 +194,13 @@ $jscomp.iteratorPrototype = function(next) {
 };
 $jscomp.iteratorFromArray = function(array, transform) {
   array instanceof String && (array += "");
-  var i = 0, iter = {next:function() {
-    if (i < array.length) {
+  var i = 0, done = !1, iter = {next:function() {
+    if (!done && i < array.length) {
       var index = i++;
       return {value:transform(index, array[index]), done:!1};
     }
-    iter.next = function() {
-      return {done:!0, value:void 0};
-    };
-    return iter.next();
+    done = !0;
+    return {done:!0, value:void 0};
   }};
   iter[Symbol.iterator] = function() {
     return iter;

@@ -64,7 +64,7 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("NAME", null),
+            new SoyMsgPlaceholderPart("NAME"),
             SoyMsgRawTextPart.of("."));
     renderer.setPlaceholder("NAME", StringData.forValue("world"));
     assertRendersAs(renderer, "Hello world.");
@@ -75,9 +75,9 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("LINK_START", null),
+            new SoyMsgPlaceholderPart("LINK_START"),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_END", null));
+            new SoyMsgPlaceholderPart("LINK_END"));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     assertRendersAs(renderer, "Hello <a>world.</a>");
@@ -89,9 +89,9 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("LINK_END", null),
+            new SoyMsgPlaceholderPart("LINK_END"),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_START", null));
+            new SoyMsgPlaceholderPart("LINK_START"));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     assertThat(assertThrows(IllegalStateException.class, renderer::status))
@@ -107,7 +107,7 @@ public final class JbcSrcRuntimeTest {
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_END", null));
+            new SoyMsgPlaceholderPart("LINK_END"));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     assertThat(assertThrows(IllegalStateException.class, renderer::status))
@@ -122,7 +122,7 @@ public final class JbcSrcRuntimeTest {
     MsgRenderer renderer =
         createRenderer(
             SoyMsgRawTextPart.of("Hello "),
-            new SoyMsgPlaceholderPart("LINK_START", null),
+            new SoyMsgPlaceholderPart("LINK_START"),
             SoyMsgRawTextPart.of("world."));
     renderer.setPlaceholderAndOrdering("LINK_START", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
@@ -139,12 +139,12 @@ public final class JbcSrcRuntimeTest {
     // placeholder
     MsgRenderer renderer =
         createRenderer(
-            new SoyMsgPlaceholderPart("LINK_START_1", null),
+            new SoyMsgPlaceholderPart("LINK_START_1"),
             SoyMsgRawTextPart.of("Hello"),
-            new SoyMsgPlaceholderPart("LINK_END", null),
-            new SoyMsgPlaceholderPart("LINK_START_2", null),
+            new SoyMsgPlaceholderPart("LINK_END"),
+            new SoyMsgPlaceholderPart("LINK_START_2"),
             SoyMsgRawTextPart.of("world."),
-            new SoyMsgPlaceholderPart("LINK_END", null));
+            new SoyMsgPlaceholderPart("LINK_END"));
     renderer.setPlaceholderAndOrdering("LINK_START_1", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholderAndOrdering("LINK_START_2", StringData.forValue("<a>"), "LINK_END");
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));

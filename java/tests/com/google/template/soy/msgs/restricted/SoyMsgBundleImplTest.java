@@ -68,7 +68,7 @@ public class SoyMsgBundleImplTest {
             .setParts(
                 ImmutableList.of(
                     SoyMsgRawTextPart.of("Hello, "),
-                    new SoyMsgPlaceholderPart("NAME", /* placeholderExample= */ null),
+                    new SoyMsgPlaceholderPart("NAME"),
                     SoyMsgRawTextPart.of("!")))
             .build());
     inMsgs.add(

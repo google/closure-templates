@@ -96,8 +96,7 @@ public final class SoyMsgBundleCompactor {
   }
 
   private SoyMsgPart compactPlaceholder(SoyMsgPlaceholderPart part) {
-    return new SoyMsgPlaceholderPart(
-        intern(part.getPlaceholderName()), /* placeholderExample=*/ null);
+    return new SoyMsgPlaceholderPart(intern(part.getPlaceholderName()));
   }
 
   private SoyMsgPart compactSelect(SoyMsgSelectPart select) {

@@ -34,9 +34,13 @@ public final class SoyMsgPlaceholderPart extends SoyMsgPart {
   /** An example for the placeholder to help translators. Optional. */
   @Nullable private final String placeholderExample;
 
+  public SoyMsgPlaceholderPart(String placeholderName) {
+    this(placeholderName, /* placeholderExample */ null);
+  }
+
   /**
    * @param placeholderName The placeholder name (as seen by translators).
-   * @param placeholderExample An optional example
+   * @param placeholderExample An optional example.
    */
   public SoyMsgPlaceholderPart(String placeholderName, @Nullable String placeholderExample) {
     this.placeholderName = checkNotNull(placeholderName);
