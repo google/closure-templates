@@ -24,8 +24,6 @@ import com.google.common.io.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -120,34 +118,7 @@ public interface SoyFileSupplier {
      * @param filePath The path to the Soy file, used for as a unique map/set key and for messages.
      */
     public static SoyFileSupplier create(URL inputFileUrl, String filePath) {
-      if (inputFileUrl.getProtocol().equals("file")) {
-        // If the URL corresponds to a local file (such as a resource during local development),
-        // open it up as a volatile file, so we can account for changes to the file.
-        URI inputFileUri;
-        try {
-          inputFileUri = inputFileUrl.toURI();
-        } catch (URISyntaxException ex) {
-          throw new RuntimeException(ex);
-        }
-        return new VolatileSoyFileSupplier(new File(inputFileUri), filePath);
-      } else {
-        return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
-      }
-    }
-
-    /**
-     * Creates a new {@code SoyFileSupplier} given a resource {@code URL}.
-     *
-     * <p>Important: This function assumes that the desired file path is returned by {@code
-     * inputFileUrl.toString()}. If this is not the case, please use {@link #create(java.net.URL,
-     * SoyFileKind, String)} instead.
-     *
-     * @see #create(java.net.URL, SoyFileKind, String)
-     * @param inputFileUrl The URL of the Soy file.
-     * @param soyFileKind The kind of this input Soy file.
-     */
-    public static SoyFileSupplier create(URL inputFileUrl) {
-      return create(inputFileUrl, inputFileUrl.toString());
+      return create(Resources.asCharSource(inputFileUrl, UTF_8), filePath);
     }
 
     /**

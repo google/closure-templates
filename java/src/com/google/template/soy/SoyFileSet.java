@@ -36,7 +36,6 @@ import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
-import com.google.template.soy.base.internal.VolatileSoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
@@ -332,9 +331,13 @@ public final class SoyFileSet {
      * @see #add(URL, String)
      * @param inputFileUrl The Soy file.
      * @return This builder.
+     * @deprecated This method is incompatible with imports since the filename is unlikely to be
+     *     correct. Please call {@link #add(URL, String)} instead, or better yet, migrate off of
+     *     SoyFileSet.
      */
+    @Deprecated
     public Builder add(URL inputFileUrl) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl));
+      return add(inputFileUrl, inputFileUrl.toString());
     }
 
     /**
@@ -357,20 +360,6 @@ public final class SoyFileSet {
      */
     public Builder add(File inputFile) {
       return addFile(SoyFileSupplier.Factory.create(inputFile));
-    }
-
-    /**
-     * Adds an input Soy file that supports checking for modifications, given a {@code File}.
-     *
-     * <p>Note: This does nothing by itself. It should be used in conjunction with a feature that
-     * actually checks for volatile files. Currently, that feature is {@link
-     * #setSoyAstCache(SoyAstCache)}.
-     *
-     * @param inputFile The Soy file.
-     * @return This builder.
-     */
-    public Builder addVolatile(File inputFile) {
-      return addFile(new VolatileSoyFileSupplier(inputFile));
     }
 
     /**
