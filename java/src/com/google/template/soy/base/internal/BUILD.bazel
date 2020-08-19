@@ -7,6 +7,7 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//java/src/com/google/template/soy/base",
+        "//java/src/com/google/template/soy/error:soy_error_api",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",

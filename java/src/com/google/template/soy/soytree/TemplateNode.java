@@ -27,6 +27,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -269,7 +270,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private final WhitespaceMode whitespaceMode;
 
   /** Strict mode context. Nonnull. */
-  private final SanitizedContentKind contentKind;
+  private final TemplateContentKind contentKind;
 
   /** Required CSS namespaces. */
   private final ImmutableList<String> requiredCssNamespaces;
@@ -445,7 +446,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     if (strictHtmlDisabled) {
       // Use the value that is explicitly set in template.
       return false;
-    } else if (contentKind != SanitizedContentKind.HTML) {
+    } else if (contentKind.getSanitizedContentKind() != SanitizedContentKind.HTML) {
       // Non-HTML templates couldn't be strictHtml.
       return false;
     } else {
@@ -462,6 +463,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Returns the content kind for strict autoescaping. */
   @Override
   public SanitizedContentKind getContentKind() {
+    return contentKind.getSanitizedContentKind();
+  }
+
+  /** Returns the template's content kind (e.g. "attributes", "element", "html", etc). */
+  public TemplateContentKind getTemplateContentKind() {
     return contentKind;
   }
 

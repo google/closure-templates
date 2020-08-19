@@ -29,6 +29,7 @@ import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -308,6 +309,16 @@ public final class CommandTagAttribute {
           INVALID_ATTRIBUTE_LIST,
           key.identifier(),
           SanitizedContentKind.attributeValues().asList());
+    }
+    return contentKind;
+  }
+
+  public Optional<TemplateContentKind> valueAsTemplateContentKind(ErrorReporter errorReporter) {
+    checkState(valueExprList == null);
+
+    Optional<TemplateContentKind> contentKind = TemplateContentKind.fromAttributeValue(value);
+    if (!contentKind.isPresent()) {
+      errorReporter.report(valueLocation, TemplateContentKind.INVALID_ATTRIBUTE_VALUE);
     }
     return contentKind;
   }

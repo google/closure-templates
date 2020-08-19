@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -97,7 +97,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /**
    * Strict mode context. This is private instead of protected to enforce use of setContentKind().
    */
-  private SanitizedContentKind contentKind;
+  private TemplateContentKind contentKind;
 
   /** The full SoyDoc, including the start/end tokens, or null. */
   protected String soyDoc;
@@ -164,20 +164,21 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
     this.attributes = attrs;
-    SanitizedContentKind kind = SanitizedContentKind.HTML;
+    TemplateContentKind kind = TemplateContentKind.HTML;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
         case "kind":
-          Optional<SanitizedContentKind> parsedKind = attribute.valueAsContentKind(errorReporter);
-          if (parsedKind.orElse(null) == SanitizedContentKind.HTML) {
+          Optional<TemplateContentKind> parsedKind =
+              attribute.valueAsTemplateContentKind(errorReporter);
+          if (parsedKind.orElse(null) == TemplateContentKind.HTML) {
             errorReporter.report(
                 attribute.getValueLocation(),
                 CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
                 "kind",
                 "html");
           }
-          kind = parsedKind.orElse(SanitizedContentKind.HTML);
+          kind = parsedKind.orElse(TemplateContentKind.HTML);
           break;
         case "requirecss":
           setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));
@@ -248,7 +249,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   // -----------------------------------------------------------------------------------------------
   // Protected helpers for fields that need extra logic when being set.
 
-  protected void setContentKind(SanitizedContentKind contentKind) {
+  protected void setContentKind(TemplateContentKind contentKind) {
     this.contentKind = contentKind;
   }
 
@@ -273,7 +274,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   }
 
   /** @return Strict mode context. */
-  public SanitizedContentKind getContentKind() {
+  public TemplateContentKind getContentKind() {
     return contentKind;
   }
 
