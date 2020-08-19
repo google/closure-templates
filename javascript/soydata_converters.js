@@ -60,6 +60,7 @@ goog.require('proto.webutil.html.types.SafeUrlProto');
 goog.require('proto.webutil.html.types.TrustedResourceUrlProto');
 goog.require('security.html.jspbconversions');
 goog.require('soydata.VERY_UNSAFE');
+goog.requireType('soydata');
 
 
 /**
