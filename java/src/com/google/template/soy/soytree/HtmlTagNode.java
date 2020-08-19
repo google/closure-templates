@@ -140,7 +140,7 @@ public abstract class HtmlTagNode extends AbstractParentSoyNode<StandaloneNode>
     return null;
   }
 
-  private static final TagName tagNameFromNode(StandaloneNode rawTextOrPrintNode) {
+  private static TagName tagNameFromNode(StandaloneNode rawTextOrPrintNode) {
     checkState(
         rawTextOrPrintNode instanceof RawTextNode || rawTextOrPrintNode instanceof PrintNode);
     return rawTextOrPrintNode instanceof RawTextNode

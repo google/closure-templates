@@ -36,6 +36,7 @@ import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNameRegistry;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.TemplatesPerFile;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -109,7 +110,7 @@ public final class PassManager {
    *
    * @param templateNameRegistry a lightweight registry of files to template names, including the
    *     dep files and the files in the current fileset.
-   * @param partialTemplateRegistryWithJustDeps registry of {@link TemplateMetadata} for just the
+   * @param partialTemplateRegistryWithJustDeps registry of {@link TemplatesPerFile} for just the
    *     deps (we don't have enough info yet to create the metadata for the current fileset).
    */
   public void runPartialTemplateRegistryPasses(
@@ -200,7 +201,7 @@ public final class PassManager {
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
-    private boolean rewritePlugins = true;
+    private boolean astRewrites = true;
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
@@ -269,11 +270,11 @@ public final class PassManager {
     }
 
     /**
-     * Determines whether or not built in plugins are rewritten. This is used by analysis tools that
-     * do not want the AST rewritten.
+     * Determines whether passes that modify the AST run. Typically analysis tools set this to false
+     * since the resulting AST will not match the original source file.
      */
-    public Builder rewritePlugins(boolean rewritePlugins) {
-      this.rewritePlugins = rewritePlugins;
+    public Builder astRewrites(boolean astRewrites) {
+      this.astRewrites = astRewrites;
       return this;
     }
 
@@ -379,7 +380,7 @@ public final class PassManager {
       addPass(new ResolvePluginsPass(pluginResolver), partialTemplateRegistryPassesBuilder);
 
       // Must come after ResolvePluginsPass.
-      if (rewritePlugins) {
+      if (astRewrites) {
         addPass(
             new RewriteDirectivesCallableAsFunctionsPass(errorReporter),
             partialTemplateRegistryPassesBuilder);
@@ -408,8 +409,9 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
       addPass(new ResolveNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to be after ResolveNames and MsgsPass
-      if (rewritePlugins) {
+      if (astRewrites) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
+        addPass(new LegacyTagNamePass(errorReporter), partialTemplateRegistryPassesBuilder);
       }
 
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
@@ -443,10 +445,9 @@ public final class PassManager {
         }
       }
 
-      // The check conformance pass needs to run on the rewritten html nodes, so it must run after
-      // HtmlRewritePass. Because conformance exits abruptly after this pass we must ensure that the
-      // AST is left in a complete state. Therefore this pass should also come after
-      // ResolveExpressionTypesPass and others.
+      // Because conformance exits abruptly after this pass we must ensure that the AST is left in a
+      // complete state. Therefore this pass should come after ResolveExpressionTypesPass and
+      // others.
       addPass(
           new SoyConformancePass(conformanceConfig, errorReporter),
           partialTemplateRegistryPassesBuilder);
@@ -463,14 +464,12 @@ public final class PassManager {
       addPass(
           new ValidateAliasesPass(errorReporter, options, loggingConfig),
           partialTemplateRegistryPassesBuilder);
-      // Needs to run after HtmlRewritePass.
       addPass(
           new KeyCommandPass(errorReporter, disableAllTypeChecking),
           partialTemplateRegistryPassesBuilder);
       addPass(new ValidateSkipNodesPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
-      // Needs to run after HtmlRewritePass and StrictHtmlValidationPass (for single root
-      // validation).
+      // Needs to run after StrictHtmlValidationPass (for single root validation).
       addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
       addPass(new CallAnnotationPass(), partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {

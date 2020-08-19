@@ -1152,7 +1152,7 @@ public final class SoyFileSet {
                   // the optimizer mutates the AST heavily which inhibits certain source analysis
                   // rules.
                   .optimize(false)
-                  .rewritePlugins(false)
+                  .astRewrites(false)
                   // skip adding extra attributes
                   .addHtmlAttributesForDebugging(false)
                   // skip the autoescaper

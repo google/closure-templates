@@ -605,11 +605,12 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         // Always resolve to false since there is no plan to support this feature in PySrc.
         return new PyExpr("False", Integer.MAX_VALUE);
       case V1_EXPRESSION:
-        throw new UnsupportedOperationException(
-            "the v1Expression function can't be used in templates compiled to Python");
+      case LEGACY_DYNAMIC_TAG:
       case UNKNOWN_JS_GLOBAL:
         throw new UnsupportedOperationException(
-            "the unknownJsGlobal function can't be used in templates compiled to Python");
+            "the "
+                + nonpluginFn.getName()
+                + " function can't be used in templates compiled to Python");
       case VE_DATA:
         return NONE;
       case MSG_WITH_ID:

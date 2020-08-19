@@ -652,7 +652,8 @@ final class TemplateAnalysis {
     @Override
     protected void visitFunctionNode(FunctionNode node) {
       if (node.getSoyFunction() instanceof BuiltinFunction) {
-        switch ((BuiltinFunction) node.getSoyFunction()) {
+        BuiltinFunction builtinFunction = (BuiltinFunction) node.getSoyFunction();
+        switch (builtinFunction) {
           case INDEX:
           case IS_FIRST:
           case IS_LAST:
@@ -666,11 +667,12 @@ final class TemplateAnalysis {
             // fall through
             break;
           case UNKNOWN_JS_GLOBAL:
-            throw new UnsupportedOperationException(
-                "the unknownJsGlobal function can't be used in templates compiled to Java");
+          case LEGACY_DYNAMIC_TAG:
           case V1_EXPRESSION:
             throw new UnsupportedOperationException(
-                "the v1Expression function can't be used in templates compiled to Java");
+                "the "
+                    + builtinFunction.getName()
+                    + " function can't be used in templates compiled to Java");
           default:
             throw new AssertionError("unexpected builtin function");
         }

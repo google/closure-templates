@@ -313,6 +313,7 @@ public final class InferenceEngineTest {
             // typically the default is what we want but in this case disable desugaring so the
             // html nodes are preserved and the autoescaper can see them
             .desugarHtmlAndStateNodes(false)
+            .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
             .parse();
     Inferences inferences = new Inferences();
     TemplateNode template = (TemplateNode) result.fileSet().getChild(0).getChild(0);

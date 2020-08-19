@@ -206,11 +206,11 @@ public final class ResolveNamesPassTest {
     assertThat(innerAVarRef.getDefnDecl()).isSameInstanceAs(innerALetNode.getVar());
   }
 
-
   @Test
   public void testLetReferencedInsideAttributeValue() {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(constructTemplateSource("{let $t: 1 /}<{$t}>"))
+        SoyFileSetParserBuilder.forFileContents(
+                constructTemplateSource("{let $t: 1 /}<{legacyDynamicTag($t)}>"))
             .parse()
             .fileSet();
     TemplateNode n = (TemplateNode) soyTree.getChild(0).getChild(0);

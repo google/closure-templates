@@ -48,6 +48,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 /** Validates restrictions specific to Soy elements. */
+@RunAfter(StrictHtmlValidationPass.class)
 public final class SoyElementPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind SOYELEMENT_CANNOT_BE_SKIPPED =

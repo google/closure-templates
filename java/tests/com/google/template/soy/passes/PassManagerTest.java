@@ -158,7 +158,6 @@ public final class PassManagerTest {
             ResolveTemplateParamTypesPass.class,
             RewriteGenderMsgsPass.class,
             SimplifyAssertNonNullPass.class,
-            SoyElementPass.class,
             StrictDepsPass.class,
             UnknownJsGlobalPass.class,
             UpgradeTemplateTypesPass.class,
@@ -191,7 +190,7 @@ public final class PassManagerTest {
                         PassManager.Builder builder =
                             builder()
                                 .setGeneralOptions(soyGeneralOptions)
-                                .rewritePlugins(rewritePlugins);
+                                .astRewrites(rewritePlugins);
                         if (allowUnknownGlobals) {
                           builder.allowUnknownGlobals();
                         }

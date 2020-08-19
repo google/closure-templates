@@ -73,8 +73,8 @@ public final class DesugarHtmlNodesPassTest {
     assertRewrite(
             "\n"
                 + "{let $t : 1 /}\n"
-                + "<{$t ? 'div' : 'span'} {if $t}onclick=\"foo()\"{/if}>\n"
-                + "</{$t ? 'div' : 'span'}>")
+                + "<{legacyDynamicTag($t ? 'div' : 'span')} {if $t}onclick=\"foo()\"{/if}>\n"
+                + "</{legacyDynamicTag($t ? 'div' : 'span')}>")
         .isEqualTo(
             ""
                 + "{let $t : 1 /}"

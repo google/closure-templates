@@ -108,6 +108,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         case REMAINDER:
           // should have been removed earlier in the compiler
         case UNKNOWN_JS_GLOBAL:
+        case LEGACY_DYNAMIC_TAG:
         case V1_EXPRESSION:
           // V1 expressions and unknownJsGlobals should not exist in jbcsrc
           throw new AssertionError();

@@ -2034,6 +2034,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                       node.numChildren() > 0
                           ? node.getChild(0).getType()
                           : UnknownType.getInstance())));
+          break;
+        case LEGACY_DYNAMIC_TAG:
+          // Should only happen when an error prevents rewriting in LegacyTagNamePass.
+          node.setType(ErrorType.getInstance());
       }
     }
 

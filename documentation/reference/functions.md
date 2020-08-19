@@ -278,6 +278,19 @@ code. The JavaScript backend will perform some simple textual replacements to
 make variable references work, but otherwise emit it as is in the generated
 JavaScript.
 
+### `legacyDynamicTag($ag)` {#legacyDynamicTag}
+
+The `legacyTagName` function is used to create an HTML tag whose name is
+determined dynamically by a print node. Wrapping the tag name expression in
+`legacyTagName` is required in order to disambiguate it with other Soy syntax.
+
+```soy
+{template .foo}
+  {@param tagName: string}
+  <{legacyDynamicTag($tagName)}>Hello!</{legacyDynamicTag($tagName)}>
+{/template}
+```
+
 ### `unknownJsGlobal(stringLiteral)` {#unknownJsGlobal}
 
 The `unknownJsGlobal` function allows code compiled to the `jssrc` backend to
