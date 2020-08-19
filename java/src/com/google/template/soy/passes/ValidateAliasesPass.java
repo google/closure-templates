@@ -23,10 +23,12 @@ import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.AliasDeclaration;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.Map;
 
 /**
  * Checks that aliases don't conflict with things that can be aliased (or their namespace prefixes).
@@ -44,6 +46,9 @@ final class ValidateAliasesPass implements CompilerFilePass {
 
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_VE =
       SoyErrorKind.of("Alias ''{0}'' conflicts with a VE of the same name.");
+
+  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_AN_IMPORT_SYMBOL =
+      SoyErrorKind.of("Alias ''{0}'' conflicts with an imported template symbol.");
 
   private final ErrorReporter errorReporter;
   private final SoyGeneralOptions options;
@@ -65,6 +70,7 @@ final class ValidateAliasesPass implements CompilerFilePass {
       if (options.getCompileTimeGlobals().containsKey(alias.alias().identifier())) {
         errorReporter.report(alias.alias().location(), ALIAS_CONFLICTS_WITH_GLOBAL, alias.alias());
       }
+
       SoyType type = registry.getType(alias.alias().identifier());
       // When running with a dummy type provider that parses all types as unknown, ignore that.
       if (type != null && type.getKind() != SoyType.Kind.UNKNOWN) {
@@ -74,6 +80,20 @@ final class ValidateAliasesPass implements CompilerFilePass {
           errorReporter.report(
               alias.alias().location(), ALIAS_CONFLICTS_WITH_TYPE_NAME, alias.alias());
         }
+      }
+
+      Map<String, TemplateName> tmplImports =
+          file.getTemplateRegistry().getSymbolsToTemplateNamesMap();
+      // Temporarily, while we migrate all template aliases to imports, ignore aliases that are
+      // identical to template imports. They don't conflict and Tricorder will remove the aliases.
+      // If two different paths are aliased to the same symbol, though, we should throw an error.
+      if (tmplImports.containsKey(alias.alias().identifier())
+          && !alias
+              .namespace()
+              .identifier()
+              .equals(tmplImports.get(alias.alias().identifier()).fullyQualifiedName())) {
+        errorReporter.report(
+            alias.alias().location(), ALIAS_CONFLICTS_WITH_AN_IMPORT_SYMBOL, alias.alias());
       }
       String conflictingNamespacedType =
           registry.findTypeWithMatchingNamespace(alias.alias().identifier());
