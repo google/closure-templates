@@ -36,11 +36,16 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /** The result of template compilation. */
-public final class CompiledTemplates {
+public class CompiledTemplates {
   private final ClassLoader loader;
   private final ConcurrentHashMap<String, TemplateData> templateNameToFactory =
       new ConcurrentHashMap<>();
   private final DelTemplateSelector<TemplateData> selector;
+
+  /** Interface for constructor. */
+  public interface Factory {
+    CompiledTemplates create(ImmutableSet<String> delTemplateNames, ClassLoader loader);
+  }
 
   /**
    * @param delTemplateNames The names of all the compiled deltemplates (the mangled names). This is
@@ -159,7 +164,7 @@ public final class CompiledTemplates {
     return selectedTemplate.factory;
   }
 
-  private TemplateData getTemplateData(String name) {
+  protected TemplateData getTemplateData(String name) {
     checkNotNull(name);
     TemplateData template = templateNameToFactory.get(name);
     if (template == null) {
@@ -186,11 +191,16 @@ public final class CompiledTemplates {
     return new TemplateData(templateClass);
   }
 
-  /** Adds all transitively called templates to {@code visited} */
-  private void collectTransitiveCallees(TemplateData templateData, Set<TemplateData> visited) {
-    if (!visited.add(templateData)) {
+  /**
+   * Adds all transitively called templates to {@code visited}. {@code templateData} may be null in
+   * the case of a stubbed template.
+   */
+  private void collectTransitiveCallees(
+      @Nullable TemplateData templateData, Set<TemplateData> visited) {
+    if (templateData == null || visited.contains(templateData)) {
       return; // avoids chasing recursive cycles
     }
+    visited.add(templateData);
     for (String callee : templateData.callees) {
       collectTransitiveCallees(getTemplateData(callee), visited);
     }
@@ -202,9 +212,12 @@ public final class CompiledTemplates {
     }
   }
 
-  /** Adds all transitively called templates to {@code visited} */
+  /**
+   * Adds all transitively called templates to {@code visited}. {@code templateData} may be null in
+   * the case of a deltemplate with no implementation or a stubbed template.
+   */
   private void collectTransitiveCallees(
-      TemplateData templateData,
+      @Nullable TemplateData templateData,
       Set<TemplateData> orderedTemplateCalls,
       Set<TemplateData> visited,
       Predicate<String> enabledDelpackages,
@@ -243,7 +256,7 @@ public final class CompiledTemplates {
 
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   @Immutable
-  private static final class TemplateData {
+  protected static final class TemplateData {
     final Class<? extends CompiledTemplate> templateClass;
     // will be null for private templates since we don't compile factories for them.
     @Nullable final CompiledTemplate.Factory factory;

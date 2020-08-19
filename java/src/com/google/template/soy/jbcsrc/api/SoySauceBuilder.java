@@ -42,6 +42,7 @@ public final class SoySauceBuilder {
   private ImmutableList<SoyFunction> userFunctions = ImmutableList.of();
   private ImmutableList<SoyPrintDirective> userDirectives = ImmutableList.of();
   private ImmutableMap<String, Supplier<Object>> userPluginInstances = ImmutableMap.of();
+  private CompiledTemplates.Factory compiledTemplatesFactory = CompiledTemplates::new;
   private ClassLoader loader;
 
   public SoySauceBuilder() {}
@@ -93,6 +94,13 @@ public final class SoySauceBuilder {
     return this;
   }
 
+  /** Non-public; for use by {@link StubbingSoySauce}. */
+  SoySauceBuilder withCustomCompiledTemplatesFactory(
+      CompiledTemplates.Factory compiledTemplatesFactory) {
+    this.compiledTemplatesFactory = compiledTemplatesFactory;
+    return this;
+  }
+
   /** Creates a SoySauce. */
   public SoySauce build() {
     SoyScopedData scopedData = new SoySimpleScope();
@@ -100,7 +108,7 @@ public final class SoySauceBuilder {
       loader = SoySauceBuilder.class.getClassLoader();
     }
     return new SoySauceImpl(
-        new CompiledTemplates(readDelTemplatesFromMetaInf(loader), loader),
+        compiledTemplatesFactory.create(readDelTemplatesFromMetaInf(loader), loader),
         scopedData.enterable(),
         userFunctions, // We don't need internal functions because they only matter at compile time
         ImmutableList.<SoyPrintDirective>builder()

@@ -1,0 +1,148 @@
+// Copyright 2020 Google Inc. All Rights Reserved.
+{namespace stubbing_test}
+
+{template .root}
+  <div>
+    Root unstubbed
+  </div>
+  {call .child}
+    {param str_param: 'foo' /}
+    {param int_param: 3 /}
+  {/call}
+{/template}
+
+{template .child}
+  {@param str_param: string}
+  {@param int_param: int}
+
+  <div>
+    Child unstubbed
+  </div>
+{/template}
+
+{template .public_parent}
+  <div>
+    Public parent
+  </div>
+  {call .private_child /}
+{/template}
+
+{template .private_child visibility="private"}
+  <span>Private child</span>
+{/template}
+
+{template .first}
+  <div>
+    1
+  </div>
+  {call .second /}
+{/template}
+
+{template .second visibility="private"}
+  <div>
+    2
+  </div>
+  {call .third /}
+{/template}
+
+{template .third}
+  <div>
+    3
+  </div>
+{/template}
+
+{template .js kind="js"}
+  Unstubbed js
+{/template}
+
+{template .uri kind="uri"}
+  Unstubbed uri
+{/template}
+
+{template .trusted_resource_uri kind="trusted_resource_uri"}
+  Unstubbed trusted resource URI
+{/template}
+
+{template .attributes kind="attributes"}
+  Unstubbed
+  attributes
+{/template}
+
+{template .css kind="css"}
+  Unstubbed css
+{/template}
+
+{template .text kind="text"}
+  Unstubbed text
+{/template}
+
+{template .default_value_test}
+  <div>
+    {call .default_value_child}
+      {param regular_param: 'bar' /}
+      {param overridden_param: 'overridden' /}
+    {/call}
+  </div>
+{/template}
+
+{template .default_value_child}
+  {@param regular_param: string}
+  {@param overridden_param: string = 'should be overridden'}
+  {@param default_param: string = 'default value'}
+
+  <span>Default value child</span>
+{/template}
+
+{template .multiple_test kind="text"}
+  {for $i in range(1, 4)}
+    {$i}{sp}
+    {call .multiple_child}
+      {param square: $i * $i /}
+    {/call}
+    {\n}
+  {/for}
+{/template}
+
+{template .multiple_child kind="text"}
+  {@param square: int}
+
+  Child {$square}
+{/template}
+
+{template .dynamic_call_test kind="text"}
+  {@param tplToRender: string}
+
+  {let $tpl: $tplToRender == 'a' ? template(.dynamic_call_child_a) : template(.dynamic_call_child_b)
+      /}
+
+  {call $tpl /}
+{/template}
+
+{template .dynamic_call_child_a kind="text"}
+  A unstubbed
+{/template}
+
+{template .dynamic_call_child_b kind="text"}
+  B unstubbed
+{/template}
+
+{template .transitive_deps_check requirecss="stubbing_test.transitive_deps_check"}
+  {@inject transitive_deps_check_ij: string}
+
+  {$transitive_deps_check_ij}
+  {call .transitive_deps_check_child /}
+{/template}
+
+{template .transitive_deps_check_child requirecss="stubbing_test.transitive_deps_check_child"}
+  {@inject transitive_deps_check_child_ij: string}
+
+  {$transitive_deps_check_child_ij}
+  {call .transitive_deps_check_grandchild /}
+{/template}
+
+{template .transitive_deps_check_grandchild
+    requirecss="stubbing_test.transitive_deps_check_grandchild"}
+  {@inject transitive_deps_check_grandchild_ij: string}
+
+  {$transitive_deps_check_grandchild_ij}
+{/template}
