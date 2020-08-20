@@ -170,13 +170,12 @@ public final class CallBasicNode extends CallNode {
     } else if (getDataExpr() != null) {
       commandText.append(" data=\"").append(getDataExpr().toSourceString()).append('"');
     }
-    if (getUserSuppliedPhName() != null) {
-      commandText.append(" phname=\"").append(getUserSuppliedPhName()).append('"');
-    }
-    if (getUserSuppliedPhExample() != null) {
-      commandText.append(" phex=\"").append(getUserSuppliedPhExample()).append('"');
-    }
-
+    getPlaceholder()
+        .userSuppliedName()
+        .ifPresent(phname -> commandText.append(" phname=\"").append(phname).append('"'));
+    getPlaceholder()
+        .example()
+        .ifPresent(phex -> commandText.append(" phex=\"").append(phex).append('"'));
     return commandText.toString();
   }
 

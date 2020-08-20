@@ -17,19 +17,20 @@
 package com.google.template.soy.soytree;
 
 import com.google.auto.value.AutoValue;
+import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
-// TODO(b/161453282): Add placeholder example, user-supplied name, and user-supplied name source
-// location field to `MessagePlaceholder`.
 /**
  * Meta-data about a placeholder, including original user-supplied values.
  *
  * <p>This also includes static utility functions for validating user-supplied placeholder values.
  */
+@Immutable
 @AutoValue
 public abstract class MessagePlaceholder {
   public static final String PHNAME_ATTR = "phname";
@@ -53,6 +54,7 @@ public abstract class MessagePlaceholder {
   /**
    * Returns {@code example} if it's valid; otherwise, returns {@code null} and reports the error.
    */
+  @Nullable
   static String validatePlaceholderExample(
       String example, SourceLocation location, ErrorReporter reporter) {
     if (!example.isEmpty()) {
@@ -63,40 +65,83 @@ public abstract class MessagePlaceholder {
   }
 
   /** Message placeholder name and example. */
+  @Immutable
   @AutoValue
   public abstract static class Summary {
     public static Summary create(String name) {
-      return create(name, /* example */ null);
+      return create(name, /* example */ Optional.empty());
     }
 
-    public static Summary create(String name, @Nullable String example) {
+    public static Summary create(String name, Optional<String> example) {
       return new AutoValue_MessagePlaceholder_Summary(name, example);
     }
 
     public abstract String name();
 
-    @Nullable
-    public abstract String example();
+    public abstract Optional<String> example();
   }
 
   public static MessagePlaceholder create(String name) {
-    return create(name, /* isUserSupplied */ false);
+    return create(name, /* example */ Optional.empty());
   }
 
-  public static MessagePlaceholder create(String name, boolean isUserSupplied) {
-    return new AutoValue_MessagePlaceholder(Summary.create(name), isUserSupplied);
+  public static MessagePlaceholder create(String name, Optional<String> example) {
+    return new AutoValue_MessagePlaceholder(
+        Summary.create(name, example),
+        /* userSuppliedName */ Optional.empty(),
+        /* userSuppliedNameLocation */ Optional.empty());
+  }
+
+  /**
+   * Create {@code MessagePlaceholder} with a user-supplied name that's the same as {@code name}.
+   */
+  public static MessagePlaceholder createWithUserSuppliedName(
+      String userSuppliedName, SourceLocation userSuppliedNameLocation) {
+    return createWithUserSuppliedName(
+        /* name */ userSuppliedName, userSuppliedName, userSuppliedNameLocation);
+  }
+
+  /**
+   * Create {@code MessagePlaceholder} with a user-supplied name that's different from {@code name}.
+   */
+  public static MessagePlaceholder createWithUserSuppliedName(
+      String name, String userSuppliedName, SourceLocation userSuppliedNameLocation) {
+    return createWithUserSuppliedName(
+        name, userSuppliedName, userSuppliedNameLocation, /* example */ Optional.empty());
+  }
+
+  /**
+   * Create {@code MessagePlaceholder} with a user-supplied name that's different from {@code name},
+   * and a user-supplied example.
+   */
+  public static MessagePlaceholder createWithUserSuppliedName(
+      String name,
+      String userSuppliedName,
+      SourceLocation userSuppliedNameLocation,
+      Optional<String> example) {
+    return new AutoValue_MessagePlaceholder(
+        Summary.create(name, example),
+        Optional.of(userSuppliedName),
+        Optional.of(userSuppliedNameLocation));
   }
 
   public abstract Summary summary();
 
-  public abstract boolean isUserSupplied();
+  /**
+   * User-supplied placeholder name, or {@code null} if not user-supplied. If present, this is
+   * generally the same as {@code name}, except that {@code name} is often concerted to UPPER_SNAKE
+   * case.
+   */
+  public abstract Optional<String> userSuppliedName();
+
+  /** Location of the user-supplied placeholder name, or {@code null} if not user-supplied. */
+  public abstract Optional<SourceLocation> userSuppliedNameLocation();
 
   public String name() {
     return summary().name();
   }
 
-  @Nullable
-  public String example() {
+  public Optional<String> example() {
     return summary().example();
   }
 }

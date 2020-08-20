@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.base.internal.BaseUtils.convertToUpperUnderscore;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
@@ -28,7 +29,6 @@ import static com.google.template.soy.soytree.MsgSubstUnitPlaceholderNameUtils.g
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprEquivalence;
@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -72,11 +73,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
-  /** The user-supplied placeholder name, or null if not supplied or not applicable. */
-  @Nullable private final String userSuppliedPlaceholderName;
-
-  /** The user-supplied placeholder example, or null if not supplied. */
-  @Nullable private final String userSuppliedPlaceholderExample;
+  private final MessagePlaceholder placeholder;
 
   @Nullable private HtmlContext htmlContext;
 
@@ -92,20 +89,21 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     this.isImplicit = isImplicit;
     this.expr = new ExprRootNode(expr);
 
-    String placeholderName = null;
-    String placeholderExample = null;
     this.attributes = ImmutableList.copyOf(attributes);
+    SourceLocation phNameLocation = null;
+    String phName = null;
+    Optional<String> phExample = Optional.empty();
     for (CommandTagAttribute attribute : attributes) {
       switch (attribute.getName().identifier()) {
         case PHNAME_ATTR:
-          placeholderName =
-              validatePlaceholderName(
-                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          phNameLocation = attribute.getValueLocation();
+          phName = validatePlaceholderName(attribute.getValue(), phNameLocation, errorReporter);
           break;
         case PHEX_ATTR:
-          placeholderExample =
-              validatePlaceholderExample(
-                  attribute.getValue(), attribute.getValueLocation(), errorReporter);
+          phExample =
+              Optional.ofNullable(
+                  validatePlaceholderExample(
+                      attribute.getValue(), attribute.getValueLocation(), errorReporter));
           break;
         default:
           errorReporter.report(
@@ -116,8 +114,12 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
               ImmutableList.of(PHNAME_ATTR, PHEX_ATTR));
       }
     }
-    this.userSuppliedPlaceholderName = placeholderName;
-    this.userSuppliedPlaceholderExample = placeholderExample;
+    this.placeholder =
+        (phName == null)
+            ? MessagePlaceholder.create(
+                genNaiveBaseNameForExpr(expr, FALLBACK_BASE_PLACEHOLDER_NAME), phExample)
+            : MessagePlaceholder.createWithUserSuppliedName(
+                convertToUpperUnderscore(phName), phName, phNameLocation, phExample);
   }
 
   /**
@@ -129,8 +131,7 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     super(orig, copyState);
     this.isImplicit = orig.isImplicit;
     this.expr = orig.expr.copy(copyState);
-    this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
-    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
+    this.placeholder = orig.placeholder;
     this.htmlContext = orig.htmlContext;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
@@ -182,26 +183,9 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     return attributes;
   }
 
-  @Nullable
   @Override
-  public String getUserSuppliedPhName() {
-    return userSuppliedPlaceholderName;
-  }
-
-  @Nullable
-  @Override
-  public String getUserSuppliedPhExample() {
-    return userSuppliedPlaceholderExample;
-  }
-
-  @Override
-  public String genBasePhName() {
-
-    if (userSuppliedPlaceholderName != null) {
-      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
-    }
-
-    return genNaiveBaseNameForExpr(expr.getRoot(), FALLBACK_BASE_PLACEHOLDER_NAME);
+  public MessagePlaceholder getPlaceholder() {
+    return placeholder;
   }
 
   @Override
@@ -236,13 +220,15 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
         return false;
       }
       PrintNode other = ((SamenessKeyImpl) obj).node;
-      return Objects.equals(node.getUserSuppliedPhName(), other.getUserSuppliedPhName())
+      return Objects.equals(
+              node.getPlaceholder().userSuppliedName(), other.getPlaceholder().userSuppliedName())
           && PrintEquivalence.get().equivalent(node, other);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(node.getUserSuppliedPhName(), PrintEquivalence.get().wrap(node));
+      return Objects.hash(
+          node.getPlaceholder().userSuppliedName(), PrintEquivalence.get().wrap(node));
     }
   }
 
@@ -258,12 +244,10 @@ public final class PrintNode extends AbstractParentCommandNode<PrintDirectiveNod
     for (PrintDirectiveNode child : getChildren()) {
       sb.append(' ').append(child.toSourceString());
     }
-    if (userSuppliedPlaceholderName != null) {
-      sb.append(" phname=\"").append(userSuppliedPlaceholderName).append('"');
-    }
-    if (userSuppliedPlaceholderExample != null) {
-      sb.append(" phex=\"").append(userSuppliedPlaceholderExample).append('"');
-    }
+    placeholder
+        .userSuppliedName()
+        .ifPresent(phname -> sb.append(" phname=\"").append(phname).append('"'));
+    placeholder.example().ifPresent(phex -> sb.append(" phex=\"").append(phex).append('"'));
     return sb.toString();
   }
 

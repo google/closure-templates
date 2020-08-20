@@ -16,6 +16,7 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.base.internal.BaseUtils.convertToUpperUnderscore;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.validatePlaceholderExample;
@@ -26,7 +27,6 @@ import com.google.common.base.Ascii;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.NodeVisitor;
@@ -35,6 +35,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
 import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -58,45 +59,53 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   public static MsgHtmlTagNode fromNode(
       int id, HtmlTagNode tagNode, @Nullable VeLogNode velogParent, ErrorReporter errorReporter) {
-    RawTextNode userSpecifiedPhExample = getAttributeValue(tagNode, PHEX_ATTR, errorReporter);
-    String phExample = null;
+    RawTextNode phExampleNode = getAttributeValue(tagNode, PHEX_ATTR, errorReporter);
+    Optional<String> phExample =
+        Optional.ofNullable(
+            (phExampleNode == null)
+                ? null
+                : validatePlaceholderExample(
+                    phExampleNode.getRawText(), phExampleNode.getSourceLocation(), errorReporter));
+    RawTextNode userSuppliedPhNameNode = getAttributeValue(tagNode, PHNAME_ATTR, errorReporter);
 
-    if (userSpecifiedPhExample != null) {
-      phExample =
-          validatePlaceholderExample(
-              userSpecifiedPhExample.getRawText(),
-              userSpecifiedPhExample.getSourceLocation(),
-              errorReporter);
-    }
-    RawTextNode userSpecifiedPhName = getAttributeValue(tagNode, PHNAME_ATTR, errorReporter);
-    String phName = null;
-    if (userSpecifiedPhName != null) {
-      phName =
-          validatePlaceholderName(
-              userSpecifiedPhName.getRawText(),
-              userSpecifiedPhName.getSourceLocation(),
-              errorReporter);
-    }
     // calculate after removing the attributes, since we don't care about example and the phname is
     // part of the samenesskey
     String fullTagText = getFullTagText(tagNode);
     String lcTagName = getLcTagName(errorReporter, tagNode.getTagName());
+    boolean isSelfEnding = false;
     if (tagNode instanceof HtmlCloseTagNode) {
       // TODO(lukes): the lcTagName logic below requires this leading '/' for close tags.  Just make
       // it understand the node type instead.
       lcTagName = "/" + lcTagName;
+    } else if (tagNode instanceof HtmlOpenTagNode) {
+      isSelfEnding = ((HtmlOpenTagNode) tagNode).isSelfClosing();
     }
+
     // Include the velog node sameness key if we are the open or close tag node of the velog.
     // close tag nodes don't really need the sameness key given our implementations.
     VeLogNode.SamenessKey key = velogParent != null ? velogParent.getSamenessKey() : null;
+    MessagePlaceholder placeholder = null;
+    if (userSuppliedPhNameNode != null) {
+      SourceLocation phNameLocation = userSuppliedPhNameNode.getSourceLocation();
+      String phName =
+          validatePlaceholderName(
+              userSuppliedPhNameNode.getRawText(), phNameLocation, errorReporter);
+      if (phName != null) {
+        placeholder =
+            MessagePlaceholder.createWithUserSuppliedName(
+                convertToUpperUnderscore(phName), phName, phNameLocation, phExample);
+      }
+    }
+    if (placeholder == null) {
+      placeholder = MessagePlaceholder.create(genBasePhName(lcTagName, isSelfEnding), phExample);
+    }
     return new MsgHtmlTagNode(
         id,
         tagNode.getSourceLocation(),
-        phName,
-        phExample,
+        placeholder,
         lcTagName,
-        tagNode instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) tagNode).isSelfClosing(),
-        fullTagText != null ? SamenessKeyImpl.create(phName, fullTagText, key) : null,
+        isSelfEnding,
+        fullTagText != null ? SamenessKeyImpl.create(placeholder.name(), fullTagText, key) : null,
         tagNode);
   }
 
@@ -217,24 +226,18 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
 
   @Nullable private final SamenessKey samenessKey;
 
-  /** The user-supplied placeholder name, or null if not supplied or not applicable. */
-  @Nullable private final String userSuppliedPlaceholderName;
-
-  /** The user-supplied placeholder example, or null if not supplied or not applicable. */
-  @Nullable private final String userSuppliedPlaceholderExample;
+  private final MessagePlaceholder placeholder;
 
   private MsgHtmlTagNode(
       int id,
       SourceLocation sourceLocation,
-      @Nullable String userSuppliedPlaceholderName,
-      @Nullable String userSuppliedPlaceholderExample,
+      MessagePlaceholder placeholder,
       String lcTagName,
       boolean isSelfEnding,
       @Nullable SamenessKey samenessKey,
       HtmlTagNode child) {
     super(id, sourceLocation);
-    this.userSuppliedPlaceholderName = userSuppliedPlaceholderName;
-    this.userSuppliedPlaceholderExample = userSuppliedPlaceholderExample;
+    this.placeholder = placeholder;
     this.lcTagName = lcTagName;
     this.isSelfEnding = isSelfEnding;
     this.samenessKey = samenessKey;
@@ -251,8 +254,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     this.lcTagName = orig.lcTagName;
     this.isSelfEnding = orig.isSelfEnding;
     this.samenessKey = orig.samenessKey != null ? orig.samenessKey.copy(copyState) : null;
-    this.userSuppliedPlaceholderName = orig.userSuppliedPlaceholderName;
-    this.userSuppliedPlaceholderExample = orig.userSuppliedPlaceholderExample;
+    this.placeholder = orig.placeholder;
     // we may have handed out a copy to ourselves via genSamenessKey()
     copyState.updateRefs(orig, this);
   }
@@ -268,16 +270,9 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return lcTagName;
   }
 
-  @Nullable
   @Override
-  public String getUserSuppliedPhName() {
-    return userSuppliedPlaceholderName;
-  }
-
-  @Nullable
-  @Override
-  public String getUserSuppliedPhExample() {
-    return userSuppliedPlaceholderExample;
+  public MessagePlaceholder getPlaceholder() {
+    return placeholder;
   }
 
   private static final CharMatcher INVALID_PLACEHOLDER_CHARS =
@@ -288,13 +283,7 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
           .negate()
           .precomputed();
 
-  @Override
-  public String genBasePhName() {
-
-    if (userSuppliedPlaceholderName != null) {
-      return BaseUtils.convertToUpperUnderscore(userSuppliedPlaceholderName);
-    }
-
+  private static String genBasePhName(String lcTagName, boolean isSelfEnding) {
     boolean isEndTag;
     String baseLcTagName;
     if (lcTagName.startsWith("/")) {
@@ -372,13 +361,10 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
       }
     }
 
-    if (userSuppliedPlaceholderExample != null) {
-      sb.insert(indexBeforeClose, " phex=\"" + userSuppliedPlaceholderExample + "\"");
-    }
-
-    if (userSuppliedPlaceholderName != null) {
-      sb.insert(indexBeforeClose, " phname=\"" + userSuppliedPlaceholderName + "\"");
-    }
+    placeholder.example().ifPresent(phex -> sb.insert(indexBeforeClose, " phex=\"" + phex + "\""));
+    placeholder
+        .userSuppliedName()
+        .ifPresent(phname -> sb.insert(indexBeforeClose, " phname=\"" + phname + "\""));
 
     return sb.toString();
   }

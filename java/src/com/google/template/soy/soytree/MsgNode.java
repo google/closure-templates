@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.soytree.CommandTagAttribute.MISSING_ATTRIBUTE;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
-import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
@@ -50,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -78,16 +78,16 @@ public final class MsgNode extends AbstractBlockCommandNode
 
   private static final SoyErrorKind BASE_NAME_COLLISION_SINGLE =
       SoyErrorKind.of(
-          "Placeholder ''{0}'' collision with ''{1}'' at {2},"
+          "Placeholder ''{0}'' collision with element at {1},"
               + " please collapse them into a single Soy variable,"
               + " or change `phname` of at last one to avoid conflict (go/soy-msg#msg).");
 
   private static final SoyErrorKind BASE_NAME_COLLISION_MULTIPLE =
       SoyErrorKind.of(
-          "Placeholder ''{0}'' collision with ''{1}'' at {2},"
+          "Placeholder ''{0}'' collision with element at {1},"
               + " please collapse them into a single Soy variable,"
               + " or change `phname`  of at last one to avoid conflict,"
-              + " ditto for these {3} (go/soy-msg#msg).");
+              + " ditto for these {2} (go/soy-msg#msg).");
 
   private static final SoyErrorKind INCOMPATIBLE_PLACEHOLDER_EXAMPLES =
       SoyErrorKind.of(
@@ -578,10 +578,7 @@ public final class MsgNode extends AbstractBlockCommandNode
           if (!baseNameToRepNodesMap.containsKey(baseName)) {
             // Case 1: First occurrence of this base name.
             baseNameToRepNodesMap.put(baseName, substUnit);
-            String example = getPhExample(substUnit);
-            if (example != null) {
-              repNodeToExample.put(substUnit, example);
-            }
+            getPhExample(substUnit).ifPresent(example -> repNodeToExample.put(substUnit, example));
           } else {
             boolean isNew = true;
             for (MsgSubstUnitNode repNode : baseNameToRepNodesMap.get(baseName)) {
@@ -600,10 +597,8 @@ public final class MsgNode extends AbstractBlockCommandNode
               // Case 3: New representative node that has the same base name as another node we've
               // seen, but should not use the same var name.
               baseNameToRepNodesMap.put(baseName, substUnit);
-              String example = getPhExample(substUnit);
-              if (example != null) {
-                repNodeToExample.put(substUnit, example);
-              }
+              getPhExample(substUnit)
+                  .ifPresent(example -> repNodeToExample.put(substUnit, example));
             }
           }
         }
@@ -633,21 +628,18 @@ public final class MsgNode extends AbstractBlockCommandNode
      * Examples are compatible if either only one instance sets an example, or if they set the same
      * example.
      */
+    @Nullable
     private static String checkCompatibleExamples(
         MsgSubstUnitNode left, MsgSubstUnitNode right, ErrorReporter reporter) {
-      String leftExample = getPhExample(left);
-      String rightExample = getPhExample(right);
-      if (leftExample == null) {
-        return rightExample;
+      Optional<String> leftExample = getPhExample(left);
+      Optional<String> rightExample = getPhExample(right);
+      if (leftExample.isPresent()
+          && rightExample.isPresent()
+          && !leftExample.equals(rightExample)) {
+        reporter.report(left.getSourceLocation(), INCOMPATIBLE_PLACEHOLDER_EXAMPLES);
+        return null;
       }
-      if (rightExample == null) {
-        return leftExample;
-      }
-      if (leftExample.equals(rightExample)) {
-        return leftExample;
-      }
-      reporter.report(left.getSourceLocation(), INCOMPATIBLE_PLACEHOLDER_EXAMPLES);
-      return null;
+      return leftExample.orElse(rightExample.orElse(null));
     }
 
     abstract ImmutableListMultimap<String, MsgSubstUnitNode> baseNameToRepNodesMap();
@@ -658,16 +650,8 @@ public final class MsgNode extends AbstractBlockCommandNode
   }
 
   /** @return Location of `phname` attribute value, if found; otherwise, node location. */
-  @Nullable
-  private static SourceLocation phnameLocation(SoyNode node) {
-    if (node instanceof CommandTagAttributesHolder) {
-      for (CommandTagAttribute attribute : ((CommandTagAttributesHolder) node).getAttributes()) {
-        if (attribute.hasName(PHNAME_ATTR)) {
-          return attribute.getValueLocation();
-        }
-      }
-    }
-    return node.getSourceLocation();
+  private static SourceLocation phnameLocation(MsgSubstUnitNode node) {
+    return node.getPlaceholder().userSuppliedNameLocation().orElse(node.getSourceLocation());
   }
 
   /**
@@ -710,14 +694,13 @@ public final class MsgNode extends AbstractBlockCommandNode
             ++nextSuffix;
           } while (representativeNodes.baseNameToRepNodesMap().containsKey(newName));
           substUnitVarNameToRepNodeMap.put(newName, repNode);
-          if (repNode.getPlaceholder().isUserSupplied()) {
+          if (repNode.getPlaceholder().userSuppliedName().isPresent()) {
             MsgSubstUnitNode exampleCollidingNode = nodesWithSameBaseName.get(i == 0 ? 1 : 0);
             if (representativeNodes.repNodeToNonRepNodesMap().containsKey(repNode)) {
               errorReporter.report(
                   phnameLocation(repNode),
                   BASE_NAME_COLLISION_MULTIPLE,
                   baseName,
-                  exampleCollidingNode.toSourceString(),
                   phnameLocation(exampleCollidingNode).toLineColumnString(),
                   representativeNodes.repNodeToNonRepNodesMap().get(repNode).stream()
                       .map(node -> phnameLocation(node).toLineColumnString())
@@ -727,7 +710,6 @@ public final class MsgNode extends AbstractBlockCommandNode
                   phnameLocation(repNode),
                   BASE_NAME_COLLISION_SINGLE,
                   baseName,
-                  exampleCollidingNode.toSourceString(),
                   phnameLocation(exampleCollidingNode).toLineColumnString());
             }
           }
@@ -745,7 +727,8 @@ public final class MsgNode extends AbstractBlockCommandNode
       substUnitNodeToVarNameMap.put(
           entry.getValue(),
           MessagePlaceholder.Summary.create(
-              entry.getKey(), representativeNodes.repNodeToPhExample().get(entry.getValue())));
+              entry.getKey(),
+              Optional.ofNullable(representativeNodes.repNodeToPhExample().get(entry.getValue()))));
     }
 
     // Add mappings for the non-representative nodes.
@@ -761,10 +744,10 @@ public final class MsgNode extends AbstractBlockCommandNode
         ImmutableMap.copyOf(substUnitNodeToVarNameMap));
   }
 
-  private static String getPhExample(MsgSubstUnitNode node) {
+  private static Optional<String> getPhExample(MsgSubstUnitNode node) {
     if (node instanceof MsgPlaceholderNode) {
-      return ((MsgPlaceholderNode) node).getPhExample();
+      return ((MsgPlaceholderNode) node).getPlaceholder().example();
     }
-    return null;
+    return Optional.empty();
   }
 }

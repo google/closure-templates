@@ -248,7 +248,9 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
       if (isValidMsgPlaceholderPosition) {
         return;
       }
-      if (node.getUserSuppliedPhName() != null || node.getUserSuppliedPhExample() != null) {
+      boolean hasUserSuppliedName = node.getPlaceholder().userSuppliedName().isPresent();
+      boolean hasExample = node.getPlaceholder().example().isPresent();
+      if (hasUserSuppliedName || hasExample) {
         MsgNode msg = node.getNearestAncestor(MsgNode.class);
         String extra = "";
         if (msg != null) {
@@ -263,10 +265,10 @@ final class InsertMsgPlaceholderNodesPass implements CompilerFilePass {
             extra = " Did you mean to put this attribute on the surrounding html tag?";
           }
         }
-        if (node.getUserSuppliedPhName() != null) {
+        if (hasUserSuppliedName) {
           errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER, PHNAME_ATTR, extra);
         }
-        if (node.getUserSuppliedPhExample() != null) {
+        if (hasExample) {
           errorReporter.report(node.getSourceLocation(), INVALID_PLACEHOLDER, PHEX_ATTR, extra);
         }
       }

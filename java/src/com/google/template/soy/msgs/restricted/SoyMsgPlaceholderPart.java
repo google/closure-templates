@@ -19,8 +19,9 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.MoreObjects;
+import com.google.template.soy.soytree.MessagePlaceholder;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  * Represents a placeholder within a message.
@@ -28,34 +29,33 @@ import javax.annotation.Nullable;
  */
 public final class SoyMsgPlaceholderPart extends SoyMsgPart {
 
-  /** The placeholder name (as seen by translators). */
-  private final String placeholderName;
-
-  /** An example for the placeholder to help translators. Optional. */
-  @Nullable private final String placeholderExample;
+  /** The placeholder (as seen by translators). */
+  private final MessagePlaceholder.Summary placeholder;
 
   public SoyMsgPlaceholderPart(String placeholderName) {
-    this(placeholderName, /* placeholderExample */ null);
+    this(placeholderName, /* placeholderExample */ Optional.empty());
   }
 
-  /**
-   * @param placeholderName The placeholder name (as seen by translators).
-   * @param placeholderExample An optional example.
-   */
-  public SoyMsgPlaceholderPart(String placeholderName, @Nullable String placeholderExample) {
-    this.placeholderName = checkNotNull(placeholderName);
-    this.placeholderExample = placeholderExample;
+  /** @param placeholderExample An optional example. */
+  public SoyMsgPlaceholderPart(String placeholderName, Optional<String> placeholderExample) {
+    this(MessagePlaceholder.Summary.create(checkNotNull(placeholderName), placeholderExample));
   }
 
+  /** @param placeholder Placeholder data. */
+  public SoyMsgPlaceholderPart(MessagePlaceholder.Summary placeholder) {
+    this.placeholder = placeholder;
+  }
+
+  // TODO(user): Replace with getPlaceholder().name().
   /** Returns the placeholder name (as seen by translators). */
   public String getPlaceholderName() {
-    return placeholderName;
+    return placeholder.name();
   }
 
+  // TODO(user): Replace with getPlaceholder().example().
   /** Returns the (optional) placeholder example (as seen by translators). */
-  @Nullable
-  public String getPlaceholderExample() {
-    return placeholderExample;
+  public Optional<String> getPlaceholderExample() {
+    return placeholder.example();
   }
 
   @Override
@@ -63,22 +63,20 @@ public final class SoyMsgPlaceholderPart extends SoyMsgPart {
     if (!(other instanceof SoyMsgPlaceholderPart)) {
       return false;
     }
-    SoyMsgPlaceholderPart otherPlacholder = (SoyMsgPlaceholderPart) other;
-    return placeholderName.equals(otherPlacholder.placeholderName)
-        && Objects.equals(placeholderExample, otherPlacholder.placeholderExample);
+    return placeholder.equals(((SoyMsgPlaceholderPart) other).placeholder);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(SoyMsgPlaceholderPart.class, placeholderName, placeholderExample);
+    return Objects.hash(SoyMsgPlaceholderPart.class, placeholder);
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper("Placeholder")
         .omitNullValues()
-        .addValue(placeholderName)
-        .add("ex", placeholderExample)
+        .addValue(placeholder.name())
+        .add("ex", placeholder.example().orElse(null))
         .toString();
   }
 }

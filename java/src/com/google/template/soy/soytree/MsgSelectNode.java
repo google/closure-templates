@@ -33,6 +33,7 @@ import com.google.template.soy.soytree.SoyNode.MsgBlockNode;
 import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -55,26 +56,18 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   private final SourceLocation openTagLocation;
 
-  /**
-   * The base select var name (what the translator sees). Null if it should be generated from the
-   * select expression.
-   */
-  @Nullable private final String baseSelectVarName;
-
-  private final boolean isUserSuppliedPhName;
+  private final MessagePlaceholder placeholder;
 
   private MsgSelectNode(
       int id,
       SourceLocation sourceLocation,
       SourceLocation openTagLocation,
       ExprRootNode selectExpr,
-      @Nullable String baseSelectVarName,
-      boolean isUserSuppliedPhName) {
+      MessagePlaceholder placeholder) {
     super(id, sourceLocation, "select");
     this.openTagLocation = openTagLocation;
     this.selectExpr = selectExpr;
-    this.baseSelectVarName = baseSelectVarName;
-    this.isUserSuppliedPhName = isUserSuppliedPhName;
+    this.placeholder = placeholder;
   }
 
   /**
@@ -86,8 +79,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
     super(orig, copyState);
     this.openTagLocation = orig.openTagLocation;
     this.selectExpr = orig.selectExpr.copy(copyState);
-    this.baseSelectVarName = orig.baseSelectVarName;
-    this.isUserSuppliedPhName = orig.isUserSuppliedPhName;
+    this.placeholder = orig.placeholder;
     copyState.updateRefs(orig, this);
   }
 
@@ -107,12 +99,12 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
       ExprRootNode selectExpr,
       List<CommandTagAttribute> attributes,
       ErrorReporter errorReporter) {
-    String baseSelectVarName = null;
+    SourceLocation phNameLocation = null;
+    String phName = null;
     for (CommandTagAttribute attribute : attributes) {
       if (PHNAME_ATTR.equals(attribute.getName().identifier())) {
-        baseSelectVarName =
-            validatePlaceholderName(
-                attribute.getValue(), attribute.getValueLocation(), errorReporter);
+        phNameLocation = attribute.getValueLocation();
+        phName = validatePlaceholderName(attribute.getValue(), phNameLocation, errorReporter);
       } else {
         errorReporter.report(
             attribute.getName().location(),
@@ -127,8 +119,10 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
         sourceLocation,
         openTagLocation,
         selectExpr,
-        baseSelectVarName,
-        /* isUserSuppliedPhName */ baseSelectVarName != null);
+        (phName == null)
+            ? MessagePlaceholder.create(
+                genNaiveBaseNameForExpr(selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME))
+            : MessagePlaceholder.createWithUserSuppliedName(phName, phNameLocation));
   }
 
   /**
@@ -151,8 +145,10 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
         sourceLocation,
         openTagLocation,
         genderExpr,
-        baseSelectVarName,
-        /* isUserSuppliedPhName */ false);
+        (baseSelectVarName == null)
+            ? MessagePlaceholder.create(
+                genNaiveBaseNameForExpr(genderExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME))
+            : MessagePlaceholder.create(baseSelectVarName));
   }
 
   @Override
@@ -178,11 +174,7 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
   /** Returns the base select var name (what the translator sees). */
   @Override
   public MessagePlaceholder getPlaceholder() {
-    return MessagePlaceholder.create(
-        (baseSelectVarName != null)
-            ? baseSelectVarName
-            : genNaiveBaseNameForExpr(selectExpr.getRoot(), FALLBACK_BASE_SELECT_VAR_NAME),
-        isUserSuppliedPhName);
+    return placeholder;
   }
 
   @Override
@@ -197,9 +189,10 @@ public final class MsgSelectNode extends AbstractParentCommandNode<CaseOrDefault
 
   @Override
   public String getCommandText() {
-    return (baseSelectVarName == null)
-        ? selectExpr.toSourceString()
-        : selectExpr.toSourceString() + " phname=\"" + baseSelectVarName + "\"";
+    Optional<String> phname = placeholder.userSuppliedName();
+    return phname.isPresent()
+        ? selectExpr.toSourceString() + " phname=\"" + phname.get() + "\""
+        : selectExpr.toSourceString();
   }
 
   @Override

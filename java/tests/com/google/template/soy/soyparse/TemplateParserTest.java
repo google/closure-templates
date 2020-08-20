@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyError;
@@ -50,6 +51,7 @@ import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
+import com.google.template.soy.soytree.MessagePlaceholder;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
@@ -949,7 +951,7 @@ public final class TemplateParserTest {
     PrintNode pn0 = (PrintNode) nodes.get(0);
     assertEquals("$boo.foo", pn0.getExpr().toSourceString());
     assertEquals(0, pn0.numChildren());
-    assertEquals("FOO", pn0.genBasePhName());
+    assertEquals(MessagePlaceholder.create("FOO"), pn0.getPlaceholder());
     assertEquals("{$boo.foo}", pn0.toSourceString());
     assertTrue(pn0.getExpr().getRoot() instanceof FieldAccessNode);
 
@@ -960,7 +962,7 @@ public final class TemplateParserTest {
     PrintNode pn2 = (PrintNode) nodes.get(2);
     assertEquals("$goo + 1", pn2.getExpr().toSourceString());
     assertEquals(0, pn2.numChildren());
-    assertEquals("XXX", pn2.genBasePhName());
+    assertEquals(MessagePlaceholder.create("XXX"), pn2.getPlaceholder());
     assertTrue(pn2.getExpr().getRoot() instanceof PlusOpNode);
 
     PrintNode pn3 = (PrintNode) nodes.get(3);
@@ -969,7 +971,7 @@ public final class TemplateParserTest {
     PrintDirectiveNode pn3d0 = pn3.getChild(0);
     assertEquals("|insertWordBreaks", pn3d0.getName());
     assertEquals(8, ((IntegerNode) pn3d0.getArgs().get(0).getRoot()).getValue());
-    assertEquals("XXX", pn3.genBasePhName());
+    assertEquals(MessagePlaceholder.create("XXX"), pn3.getPlaceholder());
     assertTrue(pn3.getExpr().getRoot() instanceof StringNode);
 
     assertFalse(pn0.genSamenessKey().equals(pn2.genSamenessKey()));
@@ -996,24 +998,39 @@ public final class TemplateParserTest {
 
     PrintNode pn0 = (PrintNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
     assertEquals("$boo.foo", pn0.getExpr().toSourceString());
-    assertEquals("FOO", pn0.genBasePhName());
+    assertEquals(MessagePlaceholder.create("FOO"), pn0.getPlaceholder());
     assertEquals("{$boo.foo}", pn0.toSourceString());
 
     PrintNode pn1 = (PrintNode) ((MsgPlaceholderNode) nodes.get(1)).getChild(0);
     assertEquals("$boo.foo", pn1.getExpr().toSourceString());
-    assertEquals("BOO_FOOA", pn1.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BOO_FOOA",
+            "booFooA",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 7, 20, 7, 28)),
+        pn1.getPlaceholder());
     assertEquals("{$boo.foo phname=\"booFooA\"}", pn1.toSourceString());
     assertEquals(0, pn1.numChildren());
     assertTrue(pn1.getExpr().getRoot() instanceof FieldAccessNode);
 
     PrintNode pn2 = (PrintNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);
     assertEquals("$boo.foo", pn2.getExpr().toSourceString());
-    assertEquals("BOO_FOOA", pn2.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BOO_FOOA",
+            "booFooA",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 8, 23, 8, 31)),
+        pn2.getPlaceholder());
     assertEquals("{$boo.foo phname=\"booFooA\"}", pn2.toSourceString());
 
     PrintNode pn3 = (PrintNode) ((MsgPlaceholderNode) nodes.get(3)).getChild(0);
     assertEquals("$boo.foo", pn3.getExpr().toSourceString());
-    assertEquals("BOO_FOO_B", pn3.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BOO_FOO_B",
+            "boo_foo_b",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 9, 28, 9, 38)),
+        pn3.getPlaceholder());
     assertEquals("{print $boo.foo phname=\"boo_foo_b\"}", pn3.toSourceString());
 
     assertFalse(pn0.genSamenessKey().equals(pn1.genSamenessKey()));
@@ -1054,7 +1071,7 @@ public final class TemplateParserTest {
     MsgPlaceholderNode mpn3 = (MsgPlaceholderNode) mn0.getChild(3);
     MsgHtmlTagNode mhtn3 = (MsgHtmlTagNode) mpn3.getChild(0);
     assertEquals("a", mhtn3.getLcTagName());
-    assertEquals("START_LINK", mhtn3.genBasePhName());
+    assertEquals(MessagePlaceholder.create("START_LINK"), mhtn3.getPlaceholder());
     assertEquals("<a href=\"{$learnMoreUrl}\">", mhtn3.toSourceString());
 
     assertEquals(3, mhtn3.numChildren());
@@ -1067,12 +1084,12 @@ public final class TemplateParserTest {
     MsgPlaceholderNode mpn5 = (MsgPlaceholderNode) mn0.getChild(5);
     MsgHtmlTagNode mhtn5 = (MsgHtmlTagNode) mpn5.getChild(0);
     assertEquals("/a", mhtn5.getLcTagName());
-    assertEquals("END_LINK", mhtn5.genBasePhName());
+    assertEquals(MessagePlaceholder.create("END_LINK"), mhtn5.getPlaceholder());
     assertEquals("</A>", mhtn5.toSourceString());
 
     MsgPlaceholderNode mpn6 = (MsgPlaceholderNode) mn0.getChild(6);
     MsgHtmlTagNode mhtn6 = (MsgHtmlTagNode) mpn6.getChild(0);
-    assertEquals("BREAK", mhtn6.genBasePhName());
+    assertEquals(MessagePlaceholder.create("BREAK"), mhtn6.getPlaceholder());
     assertTrue(mpn6.shouldUseSameVarNameAs((MsgPlaceholderNode) mn0.getChild(7), exprEquivalence));
     assertFalse(mpn6.shouldUseSameVarNameAs(mpn5, exprEquivalence));
     assertFalse(mpn5.shouldUseSameVarNameAs(mpn3, exprEquivalence));
@@ -1110,20 +1127,35 @@ public final class TemplateParserTest {
     MsgPlaceholderNode mpn0 = (MsgPlaceholderNode) mn0.getChild(0);
     MsgHtmlTagNode mhtn0 = (MsgHtmlTagNode) mpn0.getChild(0);
     assertEquals("a", mhtn0.getLcTagName());
-    assertEquals("BEGIN_LEARN_MORE_LINK", mhtn0.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BEGIN_LEARN_MORE_LINK",
+            "beginLearnMoreLink",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 39, 6, 56)),
+        mhtn0.getPlaceholder());
     assertEquals(
         "<a href=\"{$learnMoreUrl}\" phname=\"beginLearnMoreLink\">", mhtn0.toSourceString());
 
     MsgPlaceholderNode mpn2 = (MsgPlaceholderNode) mn0.getChild(2);
     MsgHtmlTagNode mhtn2 = (MsgHtmlTagNode) mpn2.getChild(0);
     assertEquals("/a", mhtn2.getLcTagName());
-    assertEquals("END_LEARN_MORE_LINK", mhtn2.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "END_LEARN_MORE_LINK",
+            "end_LearnMore_LINK",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 8, 17, 8, 34)),
+        mhtn2.getPlaceholder());
     assertEquals("</A phname=\"end_LearnMore_LINK\">", mhtn2.toSourceString());
 
     MsgPlaceholderNode mpn3 = (MsgPlaceholderNode) mn0.getChild(3);
     MsgHtmlTagNode mhtn3 = (MsgHtmlTagNode) mpn3.getChild(0);
     assertEquals("br", mhtn3.getLcTagName());
-    assertEquals("BREAK_TAG", mhtn3.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BREAK_TAG",
+            "breakTag",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 9, 17, 9, 24)),
+        mhtn3.getPlaceholder());
     assertEquals("<br phname=\"breakTag\"/>", mhtn3.toSourceString());
 
     MsgPlaceholderNode mpn4 = (MsgPlaceholderNode) mn0.getChild(4);
@@ -1132,7 +1164,12 @@ public final class TemplateParserTest {
     MsgPlaceholderNode mpn5 = (MsgPlaceholderNode) mn0.getChild(5);
     MsgHtmlTagNode mhtn5 = (MsgHtmlTagNode) mpn5.getChild(0);
     assertEquals("br", mhtn5.getLcTagName());
-    assertEquals("BREAK_TAG", mhtn5.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BREAK_TAG",
+            "breakTag",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 9, 65, 9, 72)),
+        mhtn5.getPlaceholder());
     assertEquals("<br phname=\"breakTag\"/>", mhtn5.toSourceString());
 
     assertFalse(mhtn0.genSamenessKey().equals(mhtn2.genSamenessKey()));
@@ -1421,7 +1458,7 @@ public final class TemplateParserTest {
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
-    assertEquals("XXX", cn0.genBasePhName());
+    assertEquals(MessagePlaceholder.create("XXX"), cn0.getPlaceholder());
     assertEquals(0, cn0.numChildren());
 
     CallBasicNode cn1 = (CallBasicNode) nodes.get(1);
@@ -1439,7 +1476,7 @@ public final class TemplateParserTest {
     assertFalse(cn2.isPassingData());
     assertEquals(false, cn2.isPassingAllData());
     assertEquals(null, cn2.getDataExpr());
-    assertEquals("XXX", cn2.genBasePhName());
+    assertEquals(MessagePlaceholder.create("XXX"), cn2.getPlaceholder());
     assertEquals(0, cn2.numChildren());
 
     CallBasicNode cn3 = (CallBasicNode) nodes.get(3);
@@ -1501,7 +1538,7 @@ public final class TemplateParserTest {
     assertEquals(false, cn0.isPassingData());
     assertEquals(false, cn0.isPassingAllData());
     assertEquals(null, cn0.getDataExpr());
-    assertEquals("XXX", cn0.genBasePhName());
+    assertEquals(MessagePlaceholder.create("XXX"), cn0.getPlaceholder());
     assertEquals(0, cn0.numChildren());
 
     CallDelegateNode cn1 = (CallDelegateNode) nodes.get(1);
@@ -1551,7 +1588,12 @@ public final class TemplateParserTest {
     assertEquals(3, nodes.size());
 
     CallBasicNode cn0 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(0)).getChild(0);
-    assertEquals("BOO_TEMPLATE_1", cn0.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "BOO_TEMPLATE_1",
+            "booTemplate1_",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 30, 6, 44)),
+        cn0.getPlaceholder());
     assertEquals("brittle.test.ns.booTemplate_", cn0.getCalleeName());
     assertEquals(".booTemplate_", cn0.getSourceCalleeName());
     assertEquals(false, cn0.isPassingData());
@@ -1562,7 +1604,12 @@ public final class TemplateParserTest {
     CallBasicNode cn1 = (CallBasicNode) ((MsgPlaceholderNode) nodes.get(1)).getChild(0);
 
     CallDelegateNode cn2 = (CallDelegateNode) ((MsgPlaceholderNode) nodes.get(2)).getChild(0);
-    assertEquals("SECRET_ZOO", cn2.genBasePhName());
+    assertEquals(
+        MessagePlaceholder.createWithUserSuppliedName(
+            "SECRET_ZOO",
+            "secret_zoo",
+            new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 8, 63, 8, 74)),
+        cn2.getPlaceholder());
     assertEquals("MySecretFeature.zooTemplate", cn2.getDelCalleeName());
     assertEquals(true, cn2.isPassingData());
     assertEquals(false, cn2.isPassingAllData());

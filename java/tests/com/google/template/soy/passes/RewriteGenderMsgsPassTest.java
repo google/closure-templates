@@ -413,7 +413,7 @@ public final class RewriteGenderMsgsPassTest {
 
     String expectedInnerSelectSrc =
         ""
-            + "{select $target[1].gender phname=\"TARGET_1_GENDER\"}"
+            + "{select $target[1].gender}"
             + "{case 'female'}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
             + "{case 'male'}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
             + "{default}You starred {$target[0].name}'s photo in {$target[1].name}'s album."
@@ -425,7 +425,7 @@ public final class RewriteGenderMsgsPassTest {
             + "{select $userGender}"
             + // note: 'phname' not specified because generated is same
             "{case 'female'}"
-            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{select $target[0].gender}"
             + "{case 'female'}"
             + expectedInnerSelectSrc
             + "{case 'male'}"
@@ -434,7 +434,7 @@ public final class RewriteGenderMsgsPassTest {
             + expectedInnerSelectSrc
             + "{/select}"
             + "{case 'male'}"
-            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{select $target[0].gender}"
             + "{case 'female'}"
             + expectedInnerSelectSrc
             + "{case 'male'}"
@@ -443,7 +443,7 @@ public final class RewriteGenderMsgsPassTest {
             + expectedInnerSelectSrc
             + "{/select}"
             + "{default}"
-            + "{select $target[0].gender phname=\"TARGET_0_GENDER\"}"
+            + "{select $target[0].gender}"
             + "{case 'female'}"
             + expectedInnerSelectSrc
             + "{case 'male'}"

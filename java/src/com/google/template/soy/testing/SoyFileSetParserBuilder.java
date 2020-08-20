@@ -286,13 +286,15 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  public static final String FILE_PATH = "no-path";
+
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
     List<SoyFileSupplier> soyFileSuppliers = Lists.newArrayList();
     for (int i = 0; i < soyFileContents.length; i++) {
       String soyFileContent = soyFileContents[i];
       // Names are now required to be unique in a SoyFileSet. Use one-based indexing.
-      String filePath = (i == 0) ? "no-path" : ("no-path-" + (i + 1));
+      String filePath = (i == 0) ? FILE_PATH : (FILE_PATH + "-" + (i + 1));
       soyFileSuppliers.add(SoyFileSupplier.Factory.create(soyFileContent, filePath));
     }
     return soyFileSuppliers;

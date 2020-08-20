@@ -119,7 +119,7 @@ final class RewriteRemaindersPass implements CompilerFilePass {
 
       if (currPrintNode != null
           && currPrintNode.getExpr() == functionNode.getParent()
-          && currPrintNode.getUserSuppliedPhName() != null) {
+          && currPrintNode.getPlaceholder().userSuppliedName().isPresent()) {
         // if the remainder call is the only expression in a print node, then there shouldn't be
         // a phname attribute
         errorReporter.report(functionNode.getSourceLocation(), REMAINDER_WITH_PHNAME);

@@ -25,6 +25,7 @@ import com.google.template.soy.msgs.restricted.SoyMsg;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -109,16 +110,15 @@ class XliffGenerator {
           ilb.append(contentEscaper.escape(rawText));
         } else if (msgPart instanceof SoyMsgPlaceholderPart) {
           SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) msgPart;
+          Optional<String> example = placeholder.getPlaceholderExample();
           ilb.appendParts(
               "<x id=\"",
               attributeEscaper.escape(placeholder.getPlaceholderName()),
               "\""
                   // placeholder examples are not part of the xliff standard. It is an android
                   // convention so we add it in the hope that tools will support it anyway.
-                  + (placeholder.getPlaceholderExample() != null
-                      ? " example=\""
-                          + attributeEscaper.escape(placeholder.getPlaceholderExample())
-                          + "\""
+                  + (example.isPresent()
+                      ? " example=\"" + attributeEscaper.escape(example.get()) + "\""
                       : "")
                   + "/>");
         } else {

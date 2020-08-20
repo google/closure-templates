@@ -27,7 +27,6 @@ import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.VarDefn;
-import javax.annotation.Nullable;
 
 /**
  * This class defines the base interface for a node in the parse tree, as well as a number of
@@ -344,29 +343,8 @@ public interface SoyNode extends Node {
       }
     }
 
-    /**
-     * Gets the user-supplied placeholder name, or null if not supplied or not applicable. Note that
-     * this raw name can be any identifier (not necessarily in upper-underscore format).
-     *
-     * @return The user-supplied placeholder name, or null if not supplied or not applicable.
-     */
-    @Nullable
-    String getUserSuppliedPhName();
-
-    /**
-     * Gets the user-supplied placeholder example, or null if not supplied or not applicable.
-     *
-     * @return The user-supplied placeholder example, or null if not supplied or not applicable.
-     */
-    @Nullable
-    String getUserSuppliedPhExample();
-
-    /**
-     * Generates the base placeholder name for this node.
-     *
-     * @return The base placeholder name for this node.
-     */
-    String genBasePhName();
+    /** Base placeholder name and associated info, for this node. */
+    MessagePlaceholder getPlaceholder();
 
     /**
      * Generates the key object used in comparisons to determine whether two placeholder nodes

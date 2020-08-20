@@ -21,9 +21,11 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import java.util.Optional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -37,7 +39,7 @@ public final class MsgHtmlTagNodeTest {
   @Test
   public void testPlaceholderBold() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<b>");
-    assertThat(mhtn.genBasePhName()).isEqualTo("START_BOLD");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("START_BOLD"));
     assertThat(mhtn.genSamenessKey()).isEqualTo(parseMsgHtmlTagNode("<b>").genSamenessKey());
     assertThat(mhtn.genSamenessKey()).isNotEqualTo(parseMsgHtmlTagNode("</b>").genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<b>");
@@ -46,7 +48,7 @@ public final class MsgHtmlTagNodeTest {
   @Test
   public void testPlaceholderBreak() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<br />");
-    assertThat(mhtn.genBasePhName()).isEqualTo("BREAK");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("BREAK"));
     assertThat(mhtn.genSamenessKey()).isEqualTo(parseMsgHtmlTagNode("<br/>").genSamenessKey());
     assertThat(mhtn.toSourceString()).isEqualTo("<br/>");
   }
@@ -55,7 +57,7 @@ public final class MsgHtmlTagNodeTest {
   public void testPlaceholderDiv() {
     MsgHtmlTagNode mhtn =
         parseMsgHtmlTagNode("<div class=\"{$cssClass}\">", "{@param cssClass: string}");
-    assertThat(mhtn.genBasePhName()).isEqualTo("START_DIV");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("START_DIV"));
     // not equal to an identical tag due to the print node
     assertThat(mhtn.genSamenessKey())
         .isNotEqualTo(
@@ -67,14 +69,22 @@ public final class MsgHtmlTagNodeTest {
   @Test
   public void testUserSuppliedPlaceholderName() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<div phname=\"foo\" />");
-    assertThat(mhtn.getUserSuppliedPhName()).isEqualTo("foo");
+    assertThat(mhtn.getPlaceholder())
+        .isEqualTo(
+            MessagePlaceholder.createWithUserSuppliedName(
+                "FOO", "foo", new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 14, 6, 16)));
   }
 
   @Test
   public void testUserSuppliedPlaceholderExample() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<div phname=\"foo\" phex=\"example\"/>");
-    assertThat(mhtn.getUserSuppliedPhName()).isEqualTo("foo");
-    assertThat(mhtn.getUserSuppliedPhExample()).isEqualTo("example");
+    assertThat(mhtn.getPlaceholder())
+        .isEqualTo(
+            MessagePlaceholder.createWithUserSuppliedName(
+                "FOO",
+                "foo",
+                new SourceLocation(SoyFileSetParserBuilder.FILE_PATH, 6, 14, 6, 16),
+                Optional.of("example")));
   }
 
   @Test
@@ -88,17 +98,17 @@ public final class MsgHtmlTagNodeTest {
   @Test
   public void testPlaceholderCustomTagNameWithHyphen() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<foo-bar>");
-    assertThat(mhtn.genBasePhName()).isEqualTo("START_FOO_BAR");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("START_FOO_BAR"));
     mhtn = parseMsgHtmlTagNode("<foo-bar />");
-    assertThat(mhtn.genBasePhName()).isEqualTo("FOO_BAR");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("FOO_BAR"));
   }
 
   @Test
   public void testAutomaticPlaceholderName() {
     MsgHtmlTagNode mhtn = parseMsgHtmlTagNode("<h2>");
-    assertThat(mhtn.genBasePhName()).isEqualTo("START_H2");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("START_H2"));
     mhtn = parseMsgHtmlTagNode("</h2>");
-    assertThat(mhtn.genBasePhName()).isEqualTo("END_H2");
+    assertThat(mhtn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("END_H2"));
   }
 
   private static MsgHtmlTagNode parseMsgHtmlTagNode(String htmlTag, String... params) {

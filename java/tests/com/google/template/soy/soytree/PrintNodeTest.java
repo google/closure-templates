@@ -58,19 +58,23 @@ public final class PrintNodeTest {
     assertThat(printNodes).hasSize(7);
 
     PrintNode pn = printNodes.get(0);
-    assertThat(pn.genBasePhName()).isEqualTo("BOO");
+    assertThat(pn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("BOO"));
     assertThat(pn.genSamenessKey()).isEqualTo(printNodes.get(1).genSamenessKey());
 
     pn = printNodes.get(2);
-    assertThat(pn.genBasePhName()).isEqualTo("FOO");
+    assertThat(pn.getPlaceholder()).isEqualTo(MessagePlaceholder.create("FOO"));
     assertThat(pn.genSamenessKey()).isEqualTo(printNodes.get(3).genSamenessKey());
     assertThat(pn.genSamenessKey()).isNotEqualTo(printNodes.get(4).genSamenessKey());
 
     pn = printNodes.get(5);
-    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
+    assertWithMessage("Fallback value expected.")
+        .that(pn.getPlaceholder())
+        .isEqualTo(MessagePlaceholder.create("XXX"));
 
     pn = printNodes.get(6);
-    assertWithMessage("Fallback value expected.").that(pn.genBasePhName()).isEqualTo("XXX");
+    assertWithMessage("Fallback value expected.")
+        .that(pn.getPlaceholder())
+        .isEqualTo(MessagePlaceholder.create("XXX"));
   }
 
   @Test

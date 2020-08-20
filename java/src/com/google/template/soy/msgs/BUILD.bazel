@@ -18,6 +18,7 @@ java_library(
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/internal/i18n",
+        "//java/src/com/google/template/soy/soytree:soynode",
         "@com_google_auto_value_auto_value",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_errorprone_error_prone_annotations",

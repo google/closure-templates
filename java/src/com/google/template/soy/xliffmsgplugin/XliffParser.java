@@ -27,6 +27,7 @@ import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
+import java.util.Optional;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -174,7 +175,9 @@ class XliffParser {
           currMsgParts.add(SoyMsgRawTextPart.of(currRawTextPart));
           currRawTextPart = null;
         }
-        currMsgParts.add(new SoyMsgPlaceholderPart(atts.getValue("id"), atts.getValue("example")));
+        currMsgParts.add(
+            new SoyMsgPlaceholderPart(
+                atts.getValue("id"), Optional.ofNullable(atts.getValue("example"))));
       }
     }
 
