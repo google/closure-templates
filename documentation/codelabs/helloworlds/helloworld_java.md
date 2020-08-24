@@ -226,8 +226,8 @@ Follow these steps to create a simple Hello World template and use it in Java:
 
 ## Using Guice
 
-If your application uses [Guice](http://code.google.com/p/google-guice/), you
-can inject Soy classes such as `SoyFileSet.Builder` instead of constructing them
+If your application uses [Guice](https://github.com/google/guice), you can
+inject Soy classes such as `SoyFileSet.Builder` instead of constructing them
 yourself. Your Guice injector must contain `SoyModule`.
 
 For example, if you used Guice, the Hello World example from the previous
