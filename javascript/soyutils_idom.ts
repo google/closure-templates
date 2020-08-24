@@ -105,7 +105,6 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     }
     // If we extend beyond the current scope of the patch, we may reach an
     // element of an already hydrated element.
-    const context = currentContext();
     if (currentContext()?.node === currentPointer) {
       break;
     }
