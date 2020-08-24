@@ -105,7 +105,7 @@ public final class ImportNode extends AbstractSoyNode {
   }
 
   private static ImportType importTypeForPath(String path) {
-    if (path.endsWith(".proto")) {
+    if (path.endsWith(".proto") || path.endsWith(".protodevel")) {
       return ImportType.PROTO;
     } else if (path.endsWith(".soy")) {
       return ImportType.TEMPLATE;
