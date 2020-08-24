@@ -95,7 +95,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -776,6 +775,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitSoyServerKeyFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
+        case PROTO_INIT:
+          return visitProtoInitFunction(node);
         case UNKNOWN_JS_GLOBAL:
         case LEGACY_DYNAMIC_TAG:
         case V1_EXPRESSION:
@@ -818,8 +819,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     }
   }
 
-  @Override
-  protected SoyValue visitProtoInitNode(ProtoInitNode node) {
+  protected SoyValue visitProtoInitFunction(FunctionNode node) {
     // The downcast is safe because if it was anything else, compilation would have already failed.
     SoyProtoType soyProto = (SoyProtoType) node.getType();
     ImmutableList<Identifier> paramNames = node.getParamNames();

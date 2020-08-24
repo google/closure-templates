@@ -51,6 +51,7 @@ public enum BuiltinFunction implements SoyFunction {
   IS_PRIMARY_MSG_IN_USE("$$isPrimaryMsgInUse"),
   TO_FLOAT("$$toFloat"),
   DEBUG_SOY_TEMPLATE_INFO("$$debugSoyTemplateInfo"),
+  PROTO_INIT("$$protoInit"),
   ;
 
   public static ImmutableSet<String> names() {
@@ -113,6 +114,8 @@ public enum BuiltinFunction implements SoyFunction {
       case MSG_WITH_ID:
       case TO_FLOAT:
         return ImmutableSet.of(1);
+      case PROTO_INIT:
+        throw new UnsupportedOperationException();
     }
     throw new AssertionError(this);
   }
@@ -132,6 +135,7 @@ public enum BuiltinFunction implements SoyFunction {
       case MSG_WITH_ID:
       case VE_DATA:
       case TO_FLOAT:
+      case PROTO_INIT:
         return true;
       case IS_FIRST: // implicitly depends on loop index
       case IS_LAST: // implicitly depends on loop index

@@ -17,6 +17,7 @@ java_library(
         "//java/src/com/google/template/soy:soy_cmdline",
         "//java/src/com/google/template/soy:soy_msg_extractor",
         "//java/src/com/google/template/soy/error:error_reporter",
+        "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/jbcsrc",
         "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/jbcsrc/shared",

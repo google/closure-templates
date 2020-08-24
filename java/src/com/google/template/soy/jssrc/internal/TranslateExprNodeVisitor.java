@@ -90,7 +90,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -743,8 +742,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     return assertNonNull(node.getChild(0));
   }
 
-  @Override
-  protected Expression visitProtoInitNode(ProtoInitNode node) {
+  protected Expression visitProtoInitFunction(FunctionNode node) {
     SoyProtoType type = (SoyProtoType) node.getType();
     Expression proto = construct(protoConstructor(type));
     for (int i = 0; i < node.numChildren(); i++) {
@@ -821,6 +819,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitXidFunction(node);
         case SOY_SERVER_KEY:
           return visitSoyServerKeyFunction(node);
+        case PROTO_INIT:
+          return visitProtoInitFunction(node);
         case UNKNOWN_JS_GLOBAL:
           return visitUnknownJsGlobal(node);
         case V1_EXPRESSION:

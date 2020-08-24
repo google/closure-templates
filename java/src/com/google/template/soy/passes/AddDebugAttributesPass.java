@@ -152,7 +152,7 @@ final class AddDebugAttributesPass implements CompilerFilePass {
     private IfNode createSoyDebug(SourceLocation insertionLocation) {
       IfNode ifNode = new IfNode(nodeIdGen.genId(), insertionLocation);
       FunctionNode funcNode =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(
                   BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO.getName(), insertionLocation),
               BuiltinFunction.DEBUG_SOY_TEMPLATE_INFO,

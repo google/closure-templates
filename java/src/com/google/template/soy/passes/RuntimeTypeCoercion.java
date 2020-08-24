@@ -83,7 +83,7 @@ final class RuntimeTypeCoercion {
 
       // create a node to wrap param in coercion
       FunctionNode coercedValue =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(function.getName(), node.getSourceLocation()),
               function,
               node.getSourceLocation());

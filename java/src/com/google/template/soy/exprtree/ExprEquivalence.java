@@ -24,6 +24,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
+import com.google.template.soy.exprtree.FunctionNode.ParamsStyle;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -99,7 +100,10 @@ public final class ExprEquivalence {
 
         @Override
         protected Integer visitFunctionNode(FunctionNode node) {
-          return node.getFunctionName().hashCode() * 31 + hashChildren(node);
+          if (node.getParamsStyle() == ParamsStyle.NAMED) {
+            return Objects.hash(node.getFunctionName(), namedParamsMap(node));
+          }
+          return Objects.hash(node.getFunctionName(), hashChildren(node));
         }
 
         @Override
@@ -138,11 +142,6 @@ public final class ExprEquivalence {
         }
 
         // literals
-
-        @Override
-        protected Integer visitProtoInitNode(ProtoInitNode node) {
-          return Objects.hash(node.getProtoName(), protoInitFields(node));
-        }
 
         @Override
         protected Integer visitVeLiteralNode(VeLiteralNode node) {
@@ -258,7 +257,13 @@ public final class ExprEquivalence {
       // TODO(b/78775420): consider only allowing pure functions to be equal to each other.  Will
       // require refactoring templates relying on this to extract such expressions into local
       // variables which is probably the right call anyway.
-      return node.getFunctionName().equals(typedOther.getFunctionName()) && compareChildren(node);
+      boolean ok = node.getFunctionName().equals(typedOther.getFunctionName());
+      if (node.getParamsStyle() == ParamsStyle.NAMED) {
+        ok = ok && namedParamsMap(node).equals(namedParamsMap(typedOther));
+      } else {
+        ok = ok && compareChildren(node);
+      }
+      return ok;
     }
 
     @Override
@@ -291,15 +296,6 @@ public final class ExprEquivalence {
     }
 
     // literals
-
-    @Override
-    protected Boolean visitProtoInitNode(ProtoInitNode node) {
-      ProtoInitNode otherNode = (ProtoInitNode) other;
-      if (!otherNode.getProtoName().equals(node.getProtoName())) {
-        return false;
-      }
-      return protoInitFields(node).equals(protoInitFields(otherNode));
-    }
 
     @Override
     protected Boolean visitVeLiteralNode(VeLiteralNode node) {
@@ -365,7 +361,7 @@ public final class ExprEquivalence {
     }
   }
 
-  private final HashMap<String, Wrapper> protoInitFields(ProtoInitNode node) {
+  private final HashMap<String, Wrapper> namedParamsMap(FunctionNode node) {
     HashMap<String, Wrapper> map = new HashMap<>();
     List<ExprNode> children = node.getChildren();
     for (int i = 0; i < children.size(); i++) {

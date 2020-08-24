@@ -53,7 +53,7 @@ final class VeLogRewritePass implements CompilerFilePass {
     ExprNode veExpr = node.getVeDataExpression().getRoot();
     if (SoyTypes.isKindOrUnionOfKind(veExpr.getType(), Kind.VE)) {
       FunctionNode veData =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(BuiltinFunction.VE_DATA.getName(), veExpr.getSourceLocation()),
               BuiltinFunction.VE_DATA,
               veExpr.getSourceLocation());

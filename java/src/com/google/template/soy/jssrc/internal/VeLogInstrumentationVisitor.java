@@ -86,7 +86,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               .offset(0, tag.isSelfClosing() ? -2 : -1)
               .asLocation(tag.getSourceLocation().getFilePath());
       FunctionNode funcNode =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(VeLogFunction.NAME, insertionLocation),
               VeLogFunction.INSTANCE,
               insertionLocation);
@@ -124,7 +124,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
         continue;
       }
       FunctionNode funcNode =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(VeLogJsSrcLoggingFunction.NAME, insertionLocation),
               VeLogJsSrcLoggingFunction.INSTANCE,
               insertionLocation);

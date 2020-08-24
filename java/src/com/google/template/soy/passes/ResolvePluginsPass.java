@@ -16,12 +16,11 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -30,7 +29,7 @@ import java.util.Optional;
 
 /**
  * Populates the {@link FunctionNode} and {@link PrintDirectiveNode} with their plugin instances and
- * rewrites some ambiguous function nodes to {@link ProtoInitNode}.
+ * identifies some ambiguous function nodes as {@link BuiltinFunction#PROTO_INIT}.
  */
 final class ResolvePluginsPass implements CompilerFilePass {
   private final PluginResolver resolver;
@@ -41,22 +40,18 @@ final class ResolvePluginsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (FunctionNode function : SoyTreeUtils.getAllNodesOfType(file, FunctionNode.class)) {
-      // Functions with 0 arguments are ambiguous with proto init nodes with no arguments, check the
-      // type registry first to see if this is such a case
-      if (function.numChildren() == 0) {
-        Identifier resolvedName = function.getIdentifier();
-        SoyType type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
-        if (type == null) {
-          resolvedName = file.resolveAlias(resolvedName);
-          type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
-        }
-        if (type != null && type.getKind() == SoyType.Kind.PROTO) {
-          ProtoInitNode protoInit =
-              new ProtoInitNode(resolvedName, ImmutableList.of(), function.getSourceLocation());
-          function.getParent().replaceChild(function, protoInit);
-          continue;
-        }
+    for (FunctionNode function :
+        SoyTreeUtils.getAllMatchingNodesOfType(file, FunctionNode.class, fn -> !fn.isResolved())) {
+
+      Identifier resolvedName = function.getIdentifier();
+      SoyType type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
+      if (type == null) {
+        resolvedName = file.resolveAlias(resolvedName);
+        type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
+      }
+      if (type != null && type.getKind() == SoyType.Kind.PROTO) {
+        function.setSoyFunction(BuiltinFunction.PROTO_INIT);
+        continue;
       }
 
       function.setSoyFunction(

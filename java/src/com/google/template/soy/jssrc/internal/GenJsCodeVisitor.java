@@ -1431,7 +1431,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
     // Create synthetic velog nodes. These will be removed in JS.
     FunctionNode funcNode =
-        new FunctionNode(
+        FunctionNode.newPositional(
             Identifier.create(VeLogFunction.NAME, node.getSourceLocation()),
             VeLogFunction.INSTANCE,
             node.getSourceLocation());

@@ -53,7 +53,7 @@ final class VeRewritePass implements CompilerFilePass {
     if (node.getVeDataExpression().getRoot().getKind() == Kind.GLOBAL_NODE) {
       GlobalNode veName = (GlobalNode) node.getVeDataExpression().getRoot();
       FunctionNode veData =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(BuiltinFunction.VE_DATA.getName(), veName.getSourceLocation()),
               BuiltinFunction.VE_DATA,
               veName.getSourceLocation());

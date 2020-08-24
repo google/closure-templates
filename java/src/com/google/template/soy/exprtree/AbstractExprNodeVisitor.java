@@ -182,9 +182,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case FUNCTION_NODE:
         visitFunctionNode((FunctionNode) node);
         break;
-      case PROTO_INIT_NODE:
-        visitProtoInitNode((ProtoInitNode) node);
-        break;
 
       case VE_LITERAL_NODE:
         visitVeLiteralNode((VeLiteralNode) node);
@@ -397,10 +394,6 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   // Implementations for function nodes.
 
   protected void visitFunctionNode(FunctionNode node) {
-    visitExprNode(node);
-  }
-
-  protected void visitProtoInitNode(ProtoInitNode node) {
     visitExprNode(node);
   }
 

@@ -169,7 +169,6 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
       switch (node.getChild(0).getKind()) {
         case LIST_LITERAL_NODE:
         case RECORD_LITERAL_NODE:
-        case PROTO_INIT_NODE:
           // these are always non-null
           node.getParent().replaceChild(node, node.getChild(0));
           break;

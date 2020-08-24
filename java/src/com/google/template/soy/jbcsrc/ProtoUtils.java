@@ -62,10 +62,10 @@ import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContents;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
 import com.google.template.soy.exprtree.MethodCallNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.FieldVisitor;
 import com.google.template.soy.internal.proto.JavaQualifiedNames;
 import com.google.template.soy.jbcsrc.restricted.BytecodeProducer;
@@ -774,7 +774,7 @@ final class ProtoUtils {
    * @param varManager Local variables manager
    */
   static SoyExpression createProto(
-      ProtoInitNode node,
+      FunctionNode node,
       Function<ExprNode, SoyExpression> compilerFunction,
       ExpressionDetacher detacher,
       LocalVariableManager varManager) {
@@ -782,7 +782,7 @@ final class ProtoUtils {
   }
 
   private static final class ProtoInitGenerator {
-    private final ProtoInitNode node;
+    private final FunctionNode node;
     private final Function<ExprNode, SoyExpression> compilerFunction;
     private final ExpressionDetacher detacher;
     private final LocalVariableManager varManager;
@@ -791,7 +791,7 @@ final class ProtoUtils {
     private final Descriptor descriptor;
 
     ProtoInitGenerator(
-        ProtoInitNode node,
+        FunctionNode node,
         Function<ExprNode, SoyExpression> compilerFunction,
         ExpressionDetacher detacher,
         LocalVariableManager varManager) {

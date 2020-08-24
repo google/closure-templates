@@ -88,7 +88,7 @@ final class RewriteDirectivesCallableAsFunctionsPass implements CompilerFilePass
     ExprRootNode originalExprRoot = printNode.getExpr();
     ExprNode originalExpr = originalExprRoot.getRoot();
     FunctionNode newExpr =
-        new FunctionNode(
+        FunctionNode.newPositional(
             Identifier.create(functionName, directiveNode.getNameLocation()),
             function,
             originalExpr.getSourceLocation().extend(directiveNode.getSourceLocation()));

@@ -61,6 +61,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.FunctionNode.ParamsStyle;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
@@ -87,7 +88,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -1373,7 +1373,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       tryApplySubstitution(node);
 
       // If we didn't set the allowed types for params above, then set them to unknown types.
-      if (node.getAllowedParamTypes() == null) {
+      if (node.getParamsStyle() == ParamsStyle.POSITIONAL && node.getAllowedParamTypes() == null) {
         node.setAllowedParamTypes(
             Collections.nCopies(node.numChildren(), UnknownType.getInstance()));
       }
@@ -1472,11 +1472,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
     }
 
-    @Override
-    protected void visitProtoInitNode(ProtoInitNode node) {
-      visitChildren(node);
-
-      String protoName = node.getProtoName();
+    private void visitProtoInitFunction(FunctionNode node) {
+      String protoName = node.getFunctionName();
       SoyType type = typeRegistry.getType(protoName);
 
       if (type == null) {
@@ -1539,10 +1536,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         return;
       }
 
-      // Replace the ProtoInitNode to have a list of the resolved param names.
+      // Replace the proto init node to have a list of the resolved param names.
       if (hasAliasedParams) {
-        ProtoInitNode resolvedNode =
-            new ProtoInitNode(node.getIdentifier(), resolvedIdentifiers, node.getSourceLocation());
+        FunctionNode resolvedNode =
+            FunctionNode.newNamed(
+                node.getIdentifier(), resolvedIdentifiers, node.getSourceLocation());
+        resolvedNode.setSoyFunction(node.getSoyFunction());
         resolvedNode.setType(node.getType());
         resolvedNode.addChildren(node.getChildren());
         node.getParent().replaceChild(node, resolvedNode);
@@ -2038,6 +2037,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case LEGACY_DYNAMIC_TAG:
           // Should only happen when an error prevents rewriting in LegacyTagNamePass.
           node.setType(ErrorType.getInstance());
+          break;
+        case PROTO_INIT:
+          visitProtoInitFunction(node);
+          break;
       }
     }
 

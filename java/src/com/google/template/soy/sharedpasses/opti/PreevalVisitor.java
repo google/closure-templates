@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.shared.restricted.SoyFunctions;
@@ -95,16 +94,5 @@ final class PreevalVisitor extends EvalVisitor {
     if (!SoyFunctions.isPure(fn)) {
       throw RenderException.create("Cannot preevaluate impure function.");
     }
-  }
-
-  @Override
-  protected SoyValue visitProtoInitNode(ProtoInitNode node) {
-    // we don't have the classes for the protos so we can't run the normal implementation
-    // We could do this in theory by returning a record with all the fields set, but it
-    // would be a lot of work to set up defaults and types for each field and even then if we did
-    // that, there are SoyFunctions that unpack args to raw protos which would then fail.
-    // TODO(lukes): The easiest thing would just be to conditionally execute the code iff we have
-    // the proto on our classpath.
-    throw RenderException.create("Cannot preevaluate proto initializers.");
   }
 }

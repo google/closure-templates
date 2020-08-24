@@ -50,7 +50,6 @@ import com.google.template.soy.exprtree.OperatorNodes.EqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -617,6 +616,9 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       case REMAINDER:
         // should have been removed earlier in the compiler
         throw new AssertionError();
+      case PROTO_INIT:
+        errorReporter.report(node.getSourceLocation(), PROTO_INIT_NOT_SUPPORTED);
+        return ERROR;
     }
     throw new AssertionError();
   }
@@ -807,12 +809,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
             .append(PyExprUtils.maybeProtect(falseExpr, conditionalPrecedence).getText());
 
     return new PyExpr(exprSb.toString(), conditionalPrecedence);
-  }
-
-  @Override
-  protected PyExpr visitProtoInitNode(ProtoInitNode node) {
-    errorReporter.report(node.getSourceLocation(), PROTO_INIT_NOT_SUPPORTED);
-    return ERROR;
   }
 
   @Override

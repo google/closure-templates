@@ -173,7 +173,7 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
           new ConditionalOpNode(
               fn.getSourceLocation(), /*operatorLocation=*/ fn.getSourceLocation());
       FunctionNode isPrimaryMsgInUse =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(
                   BuiltinFunction.IS_PRIMARY_MSG_IN_USE.getName(), fn.getSourceLocation()),
               BuiltinFunction.IS_PRIMARY_MSG_IN_USE,

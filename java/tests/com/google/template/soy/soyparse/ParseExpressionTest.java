@@ -48,7 +48,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -473,8 +472,8 @@ public final class ParseExpressionTest {
     ExprNode expr =
         assertThatExpression("my.Proto(a: 1, b: glo.bal, c: fn('str'), ext.name: 'str')")
             .isValidExpression();
-    ProtoInitNode protoFn = (ProtoInitNode) expr;
-    assertThat(protoFn.getProtoName()).isEqualTo("my.Proto");
+    FunctionNode protoFn = (FunctionNode) expr;
+    assertThat(protoFn.getFunctionName()).isEqualTo("my.Proto");
     assertThat(protoFn.getParamNames())
         .comparingElementsUsing(
             Correspondence.from(
@@ -581,7 +580,7 @@ public final class ParseExpressionTest {
     fieldAccess = (FieldAccessNode) nonNullOp.getChild(0);
     assertThat(fieldAccess.getFieldName()).isEqualTo("foo");
     assertThat(fieldAccess.isNullSafe()).isTrue();
-    assertThat(fieldAccess.getBaseExprChild()).isInstanceOf(ProtoInitNode.class);
+    assertThat(fieldAccess.getBaseExprChild()).isInstanceOf(FunctionNode.class);
 
     expr = assertThatExpression("-$a! + $b * $c! < ($d or $e)!").isValidExpression();
     LessThanOpNode lessThan = (LessThanOpNode) expr;

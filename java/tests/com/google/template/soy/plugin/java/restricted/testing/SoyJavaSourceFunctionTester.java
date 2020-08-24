@@ -121,7 +121,7 @@ public class SoyJavaSourceFunctionTester {
   public Object callFunction(Object... args) {
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
     FunctionNode fnNode =
-        new FunctionNode(
+        FunctionNode.newPositional(
             Identifier.create(fnSig.name(), SourceLocation.UNKNOWN), fn, SourceLocation.UNKNOWN);
     Signature matchingSig = null;
     for (Signature sig : fnSig.value()) {

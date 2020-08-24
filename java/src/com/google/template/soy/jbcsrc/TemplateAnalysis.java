@@ -664,7 +664,7 @@ final class TemplateAnalysis {
           case CHECK_NOT_NULL:
           case CSS:
           case XID:
-            // fall through
+          case PROTO_INIT:
             break;
           case UNKNOWN_JS_GLOBAL:
           case LEGACY_DYNAMIC_TAG:

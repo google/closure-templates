@@ -24,10 +24,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -326,14 +327,15 @@ public final class JavaGenerationUtils {
 
     // Add proto init
     Stream<String> fromProtoInit =
-        SoyTreeUtils.getAllNodesOfType(template, ProtoInitNode.class).stream()
-            .filter(protoInit -> protoInit.getType().getKind() == Kind.PROTO)
+        SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class).stream()
+            .filter(fctNode -> fctNode.getSoyFunction() == BuiltinFunction.PROTO_INIT)
+            .filter(fctNode -> fctNode.getType().getKind() == Kind.PROTO)
             .flatMap(
-                protoInit -> {
-                  SoyProtoType proto = (SoyProtoType) protoInit.getType();
+                fctNode -> {
+                  SoyProtoType proto = (SoyProtoType) fctNode.getType();
                   return Streams.concat(
                       Stream.of(proto.getDescriptorExpression()),
-                      protoInit.getParamNames().stream()
+                      fctNode.getParamNames().stream()
                           .map(paramName -> proto.getFieldDescriptor(paramName.identifier()))
                           .filter(FieldDescriptor::isExtension)
                           .map(ProtoUtils::getQualifiedOuterClassname));

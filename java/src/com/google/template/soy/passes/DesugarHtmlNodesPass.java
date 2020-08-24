@@ -152,7 +152,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
       // "soy-server-key="{soyServerKey(xid('template'-0))}. When users use their own key, we just
       // use their key verbatim.
       FunctionNode wrappedFn =
-          new FunctionNode(
+          FunctionNode.newPositional(
               Identifier.create(
                   BuiltinFunction.SOY_SERVER_KEY.getName(), openTag.getSourceLocation()),
               BuiltinFunction.SOY_SERVER_KEY,
@@ -161,7 +161,7 @@ public final class DesugarHtmlNodesPass implements CompilerFileSetPass {
 
       if (openTag.getKeyNode() == null) {
         FunctionNode funcNode =
-            new FunctionNode(
+            FunctionNode.newPositional(
                 Identifier.create(BuiltinFunction.XID.getName(), openTag.getSourceLocation()),
                 BuiltinFunction.XID,
                 openTag.getSourceLocation());

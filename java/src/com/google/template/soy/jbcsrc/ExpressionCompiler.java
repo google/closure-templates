@@ -76,7 +76,6 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
-import com.google.template.soy.exprtree.ProtoInitNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -102,6 +101,7 @@ import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableE
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
@@ -1517,7 +1517,7 @@ final class ExpressionCompiler {
     // Proto initialization calls
 
     @Override
-    protected final SoyExpression visitProtoInitNode(ProtoInitNode node) {
+    protected SoyExpression visitProtoInitFunction(FunctionNode node) {
       return ProtoUtils.createProto(node, this::visit, detacher, varManager);
     }
 
@@ -1665,11 +1665,6 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected Boolean visitProtoInitNode(ProtoInitNode node) {
-      return areAllChildrenConstant(node);
-    }
-
-    @Override
     protected Boolean visitMethodCallNode(MethodCallNode node) {
       if (node.getMethodName().toString().equals("bind")) {
         return areAllChildrenConstant(node);
@@ -1698,6 +1693,9 @@ final class ExpressionCompiler {
     protected Boolean visitFunctionNode(FunctionNode node) {
       if (!areAllChildrenConstant(node)) {
         return false;
+      }
+      if (node.getSoyFunction() == BuiltinFunction.PROTO_INIT) {
+        return true;
       }
       if (!node.isPure()) {
         return false;
@@ -1781,7 +1779,7 @@ final class ExpressionCompiler {
     }
 
     @Override
-    protected Boolean visitProtoInitNode(ProtoInitNode node) {
+    protected Boolean visitProtoInitFunction(FunctionNode node) {
       for (Boolean i : visitChildren(node)) {
         if (i) {
           return true;

@@ -82,7 +82,6 @@ public interface ExprNode extends Node {
     ASSERT_NON_NULL_OP_NODE,
 
     FUNCTION_NODE,
-    PROTO_INIT_NODE,
 
     VE_LITERAL_NODE,
 
