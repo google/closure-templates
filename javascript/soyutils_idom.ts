@@ -33,7 +33,7 @@ import {getSoyUntyped} from './global';
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
-const {attributes} = incrementaldom;
+const {attributes, currentContext} = incrementaldom;
 
 const defaultIdomRenderer = new IncrementalDomRenderer();
 
@@ -101,6 +101,12 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
     if (maybeSoyEl instanceof elementClassCtor &&
         isMatchingKey(soyElementKey, maybeSoyEl.key)) {
       el = maybeSoyEl;
+      break;
+    }
+    // If we extend beyond the current scope of the patch, we may reach an
+    // element of an already hydrated element.
+    const context = currentContext();
+    if (currentContext()?.node === currentPointer) {
       break;
     }
     currentPointer = currentPointer.nextSibling;
