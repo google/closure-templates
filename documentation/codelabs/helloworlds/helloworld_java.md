@@ -332,5 +332,8 @@ You've just completed the Soy Hello World using Java. Where should you go next?
 
 -   To use the same templates from this chapter in JavaScript, try the
     [Hello World Using JavaScript](helloworld_js.md) examples.
--   To read more about Soy concepts, take a look at the
-    [Concepts](/third_party/java_src/soy/g3doc/concepts/index.md) chapter.
+-   To read more about Soy concepts, take a look at the [Concepts][concepts]
+    chapter.
+
+[concepts]: /documentation/concepts/index.md
+

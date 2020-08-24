@@ -80,10 +80,9 @@ passing makes code more readable and easier to debug.
 **WARNING**: This is not supported by JSWire. b/123785421
 
 You can also pass data to the callee with the `call` command's `data` attribute.
-This accepts a variable of type
-[record](/third_party/java_src/soy/g3doc/reference/types.md#record). The `call`
-command sets the values of any parameters in the callee whose names match fields
-in the record.
+This accepts a variable of type [record](types.md#record). The `call` command
+sets the values of any parameters in the callee whose names match fields in the
+record.
 
 For example, the following call sets the value of the `largerNum` parameter to
 20 and the `smallerNum` parameter to 10. It is equivalent to the call in the
@@ -104,8 +103,7 @@ the wrong type.
 If the record contains fields whose names do not match any parameter names,
 these are ignored by the callee. Similarly, if there are any parameters whose
 names do not match any field names, these are not set; whether this causes an
-error depends on [whether the parameter is
-required](/third_party/java_src/soy/g3doc/reference/templates.md#param).
+error depends on [whether the parameter is required](templates.md#param).
 
 #### Pass all of the caller's `data`
 
