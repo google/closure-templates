@@ -476,4 +476,22 @@ public abstract class BasicEscapeDirective
       return Sanitizers.filterHtmlScriptPhrasingData(value);
     }
   }
+
+  /**
+   * Implements the |filterCspNonceValue directive.
+   *
+   * <p>See https://www.w3.org/TR/CSP2/#nonce_value
+   */
+  @SoyPurePrintDirective
+  static final class FilterCspNonceValue extends BasicEscapeDirective {
+
+    FilterCspNonceValue() {
+      super("|filterCspNonceValue");
+    }
+
+    @Override
+    protected String escape(SoyValue value) {
+      return Sanitizers.filterCspNonceValue(value);
+    }
+  }
 }

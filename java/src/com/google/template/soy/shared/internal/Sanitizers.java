@@ -897,6 +897,16 @@ public final class Sanitizers {
     return EscapingConventions.FilterHtmlElementName.INSTANCE.getInnocuousOutput();
   }
 
+  /** Filters bad csp values. */
+  public static String filterCspNonceValue(SoyValue soyValue) {
+    String value = soyValue.coerceToString();
+    if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
+      return value;
+    }
+    logger.log(Level.WARNING, "|filterCspNonceValue received bad value ''{0}''", value);
+    return EscapingConventions.FilterCspNonceValue.INSTANCE.getInnocuousOutput();
+  }
+
   /** True iff the given value is sanitized content of the given kind. */
   private static boolean isSanitizedContentOfKind(
       SoyValue value, SanitizedContent.ContentKind kind) {

@@ -20,6 +20,7 @@ import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -28,6 +29,7 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -68,9 +70,11 @@ import javax.annotation.Nullable;
 @RunBefore({
   ResolveNamesPass.class, // since it adds new varref nodes
   AutoescaperPass.class, // since it inserts print directives
+  ResolvePluginsPass.class, // / since it inserts a print directive
 })
 public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFilePass {
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
+  public static final String FILTER_NAME = "|filterCspNonceValue";
 
   private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =
       SoyErrorKind.of(
@@ -208,9 +212,6 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
         new HtmlAttributeValueNode(
             nodeIdGen.genId(), insertionLocation, HtmlAttributeValueNode.Quotes.DOUBLE);
     nonceAttribute.addChild(attributeValue);
-    // NOTE: we do not need to insert any print directives here, unlike the old implementation since
-    // we are running before the autoescaper, so the escaper should insert whatever print directives
-    // are appropriate.
     PrintNode printNode =
         new PrintNode(
             nodeIdGen.genId(),
@@ -219,6 +220,20 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
             referenceCspNonce(insertionLocation, defn),
             /* attributes= */ ImmutableList.of(),
             ErrorReporter.exploding());
+    // Add an escaping directive for the value.
+    // Because we run before the autoescaper we know that the value cannot cause a dom injection,
+    // however because this value is inserted by the compiler in a way that isn't visible to the
+    // author we need to be more careful.
+    // Notably, if the document being written uses AngularJs and allows the nonce to be user
+    // controlled, then it is possible that angular interpolation of html attributes will allow for
+    // XSS.  This is a problem for all angularJs documents but for normal print nodes the author can
+    // at least consider the injection possibilities.  For auto-noncing we should just be extra
+    // careful and restrictive about what we print.
+    printNode.addChild(
+        PrintDirectiveNode.createSyntheticNode(
+            nodeIdGen.genId(),
+            Identifier.create("|filterCspNonceValue", insertionLocation),
+            insertionLocation));
     attributeValue.addChild(printNode);
     return ifNode;
   }

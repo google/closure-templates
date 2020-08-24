@@ -46,6 +46,7 @@ public final class BasicDirectives {
         new BasicEscapeDirective.NormalizeUri(),
         new BasicEscapeDirective.EscapeUri(),
         new BasicEscapeDirective.FilterHtmlScriptPhrasingData(),
+        new BasicEscapeDirective.FilterCspNonceValue(),
 
         // Other directives.
         new ChangeNewlineToBrDirective(),

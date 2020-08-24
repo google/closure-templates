@@ -125,3 +125,14 @@ Allows arbitrary content to be included in a URI regardless of the string
 delimiters of the surrounding language. This normalizes, but does not escape, so
 it does not affect URI special characters, but instead escapes HTML, CSS, and JS
 delimiters.
+
+### `|filterCspNonceValue` {#filterCspNonceValue}
+
+Validates the values printed in `nonce=` attributes. Ensures that the value is a
+base64 encoded string as defined by the specification:
+https://www.w3.org/TR/CSP2/#nonce_value
+
+This directives is used internally by the compiler as part of its support for
+ContentSecurityPolicy nonces. See our
+[security guide](/third_party/java_src/soy/g3doc/dev/security.md#content_security_policy)
+for more information.

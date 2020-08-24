@@ -414,6 +414,10 @@ def filter_html_script_phrasing_data(value):
   return value_str
 
 
+def filter_csp_nonce_value(value):
+  return generated_sanitize.filter_csp_nonce_value_helper(value)
+
+
 ############################
 # Public Utility Functions #
 ############################

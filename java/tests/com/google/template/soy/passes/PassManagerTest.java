@@ -134,7 +134,6 @@ public final class PassManagerTest {
             CheckBadContextualUsagePass.class,
             CheckDeclaredTypesPass.class,
             CheckDelegatesPass.class,
-            CheckEscapingSanityFilePass.class,
             CheckGlobalsPass.class,
             CheckNoNamedTemplateTypesPass.class,
             CheckNonEmptyMsgNodesPass.class,

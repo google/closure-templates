@@ -1243,6 +1243,52 @@ public final class EscapingConventions {
     }
   }
 
+  /**
+   * Implements the {@code |filterCspNonceValue} directive
+   *
+   * <p>This only allows alphanumeric, plus, slash, and equals (in suffix position). So importantly
+   * it shouldn't be used in any programming-languagey context, such as:
+   *
+   * <ul>
+   *   <li>JavaScript outside a string
+   *   <li>CSS outside a string
+   *   <li>tag names, attribute names ("attributes" context)
+   * </ul>
+   *
+   * <p>It is allowed in:
+   *
+   * <ul>
+   *   <li>HTML pcdata, rcdata, attribute values, even nospace
+   *   <li>CSS and JS strings
+   *   <li>HTML, JS, CSS comments
+   * </ul>
+   *
+   * <p>And in practice, it is only used in:
+   *
+   * <ul>
+   *   <li>HTML attribute values
+   * </ul>
+   *
+   * <p>See also https://www.w3.org/TR/CSP2/#nonce_value
+   */
+  public static final class FilterCspNonceValue extends CrossLanguageStringXform {
+    public static final FilterCspNonceValue INSTANCE = new FilterCspNonceValue();
+
+    private FilterCspNonceValue() {
+      super(Pattern.compile("^[a-zA-Z0-9+/]+=*$"), null);
+    }
+
+    @Override
+    protected ImmutableList<Escape> defineEscapes() {
+      return ImmutableList.<Escape>of();
+    }
+
+    @Override
+    public String getInnocuousOutput() {
+      return INNOCUOUS_OUTPUT;
+    }
+  }
+
   /** An accessor for all string transforms defined above. */
   public static Iterable<CrossLanguageStringXform> getAllEscapers() {
     // This list is hard coded but is checked by unittests for the contextual auto-escaper.
@@ -1264,7 +1310,8 @@ public final class EscapingConventions {
         FilterSmsUri.INSTANCE,
         FilterTelUri.INSTANCE,
         FilterHtmlAttributes.INSTANCE,
-        FilterHtmlElementName.INSTANCE);
+        FilterHtmlElementName.INSTANCE,
+        FilterCspNonceValue.INSTANCE);
   }
 
   /**

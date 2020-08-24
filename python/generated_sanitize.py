@@ -230,6 +230,8 @@ _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:action|archive
 
 _FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
 
+_FILTER_FOR_FILTER_CSP_NONCE_VALUE = re.compile(r"""^[a-zA-Z0-9+/]+=*$""", re.U)
+
 def escape_html_helper(value):
   value = str(value)
   return _MATCHER_FOR_ESCAPE_HTML.sub(
@@ -347,6 +349,14 @@ def filter_html_attributes_helper(value):
 def filter_html_element_name_helper(value):
   value = str(value)
   if not _FILTER_FOR_FILTER_HTML_ELEMENT_NAME.search(value):
+    return 'zSoyz'
+
+  return value
+
+
+def filter_csp_nonce_value_helper(value):
+  value = str(value)
+  if not _FILTER_FOR_FILTER_CSP_NONCE_VALUE.search(value):
     return 'zSoyz'
 
   return value

@@ -34,7 +34,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   private static final String DEFN =
       "  {@inject? csp_nonce: any}  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
   private static final String NONCE =
-      "{if $csp_nonce} nonce=\"{$csp_nonce |escapeHtmlAttribute}\"{/if}";
+      "{if $csp_nonce} nonce=\"{$csp_nonce |filterCspNonceValue |escapeHtmlAttribute}\"{/if}";
 
   @Test
   public void testTrivialTemplate() {
@@ -251,10 +251,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             .renderHtml()
             .get()
             .getContent();
-    assertThat(renderedValue)
-        .isEqualTo(
-            "<script nonce=\"&quot;&gt;alert(&#39;hello&#39;)&lt;/script&gt;&lt;script "
-                + "data-foo=&quot;\">var innocentJs=\"foo\"</script>");
+    assertThat(renderedValue).isEqualTo("<script nonce=\"zSoyz\">var innocentJs=\"foo\"</script>");
   }
 
   @Test

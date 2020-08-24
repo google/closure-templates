@@ -2096,7 +2096,7 @@ public final class ContextualAutoescaperTest {
       "  {@inject? csp_nonce: any}  /** Created by ContentSecurityPolicyNonceInjectionPass. */\n";
 
   private static final String NONCE =
-      "{if $csp_nonce} nonce=\"{$csp_nonce |escapeHtmlAttribute}\"{/if}";
+      "{if $csp_nonce} nonce=\"{$csp_nonce |filterCspNonceValue |escapeHtmlAttribute}\"{/if}";
 
   private void assertContextualRewritingNoop(String expectedOutput) {
     assertContextualRewriting(expectedOutput, expectedOutput);

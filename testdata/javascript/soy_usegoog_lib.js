@@ -41632,6 +41632,17 @@ soy.$$filterCssValue = function(value) {
   return soy.esc.$$filterCssValueHelper(value);
 };
 
+/**
+ * Encodes a value as a CSP nonce value.
+ *
+ * @param {?} value The value to escape. Does not have to be a string, but the
+ *     value will be coerced to a string.
+ * @return {string} A safe CSP nonce value.
+ */
+soy.$$filterCspNonceValue = function(value) {
+  return soy.esc.$$filterCspNonceValueHelper(value);
+};
+
 
 // -----------------------------------------------------------------------------
 // Basic directives/functions.
@@ -42507,6 +42518,12 @@ soy.esc.$$FILTER_FOR_FILTER_HTML_ATTRIBUTES_ = /^(?!on|src|(?:action|archive|bac
 soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*$/i;
 
 /**
+ * A pattern that vets values produced by the named directives.
+ * @private {!RegExp}
+ */
+soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/]+=*$/;
+
+/**
  * A helper for the Soy directive |normalizeHtml
  * @param {?} value Can be of any type but will be coerced to a string.
  * @return {string} The escaped text.
@@ -42715,6 +42732,20 @@ soy.esc.$$filterHtmlElementNameHelper = function(value) {
   var str = String(value);
   if (!soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_.test(str)) {
     goog.asserts.fail('Bad value `%s` for |filterHtmlElementName', [str]);
+    return 'zSoyz';
+  }
+  return str;
+};
+
+/**
+ * A helper for the Soy directive |filterCspNonceValue
+ * @param {?} value Can be of any type but will be coerced to a string.
+ * @return {string} The escaped text.
+ */
+soy.esc.$$filterCspNonceValueHelper = function(value) {
+  var str = String(value);
+  if (!soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_.test(str)) {
+    goog.asserts.fail('Bad value `%s` for |filterCspNonceValue', [str]);
     return 'zSoyz';
   }
   return str;

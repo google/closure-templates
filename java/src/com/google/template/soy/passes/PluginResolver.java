@@ -454,7 +454,10 @@ public final class PluginResolver {
 
   /** Converts a | prepended print directive name to an equivalent function name. */
   static String getFunctionNameEquivalentToPrintDirectiveName(String printDirectiveName) {
-    Preconditions.checkArgument(printDirectiveName.startsWith("|"));
+    Preconditions.checkArgument(
+        printDirectiveName.startsWith("|"),
+        "Expected print directive name '%s' to start with '|'",
+        printDirectiveName);
     return printDirectiveName.substring(1);
   }
 }

@@ -120,6 +120,7 @@ public final class InternalPluginsTest {
             "|escapeUri",
             "|formatNum",
             "|filterNumber",
+            "|filterCspNonceValue",
             // These can't be made streaming because it would require a complex state machine or
             // they require knowing the full content to work.  For example all the filters, which
             // generally validate via a regular expression.

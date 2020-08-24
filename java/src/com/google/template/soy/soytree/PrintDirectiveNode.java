@@ -42,9 +42,13 @@ import javax.annotation.Nullable;
 public final class PrintDirectiveNode extends AbstractSoyNode implements ExprHolderNode {
 
   public static PrintDirectiveNode createSyntheticNode(
+      int id, Identifier name, SourceLocation location) {
+    return new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic=*/ true);
+  }
+
+  public static PrintDirectiveNode createSyntheticNode(
       int id, Identifier name, SourceLocation location, SoyPrintDirective printDirective) {
-    PrintDirectiveNode node =
-        new PrintDirectiveNode(id, name, location, ImmutableList.of(), /* isSynthetic=*/ true);
+    PrintDirectiveNode node = createSyntheticNode(id, name, location);
     node.setPrintDirective(printDirective);
     return node;
   }
