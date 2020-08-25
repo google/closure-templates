@@ -77,7 +77,6 @@ passing makes code more readable and easier to debug.
 
 #### Pass values using the `data` attribute
 
-**WARNING**: This is not supported by JSWire. b/123785421
 
 You can also pass data to the callee with the `call` command's `data` attribute.
 This accepts a variable of type [record](types.md#record). The `call` command
