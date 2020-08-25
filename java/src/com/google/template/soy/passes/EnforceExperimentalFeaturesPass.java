@@ -26,6 +26,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateBasicNode;
 import com.google.template.soy.soytree.TemplateNode;
 
 /**
@@ -66,7 +67,8 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
     if (!features.contains("enableTemplateElementKind")) {
       for (TemplateNode tmplNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
-        if (tmplNode.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind) {
+        if (tmplNode.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind
+            && tmplNode instanceof TemplateBasicNode) {
           reporter.report(tmplNode.getSourceLocation(), ELEMENT_TEMPLATE_KIND_NOT_GA);
         }
       }

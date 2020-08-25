@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -77,6 +78,11 @@ public final class SoyElementPass implements CompilerFileSetPass {
           "Soy elements must contain exactly one top-level HTML element (e.g, span, div). Calls to"
               + " templates (but not deltemplates) that contain one top-level HTML element are"
               + " also allowed.");
+
+  private static final SoyErrorKind ELEMENT_TEMPLATE_EXACTLY_ONE_TAG =
+      SoyErrorKind.of(
+          "Templates with kind=\"element\" must contain exactly one top-level HTML element (e.g,"
+              + " span, div).");
 
   static final ImmutableSet<SoyNode.Kind> ALLOWED_CHILD_NODES =
       Sets.immutableEnumSet(
@@ -163,6 +169,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
           && child instanceof CallBasicNode
           && ((CallBasicNode) child).isStaticCall()
           && i == template.numChildren() - 1) {
+        if (template.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind) {
+          errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
+        }
         return getTemplateMetadataForStaticCall(
             template, (CallBasicNode) child, templatesInLibrary, registry, visited);
       } else if (openTag == null && child instanceof HtmlOpenTagNode) {
@@ -188,6 +197,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
         closeTag = null;
         if (isSoyElement) {
           errorReporter.report(child.getSourceLocation(), SOY_ELEMENT_EXACTLY_ONE_TAG);
+        }
+        if (template.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind) {
+          errorReporter.report(child.getSourceLocation(), ELEMENT_TEMPLATE_EXACTLY_ONE_TAG);
         }
         break; // break after first error
       }

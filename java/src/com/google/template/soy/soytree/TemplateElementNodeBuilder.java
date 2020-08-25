@@ -36,7 +36,7 @@ import java.util.List;
 public final class TemplateElementNodeBuilder
     extends TemplateNodeBuilder<TemplateElementNodeBuilder> {
 
-  protected static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
+  static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
       ImmutableSet.of("autoescape", "kind", "stricthtml", "visibility");
 
   private static final SoyErrorKind BANNED_ATTRIBUTE_NAMES_ERROR =
@@ -48,7 +48,7 @@ public final class TemplateElementNodeBuilder
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);
-    setContentKind(TemplateContentKind.HTML);
+    setContentKind(TemplateContentKind.ElementContentKind.ELEMENT);
   }
 
   @Override
