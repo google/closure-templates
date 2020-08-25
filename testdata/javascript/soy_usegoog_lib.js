@@ -7460,6 +7460,7 @@ goog.require('goog.string.TypedString');
  * @param {string=} opt_content package-internal implementation detail.
  */
 goog.string.Const = function(opt_token, opt_content) {
+  'use strict';
   /**
    * The wrapped value of this Const object.  The field has a purposely ugly
    * name to make (non-compiled) code that attempts to directly access this
@@ -7501,6 +7502,7 @@ goog.string.Const.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.string.Const.prototype.getTypedStringValue = function() {
+  'use strict';
   return this.stringConstValueWithSecurityContract__googStringSecurityPrivate_;
 };
 
@@ -7516,6 +7518,7 @@ if (goog.DEBUG) {
    * @override
    */
   goog.string.Const.prototype.toString = function() {
+    'use strict';
     return 'Const{' +
         this.stringConstValueWithSecurityContract__googStringSecurityPrivate_ +
         '}';
@@ -7533,6 +7536,7 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.string.Const.unwrap = function(stringConst) {
+  'use strict';
   // Perform additional run-time type-checking to ensure that stringConst is
   // indeed an instance of the expected type.  This provides some additional
   // protection against security bugs due to application code that disables type
@@ -7573,6 +7577,7 @@ goog.string.Const.unwrap = function(stringConst) {
  * @return {!goog.string.Const} A Const object initialized to stringConst.
  */
 goog.string.Const.from = function(s) {
+  'use strict';
   return new goog.string.Const(
       goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_, s);
 };
@@ -7897,6 +7902,7 @@ goog.provide('goog.fs.url');
  * @return {string} The URL for the object.
  */
 goog.fs.url.createObjectUrl = function(obj) {
+  'use strict';
   return goog.fs.url.getUrlObject_().createObjectURL(obj);
 };
 
@@ -7908,6 +7914,7 @@ goog.fs.url.createObjectUrl = function(obj) {
  * @param {string} url The URL to revoke.
  */
 goog.fs.url.revokeObjectUrl = function(url) {
+  'use strict';
   goog.fs.url.getUrlObject_().revokeObjectURL(url);
 };
 
@@ -7938,6 +7945,7 @@ goog.fs.url.UrlObject_.prototype.revokeObjectURL = function(s) {};
  * @private
  */
 goog.fs.url.getUrlObject_ = function() {
+  'use strict';
   const urlObject = goog.fs.url.findUrlObject_();
   if (urlObject != null) {
     return urlObject;
@@ -7956,6 +7964,7 @@ goog.fs.url.getUrlObject_ = function() {
  * @private
  */
 goog.fs.url.findUrlObject_ = function() {
+  'use strict';
   // This is what the spec says to do
   // http://dev.w3.org/2006/webapi/FileAPI/#dfn-createObjectURL
   if (goog.global.URL !== undefined &&
@@ -7982,6 +7991,7 @@ goog.fs.url.findUrlObject_ = function() {
  * @return {boolean} True if this browser supports Object Urls.
  */
 goog.fs.url.browserSupportsObjectUrls = function() {
+  'use strict';
   return goog.fs.url.findUrlObject_() != null;
 };
 
@@ -8014,6 +8024,7 @@ goog.require('goog.array');
  * @return {!Blob} The blob.
  */
 goog.fs.blob.getBlob = function(var_args) {
+  'use strict';
   var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
 
   if (BlobBuilder !== undefined) {
@@ -8041,6 +8052,7 @@ goog.fs.blob.getBlob = function(var_args) {
  * @return {!Blob} The blob.
  */
 goog.fs.blob.getBlobWithProperties = function(parts, opt_type, opt_endings) {
+  'use strict';
   var BlobBuilder = goog.global.BlobBuilder || goog.global.WebKitBlobBuilder;
 
   if (BlobBuilder !== undefined) {
@@ -8250,6 +8262,7 @@ goog.i18n.bidi.I18N_LEFT =
  *     given directionality. If given null, returns null (i.e. unknown).
  */
 goog.i18n.bidi.toDir = function(givenDir, opt_noNeutral) {
+  'use strict';
   if (typeof givenDir == 'number') {
     // This includes the non-null goog.i18n.bidi.Dir case.
     return givenDir > 0 ?
@@ -8322,6 +8335,7 @@ goog.i18n.bidi.htmlSkipReg_ = /<[^>]*>|&[^;]+;/g;
  * @private
  */
 goog.i18n.bidi.stripHtmlIfNeeded_ = function(str, opt_isStripNeeded) {
+  'use strict';
   return opt_isStripNeeded ? str.replace(goog.i18n.bidi.htmlSkipReg_, '') : str;
 };
 
@@ -8350,6 +8364,7 @@ goog.i18n.bidi.ltrCharReg_ = new RegExp('[' + goog.i18n.bidi.ltrChars_ + ']');
  * @return {boolean} Whether the string contains RTL characters.
  */
 goog.i18n.bidi.hasAnyRtl = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.rtlCharReg_.test(
       goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
 };
@@ -8372,6 +8387,7 @@ goog.i18n.bidi.hasRtlChar = goog.i18n.bidi.hasAnyRtl;
  * @return {boolean} Whether the string contains LTR characters.
  */
 goog.i18n.bidi.hasAnyLtr = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.ltrCharReg_.test(
       goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
 };
@@ -8401,6 +8417,7 @@ goog.i18n.bidi.rtlRe_ = new RegExp('^[' + goog.i18n.bidi.rtlChars_ + ']');
  * @return {boolean} Whether the first character in str is an RTL char.
  */
 goog.i18n.bidi.isRtlChar = function(str) {
+  'use strict';
   return goog.i18n.bidi.rtlRe_.test(str);
 };
 
@@ -8411,6 +8428,7 @@ goog.i18n.bidi.isRtlChar = function(str) {
  * @return {boolean} Whether the first character in str is an LTR char.
  */
 goog.i18n.bidi.isLtrChar = function(str) {
+  'use strict';
   return goog.i18n.bidi.ltrRe_.test(str);
 };
 
@@ -8421,6 +8439,7 @@ goog.i18n.bidi.isLtrChar = function(str) {
  * @return {boolean} Whether the first character in str is a neutral char.
  */
 goog.i18n.bidi.isNeutralChar = function(str) {
+  'use strict';
   return !goog.i18n.bidi.isLtrChar(str) && !goog.i18n.bidi.isRtlChar(str);
 };
 
@@ -8454,6 +8473,7 @@ goog.i18n.bidi.rtlDirCheckRe_ = new RegExp(
  *     strongly-directional character method.
  */
 goog.i18n.bidi.startsWithRtl = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.rtlDirCheckRe_.test(
       goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
 };
@@ -8480,6 +8500,7 @@ goog.i18n.bidi.isRtlText = goog.i18n.bidi.startsWithRtl;
  *     strongly-directional character method.
  */
 goog.i18n.bidi.startsWithLtr = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.ltrDirCheckRe_.test(
       goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
 };
@@ -8517,6 +8538,7 @@ goog.i18n.bidi.isRequiredLtrRe_ = /^http:\/\/.*/;
  * @return {boolean} Whether neutral directionality is detected.
  */
 goog.i18n.bidi.isNeutralText = function(str, opt_isHtml) {
+  'use strict';
   str = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml);
   return goog.i18n.bidi.isRequiredLtrRe_.test(str) ||
       !goog.i18n.bidi.hasAnyLtr(str) && !goog.i18n.bidi.hasAnyRtl(str);
@@ -8554,6 +8576,7 @@ goog.i18n.bidi.rtlExitDirCheckRe_ = new RegExp(
  * @return {boolean} Whether LTR exit directionality was detected.
  */
 goog.i18n.bidi.endsWithLtr = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.ltrExitDirCheckRe_.test(
       goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
 };
@@ -8580,6 +8603,7 @@ goog.i18n.bidi.isLtrExitText = goog.i18n.bidi.endsWithLtr;
  * @return {boolean} Whether RTL exit directionality was detected.
  */
 goog.i18n.bidi.endsWithRtl = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.rtlExitDirCheckRe_.test(
       goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml));
 };
@@ -8635,6 +8659,7 @@ goog.i18n.bidi.rtlLocalesRe_ = new RegExp(
  * @return {boolean} Whether the language code is an RTL language.
  */
 goog.i18n.bidi.isRtlLanguage = function(lang) {
+  'use strict';
   return goog.i18n.bidi.rtlLocalesRe_.test(lang);
 };
 
@@ -8660,6 +8685,7 @@ goog.i18n.bidi.bracketGuardTextRe_ =
  * @return {string} The processed string, with all bracket guarded.
  */
 goog.i18n.bidi.guardBracketInText = function(s, opt_isRtlContext) {
+  'use strict';
   const useRtl = opt_isRtlContext === undefined ? goog.i18n.bidi.hasAnyRtl(s) :
                                                   opt_isRtlContext;
   const mark = useRtl ? goog.i18n.bidi.Format.RLM : goog.i18n.bidi.Format.LRM;
@@ -8678,6 +8704,7 @@ goog.i18n.bidi.guardBracketInText = function(s, opt_isRtlContext) {
  * @return {string} The processed string, with directionality enforced to RTL.
  */
 goog.i18n.bidi.enforceRtlInHtml = function(html) {
+  'use strict';
   if (html.charAt(0) == '<') {
     return html.replace(/<\w+/, '$& dir=rtl');
   }
@@ -8693,6 +8720,7 @@ goog.i18n.bidi.enforceRtlInHtml = function(html) {
  * @return {string} The wrapped string after process.
  */
 goog.i18n.bidi.enforceRtlInText = function(text) {
+  'use strict';
   return goog.i18n.bidi.Format.RLE + text + goog.i18n.bidi.Format.PDF;
 };
 
@@ -8708,6 +8736,7 @@ goog.i18n.bidi.enforceRtlInText = function(text) {
  * @return {string} The processed string, with directionality enforced to RTL.
  */
 goog.i18n.bidi.enforceLtrInHtml = function(html) {
+  'use strict';
   if (html.charAt(0) == '<') {
     return html.replace(/<\w+/, '$& dir=ltr');
   }
@@ -8723,6 +8752,7 @@ goog.i18n.bidi.enforceLtrInHtml = function(html) {
  * @return {string} The wrapped string after process.
  */
 goog.i18n.bidi.enforceLtrInText = function(text) {
+  'use strict';
   return goog.i18n.bidi.Format.LRE + text + goog.i18n.bidi.Format.PDF;
 };
 
@@ -8769,6 +8799,7 @@ goog.i18n.bidi.tempRe_ = /%%%%/g;
  * @return {string} Processed CSS specification string.
  */
 goog.i18n.bidi.mirrorCSS = function(cssStr) {
+  'use strict';
   return cssStr
       .
       // reverse dimensions
@@ -8805,6 +8836,7 @@ goog.i18n.bidi.singleQuoteSubstituteRe_ = /([\u0591-\u05f2])'/g;
  * @return {string} Processed string with double/single quote replaced.
  */
 goog.i18n.bidi.normalizeHebrewQuote = function(str) {
+  'use strict';
   return str.replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, '$1\u05f4')
       .replace(goog.i18n.bidi.singleQuoteSubstituteRe_, '$1\u05f3');
 };
@@ -8861,6 +8893,7 @@ goog.i18n.bidi.rtlDetectionThreshold_ = 0.40;
  * @return {goog.i18n.bidi.Dir} Estimated overall directionality of `str`.
  */
 goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
+  'use strict';
   let rtlCount = 0;
   let totalCount = 0;
   let hasWeaklyLtr = false;
@@ -8897,6 +8930,7 @@ goog.i18n.bidi.estimateDirection = function(str, opt_isHtml) {
  * @return {boolean} Whether this piece of text should be laid out in RTL.
  */
 goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
+  'use strict';
   return goog.i18n.bidi.estimateDirection(str, opt_isHtml) ==
       goog.i18n.bidi.Dir.RTL;
 };
@@ -8915,6 +8949,7 @@ goog.i18n.bidi.detectRtlDirectionality = function(str, opt_isHtml) {
  *     4. A null for unknown directionality.
  */
 goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
+  'use strict';
   if (element) {
     const htmlElement = /** @type {!HTMLElement} */ (element);
     dir = goog.i18n.bidi.toDir(dir);
@@ -8934,6 +8969,7 @@ goog.i18n.bidi.setElementDirAndAlign = function(element, dir) {
  * @param {string} text
  */
 goog.i18n.bidi.setElementDirByTextDirectionality = function(element, text) {
+  'use strict';
   const htmlElement = /** @type {!HTMLElement} */ (element);
   switch (goog.i18n.bidi.estimateDirection(text)) {
     case (goog.i18n.bidi.Dir.LTR):
@@ -9520,6 +9556,7 @@ goog.provide('goog.string.internal');
  * @see goog.string.startsWith
  */
 goog.string.internal.startsWith = function(str, prefix) {
+  'use strict';
   return str.lastIndexOf(prefix, 0) == 0;
 };
 
@@ -9532,6 +9569,7 @@ goog.string.internal.startsWith = function(str, prefix) {
  * @see goog.string.endsWith
  */
 goog.string.internal.endsWith = function(str, suffix) {
+  'use strict';
   const l = str.length - suffix.length;
   return l >= 0 && str.indexOf(suffix, l) == l;
 };
@@ -9546,6 +9584,7 @@ goog.string.internal.endsWith = function(str, suffix) {
  * @see goog.string.caseInsensitiveStartsWith
  */
 goog.string.internal.caseInsensitiveStartsWith = function(str, prefix) {
+  'use strict';
   return goog.string.internal.caseInsensitiveCompare(
              prefix, str.substr(0, prefix.length)) == 0;
 };
@@ -9560,6 +9599,7 @@ goog.string.internal.caseInsensitiveStartsWith = function(str, prefix) {
  * @see goog.string.caseInsensitiveEndsWith
  */
 goog.string.internal.caseInsensitiveEndsWith = function(str, suffix) {
+  'use strict';
   return (
       goog.string.internal.caseInsensitiveCompare(
           suffix, str.substr(str.length - suffix.length, suffix.length)) == 0);
@@ -9575,6 +9615,7 @@ goog.string.internal.caseInsensitiveEndsWith = function(str, suffix) {
  * @see goog.string.caseInsensitiveEquals
  */
 goog.string.internal.caseInsensitiveEquals = function(str1, str2) {
+  'use strict';
   return str1.toLowerCase() == str2.toLowerCase();
 };
 
@@ -9586,6 +9627,7 @@ goog.string.internal.caseInsensitiveEquals = function(str1, str2) {
  * @see goog.string.isEmptyOrWhitespace
  */
 goog.string.internal.isEmptyOrWhitespace = function(str) {
+  'use strict';
   // testing length == 0 first is actually slower in all browsers (about the
   // same in Opera).
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
@@ -9602,8 +9644,10 @@ goog.string.internal.isEmptyOrWhitespace = function(str) {
  */
 goog.string.internal.trim =
     (goog.TRUSTED_SITE && String.prototype.trim) ? function(str) {
+      'use strict';
       return str.trim();
     } : function(str) {
+      'use strict';
       // Since IE doesn't include non-breaking-space (0xa0) in their \s
       // character class (as required by section 7.2 of the ECMAScript spec),
       // we explicitly include it in the regexp to enforce consistent
@@ -9626,6 +9670,7 @@ goog.string.internal.trim =
  * @see goog.string.caseInsensitiveCompare
  */
 goog.string.internal.caseInsensitiveCompare = function(str1, str2) {
+  'use strict';
   const test1 = String(str1).toLowerCase();
   const test2 = String(str2).toLowerCase();
 
@@ -9647,6 +9692,7 @@ goog.string.internal.caseInsensitiveCompare = function(str1, str2) {
  * @see goog.string.newLineToBr
  */
 goog.string.internal.newLineToBr = function(str, opt_xml) {
+  'use strict';
   return str.replace(/(\r\n|\r|\n)/g, opt_xml ? '<br />' : '<br>');
 };
 
@@ -9662,6 +9708,7 @@ goog.string.internal.newLineToBr = function(str, opt_xml) {
  */
 goog.string.internal.htmlEscape = function(
     str, opt_isLikelyToContainHtmlChars) {
+  'use strict';
   if (opt_isLikelyToContainHtmlChars) {
     str = str.replace(goog.string.internal.AMP_RE_, '&amp;')
               .replace(goog.string.internal.LT_RE_, '&lt;')
@@ -9765,6 +9812,7 @@ goog.string.internal.ALL_RE_ = /[\x00&<>"']/;
  * @see goog.string.whitespaceEscape
  */
 goog.string.internal.whitespaceEscape = function(str, opt_xml) {
+  'use strict';
   // This doesn't use goog.string.preserveSpaces for backwards compatibility.
   return goog.string.internal.newLineToBr(
       str.replace(/  /g, ' &#160;'), opt_xml);
@@ -9779,6 +9827,7 @@ goog.string.internal.whitespaceEscape = function(str, opt_xml) {
  * @see goog.string.contains
  */
 goog.string.internal.contains = function(str, subString) {
+  'use strict';
   return str.indexOf(subString) != -1;
 };
 
@@ -9791,6 +9840,7 @@ goog.string.internal.contains = function(str, subString) {
  * @see goog.string.caseInsensitiveContains
  */
 goog.string.internal.caseInsensitiveContains = function(str, subString) {
+  'use strict';
   return goog.string.internal.contains(
       str.toLowerCase(), subString.toLowerCase());
 };
@@ -9808,6 +9858,7 @@ goog.string.internal.caseInsensitiveContains = function(str, subString) {
  * @see goog.string.compareVersions
  */
 goog.string.internal.compareVersions = function(version1, version2) {
+  'use strict';
   let order = 0;
   // Trim leading and trailing whitespace and split the versions into
   // subversions.
@@ -9867,6 +9918,7 @@ goog.string.internal.compareVersions = function(version1, version2) {
  * @private
  */
 goog.string.internal.compareElements_ = function(left, right) {
+  'use strict';
   if (left < right) {
     return -1;
   } else if (left > right) {
@@ -11586,6 +11638,7 @@ goog.require('goog.string.internal');
  * @private
  */
 goog.labs.userAgent.util.getNativeUserAgentString_ = function() {
+  'use strict';
   var navigator = goog.labs.userAgent.util.getNavigator_();
   if (navigator) {
     var userAgent = navigator.userAgent;
@@ -11604,6 +11657,7 @@ goog.labs.userAgent.util.getNativeUserAgentString_ = function() {
  * @private
  */
 goog.labs.userAgent.util.getNavigator_ = function() {
+  'use strict';
   return goog.global.navigator;
 };
 
@@ -11624,6 +11678,7 @@ goog.labs.userAgent.util.userAgent_ =
  * @param {?string=} opt_userAgent The User-Agent override.
  */
 goog.labs.userAgent.util.setUserAgent = function(opt_userAgent) {
+  'use strict';
   goog.labs.userAgent.util.userAgent_ =
       opt_userAgent || goog.labs.userAgent.util.getNativeUserAgentString_();
 };
@@ -11633,6 +11688,7 @@ goog.labs.userAgent.util.setUserAgent = function(opt_userAgent) {
  * @return {string} The user agent string.
  */
 goog.labs.userAgent.util.getUserAgent = function() {
+  'use strict';
   return goog.labs.userAgent.util.userAgent_;
 };
 
@@ -11642,6 +11698,7 @@ goog.labs.userAgent.util.getUserAgent = function() {
  * @return {boolean} Whether the user agent contains the given string.
  */
 goog.labs.userAgent.util.matchUserAgent = function(str) {
+  'use strict';
   var userAgent = goog.labs.userAgent.util.getUserAgent();
   return goog.string.internal.contains(userAgent, str);
 };
@@ -11653,6 +11710,7 @@ goog.labs.userAgent.util.matchUserAgent = function(str) {
  *     case.
  */
 goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
+  'use strict';
   var userAgent = goog.labs.userAgent.util.getUserAgent();
   return goog.string.internal.caseInsensitiveContains(userAgent, str);
 };
@@ -11665,6 +11723,7 @@ goog.labs.userAgent.util.matchUserAgentIgnoreCase = function(str) {
  *     of the parenthetical.
  */
 goog.labs.userAgent.util.extractVersionTuples = function(userAgent) {
+  'use strict';
   // Matches each section of a user agent string.
   // Example UA:
   // Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us)
@@ -11733,6 +11792,7 @@ goog.require('goog.string.internal');
  * @private
  */
 goog.labs.userAgent.browser.matchOpera_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Opera');
 };
 
@@ -11742,6 +11802,7 @@ goog.labs.userAgent.browser.matchOpera_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchIE_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Trident') ||
       goog.labs.userAgent.util.matchUserAgent('MSIE');
 };
@@ -11753,6 +11814,7 @@ goog.labs.userAgent.browser.matchIE_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchEdgeHtml_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Edge');
 };
 
@@ -11762,6 +11824,7 @@ goog.labs.userAgent.browser.matchEdgeHtml_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchEdgeChromium_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Edg/');
 };
 
@@ -11771,6 +11834,7 @@ goog.labs.userAgent.browser.matchEdgeChromium_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchOperaChromium_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('OPR');
 };
 
@@ -11780,6 +11844,7 @@ goog.labs.userAgent.browser.matchOperaChromium_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchFirefox_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Firefox') ||
       goog.labs.userAgent.util.matchUserAgent('FxiOS');
 };
@@ -11790,6 +11855,7 @@ goog.labs.userAgent.browser.matchFirefox_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchSafari_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Safari') &&
       !(goog.labs.userAgent.browser.matchChrome_() ||
         goog.labs.userAgent.browser.matchCoast_() ||
@@ -11809,6 +11875,7 @@ goog.labs.userAgent.browser.matchSafari_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchCoast_ = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Coast');
 };
 
@@ -11818,6 +11885,7 @@ goog.labs.userAgent.browser.matchCoast_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchIosWebview_ = function() {
+  'use strict';
   // iOS Webview does not show up as Chrome or Safari. Also check for Opera's
   // WebKit-based iOS browser, Coast.
   return (goog.labs.userAgent.util.matchUserAgent('iPad') ||
@@ -11836,6 +11904,7 @@ goog.labs.userAgent.browser.matchIosWebview_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchChrome_ = function() {
+  'use strict';
   return (goog.labs.userAgent.util.matchUserAgent('Chrome') ||
           goog.labs.userAgent.util.matchUserAgent('CriOS')) &&
       !goog.labs.userAgent.browser.matchEdgeHtml_();
@@ -11847,6 +11916,7 @@ goog.labs.userAgent.browser.matchChrome_ = function() {
  * @private
  */
 goog.labs.userAgent.browser.matchAndroidBrowser_ = function() {
+  'use strict';
   // Android can appear in the user agent string for Chrome on Android.
   // This is not the Android standalone browser if it does.
   return goog.labs.userAgent.util.matchUserAgent('Android') &&
@@ -11934,6 +12004,7 @@ goog.labs.userAgent.browser.isAndroidBrowser =
  * @return {boolean} Whether the user's browser is Silk.
  */
 goog.labs.userAgent.browser.isSilk = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Silk');
 };
 
@@ -11948,6 +12019,7 @@ goog.labs.userAgent.browser.isSilk = function() {
  *     details.)
  */
 goog.labs.userAgent.browser.getVersion = function() {
+  'use strict';
   var userAgentString = goog.labs.userAgent.util.getUserAgent();
   // Special case IE since IE's version is inside the parenthesis and
   // without the '/'.
@@ -11961,6 +12033,7 @@ goog.labs.userAgent.browser.getVersion = function() {
   // Construct a map for easy lookup.
   var versionMap = {};
   goog.array.forEach(versionTuples, function(tuple) {
+    'use strict';
     // Note that the tuple is of length three, but we only care about the
     // first two.
     var key = tuple[0];
@@ -12012,6 +12085,7 @@ goog.labs.userAgent.browser.getVersion = function() {
  *     given version.
  */
 goog.labs.userAgent.browser.isVersionOrHigher = function(version) {
+  'use strict';
   return goog.string.internal.compareVersions(
              goog.labs.userAgent.browser.getVersion(), version) >= 0;
 };
@@ -12029,6 +12103,7 @@ goog.labs.userAgent.browser.isVersionOrHigher = function(version) {
  * @private
  */
 goog.labs.userAgent.browser.getIEVersion_ = function(userAgent) {
+  'use strict';
   // IE11 may identify itself as MSIE 9.0 or MSIE 10.0 due to an IE 11 upgrade
   // bug. Example UA:
   // Mozilla/5.0 (MSIE 9.0; Windows NT 6.1; WOW64; Trident/7.0; rv:11.0)
@@ -15218,6 +15293,7 @@ goog.string.caseInsensitiveEquals = goog.string.internal.caseInsensitiveEquals;
  *     {@code %s} has been replaced an argument from `var_args`.
  */
 goog.string.subs = function(str, var_args) {
+  'use strict';
   var splitParts = str.split('%s');
   var returnString = '';
 
@@ -15240,6 +15316,7 @@ goog.string.subs = function(str, var_args) {
  * @return {string} A copy of `str` with collapsed whitespace.
  */
 goog.string.collapseWhitespace = function(str) {
+  'use strict';
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
   // class (as required by section 7.2 of the ECMAScript spec), we explicitly
   // include it in the regexp to enforce consistent cross-browser behavior.
@@ -15261,6 +15338,7 @@ goog.string.isEmptyOrWhitespace = goog.string.internal.isEmptyOrWhitespace;
  * @return {boolean} Whether `str` is empty.
  */
 goog.string.isEmptyString = function(str) {
+  'use strict';
   return str.length == 0;
 };
 
@@ -15284,6 +15362,7 @@ goog.string.isEmpty = goog.string.isEmptyOrWhitespace;
  *     instead.
  */
 goog.string.isEmptyOrWhitespaceSafe = function(str) {
+  'use strict';
   return goog.string.isEmptyOrWhitespace(goog.string.makeSafe(str));
 };
 
@@ -15305,6 +15384,7 @@ goog.string.isEmptySafe = goog.string.isEmptyOrWhitespaceSafe;
  * @return {boolean} Whether the string is all breaking whitespace.
  */
 goog.string.isBreakingWhitespace = function(str) {
+  'use strict';
   return !/[^\t\n\r ]/.test(str);
 };
 
@@ -15315,6 +15395,7 @@ goog.string.isBreakingWhitespace = function(str) {
  * @return {boolean} True if `str` consists entirely of letters.
  */
 goog.string.isAlpha = function(str) {
+  'use strict';
   return !/[^a-zA-Z]/.test(str);
 };
 
@@ -15326,6 +15407,7 @@ goog.string.isAlpha = function(str) {
  * @return {boolean} True if `str` is numeric.
  */
 goog.string.isNumeric = function(str) {
+  'use strict';
   return !/[^0-9]/.test(str);
 };
 
@@ -15336,6 +15418,7 @@ goog.string.isNumeric = function(str) {
  * @return {boolean} True if `str` is alphanumeric.
  */
 goog.string.isAlphaNumeric = function(str) {
+  'use strict';
   return !/[^a-zA-Z0-9]/.test(str);
 };
 
@@ -15346,6 +15429,7 @@ goog.string.isAlphaNumeric = function(str) {
  * @return {boolean} True if `ch` is a space.
  */
 goog.string.isSpace = function(ch) {
+  'use strict';
   return ch == ' ';
 };
 
@@ -15356,6 +15440,7 @@ goog.string.isSpace = function(ch) {
  * @return {boolean} True if `ch` is a valid unicode character.
  */
 goog.string.isUnicodeChar = function(ch) {
+  'use strict';
   return ch.length == 1 && ch >= ' ' && ch <= '~' ||
       ch >= '\u0080' && ch <= '\uFFFD';
 };
@@ -15368,6 +15453,7 @@ goog.string.isUnicodeChar = function(ch) {
  * @return {string} A copy of `str` stripped of newlines.
  */
 goog.string.stripNewlines = function(str) {
+  'use strict';
   return str.replace(/(\r\n|\r|\n)+/g, ' ');
 };
 
@@ -15378,6 +15464,7 @@ goog.string.stripNewlines = function(str) {
  * @return {string} `str` A copy of {@code} with canonicalized newlines.
  */
 goog.string.canonicalizeNewlines = function(str) {
+  'use strict';
   return str.replace(/(\r\n|\r|\n)/g, '\n');
 };
 
@@ -15389,6 +15476,7 @@ goog.string.canonicalizeNewlines = function(str) {
  * @return {string} A copy of `str` with all whitespace normalized.
  */
 goog.string.normalizeWhitespace = function(str) {
+  'use strict';
   return str.replace(/\xa0|\s/g, ' ');
 };
 
@@ -15401,6 +15489,7 @@ goog.string.normalizeWhitespace = function(str) {
  *    replaced with a single space.
  */
 goog.string.normalizeSpaces = function(str) {
+  'use strict';
   return str.replace(/\xa0|[ \t]+/g, ' ');
 };
 
@@ -15413,6 +15502,7 @@ goog.string.normalizeSpaces = function(str) {
  * @return {string} Copy of the string with normalized breaking spaces.
  */
 goog.string.collapseBreakingSpaces = function(str) {
+  'use strict';
   return str.replace(/[\t\r\n ]+/g, ' ')
       .replace(/^[\t\r\n ]+|[\t\r\n ]+$/g, '');
 };
@@ -15432,6 +15522,7 @@ goog.string.trim = goog.string.internal.trim;
  * @return {string} A trimmed copy of `str`.
  */
 goog.string.trimLeft = function(str) {
+  'use strict';
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
   // class (as required by section 7.2 of the ECMAScript spec), we explicitly
   // include it in the regexp to enforce consistent cross-browser behavior.
@@ -15445,6 +15536,7 @@ goog.string.trimLeft = function(str) {
  * @return {string} A trimmed copy of `str`.
  */
 goog.string.trimRight = function(str) {
+  'use strict';
   // Since IE doesn't include non-breaking-space (0xa0) in their \s character
   // class (as required by section 7.2 of the ECMAScript spec), we explicitly
   // include it in the regexp to enforce consistent cross-browser behavior.
@@ -15479,6 +15571,7 @@ goog.string.caseInsensitiveCompare =
  * @private
  */
 goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
+  'use strict';
   if (str1 == str2) {
     return 0;
   }
@@ -15545,6 +15638,7 @@ goog.string.numberAwareCompare_ = function(str1, str2, tokenizerRegExp) {
  *     0 if str1 > str2.
  */
 goog.string.intAwareCompare = function(str1, str2) {
+  'use strict';
   return goog.string.numberAwareCompare_(str1, str2, /\d+|\D+/g);
 };
 
@@ -15562,6 +15656,7 @@ goog.string.intAwareCompare = function(str1, str2) {
  *     0 if str1 > str2.
  */
 goog.string.floatAwareCompare = function(str1, str2) {
+  'use strict';
   return goog.string.numberAwareCompare_(str1, str2, /\d+|\.\d+|\D+/g);
 };
 
@@ -15584,6 +15679,7 @@ goog.string.numerateCompare = goog.string.floatAwareCompare;
  *     of URLs *will* be encoded.
  */
 goog.string.urlEncode = function(str) {
+  'use strict';
   return encodeURIComponent(String(str));
 };
 
@@ -15595,6 +15691,7 @@ goog.string.urlEncode = function(str) {
  * @return {string} The decoded `str`.
  */
 goog.string.urlDecode = function(str) {
+  'use strict';
   return decodeURIComponent(str.replace(/\+/g, ' '));
 };
 
@@ -15653,6 +15750,7 @@ goog.string.newLineToBr = goog.string.internal.newLineToBr;
  * @return {string} An escaped copy of `str`.
  */
 goog.string.htmlEscape = function(str, opt_isLikelyToContainHtmlChars) {
+  'use strict';
   str = goog.string.internal.htmlEscape(str, opt_isLikelyToContainHtmlChars);
   if (goog.string.DETECT_DOUBLE_ESCAPING) {
     str = str.replace(goog.string.E_RE_, '&#101;');
@@ -15676,6 +15774,7 @@ goog.string.E_RE_ = /e/g;
  * @return {string} An unescaped copy of `str`.
  */
 goog.string.unescapeEntities = function(str) {
+  'use strict';
   if (goog.string.contains(str, '&')) {
     // We are careful not to use a DOM if we do not have one or we explicitly
     // requested non-DOM html unescaping.
@@ -15699,6 +15798,7 @@ goog.string.unescapeEntities = function(str) {
  * @return {string} An unescaped copy of `str`.
  */
 goog.string.unescapeEntitiesWithDocument = function(str, document) {
+  'use strict';
   if (goog.string.contains(str, '&')) {
     return goog.string.unescapeEntitiesUsingDom_(str, document);
   }
@@ -15717,6 +15817,7 @@ goog.string.unescapeEntitiesWithDocument = function(str, document) {
  * @return {string} The unescaped `str` string.
  */
 goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
+  'use strict';
   /** @type {!Object<string, string>} */
   var seen = {'&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"'};
   /** @type {!Element} */
@@ -15732,6 +15833,7 @@ goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
   // open angle bracket, there is no chance of XSS from the innerHTML use.
   // Since no whitespace is passed to innerHTML, whitespace is preserved.
   return str.replace(goog.string.HTML_ENTITY_PATTERN_, function(s, entity) {
+    'use strict';
     // Check for cached entity.
     var value = seen[s];
     if (value) {
@@ -15770,7 +15872,9 @@ goog.string.unescapeEntitiesUsingDom_ = function(str, opt_document) {
  * @return {string} An unescaped copy of `str`.
  */
 goog.string.unescapePureXmlEntities_ = function(str) {
+  'use strict';
   return str.replace(/&([^;]+);/g, function(s, entity) {
+    'use strict';
     switch (entity) {
       case 'amp':
         return '&';
@@ -15812,6 +15916,7 @@ goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g;
  * @return {string} An escaped copy of `str`.
  */
 goog.string.whitespaceEscape = function(str, opt_xml) {
+  'use strict';
   // This doesn't use goog.string.preserveSpaces for backwards compatibility.
   return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml);
 };
@@ -15824,6 +15929,7 @@ goog.string.whitespaceEscape = function(str, opt_xml) {
  * @return {string} A copy of `str` with preserved whitespace.
  */
 goog.string.preserveSpaces = function(str) {
+  'use strict';
   return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP);
 };
 
@@ -15844,6 +15950,7 @@ goog.string.preserveSpaces = function(str) {
  * @return {string} A copy of `str` without the quotes.
  */
 goog.string.stripQuotes = function(str, quoteChars) {
+  'use strict';
   var length = quoteChars.length;
   for (var i = 0; i < length; i++) {
     var quoteChar = length == 1 ? quoteChars : quoteChars.charAt(i);
@@ -15866,6 +15973,7 @@ goog.string.stripQuotes = function(str, quoteChars) {
  * @return {string} The truncated `str` string.
  */
 goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
+  'use strict';
   if (opt_protectEscapedCharacters) {
     str = goog.string.unescapeEntities(str);
   }
@@ -15896,6 +16004,7 @@ goog.string.truncate = function(str, chars, opt_protectEscapedCharacters) {
  */
 goog.string.truncateMiddle = function(
     str, chars, opt_protectEscapedCharacters, opt_trailingChars) {
+  'use strict';
   if (opt_protectEscapedCharacters) {
     str = goog.string.unescapeEntities(str);
   }
@@ -15963,6 +16072,7 @@ goog.string.jsEscapeCache_ = {
  * @return {string} A copy of `s` surrounded by double quotes.
  */
 goog.string.quote = function(s) {
+  'use strict';
   s = String(s);
   var sb = ['"'];
   for (var i = 0; i < s.length; i++) {
@@ -15982,6 +16092,7 @@ goog.string.quote = function(s) {
  * @return {string} An escaped string representing `str`.
  */
 goog.string.escapeString = function(str) {
+  'use strict';
   var sb = [];
   for (var i = 0; i < str.length; i++) {
     sb[i] = goog.string.escapeChar(str.charAt(i));
@@ -15997,6 +16108,7 @@ goog.string.escapeString = function(str) {
  * @return {string} An escaped string representing `c`.
  */
 goog.string.escapeChar = function(c) {
+  'use strict';
   if (c in goog.string.jsEscapeCache_) {
     return goog.string.jsEscapeCache_[c];
   }
@@ -16056,6 +16168,7 @@ goog.string.caseInsensitiveContains =
  * @return {number} Number of occurrences of ss in s.
  */
 goog.string.countOf = function(s, ss) {
+  'use strict';
   return s && ss ? s.split(ss).length - 1 : 0;
 };
 
@@ -16070,6 +16183,7 @@ goog.string.countOf = function(s, ss) {
  *     string if nothing is removed or the input is invalid.
  */
 goog.string.removeAt = function(s, index, stringLength) {
+  'use strict';
   var resultStr = s;
   // If the index is greater or equal to 0 then remove substring
   if (index >= 0 && index < s.length && stringLength > 0) {
@@ -16088,6 +16202,7 @@ goog.string.removeAt = function(s, index, stringLength) {
  *     full string if nothing is removed.
  */
 goog.string.remove = function(str, substr) {
+  'use strict';
   return str.replace(substr, '');
 };
 
@@ -16100,6 +16215,7 @@ goog.string.remove = function(str, substr) {
  *      string if nothing is removed.
  */
 goog.string.removeAll = function(s, ss) {
+  'use strict';
   var re = new RegExp(goog.string.regExpEscape(ss), 'g');
   return s.replace(re, '');
 };
@@ -16114,6 +16230,7 @@ goog.string.removeAll = function(s, ss) {
  *      `replacement` or the original string if nothing is replaced.
  */
 goog.string.replaceAll = function(s, ss, replacement) {
+  'use strict';
   var re = new RegExp(goog.string.regExpEscape(ss), 'g');
   return s.replace(re, replacement.replace(/\$/g, '$$$$'));
 };
@@ -16126,6 +16243,7 @@ goog.string.replaceAll = function(s, ss, replacement) {
  * @return {string} A RegExp safe, escaped copy of `s`.
  */
 goog.string.regExpEscape = function(s) {
+  'use strict';
   return String(s)
       .replace(/([-()\[\]{}+?*.$\^|,:#<!\\])/g, '\\$1')
       .replace(/\x08/g, '\\x08');
@@ -16140,9 +16258,11 @@ goog.string.regExpEscape = function(s) {
  *     `string`.
  */
 goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
+  'use strict';
   // The native method is over 100 times faster than the alternative.
   return string.repeat(length);
 } : function(string, length) {
+  'use strict';
   return new Array(length + 1).join(string);
 };
 
@@ -16161,6 +16281,7 @@ goog.string.repeat = (String.prototype.repeat) ? function(string, length) {
  * @return {string} `num` as a string with the given options.
  */
 goog.string.padNumber = function(num, length, opt_precision) {
+  'use strict';
   var s =
       (opt_precision !== undefined) ? num.toFixed(opt_precision) : String(num);
   var index = s.indexOf('.');
@@ -16179,6 +16300,7 @@ goog.string.padNumber = function(num, length, opt_precision) {
  * @return {string} A string representation of the `obj`.
  */
 goog.string.makeSafe = function(obj) {
+  'use strict';
   return obj == null ? '' : String(obj);
 };
 
@@ -16198,6 +16320,7 @@ goog.string.makeSafe = function(obj) {
  * @return {string} The concatenation of `var_args`.
  */
 goog.string.buildString = function(var_args) {
+  'use strict';
   return Array.prototype.join.call(arguments, '');
 };
 
@@ -16212,6 +16335,7 @@ goog.string.buildString = function(var_args) {
  * @return {string} A random string, e.g. sn1s7vb4gcic.
  */
 goog.string.getRandomString = function() {
+  'use strict';
   var x = 2147483648;
   return Math.floor(Math.random() * x).toString(36) +
       Math.abs(Math.floor(Math.random() * x) ^ goog.now()).toString(36);
@@ -16243,6 +16367,7 @@ goog.string.compareVersions = goog.string.internal.compareVersions;
  *  (exclusive). The empty string returns 0.
  */
 goog.string.hashCode = function(str) {
+  'use strict';
   var result = 0;
   for (var i = 0; i < str.length; ++i) {
     // Normalize to 4 byte range, 0 ... 2^32.
@@ -16266,6 +16391,7 @@ goog.string.uniqueStringCounter_ = Math.random() * 0x80000000 | 0;
  * @return {string} A unique id.
  */
 goog.string.createUniqueString = function() {
+  'use strict';
   return 'goog_' + goog.string.uniqueStringCounter_++;
 };
 
@@ -16282,6 +16408,7 @@ goog.string.createUniqueString = function() {
  * @return {number} The number the supplied string represents, or NaN.
  */
 goog.string.toNumber = function(str) {
+  'use strict';
   var num = Number(str);
   if (num == 0 && goog.string.isEmptyOrWhitespace(str)) {
     return NaN;
@@ -16300,6 +16427,7 @@ goog.string.toNumber = function(str) {
  * @return {boolean} Whether the string is lower camel case.
  */
 goog.string.isLowerCamelCase = function(str) {
+  'use strict';
   return /^[a-z]+([A-Z][a-z]*)*$/.test(str);
 };
 
@@ -16314,6 +16442,7 @@ goog.string.isLowerCamelCase = function(str) {
  * @return {boolean} Whether the string is upper camel case.
  */
 goog.string.isUpperCamelCase = function(str) {
+  'use strict';
   return /^([A-Z][a-z]*)+$/.test(str);
 };
 
@@ -16326,7 +16455,9 @@ goog.string.isUpperCamelCase = function(str) {
  * @return {string} The string in camelCase form.
  */
 goog.string.toCamelCase = function(str) {
+  'use strict';
   return String(str).replace(/\-([a-z])/g, function(all, match) {
+    'use strict';
     return match.toUpperCase();
   });
 };
@@ -16340,6 +16471,7 @@ goog.string.toCamelCase = function(str) {
  * @return {string} The string in selector-case form.
  */
 goog.string.toSelectorCase = function(str) {
+  'use strict';
   return String(str).replace(/([A-Z])/g, '-$1').toLowerCase();
 };
 
@@ -16376,6 +16508,7 @@ goog.string.toSelectorCase = function(str) {
  * @return {string} String value in TitleCase form.
  */
 goog.string.toTitleCase = function(str, opt_delimiters) {
+  'use strict';
   var delimiters = (typeof opt_delimiters === 'string') ?
       goog.string.regExpEscape(opt_delimiters) :
       '\\s';
@@ -16386,6 +16519,7 @@ goog.string.toTitleCase = function(str, opt_delimiters) {
 
   var regexp = new RegExp('(^' + delimiters + ')([a-z])', 'g');
   return str.replace(regexp, function(all, p1, p2) {
+    'use strict';
     return p1 + p2.toUpperCase();
   });
 };
@@ -16405,6 +16539,7 @@ goog.string.toTitleCase = function(str, opt_delimiters) {
  * @return {string} String value with first letter in uppercase.
  */
 goog.string.capitalize = function(str) {
+  'use strict';
   return String(str.charAt(0)).toUpperCase() +
       String(str.substr(1)).toLowerCase();
 };
@@ -16428,6 +16563,7 @@ goog.string.capitalize = function(str) {
  *     will be NaN.
  */
 goog.string.parseInt = function(value) {
+  'use strict';
   // Force finite numbers to strings.
   if (isFinite(value)) {
     value = String(value);
@@ -16461,6 +16597,7 @@ goog.string.parseInt = function(value) {
  * @return {!Array<string>} The string, split.
  */
 goog.string.splitLimit = function(str, separator, limit) {
+  'use strict';
   var parts = str.split(separator);
   var returnVal = [];
 
@@ -16494,6 +16631,7 @@ goog.string.splitLimit = function(str, separator, limit) {
  * @return {string} The last part of the string with respect to the separators
  */
 goog.string.lastComponent = function(str, separators) {
+  'use strict';
   if (!separators) {
     return str;
   } else if (typeof separators == 'string') {
@@ -16524,6 +16662,7 @@ goog.string.lastComponent = function(str, separators) {
  * @return {number} The edit distance between the two strings.
  */
 goog.string.editDistance = function(a, b) {
+  'use strict';
   var v0 = [];
   var v1 = [];
 
@@ -30551,6 +30690,7 @@ goog.i18n.currency.tier2Enabled_ = false;
  * @return {boolean} If the currency is available.
  */
 goog.i18n.currency.isAvailable = function(currencyCode) {
+  'use strict';
   return currencyCode in goog.i18n.currency.CurrencyInfo;
 };
 
@@ -30561,6 +30701,7 @@ goog.i18n.currency.isAvailable = function(currencyCode) {
  * before any other functions in this namespace.
  */
 goog.i18n.currency.addTier2Support = function() {
+  'use strict';
   // Protection from executing this these again and again.
   if (!goog.i18n.currency.tier2Enabled_) {
     for (const key in goog.i18n.currency.CurrencyInfoTier2) {
@@ -30587,6 +30728,7 @@ goog.i18n.currency.addTier2Support = function() {
  *   {@link goog.i18n.NumberFormat.CurrencyStyle.GLOBAL}
  */
 goog.i18n.currency.getGlobalCurrencyPattern = function(currencyCode) {
+  'use strict';
   const info = goog.i18n.currency.CurrencyInfo[currencyCode];
   const patternNum = info[0];
   if (currencyCode == info[1]) {
@@ -30605,6 +30747,7 @@ goog.i18n.currency.getGlobalCurrencyPattern = function(currencyCode) {
  * @return {string} Global currency sign for given currency.
  */
 goog.i18n.currency.getGlobalCurrencySign = function(currencyCode) {
+  'use strict';
   const info = goog.i18n.currency.CurrencyInfo[currencyCode];
   return (currencyCode == info[1]) ? currencyCode :
                                      currencyCode + ' ' + info[1];
@@ -30622,6 +30765,7 @@ goog.i18n.currency.getGlobalCurrencySign = function(currencyCode) {
  * @return {string} Global currency sign for given currency.
  */
 goog.i18n.currency.getGlobalCurrencySignWithFallback = function(currencyCode) {
+  'use strict';
   var info = goog.i18n.currency.CurrencyInfo[currencyCode];
   if (!info) {
     return currencyCode;
@@ -30644,6 +30788,7 @@ goog.i18n.currency.getGlobalCurrencySignWithFallback = function(currencyCode) {
  *   {@link goog.i18n.NumberFormat.CurrencyStyle.LOCAL}
  */
 goog.i18n.currency.getLocalCurrencyPattern = function(currencyCode) {
+  'use strict';
   const info = goog.i18n.currency.CurrencyInfo[currencyCode];
   return goog.i18n.currency.getCurrencyPattern_(info[0], info[1]);
 };
@@ -30657,6 +30802,7 @@ goog.i18n.currency.getLocalCurrencyPattern = function(currencyCode) {
  * @return {string} Local currency sign for given currency.
  */
 goog.i18n.currency.getLocalCurrencySign = function(currencyCode) {
+  'use strict';
   return goog.i18n.currency.CurrencyInfo[currencyCode][1];
 };
 
@@ -30672,6 +30818,7 @@ goog.i18n.currency.getLocalCurrencySign = function(currencyCode) {
  * @return {string} Local currency sign for given currency.
  */
 goog.i18n.currency.getLocalCurrencySignWithFallback = function(currencyCode) {
+  'use strict';
   if (currencyCode in goog.i18n.currency.CurrencyInfo) {
     return goog.i18n.currency.CurrencyInfo[currencyCode][1];
   } else {
@@ -30696,6 +30843,7 @@ goog.i18n.currency.getLocalCurrencySignWithFallback = function(currencyCode) {
  *   {@link goog.i18n.NumberFormat.CurrencyStyle.PORTABLE}
  */
 goog.i18n.currency.getPortableCurrencyPattern = function(currencyCode) {
+  'use strict';
   const info = goog.i18n.currency.CurrencyInfo[currencyCode];
   return goog.i18n.currency.getCurrencyPattern_(info[0], info[2]);
 };
@@ -30709,6 +30857,7 @@ goog.i18n.currency.getPortableCurrencyPattern = function(currencyCode) {
  * @return {string} Portable currency sign for given currency.
  */
 goog.i18n.currency.getPortableCurrencySign = function(currencyCode) {
+  'use strict';
   return goog.i18n.currency.CurrencyInfo[currencyCode][2];
 };
 
@@ -30720,6 +30869,7 @@ goog.i18n.currency.getPortableCurrencySign = function(currencyCode) {
  * @return {boolean} Whether currencyCode is a 3-letter currency code.
  */
 goog.i18n.currency.isValid = function(currencyCode) {
+  'use strict';
   if (!currencyCode || currencyCode.length !== 3) {
     return false;
   }
@@ -30745,6 +30895,7 @@ goog.i18n.currency.isValid = function(currencyCode) {
  */
 goog.i18n.currency.getPortableCurrencySignWithFallback = function(
     currencyCode) {
+  'use strict';
   if (currencyCode in goog.i18n.currency.CurrencyInfo) {
     return goog.i18n.currency.CurrencyInfo[currencyCode][2];
   } else {
@@ -30770,6 +30921,7 @@ goog.i18n.currency.getPortableCurrencySignWithFallback = function(
  * @return {boolean} true if currency should be positioned before amount field.
  */
 goog.i18n.currency.isPrefixSignPosition = function(currencyCode) {
+  'use strict';
   return (goog.i18n.currency.CurrencyInfo[currencyCode][0] &
           goog.i18n.currency.POSITION_FLAG_) == 0;
 };
@@ -30786,6 +30938,7 @@ goog.i18n.currency.isPrefixSignPosition = function(currencyCode) {
  * @private
  */
 goog.i18n.currency.getCurrencyPattern_ = function(patternNum, sign) {
+  'use strict';
   const strParts = ['#,##0'];
   const precision = patternNum & goog.i18n.currency.PRECISION_MASK_;
   if (precision > 0) {
@@ -30820,6 +30973,7 @@ goog.i18n.currency.getCurrencyPattern_ = function(patternNum, sign) {
  * @return {string} modified currency pattern string.
  */
 goog.i18n.currency.adjustPrecision = function(pattern, currencyCode) {
+  'use strict';
   const strParts = ['0'];
   const info = goog.i18n.currency.CurrencyInfo[currencyCode];
   if (!info) {
@@ -34308,6 +34462,7 @@ goog.require('goog.string');
  */
 goog.i18n.NumberFormat = function(
     pattern, opt_currency, opt_currencyStyle, opt_symbols) {
+  'use strict';
   if (opt_currency && !goog.i18n.currency.isValid(opt_currency)) {
     throw new TypeError('Currency must be valid ISO code');
   }
@@ -34450,6 +34605,7 @@ goog.i18n.NumberFormat.enforceAsciiDigits_ = false;
  *     enforced.
  */
 goog.i18n.NumberFormat.setEnforceAsciiDigits = function(doEnforce) {
+  'use strict';
   goog.i18n.NumberFormat.enforceAsciiDigits_ = doEnforce;
 };
 
@@ -34459,6 +34615,7 @@ goog.i18n.NumberFormat.setEnforceAsciiDigits = function(doEnforce) {
  * @return {boolean} If Ascii digits is enforced.
  */
 goog.i18n.NumberFormat.isEnforceAsciiDigits = function() {
+  'use strict';
   return goog.i18n.NumberFormat.enforceAsciiDigits_;
 };
 
@@ -34469,6 +34626,7 @@ goog.i18n.NumberFormat.isEnforceAsciiDigits = function() {
  * @private
  */
 goog.i18n.NumberFormat.prototype.getNumberFormatSymbols_ = function() {
+  'use strict';
   return this.overrideNumberFormatSymbols_ ||
       (goog.i18n.NumberFormat.enforceAsciiDigits_ ?
            goog.i18n.NumberFormatSymbols_u_nu_latn :
@@ -34482,6 +34640,7 @@ goog.i18n.NumberFormat.prototype.getNumberFormatSymbols_ = function() {
  * @private
  */
 goog.i18n.NumberFormat.prototype.getCurrencyCode_ = function() {
+  'use strict';
   return this.intlCurrencyCode_ ||
       this.getNumberFormatSymbols_().DEF_CURRENCY_CODE;
 };
@@ -34493,6 +34652,7 @@ goog.i18n.NumberFormat.prototype.getCurrencyCode_ = function() {
  * @return {!goog.i18n.NumberFormat} Reference to this NumberFormat object.
  */
 goog.i18n.NumberFormat.prototype.setMinimumFractionDigits = function(min) {
+  'use strict';
   if (this.significantDigits_ > 0 && min > 0) {
     throw new Error(
         'Can\'t combine significant digits and minimum fraction digits');
@@ -34507,6 +34667,7 @@ goog.i18n.NumberFormat.prototype.setMinimumFractionDigits = function(min) {
  * @return {number} The number of minimum fraction digits.
  */
 goog.i18n.NumberFormat.prototype.getMinimumFractionDigits = function() {
+  'use strict';
   return this.minimumFractionDigits_;
 };
 
@@ -34517,6 +34678,7 @@ goog.i18n.NumberFormat.prototype.getMinimumFractionDigits = function() {
  * @return {!goog.i18n.NumberFormat} Reference to this NumberFormat object.
  */
 goog.i18n.NumberFormat.prototype.setMaximumFractionDigits = function(max) {
+  'use strict';
   if (max > 308) {
     // Math.pow(10, 309) becomes Infinity which breaks the logic in this class.
     throw new Error('Unsupported maximum fraction digits: ' + max);
@@ -34531,6 +34693,7 @@ goog.i18n.NumberFormat.prototype.setMaximumFractionDigits = function(max) {
  * @return {number} The number of maximum fraction digits.
  */
 goog.i18n.NumberFormat.prototype.getMaximumFractionDigits = function() {
+  'use strict';
   return this.maximumFractionDigits_;
 };
 
@@ -34543,6 +34706,7 @@ goog.i18n.NumberFormat.prototype.getMaximumFractionDigits = function() {
  * @return {!goog.i18n.NumberFormat} Reference to this NumberFormat object.
  */
 goog.i18n.NumberFormat.prototype.setSignificantDigits = function(number) {
+  'use strict';
   if (this.minimumFractionDigits_ > 0 && number >= 0) {
     throw new Error(
         'Can\'t combine significant digits and minimum fraction digits');
@@ -34557,6 +34721,7 @@ goog.i18n.NumberFormat.prototype.setSignificantDigits = function(number) {
  * @return {number} The number of significant digits to include.
  */
 goog.i18n.NumberFormat.prototype.getSignificantDigits = function() {
+  'use strict';
   return this.significantDigits_;
 };
 
@@ -34570,6 +34735,7 @@ goog.i18n.NumberFormat.prototype.getSignificantDigits = function() {
  */
 goog.i18n.NumberFormat.prototype.setShowTrailingZeros = function(
     showTrailingZeros) {
+  'use strict';
   this.showTrailingZeros_ = showTrailingZeros;
   return this;
 };
@@ -34594,6 +34760,7 @@ goog.i18n.NumberFormat.prototype.setShowTrailingZeros = function(
  */
 goog.i18n.NumberFormat.prototype.setBaseFormatting = function(
     baseFormattingNumber) {
+  'use strict';
   goog.asserts.assert(
       baseFormattingNumber === null || isFinite(baseFormattingNumber));
   this.baseFormattingNumber_ = baseFormattingNumber;
@@ -34607,6 +34774,7 @@ goog.i18n.NumberFormat.prototype.setBaseFormatting = function(
  * @return {?number}
  */
 goog.i18n.NumberFormat.prototype.getBaseFormatting = function() {
+  'use strict';
   return this.baseFormattingNumber_;
 };
 
@@ -34618,6 +34786,7 @@ goog.i18n.NumberFormat.prototype.getBaseFormatting = function() {
  * @private
  */
 goog.i18n.NumberFormat.prototype.applyPattern_ = function(pattern) {
+  'use strict';
   this.pattern_ = pattern.replace(/ /g, '\u00a0');
   var pos = [0];
 
@@ -34650,6 +34819,7 @@ goog.i18n.NumberFormat.prototype.applyPattern_ = function(pattern) {
  * @private
  */
 goog.i18n.NumberFormat.prototype.applyStandardPattern_ = function(patternType) {
+  'use strict';
   switch (patternType) {
     case goog.i18n.NumberFormat.Format.DECIMAL:
       this.applyPattern_(this.getNumberFormatSymbols_().DECIMAL_PATTERN);
@@ -34684,6 +34854,7 @@ goog.i18n.NumberFormat.prototype.applyStandardPattern_ = function(patternType) {
  * @private
  */
 goog.i18n.NumberFormat.prototype.applyCompactStyle_ = function(style) {
+  'use strict';
   this.compactStyle_ = style;
   this.applyPattern_(this.getNumberFormatSymbols_().DECIMAL_PATTERN);
   this.setMinimumFractionDigits(0);
@@ -34706,6 +34877,7 @@ goog.i18n.NumberFormat.prototype.applyCompactStyle_ = function(style) {
  *     parsed.
  */
 goog.i18n.NumberFormat.prototype.parse = function(text, opt_pos) {
+  'use strict';
   var pos = opt_pos || [0];
 
   if (this.compactStyle_ != goog.i18n.NumberFormat.CompactStyle.NONE) {
@@ -34772,6 +34944,7 @@ goog.i18n.NumberFormat.prototype.parse = function(text, opt_pos) {
  * @private
  */
 goog.i18n.NumberFormat.prototype.parseNumber_ = function(text, pos) {
+  'use strict';
   var sawDecimal = false;
   var sawExponent = false;
   var sawDigit = false;
@@ -34875,6 +35048,7 @@ goog.i18n.NumberFormat.prototype.parseNumber_ = function(text, pos) {
  * @return {string} The formatted number string.
  */
 goog.i18n.NumberFormat.prototype.format = function(number) {
+  'use strict';
   if (isNaN(number)) {
     return this.getNumberFormatSymbols_().NAN;
   }
@@ -34943,6 +35117,7 @@ goog.i18n.NumberFormat.prototype.format = function(number) {
  * @private
  */
 goog.i18n.NumberFormat.prototype.roundNumber_ = function(number) {
+  'use strict';
   var shift = goog.i18n.NumberFormat.decimalShift_;
 
   var shiftedNumber = shift(number, this.maximumFractionDigits_);
@@ -35001,6 +35176,7 @@ goog.i18n.NumberFormat.prototype.roundNumber_ = function(number) {
  */
 goog.i18n.NumberFormat.prototype.formatNumberGroupingRepeatingDigitsParts_ =
     function(parts, zeroCode, intPart, groupingArray, repeatedDigitLen) {
+  'use strict';
   // Keep track of how much has been completed on the non repeated groups
   var nonRepeatedGroupCompleteCount = 0;
   var currentGroupSizeIndex = 0;
@@ -35081,6 +35257,7 @@ goog.i18n.NumberFormat.prototype.formatNumberGroupingRepeatingDigitsParts_ =
  */
 goog.i18n.NumberFormat.prototype.formatNumberGroupingNonRepeatingDigitsParts_ =
     function(parts, zeroCode, intPart, groupingArray) {
+  'use strict';
   // Keep track of how much has been completed on the non repeated groups
   var grouping = this.getNumberFormatSymbols_().GROUP_SEP;
   var currentGroupSizeIndex;
@@ -35126,6 +35303,7 @@ goog.i18n.NumberFormat.prototype.formatNumberGroupingNonRepeatingDigitsParts_ =
  */
 goog.i18n.NumberFormat.prototype.subformatFixed_ = function(
     number, minIntDigits, parts) {
+  'use strict';
   if (this.minimumFractionDigits_ > this.maximumFractionDigits_) {
     throw new Error('Min value must be less than max value');
   }
@@ -35243,6 +35421,7 @@ goog.i18n.NumberFormat.prototype.subformatFixed_ = function(
  * @private
  */
 goog.i18n.NumberFormat.prototype.addExponentPart_ = function(exponent, parts) {
+  'use strict';
   parts.push(this.getNumberFormatSymbols_().EXP_SYMBOL);
 
   if (exponent < 0) {
@@ -35269,6 +35448,7 @@ goog.i18n.NumberFormat.prototype.addExponentPart_ = function(exponent, parts) {
  * @private
  */
 goog.i18n.NumberFormat.prototype.getMantissa_ = function(value, exponent) {
+  'use strict';
   return goog.i18n.NumberFormat.decimalShift_(value, -exponent);
 };
 
@@ -35282,6 +35462,7 @@ goog.i18n.NumberFormat.prototype.getMantissa_ = function(value, exponent) {
  */
 goog.i18n.NumberFormat.prototype.subformatExponential_ = function(
     number, parts) {
+  'use strict';
   if (number == 0.0) {
     this.subformatFixed_(number, this.minimumIntegerDigits_, parts);
     this.addExponentPart_(0, parts);
@@ -35333,6 +35514,7 @@ goog.i18n.NumberFormat.prototype.subformatExponential_ = function(
  * @private
  */
 goog.i18n.NumberFormat.prototype.getDigit_ = function(ch) {
+  'use strict';
   var code = ch.charCodeAt(0);
   // between '0' to '9'
   if (48 <= code && code < 58) {
@@ -35447,6 +35629,7 @@ goog.i18n.NumberFormat.QUOTE_ = '\'';
  * @private
  */
 goog.i18n.NumberFormat.prototype.parseAffix_ = function(pattern, pos) {
+  'use strict';
   var affix = '';
   var inQuote = false;
   var len = pattern.length;
@@ -35540,6 +35723,7 @@ goog.i18n.NumberFormat.prototype.parseAffix_ = function(pattern, pos) {
  * @private
  */
 goog.i18n.NumberFormat.prototype.parseTrunk_ = function(pattern, pos) {
+  'use strict';
   var decimalPos = -1;
   var digitLeftCount = 0;
   var zeroDigitCount = 0;
@@ -35703,6 +35887,7 @@ goog.i18n.NumberFormat.NULL_UNIT_ = {
  * @private
  */
 goog.i18n.NumberFormat.prototype.getUnitFor_ = function(base, plurality) {
+  'use strict';
   var table = this.compactStyle_ == goog.i18n.NumberFormat.CompactStyle.SHORT ?
       goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_SHORT_PATTERN :
       goog.i18n.CompactNumberFormatSymbols.COMPACT_DECIMAL_LONG_PATTERN;
@@ -35777,6 +35962,7 @@ goog.i18n.NumberFormat.prototype.getUnitFor_ = function(base, plurality) {
  */
 goog.i18n.NumberFormat.prototype.getUnitAfterRounding_ = function(
     formattingNumber, pluralityNumber) {
+  'use strict';
   if (this.compactStyle_ == goog.i18n.NumberFormat.CompactStyle.NONE) {
     return goog.i18n.NumberFormat.NULL_UNIT_;
   }
@@ -35815,6 +36001,7 @@ goog.i18n.NumberFormat.prototype.getUnitAfterRounding_ = function(
  * @private
  */
 goog.i18n.NumberFormat.prototype.intLog10_ = function(number) {
+  'use strict';
   // Handle infinity.
   if (!isFinite(number)) {
     return number > 0 ? number : 0;
@@ -35845,6 +36032,7 @@ goog.i18n.NumberFormat.prototype.intLog10_ = function(number) {
  * @private
  */
 goog.i18n.NumberFormat.decimalShift_ = function(number, digitCount) {
+  'use strict';
   goog.asserts.assert(
       digitCount % 1 == 0, 'Cannot shift by fractional digits "%s".',
       digitCount);
@@ -35880,6 +36068,7 @@ goog.i18n.NumberFormat.decimalShift_ = function(number, digitCount) {
  * @private
  */
 goog.i18n.NumberFormat.decimalRound_ = function(number, decimalCount) {
+  'use strict';
   goog.asserts.assert(
       decimalCount % 1 == 0, 'Cannot round to fractional digits "%s".',
       decimalCount);
@@ -35905,6 +36094,7 @@ goog.i18n.NumberFormat.decimalRound_ = function(number, decimalCount) {
  */
 goog.i18n.NumberFormat.prototype.roundToSignificantDigits_ = function(
     number, significantDigits, scale) {
+  'use strict';
   if (!number) return number;
 
   var digits = this.intLog10_(number);
@@ -35926,6 +36116,7 @@ goog.i18n.NumberFormat.prototype.roundToSignificantDigits_ = function(
  * @private
  */
 goog.i18n.NumberFormat.prototype.pluralForm_ = function(quantity) {
+  'use strict';
   /* TODO: Implement */
   return 'other';
 };
@@ -35940,6 +36131,7 @@ goog.i18n.NumberFormat.prototype.pluralForm_ = function(quantity) {
  * @return {boolean} true if currency is before value.
  */
 goog.i18n.NumberFormat.prototype.isCurrencyCodeBeforeValue = function() {
+  'use strict';
   var posCurrSymbol = this.pattern_.indexOf('\u00A4');  // '¤' Currency sign
   var posPound = this.pattern_.indexOf('#');
   var posZero = this.pattern_.indexOf('0');
@@ -36296,6 +36488,7 @@ goog.require('goog.string');
  * @return {boolean} Whether the rendering engine is Presto.
  */
 goog.labs.userAgent.engine.isPresto = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Presto');
 };
 
@@ -36304,6 +36497,7 @@ goog.labs.userAgent.engine.isPresto = function() {
  * @return {boolean} Whether the rendering engine is Trident.
  */
 goog.labs.userAgent.engine.isTrident = function() {
+  'use strict';
   // IE only started including the Trident token in IE8.
   return goog.labs.userAgent.util.matchUserAgent('Trident') ||
       goog.labs.userAgent.util.matchUserAgent('MSIE');
@@ -36314,6 +36508,7 @@ goog.labs.userAgent.engine.isTrident = function() {
  * @return {boolean} Whether the rendering engine is EdgeHTML.
  */
 goog.labs.userAgent.engine.isEdge = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Edge');
 };
 
@@ -36323,6 +36518,7 @@ goog.labs.userAgent.engine.isEdge = function() {
  * true for Chrome, Blink-based Opera (15+), Edge Chromium and Safari.
  */
 goog.labs.userAgent.engine.isWebKit = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgentIgnoreCase('WebKit') &&
       !goog.labs.userAgent.engine.isEdge();
 };
@@ -36332,6 +36528,7 @@ goog.labs.userAgent.engine.isWebKit = function() {
  * @return {boolean} Whether the rendering engine is Gecko.
  */
 goog.labs.userAgent.engine.isGecko = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Gecko') &&
       !goog.labs.userAgent.engine.isWebKit() &&
       !goog.labs.userAgent.engine.isTrident() &&
@@ -36344,6 +36541,7 @@ goog.labs.userAgent.engine.isGecko = function() {
  *     can't be determined.
  */
 goog.labs.userAgent.engine.getVersion = function() {
+  'use strict';
   var userAgentString = goog.labs.userAgent.util.getUserAgent();
   if (userAgentString) {
     var tuples = goog.labs.userAgent.util.extractVersionTuples(userAgentString);
@@ -36383,6 +36581,7 @@ goog.labs.userAgent.engine.getVersion = function() {
  * @private
  */
 goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
+  'use strict';
   if (!goog.labs.userAgent.engine.isEdge()) {
     return tuples[1];
   }
@@ -36401,6 +36600,7 @@ goog.labs.userAgent.engine.getEngineTuple_ = function(tuples) {
  *     as the given version.
  */
 goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
+  'use strict';
   return goog.string.compareVersions(
              goog.labs.userAgent.engine.getVersion(), version) >= 0;
 };
@@ -36414,9 +36614,13 @@ goog.labs.userAgent.engine.isVersionOrHigher = function(version) {
  * @private
  */
 goog.labs.userAgent.engine.getVersionForKey_ = function(tuples, key) {
+  'use strict';
   // TODO(nnaze): Move to util if useful elsewhere.
 
-  var pair = goog.array.find(tuples, function(pair) { return key == pair[0]; });
+  var pair = goog.array.find(tuples, function(pair) {
+    'use strict';
+    return key == pair[0];
+  });
 
   return pair && pair[1] || '';
 };
@@ -36446,6 +36650,7 @@ goog.require('goog.string');
  * @return {boolean} Whether the platform is Android.
  */
 goog.labs.userAgent.platform.isAndroid = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Android');
 };
 
@@ -36454,6 +36659,7 @@ goog.labs.userAgent.platform.isAndroid = function() {
  * @return {boolean} Whether the platform is iPod.
  */
 goog.labs.userAgent.platform.isIpod = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('iPod');
 };
 
@@ -36462,6 +36668,7 @@ goog.labs.userAgent.platform.isIpod = function() {
  * @return {boolean} Whether the platform is iPhone.
  */
 goog.labs.userAgent.platform.isIphone = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('iPhone') &&
       !goog.labs.userAgent.util.matchUserAgent('iPod') &&
       !goog.labs.userAgent.util.matchUserAgent('iPad');
@@ -36472,6 +36679,7 @@ goog.labs.userAgent.platform.isIphone = function() {
  * @return {boolean} Whether the platform is iPad.
  */
 goog.labs.userAgent.platform.isIpad = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('iPad');
 };
 
@@ -36480,6 +36688,7 @@ goog.labs.userAgent.platform.isIpad = function() {
  * @return {boolean} Whether the platform is iOS.
  */
 goog.labs.userAgent.platform.isIos = function() {
+  'use strict';
   return goog.labs.userAgent.platform.isIphone() ||
       goog.labs.userAgent.platform.isIpad() ||
       goog.labs.userAgent.platform.isIpod();
@@ -36490,6 +36699,7 @@ goog.labs.userAgent.platform.isIos = function() {
  * @return {boolean} Whether the platform is Mac.
  */
 goog.labs.userAgent.platform.isMacintosh = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Macintosh');
 };
 
@@ -36500,6 +36710,7 @@ goog.labs.userAgent.platform.isMacintosh = function() {
  * @return {boolean} Whether the platform is Linux.
  */
 goog.labs.userAgent.platform.isLinux = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Linux');
 };
 
@@ -36508,6 +36719,7 @@ goog.labs.userAgent.platform.isLinux = function() {
  * @return {boolean} Whether the platform is Windows.
  */
 goog.labs.userAgent.platform.isWindows = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('Windows');
 };
 
@@ -36516,6 +36728,7 @@ goog.labs.userAgent.platform.isWindows = function() {
  * @return {boolean} Whether the platform is ChromeOS.
  */
 goog.labs.userAgent.platform.isChromeOS = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('CrOS');
 };
 
@@ -36523,6 +36736,7 @@ goog.labs.userAgent.platform.isChromeOS = function() {
  * @return {boolean} Whether the platform is Chromecast.
  */
 goog.labs.userAgent.platform.isChromecast = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgent('CrKey');
 };
 
@@ -36530,6 +36744,7 @@ goog.labs.userAgent.platform.isChromecast = function() {
  * @return {boolean} Whether the platform is KaiOS.
  */
 goog.labs.userAgent.platform.isKaiOS = function() {
+  'use strict';
   return goog.labs.userAgent.util.matchUserAgentIgnoreCase('KaiOS');
 };
 
@@ -36543,6 +36758,7 @@ goog.labs.userAgent.platform.isKaiOS = function() {
  *     determined.
  */
 goog.labs.userAgent.platform.getVersion = function() {
+  'use strict';
   var userAgentString = goog.labs.userAgent.util.getUserAgent();
   var version = '', re;
   if (goog.labs.userAgent.platform.isWindows()) {
@@ -36587,6 +36803,7 @@ goog.labs.userAgent.platform.getVersion = function() {
  *     given version.
  */
 goog.labs.userAgent.platform.isVersionOrHigher = function(version) {
+  'use strict';
   return goog.string.compareVersions(
              goog.labs.userAgent.platform.getVersion(), version) >= 0;
 };
@@ -38143,6 +38360,7 @@ goog.i18n.uChar.TRAIL_SURROGATE_BIT_COUNT_ = 10;
  * @return {string} The U+ notation of the given character.
  */
 goog.i18n.uChar.toHexString = function(ch) {
+  'use strict';
   const chCode = goog.i18n.uChar.toCharCode(ch);
   const chCodeStr = 'U+' +
       goog.i18n.uChar.padString_(chCode.toString(16).toUpperCase(), 4, '0');
@@ -38160,6 +38378,7 @@ goog.i18n.uChar.toHexString = function(ch) {
  * @private
  */
 goog.i18n.uChar.padString_ = function(str, length, ch) {
+  'use strict';
   while (str.length < length) {
     str = ch + str;
   }
@@ -38175,6 +38394,7 @@ goog.i18n.uChar.padString_ = function(str, length, ch) {
  * @return {number} The Unicode value of the character.
  */
 goog.i18n.uChar.toCharCode = function(ch) {
+  'use strict';
   return goog.i18n.uChar.getCodePointAround(ch, 0);
 };
 
@@ -38186,6 +38406,7 @@ goog.i18n.uChar.toCharCode = function(ch) {
  * @return {?string} The character corresponding to the given Unicode value.
  */
 goog.i18n.uChar.fromCharCode = function(code) {
+  'use strict';
   if (code == null ||
       !(code >= 0 && code <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_)) {
     return null;
@@ -38255,6 +38476,7 @@ goog.i18n.uChar.fromCharCode = function(code) {
  * the pair.
  */
 goog.i18n.uChar.getCodePointAround = function(string, index) {
+  'use strict';
   const charCode = string.charCodeAt(index);
   if (goog.i18n.uChar.isLeadSurrogateCodePoint(charCode) &&
       index + 1 < string.length) {
@@ -38284,6 +38506,7 @@ goog.i18n.uChar.getCodePointAround = function(string, index) {
  * @return {number} 2 if codePoint is a supplementary character, 1 otherwise.
  */
 goog.i18n.uChar.charCount = function(codePoint) {
+  'use strict';
   return goog.i18n.uChar.isSupplementaryCodePoint(codePoint) ? 2 : 1;
 };
 
@@ -38295,6 +38518,7 @@ goog.i18n.uChar.charCount = function(codePoint) {
  * @return {boolean} Whether then given code point is a supplementary character.
  */
 goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
+  'use strict';
   return codePoint >= goog.i18n.uChar.SUPPLEMENTARY_CODE_POINT_MIN_VALUE_ &&
       codePoint <= goog.i18n.uChar.CODE_POINT_MAX_VALUE_;
 };
@@ -38307,6 +38531,7 @@ goog.i18n.uChar.isSupplementaryCodePoint = function(codePoint) {
  * character.
  */
 goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
+  'use strict';
   return codePoint >= goog.i18n.uChar.LEAD_SURROGATE_MIN_VALUE_ &&
       codePoint <= goog.i18n.uChar.LEAD_SURROGATE_MAX_VALUE_;
 };
@@ -38319,6 +38544,7 @@ goog.i18n.uChar.isLeadSurrogateCodePoint = function(codePoint) {
  * character.
  */
 goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
+  'use strict';
   return codePoint >= goog.i18n.uChar.TRAIL_SURROGATE_MIN_VALUE_ &&
       codePoint <= goog.i18n.uChar.TRAIL_SURROGATE_MAX_VALUE_;
 };
@@ -38334,6 +38560,7 @@ goog.i18n.uChar.isTrailSurrogateCodePoint = function(codePoint) {
  * the given UTF-16 surrogate pair.
  */
 goog.i18n.uChar.buildSupplementaryCodePoint = function(lead, trail) {
+  'use strict';
   if (goog.i18n.uChar.isLeadSurrogateCodePoint(lead) &&
       goog.i18n.uChar.isTrailSurrogateCodePoint(trail)) {
     const shiftedLeadOffset =
@@ -38573,6 +38800,7 @@ goog.i18n.GraphemeBreak.inversions_ = null;
  * @private
  */
 goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
+  'use strict';
   var prop = goog.i18n.GraphemeBreak.property;
 
   var aCode = (typeof a === 'string') ?
@@ -38716,6 +38944,7 @@ goog.i18n.GraphemeBreak.applyBreakRules_ = function(a, b, extended) {
  * @private
  */
 goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
+  'use strict';
   if (0xAC00 <= codePoint && codePoint <= 0xD7A3) {
     var prop = goog.i18n.GraphemeBreak.property;
     if (codePoint % 0x1C === 0x10) {
@@ -38885,6 +39114,7 @@ goog.i18n.GraphemeBreak.getBreakProp_ = function(codePoint) {
  * @private
  */
 goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
+  'use strict';
   var codePoint = goog.i18n.uChar.getCodePointAround(str, index);
   return (codePoint < 0) ? -codePoint : codePoint;
 };
@@ -38909,6 +39139,7 @@ goog.i18n.GraphemeBreak.getCodePoint_ = function(str, index) {
  *     a and b; False otherwise.
  */
 goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
+  'use strict';
   return goog.i18n.GraphemeBreak.applyBreakRules_(a, b, opt_extended !== false);
 };
 
@@ -38927,6 +39158,7 @@ goog.i18n.GraphemeBreak.hasGraphemeBreak = function(a, b, opt_extended) {
  *     a and b; False otherwise.
  */
 goog.i18n.GraphemeBreak.hasGraphemeBreakStrings = function(a, b, opt_extended) {
+  'use strict';
   goog.asserts.assert(a !== undefined, 'First string should be defined.');
   goog.asserts.assert(b !== undefined, 'Second string should be defined.');
 
@@ -38964,6 +39196,7 @@ goog.require('goog.userAgent');
  * @return {string} The human readable form of the byte size.
  */
 goog.format.fileSize = function(bytes, opt_decimals) {
+  'use strict';
   return goog.format.numBytesToString(bytes, opt_decimals, false);
 };
 
@@ -38984,6 +39217,7 @@ goog.format.fileSize = function(bytes, opt_decimals) {
  * @return {boolean} True if string could be converted to a numeric value.
  */
 goog.format.isConvertableScaledNumber = function(val) {
+  'use strict';
   return goog.format.SCALED_NUMERIC_RE_.test(val);
 };
 
@@ -38995,6 +39229,7 @@ goog.format.isConvertableScaledNumber = function(val) {
  * @return {number} Numeric value for string.
  */
 goog.format.stringToNumericValue = function(stringValue) {
+  'use strict';
   if (goog.string.endsWith(stringValue, 'B')) {
     return goog.format.stringToNumericValue_(
         stringValue, goog.format.NUMERIC_SCALES_BINARY_);
@@ -39011,6 +39246,7 @@ goog.format.stringToNumericValue = function(stringValue) {
  * @return {number} Numeric value for string.
  */
 goog.format.stringToNumBytes = function(stringValue) {
+  'use strict';
   return goog.format.stringToNumericValue_(
       stringValue, goog.format.NUMERIC_SCALES_BINARY_);
 };
@@ -39023,6 +39259,7 @@ goog.format.stringToNumBytes = function(stringValue) {
  * @return {string} String representation of number.
  */
 goog.format.numericValueToString = function(val, opt_decimals) {
+  'use strict';
   return goog.format.numericValueToString_(
       val, goog.format.NUMERIC_SCALES_SI_, opt_decimals);
 };
@@ -39043,6 +39280,7 @@ goog.format.numericValueToString = function(val, opt_decimals) {
  */
 goog.format.numBytesToString = function(
     val, opt_decimals, opt_suffix, opt_useSeparator) {
+  'use strict';
   var suffix = '';
   if (opt_suffix === undefined || opt_suffix) {
     suffix = 'B';
@@ -39062,6 +39300,7 @@ goog.format.numBytesToString = function(
  * @private
  */
 goog.format.stringToNumericValue_ = function(stringValue, conversion) {
+  'use strict';
   var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
   if (!match) {
     return NaN;
@@ -39085,6 +39324,7 @@ goog.format.stringToNumericValue_ = function(stringValue, conversion) {
  */
 goog.format.numericValueToString_ = function(
     val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
+  'use strict';
   var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
   var orig_val = val;
   var symbol = '';
@@ -39206,6 +39446,7 @@ goog.format.FIRST_GRAPHEME_EXTEND_ = 0x300;
  * @private
  */
 goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
+  'use strict';
   return (charCode <= goog.format.WbrToken_.SPACE) ||
       (charCode >= 0x1000 &&
        ((charCode >= 0x2000 && charCode <= 0x2006) ||
@@ -39223,6 +39464,7 @@ goog.format.isTreatedAsBreakingSpace_ = function(charCode) {
  * @private
  */
 goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
+  'use strict';
   // See: http://unicode.org/charts/PDF/U2000.pdf
   return (charCode >= 0x200C && charCode <= 0x200F) ||
       (charCode >= 0x202A && charCode <= 0x202E);
@@ -39251,6 +39493,7 @@ goog.format.isInvisibleFormattingCharacter_ = function(charCode) {
  */
 goog.format.insertWordBreaksGeneric_ = function(
     str, hasGraphemeBreak, opt_maxlen) {
+  'use strict';
   var maxlen = opt_maxlen || 10;
   if (maxlen > str.length) return str;
 
@@ -39342,6 +39585,7 @@ goog.format.insertWordBreaksGeneric_ = function(
  * @deprecated Prefer wrapping with CSS word-wrap: break-word.
  */
 goog.format.insertWordBreaks = function(str, opt_maxlen) {
+  'use strict';
   return goog.format.insertWordBreaksGeneric_(
       str, goog.i18n.GraphemeBreak.hasGraphemeBreak, opt_maxlen);
 };
@@ -39365,6 +39609,7 @@ goog.format.insertWordBreaks = function(str, opt_maxlen) {
  */
 goog.format.conservativelyHasGraphemeBreak_ = function(
     lastCharCode, charCode, opt_extended) {
+  'use strict';
   // Return false for everything except the most common Cyrillic characters.
   // Don't worry about Latin characters, because insertWordBreaksGeneric_
   // itself already handles those.
@@ -39393,6 +39638,7 @@ goog.format.conservativelyHasGraphemeBreak_ = function(
  * @deprecated Prefer wrapping with CSS word-wrap: break-word.
  */
 goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
+  'use strict';
   return goog.format.insertWordBreaksGeneric_(
       str, goog.format.conservativelyHasGraphemeBreak_, opt_maxlen);
 };
@@ -39511,6 +39757,7 @@ goog.require('goog.i18n.bidi.Format');
  * @final
  */
 goog.i18n.BidiFormatter = function(contextDir, opt_alwaysSpan) {
+  'use strict';
   /**
    * The overall directionality of the context in which the formatter is being
    * used.
@@ -39534,6 +39781,7 @@ goog.i18n.BidiFormatter = function(contextDir, opt_alwaysSpan) {
  * @return {?goog.i18n.bidi.Dir} The context directionality.
  */
 goog.i18n.BidiFormatter.prototype.getContextDir = function() {
+  'use strict';
   return this.contextDir_;
 };
 
@@ -39542,6 +39790,7 @@ goog.i18n.BidiFormatter.prototype.getContextDir = function() {
  * @return {boolean} Whether alwaysSpan is set.
  */
 goog.i18n.BidiFormatter.prototype.getAlwaysSpan = function() {
+  'use strict';
   return this.alwaysSpan_;
 };
 
@@ -39556,6 +39805,7 @@ goog.i18n.BidiFormatter.prototype.getAlwaysSpan = function() {
  *     4. A null for unknown directionality.
  */
 goog.i18n.BidiFormatter.prototype.setContextDir = function(contextDir) {
+  'use strict';
   this.contextDir_ = goog.i18n.bidi.toDir(contextDir, true /* opt_noNeutral */);
 };
 
@@ -39567,6 +39817,7 @@ goog.i18n.BidiFormatter.prototype.setContextDir = function(contextDir) {
  *     combination of directionalities.
  */
 goog.i18n.BidiFormatter.prototype.setAlwaysSpan = function(alwaysSpan) {
+  'use strict';
   this.alwaysSpan_ = alwaysSpan;
 };
 
@@ -39595,6 +39846,7 @@ goog.i18n.BidiFormatter.prototype.estimateDirection =
  */
 goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
     dir1, dir2) {
+  'use strict';
   return Number(dir1) * Number(dir2) < 0;
 };
 
@@ -39615,6 +39867,7 @@ goog.i18n.BidiFormatter.prototype.areDirectionalitiesOpposite_ = function(
  */
 goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
     str, dir, opt_isHtml, opt_dirReset) {
+  'use strict';
   // endsWithRtl and endsWithLtr are called only if needed (short-circuit).
   if (opt_dirReset &&
       (this.areDirectionalitiesOpposite_(dir, this.contextDir_) ||
@@ -39647,6 +39900,7 @@ goog.i18n.BidiFormatter.prototype.dirResetIfNeeded_ = function(
  * @return {string} "rtl" or "ltr", according to the logic described above.
  */
 goog.i18n.BidiFormatter.prototype.dirAttrValue = function(str, opt_isHtml) {
+  'use strict';
   return this.knownDirAttrValue(this.estimateDirection(str, opt_isHtml));
 };
 
@@ -39660,6 +39914,7 @@ goog.i18n.BidiFormatter.prototype.dirAttrValue = function(str, opt_isHtml) {
  * @return {string} "rtl" or "ltr", according to the logic described above.
  */
 goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
+  'use strict';
   var resolvedDir = dir == goog.i18n.bidi.Dir.NEUTRAL ? this.contextDir_ : dir;
   return resolvedDir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr';
 };
@@ -39677,6 +39932,7 @@ goog.i18n.BidiFormatter.prototype.knownDirAttrValue = function(dir) {
  *     LTR text in non-LTR context; else, the empty string.
  */
 goog.i18n.BidiFormatter.prototype.dirAttr = function(str, opt_isHtml) {
+  'use strict';
   return this.knownDirAttr(this.estimateDirection(str, opt_isHtml));
 };
 
@@ -39691,6 +39947,7 @@ goog.i18n.BidiFormatter.prototype.dirAttr = function(str, opt_isHtml) {
  *     LTR text in non-LTR context; else, the empty string.
  */
 goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
+  'use strict';
   if (dir != this.contextDir_) {
     return dir == goog.i18n.bidi.Dir.RTL ?
         'dir="rtl"' :
@@ -39723,6 +39980,7 @@ goog.i18n.BidiFormatter.prototype.knownDirAttr = function(dir) {
  */
 goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
     html, opt_dirReset) {
+  'use strict';
   return this.spanWrapSafeHtmlWithKnownDir(null, html, opt_dirReset);
 };
 
@@ -39750,6 +40008,7 @@ goog.i18n.BidiFormatter.prototype.spanWrapSafeHtml = function(
  */
 goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
     dir, html, opt_dirReset) {
+  'use strict';
   if (dir == null) {
     dir = this.estimateDirection(goog.html.SafeHtml.unwrap(html), true);
   }
@@ -39771,6 +40030,7 @@ goog.i18n.BidiFormatter.prototype.spanWrapSafeHtmlWithKnownDir = function(
  */
 goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
     dir, html, opt_dirReset) {
+  'use strict';
   opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
 
   var result;
@@ -39824,6 +40084,7 @@ goog.i18n.BidiFormatter.prototype.spanWrapWithKnownDir_ = function(
  */
 goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
     str, opt_isHtml, opt_dirReset) {
+  'use strict';
   return this.unicodeWrapWithKnownDir(null, str, opt_isHtml, opt_dirReset);
 };
 
@@ -39859,6 +40120,7 @@ goog.i18n.BidiFormatter.prototype.unicodeWrap = function(
  */
 goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
     dir, str, opt_isHtml, opt_dirReset) {
+  'use strict';
   if (dir == null) {
     dir = this.estimateDirection(str, opt_isHtml);
   }
@@ -39882,6 +40144,7 @@ goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir = function(
  */
 goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
     dir, str, opt_isHtml, opt_dirReset) {
+  'use strict';
   opt_dirReset = opt_dirReset || (opt_dirReset == undefined);
   var result = [];
   if (dir != goog.i18n.bidi.Dir.NEUTRAL && dir != this.contextDir_) {
@@ -39911,6 +40174,7 @@ goog.i18n.BidiFormatter.prototype.unicodeWrapWithKnownDir_ = function(
  *     the empty string.
  */
 goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
+  'use strict';
   return this.markAfterKnownDir(null, str, opt_isHtml);
 };
 
@@ -39930,6 +40194,7 @@ goog.i18n.BidiFormatter.prototype.markAfter = function(str, opt_isHtml) {
  */
 goog.i18n.BidiFormatter.prototype.markAfterKnownDir = function(
     dir, str, opt_isHtml) {
+  'use strict';
   if (dir == null) {
     dir = this.estimateDirection(str, opt_isHtml);
   }
@@ -39946,6 +40211,7 @@ goog.i18n.BidiFormatter.prototype.markAfterKnownDir = function(
  *     directionality.
  */
 goog.i18n.BidiFormatter.prototype.mark = function() {
+  'use strict';
   switch (this.contextDir_) {
     case (goog.i18n.bidi.Dir.LTR):
       return goog.i18n.bidi.Format.LRM;
@@ -39965,6 +40231,7 @@ goog.i18n.BidiFormatter.prototype.mark = function() {
  *     context directionality.
  */
 goog.i18n.BidiFormatter.prototype.startEdge = function() {
+  'use strict';
   return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.RIGHT :
                                                       goog.i18n.bidi.LEFT;
 };
@@ -39978,6 +40245,7 @@ goog.i18n.BidiFormatter.prototype.startEdge = function() {
  *     context directionality.
  */
 goog.i18n.BidiFormatter.prototype.endEdge = function() {
+  'use strict';
   return this.contextDir_ == goog.i18n.bidi.Dir.RTL ? goog.i18n.bidi.LEFT :
                                                       goog.i18n.bidi.RIGHT;
 };
