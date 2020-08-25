@@ -24,6 +24,7 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -46,6 +47,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind ELEMENT_TEMPLATE_KIND_NOT_GA =
       SoyErrorKind.of("Template ''kind=element'' is not available for general use.");
 
+  private static final SoyErrorKind WILDCARD_CLOSE_TAG_NOT_GA =
+      SoyErrorKind.of("</> is not available for general use.");
+
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
 
@@ -66,6 +70,12 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
     }
 
     if (!features.contains("enableTemplateElementKind")) {
+      for (HtmlCloseTagNode closeTagNode :
+          SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
+        if (closeTagNode.getTagName().isWildCard()) {
+          reporter.report(closeTagNode.getSourceLocation(), WILDCARD_CLOSE_TAG_NOT_GA);
+        }
+      }
       for (TemplateNode tmplNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
         if (tmplNode.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind
             && tmplNode instanceof TemplateBasicNode) {

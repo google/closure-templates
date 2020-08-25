@@ -1021,11 +1021,14 @@ final class HtmlRewriter {
         context.setState(State.PCDATA, currentPointOrEnd());
         return;
       }
-      RawTextNode node = consumeHtmlIdentifier(EXPECTED_TAG_NAME);
+      RawTextNode node =
+          context.isCloseTag
+              ? maybeConsumeHtmlIdentifier()
+              : consumeHtmlIdentifier(EXPECTED_TAG_NAME);
       if (node == null) {
         // consumeHtmlIdentifier will have already reported an error, try to keep going
         context.setTagNameNode(
-            new RawTextNode(nodeIdGen.genId(), "$parse-error$", currentLocation()));
+            new RawTextNode(nodeIdGen.genId(), TagName.WILDCARD, currentLocation()));
       } else {
         validateIdentifier(node, TAG_NAME, BAD_TAG_NAME);
         context.setTagNameNode(node);
@@ -1285,13 +1288,19 @@ final class HtmlRewriter {
      */
     @Nullable
     RawTextNode consumeHtmlIdentifier(SoyErrorKind errorForMissingIdentifier) {
+      RawTextNode node = maybeConsumeHtmlIdentifier();
+      if (node == null) {
+        errorReporter.report(currentLocation(), errorForMissingIdentifier);
+      }
+      return node;
+    }
+
+    @Nullable
+    RawTextNode maybeConsumeHtmlIdentifier() {
       // rather than use a regex to match the prefix, we just consume all non-whitespace/non-meta
       // characters and then validate the text afterwards.
       advanceWhileMatches(TAG_DELIMITER_MATCHER);
       RawTextNode node = consumeAsRawText();
-      if (node == null) {
-        errorReporter.report(currentLocation(), errorForMissingIdentifier);
-      }
       return node;
     }
 

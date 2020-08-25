@@ -74,6 +74,7 @@ public final class HtmlTagMatchingPass {
       "This HTML open tag is never matched with a close tag.";
   private static final String UNEXPECTED_OPEN_TAG_SOMETIMES =
       "This HTML open tag does not consistently match with a close tag.";
+  private static final String EXPECTED_TAG_NAME = "Expected an html tag name.";
 
   private static final Optional<HtmlTagNode> INVALID_NODE = Optional.empty();
 
@@ -332,7 +333,12 @@ public final class HtmlTagMatchingPass {
         prev = stack;
         while (!prev.isEmpty()) {
           HtmlOpenTagNode nextOpenTag = prev.tagNode;
-          if (nextOpenTag.getTagName().equals(closeTag.getTagName())) {
+          if (nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard()) {
+            errorReporter.report(
+                closeTag.getTagName().getTagLocation(), makeSoyErrorKind(EXPECTED_TAG_NAME));
+          }
+          if (nextOpenTag.getTagName().equals(closeTag.getTagName())
+              || (!nextOpenTag.getTagName().isStatic() && closeTag.getTagName().isWildCard())) {
             annotationMap.put(nextOpenTag, Optional.of(closeTag));
             annotationMap.put(closeTag, Optional.of(nextOpenTag));
             prev = prev.pop();

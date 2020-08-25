@@ -416,7 +416,9 @@ final class InferenceEngine {
 
     @Override
     protected void visitHtmlCloseTagNode(HtmlCloseTagNode node) {
-      visitHtmlTagNode(node);
+      if (!node.getTagName().isWildCard()) {
+        visitHtmlTagNode(node);
+      }
     }
 
     @Override

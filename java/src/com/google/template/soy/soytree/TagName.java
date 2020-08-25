@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -38,6 +39,7 @@ import javax.annotation.Nullable;
  * associated with the {@code PrintNode}.
  */
 public final class TagName {
+
   /**
    * An enum to represent tags that have {@code rcdata} content.
    *
@@ -173,6 +175,8 @@ public final class TagName {
   private static final ImmutableSet<String> HTML_OPEN_TAG_EXCLUDE_SET =
       ImmutableSet.of("head", "body", "html");
 
+  public static final String WILDCARD = "";
+
   /**
    * A map that is used to check whether a particular optional tag can be implicitly closed by a
    * following open tag. See {@link #checkCloseTagClosesOptional} method for more information.
@@ -239,6 +243,11 @@ public final class TagName {
 
   public boolean isStatic() {
     return node instanceof RawTextNode;
+  }
+
+  public boolean isWildCard() {
+    return node instanceof RawTextNode
+        && Objects.equals(((RawTextNode) node).getRawText(), WILDCARD);
   }
 
   public boolean isDefinitelyVoid() {
