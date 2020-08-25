@@ -802,7 +802,9 @@ public final class SoyFileSet {
    *
    * @return A SoyMsgBundle containing all the extracted messages (locale "en").
    * @throws SoyCompilationException If compilation fails.
+   * @deprecated Use the command line APIs to extract messages instead
    */
+  @Deprecated
   public SoyMsgBundle extractMsgs() {
     return entryPoint(this::doExtractMsgs);
   }
@@ -815,7 +817,7 @@ public final class SoyFileSet {
    * @param output Where to write the extracted messages.
    * @throws IOException If there are errors writing to the output.
    */
-  public void extractAndWriteMsgs(
+  void extractAndWriteMsgs(
       SoyMsgBundleHandler msgBundleHandler, OutputFileOptions options, ByteSink output)
       throws IOException {
     entryPointVoid(
