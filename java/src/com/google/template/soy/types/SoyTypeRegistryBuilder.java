@@ -319,26 +319,7 @@ public final class SoyTypeRegistryBuilder {
     }
   }
 
-  private abstract static class DelegatingProtoTypeRegistry implements ProtoTypeRegistry {
-
-    private final ProtoTypeRegistry delegate;
-
-    protected DelegatingProtoTypeRegistry(ProtoTypeRegistry delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public SoyType getProtoType(String protoFqn) {
-      return delegate.getProtoType(protoFqn);
-    }
-
-    @Override
-    public Iterable<String> getAllKeys() {
-      return delegate.getAllKeys();
-    }
-  }
-
-  private static class ProtoFqnTypeRegistry extends DelegatingProtoTypeRegistry {
+  private static class ProtoFqnTypeRegistry implements ProtoTypeRegistry {
 
     private final TypeInterner interner;
     /** Map of FQN to descriptor for all message and enum descendants of imported symbols. */
@@ -347,11 +328,10 @@ public final class SoyTypeRegistryBuilder {
     private final ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts;
 
     public ProtoFqnTypeRegistry(
-        SoyTypeRegistry delegate,
+        TypeInterner interner,
         ImmutableMap<String, GenericDescriptor> msgAndEnumFqnToDesc,
         ImmutableSetMultimap<String, FieldDescriptor> msgFqnToExts) {
-      super(delegate.getProtoRegistry());
-      this.interner = delegate;
+      this.interner = interner;
       this.msgAndEnumFqnToDesc = msgAndEnumFqnToDesc;
       this.msgFqnToExts = msgFqnToExts;
     }
@@ -369,7 +349,7 @@ public final class SoyTypeRegistryBuilder {
                 new SoyProtoType(
                     interner, this, (Descriptor) descriptor, msgFqnToExts.get(protoFqn)));
       }
-      return super.getProtoType(protoFqn);
+      return null;
     }
 
     @Override
