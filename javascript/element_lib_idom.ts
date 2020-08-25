@@ -94,6 +94,9 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
       this.renderInternal(renderer, this.data!);
     });
     this.skipHandler = skipHandler;
+    if (this.logger) {
+      this.logger.resetBuilder();
+    }
   }
 
   /**

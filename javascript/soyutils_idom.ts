@@ -113,6 +113,8 @@ function handleSoyElement<DATA, T extends SoyElement<DATA, {}>>(
   if (!el) {
     el = new elementClassCtor(data, ijData);
     el.key = soyElementKey;
+    // NOTE(b/166257386): Without this, SoyElement re-renders don't have logging
+    el.setLogger(incrementaldom.getLogger());
   }
   el.queueSoyElement(incrementaldom, data);
   el.renderInternal(incrementaldom, data);
