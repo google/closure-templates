@@ -211,7 +211,11 @@ export class IncrementalDomRenderer implements IdomRendererApi {
   }
 
   text(value: string): Text|void {
-    return incrementaldom.text(value);
+    // This helps ensure that hydrations on the server are consistent with
+    // client-side renders.
+    if (value) {
+      return incrementaldom.text(value);
+    }
   }
 
   attr(name: string, value: string) {
