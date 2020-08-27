@@ -462,5 +462,13 @@ public interface SoySauce {
      */
     @CheckReturnValue
     Continuation<T> continueRender();
+
+    /**
+     * @deprecated Generally {@link #get} should be called and the value inspected instead of
+     *     coercing the Continuation to a string..
+     */
+    @Override
+    @Deprecated
+    String toString();
   }
 }
