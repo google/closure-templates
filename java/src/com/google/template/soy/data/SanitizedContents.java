@@ -68,35 +68,7 @@ public final class SanitizedContents {
 
   /** Creates an empty string constant. */
   public static SanitizedContent emptyString(ContentKind kind) {
-    if (kind == ContentKind.TEXT) {
-      // TODO(b/129547159): throw an IllegalArgumentException
-      return UnsanitizedString.create("");
-    }
     return SanitizedContent.create("", kind, Dir.NEUTRAL); // Empty string is neutral.
-  }
-
-  /**
-   * Creates a SanitizedContent object of kind TEXT of a given direction (null if unknown).
-   *
-   * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
-   *
-   * @deprecated Use String objects instead
-   */
-  @Deprecated
-  public static UnsanitizedString unsanitizedText(String text, @Nullable Dir dir) {
-    return UnsanitizedString.create(text);
-  }
-
-  /**
-   * Creates a SanitizedContent object of kind TEXT and unknown direction.
-   *
-   * <p>This is useful when stubbing out a function that needs to create a SanitizedContent object.
-   *
-   * @deprecated Use String objects instead
-   */
-  @Deprecated
-  public static UnsanitizedString unsanitizedText(String text) {
-    return UnsanitizedString.create(text);
   }
 
   /**

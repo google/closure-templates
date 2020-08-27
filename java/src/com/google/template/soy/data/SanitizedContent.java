@@ -65,8 +65,6 @@ public class SanitizedContent extends SoyData {
    * @param dir The content's direction; null if unknown and thus to be estimated when necessary.
    */
   static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
-    checkArgument(
-        kind != ContentKind.TEXT, "Use UnsanitizedString for SanitizedContent with a kind of TEXT");
     if (Flags.stringIsNotSanitizedContent()) {
       return new SanitizedContent(content, kind, dir);
     }
@@ -170,6 +168,9 @@ public class SanitizedContent extends SoyData {
    * all implementations of this class are fully vetted by security.
    */
   SanitizedContent(String content, ContentKind contentKind, @Nullable Dir contentDir) {
+    checkArgument(
+        contentKind != ContentKind.TEXT,
+        "Use plain strings instead SanitizedContent with kind of TEXT");
     this.content = content;
     this.contentKind = contentKind;
     this.contentDir = contentDir;
@@ -430,11 +431,6 @@ public class SanitizedContent extends SoyData {
 
     static SanitizedCompatString create(String content, ContentKind kind, @Nullable Dir dir) {
       return new SanitizedCompatString(content, kind, dir);
-    }
-
-    /** Creates a SanitizedContent object with default direction. */
-    static SanitizedCompatString create(String content, ContentKind kind) {
-      return new SanitizedCompatString(content, kind, kind.getDefaultDir());
     }
   }
 }

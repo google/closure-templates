@@ -34,7 +34,6 @@ import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.restricted.StringData;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -45,14 +44,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class SanitizedContentsTest {
-
-  @Test
-  public void testUnsanitizedText() {
-    SanitizedContent unsanitized = SanitizedContents.unsanitizedText("Hello World");
-    assertThat(unsanitized.getContent()).isEqualTo("Hello World");
-    assertThat(unsanitized.getContentKind()).isEqualTo(ContentKind.TEXT);
-    assertThat(unsanitized.getContentDirection()).isEqualTo(null);
-  }
 
   @Test
   public void testConcatCombinesHtml() throws Exception {
@@ -370,22 +361,5 @@ public class SanitizedContentsTest {
       } catch (IllegalStateException expected) {
       }
     }
-  }
-
-  @Test
-  public void testUnsanizitedEqualsStringData() {
-    UnsanitizedString san = SanitizedContents.unsanitizedText("test string");
-    StringData data = StringData.forValue("test string");
-
-    assertThat(data).isEqualTo(san);
-    assertThat(san).isEqualTo(data);
-  }
-
-  @Test
-  public void testHashCodeStringData() {
-    UnsanitizedString san = SanitizedContents.unsanitizedText("test string");
-    StringData data = StringData.forValue("test string");
-
-    assertThat(san.hashCode()).isEqualTo(data.hashCode());
   }
 }
