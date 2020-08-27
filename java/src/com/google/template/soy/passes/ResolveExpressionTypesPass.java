@@ -144,6 +144,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.TypeRegistries;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
@@ -1474,7 +1475,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
     private void visitProtoInitFunction(FunctionNode node) {
       String protoName = node.getFunctionName();
-      SoyType type = typeRegistry.getType(protoName);
+      SoyType type =
+          TypeRegistries.getTypeOrProtoFqn(typeRegistry, errorReporter, node.getIdentifier());
 
       if (type == null) {
         errorReporter.report(node.getSourceLocation(), UNKNOWN_PROTO_TYPE, protoName);

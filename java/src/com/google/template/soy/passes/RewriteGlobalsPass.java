@@ -31,6 +31,7 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TypeRegistries;
 
 /**
  * A {@link CompilerFilePass} that searches for globals and substitutes values.
@@ -77,7 +78,9 @@ final class RewriteGlobalsPass implements CompilerFilePass {
     int lastDot = name.lastIndexOf('.');
     if (lastDot > 0) {
       String enumTypeName = name.substring(0, lastDot);
-      SoyType type = typeRegistry.getType(enumTypeName);
+      SoyType type =
+          TypeRegistries.getTypeOrProtoFqn(
+              typeRegistry, errorReporter, global.getIdentifier(), enumTypeName);
       if (type != null && type.getKind() == SoyType.Kind.PROTO_ENUM) {
         SoyProtoEnumType enumType = (SoyProtoEnumType) type;
         String enumMemberName = name.substring(lastDot + 1);

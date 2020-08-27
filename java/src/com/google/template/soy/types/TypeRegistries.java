@@ -26,6 +26,9 @@ import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
@@ -43,6 +46,10 @@ import javax.annotation.Nullable;
 /** Implementations of {@link TypeRegistry} and {@link TypeInterner}. */
 public final class TypeRegistries {
 
+  private static final SoyErrorKind PROTO_FQN =
+      SoyErrorKind.of(
+          "Proto types should be imported rather than referenced by their fully qualified names.");
+
   private TypeRegistries() {}
 
   private static final BuiltinTypeRegistry INSTANCE = new BuiltinTypeRegistry();
@@ -57,6 +64,33 @@ public final class TypeRegistries {
 
   public static SoyTypeRegistry newComposite(TypeRegistry typeRegistry, TypeInterner typeInterner) {
     return new CompositeSoyTypeRegistry(typeRegistry, typeInterner);
+  }
+
+  /**
+   * Looks up a type by name, including by FQN proto name. Depending on whether FQN names are
+   * allowed, deprecated, or disallowed this method may call {@code errorReporter} and may return
+   * the type or null.
+   */
+  public static SoyType getTypeOrProtoFqn(
+      SoyTypeRegistry registry, ErrorReporter errorReporter, Identifier id) {
+    return getTypeOrProtoFqn(registry, errorReporter, id, id.identifier());
+  }
+
+  public static SoyType getTypeOrProtoFqn(
+      SoyTypeRegistry registry, ErrorReporter errorReporter, Identifier id, String typeName) {
+
+    SoyType nonProtoFqnType = registry.getType(typeName);
+    if (nonProtoFqnType != null) {
+      return nonProtoFqnType;
+    }
+
+    SoyType protoFqnType = registry.getProtoRegistry().getProtoType(typeName);
+    if (protoFqnType != null) {
+      errorReporter.warn(id.location(), PROTO_FQN);
+      return protoFqnType;
+    }
+
+    return null;
   }
 
   private static final class TypeInternerImpl implements TypeInterner {

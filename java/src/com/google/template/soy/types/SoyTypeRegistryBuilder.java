@@ -232,7 +232,10 @@ public final class SoyTypeRegistryBuilder {
     }
   }
 
-  /** The standard implementation of SoyTypeRegistry, which supports protobuf types. */
+  /**
+   * The standard implementation of SoyTypeRegistry, which indexes protobuf types by FQN and exposes
+   * those types via {@link #getProtoRegistry()}.
+   */
   static class SoyTypeRegistryImpl extends DelegatingSoyTypeRegistry {
 
     /** All of the known type names for this registry (including its delegate), sorted. */
@@ -268,16 +271,6 @@ public final class SoyTypeRegistryBuilder {
     @Override
     public ProtoTypeRegistry getProtoRegistry() {
       return protoFqnRegistry;
-    }
-
-    @Nullable
-    @Override
-    public SoyType getType(String typeName) {
-      SoyType type = super.getType(typeName);
-      if (type != null) {
-        return type;
-      }
-      return protoFqnRegistry.getProtoType(typeName);
     }
 
     @Override

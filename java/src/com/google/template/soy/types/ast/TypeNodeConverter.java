@@ -231,7 +231,11 @@ public final class TypeNodeConverter
       errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
       type = ErrorType.getInstance();
     } else {
-      type = typeRegistry.getType(name);
+      type =
+          typeRegistry instanceof SoyTypeRegistry
+              ? TypeRegistries.getTypeOrProtoFqn(
+                  (SoyTypeRegistry) typeRegistry, errorReporter, node.name())
+              : typeRegistry.getType(name);
       if (type == null && protoRegistry != null) {
         type = protoRegistry.getProtoType(name);
       }

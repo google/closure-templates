@@ -16,8 +16,10 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -25,6 +27,7 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TypeRegistries;
 import java.util.Optional;
 
 /**
@@ -33,6 +36,8 @@ import java.util.Optional;
  */
 final class ResolvePluginsPass implements CompilerFilePass {
   private final PluginResolver resolver;
+  // Proto FQN will be warned in ResolveExpressionTypesPass.
+  private final ErrorReporter ignoreFqnWarnings = ErrorReporter.create(ImmutableMap.of());
 
   ResolvePluginsPass(PluginResolver resolver) {
     this.resolver = resolver;
@@ -44,10 +49,14 @@ final class ResolvePluginsPass implements CompilerFilePass {
         SoyTreeUtils.getAllMatchingNodesOfType(file, FunctionNode.class, fn -> !fn.isResolved())) {
 
       Identifier resolvedName = function.getIdentifier();
-      SoyType type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
+      SoyType type =
+          TypeRegistries.getTypeOrProtoFqn(
+              file.getSoyTypeRegistry(), ignoreFqnWarnings, resolvedName);
       if (type == null) {
         resolvedName = file.resolveAlias(resolvedName);
-        type = file.getSoyTypeRegistry().getType(resolvedName.identifier());
+        type =
+            TypeRegistries.getTypeOrProtoFqn(
+                file.getSoyTypeRegistry(), ignoreFqnWarnings, resolvedName);
       }
       if (type != null && type.getKind() == SoyType.Kind.PROTO) {
         function.setSoyFunction(BuiltinFunction.PROTO_INIT);
