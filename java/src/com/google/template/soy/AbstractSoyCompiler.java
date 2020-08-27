@@ -295,7 +295,7 @@ public abstract class AbstractSoyCompiler {
     for (File src : srcs) {
       try {
         String normalizedPath = generatedFiles.getOrDefault(src.getPath(), src.getPath());
-        sfsBuilder.addFile(cache.createFileSupplier(src, normalizedPath, soyCompilerFileReader));
+        sfsBuilder.add(cache.createFileSupplier(src, normalizedPath, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
             "File: " + src.getPath() + " passed to --srcs does not exist", fnfe);

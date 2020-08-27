@@ -511,7 +511,7 @@ public final class SoyFileSet {
       return this;
     }
 
-    Builder addFile(SoyFileSupplier supplier) {
+    private Builder addFile(SoyFileSupplier supplier) {
       filesBuilder.put(supplier.getFilePath(), supplier);
       return this;
     }
