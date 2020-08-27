@@ -28,3 +28,14 @@ export function setSkipHandler(
     el: Element, fn: <T>(prev: T, next: T) => boolean) {
   el.__soy_skip_handler = fn;
 }
+
+/**
+ * Setter for patch handler
+ * @param el Dom node that is the root of a Soy element. The DOM node should be
+ *           an {element} even if Incremental DOM isn't being used.
+ * @param fn A function that corresponds to the patch handler of the Soy
+ *     element.
+ */
+export function setAfterPatchHandler<T>(el: Element, fn: () => void) {
+  el.__soy_patch_handler = fn;
+}
