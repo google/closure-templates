@@ -163,7 +163,6 @@ public final class TofuTypeChecks {
         } else {
           if (value instanceof SoyString
               && value instanceof SanitizedContent
-              && ((SanitizedContent) value).getContentKind() != ContentKind.TEXT
               && logger.isLoggable(Level.WARNING)) {
             return CheckResult.passWithWarning(
                 () -> {

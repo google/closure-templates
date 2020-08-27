@@ -196,7 +196,6 @@ public final class JbcSrcRuntime {
     // always fail.
     if (o instanceof SoyString
         && o instanceof SanitizedContent
-        && ((SanitizedContent) o).getContentKind() != ContentKind.TEXT
         && logger.isLoggable(Level.WARNING)) {
       logger.log(
           Level.WARNING,
