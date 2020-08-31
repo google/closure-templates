@@ -32,6 +32,7 @@ import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.TypeRegistries;
+import com.google.template.soy.types.UnknownType;
 
 /**
  * A {@link CompilerFilePass} that searches for globals and substitutes values.
@@ -120,7 +121,9 @@ final class RewriteGlobalsPass implements CompilerFilePass {
       lastDot = name.lastIndexOf('.');
       if (lastDot > 0) {
         SoyType type = typeRegistry.getProtoRegistry().getProtoType(name.substring(0, lastDot));
-        if (type != null) {
+        // TODO(b/167269736): After gen_soy_xmb is gone, we should either delete
+        // SoyTypeRegistry.DEFAULT_UNKNOWN, or change it to return null for getProtoType.
+        if (type != null && !type.equals(UnknownType.getInstance())) {
           errorReporter.report(global.getSourceLocation(), PROTO_GLOBAL_OVERLAP_ERROR, name, value);
         }
       }
