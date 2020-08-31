@@ -74,7 +74,7 @@ final class LegacyTagNamePass implements CompilerFilePass {
         correctlyPlaced.add(functionNode);
       } else {
         // Eventually all other cases should be disallowed.
-        errorReporter.warn(printNode.getExpr().getSourceLocation(), NEED_WRAP);
+        errorReporter.report(printNode.getExpr().getSourceLocation(), NEED_WRAP);
       }
     }
 

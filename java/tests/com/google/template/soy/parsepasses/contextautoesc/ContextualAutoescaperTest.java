@@ -1375,7 +1375,7 @@ public final class ContextualAutoescaperTest {
             "{namespace ns}\n\n",
             "{template .foo stricthtml=\"false\"}\n",
             "  {@param x: ?}\n",
-            "<{$x}>\n",
+            "<{legacyDynamicTag($x)}>\n",
             "{/template}"));
   }
 

@@ -42,8 +42,8 @@ public final class InferenceEngineTest {
   public void testPcData() {
     assertTransitions(
         SanitizedContentKind.HTML,
-        "Hello <{assert('HTML_BEFORE_OPEN_TAG_NAME')} {assert('HTML_TAG NORMAL')}> "
-            + "{assert('HTML_PCDATA')}");
+        "Hello <{legacyDynamicTag(assert('HTML_BEFORE_OPEN_TAG_NAME'))} {assert('HTML_TAG"
+            + " NORMAL')}> {assert('HTML_PCDATA')}");
     // Test special tags.
     assertTransitions(
         SanitizedContentKind.HTML,
@@ -134,8 +134,8 @@ public final class InferenceEngineTest {
     assertTransitions(
         SanitizedContentKind.HTML,
         join(
-            "<{assert('HTML_BEFORE_OPEN_TAG_NAME')}>",
-            "</{assert('HTML_BEFORE_CLOSE_TAG_NAME')}>",
+            "<{legacyDynamicTag(assert('HTML_BEFORE_OPEN_TAG_NAME'))}>",
+            "</{legacyDynamicTag(assert('HTML_BEFORE_CLOSE_TAG_NAME'))}>",
             "<svg:font-fact "
                 + "id='{assert('HTML_NORMAL_ATTR_VALUE NORMAL PLAIN_TEXT SINGLE_QUOTE')}'/>",
             "<textarea>{assert('HTML_RCDATA TEXTAREA')}</textarea>",
