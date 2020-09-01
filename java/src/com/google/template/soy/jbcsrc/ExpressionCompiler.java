@@ -1180,8 +1180,7 @@ final class ExpressionCompiler {
           case BIND:
             return SoyExpression.forSoyValue(
                 node.getType(),
-                MethodRef.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(
-                    visit(node.getChild(0)), visit(node.getChild(1))));
+                MethodRef.RUNTIME_BIND_TEMPLATE_PARAMS.invoke(baseExpr, visit(node.getChild(1))));
         }
       } else if (function instanceof SoySourceFunctionMethod) {
         SoySourceFunctionMethod sourceMethod = (SoySourceFunctionMethod) function;

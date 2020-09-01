@@ -78,6 +78,11 @@ public final class GlobalNode extends AbstractExprNode {
     return soyType;
   }
 
+  public void upgradeTemplateType(SoyType type) {
+    checkState(this.soyType != null);
+    this.soyType = checkNotNull(type);
+  }
+
   public void resolve(SoyType soyType, PrimitiveNode value) {
     checkState(this.value == null, "value has already been set");
     this.soyType = checkNotNull(soyType);

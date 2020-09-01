@@ -26,6 +26,8 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -108,6 +110,14 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
               break;
             case VAR_REF_NODE:
               ((VarRefNode) exprNode).setSubstituteType(resolvedType);
+              break;
+            case GLOBAL_NODE:
+              // Happens for null-safe accesses.
+              Preconditions.checkState(
+                  ((GlobalNode) exprNode)
+                      .getName()
+                      .equals(NullSafeAccessNode.DO_NOT_USE_NULL_SAFE_ACCESS));
+              ((GlobalNode) exprNode).upgradeTemplateType(resolvedType);
               break;
             default:
               if (exprNode instanceof AbstractParentExprNode) {

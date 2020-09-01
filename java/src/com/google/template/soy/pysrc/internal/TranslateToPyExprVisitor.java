@@ -737,7 +737,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       switch ((BuiltinMethod) method) {
         case BIND:
           return new PyFunctionExprBuilder("runtime.bind_template_params")
-              .addArg(visit(methodCallNode.getChild(0)))
+              .addArg(containerExpr)
               .addArg(visit(methodCallNode.getChild(1)))
               .asPyExpr()
               .getText();
