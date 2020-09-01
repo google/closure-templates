@@ -44,6 +44,17 @@ Syntax:
 import {button, render as fooRender} from 'path/to/soy/file/foo.soy'
 ```
 
+You can also import all templates from other soy files using `*` and grouping
+them with a name.
+
+```soy
+import * as fooMagic from 'path/to/soy/file/foo.soy';
+...
+{call fooMagic.button}
+  ...
+{/call}
+```
+
 **Note:** Always prefer imports over referencing fully qualified names or using
 aliases (both are now deprecated and will soon be banned; we are in the process
 of migrating all existing users to use imports).
