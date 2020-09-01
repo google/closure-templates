@@ -415,7 +415,7 @@ Original entity: `<div style="color: {$x}">`
 Value                                    | Substitution
 ---------------------------------------- | ----------------------------
 `({ "x": "red" })`                       | `<div style="color: red">`
-`({ "x": "#f00" })`                      | `<div style="color: #foo">`
+`({ "x": "#f00" })`                      | `<div style="color: #f00">`
 `({ "x": "expression('alert(1337)')" })` | `<div style="color: zSoyz">`
 
 ##### Property Names
