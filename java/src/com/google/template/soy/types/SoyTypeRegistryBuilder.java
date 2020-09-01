@@ -278,11 +278,6 @@ public final class SoyTypeRegistryBuilder {
       return prefixesToTypeNames.get().get(prefix + ".");
     }
 
-    @Override
-    public Iterable<String> getAllSortedTypeNames() {
-      return allSortedTypeNames.get();
-    }
-
     private Iterable<String> buildAllSortedTypeNames() {
       return Iterables.mergeSorted(
           ImmutableList.of(

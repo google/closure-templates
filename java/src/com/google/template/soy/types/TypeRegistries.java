@@ -66,6 +66,9 @@ public final class TypeRegistries {
     return new CompositeSoyTypeRegistry(typeRegistry, typeInterner);
   }
 
+  private static final boolean PROTO_FQN_IS_ERROR =
+      false;
+
   /**
    * Looks up a type by name, including by FQN proto name. Depending on whether FQN names are
    * allowed, deprecated, or disallowed this method may call {@code errorReporter} and may return
@@ -86,8 +89,12 @@ public final class TypeRegistries {
 
     SoyType protoFqnType = registry.getProtoRegistry().getProtoType(typeName);
     if (protoFqnType != null) {
-      errorReporter.warn(id.location(), PROTO_FQN);
-      return protoFqnType;
+      if (PROTO_FQN_IS_ERROR) {
+        errorReporter.report(id.location(), PROTO_FQN);
+      } else {
+        errorReporter.warn(id.location(), PROTO_FQN);
+        return protoFqnType;
+      }
     }
 
     return null;
