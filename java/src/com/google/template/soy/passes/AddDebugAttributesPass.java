@@ -109,7 +109,7 @@ final class AddDebugAttributesPass implements CompilerFilePass {
 
     @Override
     protected void visitHtmlOpenTagNode(HtmlOpenTagNode node) {
-      if (tagDepth == 0) {
+      if (tagDepth == 0 && node.getTagName().isStatic()) {
         node.addChild(createSoyDebug(node.getSourceLocation()));
       }
       if (!node.isSelfClosing() && !node.getTagName().isDefinitelyVoid()) {
