@@ -411,7 +411,6 @@ public final class PassManager {
       // needs to be after ResolveNames and MsgsPass
       if (astRewrites) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
-        addPass(new LegacyTagNamePass(errorReporter), partialTemplateRegistryPassesBuilder);
       }
 
       // The StrictHtmlValidatorPass needs to run after ResolveNames.
@@ -433,10 +432,6 @@ public final class PassManager {
         // After ResolveExpressionTypesPass because ResolveExpressionTypesPass verifies usage and
         // types of non-null assertion operators.
         addPass(new SimplifyAssertNonNullPass(), partialTemplateRegistryPassesBuilder);
-        // Needs to come after types have been set.
-        addPass(
-            new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
-            partialTemplateRegistryPassesBuilder);
         addPass(new VeLogRewritePass(), partialTemplateRegistryPassesBuilder);
         // Needs to run before CheckGlobalsPass to prevent unbound global errors on the getExtension
         // parameters.
@@ -471,7 +466,6 @@ public final class PassManager {
 
       // Needs to run after StrictHtmlValidationPass (for single root validation).
       addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      addPass(new CallAnnotationPass(), partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {
         addPass(
             new VeLogValidationPass(errorReporter, registry), partialTemplateRegistryPassesBuilder);
@@ -491,15 +485,19 @@ public final class PassManager {
         // Upgrade the "named template" placeholder types to proper template types, now that their
         // signatures are known.
         addPass(
-            new UpgradeTemplateTypesPass(registry, errorReporter),
+            new ResolveExpressionTypesCrossTemplatePass(registry, errorReporter),
             crossTemplateCheckingPassesBuilder);
-        // Make sure we really upgraded *all* the template types.
-        addPass(new CheckNoNamedTemplateTypesPass(), crossTemplateCheckingPassesBuilder);
-        // Run type template-type-specific validation passes now that template types have been
-        // resolved.
-        addPass(new TemplateTypeValidationPass(errorReporter), crossTemplateCheckingPassesBuilder);
+        // Needs to come after types have been set.
+        addPass(
+            new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
+            crossTemplateCheckingPassesBuilder);
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+        if (astRewrites
+            && options.getExperimentalFeatures().contains("enableTemplateElementKind")) {
+          addPass(new SoyElementCompositionPass(errorReporter), crossTemplateCheckingPassesBuilder);
+        }
       }
+      addPass(new CallAnnotationPass(), crossTemplateCheckingPassesBuilder);
       addPass(new CheckTemplateVisibilityPass(errorReporter), crossTemplateCheckingPassesBuilder);
       addPass(new CheckDelegatesPass(errorReporter), crossTemplateCheckingPassesBuilder);
       // If disallowing external calls, perform the check.

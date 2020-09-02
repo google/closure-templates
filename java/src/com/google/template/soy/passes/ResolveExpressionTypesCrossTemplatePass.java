@@ -25,15 +25,24 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.passes.CompilerFileSetPass.Result;
+import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateMetadata;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
@@ -58,8 +67,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Upgrades template types from the "named template" placeholder type to proper types. */
-final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
+/**
+ * Pass that runs secondary resolution of expressions after the template registry is executed.
+ * Currently it: Upgrades template types from the "named template" placeholder type to proper types.
+ * Validates Soy Element Composition
+ */
+@RunAfter(ResolveExpressionTypesPass.class)
+final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ONLY_BASIC_TEMPLATES_ALLOWED =
       SoyErrorKind.of(
@@ -70,12 +84,23 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
           "Only strict HTML templates are allowed in expressions, but template `{0}` was not"
               + " strict HTML.");
 
+  private static final SoyErrorKind DECLARED_DEFAULT_TYPE_MISMATCH =
+      SoyErrorKind.of(
+          "The initializer for ''{0}'' has type ''{1}'' which is not assignable to type ''{2}''.");
+
+  private static final SoyErrorKind ILLEGAL_USE =
+      SoyErrorKind.of("''legacyDynamicTag'' may only be used to name an HTML tag.");
+
+  private static final SoyErrorKind NEED_WRAP =
+      SoyErrorKind.of("A dynamic tag name should be wrapped in the ''legacyDynamicTag'' function.");
+
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
   private final Set<String> invalidTemplateNames = new HashSet<>();
   private final Set<String> reportedInvalidTemplateNames = new HashSet<>();
 
-  UpgradeTemplateTypesPass(SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
+  ResolveExpressionTypesCrossTemplatePass(
+      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
     this.errorReporter = errorReporter;
     this.typeRegistry = typeRegistry;
   }
@@ -83,62 +108,141 @@ final class UpgradeTemplateTypesPass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      TemplateRegistry templateRegistry = file.getTemplateRegistry();
-      for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
-        if (SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
-          boolean isTemplateLiteral = exprNode.getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
-          // Template literal nodes and expr root nodes directly wrapping a TemplateLiteralNode are
-          // exempt from some checks.
-          boolean isSynthetic =
-              (isTemplateLiteral && ((TemplateLiteralNode) exprNode).isSynthetic())
-                  || (exprNode.getKind() == ExprNode.Kind.EXPR_ROOT_NODE
-                      && ((ExprRootNode) exprNode).getRoot().getKind()
-                          == ExprNode.Kind.TEMPLATE_LITERAL_NODE
-                      && ((TemplateLiteralNode) ((ExprRootNode) exprNode).getRoot()).isSynthetic());
-          SoyType resolvedType =
-              exprNode
-                  .getType()
-                  .accept(
-                      new TemplateTypeUpgrader(
-                          exprNode.getSourceLocation(),
-                          templateRegistry,
-                          isTemplateLiteral,
-                          isSynthetic));
-          switch (exprNode.getKind()) {
-            case TEMPLATE_LITERAL_NODE:
-              ((TemplateLiteralNode) exprNode).setType(resolvedType);
-              break;
-            case VAR_REF_NODE:
-              ((VarRefNode) exprNode).setSubstituteType(resolvedType);
-              break;
-            case GLOBAL_NODE:
-              // Happens for null-safe accesses.
-              Preconditions.checkState(
-                  ((GlobalNode) exprNode)
-                      .getName()
-                      .equals(NullSafeAccessNode.DO_NOT_USE_NULL_SAFE_ACCESS));
-              ((GlobalNode) exprNode).upgradeTemplateType(resolvedType);
-              break;
-            default:
-              if (exprNode instanceof AbstractParentExprNode) {
-                ((AbstractParentExprNode) exprNode).setType(resolvedType);
-              } else {
-                throw new AssertionError("Unhandled type: " + exprNode);
-              }
-              break;
+      updateTemplateTypes(file);
+      checkInitializerValues(file);
+      checkForNamedTemplateTypes(file);
+      handleDynamicTagAndCheckForLegacyDynamicTags(file);
+    }
+    checkReportedAllInvalidNames();
+    return Result.CONTINUE;
+  }
+
+  private void updateTemplateTypes(SoyFileNode file) {
+    TemplateRegistry templateRegistry = file.getTemplateRegistry();
+    for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
+      if (SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
+        boolean isTemplateLiteral = exprNode.getKind() == ExprNode.Kind.TEMPLATE_LITERAL_NODE;
+        // Template literal nodes and expr root nodes directly wrapping a TemplateLiteralNode are
+        // exempt from some checks.
+        boolean isSynthetic =
+            (isTemplateLiteral && ((TemplateLiteralNode) exprNode).isSynthetic())
+                || (exprNode.getKind() == ExprNode.Kind.EXPR_ROOT_NODE
+                    && ((ExprRootNode) exprNode).getRoot().getKind()
+                        == ExprNode.Kind.TEMPLATE_LITERAL_NODE
+                    && ((TemplateLiteralNode) ((ExprRootNode) exprNode).getRoot()).isSynthetic());
+        SoyType resolvedType =
+            exprNode
+                .getType()
+                .accept(
+                    new TemplateTypeUpgrader(
+                        exprNode.getSourceLocation(),
+                        templateRegistry,
+                        isTemplateLiteral,
+                        isSynthetic));
+        switch (exprNode.getKind()) {
+          case TEMPLATE_LITERAL_NODE:
+            ((TemplateLiteralNode) exprNode).setType(resolvedType);
+            break;
+          case VAR_REF_NODE:
+            ((VarRefNode) exprNode).setSubstituteType(resolvedType);
+            break;
+          case GLOBAL_NODE:
+            // Happens for null-safe accesses.
+            Preconditions.checkState(
+                ((GlobalNode) exprNode)
+                    .getName()
+                    .equals(NullSafeAccessNode.DO_NOT_USE_NULL_SAFE_ACCESS));
+            ((GlobalNode) exprNode).upgradeTemplateType(resolvedType);
+            break;
+          default:
+            if (exprNode instanceof AbstractParentExprNode) {
+              ((AbstractParentExprNode) exprNode).setType(resolvedType);
+            } else {
+              throw new AssertionError("Unhandled type: " + exprNode);
+            }
+            break;
+        }
+      }
+    }
+  }
+
+  private void checkInitializerValues(SoyFileNode file) {
+    for (TemplateNode templateNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
+      for (TemplateHeaderVarDefn headerVar : templateNode.getHeaderParams()) {
+        if (SoyTypes.transitivelyContainsKind(headerVar.type(), SoyType.Kind.TEMPLATE)
+            && headerVar.defaultValue() != null) {
+          SoyType declaredType = headerVar.type();
+          SoyType actualType = headerVar.defaultValue().getType();
+          if (!declaredType.isAssignableFrom(actualType)) {
+            errorReporter.report(
+                headerVar.defaultValue().getSourceLocation(),
+                DECLARED_DEFAULT_TYPE_MISMATCH,
+                headerVar.name(),
+                actualType,
+                declaredType);
           }
         }
       }
     }
-    checkReportedAllInvalidNames();
-    return Result.CONTINUE;
+  }
+
+  private void checkForNamedTemplateTypes(SoyFileNode file) {
+    for (ExprNode exprNode : SoyTreeUtils.getAllNodesOfType(file, ExprNode.class)) {
+      if (SoyTypes.transitivelyContainsKind(exprNode.getType(), SoyType.Kind.NAMED_TEMPLATE)) {
+        throw new IllegalStateException(
+            "Found non-upgraded Named Template type after they should have all been removed."
+                + " This is most likely a parsing error; please file a go/soy-bug. Problem"
+                + " expression: "
+                + exprNode
+                + " at "
+                + exprNode.getSourceLocation());
+      }
+    }
+  }
+
+  private void handleDynamicTagAndCheckForLegacyDynamicTags(SoyFileNode file) {
+    Set<FunctionNode> correctlyPlaced = new HashSet<>();
+    for (HtmlTagNode tagNode :
+        SoyTreeUtils.getAllMatchingNodesOfType(
+            file, HtmlTagNode.class, (tag) -> !tag.getTagName().isStatic())) {
+      handleDynamicTag(tagNode, correctlyPlaced);
+    }
+    // No other uses of legacyDynamicTag are allowed.
+    for (FunctionNode fn :
+        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.LEGACY_DYNAMIC_TAG)) {
+      if (!correctlyPlaced.contains(fn)) {
+        errorReporter.report(fn.getSourceLocation(), ILLEGAL_USE);
+      }
+    }
+  }
+
+  private void handleDynamicTag(HtmlTagNode tagNode, Set<FunctionNode> correctlyPlaced) {
+    TagName name = tagNode.getTagName();
+    PrintNode printNode = name.getDynamicTagName();
+    ExprNode exprNode = printNode.getExpr().getRoot();
+    if (exprNode.getKind() == Kind.FUNCTION_NODE
+        && ((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
+      FunctionNode functionNode = (FunctionNode) exprNode;
+      if (functionNode.numChildren() == 1) {
+        printNode.getExpr().clearChildren();
+        printNode.getExpr().addChild(functionNode.getChild(0));
+      } else {
+        // ResolvePluginsPass will tag this as an error since function arity is 1.
+      }
+      correctlyPlaced.add(functionNode);
+    } else if (!tagNode.getTagName().isTemplateCall()) {
+      // Eventually all other cases should be disallowed.
+      errorReporter.report(printNode.getExpr().getSourceLocation(), NEED_WRAP);
+    }
   }
 
   private void checkReportedAllInvalidNames() {
     // Sanity check that we reported at least one error for each invalid template name.
     Preconditions.checkState(
         invalidTemplateNames.equals(reportedInvalidTemplateNames),
-        "Expected: " + invalidTemplateNames + "; found: " + reportedInvalidTemplateNames);
+        "Expected: %s; found: %s",
+        invalidTemplateNames,
+        reportedInvalidTemplateNames);
   }
 
   private class TemplateTypeUpgrader implements SoyTypeVisitor<SoyType> {

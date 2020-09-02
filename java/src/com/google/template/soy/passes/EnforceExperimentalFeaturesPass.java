@@ -25,6 +25,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateBasicNode;
@@ -49,6 +50,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind WILDCARD_CLOSE_TAG_NOT_GA =
       SoyErrorKind.of("</> is not available for general use.");
+
+  private static final SoyErrorKind SOY_ELEMENT_COMPOSITION_NOT_GA =
+      SoyErrorKind.of("Soy element composition is not available for general use.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -76,6 +80,12 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
           reporter.report(closeTagNode.getSourceLocation(), WILDCARD_CLOSE_TAG_NOT_GA);
         }
       }
+      for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(file, HtmlTagNode.class)) {
+        if (tagNode.getTagName().isTemplateCall()) {
+          reporter.report(tagNode.getSourceLocation(), SOY_ELEMENT_COMPOSITION_NOT_GA);
+        }
+      }
+
       for (TemplateNode tmplNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
         if (tmplNode.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind
             && tmplNode instanceof TemplateBasicNode) {

@@ -21,10 +21,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.TemplateType;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
@@ -243,6 +246,16 @@ public final class TagName {
 
   public boolean isStatic() {
     return node instanceof RawTextNode;
+  }
+
+  public boolean isTemplateCall() {
+    return !isStatic()
+        && getDynamicTagName()
+            .getExpr()
+            .getType()
+            .isAssignableFrom(
+                TemplateType.declaredTypeOf(
+                    ImmutableList.of(), SanitizedType.HtmlType.getInstance()));
   }
 
   public boolean isWildCard() {
