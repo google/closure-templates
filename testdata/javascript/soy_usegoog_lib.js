@@ -4258,7 +4258,7 @@ goog.asserts.assertString = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertFunction = function(value, opt_message, var_args) {
-  if (goog.asserts.ENABLE_ASSERTS && !goog.isFunction(value)) {
+  if (goog.asserts.ENABLE_ASSERTS && typeof value !== 'function') {
     goog.asserts.doAssertFailure_(
         'Expected function but got %s: %s.', [goog.typeOf(value), value],
         opt_message, Array.prototype.slice.call(arguments, 2));
@@ -37764,7 +37764,7 @@ goog.debug.expose = function(obj, opt_showFn) {
   var str = [];
 
   for (var x in obj) {
-    if (!opt_showFn && goog.isFunction(obj[x])) {
+    if (!opt_showFn && typeof obj[x] === 'function') {
       continue;
     }
     var s = x + ' = ';
@@ -37814,7 +37814,7 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
         str.push('NULL');
       } else if (typeof obj === 'string') {
         str.push('"' + indentMultiline(obj) + '"');
-      } else if (goog.isFunction(obj)) {
+      } else if (typeof obj === 'function') {
         str.push(indentMultiline(String(obj)));
       } else if (goog.isObject(obj)) {
         // Add a Uid if needed. The struct calls implicitly adds them.
@@ -37828,7 +37828,7 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
           ancestorUids[uid] = true;
           str.push('{');
           for (var x in obj) {
-            if (!opt_showFn && goog.isFunction(obj[x])) {
+            if (!opt_showFn && typeof obj[x] === 'function') {
               continue;
             }
             str.push('\n');
@@ -45869,7 +45869,7 @@ goog.dom.nativelySupportsFocus_ = function(element) {
  */
 goog.dom.hasNonZeroBoundingRect_ = function(element) {
   var rect;
-  if (!goog.isFunction(element['getBoundingClientRect']) ||
+  if (typeof element['getBoundingClientRect'] !== 'function' ||
       // In IE, getBoundingClientRect throws on detached nodes.
       (goog.userAgent.IE && element.parentElement == null)) {
     rect = {'height': element.offsetHeight, 'width': element.offsetWidth};
@@ -46064,7 +46064,7 @@ goog.dom.isNodeList = function(val) {
       // A NodeList must have an item function (on non-IE platforms) or an item
       // property of type 'string' (on IE).
       return typeof val.item == 'function' || typeof val.item == 'string';
-    } else if (goog.isFunction(val)) {
+    } else if (typeof val === 'function') {
       // On Safari, a NodeList is a function with an item property that is also
       // a function.
       return typeof /** @type {?} */ (val.item) == 'function';
