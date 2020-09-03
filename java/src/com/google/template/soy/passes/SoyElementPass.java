@@ -81,7 +81,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ELEMENT_TEMPLATE_EXACTLY_ONE_TAG =
       SoyErrorKind.of(
-          "Templates with kind=\"element\" must contain exactly one top-level HTML element (e.g,"
+          "Templates with kind=\"html<?>\" must contain exactly one top-level HTML element (e.g,"
               + " span, div).");
 
   static final ImmutableSet<SoyNode.Kind> ALLOWED_CHILD_NODES =

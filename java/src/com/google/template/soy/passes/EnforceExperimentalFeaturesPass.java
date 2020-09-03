@@ -46,7 +46,7 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
           "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
 
   private static final SoyErrorKind ELEMENT_TEMPLATE_KIND_NOT_GA =
-      SoyErrorKind.of("Template ''kind=element'' is not available for general use.");
+      SoyErrorKind.of("Template ''kind=html<?>'' is not available for general use.");
 
   private static final SoyErrorKind WILDCARD_CLOSE_TAG_NOT_GA =
       SoyErrorKind.of("</> is not available for general use.");

@@ -24,8 +24,8 @@ import java.util.TreeMap;
 
 /**
  * The different types for template kind="" values. These have a many-to-one relationship with
- * {@link SanitizedContentKind} (for example, kind="html", kind="element", and kind="element<div>"
- * would all map to ContentKind.HTML).
+ * {@link SanitizedContentKind} (for example, kind="html", kind="html<?>" would all map to
+ * ContentKind.HTML).
  */
 public abstract class TemplateContentKind {
 
@@ -45,7 +45,7 @@ public abstract class TemplateContentKind {
 
     if (BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.containsKey(attrValue)) {
       return Optional.of(BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.get(attrValue));
-    } else if (attrValue.equals("element")) {
+    } else if (attrValue.equals("html<?>")) {
       return Optional.of(ElementContentKind.ELEMENT);
     }
     return Optional.empty();
@@ -95,7 +95,7 @@ public abstract class TemplateContentKind {
    */
   public static class ElementContentKind extends TemplateContentKind {
 
-    public static final ElementContentKind ELEMENT = new ElementContentKind("element");
+    public static final ElementContentKind ELEMENT = new ElementContentKind("html<?>");
 
     // TODO(b/163796852): Flip when ready.
     public static final boolean IS_GA = false;
