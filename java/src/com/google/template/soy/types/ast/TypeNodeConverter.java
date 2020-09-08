@@ -35,6 +35,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -83,6 +84,7 @@ public final class TypeNodeConverter
 
   private static final ImmutableSet<Kind> ALLOWED_TEMPLATE_RETURN_TYPES =
       Sets.immutableEnumSet(
+          Kind.ELEMENT,
           Kind.HTML,
           Kind.ATTRIBUTES,
           Kind.STRING,
@@ -121,6 +123,19 @@ public final class TypeNodeConverter
               return interner.getOrCreateVeType(types.get(0).toString());
             }
           });
+
+  private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES_WITH_ELEMENT =
+      new ImmutableMap.Builder<String, GenericTypeInfo>()
+          .putAll(GENERIC_TYPES)
+          .put(
+              "html",
+              new GenericTypeInfo(1) {
+                @Override
+                SoyType create(List<SoyType> types, TypeInterner interner) {
+                  return ElementType.getInstance();
+                }
+              })
+          .build();
 
   /** Simple representation of a generic type specification. */
   private abstract static class GenericTypeInfo {
@@ -267,9 +282,13 @@ public final class TypeNodeConverter
 
   @Override
   public SoyType visit(GenericTypeNode node) {
+    return visit(node, GENERIC_TYPES);
+  }
+
+  private SoyType visit(GenericTypeNode node, ImmutableMap<String, GenericTypeInfo> genericTypes) {
     ImmutableList<TypeNode> args = node.arguments();
     String name = node.name();
-    GenericTypeInfo genericType = GENERIC_TYPES.get(name);
+    GenericTypeInfo genericType = genericTypes.get(name);
     if (genericType == null) {
       errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
       return UnknownType.getInstance();
@@ -345,7 +364,7 @@ public final class TypeNodeConverter
         map.put(parameter.name(), oldParameter);
       }
     }
-    SoyType returnType = node.returnType().accept(this);
+    SoyType returnType = handleReturnTypeOfTemplateType(node.returnType());
     // Validate return type.
     if (!ALLOWED_TEMPLATE_RETURN_TYPES.contains(returnType.getKind())) {
       errorReporter.report(node.returnType().sourceLocation(), INVALID_TEMPLATE_RETURN_TYPE);
@@ -354,6 +373,13 @@ public final class TypeNodeConverter
         interner.internTemplateType(TemplateType.declaredTypeOf(map.values(), returnType));
     node.setResolvedType(type);
     return type;
+  }
+
+  private SoyType handleReturnTypeOfTemplateType(TypeNode node) {
+    if (node instanceof GenericTypeNode) {
+      return visit((GenericTypeNode) node, GENERIC_TYPES_WITH_ELEMENT);
+    }
+    return node.accept(this);
   }
 
   @DoNotCall

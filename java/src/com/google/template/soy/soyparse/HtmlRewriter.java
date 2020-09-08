@@ -326,6 +326,7 @@ final class HtmlRewriter {
         case ATTRIBUTES:
           return BEFORE_ATTRIBUTE_NAME;
         case HTML:
+        case HTML_ELEMENT:
           return PCDATA;
           // You might be thinking that some of these should be RCDATA_STYLE or RCDATA_SCRIPT, but
           // that wouldn't be accurate since rcdata is specific to the context of js on an html page

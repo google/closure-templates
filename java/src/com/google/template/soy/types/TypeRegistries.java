@@ -31,6 +31,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -244,6 +245,7 @@ public final class TypeRegistries {
             .put("number", NUMBER_TYPE)
             .put("html", HtmlType.getInstance())
             .put("attributes", AttributesType.getInstance())
+            .put("element", ElementType.getInstance())
             .put("css", StyleType.getInstance())
             .put("uri", UriType.getInstance())
             .put("trusted_resource_uri", TrustedResourceUriType.getInstance())
