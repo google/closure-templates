@@ -43,7 +43,6 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
-import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -263,11 +262,6 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     }
 
     @Override
-    public SoyType visit(ErrorType type) {
-      return type;
-    }
-
-    @Override
     public SoyType visit(LegacyObjectMapType type) {
       if (type.getKeyType() == null && type.getValueType() == null) {
         return type;
@@ -301,12 +295,8 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       TemplateMetadata basicTemplateOrElement =
           templateRegistry.getBasicTemplateOrElement(type.getTemplateName());
       if (basicTemplateOrElement == null) {
-        // Synthetic nodes are exempt from this check, to support external calls.
-        if (isSynthetic) {
-          return UnknownType.getInstance();
-        }
         // Error reporting here should be handled by StrictDepsPass and CheckDelegatesPass.
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
       }
       if (basicTemplateOrElement.getTemplateKind() != TemplateType.TemplateKind.BASIC
           && !isSynthetic) {
@@ -321,7 +311,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
               basicTemplateOrElement.getTemplateKind());
           reportedInvalidTemplateNames.add(type.getTemplateName());
         }
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
       }
       if (basicTemplateOrElement.getContentKind() == SanitizedContentKind.HTML
           && !basicTemplateOrElement.isStrictHtml()
@@ -337,7 +327,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
               basicTemplateOrElement.getTemplateName());
           reportedInvalidTemplateNames.add(type.getTemplateName());
         }
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
       }
       TemplateType templateType =
           typeRegistry.internTemplateType(TemplateMetadata.asTemplateType(basicTemplateOrElement));

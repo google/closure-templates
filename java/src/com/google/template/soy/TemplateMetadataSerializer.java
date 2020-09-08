@@ -47,7 +47,6 @@ import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.VisibilityP;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.MessageType;
@@ -316,7 +315,7 @@ public final class TemplateMetadataSerializer {
           if (type == null) {
             errorReporter.report(
                 new SourceLocation(filePath), UNABLE_TO_FIND_TYPE, "proto", proto.getProto());
-            return ErrorType.getInstance();
+            return UnknownType.getInstance();
           }
           // allow unknown to support message extraction which configures the DEFAULT_UNKNOWN type
           // registry
@@ -329,7 +328,7 @@ public final class TemplateMetadataSerializer {
               proto.getProto(),
               "proto",
               type.getKind());
-          return ErrorType.getInstance();
+          return UnknownType.getInstance();
         }
       case PROTO_ENUM:
         {
@@ -340,7 +339,7 @@ public final class TemplateMetadataSerializer {
                 UNABLE_TO_FIND_TYPE,
                 "proto enum",
                 proto.getProtoEnum());
-            return ErrorType.getInstance();
+            return UnknownType.getInstance();
           }
           // allow unknown to support message extraction which configures the DEFAULT_UNKNOWN type
           // registry
@@ -353,7 +352,7 @@ public final class TemplateMetadataSerializer {
               proto.getProtoEnum(),
               "proto enum",
               type.getKind());
-          return ErrorType.getInstance();
+          return UnknownType.getInstance();
         }
       case RECORD:
         {

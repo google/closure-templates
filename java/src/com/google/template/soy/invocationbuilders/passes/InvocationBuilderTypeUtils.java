@@ -148,7 +148,6 @@ final class InvocationBuilderTypeUtils {
       case RECORD:
         types = trySimpleRecordType((RecordType) soyType, false);
         break;
-      case ERROR:
       case NULL:
       case VE:
       case VE_DATA:

@@ -129,7 +129,6 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
 import com.google.template.soy.types.AbstractMapType;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.FloatType;
 import com.google.template.soy.types.IntType;
 import com.google.template.soy.types.LegacyObjectMapType;
@@ -352,8 +351,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           String extra;
           switch (nonConstantChild.getKind()) {
             case VAR_REF_NODE:
+              VarRefNode refNode = (VarRefNode) nonConstantChild;
               if (headerVar instanceof TemplateStateVar) {
-                VarRefNode refNode = (VarRefNode) nonConstantChild;
                 // @state depends on @state
                 if (refNode.getDefnDecl() instanceof TemplateStateVar) {
                   extra = "State cannot be referenced in default initializers";
@@ -364,7 +363,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                 // @param depends on @state/@param
                 extra = "Default parameters cannot depend on other parameters or state";
               }
-              ((VarRefNode) nonConstantChild).setSubstituteType(ErrorType.getInstance());
+              refNode.setSubstituteType(UnknownType.getInstance());
               break;
             case FUNCTION_NODE:
               if (headerVar instanceof TemplateStateVar) {
@@ -615,7 +614,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       case LIST:
         if (collectionType == ListType.EMPTY_LIST) {
           errorReporter.report(node.getExpr().getSourceLocation(), EMPTY_LIST_FOREACH);
-          return ErrorType.getInstance();
+          return UnknownType.getInstance();
         }
         return ((ListType) collectionType).getElementType();
 
@@ -623,12 +622,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         {
           // If it's a union, then do the field type calculation for each member of
           // the union and combine the result.
+          ErrorReporter.Checkpoint cp = errorReporter.checkpoint();
           UnionType unionType = (UnionType) collectionType;
           List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
           for (SoyType unionMember : unionType.getMembers()) {
             SoyType elementType = getElementType(unionMember, node);
-            if (elementType.getKind() == SoyType.Kind.ERROR) {
-              return ErrorType.getInstance();
+            if (errorReporter.errorsSince(cp)) {
+              return elementType;
             }
             fieldTypes.add(elementType);
           }
@@ -641,7 +641,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             BAD_FOREACH_TYPE,
             node.getExpr().toSourceString(),
             node.getExpr().getType()); // Report the outermost union type in the error.
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
     }
   }
 
@@ -715,10 +715,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             node.getSourceLocation(),
             CHECK_NOT_NULL_ON_COMPILE_TIME_NULL,
             "use the non-null assertion operator ('!')");
-        node.setType(ErrorType.getInstance());
+        node.setType(UnknownType.getInstance());
       } else if (node.getChild(0).getKind() == ExprNode.Kind.ASSERT_NON_NULL_OP_NODE) {
         errorReporter.report(node.getSourceLocation(), REDUNDANT_NON_NULL_ASSERTION_OPERATOR);
-        node.setType(ErrorType.getInstance());
+        node.setType(UnknownType.getInstance());
       } else {
         node.setType(SoyTypes.removeNull(type));
       }
@@ -768,7 +768,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             BAD_LIST_COMP_TYPE,
             node.getListExpr().toSourceString(),
             node.getListExpr().getType());
-        node.getListIterVar().setType(ErrorType.getInstance());
+        node.getListIterVar().setType(UnknownType.getInstance());
       } else {
         // Otherwise, use the list element type to set the type of the iterator ($var in this
         // example).
@@ -1005,7 +1005,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyMethod method = resolveMethodFromBaseType(node, baseType);
 
       if (method == null) {
-        node.setType(ErrorType.getInstance());
+        node.setType(UnknownType.getInstance());
         return;
       }
 
@@ -1394,7 +1394,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           break;
         }
       }
-      // TODO(b/71386491): Maybe we should set this to ErrorType
       if (matchedSignature == null) {
         node.setType(UnknownType.getInstance());
         return;
@@ -1419,7 +1418,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           listArg = IntType.getInstance();
         } else if (argType.getKind() == Kind.MAP) {
           errorReporter.report(node.getSourceLocation(), KEYS_PASSED_MAP);
-          listArg = ErrorType.getInstance();
+          listArg = UnknownType.getInstance();
         } else {
           listArg = UnknownType.getInstance();
         }
@@ -1480,12 +1479,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
       if (type == null) {
         errorReporter.report(node.getSourceLocation(), UNKNOWN_PROTO_TYPE, protoName);
-        node.setType(ErrorType.getInstance());
+        node.setType(UnknownType.getInstance());
         return;
       }
       if (type.getKind() != SoyType.Kind.PROTO) {
         errorReporter.report(node.getSourceLocation(), NOT_A_PROTO_TYPE, protoName, type);
-        node.setType(ErrorType.getInstance());
+        node.setType(UnknownType.getInstance());
         return;
       }
       if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(protoName)) {
@@ -1494,7 +1493,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             TypeNodeConverter.SAFE_PROTO_TYPE,
             SAFE_PROTO_TO_SANITIZED_TYPE.get(protoName),
             protoName);
-        node.setType(ErrorType.getInstance());
+        node.setType(UnknownType.getInstance());
         return;
       }
 
@@ -1524,7 +1523,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                 PROTO_FIELD_NAME_ALIAS_CONFLICT,
                 originalName,
                 protoType.getDescriptor().getName());
-            node.setType(ErrorType.getInstance());
+            node.setType(UnknownType.getInstance());
             continue;
           }
           hasAliasedParams = true;
@@ -1532,10 +1531,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         }
         resolvedIdentifiers.add(id);
         givenParams.add(id.identifier());
-      }
-
-      if (node.getType().getKind() == Kind.ERROR) {
-        return;
       }
 
       // Replace the proto init node to have a list of the resolved param names.
@@ -1585,7 +1580,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         SoyType fieldType = protoType.getFieldType(fieldName.identifier());
 
         // Let args with unknown or error types pass
-        if (argType.equals(UnknownType.getInstance()) || argType.equals(ErrorType.getInstance())) {
+        if (argType.equals(UnknownType.getInstance())) {
           continue;
         }
 
@@ -1627,7 +1622,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             VE_NO_CONFIG_FOR_ELEMENT,
             SoyErrors.getDidYouMeanMessage(
                 loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
-        type = ErrorType.getInstance();
+        type = UnknownType.getInstance();
       } else {
         if (config.getProtoName().isPresent()) {
           type = typeRegistry.getOrCreateVeType(config.getProtoName().get());
@@ -1741,7 +1736,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                   fieldName,
                   baseType,
                   extraErrorMessage);
-              return ErrorType.getInstance();
+              return UnknownType.getInstance();
             }
           }
 
@@ -1761,7 +1756,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                   fieldName,
                   baseType,
                   extraErrorMessage);
-              return ErrorType.getInstance();
+              return UnknownType.getInstance();
             }
           }
 
@@ -1769,13 +1764,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           {
             errorReporter.report(
                 sourceLocation, DOT_ACCESS_NOT_SUPPORTED_CONSIDER_RECORD, baseType);
-            return ErrorType.getInstance();
+            return UnknownType.getInstance();
           }
 
         case UNION:
           {
             // If it's a union, then do the field type calculation for each member of
             // the union and combine the result.
+            ErrorReporter.Checkpoint cp = errorReporter.checkpoint();
             UnionType unionType = (UnionType) baseType;
             List<SoyType> fieldTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
@@ -1786,17 +1782,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
               SoyType fieldType = getFieldType(unionMember, fieldName, sourceLocation);
               // If this member's field type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
-              if (fieldType == ErrorType.getInstance()) {
+              if (errorReporter.errorsSince(cp)) {
                 return fieldType;
               }
               fieldTypes.add(fieldType);
             }
             return SoyTypes.computeLowestCommonType(typeRegistry, fieldTypes);
           }
-
-        case ERROR:
-          // report no additional errors
-          return ErrorType.getInstance();
 
           // calling .length on strings/lists is common in v1 templates. So provide better error
           // messages for when users are migrating.
@@ -1808,14 +1800,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case URI:
           if (fieldName.equals("length")) {
             errorReporter.report(sourceLocation, STRING_LENGTH_ERROR);
-            return ErrorType.getInstance();
+            return UnknownType.getInstance();
           }
           // else fall through
 
         case LIST:
           if (fieldName.equals("length")) {
             errorReporter.report(sourceLocation, LIST_LENGTH_ERROR);
-            return ErrorType.getInstance();
+            return UnknownType.getInstance();
           }
           // else fall through
 
@@ -1833,7 +1825,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE_DATA:
         case MESSAGE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
-          return ErrorType.getInstance();
+          return UnknownType.getInstance();
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
@@ -1857,7 +1849,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           ListType listType = (ListType) baseType;
           if (listType.equals(ListType.EMPTY_LIST)) {
             errorReporter.report(baseLocation, EMPTY_LIST_ACCESS);
-            return ErrorType.getInstance();
+            return UnknownType.getInstance();
           }
 
           // For lists, the key type must either be unknown or assignable to integer.
@@ -1876,7 +1868,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             if (mapType.equals(LegacyObjectMapType.EMPTY_MAP)
                 || mapType.equals(MapType.EMPTY_MAP)) {
               errorReporter.report(baseLocation, EMPTY_MAP_ACCESS);
-              return ErrorType.getInstance();
+              return UnknownType.getInstance();
             }
 
             // For maps, the key type must either be unknown or assignable to the declared key type.
@@ -1892,6 +1884,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           {
             // If it's a union, then do the item type calculation for each member of
             // the union and combine the result.
+            ErrorReporter.Checkpoint cp = errorReporter.checkpoint();
             UnionType unionType = (UnionType) baseType;
             List<SoyType> itemTypes = new ArrayList<>(unionType.getMembers().size());
             for (SoyType unionMember : unionType.getMembers()) {
@@ -1903,7 +1896,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                   getItemType(unionMember, keyType, isNullSafe, baseLocation, keyLocation);
               // If this member's item type resolved to an error, bail out to avoid spamming
               // the user with multiple error messages for the same line.
-              if (itemType == ErrorType.getInstance()) {
+              if (errorReporter.errorsSince(cp)) {
                 return itemType;
               }
               itemTypes.add(itemType);
@@ -1911,13 +1904,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             // If this is a nullable union type but the operation is not null-safe, report an error.
             if (unionType.isNullable() && !isNullSafe) {
               errorReporter.report(baseLocation, BRACKET_ACCESS_NULLABLE_UNION);
-              return ErrorType.getInstance();
+              return UnknownType.getInstance();
             }
             return SoyTypes.computeLowestCommonType(typeRegistry, itemTypes);
           }
-
-        case ERROR:
-          return ErrorType.getInstance();
 
         case ANY:
         case NULL:
@@ -1940,7 +1930,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE_DATA:
         case MESSAGE:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
-          return ErrorType.getInstance();
+          return UnknownType.getInstance();
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
@@ -2037,8 +2027,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                           : UnknownType.getInstance())));
           break;
         case LEGACY_DYNAMIC_TAG:
-          // Should only happen when an error prevents rewriting in LegacyTagNamePass.
-          node.setType(ErrorType.getInstance());
+          node.setType(StringType.getInstance());
           break;
         case PROTO_INIT:
           visitProtoInitFunction(node);
@@ -2101,7 +2090,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         // TODO: think about adding function type declarations.
         // TODO(b/70946095): at the very least we could hard code types for standard functions for
         // example, everything in the BasicFunctionsModule.
-        // TODO(b/70946095): Maybe we should set to ErrorType if checkArgType failed.
         node.setType(UnknownType.getInstance());
       }
     }
@@ -2146,9 +2134,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     private boolean checkArgType(
         ExprNode arg, SoyType expectedType, FunctionNode node, UnknownPolicy policy) {
       SoyType.Kind argTypeKind = arg.getType().getKind();
-      if (argTypeKind == SoyType.Kind.ERROR || expectedType.getKind() == SoyType.Kind.ERROR) {
-        return false;
-      }
       if (policy == UnknownPolicy.ALLOWED && argTypeKind == SoyType.Kind.UNKNOWN) {
         return true;
       }
@@ -2495,7 +2480,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                         SoyFileParser.parseType(t, fct.getClass().getName(), errorReporter);
                     return typeNode != null
                         ? pluginTypeConverter.getOrCreateType(typeNode)
-                        : ErrorType.getInstance();
+                        : UnknownType.getInstance();
                   }
                 });
 

@@ -85,7 +85,6 @@ public abstract class SoyType {
     // Special types
     ANY,
     UNKNOWN,
-    ERROR,
     // Primitive types
     NULL,
     BOOL,

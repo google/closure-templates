@@ -15,6 +15,8 @@
  */
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -207,7 +209,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     List<StandaloneNode> children =
         node.getChildren().stream()
             .filter(child -> !SoyElementPass.ALLOWED_CHILD_NODES.contains(child.getKind()))
-            .collect(ImmutableList.toImmutableList());
+            .collect(toImmutableList());
     // TODO(b/133428199): Support {velog} around calls in messages.
     if (node.getNearestAncestor(MsgFallbackGroupNode.class) == null
         && children.size() == 1
@@ -288,10 +290,6 @@ final class VeLogValidationPass implements CompilerFileSetPass {
     }
     ExprNode veExpr = node.getChild(0);
     ExprNode dataExpr = node.getChild(1);
-
-    if (veExpr.getType().getKind() == Kind.ERROR) {
-      return;
-    }
 
     if (veExpr.getType().getKind() == Kind.VE) {
       if (dataExpr.getType().getKind() != Kind.NULL) {

@@ -475,8 +475,6 @@ public final class JsType {
           return builder.build();
         }
       case NAMED_TEMPLATE:
-      case ERROR:
-        // continue
     }
     throw new AssertionError("unhandled soytype: " + soyType);
   }

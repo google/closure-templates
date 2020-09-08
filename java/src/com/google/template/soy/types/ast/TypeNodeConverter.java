@@ -32,7 +32,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
@@ -229,7 +228,7 @@ public final class TypeNodeConverter
     if (safeProtoType != null) {
       String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();
       errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
-      type = ErrorType.getInstance();
+      type = UnknownType.getInstance();
     } else {
       type =
           typeRegistry instanceof SoyTypeRegistry
@@ -247,7 +246,7 @@ public final class TypeNodeConverter
               MISSING_GENERIC_TYPE_PARAMETERS,
               name,
               genericType.formatNumTypeParams());
-          type = ErrorType.getInstance();
+          type = UnknownType.getInstance();
         } else {
           if (disableAllTypeChecking) {
             type = UnknownType.getInstance();
@@ -257,7 +256,7 @@ public final class TypeNodeConverter
                 UNKNOWN_TYPE,
                 name,
                 SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
-            type = ErrorType.getInstance();
+            type = UnknownType.getInstance();
           }
         }
       }
@@ -273,7 +272,7 @@ public final class TypeNodeConverter
     GenericTypeInfo genericType = GENERIC_TYPES.get(name);
     if (genericType == null) {
       errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
-      return ErrorType.getInstance();
+      return UnknownType.getInstance();
     }
     if (args.size() < genericType.numParams) {
       errorReporter.report(
@@ -282,7 +281,7 @@ public final class TypeNodeConverter
           EXPECTED_TYPE_PARAM,
           name,
           genericType.formatNumTypeParams());
-      return ErrorType.getInstance();
+      return UnknownType.getInstance();
     } else if (args.size() > genericType.numParams) {
       errorReporter.report(
           // blame the first unexpected argument
@@ -290,7 +289,7 @@ public final class TypeNodeConverter
           UNEXPECTED_TYPE_PARAM,
           name,
           genericType.formatNumTypeParams());
-      return ErrorType.getInstance();
+      return UnknownType.getInstance();
     }
 
     SoyType type = genericType.create(Lists.transform(args, this), interner);

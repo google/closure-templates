@@ -17,7 +17,6 @@ package com.google.template.soy.types;
 
 /** Visitor for {@link SoyType}. */
 public interface SoyTypeVisitor<T> {
-  T visit(ErrorType type);
 
   T visit(LegacyObjectMapType type);
 

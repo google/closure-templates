@@ -334,7 +334,7 @@ final class ValidatorFactory extends JavaValueFactory {
    * Returns the result of validating if the clazz is allowed as a parameter type for the given soy
    * type.
    */
-  private ValidationResult isValidClassForType(Class<?> clazz, SoyType type) {
+  private static ValidationResult isValidClassForType(Class<?> clazz, SoyType type) {
     // Exit early if the class is primitive and the type is nullable -- that's not allowed.
     // Then remove null from the type.  This allows us to accept precise params for nullable
     // types, e.g, for int|null we can allow IntegerData (which will be passed as 'null').
@@ -419,8 +419,6 @@ final class ValidatorFactory extends JavaValueFactory {
       case NAMED_TEMPLATE:
       case TEMPLATE:
         throw new IllegalStateException("Cannot have template type from function signature");
-      case ERROR:
-        throw new IllegalStateException("Cannot have error type from function signature");
     }
 
     checkState(expectedClasses != null, "expectedClass not set!");
@@ -450,7 +448,7 @@ final class ValidatorFactory extends JavaValueFactory {
             .collect(toImmutableSet()));
   }
 
-  private boolean matchesProtoDescriptor(
+  private static boolean matchesProtoDescriptor(
       Class<?> expectedSupertype, Class<?> actualParamClass, GenericDescriptor expectedDescriptor) {
     if (!expectedSupertype.isAssignableFrom(actualParamClass)) {
       return false;

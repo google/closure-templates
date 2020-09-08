@@ -42,6 +42,8 @@ import javax.annotation.Nullable;
 /** Utility methods for operating on {@link SoyType} instances. */
 public final class SoyTypes {
 
+  private SoyTypes() {}
+
   /** Shared constant for the 'number' type. */
   public static final SoyType NUMBER_TYPE =
       UnionType.of(IntType.getInstance(), FloatType.getInstance());
@@ -140,9 +142,6 @@ public final class SoyTypes {
    */
   public static SoyType computeLowestCommonType(
       SoyTypeRegistry typeRegistry, SoyType t0, SoyType t1) {
-    if (t0 == ErrorType.getInstance() || t1 == ErrorType.getInstance()) {
-      return ErrorType.getInstance();
-    }
     if (t0.isAssignableFrom(t1)) {
       return t0;
     } else if (t1.isAssignableFrom(t0)) {
@@ -179,10 +178,6 @@ public final class SoyTypes {
    *     meaning a subtype of 'number' or unknown.
    */
   public static Optional<SoyType> computeLowestCommonTypeArithmetic(SoyType t0, SoyType t1) {
-    // If either of the types is an error type, return the error type
-    if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
-      return Optional.of(ErrorType.getInstance());
-    }
     // If either of the types isn't numeric or unknown, then this isn't valid for an arithmetic
     // operation.
     if (!isNumericOrUnknown(t0) || !isNumericOrUnknown(t1)) {
@@ -232,9 +227,6 @@ public final class SoyTypes {
   @Nullable
   public static SoyType getSoyTypeForBinaryOperator(
       SoyType t0, SoyType t1, SoyTypeBinaryOperator operator) {
-    if (t0.getKind() == Kind.ERROR || t1.getKind() == Kind.ERROR) {
-      return ErrorType.getInstance();
-    }
     // If both types are nullable, we will make the result nullable as well.
     // If only one of these input types is nullable, we don't. For example, {int} and {int|null}
     // probably should return {int} instead of {int|null}.
@@ -294,10 +286,6 @@ public final class SoyTypes {
   public static boolean transitivelyContainsKind(SoyType type, Kind kind) {
     return type.accept(
         new SoyTypeVisitor<Boolean>() {
-          @Override
-          public Boolean visit(ErrorType type) {
-            return type.getKind() == kind;
-          }
 
           @Override
           public Boolean visit(LegacyObjectMapType type) {

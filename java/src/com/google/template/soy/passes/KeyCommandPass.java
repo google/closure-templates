@@ -95,7 +95,7 @@ final class KeyCommandPass implements CompilerFilePass {
       return;
     }
     // TODO: Remove when pass is turned on.
-    if (tagNode.getTaggedPairs().size() != 0) {
+    if (!tagNode.getTaggedPairs().isEmpty()) {
       checkOneOpenTagNodeMappedToOneCloseTag(tagNode);
     }
   }
@@ -135,7 +135,6 @@ final class KeyCommandPass implements CompilerFilePass {
     boolean isSupportedType = true;
     for (SoyType type : unwrapped) {
       switch (type.getKind()) {
-        case ERROR: // allow ERROR to avoid cascading errors
         case NULL:
         case INT:
         case FLOAT:

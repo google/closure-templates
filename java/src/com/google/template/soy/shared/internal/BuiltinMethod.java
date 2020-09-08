@@ -40,7 +40,6 @@ import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.BoolType;
-import com.google.template.soy.types.ErrorType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -48,6 +47,7 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateBindingUtil;
+import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.List;
 
@@ -76,7 +76,7 @@ public enum BuiltinMethod implements SoyMethod {
       if (param.getKind() != ExprNode.Kind.GLOBAL_NODE) {
         errorReporter.report(
             param.getSourceLocation(), GET_EXTENSION_GLOBAL_REQUIRED, param.getType().toString());
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
       }
       GlobalNode parameter = (GlobalNode) param;
       ImmutableSet<String> fields = protoType.getExtensionFieldNames();
@@ -91,7 +91,7 @@ public enum BuiltinMethod implements SoyMethod {
             fieldName,
             protoType.getDescriptor().getFullName(),
             extraErrorMessage);
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
       }
       return protoType.getFieldType(fieldName);
     }
@@ -186,7 +186,7 @@ public enum BuiltinMethod implements SoyMethod {
       ExprNode param = params.get(0);
       if (param.getKind() != ExprNode.Kind.RECORD_LITERAL_NODE) {
         errorReporter.report(param.getSourceLocation(), BIND_PARAMETER_MUST_BE_RECORD_LITERAL);
-        return ErrorType.getInstance();
+        return UnknownType.getInstance();
       }
       return TemplateBindingUtil.bindParameters(
           baseType,

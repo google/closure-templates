@@ -119,7 +119,6 @@ public abstract class SoyRuntimeType {
       case ANY:
         // SoyValue
         return new BoxedSoyType(soyType, BytecodeUtils.SOY_VALUE_TYPE);
-      case ERROR:
       default:
         throw new AssertionError("can't map " + soyType + " to a boxed soy runtime type");
     }
@@ -209,8 +208,6 @@ public abstract class SoyRuntimeType {
       case ANY:
         // no unique unboxed representation
         return null;
-      case ERROR:
-        // continue
     }
     throw new AssertionError("can't map " + soyType + " to an unboxed soy runtime type");
   }

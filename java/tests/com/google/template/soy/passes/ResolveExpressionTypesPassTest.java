@@ -59,7 +59,6 @@ import com.google.template.soy.types.VeType;
 import com.google.template.soy.types.ast.TypeNode;
 import com.google.template.soy.types.ast.TypeNodeConverter;
 import java.util.List;
-import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -78,7 +77,7 @@ public final class ResolveExpressionTypesPassTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(2);
         }
       };

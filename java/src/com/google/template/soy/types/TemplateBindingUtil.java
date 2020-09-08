@@ -120,7 +120,7 @@ public final class TemplateBindingUtil {
       unboundParameters.remove(member.name());
     }
     if (reportedErrors) {
-      return ErrorType.getInstance();
+      return UnknownType.getInstance();
     }
     TemplateType.Builder builder = base.toBuilder();
     ImmutableList<TemplateType.Parameter> newParameters =
@@ -158,7 +158,7 @@ public final class TemplateBindingUtil {
       mergedParameters = parameters;
     }
     if (reportedErrors) {
-      return ErrorType.getInstance();
+      return UnknownType.getInstance();
     }
     return NamedTemplateType.createWithBoundParameters(base.getTemplateName(), mergedParameters);
   }

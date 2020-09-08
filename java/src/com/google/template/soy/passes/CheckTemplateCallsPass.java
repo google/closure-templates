@@ -32,7 +32,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -236,15 +235,12 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         // report anything.
         Collection<SoyType> declaredParamTypes = calleeParamTypes.params.get(paramName);
 
-        // Type of the param value. May be null if the param is a v1 expression.
-        SoyType argType = null;
+        // Type of the param value.
+        SoyType argType;
         if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_VALUE_NODE) {
           CallParamValueNode node = (CallParamValueNode) callerParam;
-          ExprNode expr = node.getExpr();
-          if (expr != null) {
-            argType =
-                RuntimeTypeCoercion.maybeCoerceType(node.getExpr().getRoot(), declaredParamTypes);
-          }
+          argType =
+              RuntimeTypeCoercion.maybeCoerceType(node.getExpr().getRoot(), declaredParamTypes);
         } else if (callerParam.getKind() == SoyNode.Kind.CALL_PARAM_CONTENT_NODE) {
           SanitizedContentKind contentKind = ((CallParamContentNode) callerParam).getContentKind();
           argType =
@@ -255,23 +251,18 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           throw new AssertionError(); // CallParamNode shouldn't have any other kind of child
         }
 
-        // If the param is a v1 expression (so argType == null) we can't check anything, or if the
-        // calculated type is an error type (because we already reported a type error for this
-        // expression) don't check whether it matches the formal param.
-        if (argType != null && argType.getKind() != SoyType.Kind.ERROR) {
-          boolean staticTypeSafe = true;
-          for (SoyType formalType : declaredParamTypes) {
-            staticTypeSafe &=
-                checkArgumentAgainstParamType(
-                    callerParam.getSourceLocation(),
-                    paramName,
-                    argType,
-                    formalType,
-                    calleeParamTypes);
-          }
-          if (staticTypeSafe) {
-            paramNamesToRuntimeCheck.remove(paramName);
-          }
+        boolean staticTypeSafe = true;
+        for (SoyType formalType : declaredParamTypes) {
+          staticTypeSafe &=
+              checkArgumentAgainstParamType(
+                  callerParam.getSourceLocation(),
+                  paramName,
+                  argType,
+                  formalType,
+                  calleeParamTypes);
+        }
+        if (staticTypeSafe) {
+          paramNamesToRuntimeCheck.remove(paramName);
         }
 
         explicitParams.add(paramName);

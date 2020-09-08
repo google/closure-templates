@@ -172,7 +172,7 @@ public final class TofuTypeChecks {
                           "Passing in sanitized content into a template that accepts only string"
                               + " is forbidden. Please modify the template at %s to take in %s"
                               + " instead of just %s.",
-                          location != null ? location.toString() : "unknown",
+                          location != null ? location : "unknown",
                           ((SanitizedContent) value).getContentKind(),
                           type.toString()),
                       new Exception());
@@ -201,8 +201,6 @@ public final class TofuTypeChecks {
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE);
       case VE_DATA:
         return CheckResult.fromBool(value == EvalVisitor.UNDEFINED_VE_DATA);
-      case ERROR:
-        // continue
     }
     throw new AssertionError("invalid type: " + type);
   }
