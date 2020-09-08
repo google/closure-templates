@@ -93,7 +93,6 @@ public abstract class SoyType {
     STRING,
     // Sanitized types (subtypes of string)
     HTML,
-    ELEMENT,
     ATTRIBUTES,
     JS,
     CSS,
@@ -118,7 +117,6 @@ public abstract class SoyType {
         Sets.immutableEnumSet(
             Kind.STRING,
             Kind.HTML,
-            Kind.ELEMENT,
             Kind.ATTRIBUTES,
             Kind.JS,
             Kind.CSS,

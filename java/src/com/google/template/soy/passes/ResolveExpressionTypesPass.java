@@ -1796,7 +1796,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case CSS:
         case JS:
         case ATTRIBUTES:
-        case ELEMENT:
         case HTML:
         case URI:
           if (fieldName.equals("length")) {
@@ -1916,7 +1915,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case INT:
         case FLOAT:
         case STRING:
-        case ELEMENT:
         case HTML:
         case ATTRIBUTES:
         case JS:

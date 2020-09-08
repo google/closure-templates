@@ -111,8 +111,6 @@ final class CheckDeclaredTypesPass implements CompilerFilePass {
           }
           node.arguments().get(0).accept(this);
           break;
-        case ELEMENT:
-          break;
         default:
           throw new AssertionError("unexpected generic type: " + node.getResolvedType().getKind());
       }

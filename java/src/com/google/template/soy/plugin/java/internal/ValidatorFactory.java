@@ -352,7 +352,6 @@ final class ValidatorFactory extends JavaValueFactory {
         break;
       case ATTRIBUTES:
       case CSS:
-      case ELEMENT:
       case HTML:
       case URI:
       case TRUSTED_RESOURCE_URI:

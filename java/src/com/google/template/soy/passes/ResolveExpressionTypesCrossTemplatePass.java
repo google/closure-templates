@@ -56,7 +56,6 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeVisitor;
 import com.google.template.soy.types.SoyTypes;
-import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
@@ -204,15 +203,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     Set<FunctionNode> correctlyPlaced = new HashSet<>();
     for (HtmlTagNode tagNode :
         SoyTreeUtils.getAllMatchingNodesOfType(
-            file,
-            HtmlTagNode.class,
-            (tag) ->
-                !tag.getTagName().isStatic()
-                    && tag.getTagName()
-                        .getDynamicTagName()
-                        .getExpr()
-                        .getType()
-                        .isAssignableFrom(StringType.getInstance()))) {
+            file, HtmlTagNode.class, (tag) -> !tag.getTagName().isStatic())) {
       handleDynamicTag(tagNode, correctlyPlaced);
     }
     // No other uses of legacyDynamicTag are allowed.

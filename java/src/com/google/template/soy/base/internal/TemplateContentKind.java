@@ -42,11 +42,11 @@ public abstract class TemplateContentKind {
    */
   public static Optional<TemplateContentKind> fromAttributeValue(String attrValue) {
     checkNotNull(attrValue);
-    if (attrValue.equals("html<?>")) {
-      return Optional.of(ElementContentKind.ELEMENT);
-    }
+
     if (BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.containsKey(attrValue)) {
       return Optional.of(BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.get(attrValue));
+    } else if (attrValue.equals("html<?>")) {
+      return Optional.of(ElementContentKind.ELEMENT);
     }
     return Optional.empty();
   }
@@ -113,7 +113,7 @@ public abstract class TemplateContentKind {
 
     @Override
     public SanitizedContentKind getSanitizedContentKind() {
-      return SanitizedContentKind.HTML_ELEMENT;
+      return SanitizedContentKind.HTML;
     }
   }
 
