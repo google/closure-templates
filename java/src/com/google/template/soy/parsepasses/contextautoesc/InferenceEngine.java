@@ -20,6 +20,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.parsepasses.contextautoesc.Context.AttributeEndDelimiter;
@@ -509,11 +510,11 @@ final class InferenceEngine {
       if (templates.isEmpty()) {
         return null;
       }
-      SanitizedContentKind contentKind = templates.get(0).getContentKind();
+      TemplateContentKind contentKind = templates.get(0).getContentKind();
       for (TemplateType template : templates) {
-        Preconditions.checkArgument(template.getContentKind() == contentKind);
+        Preconditions.checkArgument(template.getContentKind().equals(contentKind));
       }
-      return contentKind;
+      return contentKind.getSanitizedContentKind();
     }
 
     /**

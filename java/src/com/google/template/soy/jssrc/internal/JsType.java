@@ -40,6 +40,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.jssrc.dsl.CodeChunk.Generator;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -481,8 +482,9 @@ public final class JsType {
   }
 
   private static JsType templateReturnType(
-      SanitizedContentKind templateReturnType, boolean isIncrementalDom) {
-    switch (templateReturnType) {
+      TemplateContentKind templateReturnType, boolean isIncrementalDom) {
+    SanitizedContentKind contentKind = templateReturnType.getSanitizedContentKind();
+    switch (contentKind) {
       case TEXT:
         return STRING_TYPE;
       case ATTRIBUTES:
@@ -493,10 +495,10 @@ public final class JsType {
       case URI:
       case TRUSTED_RESOURCE_URI:
         Builder builder = builder();
-        String type = NodeContentKinds.toJsSanitizedContentCtorName(templateReturnType);
+        String type = NodeContentKinds.toJsSanitizedContentCtorName(contentKind);
         if (isIncrementalDom
-            && (templateReturnType == SanitizedContentKind.HTML
-                || templateReturnType == SanitizedContentKind.ATTRIBUTES)) {
+            && (contentKind == SanitizedContentKind.HTML
+                || contentKind == SanitizedContentKind.ATTRIBUTES)) {
           builder.addType("void");
         } else {
           builder.addType("!" + type);

@@ -51,6 +51,13 @@ public abstract class TemplateContentKind {
     return Optional.empty();
   }
 
+  public static TemplateContentKind fromSanitizedContentKind(
+      SanitizedContentKind sanitizedContentKind) {
+    checkNotNull(sanitizedContentKind);
+
+    return BasicTemplateContentKind.KINDS_BY_KIND.get(sanitizedContentKind);
+  }
+
   public static final BasicTemplateContentKind HTML =
       BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.get(
           SanitizedContentKind.HTML.asAttributeValue());
@@ -61,13 +68,18 @@ public abstract class TemplateContentKind {
    */
   public static class BasicTemplateContentKind extends TemplateContentKind {
 
+    private static final ImmutableMap<SanitizedContentKind, BasicTemplateContentKind> KINDS_BY_KIND;
     private static final ImmutableMap<String, BasicTemplateContentKind> KINDS_BY_ATTR_VALUE;
 
     static {
+      TreeMap<SanitizedContentKind, BasicTemplateContentKind> kindsByKind = new TreeMap<>();
       TreeMap<String, BasicTemplateContentKind> kindsByAttributeValue = new TreeMap<>();
       for (SanitizedContentKind kind : SanitizedContentKind.values()) {
-        kindsByAttributeValue.put(kind.asAttributeValue(), new BasicTemplateContentKind(kind));
+        BasicTemplateContentKind basicKind = new BasicTemplateContentKind(kind);
+        kindsByKind.put(kind, basicKind);
+        kindsByAttributeValue.put(kind.asAttributeValue(), basicKind);
       }
+      KINDS_BY_KIND = ImmutableMap.copyOf(kindsByKind);
       KINDS_BY_ATTR_VALUE = ImmutableMap.copyOf(kindsByAttributeValue);
     }
 
@@ -85,6 +97,25 @@ public abstract class TemplateContentKind {
     @Override
     public SanitizedContentKind getSanitizedContentKind() {
       return sanitizedContentKind;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof BasicTemplateContentKind)) {
+        return false;
+      }
+      BasicTemplateContentKind other = (BasicTemplateContentKind) o;
+      return this.sanitizedContentKind == other.sanitizedContentKind;
+    }
+
+    @Override
+    public int hashCode() {
+      return this.sanitizedContentKind.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return this.sanitizedContentKind.toString();
     }
   }
 
@@ -115,6 +146,25 @@ public abstract class TemplateContentKind {
     public SanitizedContentKind getSanitizedContentKind() {
       return SanitizedContentKind.HTML_ELEMENT;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof ElementContentKind)) {
+        return false;
+      }
+      ElementContentKind other = (ElementContentKind) o;
+      return this.attrValue.equals(other.attrValue);
+    }
+
+    @Override
+    public int hashCode() {
+      return this.attrValue.hashCode();
+    }
+
+    @Override
+    public String toString() {
+      return this.attrValue;
+    }
   }
 
   /** Returns the kind formatted as it would be for an attribute value. */
@@ -122,4 +172,14 @@ public abstract class TemplateContentKind {
 
   /** Returns the sanitized content type for this template kind. */
   public abstract SanitizedContentKind getSanitizedContentKind();
+
+  @Override
+  public abstract boolean equals(Object o);
+
+  @Override
+  public abstract int hashCode();
+
+  /** String representation used in error messages. */
+  @Override
+  public abstract String toString();
 }

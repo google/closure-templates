@@ -273,7 +273,7 @@ final class Rewriter {
     @Override
     protected void visitCallNode(CallNode node) {
       ImmutableList<SoyPrintDirective> directives = getDirectivesForNode(node);
-      // only handle CalllBasicNode. The compiler attempts to enforce consistency in the type of
+      // Only handle CallBasicNode.  The compiler attempts to enforce consistency in the type of
       // deltemplates but there is currently no strong guarantee that they are compatible.  So be
       // conservative here.
       if (node instanceof CallBasicNode) {
@@ -281,7 +281,9 @@ final class Rewriter {
         if (!targets.isEmpty()) {
           directives =
               ShortCircuitables.filterDirectivesForKind(
-                  ContentKind.valueOf(targets.get(0).getContentKind().name()), directives);
+                  ContentKind.valueOf(
+                      targets.get(0).getContentKind().getSanitizedContentKind().name()),
+                  directives);
         }
       }
       node.setEscapingDirectives(directives);

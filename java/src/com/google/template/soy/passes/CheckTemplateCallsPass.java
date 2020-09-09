@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -146,18 +147,18 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
       } else if (calleeType.getKind() == SoyType.Kind.UNION) {
         List<Predicate<String>> paramsToRuntimeCheckList = new ArrayList<>();
-        SanitizedContentKind sanitizedContentKind = null;
+        TemplateContentKind templateContentKind = null;
         for (SoyType member : ((UnionType) calleeType).getMembers()) {
           if (member.getKind() == SoyType.Kind.TEMPLATE) {
             // Check that all members of a union type have the same content kind.
             TemplateType templateType = (TemplateType) member;
-            if (sanitizedContentKind == null) {
-              sanitizedContentKind = templateType.getContentKind();
-            } else if (templateType.getContentKind() != sanitizedContentKind) {
+            if (templateContentKind == null) {
+              templateContentKind = templateType.getContentKind();
+            } else if (!templateType.getContentKind().equals(templateContentKind)) {
               errorReporter.report(
                   node.getSourceLocation(),
                   CANNOT_CALL_MIXED_CONTENT_TYPE,
-                  sanitizedContentKind,
+                  templateContentKind,
                   templateType.getContentKind());
             }
             paramsToRuntimeCheckList.add(checkCall(callerTemplate, node, templateType));
@@ -422,8 +423,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (callerTemplate.isStrictHtml()
           && caller.getIsPcData()
           && callee != null
-          && (callee.getContentKind() == SanitizedContentKind.HTML
-              || callee.getContentKind() == SanitizedContentKind.HTML_ELEMENT)
+          && (callee.getContentKind().getSanitizedContentKind() == SanitizedContentKind.HTML
+              || callee.getContentKind().getSanitizedContentKind()
+                  == SanitizedContentKind.HTML_ELEMENT)
           && !callee.isStrictHtml()) {
         errorReporter.report(caller.getSourceLocation(), STRICT_HTML);
       }

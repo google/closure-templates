@@ -297,7 +297,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
     // For per-file compilation, we may not have any of the delegate templates in the compilation
     // unit.
     if (!templateNodes.isEmpty()) {
-      return Optional.of(templateNodes.get(0).getContentKind());
+      return Optional.of(templateNodes.get(0).getContentKind().getSanitizedContentKind());
     }
     // The template node may be null if the template is being compiled in isolation.
     return Optional.empty();

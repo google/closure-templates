@@ -27,6 +27,7 @@ import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
@@ -390,7 +391,8 @@ public abstract class TemplateMetadata {
   public static TemplateType asTemplateType(TemplateMetadata templateMetadata) {
     return TemplateType.builder()
         .setTemplateKind(templateMetadata.getTemplateKind())
-        .setContentKind(templateMetadata.getContentKind())
+        .setContentKind(
+            TemplateContentKind.fromSanitizedContentKind(templateMetadata.getContentKind()))
         .setStrictHtml(templateMetadata.isStrictHtml())
         .setParameters(
             templateMetadata.getParameters().stream()

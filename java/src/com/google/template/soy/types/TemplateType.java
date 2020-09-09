@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** Template type, containing a list of named, typed parameters and a return type. */
@@ -37,7 +38,7 @@ public abstract class TemplateType extends SoyType {
 
   public abstract TemplateKind getTemplateKind();
 
-  public abstract SanitizedContentKind getContentKind();
+  public abstract TemplateContentKind getContentKind();
 
   public abstract boolean isStrictHtml();
 
@@ -64,7 +65,7 @@ public abstract class TemplateType extends SoyType {
 
     public abstract Builder setTemplateKind(TemplateKind templateKind);
 
-    public abstract Builder setContentKind(SanitizedContentKind sanitizedContentKind);
+    public abstract Builder setContentKind(TemplateContentKind sanitizedContentKind);
 
     public abstract Builder setStrictHtml(boolean isStrictHtml);
 
@@ -116,10 +117,12 @@ public abstract class TemplateType extends SoyType {
       // Only other valid type is string.
       contentKind = SanitizedContentKind.TEXT;
     }
+    TemplateContentKind templateContentKind =
+        TemplateContentKind.fromSanitizedContentKind(contentKind);
     return builder()
         // Declared templates can only be basic templates (no deltemplates/elements allowed).
         .setTemplateKind(TemplateKind.BASIC)
-        .setContentKind(contentKind)
+        .setContentKind(templateContentKind)
         // Declared HTML templates are implicitly strict. A separate check enforces that
         // non-strict templates may not be bound in template literals.
         .setStrictHtml(
@@ -128,7 +131,7 @@ public abstract class TemplateType extends SoyType {
         .setParameters(ImmutableList.copyOf(parameters))
         // data=all is banned on declared templates.
         .setDataAllCallSituations(ImmutableList.of())
-        .setIdentifierForDebugging(stringRepresentation(parameters, contentKind))
+        .setIdentifierForDebugging(stringRepresentation(parameters, templateContentKind))
         .setInferredType(false)
         .build();
   }
@@ -163,7 +166,10 @@ public abstract class TemplateType extends SoyType {
           }
         }
       }
-      if (!this.getContentKind().isAssignableFrom(srcTemplate.getContentKind())) {
+      // TODO(b/167574941): Add element support.
+      SanitizedContentKind thisKind = this.getContentKind().getSanitizedContentKind();
+      SanitizedContentKind srcKind = srcTemplate.getContentKind().getSanitizedContentKind();
+      if (!thisKind.isAssignableFrom(srcKind)) {
         return false;
       }
       return true;
@@ -177,7 +183,7 @@ public abstract class TemplateType extends SoyType {
   }
 
   static String stringRepresentation(
-      Iterable<Parameter> parameters, SanitizedContentKind contentKind) {
+      Iterable<Parameter> parameters, TemplateContentKind contentKind) {
     StringBuilder sb = new StringBuilder();
     sb.append("(");
     boolean first = true;
@@ -195,7 +201,8 @@ public abstract class TemplateType extends SoyType {
       sb.append(parameter.getType());
     }
     sb.append(") => ");
-    sb.append(SanitizedType.getTypeForContentKind(contentKind).toString());
+    // TODO(b/167574941): Add element support.
+    sb.append(SanitizedType.getTypeForContentKind(contentKind.getSanitizedContentKind()));
     return sb.toString();
   }
 
@@ -207,8 +214,11 @@ public abstract class TemplateType extends SoyType {
     for (Parameter parameter : getParameters()) {
       templateBuilder.putParameter(parameter.getName(), parameter.getType().toProto());
     }
+    // TODO(b/167574941): Add element support.
     templateBuilder.setReturnType(
-        SanitizedType.getTypeForContentKind(getContentKind()).toProto().getPrimitive());
+        SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind())
+            .toProto()
+            .getPrimitive());
   }
 
   @Override

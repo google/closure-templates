@@ -82,9 +82,10 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     // Unions are enforced to have the same content kind in CheckTemplateCallsPass.
     SanitizedContentKind kind =
         Iterables.getOnlyElement(
-            SoyTypes.expandUnions(templateType).stream()
-                .map(type -> ((TemplateType) type).getContentKind())
-                .collect(toImmutableSet()));
+                SoyTypes.expandUnions(templateType).stream()
+                    .map(type -> ((TemplateType) type).getContentKind())
+                    .collect(toImmutableSet()))
+            .getSanitizedContentKind();
     if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
       return BIND_TEMPLATE_PARAMS_FOR_IDOM.call(template, paramRecord);
     } else {
