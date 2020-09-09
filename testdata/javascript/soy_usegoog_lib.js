@@ -3893,7 +3893,7 @@ goog.provide('goog.debug.Error');
  * @extends {Error}
  */
 goog.debug.Error = function(opt_msg) {
-
+  'use strict';
   // Attempt to ensure there is a stack trace.
   if (Error.captureStackTrace) {
     Error.captureStackTrace(this, goog.debug.Error);
@@ -18550,7 +18550,7 @@ goog.require('goog.iter.StopIteration');
  * @deprecated This type is misleading: use ES6 Map instead.
  */
 goog.structs.Map = function(opt_map, var_args) {
-
+  'use strict';
   /**
    * Underlying JS object used to implement the map.
    * @private {!Object}
@@ -18603,6 +18603,7 @@ goog.structs.Map = function(opt_map, var_args) {
  * @return {number} The number of key-value pairs in the map.
  */
 goog.structs.Map.prototype.getCount = function() {
+  'use strict';
   return this.count_;
 };
 
@@ -18612,6 +18613,7 @@ goog.structs.Map.prototype.getCount = function() {
  * @return {!Array<V>} The values in the map.
  */
 goog.structs.Map.prototype.getValues = function() {
+  'use strict';
   this.cleanupKeysArray_();
 
   var rv = [];
@@ -18628,6 +18630,7 @@ goog.structs.Map.prototype.getValues = function() {
  * @return {!Array<string>} Array of string values.
  */
 goog.structs.Map.prototype.getKeys = function() {
+  'use strict';
   this.cleanupKeysArray_();
   return /** @type {!Array<string>} */ (this.keys_.concat());
 };
@@ -18639,6 +18642,7 @@ goog.structs.Map.prototype.getKeys = function() {
  * @return {boolean} Whether the map contains the key.
  */
 goog.structs.Map.prototype.containsKey = function(key) {
+  'use strict';
   return goog.structs.Map.hasKey_(this.map_, key);
 };
 
@@ -18649,6 +18653,7 @@ goog.structs.Map.prototype.containsKey = function(key) {
  * @return {boolean} Whether the map contains the value.
  */
 goog.structs.Map.prototype.containsValue = function(val) {
+  'use strict';
   for (var i = 0; i < this.keys_.length; i++) {
     var key = this.keys_[i];
     if (goog.structs.Map.hasKey_(this.map_, key) && this.map_[key] == val) {
@@ -18668,6 +18673,7 @@ goog.structs.Map.prototype.containsValue = function(val) {
  * @return {boolean} Whether the maps are equal.
  */
 goog.structs.Map.prototype.equals = function(otherMap, opt_equalityFn) {
+  'use strict';
   if (this === otherMap) {
     return true;
   }
@@ -18696,6 +18702,7 @@ goog.structs.Map.prototype.equals = function(otherMap, opt_equalityFn) {
  * @return {boolean} Whether a and b reference the same object.
  */
 goog.structs.Map.defaultEquals = function(a, b) {
+  'use strict';
   return a === b;
 };
 
@@ -18704,6 +18711,7 @@ goog.structs.Map.defaultEquals = function(a, b) {
  * @return {boolean} Whether the map is empty.
  */
 goog.structs.Map.prototype.isEmpty = function() {
+  'use strict';
   return this.count_ == 0;
 };
 
@@ -18712,6 +18720,7 @@ goog.structs.Map.prototype.isEmpty = function() {
  * Removes all key-value pairs from the map.
  */
 goog.structs.Map.prototype.clear = function() {
+  'use strict';
   this.map_ = {};
   this.keys_.length = 0;
   this.count_ = 0;
@@ -18727,6 +18736,7 @@ goog.structs.Map.prototype.clear = function() {
  * @return {boolean} Whether object was removed.
  */
 goog.structs.Map.prototype.remove = function(key) {
+  'use strict';
   if (goog.structs.Map.hasKey_(this.map_, key)) {
     delete this.map_[key];
     this.count_--;
@@ -18749,6 +18759,7 @@ goog.structs.Map.prototype.remove = function(key) {
  * @private
  */
 goog.structs.Map.prototype.cleanupKeysArray_ = function() {
+  'use strict';
   if (this.count_ != this.keys_.length) {
     // First remove keys that are no longer in the map.
     var srcIndex = 0;
@@ -18795,6 +18806,7 @@ goog.structs.Map.prototype.cleanupKeysArray_ = function() {
  * @template DEFAULT
  */
 goog.structs.Map.prototype.get = function(key, opt_val) {
+  'use strict';
   if (goog.structs.Map.hasKey_(this.map_, key)) {
     return this.map_[key];
   }
@@ -18809,6 +18821,7 @@ goog.structs.Map.prototype.get = function(key, opt_val) {
  * @return {*} Some subclasses return a value.
  */
 goog.structs.Map.prototype.set = function(key, value) {
+  'use strict';
   if (!(goog.structs.Map.hasKey_(this.map_, key))) {
     this.count_++;
     // TODO(johnlenz): This class lies, it claims to return an array of string
@@ -18826,6 +18839,7 @@ goog.structs.Map.prototype.set = function(key, value) {
  * @param {?Object} map Object containing the data to add.
  */
 goog.structs.Map.prototype.addAll = function(map) {
+  'use strict';
   if (map instanceof goog.structs.Map) {
     var keys = map.getKeys();
     for (var i = 0; i < keys.length; i++) {
@@ -18846,6 +18860,7 @@ goog.structs.Map.prototype.addAll = function(map) {
  * @template T
  */
 goog.structs.Map.prototype.forEach = function(f, opt_obj) {
+  'use strict';
   var keys = this.getKeys();
   for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
@@ -18860,6 +18875,7 @@ goog.structs.Map.prototype.forEach = function(f, opt_obj) {
  * @return {!goog.structs.Map} A new map with the same key-value pairs.
  */
 goog.structs.Map.prototype.clone = function() {
+  'use strict';
   return new goog.structs.Map(this);
 };
 
@@ -18874,6 +18890,7 @@ goog.structs.Map.prototype.clone = function() {
  * @return {!goog.structs.Map} The transposed map.
  */
 goog.structs.Map.prototype.transpose = function() {
+  'use strict';
   var transposed = new goog.structs.Map();
   for (var i = 0; i < this.keys_.length; i++) {
     var key = this.keys_[i];
@@ -18889,6 +18906,7 @@ goog.structs.Map.prototype.transpose = function() {
  * @return {!Object} Object representation of the map.
  */
 goog.structs.Map.prototype.toObject = function() {
+  'use strict';
   this.cleanupKeysArray_();
   var obj = {};
   for (var i = 0; i < this.keys_.length; i++) {
@@ -18905,6 +18923,7 @@ goog.structs.Map.prototype.toObject = function() {
  * @return {!goog.iter.Iterator} An iterator over the keys in the map.
  */
 goog.structs.Map.prototype.getKeyIterator = function() {
+  'use strict';
   return this.__iterator__(true);
 };
 
@@ -18915,6 +18934,7 @@ goog.structs.Map.prototype.getKeyIterator = function() {
  * @return {!goog.iter.Iterator} An iterator over the values in the map.
  */
 goog.structs.Map.prototype.getValueIterator = function() {
+  'use strict';
   return this.__iterator__(false);
 };
 
@@ -18928,6 +18948,7 @@ goog.structs.Map.prototype.getValueIterator = function() {
  * @return {!goog.iter.Iterator} An iterator over the values or keys in the map.
  */
 goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
+  'use strict';
   // Clean up keys to minimize the risk of iterating over dead keys.
   this.cleanupKeysArray_();
 
@@ -18937,6 +18958,7 @@ goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
 
   var newIter = new goog.iter.Iterator;
   newIter.next = function() {
+    'use strict';
     if (version != selfObj.version_) {
       throw new Error('The map has changed since the iterator was created');
     }
@@ -18959,6 +18981,7 @@ goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
  * @private
  */
 goog.structs.Map.hasKey_ = function(obj, key) {
+  'use strict';
   return Object.prototype.hasOwnProperty.call(obj, key);
 };
 
@@ -18996,6 +19019,7 @@ goog.require('goog.object');
  * @return {number} The number of values in the collection-like object.
  */
 goog.structs.getCount = function(col) {
+  'use strict';
   if (col.getCount && typeof col.getCount == 'function') {
     return col.getCount();
   }
@@ -19012,6 +19036,7 @@ goog.structs.getCount = function(col) {
  * @return {!Array<?>} The values in the collection-like object.
  */
 goog.structs.getValues = function(col) {
+  'use strict';
   if (col.getValues && typeof col.getValues == 'function') {
     return col.getValues();
   }
@@ -19037,6 +19062,7 @@ goog.structs.getValues = function(col) {
  * @return {!Array|undefined} The keys in the collection.
  */
 goog.structs.getKeys = function(col) {
+  'use strict';
   if (col.getKeys && typeof col.getKeys == 'function') {
     return col.getKeys();
   }
@@ -19065,6 +19091,7 @@ goog.structs.getKeys = function(col) {
  * @return {boolean} True if the map contains the value.
  */
 goog.structs.contains = function(col, val) {
+  'use strict';
   if (col.contains && typeof col.contains == 'function') {
     return col.contains(val);
   }
@@ -19084,6 +19111,7 @@ goog.structs.contains = function(col, val) {
  * @return {boolean} True if empty.
  */
 goog.structs.isEmpty = function(col) {
+  'use strict';
   if (col.isEmpty && typeof col.isEmpty == 'function') {
     return col.isEmpty();
   }
@@ -19104,6 +19132,7 @@ goog.structs.isEmpty = function(col) {
  * @param {Object} col The collection-like object.
  */
 goog.structs.clear = function(col) {
+  'use strict';
   // NOTE(arv): This should not contain strings because strings are immutable
   if (col.clear && typeof col.clear == 'function') {
     col.clear();
@@ -19131,6 +19160,7 @@ goog.structs.clear = function(col) {
  *     goog.object.forEach, or for-of.
  */
 goog.structs.forEach = function(col, f, opt_obj) {
+  'use strict';
   if (col.forEach && typeof col.forEach == 'function') {
     col.forEach(f, opt_obj);
   } else if (goog.isArrayLike(col) || typeof col === 'string') {
@@ -19165,6 +19195,7 @@ goog.structs.forEach = function(col, f, opt_obj) {
  * @template T,S
  */
 goog.structs.filter = function(col, f, opt_obj) {
+  'use strict';
   if (typeof col.filter == 'function') {
     return col.filter(f, opt_obj);
   }
@@ -19215,6 +19246,7 @@ goog.structs.filter = function(col, f, opt_obj) {
  * @template T,S,V
  */
 goog.structs.map = function(col, f, opt_obj) {
+  'use strict';
   if (typeof col.map == 'function') {
     return col.map(f, opt_obj);
   }
@@ -19259,6 +19291,7 @@ goog.structs.map = function(col, f, opt_obj) {
  * @template T,S
  */
 goog.structs.some = function(col, f, opt_obj) {
+  'use strict';
   if (typeof col.some == 'function') {
     return col.some(f, opt_obj);
   }
@@ -19293,6 +19326,7 @@ goog.structs.some = function(col, f, opt_obj) {
  * @template T,S
  */
 goog.structs.every = function(col, f, opt_obj) {
+  'use strict';
   if (typeof col.every == 'function') {
     return col.every(f, opt_obj);
   }
@@ -22044,6 +22078,7 @@ goog.soy.data.SanitizedContentKind = {
  * @constructor
  */
 goog.soy.data.SanitizedContent = function() {
+  'use strict';
   throw new Error('Do not instantiate directly');
 };
 
@@ -22075,12 +22110,14 @@ goog.soy.data.SanitizedContent.prototype.content;
  * @return {string}
  */
 goog.soy.data.SanitizedContent.prototype.getContent = function() {
+  'use strict';
   return this.content;
 };
 
 
 /** @override */
 goog.soy.data.SanitizedContent.prototype.toString = function() {
+  'use strict';
   return this.content;
 };
 
@@ -22091,6 +22128,7 @@ goog.soy.data.SanitizedContent.prototype.toString = function() {
  * @throws {!Error} when the content kind is not HTML.
  */
 goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
+  'use strict';
   if (this.contentKind !== goog.soy.data.SanitizedContentKind.HTML) {
     throw new Error('Sanitized content was not of kind HTML.');
   }
@@ -22109,6 +22147,7 @@ goog.soy.data.SanitizedContent.prototype.toSafeHtml = function() {
  * @throws {Error} when the content kind is not URI.
  */
 goog.soy.data.SanitizedContent.prototype.toSafeUrl = function() {
+  'use strict';
   if (this.contentKind !== goog.soy.data.SanitizedContentKind.URI) {
     throw new Error('Sanitized content was not of kind URI.');
   }
@@ -22135,6 +22174,7 @@ goog.soy.data.SanitizedContent.prototype.toSafeUrl = function() {
  * @constructor
  */
 goog.soy.data.SanitizedHtml = function() {
+  'use strict';
   goog.soy.data.SanitizedHtml.base(this, 'constructor');
 };
 goog.inherits(goog.soy.data.SanitizedHtml, goog.soy.data.SanitizedContent);
@@ -22151,6 +22191,7 @@ goog.soy.data.SanitizedHtml.prototype.contentKind =
  * @return {boolean}
  */
 goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
+  'use strict';
   return typeof value === 'string' ||
       goog.soy.data.SanitizedHtml.isCompatibleWithStrict(value);
 };
@@ -22163,6 +22204,7 @@ goog.soy.data.SanitizedHtml.isCompatibleWith = function(value) {
  * @return {boolean}
  */
 goog.soy.data.SanitizedHtml.isCompatibleWithStrict = function(value) {
+  'use strict';
   return value instanceof goog.soy.data.SanitizedHtml ||
       value instanceof goog.html.SafeHtml;
 };
@@ -22178,6 +22220,7 @@ goog.soy.data.SanitizedHtml.isCompatibleWithStrict = function(value) {
  * @constructor
  */
 goog.soy.data.SanitizedJs = function() {
+  'use strict';
   goog.soy.data.SanitizedJs.base(this, 'constructor');
 };
 goog.inherits(goog.soy.data.SanitizedJs, goog.soy.data.SanitizedContent);
@@ -22198,6 +22241,7 @@ goog.soy.data.SanitizedJs.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @return {boolean}
  */
 goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
+  'use strict';
   return typeof value === 'string' ||
       goog.soy.data.SanitizedJs.isCompatibleWithStrict(value);
 };
@@ -22209,6 +22253,7 @@ goog.soy.data.SanitizedJs.isCompatibleWith = function(value) {
  * @return {boolean}
  */
 goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
+  'use strict';
   return value instanceof goog.soy.data.SanitizedJs ||
       value instanceof goog.html.SafeScript;
 };
@@ -22224,6 +22269,7 @@ goog.soy.data.SanitizedJs.isCompatibleWithStrict = function(value) {
  * @constructor
  */
 goog.soy.data.SanitizedUri = function() {
+  'use strict';
   goog.soy.data.SanitizedUri.base(this, 'constructor');
 };
 goog.inherits(goog.soy.data.SanitizedUri, goog.soy.data.SanitizedContent);
@@ -22243,6 +22289,7 @@ goog.soy.data.SanitizedUri.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @return {boolean}
  */
 goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
+  'use strict';
   return typeof value === 'string' ||
       goog.soy.data.SanitizedUri.isCompatibleWithStrict(value);
 };
@@ -22255,6 +22302,7 @@ goog.soy.data.SanitizedUri.isCompatibleWith = function(value) {
  * @return {boolean}
  */
 goog.soy.data.SanitizedUri.isCompatibleWithStrict = function(value) {
+  'use strict';
   return value instanceof goog.soy.data.SanitizedUri ||
       value instanceof goog.html.SafeUrl ||
       value instanceof goog.html.TrustedResourceUrl ||
@@ -22274,6 +22322,7 @@ goog.soy.data.SanitizedUri.isCompatibleWithStrict = function(value) {
  * @constructor
  */
 goog.soy.data.SanitizedTrustedResourceUri = function() {
+  'use strict';
   goog.soy.data.SanitizedTrustedResourceUri.base(this, 'constructor');
 };
 goog.inherits(
@@ -22296,6 +22345,7 @@ goog.soy.data.SanitizedTrustedResourceUri.prototype.contentDir =
  */
 goog.soy.data.SanitizedTrustedResourceUri.prototype.toTrustedResourceUrl =
     function() {
+  'use strict';
   return goog.html.uncheckedconversions
       .trustedResourceUrlFromStringKnownToSatisfyTypeContract(
           goog.string.Const.from(
@@ -22311,6 +22361,7 @@ goog.soy.data.SanitizedTrustedResourceUri.prototype.toTrustedResourceUrl =
  * @return {boolean}
  */
 goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
+  'use strict';
   return typeof value === 'string' ||
       goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict(value);
 };
@@ -22324,6 +22375,7 @@ goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWith = function(value) {
  */
 goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict = function(
     value) {
+  'use strict';
   return value instanceof goog.soy.data.SanitizedTrustedResourceUri ||
       value instanceof goog.html.TrustedResourceUrl;
 };
@@ -22340,6 +22392,7 @@ goog.soy.data.SanitizedTrustedResourceUri.isCompatibleWithStrict = function(
  * @constructor
  */
 goog.soy.data.SanitizedHtmlAttribute = function() {
+  'use strict';
   goog.soy.data.SanitizedHtmlAttribute.base(this, 'constructor');
 };
 goog.inherits(
@@ -22362,6 +22415,7 @@ goog.soy.data.SanitizedHtmlAttribute.prototype.contentDir =
  * @return {boolean}
  */
 goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
+  'use strict';
   return typeof value === 'string' ||
       goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict(value);
 };
@@ -22374,6 +22428,7 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWith = function(value) {
  * @return {boolean}
  */
 goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict = function(value) {
+  'use strict';
   return value instanceof goog.soy.data.SanitizedHtmlAttribute;
 };
 
@@ -22389,6 +22444,7 @@ goog.soy.data.SanitizedHtmlAttribute.isCompatibleWithStrict = function(value) {
  * @constructor
  */
 goog.soy.data.SanitizedCss = function() {
+  'use strict';
   goog.soy.data.SanitizedCss.base(this, 'constructor');
 };
 goog.inherits(goog.soy.data.SanitizedCss, goog.soy.data.SanitizedContent);
@@ -22409,6 +22465,7 @@ goog.soy.data.SanitizedCss.prototype.contentDir = goog.i18n.bidi.Dir.LTR;
  * @return {boolean}
  */
 goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
+  'use strict';
   return typeof value === 'string' ||
       goog.soy.data.SanitizedCss.isCompatibleWithStrict(value);
 };
@@ -22421,6 +22478,7 @@ goog.soy.data.SanitizedCss.isCompatibleWith = function(value) {
  * @return {boolean}
  */
 goog.soy.data.SanitizedCss.isCompatibleWithStrict = function(value) {
+  'use strict';
   return value instanceof goog.soy.data.SanitizedCss ||
       value instanceof goog.html.SafeStyle ||
       value instanceof goog.html.SafeStyleSheet;
@@ -22435,6 +22493,7 @@ goog.soy.data.SanitizedCss.isCompatibleWithStrict = function(value) {
  * @return {!goog.html.SafeStyleSheet}
  */
 goog.soy.data.SanitizedCss.prototype.toSafeStyleSheet = function() {
+  'use strict';
   var value = this.toString();
   goog.asserts.assert(
       /[@{]|^\s*$/.test(value),
@@ -36535,6 +36594,7 @@ goog.provide('goog.debug.errorcontext');
  */
 goog.debug.errorcontext.addErrorContext = function(
     err, contextKey, contextValue) {
+  'use strict';
   if (!err[goog.debug.errorcontext.CONTEXT_KEY_]) {
     err[goog.debug.errorcontext.CONTEXT_KEY_] = {};
   }
@@ -36547,6 +36607,7 @@ goog.debug.errorcontext.addErrorContext = function(
  * @return {!Object<string, string>} The context of the provided error.
  */
 goog.debug.errorcontext.getErrorContext = function(err) {
+  'use strict';
   return err[goog.debug.errorcontext.CONTEXT_KEY_] || {};
 };
 
@@ -37690,6 +37751,7 @@ goog.debug.CHECK_FOR_THROWN_EVENT =
  *    on Object.
  */
 goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
+  'use strict';
   var target = opt_target || goog.global;
   var oldErrorHandler = target.onerror;
   var retVal = !!opt_cancel;
@@ -37731,6 +37793,7 @@ goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
    * @return {boolean} Whether to prevent the error from reaching the browser.
    */
   target.onerror = function(message, url, line, opt_col, opt_error) {
+    'use strict';
     if (oldErrorHandler) {
       oldErrorHandler(message, url, line, opt_col, opt_error);
     }
@@ -37755,6 +37818,7 @@ goog.debug.catchErrors = function(logFunc, opt_cancel, opt_target) {
  * @return {string} The string representation of `obj`.
  */
 goog.debug.expose = function(obj, opt_showFn) {
+  'use strict';
   if (typeof obj == 'undefined') {
     return 'undefined';
   }
@@ -37791,6 +37855,7 @@ goog.debug.expose = function(obj, opt_showFn) {
  * @return {string} A string representation of `obj`.
  */
 goog.debug.deepExpose = function(obj, opt_showFn) {
+  'use strict';
   var str = [];
 
   // Track any objects where deepExpose added a Uid, so they can be cleaned up
@@ -37800,9 +37865,11 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
   var ancestorUids = {};
 
   var helper = function(obj, space) {
+    'use strict';
     var nestspace = space + '  ';
 
     var indentMultiline = function(str) {
+      'use strict';
       return str.replace(/\n/g, '\n' + space);
     };
 
@@ -37864,6 +37931,7 @@ goog.debug.deepExpose = function(obj, opt_showFn) {
  * @return {string} String representing nested array.
  */
 goog.debug.exposeArray = function(arr) {
+  'use strict';
   var str = [];
   for (var i = 0; i < arr.length; i++) {
     if (Array.isArray(arr[i])) {
@@ -37889,6 +37957,7 @@ goog.debug.exposeArray = function(arr) {
  * @suppress {strictMissingProperties} properties not defined on err
  */
 goog.debug.normalizeErrorObject = function(err) {
+  'use strict';
   var href = goog.getObjectByName('window.location.href');
   if (err == null) {
     err = 'Unknown Error of type "null/undefined"';
@@ -37984,6 +38053,7 @@ goog.debug.normalizeErrorObject = function(err) {
  * @suppress {missingProperties} properties not defined on cause and e
  */
 goog.debug.serializeErrorStack_ = function(e, seen) {
+  'use strict';
   if (!seen) {
     seen = {};
   }
@@ -38014,6 +38084,7 @@ goog.debug.serializeErrorStack_ = function(e, seen) {
  * @private
  */
 goog.debug.serializeErrorAsKey_ = function(e) {
+  'use strict';
   var keyPrefix = '';
 
   if (typeof e.toString === 'function') {
@@ -38035,6 +38106,7 @@ goog.debug.serializeErrorAsKey_ = function(e) {
  *     it is converted to an Error which is enhanced and returned.
  */
 goog.debug.enhanceError = function(err, opt_message) {
+  'use strict';
   var error;
   if (!(err instanceof Error)) {
     error = Error(err);
@@ -38072,6 +38144,7 @@ goog.debug.enhanceError = function(err, opt_message) {
  *     it is converted to an Error which is enhanced and returned.
  */
 goog.debug.enhanceErrorWithContext = function(err, opt_context) {
+  'use strict';
   var error = goog.debug.enhanceError(err);
   if (opt_context) {
     for (var key in opt_context) {
@@ -38091,6 +38164,7 @@ goog.debug.enhanceErrorWithContext = function(err, opt_context) {
  * @suppress {es5Strict}
  */
 goog.debug.getStacktraceSimple = function(opt_depth) {
+  'use strict';
   if (!goog.debug.FORCE_SLOPPY_STACKS) {
     var stack = goog.debug.getNativeStackTrace_(goog.debug.getStacktraceSimple);
     if (stack) {
@@ -38143,6 +38217,7 @@ goog.debug.MAX_STACK_DEPTH = 50;
  * @private
  */
 goog.debug.getNativeStackTrace_ = function(fn) {
+  'use strict';
   var tempErr = new Error();
   if (Error.captureStackTrace) {
     Error.captureStackTrace(tempErr, fn);
@@ -38173,6 +38248,7 @@ goog.debug.getNativeStackTrace_ = function(fn) {
  * @suppress {es5Strict}
  */
 goog.debug.getStacktrace = function(fn) {
+  'use strict';
   var stack;
   if (!goog.debug.FORCE_SLOPPY_STACKS) {
     // Try to get the stack trace from the environment if it is available.
@@ -38199,6 +38275,7 @@ goog.debug.getStacktrace = function(fn) {
  * @private
  */
 goog.debug.getStacktraceHelper_ = function(fn, visited) {
+  'use strict';
   var sb = [];
 
   // Circular reference, certain functions like bind seem to cause a recursive
@@ -38274,6 +38351,7 @@ goog.debug.getStacktraceHelper_ = function(fn, visited) {
  * @return {string} Function's name.
  */
 goog.debug.getFunctionName = function(fn) {
+  'use strict';
   if (goog.debug.fnNameCache_[fn]) {
     return goog.debug.fnNameCache_[fn];
   }
@@ -38302,6 +38380,7 @@ goog.debug.getFunctionName = function(fn) {
  * @return {string} string whose whitespace is made visible.
  */
 goog.debug.makeWhitespaceVisible = function(string) {
+  'use strict';
   return string.replace(/ /g, '[_]')
       .replace(/\f/g, '[f]')
       .replace(/\n/g, '[n]\n')
@@ -38320,6 +38399,7 @@ goog.debug.makeWhitespaceVisible = function(string) {
  * @return {string} The best display name for the value, or 'unknown type name'.
  */
 goog.debug.runtimeType = function(value) {
+  'use strict';
   if (value instanceof Function) {
     return value.displayName || value.name || 'unknown type name';
   } else if (value instanceof Object) {
@@ -38347,6 +38427,7 @@ goog.debug.fnNameCache_ = {};
  * @private
  */
 goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
+  'use strict';
   return arg;
 };
 
@@ -38360,11 +38441,13 @@ goog.debug.freezeInternal_ = goog.DEBUG && Object.freeze || function(arg) {
  * @template T
  */
 goog.debug.freeze = function(arg) {
+  'use strict';
   // NOTE: this compiles to nothing, but hides the possible side effect of
   // freezeInternal_ from the compiler so that the entire call can be
   // removed if the result is not used.
   return {
     valueOf: function() {
+      'use strict';
       return goog.debug.freezeInternal_(arg);
     }
   }.valueOf();
@@ -38697,6 +38780,7 @@ goog.require('goog.asserts');
  * @template T
  */
 goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
+  'use strict';
   /**
    * @protected {?Array<number>}
    */
@@ -38724,6 +38808,7 @@ goog.structs.InversionMap = function(rangeArray, valueArray, opt_delta) {
  */
 goog.structs.InversionMap.prototype.storeInversion_ = function(
     rangeArray, opt_delta) {
+  'use strict';
   this.rangeArray = rangeArray;
 
   for (var i = 1; i < rangeArray.length; i++) {
@@ -38746,6 +38831,7 @@ goog.structs.InversionMap.prototype.storeInversion_ = function(
  */
 goog.structs.InversionMap.prototype.spliceInversion = function(
     rangeArray, valueArray, opt_delta) {
+  'use strict';
   // By building another inversion map, we build the arrays that we need
   // to splice in.
   var otherMap =
@@ -38781,6 +38867,7 @@ goog.structs.InversionMap.prototype.spliceInversion = function(
  * @return {T|null} Value retrieved from inversion map; null if not found.
  */
 goog.structs.InversionMap.prototype.at = function(intKey) {
+  'use strict';
   var index = this.getLeast(intKey);
   if (index < 0) {
     return null;
@@ -38797,6 +38884,7 @@ goog.structs.InversionMap.prototype.at = function(intKey) {
  * @protected
  */
 goog.structs.InversionMap.prototype.getLeast = function(intKey) {
+  'use strict';
   var arr = this.rangeArray;
   var low = 0;
   var high = arr.length;
@@ -47167,6 +47255,7 @@ goog.soy.TextTemplate;
  * @template ARG_TYPES
  */
 goog.soy.renderHtml = function(element, templateResult) {
+  'use strict';
   goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(
       goog.asserts.assert(element),
       goog.soy.ensureTemplateOutputHtml_(templateResult));
@@ -47188,6 +47277,7 @@ goog.soy.renderHtml = function(element, templateResult) {
  */
 goog.soy.renderElement = function(
     element, template, opt_templateData, opt_injectedData) {
+  'use strict';
   var html = goog.soy.ensureTemplateOutputHtml_(template(
       opt_templateData || goog.soy.defaultTemplateData_, opt_injectedData));
   goog.dom.safe.unsafeSetInnerHtmlDoNotUseOrElse(
@@ -47213,6 +47303,7 @@ goog.soy.renderElement = function(
  */
 goog.soy.renderAsFragment = function(
     template, opt_templateData, opt_injectedData, opt_domHelper) {
+  'use strict';
   var dom = opt_domHelper || goog.dom.getDomHelper();
   var output = template(
       opt_templateData || goog.soy.defaultTemplateData_, opt_injectedData);
@@ -47238,6 +47329,7 @@ goog.soy.renderAsFragment = function(
  */
 goog.soy.renderAsElement = function(
     template, opt_templateData, opt_injectedData, opt_domHelper) {
+  'use strict';
   return goog.soy.convertToElement_(
       template(
           opt_templateData || goog.soy.defaultTemplateData_, opt_injectedData),
@@ -47258,6 +47350,7 @@ goog.soy.renderAsElement = function(
  *     element if necessary.
  */
 goog.soy.convertToElement = function(templateResult, opt_domHelper) {
+  'use strict';
   return goog.soy.convertToElement_(templateResult, opt_domHelper);
 };
 
@@ -47273,6 +47366,7 @@ goog.soy.convertToElement = function(templateResult, opt_domHelper) {
  * @private
  */
 goog.soy.convertToElement_ = function(templateResult, opt_domHelper) {
+  'use strict';
   var dom = opt_domHelper || goog.dom.getDomHelper();
   var wrapper = dom.createElement(goog.dom.TagName.DIV);
   var html = goog.soy.ensureTemplateOutputHtml_(templateResult);
@@ -47304,6 +47398,7 @@ goog.soy.convertToElement_ = function(templateResult, opt_domHelper) {
  * @private
  */
 goog.soy.ensureTemplateOutputHtml_ = function(templateResult) {
+  'use strict';
   // Note we allow everything that isn't an object, because some non-escaping
   // templates end up returning non-strings if their only print statement is a
   // non-escaped argument, plus some unit tests spoof templates.
@@ -47334,6 +47429,7 @@ goog.soy.ensureTemplateOutputHtml_ = function(templateResult) {
  * @private
  */
 goog.soy.assertFirstTagValid_ = function(html) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS) {
     var matches = html.match(goog.soy.INVALID_TAG_TO_RENDER_);
     goog.asserts.assert(
