@@ -72,6 +72,7 @@ public abstract class SoyRuntimeType {
       case ATTRIBUTES:
       case CSS:
       case URI:
+      case ELEMENT:
       case HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:
@@ -147,6 +148,7 @@ public abstract class SoyRuntimeType {
       case ATTRIBUTES:
       case CSS:
       case URI:
+      case ELEMENT:
       case HTML:
       case JS:
       case TRUSTED_RESOURCE_URI:

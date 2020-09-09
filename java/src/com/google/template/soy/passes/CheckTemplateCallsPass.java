@@ -422,7 +422,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       if (callerTemplate.isStrictHtml()
           && caller.getIsPcData()
           && callee != null
-          && callee.getContentKind() == SanitizedContentKind.HTML
+          && (callee.getContentKind() == SanitizedContentKind.HTML
+              || callee.getContentKind() == SanitizedContentKind.HTML_ELEMENT)
           && !callee.isStrictHtml()) {
         errorReporter.report(caller.getSourceLocation(), STRICT_HTML);
       }
