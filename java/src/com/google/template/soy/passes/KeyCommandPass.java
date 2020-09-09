@@ -145,6 +145,7 @@ final class KeyCommandPass implements CompilerFilePass {
           break;
         case BOOL:
         case HTML:
+        case ELEMENT:
         case ATTRIBUTES:
         case JS:
         case CSS:

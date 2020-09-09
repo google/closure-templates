@@ -93,6 +93,9 @@ public class SanitizedContent extends SoyData {
      */
     HTML,
 
+    /** Same as HTML but only one element. */
+    HTML_ELEMENT,
+
     /**
      * Executable Javascript code or expression, safe for insertion in a script-tag or event handler
      * context, known to be free of any attacker-controlled scripts. This can either be
@@ -152,6 +155,7 @@ public class SanitizedContent extends SoyData {
         case TRUSTED_RESOURCE_URI:
           return Dir.LTR;
         case HTML:
+        case HTML_ELEMENT:
         case TEXT:
           return null;
       }
@@ -250,7 +254,7 @@ public class SanitizedContent extends SoyData {
    */
   public SafeHtml toSafeHtml() {
     Preconditions.checkState(
-        getContentKind() == ContentKind.HTML,
+        getContentKind() == ContentKind.HTML || getContentKind() == ContentKind.HTML_ELEMENT,
         "toSafeHtml() only valid for SanitizedContent of kind HTML, is: %s",
         getContentKind());
     return UncheckedConversions.safeHtmlFromStringKnownToSatisfyTypeContract(getContent());

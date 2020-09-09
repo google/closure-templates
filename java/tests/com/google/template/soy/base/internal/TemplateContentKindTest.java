@@ -38,7 +38,7 @@ public final class TemplateContentKindTest {
   @Test
   public void testForAttributeValue_element() {
     assertThat(TemplateContentKind.fromAttributeValue("html<?>").get().getSanitizedContentKind())
-        .isEqualTo(SanitizedContentKind.HTML);
+        .isEqualTo(SanitizedContentKind.HTML_ELEMENT);
   }
 
   @Test

@@ -209,6 +209,9 @@ public final class TagName {
           .putAll("th", "td", "th")
           .build();
 
+  private static final TemplateType ELEMENT_TEMPLATE =
+      TemplateType.declaredTypeOf(ImmutableList.of(), SanitizedType.ElementType.getInstance());
+
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;
   @Nullable private final RcDataTagName rcDataTagName;
@@ -250,12 +253,7 @@ public final class TagName {
 
   public boolean isTemplateCall() {
     return !isStatic()
-        && getDynamicTagName()
-            .getExpr()
-            .getType()
-            .isAssignableFrom(
-                TemplateType.declaredTypeOf(
-                    ImmutableList.of(), SanitizedType.HtmlType.getInstance()));
+        && ELEMENT_TEMPLATE.isAssignableFrom(getDynamicTagName().getExpr().getType());
   }
 
   public boolean isWildCard() {

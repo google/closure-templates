@@ -131,6 +131,7 @@ public final class TofuTypeChecks {
       case FLOAT:
         return CheckResult.fromBool(value instanceof FloatData);
       case HTML:
+      case ELEMENT:
         return isSanitizedofKind(value, ContentKind.HTML);
       case INT:
         return CheckResult.fromBool(value instanceof IntegerData);

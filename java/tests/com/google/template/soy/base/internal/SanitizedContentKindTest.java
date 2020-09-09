@@ -50,7 +50,15 @@ public final class SanitizedContentKindTest {
   public void testGetAttributeValues() {
     Set<String> attributeValues = SanitizedContentKind.attributeValues();
     assertThat(attributeValues)
-        .containsExactly("attributes", "css", "html", "js", "text", "trusted_resource_uri", "uri")
+        .containsExactly(
+            "attributes",
+            "css",
+            "html",
+            "html_element",
+            "js",
+            "text",
+            "trusted_resource_uri",
+            "uri")
         .inOrder();
   }
 }
