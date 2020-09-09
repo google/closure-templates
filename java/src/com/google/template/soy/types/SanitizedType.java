@@ -130,6 +130,11 @@ public abstract class SanitizedType extends PrimitiveType {
     public static ElementType getInstance() {
       return INSTANCE;
     }
+
+    @Override
+    public String toString() {
+      return "html<?>";
+    }
   }
 
   /** Type produced by templates whose kind is "attributes". */

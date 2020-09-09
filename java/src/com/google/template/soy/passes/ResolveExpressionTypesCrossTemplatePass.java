@@ -79,6 +79,10 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SoyErrorKind.of(
           "Only basic templates are allowed in expressions, but found template of kind: `{0}`.");
 
+  private static final SoyErrorKind ELEMENT_CALL_TO_HTML_TEMPLATE =
+      SoyErrorKind.of(
+          "Expected a template with kind 'html<?>' that is completely bound, but found `{0}`.");
+
   private static final SoyErrorKind ONLY_STRICT_HTML_TEMPLATES_ALLOWED =
       SoyErrorKind.of(
           "Only strict HTML templates are allowed in expressions, but template `{0}` was not"
@@ -213,7 +217,16 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                         .getExpr()
                         .getType()
                         .isAssignableFrom(StringType.getInstance()))) {
-      handleDynamicTag(tagNode, correctlyPlaced);
+      SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
+      if (type.isAssignableFrom(StringType.getInstance())) {
+        handleDynamicTag(tagNode, correctlyPlaced);
+      } else if (!tagNode.getTagName().isTemplateCall()
+          && !type.isAssignableFrom(UnknownType.getInstance())) {
+        errorReporter.report(
+            tagNode.getSourceLocation(),
+            ELEMENT_CALL_TO_HTML_TEMPLATE,
+            tagNode.getTagName().getDynamicTagName().getExpr().getType());
+      }
     }
     // No other uses of legacyDynamicTag are allowed.
     for (FunctionNode fn :

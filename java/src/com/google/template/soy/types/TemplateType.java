@@ -201,7 +201,6 @@ public abstract class TemplateType extends SoyType {
       sb.append(parameter.getType());
     }
     sb.append(") => ");
-    // TODO(b/167574941): Add element support.
     sb.append(SanitizedType.getTypeForContentKind(contentKind.getSanitizedContentKind()));
     return sb.toString();
   }
