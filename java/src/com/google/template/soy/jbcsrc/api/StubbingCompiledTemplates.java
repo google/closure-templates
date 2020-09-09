@@ -99,7 +99,6 @@ final class StubbingCompiledTemplates extends CompiledTemplates {
       return super.getTemplateFactory(name);
     }
     switch (contentKind) {
-      case HTML_ELEMENT:
       case HTML:
         return new Factory<>(
             contentKind, stubFactory.createHtmlTemplate(name), SafeHtml::getSafeHtmlString);

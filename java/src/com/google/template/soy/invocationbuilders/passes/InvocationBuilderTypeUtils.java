@@ -79,7 +79,6 @@ final class InvocationBuilderTypeUtils {
       case STRING:
         types = ImmutableList.of(SimpleJavaType.STRING);
         break;
-      case ELEMENT:
       case HTML:
         types = ImmutableList.of(SimpleJavaType.HTML);
         break;

@@ -124,7 +124,6 @@ enum SanitizedContentKindP {
   CSS = 6;
   TEXT = 7;
   NONE = 8;
-  HTML_ELEMENT = 9;
 }
 // The kind of the template.
 enum TemplateKindP {

@@ -930,7 +930,6 @@ abstract class Context {
     switch (contentKind) {
       case CSS:
         return state() == HtmlContext.CSS && elType() == ElementType.NONE;
-      case HTML_ELEMENT:
       case HTML:
         return state() == HtmlContext.HTML_PCDATA && elType() == ElementType.NONE;
       case ATTRIBUTES:
@@ -1745,7 +1744,6 @@ abstract class Context {
         case CSS:
           withState(HtmlContext.CSS);
           break;
-        case HTML_ELEMENT:
         case HTML:
           withState(HtmlContext.HTML_PCDATA);
           break;

@@ -283,7 +283,6 @@ public final class JsType {
         }
         // fall through
       case HTML:
-      case ELEMENT:
         if (isIncrementalDom) {
           // idom has a different strategy for handling these
           return IDOM_HTML;
@@ -487,7 +486,6 @@ public final class JsType {
         return STRING_TYPE;
       case ATTRIBUTES:
       case CSS:
-      case HTML_ELEMENT:
       case HTML:
       case JS:
       case URI:
@@ -643,7 +641,6 @@ public final class JsType {
       case CSS:
         builder.addType("!goog.html.SafeStyle");
         break;
-      case HTML_ELEMENT:
       case HTML:
         builder.addType("!goog.html.SafeHtml");
         break;

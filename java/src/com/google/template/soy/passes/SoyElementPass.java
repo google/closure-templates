@@ -109,8 +109,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
       // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
       for (TemplateNode template : file.getTemplates()) {
         if (!(template instanceof TemplateDelegateNode)
-            && (template.getContentKind() == SanitizedContentKind.HTML
-                || template.getContentKind() == SanitizedContentKind.HTML_ELEMENT)) {
+            && template.getContentKind() == SanitizedContentKind.HTML) {
           templatesInLibrary.put(template.getTemplateName(), template);
         } else {
           template.setHtmlElementMetadata(DEFAULT_HTML_METADATA);
