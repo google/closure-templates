@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
 
 /** Template type, containing a list of named, typed parameters and a return type. */
@@ -209,7 +210,12 @@ public abstract class TemplateType extends SoyType {
         !isInferredType(), "Only declared types may be serialized to proto form.");
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
     for (Parameter parameter : getParameters()) {
-      templateBuilder.putParameter(parameter.getName(), parameter.getType().toProto());
+      templateBuilder.addParameter(
+          ParameterP.newBuilder()
+              .setName(parameter.getName())
+              .setType(parameter.getType().toProto())
+              .setRequired(parameter.isRequired())
+              .build());
     }
     // TODO(b/167574941): Add element support.
     templateBuilder.setReturnType(

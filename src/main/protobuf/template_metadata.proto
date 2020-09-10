@@ -71,8 +71,10 @@ message SoyTypeP {
     repeated SoyTypeP member = 1;
   }
   message TemplateTypeP {
-    map<string, SoyTypeP> parameter = 1;
     PrimitiveTypeP return_type = 2;
+    repeated ParameterP parameter = 3;
+
+    reserved 1;
   }
   // discriminated union of the different type categories
   oneof TypeKind {

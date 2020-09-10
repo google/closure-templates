@@ -369,14 +369,13 @@ public final class TemplateMetadataSerializer {
       case TEMPLATE:
         {
           List<TemplateType.Parameter> parameters = new ArrayList<>();
-          // TODO: this relies on proto map insertion order, which is not guaranteed by the spec.
-          for (Map.Entry<String, SoyTypeP> entry :
-              proto.getTemplate().getParameterMap().entrySet()) {
+          // TODO: this relies on proto list insertion order, which is not guaranteed by the spec.
+          for (ParameterP parameter : proto.getTemplate().getParameterList()) {
             parameters.add(
                 TemplateType.Parameter.create(
-                    entry.getKey(),
-                    fromProto(entry.getValue(), typeRegistry, filePath, errorReporter),
-                    true /* isRequired */));
+                    parameter.getName(),
+                    fromProto(parameter.getType(), typeRegistry, filePath, errorReporter),
+                    parameter.getRequired()));
           }
           return typeRegistry.internTemplateType(
               TemplateType.declaredTypeOf(
