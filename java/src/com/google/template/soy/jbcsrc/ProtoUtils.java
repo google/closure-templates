@@ -323,7 +323,8 @@ final class ProtoUtils {
         final BytecodeProducer hasCheck;
 
         // if oneof, check the value of getFooCase() enum
-        OneofDescriptor containingOneof = descriptor.getContainingOneof();
+        OneofDescriptor containingOneof =
+            descriptor.getContainingOneof();
         if (containingOneof != null) {
           final MethodRef getCaseRef = getOneOfCaseMethod(containingOneof);
           final Expression fieldNumber = constant(descriptor.getNumber());
