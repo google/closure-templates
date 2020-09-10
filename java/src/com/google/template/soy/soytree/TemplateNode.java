@@ -446,7 +446,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     if (strictHtmlDisabled) {
       // Use the value that is explicitly set in template.
       return false;
-    } else if (contentKind.getSanitizedContentKind() != SanitizedContentKind.HTML) {
+    } else if (!contentKind.getSanitizedContentKind().isHtml()) {
       // Non-HTML templates couldn't be strictHtml.
       return false;
     } else {

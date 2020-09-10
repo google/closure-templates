@@ -286,9 +286,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
     super.visitTemplateNode(node);
 
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       Expression type;
-      if (kind == SanitizedContentKind.HTML) {
+      if (kind.isHtml()) {
         type = SOY_IDOM_TYPE_HTML;
       } else {
         type = SOY_IDOM_TYPE_ATTRIBUTE;
@@ -312,7 +312,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     SanitizedContentKind kind = node.getContentKind();
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       jsDocBuilder.addGoogRequire(INCREMENTAL_DOM_LIB);
       jsDocBuilder.addParam(
           INCREMENTAL_DOM_PARAM_NAME, "!incrementaldomlib.IncrementalDomRenderer");
@@ -698,9 +698,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     CodeChunk definition;
     VariableDeclaration.Builder builder = VariableDeclaration.builder(generatedVarName);
     SanitizedContentKind kind = node.getContentKind();
-    if (kind == SanitizedContentKind.HTML || kind == SanitizedContentKind.ATTRIBUTES) {
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
       Expression constructor;
-      if (kind == SanitizedContentKind.HTML) {
+      if (kind.isHtml()) {
         constructor = SOY_IDOM_MAKE_HTML;
       } else {
         constructor = SOY_IDOM_MAKE_ATTRIBUTES;
@@ -785,11 +785,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     if (STRINGLIKE_KINDS.contains(node.getHtmlContext())
         && (!kind.isPresent()
             || kind.get() == SanitizedContentKind.ATTRIBUTES
-            || kind.get() == SanitizedContentKind.HTML)) {
+            || kind.get().isHtml())) {
       call = SOY_IDOM_CALL_DYNAMIC_TEXT.call(callee, objToPass, JsRuntime.OPT_IJ_DATA);
     } else if (kind.isPresent()
-        && (kind.get() == SanitizedContentKind.HTML
-            || kind.get() == SanitizedContentKind.ATTRIBUTES)) {
+        && (kind.get().isHtml() || kind.get() == SanitizedContentKind.ATTRIBUTES)) {
       // This is executed in the case of HTML/ATTR -> HTML/ATTR. All other ambiguous cases are
       // passed through to runtime functions.
       call = callee.call(INCREMENTAL_DOM, objToPass, JsRuntime.OPT_IJ_DATA);
@@ -822,7 +821,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   INCREMENTAL_DOM, callee, objToPass, JsRuntime.OPT_IJ_DATA);
           break;
         default:
-          if (!kind.isPresent() || kind.get() != SanitizedContentKind.HTML) {
+          if (!kind.isPresent() || !kind.get().isHtml()) {
             call =
                 SOY_IDOM_CALL_DYNAMIC_HTML.call(
                     INCREMENTAL_DOM, callee, objToPass, JsRuntime.OPT_IJ_DATA);
@@ -884,8 +883,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
    * @return True if the content represents text, false otherwise.
    */
   private boolean isTextContent(SanitizedContentKind contentKind) {
-    return contentKind != SanitizedContentKind.HTML
-        && contentKind != SanitizedContentKind.ATTRIBUTES;
+    return !contentKind.isHtml() && contentKind != SanitizedContentKind.ATTRIBUTES;
   }
 
   @Override
@@ -979,7 +977,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         Optional<SanitizedContentKind> kind = templateRegistry.getCallContentKind((CallNode) n);
         needsToBeCoerced =
             !kind.isPresent()
-                || kind.get() == SanitizedContentKind.HTML
+                || kind.get().isHtml()
                 || kind.get() == SanitizedContentKind.ATTRIBUTES;
       }
     }

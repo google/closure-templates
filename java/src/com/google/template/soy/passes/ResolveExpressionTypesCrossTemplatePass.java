@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
@@ -335,7 +334,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         }
         return UnknownType.getInstance();
       }
-      if (basicTemplateOrElement.getContentKind() == SanitizedContentKind.HTML
+      if (basicTemplateOrElement.getContentKind().isHtml()
           && !basicTemplateOrElement.isStrictHtml()
           && !isSynthetic) {
         // Only report errors for template literal nodes, to avoid reporting errors multiple times

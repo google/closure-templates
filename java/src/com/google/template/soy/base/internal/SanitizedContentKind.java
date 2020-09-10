@@ -93,6 +93,10 @@ public enum SanitizedContentKind {
     return attributeValue;
   }
 
+  public boolean isHtml() {
+    return this == HTML || this == HTML_ELEMENT;
+  }
+
   /** Returns whether the sanitized types are equal. */
   public boolean isAssignableFrom(SanitizedContentKind sanitizedType) {
     return this == sanitizedType || (this == HTML && sanitizedType == HTML_ELEMENT);

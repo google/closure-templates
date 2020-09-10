@@ -16,7 +16,6 @@
 
 package com.google.template.soy.conformance;
 
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode;
@@ -29,7 +28,7 @@ final class RequireStrictHtml extends Rule<TemplateNode> {
   @Override
   protected void doCheckConformance(TemplateNode node, ErrorReporter errorReporter) {
     // Ignore non-HTML templates.
-    if (node.getContentKind() != SanitizedContentKind.HTML) {
+    if (!node.getContentKind().isHtml()) {
       return;
     }
     if (!node.isStrictHtml()) {

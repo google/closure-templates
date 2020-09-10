@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -108,9 +107,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
       // Create an intermediatary data structure for template name -> template node so that
       // we can use it like a TemplateRegistry, but for templates in the immediate compilation unit.
       for (TemplateNode template : file.getTemplates()) {
-        if (!(template instanceof TemplateDelegateNode)
-            && (template.getContentKind() == SanitizedContentKind.HTML
-                || template.getContentKind() == SanitizedContentKind.HTML_ELEMENT)) {
+        if (!(template instanceof TemplateDelegateNode) && template.getContentKind().isHtml()) {
           templatesInLibrary.put(template.getTemplateName(), template);
         } else {
           template.setHtmlElementMetadata(DEFAULT_HTML_METADATA);

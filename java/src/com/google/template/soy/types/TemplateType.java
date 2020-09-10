@@ -125,9 +125,7 @@ public abstract class TemplateType extends SoyType {
         .setContentKind(templateContentKind)
         // Declared HTML templates are implicitly strict. A separate check enforces that
         // non-strict templates may not be bound in template literals.
-        .setStrictHtml(
-            contentKind == SanitizedContentKind.HTML
-                || contentKind == SanitizedContentKind.HTML_ELEMENT)
+        .setStrictHtml(contentKind.isHtml())
         .setParameters(ImmutableList.copyOf(parameters))
         // data=all is banned on declared templates.
         .setDataAllCallSituations(ImmutableList.of())

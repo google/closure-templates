@@ -46,8 +46,7 @@ final class IncrementalDomCodeBuilder extends JsCodeBuilder {
 
   @Override
   public IncrementalDomCodeBuilder addChunksToOutputVar(List<? extends Expression> codeChunks) {
-    if (getContentKind() == SanitizedContentKind.HTML
-        || getContentKind() == SanitizedContentKind.ATTRIBUTES) {
+    if (getContentKind().isHtml() || getContentKind() == SanitizedContentKind.ATTRIBUTES) {
       for (Expression chunk : codeChunks) {
         append(chunk);
       }

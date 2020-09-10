@@ -59,6 +59,8 @@ final class LegacyObjectMapFinder implements TypeNodeVisitor<Void> {
           child.accept(this);
         }
         break;
+      case ELEMENT:
+        break;
       default:
         throw new AssertionError("unexpected generic type: " + node.getResolvedType().getKind());
     }

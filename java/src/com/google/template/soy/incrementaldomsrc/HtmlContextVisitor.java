@@ -205,6 +205,7 @@ final class HtmlContextVisitor extends AbstractSoyNodeVisitor<Void> {
   private HtmlContext contextForKind(SanitizedContentKind contentKind) {
     switch (contentKind) {
       case HTML:
+      case HTML_ELEMENT:
         return HtmlContext.HTML_PCDATA;
       case ATTRIBUTES:
         return HtmlContext.HTML_TAG;

@@ -136,8 +136,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
       }
       Set<TemplateMetadata.Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
       SanitizedContentKind firstContentKind = firstDelTemplate.getContentKind();
-      boolean firstStrictHtml =
-          firstDelTemplate.isStrictHtml() && firstContentKind == SanitizedContentKind.HTML;
+      boolean firstStrictHtml = firstDelTemplate.isStrictHtml() && firstContentKind.isHtml();
       // loop over all members of the deltemplate group.
       for (TemplateMetadata delTemplate : delTemplateGroup) {
         if (firstDelTemplate == delTemplate) {
