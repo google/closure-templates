@@ -3870,7 +3870,7 @@ goog.createTrustedTypesPolicy = function(name) {
 };
 
 //third_party/javascript/closure/debug/error.js
-/**
+goog.loadModule(function(exports) {'use strict';/**
  * @license
  * Copyright The Closure Library Authors.
  * SPDX-License-Identifier: Apache-2.0
@@ -3880,11 +3880,12 @@ goog.createTrustedTypesPolicy = function(name) {
  * @fileoverview Provides a base class for custom Error objects such that the
  * stack is correctly maintained.
  *
- * You should never need to throw goog.debug.Error(msg) directly, Error(msg) is
+ * You should never need to throw DebugError(msg) directly, Error(msg) is
  * sufficient.
  */
 
-goog.provide('goog.debug.Error');
+goog.module('goog.debug.Error');
+goog.module.declareLegacyNamespace();
 
 
 
@@ -3894,11 +3895,10 @@ goog.provide('goog.debug.Error');
  * @constructor
  * @extends {Error}
  */
-goog.debug.Error = function(opt_msg) {
-  'use strict';
+function DebugError(opt_msg) {
   // Attempt to ensure there is a stack trace.
   if (Error.captureStackTrace) {
-    Error.captureStackTrace(this, goog.debug.Error);
+    Error.captureStackTrace(this, DebugError);
   } else {
     const stack = new Error().stack;
     if (stack) {
@@ -3920,12 +3920,17 @@ goog.debug.Error = function(opt_msg) {
    * @type {boolean}
    */
   this.reportErrorToServer = true;
-};
-goog.inherits(goog.debug.Error, Error);
+}
+goog.inherits(DebugError, Error);
 
 
 /** @override */
-goog.debug.Error.prototype.name = 'CustomError';
+DebugError.prototype.name = 'CustomError';
+
+
+exports = DebugError;
+
+;return exports;});
 
 //third_party/javascript/closure/dom/nodetype.js
 /**

@@ -77,10 +77,6 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     if (this.logger && !renderer.getLogger()) {
       renderer.setLogger(this.logger);
     }
-    // It is possible that this Soy element has a skip handler on it. When
-    // render() is called, ignore the skip handler.
-    const skipHandler = this.skipHandler;
-    this.skipHandler = null;
     if (this.patchHandler) {
       const patchHandler =
           (this as SoyElement<TData, TInterface>).patchHandler!;
@@ -89,11 +85,21 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
             this as unknown as TInterface, this as unknown as TInterface);
       };
     }
-    patchOuter(this.node!, () => {
-      // If there are parameters, they must already be specified.
-      this.renderInternal(renderer, this.data!);
-    });
-    this.skipHandler = skipHandler;
+    const origSyncState = this.syncState;
+    this.syncState = false;
+    // It is possible that this Soy element has a skip handler on it. When
+    // render() is called, ignore the skip handler.
+    const skipHandler = this.skipHandler;
+    this.skipHandler = null;
+    try {
+      patchOuter(this.node!, () => {
+        // If there are parameters, they must already be specified.
+        this.renderInternal(renderer, this.data!);
+      });
+    } finally {
+      this.syncState = origSyncState;
+      this.skipHandler = skipHandler;
+    }
     if (this.logger) {
       this.logger.resetBuilder();
     }
