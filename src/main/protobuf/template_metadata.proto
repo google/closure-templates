@@ -48,14 +48,16 @@ message SoyTypeP {
     INT = 5;
     FLOAT = 6;
     STRING = 7;
-    HTML = 8;
     ATTRIBUTES = 9;
     JS = 10;
     CSS = 11;
     URI = 12;
     TRUSTED_RESOURCE_URI = 13;
     VE_DATA = 14;
-    HTML_ELEMENT = 15;
+  }
+  message HtmlTypeP {
+    bool is_element = 1;
+    // TODO(user): Add tag name.
   }
   message RecordTypeP {
     map<string, SoyTypeP> field = 1;
@@ -72,10 +74,10 @@ message SoyTypeP {
     repeated SoyTypeP member = 1;
   }
   message TemplateTypeP {
-    PrimitiveTypeP return_type = 2;
     repeated ParameterP parameter = 3;
+    SoyTypeP return_type = 4;
 
-    reserved 1;
+    reserved 1, 2;
   }
   // discriminated union of the different type categories
   oneof TypeKind {
@@ -90,6 +92,7 @@ message SoyTypeP {
     string ve = 9;
     TemplateTypeP template = 10;
     bool message = 11;
+    HtmlTypeP html = 12;
   }
 }
 

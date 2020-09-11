@@ -217,11 +217,8 @@ public abstract class TemplateType extends SoyType {
               .setRequired(parameter.isRequired())
               .build());
     }
-    // TODO(b/167574941): Add element support.
     templateBuilder.setReturnType(
-        SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind())
-            .toProto()
-            .getPrimitive());
+        SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind()).toProto());
   }
 
   @Override

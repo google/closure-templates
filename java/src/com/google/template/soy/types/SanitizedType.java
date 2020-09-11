@@ -93,7 +93,7 @@ public abstract class SanitizedType extends PrimitiveType {
 
     @Override
     void doToProto(SoyTypeP.Builder builder) {
-      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.HTML);
+      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(false));
     }
 
     /** Return the single instance of this type. */
@@ -120,10 +120,9 @@ public abstract class SanitizedType extends PrimitiveType {
       return SanitizedContentKind.HTML_ELEMENT;
     }
 
-    /** TODO(tomnguyen) Change this to ELEMENT */
     @Override
     void doToProto(SoyTypeP.Builder builder) {
-      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.HTML_ELEMENT);
+      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(true));
     }
 
     /** Return the single instance of this type. */

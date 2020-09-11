@@ -276,10 +276,6 @@ public final class TemplateMetadataSerializer {
             return FloatType.getInstance();
           case STRING:
             return StringType.getInstance();
-          case HTML_ELEMENT:
-            return ElementType.getInstance();
-          case HTML:
-            return HtmlType.getInstance();
           case ATTRIBUTES:
             return AttributesType.getInstance();
           case JS:
@@ -297,6 +293,12 @@ public final class TemplateMetadataSerializer {
             // fall-through
         }
         throw new AssertionError("Unknown primitive: " + proto.getPrimitive());
+      case HTML:
+        if (proto.getHtml().getIsElement()) {
+          return ElementType.getInstance();
+        } else {
+          return HtmlType.getInstance();
+        }
       case LIST_ELEMENT:
         return typeRegistry.getOrCreateListType(
             fromProto(proto.getListElement(), typeRegistry, filePath, errorReporter));
@@ -384,12 +386,7 @@ public final class TemplateMetadataSerializer {
               TemplateType.declaredTypeOf(
                   parameters,
                   fromProto(
-                      SoyTypeP.newBuilder()
-                          .setPrimitive(proto.getTemplate().getReturnType())
-                          .build(),
-                      typeRegistry,
-                      filePath,
-                      errorReporter)));
+                      proto.getTemplate().getReturnType(), typeRegistry, filePath, errorReporter)));
         }
       case UNION:
         {
