@@ -181,14 +181,13 @@ message TemplateMetadataP {
   // The variant string.  Will be empty for basic templates or deltemplates with
   // no variant.
   string del_template_variant = 3;
-  SanitizedContentKindP content_kind = 4;
   bool strict_html = 5;
   VisibilityP visibility = 6;
-  repeated ParameterP parameter = 7;
   repeated DataAllCallSituationP data_all_call_situation = 8;
 
   HtmlElementMetadataP html_element = 11;
   SoyElementMetadataP soy_element = 12;
+  SoyTypeP.TemplateTypeP template_type = 13;
 
-  reserved 9, 10;
+  reserved 4, 7, 9, 10;
 }
