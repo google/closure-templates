@@ -123,7 +123,7 @@ public abstract class SanitizedType extends PrimitiveType {
     /** TODO(tomnguyen) Change this to ELEMENT */
     @Override
     void doToProto(SoyTypeP.Builder builder) {
-      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.HTML);
+      builder.setPrimitive(SoyTypeP.PrimitiveTypeP.HTML_ELEMENT);
     }
 
     /** Return the single instance of this type. */

@@ -53,6 +53,7 @@ import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -117,12 +118,12 @@ public final class TemplateMetadataSerializer {
       String headerFilePath,
       ErrorReporter errorReporter) {
     ImmutableList.Builder<TemplateMetadata> templates = ImmutableList.builder();
-      for (TemplateMetadataP templateProto : fileProto.getTemplateList()) {
-        try {
+    for (TemplateMetadataP templateProto : fileProto.getTemplateList()) {
+      try {
         templates.add(
             metadataFromProto(
                 fileProto, templateProto, fileKind, typeRegistry, headerFilePath, errorReporter));
-        } catch (IllegalArgumentException iae) {
+      } catch (IllegalArgumentException iae) {
         errorReporter.report(
             new SourceLocation(headerFilePath),
             UNABLE_TO_PARSE_TEMPLATE_HEADER,
@@ -275,6 +276,8 @@ public final class TemplateMetadataSerializer {
             return FloatType.getInstance();
           case STRING:
             return StringType.getInstance();
+          case HTML_ELEMENT:
+            return ElementType.getInstance();
           case HTML:
             return HtmlType.getInstance();
           case ATTRIBUTES:

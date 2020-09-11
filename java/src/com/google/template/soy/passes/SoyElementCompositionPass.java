@@ -24,6 +24,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -72,18 +73,18 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
           }
           closeTag.getParent().removeChild(closeTag);
         }
-        tagNode
-            .getParent()
-            .replaceChild(
-                tagNode,
-                new CallBasicNode(
-                    nodeIdGen.genId(),
-                    SourceLocation.UNKNOWN,
-                    SourceLocation.UNKNOWN,
-                    printNode.getExpr().getRoot().copy(new CopyState()),
-                    ImmutableList.of(),
-                    false,
-                    errorReporter));
+        CallBasicNode call =
+            new CallBasicNode(
+                nodeIdGen.genId(),
+                SourceLocation.UNKNOWN,
+                SourceLocation.UNKNOWN,
+                printNode.getExpr().getRoot().copy(new CopyState()),
+                ImmutableList.of(),
+                false,
+                errorReporter);
+        call.getCalleeExpr().setType(printNode.getExpr().getType());
+        call.setHtmlContext(HtmlContext.HTML_PCDATA);
+        tagNode.getParent().replaceChild(tagNode, call);
       }
     }
   }

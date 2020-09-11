@@ -55,6 +55,7 @@ message SoyTypeP {
     URI = 12;
     TRUSTED_RESOURCE_URI = 13;
     VE_DATA = 14;
+    HTML_ELEMENT = 15;
   }
   message RecordTypeP {
     map<string, SoyTypeP> field = 1;
