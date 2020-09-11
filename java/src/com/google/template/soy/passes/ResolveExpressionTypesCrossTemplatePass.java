@@ -207,15 +207,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     Set<FunctionNode> correctlyPlaced = new HashSet<>();
     for (HtmlTagNode tagNode :
         SoyTreeUtils.getAllMatchingNodesOfType(
-            file,
-            HtmlTagNode.class,
-            (tag) ->
-                !tag.getTagName().isStatic()
-                    && tag.getTagName()
-                        .getDynamicTagName()
-                        .getExpr()
-                        .getType()
-                        .isAssignableFrom(StringType.getInstance()))) {
+            file, HtmlTagNode.class, (tag) -> !tag.getTagName().isStatic())) {
       SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
       if (type.isAssignableFrom(StringType.getInstance())) {
         handleDynamicTag(tagNode, correctlyPlaced);
