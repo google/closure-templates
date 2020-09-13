@@ -799,7 +799,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
       int numChildren = node.numChildren();
       checkState(numChildren == node.getKeys().size());
-      checkState(numChildren > 0);
 
       List<RecordType.Member> members = new ArrayList<>();
       for (int i = 0; i < numChildren; i++) {
