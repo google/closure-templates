@@ -43,6 +43,8 @@ import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
+import com.google.template.soy.basicfunctions.MaxFunction;
+import com.google.template.soy.basicfunctions.MinFunction;
 import com.google.template.soy.basicfunctions.NumberListSortMethod;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -2086,6 +2088,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       } else if (fn instanceof LoggingFunction) {
         // LoggingFunctions always return string.
         node.setType(StringType.getInstance());
+      } else if (fn instanceof MaxFunction || fn instanceof MinFunction) {
+        // Merge types of the two arguments.
+        if (node.getChildren().size() > 1) {
+          node.setType(
+              SoyTypes.computeLowestCommonType(
+                  typeRegistry, node.getChild(0).getType(), node.getChild(1).getType()));
+        }
       } else if (node.getType() == null) {
         // We have no way of knowing the return type of a function.
         // TODO: think about adding function type declarations.
