@@ -150,6 +150,7 @@ public final class FunctionNode extends AbstractParentExprNode {
       ImmutableList<Identifier> paramNames,
       @Nullable ImmutableList<Point> commaLocations) {
     super(sourceLocation);
+    Preconditions.checkArgument(paramNames.isEmpty() || paramsStyle == ParamsStyle.NAMED);
     this.name = name;
     this.paramsStyle = paramsStyle;
     this.paramNames = paramNames;
