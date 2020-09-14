@@ -497,8 +497,7 @@ public final class JsType {
         Builder builder = builder();
         String type = NodeContentKinds.toJsSanitizedContentCtorName(contentKind);
         if (isIncrementalDom
-            && (contentKind == SanitizedContentKind.HTML
-                || contentKind == SanitizedContentKind.ATTRIBUTES)) {
+            && (contentKind.isHtml() || contentKind == SanitizedContentKind.ATTRIBUTES)) {
           builder.addType("void");
         } else {
           builder.addType("!" + type);
