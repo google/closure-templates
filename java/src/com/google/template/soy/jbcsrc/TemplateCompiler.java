@@ -31,6 +31,7 @@ import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThis
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.error.ErrorReporter;
@@ -219,12 +220,12 @@ final class TemplateCompiler {
     Set<String> callees = new LinkedHashSet<>();
     for (TemplateLiteralNode templateLiteralNode :
         getAllNodesOfType(templateNode, TemplateLiteralNode.class)) {
-      callees.add(templateLiteralNode.getResolvedName());
+      callees.add(Preconditions.checkNotNull(templateLiteralNode.getResolvedName()));
     }
 
     Set<String> delCallees = new LinkedHashSet<>();
     for (CallDelegateNode call : getAllNodesOfType(templateNode, CallDelegateNode.class)) {
-      delCallees.add(call.getDelCalleeName());
+      delCallees.add(Preconditions.checkNotNull(call.getDelCalleeName()));
     }
 
     TemplateMetadata.DelTemplateMetadata deltemplateMetadata;
