@@ -61,7 +61,7 @@ public final class TranslateExprNodeVisitorTest {
   public void testListLiteral() {
     assertThatSoyExpr("['blah', 123, $foo]")
         .generatesCode("soy.$$makeArray('blah', 123, opt_data.foo);");
-    assertThatSoyExpr("[]").generatesCode("soy.$$makeArray();");
+    assertThatSoyExpr("[]").generatesCode("[];");
   }
 
   @Test

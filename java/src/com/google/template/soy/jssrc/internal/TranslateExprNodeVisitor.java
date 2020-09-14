@@ -289,6 +289,9 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
   @Override
   protected Expression visitListLiteralNode(ListLiteralNode node) {
+    if (node.numChildren() == 0) {
+      return Expression.arrayLiteral(ImmutableList.of());
+    }
     return SOY_MAKE_ARRAY.call(visitChildren(node));
   }
 
