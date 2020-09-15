@@ -25,21 +25,27 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.sharedpasses.render.RenderException;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -301,6 +307,35 @@ public final class SimplifyVisitor {
       return !Objects.equal(
           holder.getNearestAncestor(ForNonemptyNode.class),
           definition.getNearestAncestor(ForNonemptyNode.class));
+    }
+
+    @Override
+    protected void visitCallBasicNode(CallBasicNode node) {
+      ExprNode calleeRoot = node.getCalleeExpr().getRoot();
+
+      // Simplify call(bind(args1), args2) to call(args1+args2).
+      if (calleeRoot.getKind() == Kind.METHOD_CALL_NODE
+          && ((MethodCallNode) calleeRoot).getSoyMethod() == BuiltinMethod.BIND) {
+        MethodCallNode methodCallNode = (MethodCallNode) calleeRoot;
+        if (methodCallNode.numParams() != 1) {
+          return;
+        }
+        RecordLiteralNode record = (RecordLiteralNode) methodCallNode.getParams().get(0);
+        ExprNode bindCallee = methodCallNode.getBaseExprChild();
+        node.getCalleeExpr().replaceChild(calleeRoot, bindCallee);
+
+        for (int i = 0; i < record.numChildren(); i++) {
+          Identifier key = record.getKey(i);
+          ExprNode value = record.getChild(i);
+          CallParamValueNode paramNode =
+              new CallParamValueNode(
+                  nodeIdGen.genId(), key.location().extend(value.getSourceLocation()), key, value);
+          node.addChild(i, paramNode);
+        }
+        return;
+      }
+
+      super.visitCallBasicNode(node);
     }
 
     @Override

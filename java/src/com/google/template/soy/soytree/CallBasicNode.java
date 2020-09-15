@@ -115,8 +115,7 @@ public final class CallBasicNode extends CallNode {
 
   /** Returns the callee name string as it appears in the source code. */
   public String getSourceCalleeName() {
-    checkState(isStaticCall());
-    return ((TemplateLiteralNode) calleeExpr.getRoot()).toSourceString();
+    return calleeExpr.getRoot().toSourceString();
   }
 
   @Override
