@@ -4037,6 +4037,7 @@ goog.asserts.ENABLE_ASSERTS =
  * @final
  */
 goog.asserts.AssertionError = function(messagePattern, messageArgs) {
+  'use strict';
   goog.debug.Error.call(this, goog.asserts.subs_(messagePattern, messageArgs));
 
   /**
@@ -4058,6 +4059,7 @@ goog.asserts.AssertionError.prototype.name = 'AssertionError';
  * @param {!goog.asserts.AssertionError} e The exception to be handled.
  */
 goog.asserts.DEFAULT_ERROR_HANDLER = function(e) {
+  'use strict';
   throw e;
 };
 
@@ -4079,6 +4081,7 @@ goog.asserts.errorHandler_ = goog.asserts.DEFAULT_ERROR_HANDLER;
  * @private
  */
 goog.asserts.subs_ = function(pattern, subs) {
+  'use strict';
   var splitParts = pattern.split('%s');
   var returnString = '';
 
@@ -4106,6 +4109,7 @@ goog.asserts.subs_ = function(pattern, subs) {
  */
 goog.asserts.doAssertFailure_ = function(
     defaultMessage, defaultArgs, givenMessage, givenArgs) {
+  'use strict';
   var message = 'Assertion failed';
   if (givenMessage) {
     message += ': ' + givenMessage;
@@ -4130,6 +4134,7 @@ goog.asserts.doAssertFailure_ = function(
  * @param {function(!goog.asserts.AssertionError)} errorHandler
  */
 goog.asserts.setErrorHandler = function(errorHandler) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS) {
     goog.asserts.errorHandler_ = errorHandler;
   }
@@ -4148,6 +4153,7 @@ goog.asserts.setErrorHandler = function(errorHandler) {
  * @closurePrimitive {asserts.truthy}
  */
 goog.asserts.assert = function(condition, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && !condition) {
     goog.asserts.doAssertFailure_(
         '', null, opt_message, Array.prototype.slice.call(arguments, 2));
@@ -4179,6 +4185,7 @@ goog.asserts.assert = function(condition, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertExists = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && value == null) {
     goog.asserts.doAssertFailure_(
         'Expected to exist: %s.', [value], opt_message,
@@ -4208,6 +4215,7 @@ goog.asserts.assertExists = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.fail}
  */
 goog.asserts.fail = function(opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS) {
     goog.asserts.errorHandler_(new goog.asserts.AssertionError(
         'Failure' + (opt_message ? ': ' + opt_message : ''),
@@ -4226,6 +4234,7 @@ goog.asserts.fail = function(opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertNumber = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && typeof value !== 'number') {
     goog.asserts.doAssertFailure_(
         'Expected number but got %s: %s.', [goog.typeOf(value), value],
@@ -4245,6 +4254,7 @@ goog.asserts.assertNumber = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertString = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && typeof value !== 'string') {
     goog.asserts.doAssertFailure_(
         'Expected string but got %s: %s.', [goog.typeOf(value), value],
@@ -4265,6 +4275,7 @@ goog.asserts.assertString = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertFunction = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && typeof value !== 'function') {
     goog.asserts.doAssertFailure_(
         'Expected function but got %s: %s.', [goog.typeOf(value), value],
@@ -4284,6 +4295,7 @@ goog.asserts.assertFunction = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertObject = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && !goog.isObject(value)) {
     goog.asserts.doAssertFailure_(
         'Expected object but got %s: %s.', [goog.typeOf(value), value],
@@ -4303,6 +4315,7 @@ goog.asserts.assertObject = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertArray = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && !Array.isArray(value)) {
     goog.asserts.doAssertFailure_(
         'Expected array but got %s: %s.', [goog.typeOf(value), value],
@@ -4323,6 +4336,7 @@ goog.asserts.assertArray = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertBoolean = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && typeof value !== 'boolean') {
     goog.asserts.doAssertFailure_(
         'Expected boolean but got %s: %s.', [goog.typeOf(value), value],
@@ -4344,6 +4358,7 @@ goog.asserts.assertBoolean = function(value, opt_message, var_args) {
  * @deprecated Use goog.asserts.dom.assertIsElement instead.
  */
 goog.asserts.assertElement = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS &&
       (!goog.isObject(value) ||
        /** @type {!Node} */ (value).nodeType != goog.dom.NodeType.ELEMENT)) {
@@ -4377,6 +4392,7 @@ goog.asserts.assertElement = function(value, opt_message, var_args) {
  * @closurePrimitive {asserts.matchesReturn}
  */
 goog.asserts.assertInstanceof = function(value, type, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS && !(value instanceof type)) {
     goog.asserts.doAssertFailure_(
         'Expected instanceof %s but got %s.',
@@ -4399,6 +4415,7 @@ goog.asserts.assertInstanceof = function(value, type, opt_message, var_args) {
  * @return {number} The value initially passed in.
  */
 goog.asserts.assertFinite = function(value, opt_message, var_args) {
+  'use strict';
   if (goog.asserts.ENABLE_ASSERTS &&
       (typeof value != 'number' || !isFinite(value))) {
     goog.asserts.doAssertFailure_(
@@ -4413,6 +4430,7 @@ goog.asserts.assertFinite = function(value, opt_message, var_args) {
  * would break most code that use {@code for (var ... in ...)} loops.
  */
 goog.asserts.assertObjectPrototypeIsIntact = function() {
+  'use strict';
   for (var key in Object.prototype) {
     goog.asserts.fail(key + ' should not be enumerable in Object.prototype.');
   }
@@ -4427,6 +4445,7 @@ goog.asserts.assertObjectPrototypeIsIntact = function() {
  * @private
  */
 goog.asserts.getType_ = function(value) {
+  'use strict';
   if (value instanceof Function) {
     return value.displayName || value.name || 'unknown type name';
   } else if (value instanceof Object) {
@@ -6686,6 +6705,7 @@ goog.provide('goog.object');
  * @template T,K,V
  */
 goog.object.forEach = function(obj, f, opt_obj) {
+  'use strict';
   for (const key in obj) {
     f.call(/** @type {?} */ (opt_obj), obj[key], key, obj);
   }
@@ -6709,6 +6729,7 @@ goog.object.forEach = function(obj, f, opt_obj) {
  * @template T,K,V
  */
 goog.object.filter = function(obj, f, opt_obj) {
+  'use strict';
   const res = {};
   for (const key in obj) {
     if (f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
@@ -6734,6 +6755,7 @@ goog.object.filter = function(obj, f, opt_obj) {
  * @template T,K,V,R
  */
 goog.object.map = function(obj, f, opt_obj) {
+  'use strict';
   const res = {};
   for (const key in obj) {
     res[key] = f.call(/** @type {?} */ (opt_obj), obj[key], key, obj);
@@ -6757,6 +6779,7 @@ goog.object.map = function(obj, f, opt_obj) {
  * @template T,K,V
  */
 goog.object.some = function(obj, f, opt_obj) {
+  'use strict';
   for (const key in obj) {
     if (f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       return true;
@@ -6781,6 +6804,7 @@ goog.object.some = function(obj, f, opt_obj) {
  * @template T,K,V
  */
 goog.object.every = function(obj, f, opt_obj) {
+  'use strict';
   for (const key in obj) {
     if (!f.call(/** @type {?} */ (opt_obj), obj[key], key, obj)) {
       return false;
@@ -6798,6 +6822,7 @@ goog.object.every = function(obj, f, opt_obj) {
  * @return {number} The number of key-value pairs in the object map.
  */
 goog.object.getCount = function(obj) {
+  'use strict';
   let rv = 0;
   for (const key in obj) {
     rv++;
@@ -6815,6 +6840,7 @@ goog.object.getCount = function(obj) {
  * @return {string|undefined} The key or undefined if the object is empty.
  */
 goog.object.getAnyKey = function(obj) {
+  'use strict';
   for (const key in obj) {
     return key;
   }
@@ -6831,6 +6857,7 @@ goog.object.getAnyKey = function(obj) {
  * @template K,V
  */
 goog.object.getAnyValue = function(obj) {
+  'use strict';
   for (const key in obj) {
     return obj[key];
   }
@@ -6847,6 +6874,7 @@ goog.object.getAnyValue = function(obj) {
  * @template K,V
  */
 goog.object.contains = function(obj, val) {
+  'use strict';
   return goog.object.containsValue(obj, val);
 };
 
@@ -6859,6 +6887,7 @@ goog.object.contains = function(obj, val) {
  * @template K,V
  */
 goog.object.getValues = function(obj) {
+  'use strict';
   const res = [];
   let i = 0;
   for (const key in obj) {
@@ -6875,6 +6904,7 @@ goog.object.getValues = function(obj) {
  * @return {!Array<string>} Array of property keys.
  */
 goog.object.getKeys = function(obj) {
+  'use strict';
   const res = [];
   let i = 0;
   for (const key in obj) {
@@ -6898,6 +6928,7 @@ goog.object.getKeys = function(obj) {
  *     in the current object is null or undefined, returns undefined.
  */
 goog.object.getValueByKeys = function(obj, var_args) {
+  'use strict';
   const isArrayLike = goog.isArrayLike(var_args);
   const keys = isArrayLike ?
       /** @type {!IArrayLike<number|string>} */ (var_args) :
@@ -6921,6 +6952,7 @@ goog.object.getValueByKeys = function(obj, var_args) {
  * @return {boolean} true If the map contains the key.
  */
 goog.object.containsKey = function(obj, key) {
+  'use strict';
   return obj !== null && key in obj;
 };
 
@@ -6934,6 +6966,7 @@ goog.object.containsKey = function(obj, key) {
  * @template K,V
  */
 goog.object.containsValue = function(obj, val) {
+  'use strict';
   for (const key in obj) {
     if (obj[key] == val) {
       return true;
@@ -6956,6 +6989,7 @@ goog.object.containsValue = function(obj, val) {
  * @template T,K,V
  */
 goog.object.findKey = function(obj, f, opt_this) {
+  'use strict';
   for (const key in obj) {
     if (f.call(/** @type {?} */ (opt_this), obj[key], key, obj)) {
       return key;
@@ -6978,6 +7012,7 @@ goog.object.findKey = function(obj, f, opt_this) {
  * @template T,K,V
  */
 goog.object.findValue = function(obj, f, opt_this) {
+  'use strict';
   const key = goog.object.findKey(obj, f, opt_this);
   return key && obj[key];
 };
@@ -6990,6 +7025,7 @@ goog.object.findValue = function(obj, f, opt_this) {
  * @return {boolean} true if obj is empty.
  */
 goog.object.isEmpty = function(obj) {
+  'use strict';
   for (const key in obj) {
     return false;
   }
@@ -7003,6 +7039,7 @@ goog.object.isEmpty = function(obj) {
  * @param {Object} obj The object to clear.
  */
 goog.object.clear = function(obj) {
+  'use strict';
   for (const i in obj) {
     delete obj[i];
   }
@@ -7017,6 +7054,7 @@ goog.object.clear = function(obj) {
  * @return {boolean} Whether an element was removed.
  */
 goog.object.remove = function(obj, key) {
+  'use strict';
   let rv;
   if (rv = key in /** @type {!Object} */ (obj)) {
     delete obj[key];
@@ -7035,6 +7073,7 @@ goog.object.remove = function(obj, key) {
  * @template K,V
  */
 goog.object.add = function(obj, key, val) {
+  'use strict';
   if (obj !== null && key in obj) {
     throw new Error('The object already contains the key "' + key + '"');
   }
@@ -7053,6 +7092,7 @@ goog.object.add = function(obj, key, val) {
  * @template K,V,R
  */
 goog.object.get = function(obj, key, opt_val) {
+  'use strict';
   if (obj !== null && key in obj) {
     return obj[key];
   }
@@ -7069,6 +7109,7 @@ goog.object.get = function(obj, key, opt_val) {
  * @template K,V
  */
 goog.object.set = function(obj, key, value) {
+  'use strict';
   obj[key] = value;
 };
 
@@ -7083,6 +7124,7 @@ goog.object.set = function(obj, key, value) {
  * @template K,V
  */
 goog.object.setIfUndefined = function(obj, key, value) {
+  'use strict';
   return key in /** @type {!Object} */ (obj) ? obj[key] : (obj[key] = value);
 };
 
@@ -7103,6 +7145,7 @@ goog.object.setIfUndefined = function(obj, key, value) {
  * @template K,V
  */
 goog.object.setWithReturnValueIfNotSet = function(obj, key, f) {
+  'use strict';
   if (key in obj) {
     return obj[key];
   }
@@ -7122,6 +7165,7 @@ goog.object.setWithReturnValueIfNotSet = function(obj, key, f) {
  * @template K,V
  */
 goog.object.equals = function(a, b) {
+  'use strict';
   for (const k in a) {
     if (!(k in b) || a[k] !== b[k]) {
       return false;
@@ -7144,6 +7188,7 @@ goog.object.equals = function(a, b) {
  * @template K,V
  */
 goog.object.clone = function(obj) {
+  'use strict';
   const res = {};
   for (const key in obj) {
     res[key] = obj[key];
@@ -7168,6 +7213,7 @@ goog.object.clone = function(obj) {
  * @template T
  */
 goog.object.unsafeClone = function(obj) {
+  'use strict';
   if (!obj || typeof obj !== 'object') return obj;
   if (typeof obj.clone === 'function') return obj.clone();
   const clone = Array.isArray(obj) ? [] :
@@ -7192,6 +7238,7 @@ goog.object.unsafeClone = function(obj) {
  * @return {!Object} The transposed object.
  */
 goog.object.transpose = function(obj) {
+  'use strict';
   const transposed = {};
   for (const key in obj) {
     transposed[obj[key]] = key;
@@ -7230,6 +7277,7 @@ goog.object.PROTOTYPE_FIELDS_ = [
  * @deprecated Prefer Object.assign
  */
 goog.object.extend = function(target, var_args) {
+  'use strict';
   let key;
   let source;
   for (let i = 1; i < arguments.length; i++) {
@@ -7264,6 +7312,7 @@ goog.object.extend = function(target, var_args) {
  *     non array argument.
  */
 goog.object.create = function(var_args) {
+  'use strict';
   const argLength = arguments.length;
   if (argLength == 1 && Array.isArray(arguments[0])) {
     return goog.object.create.apply(null, arguments[0]);
@@ -7290,6 +7339,7 @@ goog.object.create = function(var_args) {
  * @return {!Object} The new object.
  */
 goog.object.createSet = function(var_args) {
+  'use strict';
   const argLength = arguments.length;
   if (argLength == 1 && Array.isArray(arguments[0])) {
     return goog.object.createSet.apply(null, arguments[0]);
@@ -7316,6 +7366,7 @@ goog.object.createSet = function(var_args) {
  * @template K,V
  */
 goog.object.createImmutableView = function(obj) {
+  'use strict';
   let result = obj;
   if (Object.isFrozen && !Object.isFrozen(obj)) {
     result = Object.create(obj);
@@ -7330,6 +7381,7 @@ goog.object.createImmutableView = function(obj) {
  * @return {boolean} Whether this is an immutable view of the object.
  */
 goog.object.isImmutableView = function(obj) {
+  'use strict';
   return !!Object.isFrozen && Object.isFrozen(obj);
 };
 
@@ -7351,6 +7403,7 @@ goog.object.isImmutableView = function(obj) {
  */
 goog.object.getAllPropertyNames = function(
     obj, opt_includeObjectPrototype, opt_includeFunctionPrototype) {
+  'use strict';
   if (!obj) {
     return [];
   }
@@ -7394,6 +7447,7 @@ goog.object.getAllPropertyNames = function(
  * @return {?Object}
  */
 goog.object.getSuperClass = function(constructor) {
+  'use strict';
   var proto = Object.getPrototypeOf(constructor.prototype);
   return proto && proto.constructor;
 };
@@ -7462,6 +7516,7 @@ goog.html.trustedtypes.cachedPolicy_;
  * @package
  */
 goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse = function() {
+  'use strict';
   if (!goog.TRUSTED_TYPES_POLICY_NAME) {
     // Binary not configured for Trusted Types.
     return null;
@@ -9223,6 +9278,7 @@ goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function() {
+  'use strict';
   return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_
       .toString();
 };
@@ -9241,6 +9297,7 @@ goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
  * @override
  */
 goog.html.TrustedResourceUrl.prototype.getDirection = function() {
+  'use strict';
   return goog.i18n.bidi.Dir.LTR;
 };
 
@@ -9259,6 +9316,7 @@ goog.html.TrustedResourceUrl.prototype.getDirection = function() {
  */
 goog.html.TrustedResourceUrl.prototype.cloneWithParams = function(
     searchParams, opt_hashParams) {
+  'use strict';
   var url = goog.html.TrustedResourceUrl.unwrap(this);
   var parts = goog.html.TrustedResourceUrl.URL_PARAM_PARSER_.exec(url);
   var urlBase = parts[1];
@@ -9286,6 +9344,7 @@ if (goog.DEBUG) {
    * @override
    */
   goog.html.TrustedResourceUrl.prototype.toString = function() {
+    'use strict';
     return 'TrustedResourceUrl{' +
         this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '}';
   };
@@ -9304,6 +9363,7 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
+  'use strict';
   return goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(trustedResourceUrl)
       .toString();
 };
@@ -9317,6 +9377,7 @@ goog.html.TrustedResourceUrl.unwrap = function(trustedResourceUrl) {
  */
 goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function(
     trustedResourceUrl) {
+  'use strict';
   // Perform additional Run-time type-checking to ensure that
   // trustedResourceUrl is indeed an instance of the expected type.  This
   // provides some additional protection against security bugs due to
@@ -9375,12 +9436,14 @@ goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function(
  *     the format string is not present in args.
  */
 goog.html.TrustedResourceUrl.format = function(format, args) {
+  'use strict';
   var formatStr = goog.string.Const.unwrap(format);
   if (!goog.html.TrustedResourceUrl.BASE_URL_.test(formatStr)) {
     throw new Error('Invalid TrustedResourceUrl format: ' + formatStr);
   }
   var result = formatStr.replace(
       goog.html.TrustedResourceUrl.FORMAT_MARKER_, function(match, id) {
+        'use strict';
         if (!Object.prototype.hasOwnProperty.call(args, id)) {
           throw new Error(
               'Found marker, "' + id + '", in format string, "' + formatStr +
@@ -9480,6 +9543,7 @@ goog.html.TrustedResourceUrl.URL_PARAM_PARSER_ =
  */
 goog.html.TrustedResourceUrl.formatWithParams = function(
     format, args, searchParams, opt_hashParams) {
+  'use strict';
   var url = goog.html.TrustedResourceUrl.format(format, args);
   return url.cloneWithParams(searchParams, opt_hashParams);
 };
@@ -9497,6 +9561,7 @@ goog.html.TrustedResourceUrl.formatWithParams = function(
  *     initialized to `url`.
  */
 goog.html.TrustedResourceUrl.fromConstant = function(url) {
+  'use strict';
   return goog.html.TrustedResourceUrl
       .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse(
           goog.string.Const.unwrap(url));
@@ -9515,6 +9580,7 @@ goog.html.TrustedResourceUrl.fromConstant = function(url) {
  *     initialized to concatenation of `parts`.
  */
 goog.html.TrustedResourceUrl.fromConstants = function(parts) {
+  'use strict';
   var unwrapped = '';
   for (var i = 0; i < parts.length; i++) {
     unwrapped += goog.string.Const.unwrap(parts[i]);
@@ -9540,6 +9606,7 @@ goog.html.TrustedResourceUrl.fromConstants = function(parts) {
  *     initialized to a new blob URL.
  */
 goog.html.TrustedResourceUrl.fromSafeScript = function(safeScript) {
+  'use strict';
   var blob = goog.fs.blob.getBlobWithProperties(
       [goog.html.SafeScript.unwrap(safeScript)], 'text/javascript');
   var url = goog.fs.url.createObjectUrl(blob);
@@ -9568,6 +9635,7 @@ goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
  */
 goog.html.TrustedResourceUrl
     .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse = function(url) {
+  'use strict';
   const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
   var value = policy ? policy.createScriptURL(url) : url;
   return new goog.html.TrustedResourceUrl(
@@ -9601,6 +9669,7 @@ goog.html.TrustedResourceUrl
  */
 goog.html.TrustedResourceUrl.stringifyParams_ = function(
     prefix, currentString, params) {
+  'use strict';
   if (params == null) {
     // Do not modify the field.
     return currentString;
@@ -10159,6 +10228,7 @@ goog.html.SafeUrl.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.html.SafeUrl.prototype.getTypedStringValue = function() {
+  'use strict';
   return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString();
 };
 
@@ -10175,6 +10245,7 @@ goog.html.SafeUrl.prototype.implementsGoogI18nBidiDirectionalString = true;
  * @override
  */
 goog.html.SafeUrl.prototype.getDirection = function() {
+  'use strict';
   return goog.i18n.bidi.Dir.LTR;
 };
 
@@ -10190,6 +10261,7 @@ if (goog.DEBUG) {
    * @override
    */
   goog.html.SafeUrl.prototype.toString = function() {
+    'use strict';
     return 'SafeUrl{' + this.privateDoNotAccessOrElseSafeUrlWrappedValue_ + '}';
   };
 }
@@ -10213,6 +10285,7 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeUrl.unwrap = function(safeUrl) {
+  'use strict';
   // Perform additional Run-time type-checking to ensure that safeUrl is indeed
   // an instance of the expected type.  This provides some additional protection
   // against security bugs due to application code that disables type checks.
@@ -10241,6 +10314,7 @@ goog.html.SafeUrl.unwrap = function(safeUrl) {
  * @return {!goog.html.SafeUrl} A SafeUrl object initialized to `url`.
  */
 goog.html.SafeUrl.fromConstant = function(url) {
+  'use strict';
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
       goog.string.Const.unwrap(url));
 };
@@ -10283,6 +10357,7 @@ goog.html.SAFE_MIME_TYPE_PATTERN_ = new RegExp(
  *   otherwise.
  */
 goog.html.SafeUrl.isSafeMimeType = function(mimeType) {
+  'use strict';
   return goog.html.SAFE_MIME_TYPE_PATTERN_.test(mimeType);
 };
 
@@ -10303,6 +10378,7 @@ goog.html.SafeUrl.isSafeMimeType = function(mimeType) {
  *   as a SafeUrl.
  */
 goog.html.SafeUrl.fromBlob = function(blob) {
+  'use strict';
   var url = goog.html.SafeUrl.isSafeMimeType(blob.type) ?
       goog.fs.url.createObjectUrl(blob) :
       goog.html.SafeUrl.INNOCUOUS_STRING;
@@ -10315,6 +10391,7 @@ goog.html.SafeUrl.fromBlob = function(blob) {
  * @param {!goog.html.SafeUrl} safeUrl SafeUrl wrapping a blob object.
  */
 goog.html.SafeUrl.revokeObjectUrl = function(safeUrl) {
+  'use strict';
   var url = safeUrl.getTypedStringValue();
   if (url !== goog.html.SafeUrl.INNOCUOUS_STRING) {
     goog.fs.url.revokeObjectUrl(url);
@@ -10328,6 +10405,7 @@ goog.html.SafeUrl.revokeObjectUrl = function(safeUrl) {
  * @return {!goog.html.SafeUrl} The blob URL.
  */
 goog.html.SafeUrl.fromMediaSource = function(mediaSource) {
+  'use strict';
   goog.asserts.assert(
       'MediaSource' in goog.global, 'No support for MediaSource');
   const url = mediaSource instanceof MediaSource ?
@@ -10355,6 +10433,7 @@ goog.html.DATA_URL_PATTERN_ = /^data:(.*);base64,[a-z0-9+\/]+=*$/i;
  *     pass.
  */
 goog.html.SafeUrl.tryFromDataUrl = function(dataUrl) {
+  'use strict';
   // For defensive purposes, in case users cast around the parameter type.
   dataUrl = String(dataUrl);
   // RFC4648 suggest to ignore CRLF in base64 encoding.
@@ -10389,6 +10468,7 @@ goog.html.SafeUrl.tryFromDataUrl = function(dataUrl) {
  *     `goog.html.SafeUrl.INNOCUOUS_URL` if it does not pass.
  */
 goog.html.SafeUrl.fromDataUrl = function(dataUrl) {
+  'use strict';
   return goog.html.SafeUrl.tryFromDataUrl(dataUrl) ||
       goog.html.SafeUrl.INNOCUOUS_URL;
 };
@@ -10402,6 +10482,7 @@ goog.html.SafeUrl.fromDataUrl = function(dataUrl) {
  *     wrapped as a SafeUrl if it does not pass.
  */
 goog.html.SafeUrl.fromTelUrl = function(telUrl) {
+  'use strict';
   // There's a risk that a tel: URL could immediately place a call once
   // clicked, without requiring user confirmation. For that reason it is
   // handled in this separate function.
@@ -10435,6 +10516,7 @@ goog.html.SIP_URL_PATTERN_ = new RegExp(
  *     wrapped as a SafeUrl if it does not pass.
  */
 goog.html.SafeUrl.fromSipUrl = function(sipUrl) {
+  'use strict';
   if (!goog.html.SIP_URL_PATTERN_.test(decodeURIComponent(sipUrl))) {
     sipUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
   }
@@ -10451,6 +10533,7 @@ goog.html.SafeUrl.fromSipUrl = function(sipUrl) {
  *     wrapped as a SafeUrl if it does not pass.
  */
 goog.html.SafeUrl.fromFacebookMessengerUrl = function(facebookMessengerUrl) {
+  'use strict';
   if (!goog.string.internal.caseInsensitiveStartsWith(
           facebookMessengerUrl, 'fb-messenger://share')) {
     facebookMessengerUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
@@ -10467,6 +10550,7 @@ goog.html.SafeUrl.fromFacebookMessengerUrl = function(facebookMessengerUrl) {
  *     wrapped as a SafeUrl if it does not pass.
  */
 goog.html.SafeUrl.fromWhatsAppUrl = function(whatsAppUrl) {
+  'use strict';
   if (!goog.string.internal.caseInsensitiveStartsWith(
           whatsAppUrl, 'whatsapp://send')) {
     whatsAppUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
@@ -10483,6 +10567,7 @@ goog.html.SafeUrl.fromWhatsAppUrl = function(whatsAppUrl) {
  *     wrapped as a SafeUrl if it does not pass.
  */
 goog.html.SafeUrl.fromSmsUrl = function(smsUrl) {
+  'use strict';
   if (!goog.string.internal.caseInsensitiveStartsWith(smsUrl, 'sms:') ||
       !goog.html.SafeUrl.isSmsUrlBodyValid_(smsUrl)) {
     smsUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
@@ -10503,6 +10588,7 @@ goog.html.SafeUrl.fromSmsUrl = function(smsUrl) {
  * @private
  */
 goog.html.SafeUrl.isSmsUrlBodyValid_ = function(smsUrl) {
+  'use strict';
   var hash = smsUrl.indexOf('#');
   if (hash > 0) {
     smsUrl = smsUrl.substring(0, hash);
@@ -10538,6 +10624,7 @@ goog.html.SafeUrl.isSmsUrlBodyValid_ = function(smsUrl) {
  *     wrapped as a SafeUrl if it does not pass.
  */
 goog.html.SafeUrl.fromSshUrl = function(sshUrl) {
+  'use strict';
   if (!goog.string.internal.caseInsensitiveStartsWith(sshUrl, 'ssh://')) {
     sshUrl = goog.html.SafeUrl.INNOCUOUS_STRING;
   }
@@ -10558,6 +10645,7 @@ goog.html.SafeUrl.fromSshUrl = function(sshUrl) {
  *     `INNOCUOUS_STRING` if it's not.
  */
 goog.html.SafeUrl.sanitizeChromeExtensionUrl = function(url, extensionId) {
+  'use strict';
   return goog.html.SafeUrl.sanitizeExtensionUrl_(
       /^chrome-extension:\/\/([^\/]+)\//, url, extensionId);
 };
@@ -10575,6 +10663,7 @@ goog.html.SafeUrl.sanitizeChromeExtensionUrl = function(url, extensionId) {
  *     `INNOCUOUS_STRING` if it's not.
  */
 goog.html.SafeUrl.sanitizeFirefoxExtensionUrl = function(url, extensionId) {
+  'use strict';
   return goog.html.SafeUrl.sanitizeExtensionUrl_(
       /^moz-extension:\/\/([^\/]+)\//, url, extensionId);
 };
@@ -10592,6 +10681,7 @@ goog.html.SafeUrl.sanitizeFirefoxExtensionUrl = function(url, extensionId) {
  *     `INNOCUOUS_STRING` if it's not.
  */
 goog.html.SafeUrl.sanitizeEdgeExtensionUrl = function(url, extensionId) {
+  'use strict';
   return goog.html.SafeUrl.sanitizeExtensionUrl_(
       /^ms-browser-extension:\/\/([^\/]+)\//, url, extensionId);
 };
@@ -10614,6 +10704,7 @@ goog.html.SafeUrl.sanitizeEdgeExtensionUrl = function(url, extensionId) {
  *     `INNOCUOUS_STRING` if it's not.
  */
 goog.html.SafeUrl.sanitizeExtensionUrl_ = function(scheme, url, extensionId) {
+  'use strict';
   var matches = scheme.exec(url);
   if (!matches) {
     url = goog.html.SafeUrl.INNOCUOUS_STRING;
@@ -10624,6 +10715,7 @@ goog.html.SafeUrl.sanitizeExtensionUrl_ = function(scheme, url, extensionId) {
       acceptedExtensionIds = [goog.string.Const.unwrap(extensionId)];
     } else {
       acceptedExtensionIds = extensionId.map(function unwrap(x) {
+        'use strict';
         return goog.string.Const.unwrap(x);
       });
     }
@@ -10643,6 +10735,7 @@ goog.html.SafeUrl.sanitizeExtensionUrl_ = function(scheme, url, extensionId) {
  * @return {!goog.html.SafeUrl}
  */
 goog.html.SafeUrl.fromTrustedResourceUrl = function(trustedResourceUrl) {
+  'use strict';
   return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
       goog.html.TrustedResourceUrl.unwrap(trustedResourceUrl));
 };
@@ -10697,6 +10790,7 @@ goog.html.SafeUrl.SAFE_URL_PATTERN = goog.html.SAFE_URL_PATTERN_;
  *     if validation fails.
  */
 goog.html.SafeUrl.trySanitize = function(url) {
+  'use strict';
   if (url instanceof goog.html.SafeUrl) {
     return url;
   }
@@ -10727,6 +10821,7 @@ goog.html.SafeUrl.trySanitize = function(url) {
  * @return {!goog.html.SafeUrl} The validated URL, wrapped as a SafeUrl.
  */
 goog.html.SafeUrl.sanitize = function(url) {
+  'use strict';
   return goog.html.SafeUrl.trySanitize(url) || goog.html.SafeUrl.INNOCUOUS_URL;
 };
 
@@ -10749,6 +10844,7 @@ goog.html.SafeUrl.sanitize = function(url) {
  * @return {!goog.html.SafeUrl} The validated URL, wrapped as a SafeUrl.
  */
 goog.html.SafeUrl.sanitizeAssertUnchanged = function(url, opt_allowDataUrl) {
+  'use strict';
   if (url instanceof goog.html.SafeUrl) {
     return url;
   } else if (typeof url == 'object' && url.implementsGoogStringTypedString) {
@@ -10787,6 +10883,7 @@ goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
  */
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function(
     url) {
+  'use strict';
   return new goog.html.SafeUrl(
       url, goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_);
 };
@@ -10963,6 +11060,7 @@ goog.html.SafeStyle.prototype.implementsGoogStringTypedString = true;
  *     `style`.
  */
 goog.html.SafeStyle.fromConstant = function(style) {
+  'use strict';
   var styleString = goog.string.Const.unwrap(style);
   if (styleString.length === 0) {
     return goog.html.SafeStyle.EMPTY;
@@ -11001,6 +11099,7 @@ goog.html.SafeStyle.fromConstant = function(style) {
  * @override
  */
 goog.html.SafeStyle.prototype.getTypedStringValue = function() {
+  'use strict';
   return this.privateDoNotAccessOrElseSafeStyleWrappedValue_;
 };
 
@@ -11016,6 +11115,7 @@ if (goog.DEBUG) {
    * @override
    */
   goog.html.SafeStyle.prototype.toString = function() {
+    'use strict';
     return 'SafeStyle{' + this.privateDoNotAccessOrElseSafeStyleWrappedValue_ +
         '}';
   };
@@ -11033,6 +11133,7 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeStyle.unwrap = function(safeStyle) {
+  'use strict';
   // Perform additional Run-time type-checking to ensure that
   // safeStyle is indeed an instance of the expected type.  This
   // provides some additional protection against security bugs due to
@@ -11070,6 +11171,7 @@ goog.html.SafeStyle.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
  */
 goog.html.SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse = function(
     style) {
+  'use strict';
   return new goog.html.SafeStyle(
       style, goog.html.SafeStyle.CONSTRUCTOR_TOKEN_PRIVATE_);
 };
@@ -11128,6 +11230,7 @@ goog.html.SafeStyle.PropertyMap;
  *     goog.html.SafeStyle.INNOCUOUS_STRING.
  */
 goog.html.SafeStyle.create = function(map) {
+  'use strict';
   var style = '';
   for (var name in map) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
@@ -11164,6 +11267,7 @@ goog.html.SafeStyle.create = function(map) {
  * @private
  */
 goog.html.SafeStyle.sanitizePropertyValue_ = function(value) {
+  'use strict';
   if (value instanceof goog.html.SafeUrl) {
     var url = goog.html.SafeUrl.unwrap(value);
     return 'url("' + url.replace(/</g, '%3c').replace(/[\\"]/g, '\\$&') + '")';
@@ -11188,6 +11292,7 @@ goog.html.SafeStyle.sanitizePropertyValue_ = function(value) {
  * @private
  */
 goog.html.SafeStyle.sanitizePropertyValueString_ = function(value) {
+  'use strict';
   // Some CSS property values permit nested functions. We allow one level of
   // nesting, and all nested functions must also be in the FUNCTIONS_RE_ list.
   var valueWithoutFunctions =
@@ -11226,6 +11331,7 @@ goog.html.SafeStyle.sanitizePropertyValueString_ = function(value) {
  * @private
  */
 goog.html.SafeStyle.hasBalancedQuotes_ = function(value) {
+  'use strict';
   var outsideSingle = true;
   var outsideDouble = true;
   for (var i = 0; i < value.length; i++) {
@@ -11253,6 +11359,7 @@ goog.html.SafeStyle.hasBalancedQuotes_ = function(value) {
  * @private
  */
 goog.html.SafeStyle.hasBalancedSquareBrackets_ = function(value) {
+  'use strict';
   var outside = true;
   var tokenRe = /^[-_a-zA-Z0-9]$/;
   for (var i = 0; i < value.length; i++) {
@@ -11367,10 +11474,13 @@ goog.html.SafeStyle.COMMENT_RE_ = /\/\*/;
  * @private
  */
 goog.html.SafeStyle.sanitizeUrl_ = function(value) {
+  'use strict';
   return value.replace(
       goog.html.SafeStyle.URL_RE_, function(match, before, url, after) {
+        'use strict';
         var quote = '';
         url = url.replace(/^(['"])(.*)\1$/, function(match, start, inside) {
+          'use strict';
           quote = start;
           return inside;
         });
@@ -11387,12 +11497,14 @@ goog.html.SafeStyle.sanitizeUrl_ = function(value) {
  * @return {!goog.html.SafeStyle}
  */
 goog.html.SafeStyle.concat = function(var_args) {
+  'use strict';
   var style = '';
 
   /**
    * @param {!goog.html.SafeStyle|!Array<!goog.html.SafeStyle>} argument
    */
   var addArgument = function(argument) {
+    'use strict';
     if (Array.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
@@ -12376,6 +12488,7 @@ goog.html.SafeHtml.prototype.implementsGoogI18nBidiDirectionalString = true;
 
 /** @override */
 goog.html.SafeHtml.prototype.getDirection = function() {
+  'use strict';
   return this.dir_;
 };
 
@@ -12409,6 +12522,7 @@ goog.html.SafeHtml.prototype.implementsGoogStringTypedString = true;
  * @override
  */
 goog.html.SafeHtml.prototype.getTypedStringValue = function() {
+  'use strict';
   return this.privateDoNotAccessOrElseSafeHtmlWrappedValue_.toString();
 };
 
@@ -12424,6 +12538,7 @@ if (goog.DEBUG) {
    * @override
    */
   goog.html.SafeHtml.prototype.toString = function() {
+    'use strict';
     return 'SafeHtml{' + this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ +
         '}';
   };
@@ -12440,6 +12555,7 @@ if (goog.DEBUG) {
  *     `goog.asserts.AssertionError`.
  */
 goog.html.SafeHtml.unwrap = function(safeHtml) {
+  'use strict';
   return goog.html.SafeHtml.unwrapTrustedHTML(safeHtml).toString();
 };
 
@@ -12451,6 +12567,7 @@ goog.html.SafeHtml.unwrap = function(safeHtml) {
  * @see goog.html.SafeHtml.unwrap
  */
 goog.html.SafeHtml.unwrapTrustedHTML = function(safeHtml) {
+  'use strict';
   // Perform additional run-time type-checking to ensure that safeHtml is indeed
   // an instance of the expected type.  This provides some additional protection
   // against security bugs due to application code that disables type checks.
@@ -12494,6 +12611,7 @@ goog.html.SafeHtml.TextOrHtml_;
  * @return {!goog.html.SafeHtml} The escaped text, wrapped as a SafeHtml.
  */
 goog.html.SafeHtml.htmlEscape = function(textOrHtml) {
+  'use strict';
   if (textOrHtml instanceof goog.html.SafeHtml) {
     return textOrHtml;
   }
@@ -12524,6 +12642,7 @@ goog.html.SafeHtml.htmlEscape = function(textOrHtml) {
  * @return {!goog.html.SafeHtml} The escaped text, wrapped as a SafeHtml.
  */
 goog.html.SafeHtml.htmlEscapePreservingNewlines = function(textOrHtml) {
+  'use strict';
   if (textOrHtml instanceof goog.html.SafeHtml) {
     return textOrHtml;
   }
@@ -12545,6 +12664,7 @@ goog.html.SafeHtml.htmlEscapePreservingNewlines = function(textOrHtml) {
  */
 goog.html.SafeHtml.htmlEscapePreservingNewlinesAndSpaces = function(
     textOrHtml) {
+  'use strict';
   if (textOrHtml instanceof goog.html.SafeHtml) {
     return textOrHtml;
   }
@@ -12583,6 +12703,7 @@ goog.html.SafeHtml.from = goog.html.SafeHtml.htmlEscape;
  * @return {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.comment = function(text) {
+  'use strict';
   return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
       '<!--' + goog.string.internal.htmlEscape(text) + '-->', null);
 };
@@ -12679,6 +12800,7 @@ goog.html.SafeHtml.AttributeValue;
  * @throws {!goog.asserts.AssertionError} If content for void tag is provided.
  */
 goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
+  'use strict';
   goog.html.SafeHtml.verifyTagName(String(tagName));
   return goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
       String(tagName), opt_attributes, opt_content);
@@ -12694,6 +12816,7 @@ goog.html.SafeHtml.create = function(tagName, opt_attributes, opt_content) {
  * @package
  */
 goog.html.SafeHtml.verifyTagName = function(tagName) {
+  'use strict';
   if (!goog.html.SafeHtml.VALID_NAMES_IN_TAG_.test(tagName)) {
     throw new Error(
         goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
@@ -12739,6 +12862,7 @@ goog.html.SafeHtml.verifyTagName = function(tagName) {
  */
 goog.html.SafeHtml.createIframe = function(
     opt_src, opt_srcdoc, opt_attributes, opt_content) {
+  'use strict';
   if (opt_src) {
     // Check whether this is really TrustedResourceUrl.
     goog.html.TrustedResourceUrl.unwrap(opt_src);
@@ -12790,6 +12914,7 @@ goog.html.SafeHtml.createIframe = function(
  */
 goog.html.SafeHtml.createSandboxIframe = function(
     opt_src, opt_srcdoc, opt_attributes, opt_content) {
+  'use strict';
   if (!goog.html.SafeHtml.canUseSandboxIframe()) {
     throw new Error(
         goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
@@ -12819,6 +12944,7 @@ goog.html.SafeHtml.createSandboxIframe = function(
  * @return {boolean}
  */
 goog.html.SafeHtml.canUseSandboxIframe = function() {
+  'use strict';
   return goog.global['HTMLIFrameElement'] &&
       ('sandbox' in goog.global['HTMLIFrameElement'].prototype);
 };
@@ -12838,6 +12964,7 @@ goog.html.SafeHtml.canUseSandboxIframe = function() {
  *     opt_attributes contains the src attribute.
  */
 goog.html.SafeHtml.createScriptSrc = function(src, opt_attributes) {
+  'use strict';
   // TODO(mlourenco): The charset attribute should probably be blocked. If
   // its value is attacker controlled, the script contains attacker controlled
   // sub-strings (even if properly escaped) and the server does not set charset
@@ -12871,6 +12998,7 @@ goog.html.SafeHtml.createScriptSrc = function(src, opt_attributes) {
  *     opt_attributes contains the language, src, text or type attribute.
  */
 goog.html.SafeHtml.createScript = function(script, opt_attributes) {
+  'use strict';
   for (var attr in opt_attributes) {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty#Using_hasOwnProperty_as_a_property_name
     if (Object.prototype.hasOwnProperty.call(opt_attributes, attr)) {
@@ -12915,6 +13043,7 @@ goog.html.SafeHtml.createScript = function(script, opt_attributes) {
  *     opt_attributes contains the type attribute.
  */
 goog.html.SafeHtml.createStyle = function(styleSheet, opt_attributes) {
+  'use strict';
   var fixedAttributes = {'type': 'text/css'};
   var defaultAttributes = {};
   var attributes = goog.html.SafeHtml.combineAttributes(
@@ -12944,6 +13073,7 @@ goog.html.SafeHtml.createStyle = function(styleSheet, opt_attributes) {
  * @return {!goog.html.SafeHtml} The SafeHtml content with the tag.
  */
 goog.html.SafeHtml.createMetaRefresh = function(url, opt_secs) {
+  'use strict';
   // Note that sanitize is a no-op on SafeUrl.
   var unwrappedUrl = goog.html.SafeUrl.unwrap(goog.html.SafeUrl.sanitize(url));
 
@@ -12989,6 +13119,7 @@ goog.html.SafeHtml.createMetaRefresh = function(url, opt_secs) {
  * @private
  */
 goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
+  'use strict';
   // If it's goog.string.Const, allow any valid attribute name.
   if (value instanceof goog.string.Const) {
     value = goog.string.Const.unwrap(value);
@@ -13051,6 +13182,7 @@ goog.html.SafeHtml.getAttrNameAndValue_ = function(tagName, name, value) {
  * @private
  */
 goog.html.SafeHtml.getStyleValue_ = function(value) {
+  'use strict';
   if (!goog.isObject(value)) {
     throw new Error(
         goog.html.SafeHtml.ENABLE_ERROR_MESSAGES ?
@@ -13078,6 +13210,7 @@ goog.html.SafeHtml.getStyleValue_ = function(value) {
  */
 goog.html.SafeHtml.createWithDir = function(
     dir, tagName, opt_attributes, opt_content) {
+  'use strict';
   var html = goog.html.SafeHtml.create(tagName, opt_attributes, opt_content);
   html.dir_ = dir;
   return html;
@@ -13094,6 +13227,7 @@ goog.html.SafeHtml.createWithDir = function(
  * @return {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.join = function(separator, parts) {
+  'use strict';
   var separatorHtml = goog.html.SafeHtml.htmlEscape(separator);
   var dir = separatorHtml.getDirection();
   var content = [];
@@ -13103,6 +13237,7 @@ goog.html.SafeHtml.join = function(separator, parts) {
    *     !Array<!goog.html.SafeHtml.TextOrHtml_>} argument
    */
   var addArgument = function(argument) {
+    'use strict';
     if (Array.isArray(argument)) {
       goog.array.forEach(argument, addArgument);
     } else {
@@ -13130,6 +13265,7 @@ goog.html.SafeHtml.join = function(separator, parts) {
  * @return {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.concat = function(var_args) {
+  'use strict';
   return goog.html.SafeHtml.join(
       goog.html.SafeHtml.EMPTY, Array.prototype.slice.call(arguments));
 };
@@ -13145,6 +13281,7 @@ goog.html.SafeHtml.concat = function(var_args) {
  * @return {!goog.html.SafeHtml}
  */
 goog.html.SafeHtml.concatWithDir = function(dir, var_args) {
+  'use strict';
   var html = goog.html.SafeHtml.concat(goog.array.slice(arguments, 1));
   html.dir_ = dir;
   return html;
@@ -13171,6 +13308,7 @@ goog.html.SafeHtml.CONSTRUCTOR_TOKEN_PRIVATE_ = {};
  */
 goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
     html, dir) {
+  'use strict';
   const policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse();
   const trustedHtml = policy ? policy.createHTML(html) : html;
   return new goog.html.SafeHtml(
@@ -13192,6 +13330,7 @@ goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse = function(
  */
 goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse = function(
     tagName, opt_attributes, opt_content) {
+  'use strict';
   var dir = null;
   var result = '<' + tagName;
   result += goog.html.SafeHtml.stringifyAttributes(tagName, opt_attributes);
@@ -13240,6 +13379,7 @@ goog.html.SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse = function(
  * @package
  */
 goog.html.SafeHtml.stringifyAttributes = function(tagName, opt_attributes) {
+  'use strict';
   var result = '';
   if (opt_attributes) {
     for (var name in opt_attributes) {
@@ -13276,6 +13416,7 @@ goog.html.SafeHtml.stringifyAttributes = function(tagName, opt_attributes) {
  */
 goog.html.SafeHtml.combineAttributes = function(
     fixedAttributes, defaultAttributes, opt_attributes) {
+  'use strict';
   var combinedAttributes = {};
   var name;
 
@@ -13325,6 +13466,7 @@ goog.html.SafeHtml.DOCTYPE_HTML = /** @type {!goog.html.SafeHtml} */ ({
   // SafeHtml creation (due to calling trustedTypes.createPolicy) from the
   // compiler so that the entire call can be removed if the result is not used.
   valueOf: function() {
+    'use strict';
     return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<!DOCTYPE html>', goog.i18n.bidi.Dir.NEUTRAL);
   },
@@ -13347,6 +13489,7 @@ goog.html.SafeHtml.BR = /** @type {!goog.html.SafeHtml} */ ({
   // SafeHtml creation (due to calling trustedTypes.createPolicy) from the
   // compiler so that the entire call can be removed if the result is not used.
   valueOf: function() {
+    'use strict';
     return goog.html.SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         '<br>', goog.i18n.bidi.Dir.NEUTRAL);
   },
@@ -13410,6 +13553,7 @@ goog.requireType('goog.i18n.bidi.Dir');
  */
 goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
     function(justification, html, opt_dir) {
+  'use strict';
   // unwrap() called inside an assert so that justification can be optimized
   // away in production code.
   goog.asserts.assertString(
@@ -13441,6 +13585,7 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
  */
 goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
     function(justification, script) {
+  'use strict';
   // unwrap() called inside an assert so that justification can be optimized
   // away in production code.
   goog.asserts.assertString(
@@ -13472,6 +13617,7 @@ goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
  */
 goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
     function(justification, style) {
+  'use strict';
   // unwrap() called inside an assert so that justification can be optimized
   // away in production code.
   goog.asserts.assertString(
@@ -13504,6 +13650,7 @@ goog.html.uncheckedconversions.safeStyleFromStringKnownToSatisfyTypeContract =
 goog.html.uncheckedconversions
     .safeStyleSheetFromStringKnownToSatisfyTypeContract = function(
     justification, styleSheet) {
+  'use strict';
   // unwrap() called inside an assert so that justification can be optimized
   // away in production code.
   goog.asserts.assertString(
@@ -13535,6 +13682,7 @@ goog.html.uncheckedconversions
  */
 goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
     function(justification, url) {
+  'use strict';
   // unwrap() called inside an assert so that justification can be optimized
   // away in production code.
   goog.asserts.assertString(
@@ -13566,6 +13714,7 @@ goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract =
 goog.html.uncheckedconversions
     .trustedResourceUrlFromStringKnownToSatisfyTypeContract = function(
     justification, url) {
+  'use strict';
   // unwrap() called inside an assert so that justification can be optimized
   // away in production code.
   goog.asserts.assertString(
@@ -17333,6 +17482,7 @@ goog.iter.Iterator = function() {};
  * @return {VALUE} Any object or value.
  */
 goog.iter.Iterator.prototype.next = function() {
+  'use strict';
   throw goog.iter.StopIteration;
 };
 
@@ -17348,6 +17498,7 @@ goog.iter.Iterator.prototype.next = function() {
  * @return {!goog.iter.Iterator<VALUE>} The object itself.
  */
 goog.iter.Iterator.prototype.__iterator__ = function(opt_keys) {
+  'use strict';
   return this;
 };
 
@@ -17364,6 +17515,7 @@ goog.iter.Iterator.prototype.__iterator__ = function(opt_keys) {
  * @template VALUE
  */
 goog.iter.toIterator = function(iterable) {
+  'use strict';
   if (iterable instanceof goog.iter.Iterator) {
     return iterable;
   }
@@ -17376,6 +17528,7 @@ goog.iter.toIterator = function(iterable) {
     var i = 0;
     var newIter = new goog.iter.Iterator;
     newIter.next = function() {
+      'use strict';
       while (true) {
         if (i >= like.length) {
           throw goog.iter.StopIteration;
@@ -17416,8 +17569,8 @@ goog.iter.toIterator = function(iterable) {
  * @template THIS, VALUE
  */
 goog.iter.forEach = function(iterable, f, opt_obj) {
+  'use strict';
   if (goog.isArrayLike(iterable)) {
-
     try {
       // NOTES: this passes the index number to the second parameter
       // of the callback contrary to the documentation above.
@@ -17463,9 +17616,11 @@ goog.iter.forEach = function(iterable, f, opt_obj) {
  * @template THIS, VALUE
  */
 goog.iter.filter = function(iterable, f, opt_obj) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var newIter = new goog.iter.Iterator;
   newIter.next = function() {
+    'use strict';
     while (true) {
       var val = iterator.next();
       if (f.call(opt_obj, val, undefined, iterator)) {
@@ -17496,6 +17651,7 @@ goog.iter.filter = function(iterable, f, opt_obj) {
  * @template THIS, VALUE
  */
 goog.iter.filterFalse = function(iterable, f, opt_obj) {
+  'use strict';
   return goog.iter.filter(iterable, goog.functions.not(f), opt_obj);
 };
 
@@ -17519,6 +17675,7 @@ goog.iter.filterFalse = function(iterable, f, opt_obj) {
  *     in the range.
  */
 goog.iter.range = function(startOrStop, opt_stop, opt_step) {
+  'use strict';
   var start = 0;
   var stop = startOrStop;
   var step = opt_step || 1;
@@ -17532,6 +17689,7 @@ goog.iter.range = function(startOrStop, opt_stop, opt_step) {
 
   var newIter = new goog.iter.Iterator;
   newIter.next = function() {
+    'use strict';
     if (step > 0 && start >= stop || step < 0 && start <= stop) {
       throw goog.iter.StopIteration;
     }
@@ -17552,6 +17710,7 @@ goog.iter.range = function(startOrStop, opt_stop, opt_step) {
  * @template VALUE
  */
 goog.iter.join = function(iterable, deliminator) {
+  'use strict';
   return goog.iter.toArray(iterable).join(deliminator);
 };
 
@@ -17574,9 +17733,11 @@ goog.iter.join = function(iterable, deliminator) {
  * @template THIS, VALUE, RESULT
  */
 goog.iter.map = function(iterable, f, opt_obj) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var newIter = new goog.iter.Iterator;
   newIter.next = function() {
+    'use strict';
     var val = iterator.next();
     return f.call(opt_obj, val, undefined, iterator);
   };
@@ -17603,9 +17764,12 @@ goog.iter.map = function(iterable, f, opt_obj) {
  * @template THIS, VALUE
  */
 goog.iter.reduce = function(iterable, f, val, opt_obj) {
+  'use strict';
   var rval = val;
-  goog.iter.forEach(
-      iterable, function(val) { rval = f.call(opt_obj, rval, val); });
+  goog.iter.forEach(iterable, function(val) {
+    'use strict';
+    rval = f.call(opt_obj, rval, val);
+  });
   return rval;
 };
 
@@ -17627,6 +17791,7 @@ goog.iter.reduce = function(iterable, f, val, opt_obj) {
  * @template THIS, VALUE
  */
 goog.iter.some = function(iterable, f, opt_obj) {
+  'use strict';
   iterable = goog.iter.toIterator(iterable);
 
   try {
@@ -17661,6 +17826,7 @@ goog.iter.some = function(iterable, f, opt_obj) {
  * @template THIS, VALUE
  */
 goog.iter.every = function(iterable, f, opt_obj) {
+  'use strict';
   iterable = goog.iter.toIterator(iterable);
 
   try {
@@ -17688,6 +17854,7 @@ goog.iter.every = function(iterable, f, opt_obj) {
  * @template VALUE
  */
 goog.iter.chain = function(var_args) {
+  'use strict';
   return goog.iter.chainFromIterable(arguments);
 };
 
@@ -17704,11 +17871,13 @@ goog.iter.chain = function(var_args) {
  * @template VALUE
  */
 goog.iter.chainFromIterable = function(iterable) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var iter = new goog.iter.Iterator();
   var current = null;
 
   iter.next = function() {
+    'use strict';
     while (true) {
       if (current == null) {
         var it = iterator.next();
@@ -17745,10 +17914,12 @@ goog.iter.chainFromIterable = function(iterable) {
  * @template THIS, VALUE
  */
 goog.iter.dropWhile = function(iterable, f, opt_obj) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var newIter = new goog.iter.Iterator;
   var dropping = true;
   newIter.next = function() {
+    'use strict';
     while (true) {
       var val = iterator.next();
       if (dropping && f.call(opt_obj, val, undefined, iterator)) {
@@ -17778,9 +17949,11 @@ goog.iter.dropWhile = function(iterable, f, opt_obj) {
  * @template THIS, VALUE
  */
 goog.iter.takeWhile = function(iterable, f, opt_obj) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var iter = new goog.iter.Iterator();
   iter.next = function() {
+    'use strict';
     var val = iterator.next();
     if (f.call(opt_obj, val, undefined, iterator)) {
       return val;
@@ -17799,13 +17972,17 @@ goog.iter.takeWhile = function(iterable, f, opt_obj) {
  * @template VALUE
  */
 goog.iter.toArray = function(iterable) {
+  'use strict';
   // Fast path for array-like.
   if (goog.isArrayLike(iterable)) {
     return goog.array.toArray(/** @type {!IArrayLike<?>} */ (iterable));
   }
   iterable = goog.iter.toIterator(iterable);
   var array = [];
-  goog.iter.forEach(iterable, function(val) { array.push(val); });
+  goog.iter.forEach(iterable, function(val) {
+    'use strict';
+    array.push(val);
+  });
   return array;
 };
 
@@ -17827,11 +18004,14 @@ goog.iter.toArray = function(iterable) {
  * @template VALUE
  */
 goog.iter.equals = function(iterable1, iterable2, opt_equalsFn) {
+  'use strict';
   var fillValue = {};
   var pairs = goog.iter.zipLongest(fillValue, iterable1, iterable2);
   var equalsFn = opt_equalsFn || goog.array.defaultCompareEquality;
-  return goog.iter.every(
-      pairs, function(pair) { return equalsFn(pair[0], pair[1]); });
+  return goog.iter.every(pairs, function(pair) {
+    'use strict';
+    return equalsFn(pair[0], pair[1]);
+  });
 };
 
 
@@ -17846,6 +18026,7 @@ goog.iter.equals = function(iterable1, iterable2, opt_equalsFn) {
  * @template VALUE
  */
 goog.iter.nextOrValue = function(iterable, defaultValue) {
+  'use strict';
   try {
     return goog.iter.toIterator(iterable).next();
   } catch (e) {
@@ -17869,8 +18050,11 @@ goog.iter.nextOrValue = function(iterable, defaultValue) {
  * @template VALUE
  */
 goog.iter.product = function(var_args) {
-  var someArrayEmpty =
-      goog.array.some(arguments, function(arr) { return !arr.length; });
+  'use strict';
+  var someArrayEmpty = goog.array.some(arguments, function(arr) {
+    'use strict';
+    return !arr.length;
+  });
 
   // An empty set in a cartesian product gives an empty set.
   if (someArrayEmpty || !arguments.length) {
@@ -17885,9 +18069,10 @@ goog.iter.product = function(var_args) {
   var indicies = goog.array.repeat(0, arrays.length);
 
   iter.next = function() {
-
+    'use strict';
     if (indicies) {
       var retVal = goog.array.map(indicies, function(valueIndex, arrayIndex) {
+        'use strict';
         return arrays[arrayIndex][valueIndex];
       });
 
@@ -17933,6 +18118,7 @@ goog.iter.product = function(var_args) {
  * @template VALUE
  */
 goog.iter.cycle = function(iterable) {
+  'use strict';
   var baseIterator = goog.iter.toIterator(iterable);
 
   // We maintain a cache to store the iterable elements as we iterate
@@ -17947,6 +18133,7 @@ goog.iter.cycle = function(iterable) {
   var useCache = false;
 
   iter.next = function() {
+    'use strict';
     var returnElement = null;
 
     // Pull elements off the original iterator if not using cache
@@ -17990,11 +18177,13 @@ goog.iter.cycle = function(iterable) {
  *     in the series.
  */
 goog.iter.count = function(opt_start, opt_step) {
+  'use strict';
   var counter = opt_start || 0;
   var step = (opt_step !== undefined) ? opt_step : 1;
   var iter = new goog.iter.Iterator();
 
   iter.next = function() {
+    'use strict';
     var returnValue = counter;
     counter += step;
     return returnValue;
@@ -18012,6 +18201,7 @@ goog.iter.count = function(opt_start, opt_step) {
  * @template VALUE
  */
 goog.iter.repeat = function(value) {
+  'use strict';
   var iter = new goog.iter.Iterator();
 
   iter.next = goog.functions.constant(value);
@@ -18031,11 +18221,13 @@ goog.iter.repeat = function(value) {
  *     numbers in the series.
  */
 goog.iter.accumulate = function(iterable) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var total = 0;
   var iter = new goog.iter.Iterator();
 
   iter.next = function() {
+    'use strict';
     total += iterator.next();
     return total;
   };
@@ -18058,13 +18250,18 @@ goog.iter.accumulate = function(iterable) {
  * @template VALUE
  */
 goog.iter.zip = function(var_args) {
+  'use strict';
   var args = arguments;
   var iter = new goog.iter.Iterator();
 
   if (args.length > 0) {
     var iterators = goog.array.map(args, goog.iter.toIterator);
     iter.next = function() {
-      var arr = goog.array.map(iterators, function(it) { return it.next(); });
+      'use strict';
+      var arr = goog.array.map(iterators, function(it) {
+        'use strict';
+        return it.next();
+      });
       return arr;
     };
   }
@@ -18088,6 +18285,7 @@ goog.iter.zip = function(var_args) {
  * @template VALUE
  */
 goog.iter.zipLongest = function(fillValue, var_args) {
+  'use strict';
   var args = goog.array.slice(arguments, 1);
   var iter = new goog.iter.Iterator();
 
@@ -18095,8 +18293,10 @@ goog.iter.zipLongest = function(fillValue, var_args) {
     var iterators = goog.array.map(args, goog.iter.toIterator);
 
     iter.next = function() {
+      'use strict';
       var iteratorsHaveValues = false;  // false when all iterators are empty.
       var arr = goog.array.map(iterators, function(it) {
+        'use strict';
         var returnValue;
         try {
           returnValue = it.next();
@@ -18143,10 +18343,13 @@ goog.iter.zipLongest = function(fillValue, var_args) {
  * @template VALUE
  */
 goog.iter.compress = function(iterable, selectors) {
+  'use strict';
   var selectorIterator = goog.iter.toIterator(selectors);
 
-  return goog.iter.filter(
-      iterable, function() { return !!selectorIterator.next(); });
+  return goog.iter.filter(iterable, function() {
+    'use strict';
+    return !!selectorIterator.next();
+  });
 };
 
 
@@ -18164,7 +18367,7 @@ goog.iter.compress = function(iterable, selectors) {
  * @private
  */
 goog.iter.GroupByIterator_ = function(iterable, opt_keyFunc) {
-
+  'use strict';
   /**
    * The iterable to group, coerced to an iterator.
    * @type {!goog.iter.Iterator}
@@ -18202,6 +18405,7 @@ goog.inherits(goog.iter.GroupByIterator_, goog.iter.Iterator);
 
 /** @override */
 goog.iter.GroupByIterator_.prototype.next = function() {
+  'use strict';
   while (this.currentKey == this.targetKey) {
     this.currentValue = this.iterator.next();  // Exits on StopIteration
     this.currentKey = this.keyFunc(this.currentValue);
@@ -18218,6 +18422,7 @@ goog.iter.GroupByIterator_.prototype.next = function() {
  * @private
  */
 goog.iter.GroupByIterator_.prototype.groupItems_ = function(targetKey) {
+  'use strict';
   var arr = [];
   while (this.currentKey == targetKey) {
     arr.push(this.currentValue);
@@ -18253,6 +18458,7 @@ goog.iter.GroupByIterator_.prototype.groupItems_ = function(targetKey) {
  * @template KEY, VALUE
  */
 goog.iter.groupBy = function(iterable, opt_keyFunc) {
+  'use strict';
   return new goog.iter.GroupByIterator_(iterable, opt_keyFunc);
 };
 
@@ -18280,10 +18486,12 @@ goog.iter.groupBy = function(iterable, opt_keyFunc) {
  * @template THIS, RESULT
  */
 goog.iter.starMap = function(iterable, f, opt_obj) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var iter = new goog.iter.Iterator();
 
   iter.next = function() {
+    'use strict';
     var args = goog.iter.toArray(iterator.next());
     return f.apply(opt_obj, goog.array.concat(args, undefined, iterator));
   };
@@ -18303,17 +18511,25 @@ goog.iter.starMap = function(iterable, f, opt_obj) {
  * @template VALUE
  */
 goog.iter.tee = function(iterable, opt_num) {
+  'use strict';
   var iterator = goog.iter.toIterator(iterable);
   var num = (typeof opt_num === 'number') ? opt_num : 2;
-  var buffers =
-      goog.array.map(goog.array.range(num), function() { return []; });
+  var buffers = goog.array.map(goog.array.range(num), function() {
+    'use strict';
+    return [];
+  });
 
   var addNextIteratorValueToBuffers = function() {
+    'use strict';
     var val = iterator.next();
-    goog.array.forEach(buffers, function(buffer) { buffer.push(val); });
+    goog.array.forEach(buffers, function(buffer) {
+      'use strict';
+      buffer.push(val);
+    });
   };
 
   var createIterator = function(buffer) {
+    'use strict';
     // Each tee'd iterator has an associated buffer (initially empty). When a
     // tee'd iterator's buffer is empty, it calls
     // addNextIteratorValueToBuffers(), adding the next value to all tee'd
@@ -18322,6 +18538,7 @@ goog.iter.tee = function(iterable, opt_num) {
     var iter = new goog.iter.Iterator();
 
     iter.next = function() {
+      'use strict';
       if (goog.array.isEmpty(buffer)) {
         addNextIteratorValueToBuffers();
       }
@@ -18348,6 +18565,7 @@ goog.iter.tee = function(iterable, opt_num) {
  * @template VALUE
  */
 goog.iter.enumerate = function(iterable, opt_start) {
+  'use strict';
   return goog.iter.zip(goog.iter.count(opt_start), iterable);
 };
 
@@ -18365,6 +18583,7 @@ goog.iter.enumerate = function(iterable, opt_start) {
  * @template VALUE
  */
 goog.iter.limit = function(iterable, limitSize) {
+  'use strict';
   goog.asserts.assert(goog.math.isInt(limitSize) && limitSize >= 0);
 
   var iterator = goog.iter.toIterator(iterable);
@@ -18373,6 +18592,7 @@ goog.iter.limit = function(iterable, limitSize) {
   var remaining = limitSize;
 
   iter.next = function() {
+    'use strict';
     if (remaining-- > 0) {
       return iterator.next();
     }
@@ -18396,6 +18616,7 @@ goog.iter.limit = function(iterable, limitSize) {
  * @template VALUE
  */
 goog.iter.consume = function(iterable, count) {
+  'use strict';
   goog.asserts.assert(goog.math.isInt(count) && count >= 0);
 
   var iterator = goog.iter.toIterator(iterable);
@@ -18421,6 +18642,7 @@ goog.iter.consume = function(iterable, count) {
  * @template VALUE
  */
 goog.iter.slice = function(iterable, start, opt_end) {
+  'use strict';
   goog.asserts.assert(goog.math.isInt(start) && start >= 0);
 
   var iterator = goog.iter.consume(iterable, start);
@@ -18444,6 +18666,7 @@ goog.iter.slice = function(iterable, start, opt_end) {
  */
 // TODO(user): Consider moving this into goog.array as a public function.
 goog.iter.hasDuplicates_ = function(arr) {
+  'use strict';
   var deduped = [];
   goog.array.removeDuplicates(arr, deduped);
   return arr.length != deduped.length;
@@ -18468,14 +18691,17 @@ goog.iter.hasDuplicates_ = function(arr) {
  * @template VALUE
  */
 goog.iter.permutations = function(iterable, opt_length) {
+  'use strict';
   var elements = goog.iter.toArray(iterable);
   var length = (typeof opt_length === 'number') ? opt_length : elements.length;
 
   var sets = goog.array.repeat(elements, length);
   var product = goog.iter.product.apply(undefined, sets);
 
-  return goog.iter.filter(
-      product, function(arr) { return !goog.iter.hasDuplicates_(arr); });
+  return goog.iter.filter(product, function(arr) {
+    'use strict';
+    return !goog.iter.hasDuplicates_(arr);
+  });
 };
 
 
@@ -18496,19 +18722,25 @@ goog.iter.permutations = function(iterable, opt_length) {
  * @template VALUE
  */
 goog.iter.combinations = function(iterable, length) {
+  'use strict';
   var elements = goog.iter.toArray(iterable);
   var indexes = goog.iter.range(elements.length);
   var indexIterator = goog.iter.permutations(indexes, length);
   // sortedIndexIterator will now give arrays of with the given length that
   // indicate what indexes into "elements" should be returned on each iteration.
-  var sortedIndexIterator = goog.iter.filter(
-      indexIterator, function(arr) { return goog.array.isSorted(arr); });
+  var sortedIndexIterator = goog.iter.filter(indexIterator, function(arr) {
+    'use strict';
+    return goog.array.isSorted(arr);
+  });
 
   var iter = new goog.iter.Iterator();
 
-  function getIndexFromElements(index) { return elements[index]; }
+  function getIndexFromElements(index) {
+    return elements[index];
+  }
 
   iter.next = function() {
+    'use strict';
     return goog.array.map(sortedIndexIterator.next(), getIndexFromElements);
   };
 
@@ -18534,20 +18766,26 @@ goog.iter.combinations = function(iterable, length) {
  * @template VALUE
  */
 goog.iter.combinationsWithReplacement = function(iterable, length) {
+  'use strict';
   var elements = goog.iter.toArray(iterable);
   var indexes = goog.array.range(elements.length);
   var sets = goog.array.repeat(indexes, length);
   var indexIterator = goog.iter.product.apply(undefined, sets);
   // sortedIndexIterator will now give arrays of with the given length that
   // indicate what indexes into "elements" should be returned on each iteration.
-  var sortedIndexIterator = goog.iter.filter(
-      indexIterator, function(arr) { return goog.array.isSorted(arr); });
+  var sortedIndexIterator = goog.iter.filter(indexIterator, function(arr) {
+    'use strict';
+    return goog.array.isSorted(arr);
+  });
 
   var iter = new goog.iter.Iterator();
 
-  function getIndexFromElements(index) { return elements[index]; }
+  function getIndexFromElements(index) {
+    return elements[index];
+  }
 
   iter.next = function() {
+    'use strict';
     return goog.array.map(
         /** @type {!Array<number>} */
         (sortedIndexIterator.next()), getIndexFromElements);
@@ -37030,6 +37268,7 @@ goog.provide('goog.reflect');
  * @return {Object} The object literal.
  */
 goog.reflect.object = function(type, object) {
+  'use strict';
   return object;
 };
 
@@ -37050,6 +37289,7 @@ goog.reflect.object = function(type, object) {
  * @return {string} The renamed property.
  */
 goog.reflect.objectProperty = function(prop, object) {
+  'use strict';
   return prop;
 };
 
@@ -37065,6 +37305,7 @@ goog.reflect.objectProperty = function(prop, object) {
  * @template T
  */
 goog.reflect.sinkValue = function(x) {
+  'use strict';
   goog.reflect.sinkValue[' '](x);
   return x;
 };
@@ -37085,7 +37326,7 @@ goog.reflect.sinkValue[' '] = goog.nullFunction;
  *     if obj is null.
  */
 goog.reflect.canAccessProperty = function(obj, prop) {
-
+  'use strict';
   try {
     goog.reflect.sinkValue(obj[prop]);
     return true;
@@ -37124,6 +37365,7 @@ goog.reflect.canAccessProperty = function(obj, prop) {
  * @template V
  */
 goog.reflect.cache = function(cacheObj, key, valueFn, opt_keyFn) {
+  'use strict';
   const storedKey = opt_keyFn ? opt_keyFn(key) : key;
 
   if (Object.prototype.hasOwnProperty.call(cacheObj, storedKey)) {
