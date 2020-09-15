@@ -21,7 +21,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -52,8 +51,7 @@ public final class TemplateBindingUtil {
       SoyType base,
       RecordType parameterType,
       SoyTypeRegistry typeRegistry,
-      ErrorReporter errorReporter,
-      SourceLocation whereToReportErrors) {
+      ErrorReporter.LocationBound errorReporter) {
     checkArgument(
         SoyTypes.isKindOrUnionOfKinds(
             base, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE)));
@@ -63,20 +61,12 @@ public final class TemplateBindingUtil {
         case TEMPLATE:
           types.add(
               bindParametersToTemplate(
-                  (TemplateType) baseType,
-                  parameterType,
-                  typeRegistry,
-                  errorReporter,
-                  whereToReportErrors));
+                  (TemplateType) baseType, parameterType, typeRegistry, errorReporter));
           break;
         case NAMED_TEMPLATE:
           types.add(
               bindParametersToNamedTemplate(
-                  (NamedTemplateType) baseType,
-                  parameterType,
-                  typeRegistry,
-                  errorReporter,
-                  whereToReportErrors));
+                  (NamedTemplateType) baseType, parameterType, typeRegistry, errorReporter));
           break;
         default:
           throw new AssertionError();
@@ -94,22 +84,19 @@ public final class TemplateBindingUtil {
       TemplateType base,
       RecordType parameters,
       SoyTypeRegistry typeRegistry,
-      ErrorReporter errorReporter,
-      SourceLocation whereToReportErrors) {
+      ErrorReporter.LocationBound errorReporter) {
     Set<String> unboundParameters = new HashSet<>(base.getParameterMap().keySet());
     boolean reportedErrors = false;
     for (RecordType.Member member : parameters.getMembers()) {
       if (!base.getParameterMap().containsKey(member.name())) {
         String didYouMeanMessage =
             SoyErrors.getDidYouMeanMessage(base.getParameterMap().keySet(), member.name());
-        errorReporter.report(
-            whereToReportErrors, PARAMETER_NAME_MISMATCH, member.name(), base, didYouMeanMessage);
+        errorReporter.report(PARAMETER_NAME_MISMATCH, member.name(), base, didYouMeanMessage);
         reportedErrors = true;
         continue;
       }
       if (!base.getParameterMap().get(member.name()).isAssignableFrom(member.type())) {
         errorReporter.report(
-            whereToReportErrors,
             PARAMETER_TYPE_MISMATCH,
             member.name(),
             base,
@@ -137,15 +124,14 @@ public final class TemplateBindingUtil {
       NamedTemplateType base,
       RecordType parameters,
       SoyTypeRegistry typeRegistry,
-      ErrorReporter errorReporter,
-      SourceLocation whereToReportErrors) {
+      ErrorReporter.LocationBound errorReporter) {
     Optional<RecordType> alreadyBound = base.getBoundParameters();
     RecordType mergedParameters = null;
     boolean reportedErrors = false;
     if (alreadyBound.isPresent()) {
       for (String name : parameters.getMemberNames()) {
         if (alreadyBound.get().getMemberType(name) != null) {
-          errorReporter.report(whereToReportErrors, PARAMETER_ALREADY_BOUND, name);
+          errorReporter.report(PARAMETER_ALREADY_BOUND, name);
           reportedErrors = true;
         }
       }

@@ -349,8 +349,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
             templateType,
             (RecordType) type.getBoundParameters().get().accept(this),
             typeRegistry,
-            errorReporter,
-            whereToReportErrors);
+            errorReporter.bind(whereToReportErrors));
       } else {
         return templateType;
       }

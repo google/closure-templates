@@ -192,8 +192,7 @@ public enum BuiltinMethod implements SoyMethod {
           baseType,
           (RecordType) param.getType(),
           soyTypeRegistry,
-          errorReporter,
-          param.getSourceLocation());
+          errorReporter.bind(param.getSourceLocation()));
     }
   };
 
