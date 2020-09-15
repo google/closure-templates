@@ -18,7 +18,6 @@ package com.google.template.soy.passes;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -28,11 +27,13 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -99,13 +100,15 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
+  private final boolean astRewrites;
   private final Set<String> invalidTemplateNames = new HashSet<>();
   private final Set<String> reportedInvalidTemplateNames = new HashSet<>();
 
   ResolveExpressionTypesCrossTemplatePass(
-      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
+      SoyTypeRegistry typeRegistry, ErrorReporter errorReporter, boolean astRewrites) {
     this.typeRegistry = typeRegistry;
+    this.errorReporter = errorReporter;
+    this.astRewrites = astRewrites;
   }
 
   @Override
@@ -114,7 +117,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       updateTemplateTypes(file);
       checkInitializerValues(file);
       checkForNamedTemplateTypes(file);
-      handleDynamicTagAndCheckForLegacyDynamicTags(file);
+      if (astRewrites) {
+        handleDynamicTagAndCheckForLegacyDynamicTags(file);
+      }
     }
     checkReportedAllInvalidNames();
     return Result.CONTINUE;
@@ -138,7 +143,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                 .getType()
                 .accept(
                     new TemplateTypeUpgrader(
-                        exprNode.getSourceLocation(),
+                        errorReporter.bindIgnoringUnknown(exprNode.getSourceLocation()),
                         templateRegistry,
                         isTemplateLiteral,
                         isSynthetic));
@@ -243,7 +248,12 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       }
       correctlyPlaced.add(functionNode);
     } else if (!tagNode.getTagName().isTemplateCall()) {
-      // Eventually all other cases should be disallowed.
+      if (printNode.getExpr().getType() == UnknownType.getInstance()
+          && exprNode.getKind() == Kind.METHOD_CALL_NODE
+          && ((MethodCallNode) exprNode).getSoyMethod() == BuiltinMethod.BIND) {
+        // Bind method + unknown type indicates an error already reported here.
+        return;
+      }
       errorReporter.report(printNode.getExpr().getSourceLocation(), NEED_WRAP);
     }
   }
@@ -258,17 +268,17 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   }
 
   private class TemplateTypeUpgrader implements SoyTypeVisitor<SoyType> {
-    private final SourceLocation whereToReportErrors;
+    private final ErrorReporter.LocationBound errorReporter;
     private final TemplateRegistry templateRegistry;
     private final boolean isTemplateLiteral;
     private final boolean isSynthetic;
 
     private TemplateTypeUpgrader(
-        SourceLocation whereToReportErrors,
+        ErrorReporter.LocationBound errorReporter,
         TemplateRegistry templateRegistry,
         boolean isTemplateLiteral,
         boolean isSynthetic) {
-      this.whereToReportErrors = whereToReportErrors;
+      this.errorReporter = errorReporter;
       this.templateRegistry = templateRegistry;
       this.isTemplateLiteral = isTemplateLiteral;
       this.isSynthetic = isSynthetic;
@@ -319,9 +329,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         invalidTemplateNames.add(type.getTemplateName());
         if (isTemplateLiteral) {
           errorReporter.report(
-              whereToReportErrors,
-              ONLY_BASIC_TEMPLATES_ALLOWED,
-              basicTemplateOrElement.getTemplateKind());
+              ONLY_BASIC_TEMPLATES_ALLOWED, basicTemplateOrElement.getTemplateKind());
           reportedInvalidTemplateNames.add(type.getTemplateName());
         }
         return UnknownType.getInstance();
@@ -335,9 +343,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         invalidTemplateNames.add(type.getTemplateName());
         if (isTemplateLiteral) {
           errorReporter.report(
-              whereToReportErrors,
-              ONLY_STRICT_HTML_TEMPLATES_ALLOWED,
-              basicTemplateOrElement.getTemplateName());
+              ONLY_STRICT_HTML_TEMPLATES_ALLOWED, basicTemplateOrElement.getTemplateName());
           reportedInvalidTemplateNames.add(type.getTemplateName());
         }
         return UnknownType.getInstance();
@@ -349,7 +355,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
             templateType,
             (RecordType) type.getBoundParameters().get().accept(this),
             typeRegistry,
-            errorReporter.bind(whereToReportErrors));
+            errorReporter);
       } else {
         return templateType;
       }

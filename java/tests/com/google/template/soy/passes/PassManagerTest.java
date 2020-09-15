@@ -79,6 +79,7 @@ public final class PassManagerTest {
         .containsExactly(
             "ResolveProtoImports",
             "ResolveTemplateImports",
+            "ResolveTemplateFunctions",
             "ResolveTemplateNames",
             "ResolveTemplateParamTypes",
             "ResolvePlugins")
@@ -96,8 +97,11 @@ public final class PassManagerTest {
 
     assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
-            "ResolveProtoImports", "ResolveTemplateImports",
-            "ResolveTemplateNames", "ResolveTemplateParamTypes")
+            "ResolveProtoImports",
+            "ResolveTemplateImports",
+            "ResolveTemplateFunctions",
+            "ResolveTemplateNames",
+            "ResolveTemplateParamTypes")
         .inOrder();
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }

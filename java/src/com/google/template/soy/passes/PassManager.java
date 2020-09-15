@@ -369,6 +369,9 @@ public final class PassManager {
       addPass(
           new ResolveTemplateImportsPass(options, errorReporter),
           partialTemplateRegistryPassesBuilder);
+      if (astRewrites) {
+        addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
+      }
       addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
@@ -485,7 +488,7 @@ public final class PassManager {
         // Upgrade the "named template" placeholder types to proper template types, now that their
         // signatures are known.
         addPass(
-            new ResolveExpressionTypesCrossTemplatePass(registry, errorReporter),
+            new ResolveExpressionTypesCrossTemplatePass(registry, errorReporter, astRewrites),
             crossTemplateCheckingPassesBuilder);
         // Needs to come after types have been set.
         addPass(
