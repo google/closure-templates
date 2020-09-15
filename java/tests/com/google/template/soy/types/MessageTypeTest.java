@@ -45,8 +45,8 @@ public final class MessageTypeTest {
 
   @Test
   public void testBaseProtoAssignability() throws Exception {
-    assertThatType("Message").isAssignableFrom("Message");
-    assertThatType("Message").isAssignableFrom("Foo");
-    assertThatType("Foo").isNotAssignableFrom("Message");
+    assertThatType("Message").isAssignableFromStrict("Message");
+    assertThatType("Message").isAssignableFromStrict("Foo");
+    assertThatType("Foo").isNotAssignableFromStrict("Message");
   }
 }

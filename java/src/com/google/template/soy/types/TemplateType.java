@@ -141,7 +141,8 @@ public abstract class TemplateType extends SoyType {
   }
 
   @Override
-  final boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  final boolean doIsAssignableFromNonUnionType(
+      SoyType srcType, UnknownAssignmentPolicy unknownPolicy) {
     if (srcType.getKind() == SoyType.Kind.TEMPLATE) {
       TemplateType srcTemplate = (TemplateType) srcType;
       // The source template type's arguments must be a superset of this type's arguments (possibly
@@ -160,7 +161,7 @@ public abstract class TemplateType extends SoyType {
           // argument
           // of this type. This is because the parameter types are constraints; assignability of a
           // template type is only possible when the constraints of the from-type are narrower.
-          if (!srcParameter.getType().isAssignableFrom(thisParameterType)) {
+          if (!srcParameter.getType().isAssignableFromInternal(thisParameterType, unknownPolicy)) {
             return false;
           }
         }

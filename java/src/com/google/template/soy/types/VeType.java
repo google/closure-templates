@@ -25,6 +25,8 @@ public final class VeType extends SoyType {
 
   public static final VeType NO_DATA = new VeType(Optional.empty());
 
+  // This isn't a soyType to avoid triggering issues with strict deps and protos.  Not sure if that
+  // makes sense though given imports.
   private final Optional<String> dataType;
 
   private VeType(Optional<String> dataType) {

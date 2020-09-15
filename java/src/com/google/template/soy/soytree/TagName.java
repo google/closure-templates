@@ -253,7 +253,7 @@ public final class TagName {
 
   public boolean isTemplateCall() {
     return !isStatic()
-        && ELEMENT_TEMPLATE.isAssignableFrom(getDynamicTagName().getExpr().getType());
+        && ELEMENT_TEMPLATE.isAssignableFromStrict(getDynamicTagName().getExpr().getType());
   }
 
   public boolean isWildCard() {

@@ -93,7 +93,7 @@ public final class SoyTypes {
     if (NUMERIC_PRIMITIVES.contains(kind)) {
       return true;
     }
-    return type.isAssignableFrom(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFrom(type);
+    return type.isAssignableFromStrict(NUMBER_TYPE) || NUMBER_TYPE.isAssignableFromStrict(type);
   }
 
   public static SoyType removeNull(SoyType type) {
@@ -129,7 +129,7 @@ public final class SoyTypes {
   }
 
   public static boolean isNumericOrUnknown(SoyType type) {
-    return type.getKind() == SoyType.Kind.UNKNOWN || NUMBER_TYPE.isAssignableFrom(type);
+    return type.getKind() == SoyType.Kind.UNKNOWN || NUMBER_TYPE.isAssignableFromStrict(type);
   }
 
   /**
@@ -142,9 +142,9 @@ public final class SoyTypes {
    */
   public static SoyType computeLowestCommonType(
       SoyTypeRegistry typeRegistry, SoyType t0, SoyType t1) {
-    if (t0.isAssignableFrom(t1)) {
+    if (t0.isAssignableFromStrict(t1)) {
       return t0;
-    } else if (t1.isAssignableFrom(t0)) {
+    } else if (t1.isAssignableFromStrict(t0)) {
       return t1;
     } else {
       // Create a union.  This preserves the most information.
@@ -186,9 +186,9 @@ public final class SoyTypes {
 
     // Note: everything is assignable to unknown and itself.  So the first two conditions take care
     // of all cases but a mix of float and int.
-    if (t0.isAssignableFrom(t1)) {
+    if (t0.isAssignableFromStrict(t1)) {
       return Optional.of(t0);
-    } else if (t1.isAssignableFrom(t0)) {
+    } else if (t1.isAssignableFromStrict(t0)) {
       return Optional.of(t1);
     } else {
       // If we get here then we know that we have a mix of float and int.  In this case arithmetic

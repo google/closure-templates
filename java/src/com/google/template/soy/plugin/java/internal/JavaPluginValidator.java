@@ -152,7 +152,7 @@ public class JavaPluginValidator {
         if (!returnType.isPresent()) {
           return; // error already reported
         }
-        if (!expectedType.isAssignableFrom(returnType.get())) {
+        if (!expectedType.isAssignableFromStrict(returnType.get())) {
           reporter.incompatibleReturnType(returnType.get(), expectedType, method);
           return;
         }
@@ -170,7 +170,7 @@ public class JavaPluginValidator {
     boolean isPossibleProtoEnum =
         actualSoyType.getKind() == SoyType.Kind.INT
             && isOrContains(expectedType, SoyType.Kind.PROTO_ENUM);
-    if (!isPossibleProtoEnum && !expectedType.isAssignableFrom(actualSoyType)) {
+    if (!isPossibleProtoEnum && !expectedType.isAssignableFromStrict(actualSoyType)) {
       reporter.incompatibleReturnType(actualSoyType, expectedType, pluginReturnValue.methodInfo());
     }
   }

@@ -539,7 +539,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     // An instanceof check on the runtime value of base is insufficient, since
     // DictImpl implements both interfaces. Instead, look at the declared type of the base
     // expression.
-    boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFrom(baseType);
+    boolean shouldUseNewMap = MapType.ANY_MAP.isAssignableFromStrict(baseType);
     SoyValue value =
         shouldUseNewMap ? ((SoyMap) base).get(key) : ((SoyLegacyObjectMap) base).getItem(key);
 

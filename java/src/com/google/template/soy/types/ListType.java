@@ -28,6 +28,7 @@ import java.util.Objects;
  */
 public final class ListType extends SoyType {
 
+  // TODO(lukes): see if this can be replaced with list<?>
   public static final ListType EMPTY_LIST = new ListType(null);
   public static final ListType ANY_LIST = new ListType(AnyType.getInstance());
 
@@ -52,7 +53,7 @@ public final class ListType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.LIST) {
       ListType srcListType = (ListType) srcType;
       if (srcListType == EMPTY_LIST) {
@@ -61,7 +62,7 @@ public final class ListType extends SoyType {
         return false;
       }
       // Lists are covariant (because values are immutable.)
-      return elementType.isAssignableFrom(srcListType.elementType);
+      return elementType.isAssignableFromInternal(srcListType.elementType, policy);
     }
     return false;
   }

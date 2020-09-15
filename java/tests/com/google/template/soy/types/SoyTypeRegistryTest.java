@@ -47,8 +47,10 @@ public class SoyTypeRegistryTest {
     assertThat(typeRegistry.getType("string").getKind()).isEqualTo(SoyType.Kind.STRING);
 
     // Check that 'number' type is assignable from both float and int.
-    assertThat(typeRegistry.getType("number").isAssignableFrom(IntType.getInstance())).isTrue();
-    assertThat(typeRegistry.getType("number").isAssignableFrom(FloatType.getInstance())).isTrue();
+    assertThat(typeRegistry.getType("number").isAssignableFromStrict(IntType.getInstance()))
+        .isTrue();
+    assertThat(typeRegistry.getType("number").isAssignableFromStrict(FloatType.getInstance()))
+        .isTrue();
   }
 
   @Test

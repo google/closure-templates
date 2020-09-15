@@ -76,7 +76,6 @@ import com.google.template.soy.types.UnknownType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -631,7 +630,7 @@ public class ExpressionCompilerTest {
                               }
 
                               @Override
-                              public Set<Integer> getValidArgsSizes() {
+                              public ImmutableSet<Integer> getValidArgsSizes() {
                                 return ImmutableSet.of(1);
                               }
                             })

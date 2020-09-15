@@ -58,14 +58,14 @@ final class RuntimeTypeCoercion {
       return fromType;
     }
     for (SoyType formalType : toTypes) {
-      if (formalType.isAssignableFrom(fromType)) {
+      if (formalType.isAssignableFromStrict(fromType)) {
         return fromType; // template already accepts value, no need to coerce
       }
     }
     for (SoyType coercionTargetType : AVAILABLE_CALL_SITE_COERCIONS.row(fromType).keySet()) {
       BuiltinFunction function = null;
       for (SoyType formalType : toTypes) {
-        if (!formalType.isAssignableFrom(coercionTargetType)) {
+        if (!formalType.isAssignableFromStrict(coercionTargetType)) {
           continue;
         }
         if (function == null) {

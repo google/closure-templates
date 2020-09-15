@@ -146,6 +146,11 @@ public abstract class SoyType {
     }
   }
 
+  enum UnknownAssignmentPolicy {
+    ALLOWED,
+    DISALLOWED
+  }
+
   // memoize the proto version.  SoyTypes are immutable so this is safe/correct and types are likely
   // to be serialized many times (think, 'string'), so we can save some work by not calculating it
   // repeatedly.
@@ -161,22 +166,64 @@ public abstract class SoyType {
    * Returns true if a parameter or field of this type can be assigned from a value of {@code
    * srcType}.
    *
+   * <p><i>loose</i> assignment means that the type is only possibly assignable. {@code ?} types are
+   * considered to be possibly assignable. Use this in cases where the compiler may insert a runtime
+   * test (as in {@code call} commands) or we expect some other part of the runtime to enforce types
+   * (e.g. dispatching to plugin methods).
+   *
    * @param srcType The type of the incoming value.
    * @return True if the assignment is valid.
    */
-  public final boolean isAssignableFrom(SoyType srcType) {
+  public final boolean isAssignableFromLoose(SoyType srcType) {
+    return isAssignableFromInternal(srcType, UnknownAssignmentPolicy.ALLOWED);
+  }
+
+  /**
+   * Returns true if a parameter or field of this type can be strictly assigned from a value of
+   * {@code srcType}.
+   *
+   * <p><i>strict</i> assignment means that the type is definitly assignable. {@code ?} types are
+   * not considered to be definitely assignable. Use this in cases where we require certainty, such
+   * as when selecting methods based on receiver types or when making code generation decisions.
+   *
+   * @param srcType The type of the incoming value.
+   * @return True if the assignment is valid.
+   */
+  public final boolean isAssignableFromStrict(SoyType srcType) {
+    return isAssignableFromInternal(srcType, UnknownAssignmentPolicy.DISALLOWED);
+  }
+
+  /** Internal helper method for assignment analysis. This should only be used by subclasses. */
+  final boolean isAssignableFromInternal(SoyType soyType, UnknownAssignmentPolicy unknownPolicy) {
+    if (unknownPolicy == UnknownAssignmentPolicy.ALLOWED && soyType == UnknownType.getInstance()) {
+      return true;
+    }
     // Handle unions generically.  A type is assignable from a union if it is assignable from _all_
     // members.
-    return SoyTypes.expandUnions(srcType).stream().allMatch(this::doIsAssignableFromNonUnionType);
+    for (SoyType type : SoyTypes.expandUnions(soyType)) {
+      if (!doIsAssignableFromNonUnionType(type, unknownPolicy)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
    * Subclass integration point to implement assignablility.
    *
    * @param type The target type, guaranteed to <b>not be a union type</b>.
+   * @param unknownPolicy How assignments from the unknown type should be treated. This should be
+   *     passed along to {@link #isAssignableFromInternal} calls made on member types.
    */
   @ForOverride
-  abstract boolean doIsAssignableFromNonUnionType(SoyType type);
+  boolean doIsAssignableFromNonUnionType(SoyType type, UnknownAssignmentPolicy unknownPolicy) {
+    return doIsAssignableFromNonUnionType(type);
+  }
+
+  @ForOverride
+  boolean doIsAssignableFromNonUnionType(SoyType type) {
+    throw new AbstractMethodError();
+  }
 
   /** The type represented in a fully parseable format. */
   @Override

@@ -79,14 +79,14 @@ public final class RecordType extends SoyType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.RECORD) {
       RecordType srcRecord = (RecordType) srcType;
       // The source record must have at least all of the members in the dest
       // record.
       for (Member mine : members) {
         SoyType theirType = srcRecord.getMemberType(mine.name());
-        if (theirType == null || !mine.type().isAssignableFrom(theirType)) {
+        if (theirType == null || !mine.type().isAssignableFromInternal(theirType, policy)) {
           return false;
         }
       }

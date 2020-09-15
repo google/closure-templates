@@ -53,7 +53,7 @@ public final class SoySourceFunctionMethod implements SoyMethod {
   public boolean appliesToArgs(List<SoyType> argTypes) {
     Preconditions.checkArgument(argTypes.size() == this.argTypes.size());
     for (int i = 0; i < argTypes.size(); i++) {
-      if (!this.argTypes.get(i).isAssignableFrom(argTypes.get(i))) {
+      if (!this.argTypes.get(i).isAssignableFromStrict(argTypes.get(i))) {
         return false;
       }
     }
@@ -77,7 +77,7 @@ public final class SoySourceFunctionMethod implements SoyMethod {
   }
 
   public boolean appliesToBase(SoyType baseType) {
-    return this.baseType.isAssignableFrom(baseType);
+    return this.baseType.isAssignableFromStrict(baseType);
   }
 
   public String getMethodName() {

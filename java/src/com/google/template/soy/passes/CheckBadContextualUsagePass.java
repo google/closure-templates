@@ -127,8 +127,8 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
       if (contentKindOfPrintDirectives == null) {
         SoyType type = node.getExpr().getRoot().getType();
         report =
-            !type.isAssignableFrom(AnyType.getInstance())
-                && type.isAssignableFrom(SanitizedType.getTypeForContentKind(contentKind));
+            !type.isAssignableFromStrict(AnyType.getInstance())
+                && type.isAssignableFromStrict(SanitizedType.getTypeForContentKind(contentKind));
       } else {
         report = contentKindOfPrintDirectives.name().equals(contentKind.name());
       }

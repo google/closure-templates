@@ -31,6 +31,7 @@ import java.util.Objects;
  */
 public final class MapType extends AbstractMapType {
 
+  // TODO(lukes): see if this can be replaced with map<?,?>
   public static final MapType EMPTY_MAP = new MapType(null, null);
 
   public static final MapType ANY_MAP = new MapType(AnyType.getInstance(), AnyType.getInstance());
@@ -88,7 +89,7 @@ public final class MapType extends AbstractMapType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.MAP) {
       MapType srcMapType = (MapType) srcType;
       if (srcMapType == EMPTY_MAP) {
@@ -97,12 +98,11 @@ public final class MapType extends AbstractMapType {
         return false;
       }
       // Maps are covariant.
-      return keyType.isAssignableFrom(srcMapType.keyType)
-          && valueType.isAssignableFrom(srcMapType.valueType);
+      return keyType.isAssignableFromInternal(srcMapType.keyType, policy)
+          && valueType.isAssignableFromInternal(srcMapType.valueType, policy);
     }
     return false;
   }
-
 
   @Override
   public String toString() {

@@ -263,8 +263,9 @@ public abstract class SoyRuntimeType {
   }
 
   private boolean assignableToNullableType(SoyType type) {
-    return type.isAssignableFrom(soyType)
-        || (soyType.getKind() == Kind.UNION && type.isAssignableFrom(SoyTypes.removeNull(soyType)));
+    return type.isAssignableFromStrict(soyType)
+        || (soyType.getKind() == Kind.UNION
+            && type.isAssignableFromStrict(SoyTypes.removeNull(soyType)));
   }
 
   /**
@@ -362,7 +363,7 @@ public abstract class SoyRuntimeType {
    * <em>not</em> a number, just that it is not <em>known</em> to be a number at compile time.
    */
   public final boolean isKnownNumber() {
-    return SoyTypes.NUMBER_TYPE.isAssignableFrom(soyType);
+    return SoyTypes.NUMBER_TYPE.isAssignableFromStrict(soyType);
   }
 
   public final SoyRuntimeType asNonNullable() {

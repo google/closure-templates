@@ -146,7 +146,7 @@ final class ValidatorValue implements JavaValue {
           isConstantNull() ? Object.class : valueType.clazz(), newType, methodName);
       return forError(newType, reporter);
     }
-    if (!valueType.soyType().isAssignableFrom(newType)) {
+    if (!valueType.soyType().isAssignableFromStrict(newType)) {
       reporter.incompatibleSoyType(valueType.soyType(), newType, methodName);
       return forError(newType, reporter);
     }

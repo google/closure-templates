@@ -95,7 +95,7 @@ public final class TemplateBindingUtil {
         reportedErrors = true;
         continue;
       }
-      if (!base.getParameterMap().get(member.name()).isAssignableFrom(member.type())) {
+      if (!base.getParameterMap().get(member.name()).isAssignableFromStrict(member.type())) {
         errorReporter.report(
             PARAMETER_TYPE_MISMATCH,
             member.name(),

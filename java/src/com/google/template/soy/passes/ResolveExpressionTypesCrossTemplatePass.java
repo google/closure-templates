@@ -181,7 +181,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
             && headerVar.defaultValue() != null) {
           SoyType declaredType = headerVar.type();
           SoyType actualType = headerVar.defaultValue().getType();
-          if (!declaredType.isAssignableFrom(actualType)) {
+          if (!declaredType.isAssignableFromStrict(actualType)) {
             errorReporter.report(
                 headerVar.defaultValue().getSourceLocation(),
                 DECLARED_DEFAULT_TYPE_MISMATCH,
@@ -214,10 +214,10 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         SoyTreeUtils.getAllMatchingNodesOfType(
             file, HtmlTagNode.class, (tag) -> !tag.getTagName().isStatic())) {
       SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
-      if (type.isAssignableFrom(StringType.getInstance())) {
+      if (type.isAssignableFromStrict(StringType.getInstance())) {
         handleDynamicTag(tagNode, correctlyPlaced);
       } else if (!tagNode.getTagName().isTemplateCall()
-          && !type.isAssignableFrom(UnknownType.getInstance())) {
+          && !type.isAssignableFromStrict(UnknownType.getInstance())) {
         errorReporter.report(
             tagNode.getSourceLocation(),
             ELEMENT_CALL_TO_HTML_TEMPLATE,

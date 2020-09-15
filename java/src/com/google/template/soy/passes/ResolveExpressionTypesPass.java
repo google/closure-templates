@@ -400,12 +400,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             // assignable at this stage in parsing.
             if (!(SoyTypes.transitivelyContainsKind(declaredType, SoyType.Kind.TEMPLATE)
                 && SoyTypes.transitivelyContainsKind(actualType, SoyType.Kind.NAMED_TEMPLATE))) {
-              if (!declaredType.isAssignableFrom(actualType)) {
+              if (!declaredType.isAssignableFromStrict(actualType)) {
                 actualType =
                     RuntimeTypeCoercion.maybeCoerceType(
                         headerVar.defaultValue().getRoot(), SoyTypes.expandUnions(declaredType));
               }
-              if (!declaredType.isAssignableFrom(actualType)) {
+              if (!declaredType.isAssignableFromStrict(actualType)) {
                 errorReporter.report(
                     headerVar.defaultValue().getSourceLocation(),
                     DECLARED_DEFAULT_TYPE_MISMATCH,
@@ -1441,7 +1441,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyType argType = node.getChild(0).getType();
       if (argType.equals(LegacyObjectMapType.EMPTY_MAP)) {
         node.setType(MapType.EMPTY_MAP);
-      } else if (argType.isAssignableFrom(UnknownType.getInstance())) {
+      } else if (argType == UnknownType.getInstance()) {
         // Allow the type of the arg to be unknown as legacy_object_map functionality on unknown
         // types is allowed (i.e. bracket access on a variable with an unknown type).
         node.setType(
@@ -1580,11 +1580,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
 
         SoyType fieldType = protoType.getFieldType(fieldName.identifier());
 
-        // Let args with unknown or error types pass
-        if (argType.equals(UnknownType.getInstance())) {
-          continue;
-        }
-
         // Same for List<?>, for repeated fields
         if (fieldType.getKind() == Kind.LIST && argType.getKind() == Kind.LIST) {
           SoyType argElementType = ((ListType) argType).getElementType();
@@ -1594,7 +1589,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         }
 
         SoyType expectedType = SoyTypes.makeNullable(fieldType);
-        if (!expectedType.isAssignableFrom(argType)) {
+        if (!expectedType.isAssignableFromLoose(argType)) {
           argType =
               RuntimeTypeCoercion.maybeCoerceType(
                   expr,
@@ -1602,7 +1597,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                       ? ((UnionType) expectedType).getMembers()
                       : ImmutableList.of(expectedType));
         }
-        if (!expectedType.isAssignableFrom(argType)) {
+        if (!expectedType.isAssignableFromLoose(argType)) {
           errorReporter.report(
               expr.getSourceLocation(),
               ARGUMENT_TYPE_MISMATCH,
@@ -1855,8 +1850,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           }
 
           // For lists, the key type must either be unknown or assignable to integer.
-          if (keyType.getKind() != SoyType.Kind.UNKNOWN
-              && !IntType.getInstance().isAssignableFrom(keyType)) {
+          if (!IntType.getInstance().isAssignableFromLoose(keyType)) {
             errorReporter.report(keyLocation, BAD_INDEX_TYPE, keyType, baseType);
             // fall through and report the element type.  This will allow more later type checks to
             // be evaluated.
@@ -1874,8 +1868,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             }
 
             // For maps, the key type must either be unknown or assignable to the declared key type.
-            if (keyType.getKind() != SoyType.Kind.UNKNOWN
-                && !mapType.getKeyType().isAssignableFrom(keyType)) {
+            if (!mapType.getKeyType().isAssignableFromLoose(keyType)) {
               errorReporter.report(keyLocation, BAD_KEY_TYPE, keyType, baseType);
               // fall through and report the value type.  This will allow more later type checks to
               // be evaluated.
@@ -1941,7 +1934,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     private void tryApplySubstitution(AbstractParentExprNode parentNode) {
       SoyType newType = getTypeSubstitution(parentNode);
       if (newType != null) {
-        if (!parentNode.getType().isAssignableFrom(newType)) {
+        if (!parentNode.getType().isAssignableFromStrict(newType)) {
           errorReporter.report(
               parentNode.getSourceLocation(),
               INVALID_TYPE_SUBSTITUTION,
@@ -2143,11 +2136,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     /** Checks the argument type. Returns false if an incorrect arg type error was reported. */
     private boolean checkArgType(
         ExprNode arg, SoyType expectedType, FunctionNode node, UnknownPolicy policy) {
-      SoyType.Kind argTypeKind = arg.getType().getKind();
-      if (policy == UnknownPolicy.ALLOWED && argTypeKind == SoyType.Kind.UNKNOWN) {
-        return true;
-      }
-      if (!expectedType.isAssignableFrom(arg.getType())) {
+      if (!expectedType.isAssignableFromLoose(arg.getType())
+          || (policy == UnknownPolicy.DISALLOWED && arg.getType() == UnknownType.getInstance())) {
         errorReporter.report(
             arg.getSourceLocation(),
             INCORRECT_ARG_TYPE,

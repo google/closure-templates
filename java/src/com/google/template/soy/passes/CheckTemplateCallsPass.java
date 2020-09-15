@@ -356,11 +356,11 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         //   reportProtoArgumentTypeMismatch(call, paramName, formalType, argType);
         // }
       } else {
-        if (!formalType.isAssignableFrom(argType)) {
+        if (!formalType.isAssignableFromStrict(argType)) {
           if (calleeParams.isIndirect(paramName)
               && argType.getKind() == SoyType.Kind.UNION
               && ((UnionType) argType).isNullable()
-              && SoyTypes.makeNullable(formalType).isAssignableFrom(argType)) {
+              && SoyTypes.makeNullable(formalType).isAssignableFromStrict(argType)) {
             // Special case for indirect params: Allow a nullable type to be assigned
             // to a non-nullable type if the non-nullable type is an indirect parameter type.
             // The reason is because without flow analysis, we can't know whether or not

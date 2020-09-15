@@ -32,6 +32,7 @@ import java.util.Objects;
  */
 public final class LegacyObjectMapType extends AbstractMapType {
 
+  // TODO(lukes): see if this can be replaced with legacy_object_map<?, ?>
   public static final LegacyObjectMapType EMPTY_MAP = new LegacyObjectMapType(null, null);
 
   public static final LegacyObjectMapType ANY_MAP =
@@ -70,7 +71,7 @@ public final class LegacyObjectMapType extends AbstractMapType {
   }
 
   @Override
-  boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+  boolean doIsAssignableFromNonUnionType(SoyType srcType, UnknownAssignmentPolicy policy) {
     if (srcType.getKind() == Kind.LEGACY_OBJECT_MAP) {
       LegacyObjectMapType srcMapType = (LegacyObjectMapType) srcType;
       if (srcMapType == EMPTY_MAP) {
@@ -79,8 +80,8 @@ public final class LegacyObjectMapType extends AbstractMapType {
         return false;
       }
       // Maps are covariant.
-      return keyType.isAssignableFrom(srcMapType.keyType)
-          && valueType.isAssignableFrom(srcMapType.valueType);
+      return keyType.isAssignableFromInternal(srcMapType.keyType, policy)
+          && valueType.isAssignableFromInternal(srcMapType.valueType, policy);
     }
     return false;
   }
