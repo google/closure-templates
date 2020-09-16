@@ -27,7 +27,6 @@ import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.IdentityHashMap;
-import java.util.Map;
 
 /**
  * The local variable table.
@@ -91,7 +90,7 @@ public abstract class Environment {
       SoyValueProvider item;
     }
 
-    final Map<VarDefn, Object> localVariables = new IdentityHashMap<>();
+    final IdentityHashMap<VarDefn, Object> localVariables = new IdentityHashMap<>();
     final SoyRecord data;
     Impl(TemplateNode template, SoyRecord data, SoyRecord ijData) {
       this.data = data;

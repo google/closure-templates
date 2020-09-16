@@ -28,7 +28,6 @@ import com.google.template.soy.exprtree.FunctionNode.ParamsStyle;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -53,7 +52,7 @@ public final class ExprEquivalence {
    * is shared. This is important for some cases where the compiler needs to hash all subexpression,
    * like when ResolveExpressionTypesPass implements the 'type narrowing' logic.
    */
-  private final Map<ExprNode, Wrapper> interningMap = new IdentityHashMap<>();
+  private final IdentityHashMap<ExprNode, Wrapper> interningMap = new IdentityHashMap<>();
 
   private final Equivalence<ExprNode> equivalence =
       new Equivalence<ExprNode>() {

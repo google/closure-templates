@@ -38,8 +38,8 @@ public final class SoyToJsVariableMappings {
    * The MsgFallbackGroupNode to an expression that evaluates to whether or not the primary message
    * is in use.
    */
-  private final Map<MsgFallbackGroupNode, Expression> isPrimaryMsgInUseForFallbackGroup =
-      new IdentityHashMap<>();
+  private final IdentityHashMap<MsgFallbackGroupNode, Expression>
+      isPrimaryMsgInUseForFallbackGroup = new IdentityHashMap<>();
 
   private SoyToJsVariableMappings(ImmutableMap<String, ? extends Expression> initialMappings) {
     mappings = new HashMap<>(initialMappings);

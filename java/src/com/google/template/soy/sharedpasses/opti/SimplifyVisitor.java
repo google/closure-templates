@@ -132,7 +132,7 @@ public final class SimplifyVisitor {
   private final class Impl extends AbstractSoyNodeVisitor<Void> {
     final ImmutableMap<String, TemplateNode> basicTemplates;
     final IdGenerator nodeIdGen;
-    final Map<LocalVar, LocalVar> varDefnReplacements = new IdentityHashMap<>();
+    final IdentityHashMap<LocalVar, LocalVar> varDefnReplacements = new IdentityHashMap<>();
 
     Impl(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
       this.nodeIdGen = idGenerator;

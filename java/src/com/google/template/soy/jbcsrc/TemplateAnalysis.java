@@ -790,7 +790,7 @@ final class TemplateAnalysis {
 
     /** Creates a copy of the block. Note, this does not clone the {@code #exprs}. */
     AccessGraph copy() {
-      Map<Block, Block> originalToCopy = new IdentityHashMap<>();
+      IdentityHashMap<Block, Block> originalToCopy = new IdentityHashMap<>();
       Block newStart = shallowCopyBlock(start, originalToCopy);
       Block newEnd = originalToCopy.get(end);
       return new AccessGraph(newStart, newEnd, exprEquivalence);
@@ -816,7 +816,8 @@ final class TemplateAnalysis {
       // edges.
 
       Set<ExprNode> resolvedExprs = Sets.newIdentityHashSet();
-      Map<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs = new IdentityHashMap<>();
+      IdentityHashMap<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs =
+          new IdentityHashMap<>();
       for (Block current : getTopologicalOrdering()) {
         // First calculate the set of exprs that were definitely accessed prior to this node
         Set<ExprEquivalence.Wrapper> currentBlockSet =
@@ -834,7 +835,7 @@ final class TemplateAnalysis {
     }
 
     static Set<ExprEquivalence.Wrapper> mergePredecessors(
-        Map<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs, Block current) {
+        IdentityHashMap<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs, Block current) {
       Set<ExprEquivalence.Wrapper> currentBlockSet = null;
       for (Block predecessor : current.predecessors) {
         Set<ExprEquivalence.Wrapper> predecessorBlockSet = blockToAccessedExprs.get(predecessor);
@@ -855,24 +856,27 @@ final class TemplateAnalysis {
       Set<Block> visited = Sets.newIdentityHashSet();
       Set<Block> discoveredButNotVisited = Sets.newIdentityHashSet();
       discoveredButNotVisited.add(start);
-      outer:
       while (!discoveredButNotVisited.isEmpty()) {
-        for (Block notVisited : discoveredButNotVisited) {
-          // If we have already visited all predecessors
-          if (visited.containsAll(notVisited.predecessors)) {
-            discoveredButNotVisited.remove(notVisited);
-            visited.add(notVisited);
-            discoveredButNotVisited.addAll(notVisited.successors);
-            ordering.add(notVisited);
-            continue outer;
-          }
+        Optional<Block> firstVisitedAllPredecessors =
+            discoveredButNotVisited.stream()
+                // If we have already visited all predecessors
+                .filter(block -> visited.containsAll(block.predecessors))
+                .findFirst();
+        if (firstVisitedAllPredecessors.isPresent()) {
+          Block notVisited = firstVisitedAllPredecessors.get();
+          discoveredButNotVisited.remove(notVisited);
+          visited.add(notVisited);
+          discoveredButNotVisited.addAll(notVisited.successors);
+          ordering.add(notVisited);
+        } else {
+          throw new AssertionError("failed to make progress");
         }
-        throw new AssertionError("failed to make progress");
       }
       return ordering;
     }
 
-    private static Block shallowCopyBlock(Block original, Map<Block, Block> originalToCopy) {
+    private static Block shallowCopyBlock(
+        Block original, IdentityHashMap<Block, Block> originalToCopy) {
       if (originalToCopy.containsKey(original)) {
         return originalToCopy.get(original);
       }

@@ -28,8 +28,8 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.TemplateType;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Encapsulates information inferred about a Soy file and decisions made to change it.
@@ -53,11 +53,11 @@ public final class Inferences {
   private TemplateRegistry templateRegistry = null;
 
   /** Maps print, msg and call commands to the inferred escaping modes. */
-  private final Map<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
+  private final IdentityHashMap<SoyNode, ImmutableList<EscapingMode>> nodeToEscapingModes =
       Maps.newIdentityHashMap();
 
   /** Maps print, msg and call commands to the context. */
-  private final Map<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
+  private final IdentityHashMap<SoyNode, Context> nodeToContext = Maps.newIdentityHashMap();
 
   public void setTemplateRegistry(TemplateRegistry templateRegistry) {
     this.templateRegistry = templateRegistry;
@@ -72,9 +72,7 @@ public final class Inferences {
     return templateRegistry.getTemplates(call);
   }
 
-  /**
-   * Null if there is no escaping mode for the given <code>{print}</code> node.
-   */
+  /** Null if there is no escaping mode for the given <code>{print}</code> node. */
   public ImmutableList<EscapingMode> getEscapingMode(PrintNode printNode) {
     // See if we have already inferred an escaping mode for the node.
     ImmutableList<EscapingMode> escapingModes = nodeToEscapingModes.get(printNode);
@@ -112,7 +110,7 @@ public final class Inferences {
   /**
    * The escaping modes for the print command with the given ID in the order in which they should be
    * applied.
-    *
+   *
    * @param node a node instance
    */
   public ImmutableList<EscapingMode> getEscapingModesForNode(SoyNode node) {
