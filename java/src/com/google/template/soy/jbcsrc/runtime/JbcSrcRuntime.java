@@ -53,7 +53,6 @@ import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.jbcsrc.api.OutputAppendable;
@@ -188,24 +187,6 @@ public final class JbcSrcRuntime {
 
   public static SoyValueProvider getFieldProvider(SoyRecord record, String field) {
     return getFieldProvider(record, field, /* defaultValue= */ null);
-  }
-
-  /** Casts the given type to SoyString or throws a ClassCastException. */
-  public static SoyString checkSoyString(Object o) {
-    // if it isn't a sanitized content we don't want to warn and if it isn't a soystring we should
-    // always fail.
-    if (o instanceof SoyString
-        && o instanceof SanitizedContent
-        && logger.isLoggable(Level.WARNING)) {
-      logger.log(
-          Level.WARNING,
-          String.format(
-              "Passing in sanitized content into a template that accepts only string is forbidden. "
-                  + " Please modify the template to take in %s.",
-              ((SanitizedContent) o).getContentKind()),
-          new Exception());
-    }
-    return (SoyString) o;
   }
 
   /**

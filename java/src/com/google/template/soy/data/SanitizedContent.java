@@ -40,7 +40,6 @@ import com.google.common.html.types.TrustedResourceUrls;
 import com.google.common.html.types.UncheckedConversions;
 import com.google.errorprone.annotations.DoNotMock;
 import com.google.errorprone.annotations.Immutable;
-import com.google.template.soy.data.restricted.SoyString;
 import java.io.IOException;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -65,20 +64,12 @@ public class SanitizedContent extends SoyData {
    * @param dir The content's direction; null if unknown and thus to be estimated when necessary.
    */
   static SanitizedContent create(String content, ContentKind kind, @Nullable Dir dir) {
-    if (Flags.stringIsNotSanitizedContent()) {
       return new SanitizedContent(content, kind, dir);
-    }
-    return SanitizedCompatString.create(content, kind, dir);
   }
 
   /** Creates a SanitizedContent object with default direction. */
   static SanitizedContent create(String content, ContentKind kind) {
-    checkArgument(
-        kind != ContentKind.TEXT, "Use UnsanitizedString for SanitizedContent with a kind of TEXT");
-    if (Flags.stringIsNotSanitizedContent()) {
-      return new SanitizedContent(content, kind, kind.getDefaultDir());
-    }
-    return SanitizedCompatString.create(content, kind, kind.getDefaultDir());
+    return create(content, kind, kind.getDefaultDir());
   }
 
   /** A kind of textual content. */
@@ -425,16 +416,4 @@ public class SanitizedContent extends SoyData {
     return TrustedResourceUrls.toProto(toTrustedResourceUrl());
   }
 
-  /** A sanitized content that implements the old semantics of SoyString. */
-  private static final class SanitizedCompatString extends SanitizedContent implements SoyString {
-
-    private SanitizedCompatString(
-        String content, ContentKind contentKind, @Nullable Dir contentDir) {
-      super(content, contentKind, contentDir);
-    }
-
-    static SanitizedCompatString create(String content, ContentKind kind, @Nullable Dir dir) {
-      return new SanitizedCompatString(content, kind, dir);
-    }
-  }
 }

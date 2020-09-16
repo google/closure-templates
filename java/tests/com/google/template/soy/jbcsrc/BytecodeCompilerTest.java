@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.template.soy.jbcsrc.TemplateTester.asRecord;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatElementBody;
 import static com.google.template.soy.jbcsrc.TemplateTester.assertThatFile;
@@ -32,7 +33,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
@@ -84,7 +84,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.junit.Test;
@@ -700,7 +699,7 @@ public class BytecodeCompilerTest {
     SoyJavaFunction plusOneFunction =
         new SoyJavaFunction() {
           @Override
-          public Set<Integer> getValidArgsSizes() {
+          public ImmutableSet<Integer> getValidArgsSizes() {
             return ImmutableSet.of(1);
           }
 
@@ -898,12 +897,6 @@ public class BytecodeCompilerTest {
     assertThat(templateMetadata.delCallees()).isEmpty();
   }
 
-  private Object getField(String name, CompiledTemplate template) throws Exception {
-    Field declaredField = template.getClass().getDeclaredField(name);
-    declaredField.setAccessible(true);
-    return declaredField.get(template);
-  }
-
   @Test
   public void testPassHtmlAsNullableString() throws Exception {
     CompiledTemplateSubject subject =
@@ -914,8 +907,15 @@ public class BytecodeCompilerTest {
             "  {$content ?: 'empty'}",
             "{/template}");
     subject.rendersAs("empty");
-    subject.rendersAs(
-        "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
+    subject.failsToRenderWith(
+        ClassCastException.class,
+        ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
+  }
+
+  private Object getField(String name, CompiledTemplate template) throws Exception {
+    Field declaredField = template.getClass().getDeclaredField(name);
+    declaredField.setAccessible(true);
+    return declaredField.get(template);
   }
 
   @Test
@@ -1113,7 +1113,7 @@ public class BytecodeCompilerTest {
             render(
                 templates, asRecord(ImmutableMap.of("p1", 1, "p2", 2, "p3", 3, "p4", 4)), "ns.foo"))
         .isEqualTo("10");
-    ListenableFuture<?> failed = Futures.immediateFailedFuture(new RuntimeException("boom"));
+    ListenableFuture<?> failed = immediateFailedFuture(new RuntimeException("boom"));
     // since each parameter is on a different source line, depending on which one is assigned the
     // failed future, the template should show a different line number
     try {
@@ -1171,7 +1171,7 @@ public class BytecodeCompilerTest {
     assertThat(
             render(templates, asRecord(ImmutableMap.of("list", ImmutableList.of(1, 2))), "ns.foo"))
         .isEqualTo("1 2");
-    ListenableFuture<?> failed = Futures.immediateFailedFuture(new RuntimeException("boom"));
+    ListenableFuture<?> failed = immediateFailedFuture(new RuntimeException("boom"));
     // since each parameter is on a different source line, depending on which one is assigned the
     // failed future, the template should show a different line number
     try {

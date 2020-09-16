@@ -19,7 +19,6 @@ package com.google.template.soy.sharedpasses.render;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.data.Flags;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyLegacyObjectMap;
@@ -39,12 +38,9 @@ import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnionType;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /** Implements runtime type checks for tofu. */
 public final class TofuTypeChecks {
-  private static final Logger logger = Logger.getLogger(TofuTypeChecks.class.getName());
 
   private static final CheckResult PASS = new CheckResult(true, Optional.empty());
   private static final CheckResult FAIL = new CheckResult(false, Optional.empty());
@@ -159,29 +155,7 @@ public final class TofuTypeChecks {
       case RECORD:
         return CheckResult.fromBool(value instanceof SoyRecord);
       case STRING:
-        if (Flags.stringIsNotSanitizedContent()) {
           return CheckResult.fromBool(value instanceof SoyString);
-        } else {
-          if (value instanceof SoyString
-              && value instanceof SanitizedContent
-              && logger.isLoggable(Level.WARNING)) {
-            return CheckResult.passWithWarning(
-                () -> {
-                  logger.log(
-                      Level.WARNING,
-                      String.format(
-                          "Passing in sanitized content into a template that accepts only string"
-                              + " is forbidden. Please modify the template at %s to take in %s"
-                              + " instead of just %s.",
-                          location != null ? location : "unknown",
-                          ((SanitizedContent) value).getContentKind(),
-                          type.toString()),
-                      new Exception());
-                });
-          }
-          return CheckResult.fromBool(
-              value instanceof SoyString || value instanceof SanitizedContent);
-        }
       case NAMED_TEMPLATE:
         throw new AssertionError("Named template types should be resolved in the compiler.");
       case TEMPLATE:

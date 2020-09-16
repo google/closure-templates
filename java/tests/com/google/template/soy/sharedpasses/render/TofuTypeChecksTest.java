@@ -42,8 +42,8 @@ import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -59,43 +59,20 @@ public class TofuTypeChecksTest {
   private static final SoyLegacyObjectMap MAP_DATA = SoyValueConverterUtility.newDict();
   private static final SoyDict DICT_DATA = SoyValueConverterUtility.newDict();
 
-  private static SanitizedContent htmlData =
+  private static final SanitizedContent HTML_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("html", SanitizedContent.ContentKind.HTML, null);
-  private static SanitizedContent attributesData =
+  private static final SanitizedContent ATTRIBUTES_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe(
           "attrs", SanitizedContent.ContentKind.ATTRIBUTES, null);
-  private static SanitizedContent cssData =
+  private static final SanitizedContent CSS_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("css", SanitizedContent.ContentKind.CSS, null);
-  private static SanitizedContent uriData =
+  private static final SanitizedContent URI_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("uri", SanitizedContent.ContentKind.URI, null);
-  private static SanitizedContent trustedResourceUriData =
+  private static final SanitizedContent TRUSTED_RESOURCE_URI_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe(
           "trusted_resource_uri", SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI, null);
-  private static SanitizedContent jsData =
+  private static final SanitizedContent JS_DATA =
       UnsafeSanitizedContentOrdainer.ordainAsSafe("js", SanitizedContent.ContentKind.JS, null);
-
-  @Before
-  public void setUp() {
-    setUpSanitizedData();
-  }
-
-  private void setUpSanitizedData() {
-    htmlData =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "html", SanitizedContent.ContentKind.HTML, null);
-    attributesData =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "attrs", SanitizedContent.ContentKind.ATTRIBUTES, null);
-    cssData =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("css", SanitizedContent.ContentKind.CSS, null);
-    uriData =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("uri", SanitizedContent.ContentKind.URI, null);
-    trustedResourceUriData =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe(
-            "trusted_resource_uri", SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI, null);
-    jsData =
-        UnsafeSanitizedContentOrdainer.ordainAsSafe("js", SanitizedContent.ContentKind.JS, null);
-  }
 
   @Test
   public void testAnyTypeIsInstance() {
@@ -106,12 +83,12 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -126,12 +103,12 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -146,12 +123,12 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -166,14 +143,33 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
+        DICT_DATA);
+  }
+
+  @Test
+  public void testStringTypeIsInstanceNewBehavior() {
+    assertIsInstance(StringType.getInstance(), STRING_DATA);
+    assertIsNotInstance(
+        StringType.getInstance(),
+        NULL_DATA,
+        BOOLEAN_DATA,
+        INTEGER_DATA,
+        HTML_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         DICT_DATA);
   }
 
@@ -186,12 +182,12 @@ public class TofuTypeChecksTest {
         BOOLEAN_DATA,
         STRING_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -206,12 +202,12 @@ public class TofuTypeChecksTest {
         BOOLEAN_DATA,
         STRING_DATA,
         INTEGER_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -219,7 +215,7 @@ public class TofuTypeChecksTest {
 
   @Test
   public void testSanitizedTypeIsInstance() {
-    assertIsInstance(SanitizedType.HtmlType.getInstance(), htmlData);
+    assertIsInstance(SanitizedType.HtmlType.getInstance(), HTML_DATA);
     assertIsNotInstance(
         SanitizedType.HtmlType.getInstance(),
         NULL_DATA,
@@ -227,16 +223,16 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
 
-    assertIsInstance(SanitizedType.AttributesType.getInstance(), attributesData);
+    assertIsInstance(SanitizedType.AttributesType.getInstance(), ATTRIBUTES_DATA);
     assertIsNotInstance(
         SanitizedType.AttributesType.getInstance(),
         NULL_DATA,
@@ -244,16 +240,16 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
 
-    assertIsInstance(SanitizedType.StyleType.getInstance(), cssData);
+    assertIsInstance(SanitizedType.StyleType.getInstance(), CSS_DATA);
     assertIsNotInstance(
         SanitizedType.StyleType.getInstance(),
         NULL_DATA,
@@ -261,16 +257,16 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
 
-    assertIsInstance(SanitizedType.UriType.getInstance(), uriData);
+    assertIsInstance(SanitizedType.UriType.getInstance(), URI_DATA);
     assertIsNotInstance(
         SanitizedType.UriType.getInstance(),
         NULL_DATA,
@@ -278,16 +274,16 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
 
-    assertIsInstance(SanitizedType.TrustedResourceUriType.getInstance(), trustedResourceUriData);
+    assertIsInstance(SanitizedType.TrustedResourceUriType.getInstance(), TRUSTED_RESOURCE_URI_DATA);
     assertIsNotInstance(
         SanitizedType.TrustedResourceUriType.getInstance(),
         NULL_DATA,
@@ -295,16 +291,16 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        JS_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
 
-    assertIsInstance(SanitizedType.JsType.getInstance(), jsData);
+    assertIsInstance(SanitizedType.JsType.getInstance(), JS_DATA);
     assertIsNotInstance(
         SanitizedType.JsType.getInstance(),
         NULL_DATA,
@@ -312,11 +308,11 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
         LIST_DATA,
         MAP_DATA,
         DICT_DATA);
@@ -333,12 +329,12 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
         MAP_DATA,
         DICT_DATA);
   }
@@ -355,12 +351,12 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData);
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA);
   }
 
   @Test
@@ -375,26 +371,36 @@ public class TofuTypeChecksTest {
         STRING_DATA,
         INTEGER_DATA,
         FLOAT_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        jsData);
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        JS_DATA);
+  }
+
+  @Test
+  public void testUnionTypeIsInstanceNewBehavior() {
+    SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
+    assertIsInstance(utype, INTEGER_DATA, STRING_DATA);
+    assertIsNotInstance(
+        utype,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA,
+        NULL_DATA,
+        BOOLEAN_DATA,
+        FLOAT_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA);
   }
 
   @Test
   public void testStringTypeIsInstance() {
-    setUpSanitizedData();
-
-    assertIsInstance(
-        StringType.getInstance(),
-        STRING_DATA,
-        htmlData,
-        attributesData,
-        cssData,
-        uriData,
-        trustedResourceUriData,
-        jsData);
+    assertIsInstance(StringType.getInstance(), STRING_DATA);
     assertIsNotInstance(
         StringType.getInstance(),
         NULL_DATA,
@@ -402,7 +408,39 @@ public class TofuTypeChecksTest {
         INTEGER_DATA,
         LIST_DATA,
         MAP_DATA,
-        DICT_DATA);
+        DICT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA);
+  }
+
+  @Test
+  public void testStringUnionTypeIsInstance() {
+    SoyType utype = UnionType.of(HtmlType.getInstance(), StringType.getInstance());
+    assertIsInstance(utype, STRING_DATA, HTML_DATA);
+  }
+
+  @Test
+  public void testUnionTypeIsInstance() {
+    SoyType utype = UnionType.of(IntType.getInstance(), StringType.getInstance());
+    assertIsInstance(utype, INTEGER_DATA, STRING_DATA);
+    assertIsNotInstance(
+        utype,
+        NULL_DATA,
+        BOOLEAN_DATA,
+        FLOAT_DATA,
+        LIST_DATA,
+        MAP_DATA,
+        DICT_DATA,
+        HTML_DATA,
+        ATTRIBUTES_DATA,
+        CSS_DATA,
+        URI_DATA,
+        TRUSTED_RESOURCE_URI_DATA,
+        JS_DATA);
   }
 
   private static void assertIsInstance(SoyType type, SoyValue... values) {

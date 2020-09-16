@@ -355,16 +355,7 @@ public abstract class Expression extends BytecodeProducer {
       @Override
       protected void doGen(CodeBuilder adapter) {
         Expression.this.gen(adapter);
-        // TODO(b/191662001) Remove this once we have fully switched the type
-        // system over. Normally, we should just cast this result over, but in
-        // the case of SoyString, there are temporarily two states (SanitizedContent == SoyString)
-        // and (SanitizedContent != SoyString). This branch bails out to a runtime function that
-        // effectively does the below but also optionally logs a warning.
-        if (resultType().equals(BytecodeUtils.SOY_STRING_TYPE)) {
-          MethodRef.RUNTIME_CHECK_SOY_STRING.invokeUnchecked(adapter);
-        } else {
-          adapter.checkCast(resultType());
-        }
+        adapter.checkCast(resultType());
       }
     };
   }
