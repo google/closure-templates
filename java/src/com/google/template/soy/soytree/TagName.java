@@ -21,12 +21,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Ascii;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -209,9 +210,6 @@ public final class TagName {
           .putAll("th", "td", "th")
           .build();
 
-  private static final TemplateType ELEMENT_TEMPLATE =
-      TemplateType.declaredTypeOf(ImmutableList.of(), SanitizedType.ElementType.getInstance());
-
   private final StandaloneNode node;
   @Nullable private final String nameAsLowerCase;
   @Nullable private final RcDataTagName rcDataTagName;
@@ -251,9 +249,29 @@ public final class TagName {
     return node instanceof RawTextNode;
   }
 
+  public boolean isSlot() {
+    return isStatic() && getStaticTagName().equals("@slot");
+  }
+
+  /**
+   * A tag is a template call if it contains either no parameters or only parameters of type html.
+   * It must also return a html<?> type.
+   */
   public boolean isTemplateCall() {
-    return !isStatic()
-        && ELEMENT_TEMPLATE.isAssignableFromStrict(getDynamicTagName().getExpr().getType());
+    if (isStatic() || getDynamicTagName().getExpr().getType().getKind() != SoyType.Kind.TEMPLATE) {
+      return false;
+    }
+    TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
+    if (!(templateType.getContentKind() instanceof TemplateContentKind.ElementContentKind)) {
+      return false;
+    }
+    for (TemplateType.Parameter parameter : templateType.getParameters()) {
+      SoyType htmlType = SanitizedType.HtmlType.getInstance();
+      if (parameter.isRequired() && !htmlType.isAssignableFromStrict(parameter.getType())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public boolean isWildCard() {

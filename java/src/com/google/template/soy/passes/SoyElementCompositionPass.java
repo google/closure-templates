@@ -16,18 +16,25 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CommandTagAttribute;
+import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlContext;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 
@@ -38,10 +45,6 @@ import com.google.template.soy.soytree.TagName;
 @RunAfter(ResolveExpressionTypesPass.class)
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind UNIMPLEMENTED_FEATURES =
-      SoyErrorKind.of(
-          "Soy Element Composition does not support HTML attributes or slotted content.");
-
   private final ErrorReporter errorReporter;
 
   SoyElementCompositionPass(ErrorReporter errorReporter) {
@@ -50,6 +53,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
+    if (errorReporter.hasErrors()) {
+      return Result.CONTINUE;
+    }
     for (SoyFileNode file : sourceFiles) {
       run(file, idGenerator);
     }
@@ -64,28 +70,64 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       }
       PrintNode printNode = name.getDynamicTagName();
       if (tagNode.getTagName().isTemplateCall()) {
-        if (tagNode.numChildren() > 1) {
-          errorReporter.report(tagNode.getSourceLocation(), UNIMPLEMENTED_FEATURES);
-        }
-        for (HtmlTagNode closeTag : tagNode.getTaggedPairs()) {
-          if (SoyTreeUtils.nextSibling(tagNode) != closeTag) {
-            errorReporter.report(tagNode.getSourceLocation(), UNIMPLEMENTED_FEATURES);
-          }
-          closeTag.getParent().removeChild(closeTag);
+        Preconditions.checkState(tagNode.numChildren() == 1);
+        Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
+        SourceLocation location = tagNode.getSourceLocation();
+        if (!tagNode.getTaggedPairs().isEmpty()) {
+          location = location.extend(tagNode.getTaggedPairs().get(0).getSourceLocation());
         }
         CallBasicNode call =
             new CallBasicNode(
                 nodeIdGen.genId(),
-                SourceLocation.UNKNOWN,
+                location,
                 SourceLocation.UNKNOWN,
                 printNode.getExpr().getRoot().copy(new CopyState()),
                 ImmutableList.of(),
                 false,
                 errorReporter);
+        if (!tagNode.getTaggedPairs().isEmpty()) {
+          HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
+          SoyNode next = SoyTreeUtils.nextSibling(tagNode);
+          while (next != closeTag) {
+            next = consumeSlot(call, next, nodeIdGen);
+          }
+          closeTag.getParent().removeChild(closeTag);
+        }
         call.getCalleeExpr().setType(printNode.getExpr().getType());
         call.setHtmlContext(HtmlContext.HTML_PCDATA);
         tagNode.getParent().replaceChild(tagNode, call);
       }
     }
+  }
+
+  private SoyNode consumeSlot(CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
+    HtmlOpenTagNode nextOpenTag = (HtmlOpenTagNode) startNode;
+    HtmlAttributeNode attributeNode = (HtmlAttributeNode) nextOpenTag.getChild(1);
+    HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
+    CallParamContentNode callParamContent =
+        new CallParamContentNode(
+            nodeIdGen.genId(),
+            startNode.getSourceLocation(),
+            SourceLocation.UNKNOWN,
+            Identifier.create(attributeNode.getStaticKey(), SourceLocation.UNKNOWN),
+            new CommandTagAttribute(
+                Identifier.create("kind", SourceLocation.UNKNOWN),
+                QuoteStyle.SINGLE,
+                "html",
+                startNode.getSourceLocation().extend(closeTag.getSourceLocation()),
+                SourceLocation.UNKNOWN),
+            errorReporter);
+    callNode.addChild(callParamContent);
+    SoyNode.StandaloneNode next = (SoyNode.StandaloneNode) SoyTreeUtils.nextSibling(nextOpenTag);
+    while (next != closeTag) {
+      SoyNode.StandaloneNode sibling = (SoyNode.StandaloneNode) SoyTreeUtils.nextSibling(next);
+      next.getParent().removeChild(next);
+      callParamContent.addChild(next);
+      next = sibling;
+    }
+    nextOpenTag.getParent().removeChild(nextOpenTag);
+    SoyNode retNode = SoyTreeUtils.nextSibling(closeTag);
+    closeTag.getParent().removeChild(closeTag);
+    return retNode;
   }
 }

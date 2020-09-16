@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.Optional;
-import java.util.TreeMap;
 
 /**
  * The different types for template kind="" values. These have a many-to-one relationship with
@@ -58,7 +57,7 @@ public abstract class TemplateContentKind {
     return BasicTemplateContentKind.KINDS_BY_KIND.get(sanitizedContentKind);
   }
 
-  public static final BasicTemplateContentKind HTML =
+  public static final TemplateContentKind HTML =
       BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.get(
           SanitizedContentKind.HTML.asAttributeValue());
 
@@ -68,19 +67,26 @@ public abstract class TemplateContentKind {
    */
   public static class BasicTemplateContentKind extends TemplateContentKind {
 
-    private static final ImmutableMap<SanitizedContentKind, BasicTemplateContentKind> KINDS_BY_KIND;
-    private static final ImmutableMap<String, BasicTemplateContentKind> KINDS_BY_ATTR_VALUE;
+    private static final ImmutableMap<SanitizedContentKind, TemplateContentKind> KINDS_BY_KIND;
+    private static final ImmutableMap<String, TemplateContentKind> KINDS_BY_ATTR_VALUE;
 
     static {
-      TreeMap<SanitizedContentKind, BasicTemplateContentKind> kindsByKind = new TreeMap<>();
-      TreeMap<String, BasicTemplateContentKind> kindsByAttributeValue = new TreeMap<>();
+      ImmutableMap.Builder<SanitizedContentKind, TemplateContentKind> kindsByKind =
+          new ImmutableMap.Builder<>();
+      ImmutableMap.Builder<String, TemplateContentKind> kindsByAttributeValue =
+          new ImmutableMap.Builder<>();
       for (SanitizedContentKind kind : SanitizedContentKind.values()) {
-        BasicTemplateContentKind basicKind = new BasicTemplateContentKind(kind);
-        kindsByKind.put(kind, basicKind);
-        kindsByAttributeValue.put(kind.asAttributeValue(), basicKind);
+        TemplateContentKind contentKind;
+        if (kind == SanitizedContentKind.HTML_ELEMENT) {
+          contentKind = new ElementContentKind("html<?>");
+        } else {
+          contentKind = new BasicTemplateContentKind(kind);
+        }
+        kindsByKind.put(kind, contentKind);
+        kindsByAttributeValue.put(kind.asAttributeValue(), contentKind);
       }
-      KINDS_BY_KIND = ImmutableMap.copyOf(kindsByKind);
-      KINDS_BY_ATTR_VALUE = ImmutableMap.copyOf(kindsByAttributeValue);
+      KINDS_BY_KIND = kindsByKind.build();
+      KINDS_BY_ATTR_VALUE = kindsByAttributeValue.build();
     }
 
     private final SanitizedContentKind sanitizedContentKind;

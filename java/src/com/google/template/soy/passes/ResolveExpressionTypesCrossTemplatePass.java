@@ -16,11 +16,17 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
+import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
@@ -34,9 +40,12 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
+import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -66,11 +75,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Pass that runs secondary resolution of expressions after the template registry is executed.
  * Currently it: Upgrades template types from the "named template" placeholder type to proper types.
- * Validates Soy Element Composition
+ * Validates Element Calls
  */
 @RunAfter(ResolveExpressionTypesPass.class)
 final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPass {
@@ -81,7 +91,8 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
   private static final SoyErrorKind ELEMENT_CALL_TO_HTML_TEMPLATE =
       SoyErrorKind.of(
-          "Expected a template with kind 'html<?>' that is completely bound, but found `{0}`.");
+          "Expected a template with kind 'html<?>' that is completely bound or only has html"
+              + " parameters, but found `{0}`.");
 
   private static final SoyErrorKind ONLY_STRICT_HTML_TEMPLATES_ALLOWED =
       SoyErrorKind.of(
@@ -97,6 +108,31 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
   private static final SoyErrorKind NEED_WRAP =
       SoyErrorKind.of("A dynamic tag name should be wrapped in the ''legacyDynamicTag'' function.");
+
+  private static final SoyErrorKind UNIMPLEMENTED_FEATURES =
+      SoyErrorKind.of("Element calls do not support HTML attributes.");
+
+  private static final SoyErrorKind ONLY_ONE_CLOSE_TAG =
+      SoyErrorKind.of("Element calls require exactly one close tag.");
+
+  private static final SoyErrorKind NO_ATTRIBUTES_ON_SLOT =
+      SoyErrorKind.of("Slot elements cannot have attributes.");
+
+  private static final SoyErrorKind SLOTS_ONLY_ONE_CLOSE_TAG =
+      SoyErrorKind.of("Slot elements cannot have more than one close tag.");
+
+  private static final SoyErrorKind SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL =
+      SoyErrorKind.of("Slot elements can only be direct descendents of template calls.");
+
+  private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
+  private static final SoyErrorKind PASSES_UNUSED_PARAM =
+      SoyErrorKind.of(
+          "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
+          StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
+
+  private static final SoyErrorKind ONLY_SLOTS_ALLOWED =
+      SoyErrorKind.of("Element calls require all children to be <@slot> elements.");
 
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
@@ -210,6 +246,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
   private void handleDynamicTagAndCheckForLegacyDynamicTags(SoyFileNode file) {
     Set<FunctionNode> correctlyPlaced = new HashSet<>();
+    Set<HtmlTagNode> allowedSlots = new HashSet<>();
     for (HtmlTagNode tagNode :
         SoyTreeUtils.getAllMatchingNodesOfType(
             file, HtmlTagNode.class, (tag) -> !tag.getTagName().isStatic())) {
@@ -222,6 +259,8 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
             tagNode.getSourceLocation(),
             ELEMENT_CALL_TO_HTML_TEMPLATE,
             tagNode.getTagName().getDynamicTagName().getExpr().getType());
+      } else {
+        validateTemplateCall(tagNode, allowedSlots::add);
       }
     }
     // No other uses of legacyDynamicTag are allowed.
@@ -231,6 +270,95 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         errorReporter.report(fn.getSourceLocation(), ILLEGAL_USE);
       }
     }
+    for (HtmlTagNode tagNode :
+        SoyTreeUtils.getAllMatchingNodesOfType(
+            file,
+            HtmlOpenTagNode.class,
+            (tag) -> tag.getTagName().isSlot() && !allowedSlots.contains(tag))) {
+      errorReporter.report(
+          tagNode.getSourceLocation(), SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL);
+    }
+  }
+
+  private void validateTemplateCall(HtmlTagNode openTagNode, Consumer<HtmlTagNode> consumer) {
+    if (openTagNode.numChildren() != 1) {
+      errorReporter.report(openTagNode.getSourceLocation(), UNIMPLEMENTED_FEATURES);
+    }
+
+    if (openTagNode.getTaggedPairs().size() > 1) {
+      errorReporter.report(openTagNode.getSourceLocation(), ONLY_ONE_CLOSE_TAG);
+    }
+    HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
+    SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
+    List<String> seenParams = new ArrayList<>();
+    while (next != closeTag) {
+      if (next == null) {
+        break;
+      }
+      next =
+          consumeSlot(
+              next,
+              openTagNode.getTagName().getDynamicTagName().getExpr(),
+              openTagNode.getSourceLocation(),
+              seenParams,
+              consumer);
+    }
+    TemplateType templateType =
+        (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
+    templateType.getParameters().stream()
+        .filter(p -> !seenParams.contains(p.getName()) && p.isRequired())
+        .forEach(
+            p -> errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName()));
+  }
+
+  private SoyNode consumeSlot(
+      SoyNode startNode,
+      ExprNode template,
+      SourceLocation templateLocation,
+      List<String> seenParams,
+      Consumer<HtmlTagNode> consumer) {
+    if (!(startNode instanceof HtmlOpenTagNode)
+        || !((HtmlOpenTagNode) startNode).getTagName().isSlot()) {
+      errorReporter.report(startNode.getSourceLocation(), ONLY_SLOTS_ALLOWED);
+      return null;
+    }
+    HtmlOpenTagNode nextOpenTag = (HtmlOpenTagNode) startNode;
+    if (nextOpenTag.numChildren() != 2) {
+      errorReporter.report(nextOpenTag.getSourceLocation(), NO_ATTRIBUTES_ON_SLOT);
+      return null;
+    }
+    if (nextOpenTag.getTaggedPairs().size() > 1) {
+      errorReporter.report(nextOpenTag.getSourceLocation(), SLOTS_ONLY_ONE_CLOSE_TAG);
+      return null;
+    }
+    HtmlAttributeNode attributeNode = (HtmlAttributeNode) nextOpenTag.getChild(1);
+    if (attributeNode.hasValue() || attributeNode.getStaticKey() == null) {
+      errorReporter.report(attributeNode.getSourceLocation(), NO_ATTRIBUTES_ON_SLOT);
+      return null;
+    }
+    TemplateType templateType = (TemplateType) template.getType();
+    boolean containsParam =
+        templateType.getParameters().stream()
+            .anyMatch(p -> p.getName().equals(attributeNode.getStaticKey()));
+    if (!containsParam) {
+      errorReporter.report(
+          templateLocation,
+          PASSES_UNUSED_PARAM,
+          attributeNode.getStaticKey(),
+          template.toSourceString(),
+          SoyErrors.getDidYouMeanMessage(
+              templateType.getParameters().stream()
+                  .map(p -> p.getName())
+                  .collect(toImmutableList()),
+              attributeNode.getStaticKey()));
+    }
+    if (seenParams.contains(attributeNode.getStaticKey())) {
+      errorReporter.report(templateLocation, DUPLICATE_PARAM, attributeNode.getStaticKey());
+    }
+    seenParams.add(attributeNode.getStaticKey());
+    HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
+    consumer.accept(nextOpenTag);
+    return SoyTreeUtils.nextSibling(closeTag);
   }
 
   private void handleDynamicTag(HtmlTagNode tagNode, Set<FunctionNode> correctlyPlaced) {
