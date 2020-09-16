@@ -16,6 +16,7 @@
 
 package com.google.template.soy.invocationbuilders.passes;
 
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static com.google.template.soy.invocationbuilders.passes.InvocationBuilderTypeUtils.upcastTypesForIndirectParams;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
@@ -26,6 +27,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamStatus;
@@ -123,7 +125,11 @@ public class SoyFileNodeTransformer {
 
     static TemplateInfo error(TemplateNode template, TemplateStatus status) {
       return new AutoValue_SoyFileNodeTransformer_TemplateInfo(
-          generateTemplateClassName(template), ImmutableList.of(), status, template);
+          generateTemplateClassName(template),
+          ImmutableList.of(),
+          status,
+          template,
+          template.getTemplateNameLocation());
     }
 
     /** Returns the fully qualified name of the generated SoyTemplate implementation. */
@@ -134,6 +140,8 @@ public class SoyFileNodeTransformer {
     public abstract TemplateStatus status();
 
     protected abstract TemplateNode template();
+
+    public abstract SourceLocation sourceLocation();
 
     public boolean complete() {
       return status() == TemplateStatus.HANDLED
@@ -185,7 +193,12 @@ public class SoyFileNodeTransformer {
   public abstract static class ParamInfo {
     static ParamInfo of(TemplateParam param, ParamStatus status) {
       return of(
-          Parameter.fromParam(param), status, false, param.isInjected(), ParamFutureStatus.HANDLED);
+          Parameter.fromParam(param),
+          status,
+          false,
+          param.isInjected(),
+          ParamFutureStatus.HANDLED,
+          param.getSourceLocation());
     }
 
     static ParamInfo of(TemplateParam param, ParamStatus status, boolean indirect) {
@@ -194,11 +207,12 @@ public class SoyFileNodeTransformer {
           status,
           indirect,
           param.isInjected(),
-          ParamFutureStatus.HANDLED);
+          ParamFutureStatus.HANDLED,
+          param.getSourceLocation());
     }
 
     static ParamInfo of(Parameter param, ParamStatus status, boolean indirect) {
-      return of(param, status, indirect, false, ParamFutureStatus.HANDLED);
+      return of(param, status, indirect, false, ParamFutureStatus.HANDLED, UNKNOWN);
     }
 
     static ParamInfo of(
@@ -206,9 +220,10 @@ public class SoyFileNodeTransformer {
         ParamStatus status,
         boolean indirect,
         boolean injected,
-        ParamFutureStatus futureStatus) {
+        ParamFutureStatus futureStatus,
+        SourceLocation sourceLocation) {
       return new AutoValue_SoyFileNodeTransformer_ParamInfo(
-          param, status, indirect, injected, futureStatus);
+          param, status, indirect, injected, futureStatus, sourceLocation);
     }
 
     private int uniqueSerial = 0;
@@ -222,6 +237,8 @@ public class SoyFileNodeTransformer {
     public abstract boolean injected();
 
     public abstract ParamFutureStatus futureStatus();
+
+    public abstract SourceLocation sourceLocation();
 
     public String name() {
       return param().getName();
@@ -304,7 +321,11 @@ public class SoyFileNodeTransformer {
   private TemplateInfo transform(TemplateNode template, String className) {
     List<ParamInfo> params = getAllParams(template);
     return new AutoValue_SoyFileNodeTransformer_TemplateInfo(
-        className, ImmutableList.copyOf(params), TemplateStatus.HANDLED, template);
+        className,
+        ImmutableList.copyOf(params),
+        TemplateStatus.HANDLED,
+        template,
+        template.getTemplateNameLocation());
   }
 
   private List<ParamInfo> getAllParams(TemplateNode template) {
@@ -435,7 +456,8 @@ public class SoyFileNodeTransformer {
             previous.status(),
             previous.indirect(),
             previous.injected(),
-            futureStatus));
+            futureStatus,
+            previous.sourceLocation()));
   }
 
   private static void changeParamStatus(
@@ -448,7 +470,8 @@ public class SoyFileNodeTransformer {
             newStatus,
             previous.indirect(),
             previous.injected(),
-            previous.futureStatus()));
+            previous.futureStatus(),
+            previous.sourceLocation()));
   }
 
   private static String modifyIndirectDesc(

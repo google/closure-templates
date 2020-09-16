@@ -693,7 +693,8 @@ public final class SoyFileSet {
           SoyFileSetNode soyTree = result.fileSet();
 
           // Generate template invocation builders for the soy tree.
-          return new GenInvocationBuildersVisitor(javaPackage, registry).exec(soyTree);
+          return new GenInvocationBuildersVisitor(errorReporter, javaPackage, registry)
+              .exec(soyTree);
         });
   }
 

@@ -17,6 +17,7 @@
 package com.google.template.soy.invocationbuilders.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.ADD_TO_LIST_PARAM;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.AS_RECORD;
 import static com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils.INDIRECT_P;
@@ -35,6 +36,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.invocationbuilders.javatypes.CodeGenUtils;
 import com.google.template.soy.invocationbuilders.javatypes.FutureJavaType;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
@@ -55,7 +58,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * Visitor for generating Java template parameter builders (see {@link
@@ -69,20 +71,60 @@ import java.util.logging.Logger;
 public final class GenInvocationBuildersVisitor
     extends AbstractSoyNodeVisitor<ImmutableList<GeneratedFile>> {
 
-  private static final Logger logger =
-      Logger.getLogger(GenInvocationBuildersVisitor.class.getName());
-
   private static final String TEMPLATE_NAME_FIELD = "__NAME__";
   private static final String PARAMS_FIELD = "__PARAMS__";
   private static final String PROTOS_FIELD = "__PROTOS__";
   private static final String DEFAULT_INSTANCE_FIELD = "__DEFAULT_INSTANCE__";
 
+  private static final SoyErrorKind TYPE_COLLISION =
+      SoyErrorKind.of(
+          "Parameter ''{0}'' in {1} has different types in different templates. No parameter"
+              + " setter generated.");
+  private static final SoyErrorKind INDIRECT_PROTO =
+      SoyErrorKind.of(
+          "Indirect parameter ''{0}'' in {1} is of type proto or proto enum. No parameter setter"
+              + " generated.");
+  private static final SoyErrorKind TEMPLATE_NAME_COLLISION =
+      SoyErrorKind.of(
+          "When generating Soy Java Template Builders, the template: {0} generated the same Java"
+              + " UpperCamelCase name as another template in this file, or collided with a"
+              + " reserved identifier: "
+              + SoyFileNodeTransformer.RESERVED_IDENTIFIERS
+              + ". This template was skipped during Soy java_builders generation. To use this API,"
+              + " all Soy template names in a given file should be unique when converted to"
+              + " UpperCamelCase (with non-alphanumeric characters stripped). The generated Java"
+              + " class name was: {1}.");
+  private static final SoyErrorKind PARAM_NAME_COLLISION =
+      SoyErrorKind.of(
+          "When generating Soy Java Template Builders, the param named {0} in template {1}"
+              + " generated the same UpperCamelCase name as another parameter, or collided with"
+              + " a reserved identifier: "
+              + SoyFileNodeTransformer.RESERVED_IDENTIFIERS
+              + ". Param: {0} is being skipped (no setters will be generated for this param). The"
+              + " generated setter name was: {2}. To use this API, all parameter names for a given"
+              + " template should be unique when converted to UpperCamelCase (with"
+              + " non-alphanumeric characters stripped).");
+  private static final SoyErrorKind FILE_NAME_COLLISION =
+      SoyErrorKind.of(
+          "While generating Soy Java invocation builders, multiple files in this soy fileset"
+              + " mapped to the same file name: {0}. To use this api, soy file names should be"
+              + " unique when converted to UpperCamelCase (with non-alpha-numeric characters"
+              + " stripped).");
+  private static final SoyErrorKind FUTURE_NAME_COLLISION =
+      SoyErrorKind.of(
+          "Achievement unlocked. You have a template with parameters named {0} and"
+              + " {0}Future, preventing a future setter from being created for the first"
+              + " parameter.");
+
+  private final ErrorReporter errorReporter;
   private final SoyFileNodeTransformer transformer;
 
   private IndentedLinesBuilder ilb; // Line formatter for the generated code.
   private ImmutableList.Builder<GeneratedFile> generatedFiles; // The generated Java files to write.
 
-  public GenInvocationBuildersVisitor(String javaPackage, TemplateRegistry templateRegistry) {
+  public GenInvocationBuildersVisitor(
+      ErrorReporter errorReporter, String javaPackage, TemplateRegistry templateRegistry) {
+    this.errorReporter = errorReporter;
     this.transformer = new SoyFileNodeTransformer(javaPackage, templateRegistry);
   }
 
@@ -153,7 +195,8 @@ public final class GenInvocationBuildersVisitor
                   visitTemplateInfo(t);
                   break;
                 case NAME_COLLISION:
-                  logDuplicateTemplateNameWarning(t.templateName(), t.className());
+                  errorReporter.warn(
+                      t.sourceLocation(), TEMPLATE_NAME_COLLISION, t.templateName(), t.className());
                   break;
               }
             });
@@ -305,24 +348,28 @@ public final class GenInvocationBuildersVisitor
                     case UNHANDLED_TYPE:
                       return true;
                     case NAME_COLLISION:
-                      logDuplicateParamNameWarning(
-                          info.name(), info.setterName(), template.templateName());
+                      errorReporter.warn(
+                          info.sourceLocation(),
+                          PARAM_NAME_COLLISION,
+                          info.name(),
+                          template.templateName(),
+                          info.setterName());
                       return true;
                     case JAVA_INCOMPATIBLE:
                       break;
                     case INDIRECT_INCOMPATIBLE_TYPES:
-                      logger.warning(
-                          String.format(
-                              "Parameter '%s' in %s has different types in different templates. No"
-                                  + " parameter setter generated.",
-                              info.name(), template.templateName()));
+                      errorReporter.warn(
+                          info.sourceLocation(),
+                          TYPE_COLLISION,
+                          info.name(),
+                          template.templateName());
                       break;
                     case INDIRECT_PROTO:
-                      logger.warning(
-                          String.format(
-                              "Indirect parameter '%s' in %s is of type proto or proto enum. No"
-                                  + " parameter setter generated.",
-                              info.name(), template.templateName()));
+                      errorReporter.warn(
+                          info.sourceLocation(),
+                          INDIRECT_PROTO,
+                          info.name(),
+                          template.templateName());
                       break;
                   }
                   return false;
@@ -560,12 +607,7 @@ public final class GenInvocationBuildersVisitor
         }
         break;
       case NAME_COLLISION:
-        logger.warning(
-            String.format(
-                "Achievement unlocked. You have a template with parameters named %s and"
-                    + " %sFuture, preventing a future setter from being created for the first"
-                    + " parameter.",
-                param.name(), param.name()));
+        errorReporter.warn(param.sourceLocation(), FUTURE_NAME_COLLISION, param.name());
         break;
       case UNHANDLED:
         break;
@@ -699,66 +741,16 @@ public final class GenInvocationBuildersVisitor
     return newType;
   }
 
-  /**
-   * Logs a warning if two templates in the same soy file mapped to the same UpperCamelCase java
-   * class name.
-   */
-  private static void logDuplicateTemplateNameWarning(
-      String templateName, String generatedClassName) {
-    logger.warning(
-        String.format(
-            "When generating Soy Java Template Builders, the template: %s generated the same Java"
-                + " UpperCamelCase name as another template in this file, or collided with a"
-                + " reserved identifier: "
-                + SoyFileNodeTransformer.RESERVED_IDENTIFIERS
-                + ".\n"
-                + "This template was skipped during Soy java_builders generation.\n"
-                + "To use this API, all Soy template names in a given file should be unique when "
-                + "converted to UpperCamelCase (with non-alphanumeric characters stripped).\n"
-                + "The generated Java class name was: %s.",
-            templateName,
-            generatedClassName));
-  }
-
-  /**
-   * Logs a warning if two params generate the same upper camel case name (which means we need to
-   * skip over the param and not generate setters for it.
-   */
-  private static void logDuplicateParamNameWarning(
-      String templateParamName, String setterName, String templateName) {
-    logger.warning(
-        String.format(
-            "When generating Soy Java Template Builders, the param named %s in template %s"
-                + " generated the same UpperCamelCase name as another parameter, or collided with"
-                + " a reserved identifier: "
-                + SoyFileNodeTransformer.RESERVED_IDENTIFIERS
-                + ".\n"
-                + "Param: %s is being skipped (no setters will be generated for this param). The "
-                + "generated setter name was: %s.\n"
-                + "To use this API, all parameter names for a given template should be unique "
-                + "when converted to UpperCamelCase (with non-alphanumeric characters stripped).\n",
-            templateParamName,
-            templateName,
-            templateParamName,
-            setterName));
-  }
-
   /** Logs a warning if two soy files mapped to the same generated java file name. */
-  private static void logWarningIfFilenamesNotUnique(ImmutableList<GeneratedFile> files) {
+  private void logWarningIfFilenamesNotUnique(ImmutableList<GeneratedFile> files) {
     ImmutableList<String> duplicateFilenames =
         files.stream().collect(groupingBy(GeneratedFile::fileName, counting())).entrySet().stream()
             .filter(e -> e.getValue() > 1) // We only care about duplicate filenames.
-            .map(e -> e.getKey())
+            .map(Map.Entry::getKey)
             .collect(toImmutableList());
 
     for (String fileName : duplicateFilenames) {
-      logger.warning(
-          "While generating Soy Java invocation builders, multiple files in this soy fileset"
-              + " mapped to the same file name: "
-              + fileName
-              + ".\n"
-              + " To use this api, soy file names should be unique when"
-              + " converted to UpperCamelCase (with non-alpha-numeric characters stripped).\n");
+      errorReporter.warn(UNKNOWN, FILE_NAME_COLLISION, fileName);
     }
   }
 
