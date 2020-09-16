@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
@@ -1134,27 +1135,62 @@ public final class SoyFileSet {
         });
   }
 
+  /** Returns the result of {@link #compileForAnalysis}. */
+  @AutoValue
+  public abstract static class AnalysisResult {
+    AnalysisResult() {}
+
+    /**
+     * The template registry, will be empty if errors occurred early and it couldn't be constructed.
+     */
+    public abstract Optional<TemplateRegistry> registry();
+
+    /** The full parsed AST. */
+    public abstract SoyFileSetNode fileSet();
+
+    /** Compiler warnings. This will include errors if {@code treatErrorsAsWarnings} was set. */
+    public abstract ImmutableList<SoyError> warnings();
+  }
+
   /** Performs enough work to retrieve all possible warnings in a compile. */
-  public ParseResult compileForAnalysis() {
+  public AnalysisResult compileForAnalysis(boolean treatErrorsAsWarnings) {
     return entryPoint(
         () -> {
           disallowExternalCalls();
-          return parse(
-              passManagerBuilder()
-                  // the optimizer mutates the AST heavily which inhibits certain source analysis
-                  // rules.
-                  .optimize(false)
-                  .astRewrites(false)
-                  // skip adding extra attributes
-                  .addHtmlAttributesForDebugging(false)
-                  // skip the autoescaper
-                  .insertEscapingDirectives(false)
-                  .desugarHtmlAndStateNodes(false)
-                  // TODO(lukes): This is needed for kythe apparently
-                  .allowUnknownGlobals()
-                  .allowUnknownJsGlobals()
-                  .allowV1Expression(),
-              typeRegistry);
+          ParseResult result =
+              parse(
+                  passManagerBuilder()
+                      // the optimizer mutates the AST heavily which inhibits certain source
+                      // analysis
+                      // rules.
+                      .optimize(false)
+                      .astRewrites(false)
+                      // skip adding extra attributes
+                      .addHtmlAttributesForDebugging(false)
+                      // skip the autoescaper
+                      .insertEscapingDirectives(false)
+                      .desugarHtmlAndStateNodes(false)
+                      // TODO(lukes): This is needed for kythe apparently
+                      .allowUnknownGlobals()
+                      .allowUnknownJsGlobals()
+                      .allowV1Expression(),
+                  typeRegistry);
+          ImmutableList<SoyError> warnings;
+          if (treatErrorsAsWarnings) {
+            // we are essentially ignoring errors
+            resetErrorReporter();
+            warnings =
+                ImmutableList.<SoyError>builder()
+                    .addAll(errorReporter.getErrors())
+                    .addAll(errorReporter.getWarnings())
+                    .build();
+          } else {
+            warnings = errorReporter.getWarnings();
+          }
+          return new AutoValue_SoyFileSet_AnalysisResult(
+              result.hasRegistry() ? Optional.of(result.registry()) : Optional.empty(),
+              result.fileSet(),
+              warnings);
         });
   }
 
