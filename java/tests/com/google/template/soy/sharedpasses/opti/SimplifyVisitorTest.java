@@ -197,6 +197,18 @@ public class SimplifyVisitorTest {
   }
 
   @Test
+  public void testCallBind() {
+    assertSimplification(
+            "{@param tpl: (a: string, b: string) => html<?>}",
+            "{call $tpl.bind(record(a:'anA'))}",
+            "  {param b: 'aB' /}",
+            "{/call}")
+        .isEqualTo(
+            "{@param tpl: (a: string, b: string) => html<?>}\n"
+                + "{call $tpl}{param a: 'anA' /}{param b: 'aB' /}{/call}");
+  }
+
+  @Test
   public void testInlineLets() {
     assertSimplification("{@param p: ?}", "{let $a : $p /}", "{let $b : $a /}", "{$b}")
         .isEqualTo(normalized("{@param p: ?}", "{$p}"));
