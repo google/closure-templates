@@ -16,9 +16,10 @@
 
 package com.google.template.soy.shared.internal;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
@@ -184,7 +185,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
     for (FileRef input : inputs) {
       try {
         boolean inGeneratedCode = false;
-        for (String line : Files.readLines(input.file, Charsets.UTF_8)) {
+        for (String line : Files.readLines(input.file, UTF_8)) {
           // Skip code between generated code markers so that this transformation is idempotent.
           // We can run an old output through this class, and get the latest version out.
           if (inGeneratedCode) {
@@ -209,7 +210,7 @@ public abstract class AbstractGenerateSoyEscapingDirectiveCode extends Task {
 
     // Output a file now that we know generation hasn't failed.
     try {
-      Files.asCharSink(output.file, Charsets.UTF_8).write(sb);
+      Files.asCharSink(output.file, UTF_8).write(sb);
     } catch (IOException ex) {
       // Make sure an abortive write does not leave a file w
       output.file.delete();
