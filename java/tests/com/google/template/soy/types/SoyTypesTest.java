@@ -89,7 +89,11 @@ public class SoyTypesTest {
     assertThatSoyType("string").isNotAssignableFromStrict("null");
     assertThatSoyType("string").isNotAssignableFromStrict("any");
     assertThatSoyType("string").isNotAssignableFromStrict("?");
-    assertThatSoyType("string").isAssignableFromLoose("?");
+    assertThatSoyType("string").isAssignableFromLoose("string");
+    assertThatSoyType("string").isNotAssignableFromStrict("int");
+    assertThatSoyType("string").isNotAssignableFromStrict("null");
+    assertThatSoyType("string").isNotAssignableFromStrict("any");
+    assertThatSoyType("string").isNotAssignableFromStrict("?");
   }
 
   @Test

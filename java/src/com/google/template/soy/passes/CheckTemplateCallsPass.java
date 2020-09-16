@@ -49,7 +49,6 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
@@ -90,8 +89,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
-  private static final SoyErrorKind PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT =
-      SoyErrorKind.of("Passing protobuf {0} of type {1} to an untyped template is not allowed.");
   private static final SoyErrorKind STRICT_HTML =
       SoyErrorKind.of(
           "Found call to non stricthtml template. Strict HTML template "
@@ -325,51 +322,20 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         SoyType argType,
         SoyType formalType,
         TemplateParamTypes calleeParams) {
-      if (formalType.getKind() == SoyType.Kind.ANY) {
-        // Special rules for unknown / any
-        if (argType.getKind() == SoyType.Kind.PROTO) {
-          errorReporter.report(
-              location, PASSING_PROTOBUF_FROM_STRICT_TO_NON_STRICT, paramName, argType);
+      // We use loose assignability because soy templates generate runtime type checking code for
+      // parameter types.  So passing loosely typed values will generally be checked at runtime.
+      // Our runtime type checking code isn't perfect and varies by backend.
+      if (!formalType.isAssignableFromLoose(argType)) {
+        if (calleeParams.isIndirect(paramName)
+            && formalType.isAssignableFromLoose(SoyTypes.tryRemoveNull(argType))) {
+          // Special case for indirect params: Allow a nullable type to be assigned
+          // to a non-nullable type if the non-nullable type is an indirect parameter type.
+          // The reason is because without flow analysis, we can't know whether or not
+          // there are if-statements preventing null from being passed as an indirect
+          // param, so we assume all indirect params are optional.
+          return false;
         }
-      } else if (argType.getKind() == SoyType.Kind.UNKNOWN
-          // TODO(b/69048281): consider allowing passing `?`-typed values to `map`-typed params.
-          // As long as there are two map types, `map` cannot be assigned <em>to</em> the unknown
-          // type; the jssrc backend wouldn't know what code to generate for bracket access on a
-          // `?`-typed value. However, assigning `map` <em>from</em> the unknown type is possible
-          // and perhaps useful, since it is equivalent to a runtime type assertion. During the
-          // legacy_object_map to map migration, it is disallowed in order to catch bugs in the
-          // migration tool (e.g. upgrading a callee's param to `map` without inserting
-          // `legacyObjectMapToMap` calls in the caller). But it may be useful in order to work with
-          // recursive map-like structures such as JSON.
-          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.MAP
-          // ve and ve_data usage is limited to prevent abuse, so don't allow the unknown type to be
-          // upgraded to the ve or ve_data types.
-          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.VE
-          && SoyTypes.tryRemoveNull(formalType).getKind() != Kind.VE_DATA) {
-        // Special rules for unknown / any
-        //
-        // This check disabled: We now allow maps created from protos to be passed
-        // to a function accepting a proto, this makes migration easier.
-        // (See GenJsCodeVisitor.genParamTypeChecks).
-        // TODO(user): Re-enable at some future date?
-        // if (formalType.getKind() == SoyType.Kind.PROTO || SoyType.Kind.PROTO_ENUM) {
-        //   reportProtoArgumentTypeMismatch(call, paramName, formalType, argType);
-        // }
-      } else {
-        if (!formalType.isAssignableFromStrict(argType)) {
-          if (calleeParams.isIndirect(paramName)
-              && argType.getKind() == SoyType.Kind.UNION
-              && ((UnionType) argType).isNullable()
-              && SoyTypes.makeNullable(formalType).isAssignableFromStrict(argType)) {
-            // Special case for indirect params: Allow a nullable type to be assigned
-            // to a non-nullable type if the non-nullable type is an indirect parameter type.
-            // The reason is because without flow analysis, we can't know whether or not
-            // there are if-statements preventing null from being passed as an indirect
-            // param, so we assume all indirect params are optional.
-            return false;
-          }
-          errorReporter.report(location, ARGUMENT_TYPE_MISMATCH, paramName, formalType, argType);
-        }
+        errorReporter.report(location, ARGUMENT_TYPE_MISMATCH, paramName, formalType, argType);
       }
       return true;
     }
