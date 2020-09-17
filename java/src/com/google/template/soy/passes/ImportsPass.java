@@ -41,7 +41,10 @@ import java.util.Map;
 abstract class ImportsPass {
 
   private static final SoyErrorKind IMPORT_NOT_IN_DEPS =
-      SoyErrorKind.of("Unknown import dep {0}.{1}", StyleAllowance.NO_PUNCTUATION);
+      SoyErrorKind.of(
+          "Unknown import dep {0}.{1}"
+          ,
+          StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNKNOWN_SYMBOL =
       SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind SYMBOLS_NOT_ALLOWED =
@@ -133,12 +136,13 @@ abstract class ImportsPass {
       }
 
       if (!importExists(node.getImportType(), node.getPath())) {
+        String nodePath = node.getPath();
+        ImmutableSet<String> validPaths = getValidImportPathsForType(node.getImportType());
         errorReporter.report(
             node.getPathSourceLocation(),
             IMPORT_NOT_IN_DEPS,
-            node.getPath(),
-            SoyErrors.getDidYouMeanMessage(
-                getValidImportPathsForType(node.getImportType()), node.getPath()));
+            nodePath,
+            SoyErrors.getDidYouMeanMessage(validPaths, nodePath));
         return;
       }
 
