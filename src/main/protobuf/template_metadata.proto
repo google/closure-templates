@@ -119,19 +119,6 @@ message DataAllCallSituationP {
   repeated string explicitly_passed_parameters = 3;
 }
 
-// A duplicate of SanitizedContentKind
-enum SanitizedContentKindP {
-  UNKNOWN_SANITIZED_CONTENT_KIND = 0;
-  HTML = 1;
-  JS = 2;
-  URI = 3;
-  TRUSTED_RESOURCE_URI = 4;
-  ATTRIBUTES = 5;
-  CSS = 6;
-  TEXT = 7;
-  NONE = 8;
-  HTML_ELEMENT = 9;
-}
 // The kind of the template.
 enum TemplateKindP {
   UNKNOWN_TEMPLATE_KIND = 0;
