@@ -14,6 +14,13 @@ message CssMetadata {
   // All the namespaces required by soy files or templates
   repeated string require_css_names = 1;
 
+  // All the css paths required by soy files or templates via the requirecsspath
+  // namespace attribute.
+  repeated string require_css_paths = 3;
+
+  // For required css names, the paths corresponding to those files.
+  repeated string require_css_paths_from_namespaces = 4;
+
   // All the class names renamed with the css() function
   repeated string css_class_names = 2;
 }

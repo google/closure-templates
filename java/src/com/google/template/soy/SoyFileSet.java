@@ -1114,24 +1114,38 @@ public final class SoyFileSet {
         });
   }
 
+  @AutoValue
+  abstract static class HeaderResult {
+    abstract SoyFileSetNode fileSet();
+
+    abstract TemplateRegistry templateRegistry();
+
+    abstract CssRegistry cssRegistry();
+  }
+
   /**
    * Performs the minimal amount of work needed to calculate TemplateMetadata objects for header
    * compilation.
    */
-  ParseResult compileMinimallyForHeaders() {
+  HeaderResult compileMinimallyForHeaders() {
     return entryPoint(
         () -> {
           disallowExternalCalls();
-          return parse(
-              passManagerBuilder()
-                  // Because we allow this for JS generated templates, we allow this for
-                  // headers.
-                  .allowUnknownJsGlobals()
-                  // Only run passes that not cross template checking.
-                  .addPassContinuationRule(
-                      CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
-                  .allowV1Expression(),
-              typeRegistry);
+          ParseResult parseResult =
+              parse(
+                  passManagerBuilder()
+                      // Because we allow this for JS generated templates, we allow this for
+                      // headers.
+                      .allowUnknownJsGlobals()
+                      // Only run passes that not cross template checking.
+                      .addPassContinuationRule(
+                          CheckTemplateHeaderVarsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
+                      .allowV1Expression(),
+                  typeRegistry);
+          // throw before accessing registry() to make sure it is definitely available.
+          throwIfErrorsPresent();
+          return new AutoValue_SoyFileSet_HeaderResult(
+              parseResult.fileSet(), parseResult.registry(), cssRegistry.get());
         });
   }
 

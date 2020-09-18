@@ -16,10 +16,14 @@
 
 package com.google.template.soy.css;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
+import java.util.Map;
 
 /** Registry of known css symbols provided by the --cssSummaries flag. */
 @Immutable
@@ -28,6 +32,12 @@ public abstract class CssRegistry {
   public abstract ImmutableSet<String> providedSymbols();
 
   abstract ImmutableMap<String, String> filePathToSymbol();
+
+  @Memoized
+  public ImmutableMap<String, String> symbolToFilePath() {
+    return filePathToSymbol().entrySet().stream()
+        .collect(toImmutableMap(Map.Entry::getValue, Map.Entry::getKey));
+  }
 
   public boolean isInRegistry(String symbol) {
     return providedSymbols().contains(symbol);

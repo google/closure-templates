@@ -16,9 +16,11 @@
 
 package com.google.template.soy;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.Iterables;
-import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.css.CssMetadata;
+import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
@@ -68,9 +70,10 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    ParseResult result = sfsBuilder.build().compileMinimallyForHeaders();
+    SoyFileSet.HeaderResult result = sfsBuilder.build().compileMinimallyForHeaders();
     CompilationUnit unit =
-        TemplateMetadataSerializer.compilationUnitFromFileSet(result.fileSet(), result.registry());
+        TemplateMetadataSerializer.compilationUnitFromFileSet(
+            result.fileSet(), result.templateRegistry());
     // some small tests revealed about a 5x compression ratio.  This is likely due to template names
     // sharing common prefixes and repeated parameter names and types.
     try (OutputStream os =
@@ -81,17 +84,23 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
       try (OutputStream os =
           new GZIPOutputStream(
               new FileOutputStream(cssMetadataOutput), /* buffer size */ 64 * 1024)) {
-        calculateCssMetadata(result.fileSet()).writeTo(os);
+        calculateCssMetadata(result.fileSet(), result.cssRegistry()).writeTo(os);
       }
     }
   }
 
-  private static CssMetadata calculateCssMetadata(SoyFileSetNode fileSet) {
-    // We need to remove duplicates and preserve order
+  private static CssMetadata calculateCssMetadata(SoyFileSetNode fileSet, CssRegistry cssRegistry) {
+    // We need to remove duplicates and preserve order, so collect into maps first
     Set<String> requiredCssNames = new LinkedHashSet<>();
+    Set<String> requiredCssPaths = new LinkedHashSet<>();
     Set<String> cssClassNames = new LinkedHashSet<>();
     for (SoyFileNode file : fileSet.getChildren()) {
       requiredCssNames.addAll(file.getRequiredCssNamespaces());
+      for (SoyFileNode.CssPath cssPath : file.getRequiredCssPaths()) {
+        // This should alwayus be present due to the ValidateRequiredCssPass, but that pass isn't
+        // run in the open source release.
+        cssPath.resolvedPath().ifPresent(requiredCssPaths::add);
+      }
       for (TemplateNode template : file.getTemplates()) {
         requiredCssNames.addAll(template.getRequiredCssNamespaces());
         for (FunctionNode fn :
@@ -103,6 +112,14 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
 
     return CssMetadata.newBuilder()
         .addAllRequireCssNames(requiredCssNames)
+        .addAllRequireCssPaths(requiredCssPaths)
+        .addAllRequireCssPathsFromNamespaces(
+            requiredCssNames.stream()
+                .map(namespace -> cssRegistry.symbolToFilePath().get(namespace))
+                // This shouldn't really happen due to the ValidateRequiredCssPass but that pass
+                // doesn't run in the open source build
+                .filter(f -> f != null)
+                .collect(toList()))
         .addAllCssClassNames(cssClassNames)
         .build();
   }

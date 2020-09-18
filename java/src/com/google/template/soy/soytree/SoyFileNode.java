@@ -16,6 +16,9 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -26,6 +29,7 @@ import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.types.SoyTypeRegistry;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -36,6 +40,38 @@ import javax.annotation.Nullable;
  */
 public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     implements SplitLevelTopNode<SoyNode> {
+
+  /** A css path required by a Soy file. Constains both the source text and the resolved file. */
+  public static final class CssPath {
+    private final String sourcePath;
+    private String resolvedPath;
+
+    CssPath(String sourcePath) {
+      this.sourcePath = checkNotNull(sourcePath);
+    }
+
+    private CssPath(CssPath origin) {
+      this.sourcePath = origin.sourcePath;
+      this.resolvedPath = origin.resolvedPath;
+    }
+
+    public String sourcePath() {
+      return sourcePath;
+    }
+
+    public Optional<String> resolvedPath() {
+      return Optional.ofNullable(resolvedPath);
+    }
+
+    public void setResolvedPath(String resolvedPath) {
+      checkState(this.resolvedPath == null);
+      this.resolvedPath = checkNotNull(resolvedPath);
+    }
+
+    CssPath copy() {
+      return new CssPath(this);
+    }
+  }
 
   /** The name and location of the containing delegate package, or null if none. */
   @Nullable private final DelPackageDeclaration delPackage;
@@ -49,7 +85,9 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   private final ImmutableList<Comment> comments;
 
-  private ImportsContext importsContext;
+  private final ImportsContext importsContext;
+
+  private final ImmutableList<CssPath> requiredCssPaths;
 
   /**
    * @param id The id for this node.
@@ -71,6 +109,10 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     this.aliasDeclarations = headerInfo.getAliases(); // immutable
     this.comments = comments;
     this.importsContext = new ImportsContext();
+    this.requiredCssPaths =
+        namespaceDeclaration.getRequiredCssPaths().stream()
+            .map(CssPath::new)
+            .collect(toImmutableList());
   }
 
   /**
@@ -88,6 +130,8 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
     // Imports context must be reset during edit-refresh (can't be set/cached in single file
     // passes).
     this.importsContext = new ImportsContext();
+    this.requiredCssPaths =
+        orig.requiredCssPaths.stream().map(CssPath::copy).collect(toImmutableList());
   }
 
   @Override
@@ -132,14 +176,14 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   }
 
   /** Returns the CSS namespaces required by this file (usable in any template in this file). */
-  public ImmutableList<String> getRequiredCssPaths() {
-    return namespaceDeclaration.getRequiredCssPaths();
+  public ImmutableList<CssPath> getRequiredCssPaths() {
+    return requiredCssPaths;
   }
 
   public ImmutableList<String> getRequireCss() {
-    return new ImmutableList.Builder<String>()
+    return ImmutableList.<String>builder()
         .addAll(getRequiredCssNamespaces())
-        .addAll(getRequiredCssPaths())
+        .addAll(getRequiredCssPaths().stream().map(CssPath::sourcePath).collect(toImmutableList()))
         .build();
   }
 
