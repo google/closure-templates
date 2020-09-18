@@ -347,8 +347,7 @@ public class SoyFileNodeTransformer {
 
     IndirectParamsInfo idi =
         new IndirectParamsCalculator(template.getParent().getTemplateRegistry())
-            .calculateIndirectParams(
-                TemplateMetadata.asTemplateType(TemplateMetadata.fromTemplate(template)));
+            .calculateIndirectParams(TemplateMetadata.fromTemplate(template).getTemplateType());
 
     for (Map.Entry<String, Parameter> entry : idi.indirectParams.entrySet()) {
       String paramName = entry.getKey();

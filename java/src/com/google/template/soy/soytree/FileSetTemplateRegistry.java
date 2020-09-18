@@ -114,7 +114,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
       addTemplateToPerFileRegistry(filePath, template);
       allTemplatesBuilder.put(template.getTemplateName(), template);
 
-      switch (template.getTemplateKind()) {
+      switch (template.getTemplateType().getTemplateKind()) {
         case BASIC:
         case ELEMENT:
           // Case 1: Basic Template or Element node
@@ -226,7 +226,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
     } else {
       String calleeName = ((CallDelegateNode) node).getDelCalleeName();
       return delTemplateSelector.delTemplateNameToValues().get(calleeName).stream()
-          .map(TemplateMetadata::asTemplateType)
+          .map(TemplateMetadata::getTemplateType)
           .collect(toImmutableList());
     }
   }

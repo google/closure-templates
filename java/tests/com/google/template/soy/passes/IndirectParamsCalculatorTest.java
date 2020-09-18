@@ -140,8 +140,7 @@ public final class IndirectParamsCalculatorTest {
     TemplateMetadata b4 = registry.getBasicTemplateOrElement("beta.four");
 
     IndirectParamsInfo ipi =
-        new IndirectParamsCalculator(registry)
-            .calculateIndirectParams(TemplateMetadata.asTemplateType(a0));
+        new IndirectParamsCalculator(registry).calculateIndirectParams(a0.getTemplateType());
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 

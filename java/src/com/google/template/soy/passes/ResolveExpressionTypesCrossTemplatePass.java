@@ -449,21 +449,20 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         // Error reporting here should be handled by StrictDepsPass and CheckDelegatesPass.
         return UnknownType.getInstance();
       }
-      if (basicTemplateOrElement.getTemplateKind() != TemplateType.TemplateKind.BASIC
-          && !isSynthetic) {
+      TemplateType templateType = basicTemplateOrElement.getTemplateType();
+      if (templateType.getTemplateKind() != TemplateType.TemplateKind.BASIC && !isSynthetic) {
         // Only report errors for template literal nodes, to avoid reporting errors multiple times
         // (ie., once for everywhere the 'named' template type has propagated in the expression
         // tree).
         invalidTemplateNames.add(type.getTemplateName());
         if (isTemplateLiteral) {
-          errorReporter.report(
-              ONLY_BASIC_TEMPLATES_ALLOWED, basicTemplateOrElement.getTemplateKind());
+          errorReporter.report(ONLY_BASIC_TEMPLATES_ALLOWED, templateType.getTemplateKind());
           reportedInvalidTemplateNames.add(type.getTemplateName());
         }
         return UnknownType.getInstance();
       }
-      if (basicTemplateOrElement.getContentKind().isHtml()
-          && !basicTemplateOrElement.isStrictHtml()
+      if (templateType.getContentKind().getSanitizedContentKind().isHtml()
+          && !templateType.isStrictHtml()
           && !isSynthetic) {
         // Only report errors for template literal nodes, to avoid reporting errors multiple times
         // (ie., once for everywhere the 'named' template type has propagated in the expression
@@ -476,16 +475,15 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         }
         return UnknownType.getInstance();
       }
-      TemplateType templateType =
-          typeRegistry.internTemplateType(TemplateMetadata.asTemplateType(basicTemplateOrElement));
+      TemplateType internTemplateType = typeRegistry.internTemplateType(templateType);
       if (type.getBoundParameters().isPresent()) {
         return TemplateBindingUtil.bindParameters(
-            templateType,
+            internTemplateType,
             (RecordType) type.getBoundParameters().get().accept(this),
             typeRegistry,
             errorReporter);
       } else {
-        return templateType;
+        return internTemplateType;
       }
     }
 

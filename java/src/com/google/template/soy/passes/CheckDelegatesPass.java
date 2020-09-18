@@ -135,8 +135,10 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         continue;
       }
       Set<Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
-      SanitizedContentKind firstContentKind = firstDelTemplate.getContentKind();
-      boolean firstStrictHtml = firstDelTemplate.isStrictHtml() && firstContentKind.isHtml();
+      SanitizedContentKind firstContentKind =
+          firstDelTemplate.getTemplateType().getContentKind().getSanitizedContentKind();
+      boolean firstStrictHtml =
+          firstDelTemplate.getTemplateType().isStrictHtml() && firstContentKind.isHtml();
       // loop over all members of the deltemplate group.
       for (TemplateMetadata delTemplate : delTemplateGroup) {
         if (firstDelTemplate == delTemplate) {
@@ -145,8 +147,8 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         // Not first template encountered.
         Set<Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
         if (!paramSetsEqual(currRequiredParamSet, firstRequiredParamSet)) {
-          List<Parameter> firstParamList = firstDelTemplate.getParameters();
-          List<Parameter> currParamList = delTemplate.getParameters();
+          List<Parameter> firstParamList = firstDelTemplate.getTemplateType().getParameters();
+          List<Parameter> currParamList = delTemplate.getTemplateType().getParameters();
           Set<Parameter> missingParamSet =
               getRequiredParamsDifference(firstParamList, currParamList);
           Set<Parameter> unexpectedParamSet =
@@ -158,7 +160,8 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
               firstDelTemplate.getSourceLocation().toString(),
               getInconsistentParamMessage(missingParamSet, unexpectedParamSet));
         }
-        if (delTemplate.getContentKind() != firstContentKind) {
+        if (delTemplate.getTemplateType().getContentKind().getSanitizedContentKind()
+            != firstContentKind) {
           // TODO: This is only *truly* a requirement if the strict mode deltemplates are
           // being called by contextual templates. For a strict-to-strict call, everything
           // is escaped at runtime at the call sites. You could imagine delegating between
@@ -170,14 +173,15 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
           errorReporter.report(
               firstDelTemplate.getSourceLocation(),
               STRICT_DELTEMPLATES_WITH_DIFFERENT_CONTENT_KIND,
-              String.valueOf(delTemplate.getContentKind()),
+              String.valueOf(
+                  delTemplate.getTemplateType().getContentKind().getSanitizedContentKind()),
               String.valueOf(firstContentKind),
               delTemplate.getSourceLocation().toString());
         }
         // Check if all del templates have the same settings of strict HTML mode.
         // We do not need to check {@code ContentKind} again since we already did that earlier
         // in this pass.
-        if (delTemplate.isStrictHtml() != firstStrictHtml) {
+        if (delTemplate.getTemplateType().isStrictHtml() != firstStrictHtml) {
           errorReporter.report(
               firstDelTemplate.getSourceLocation(),
               DELTEMPLATES_WITH_DIFFERENT_STRICT_HTML_MODE,
@@ -194,7 +198,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
   }
 
   private static Set<Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
-    return delTemplate.getParameters().stream()
+    return delTemplate.getTemplateType().getParameters().stream()
         .filter(Parameter::isRequired)
         .map(Parameter::toComparable)
         .collect(Collectors.toSet());

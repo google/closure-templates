@@ -77,7 +77,9 @@ public final class BytecodeCompiler {
         new CompiledTemplates(
             /* delTemplateNames=*/ registry.getAllTemplates().stream()
                 .filter(
-                    template -> template.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE)
+                    template ->
+                        template.getTemplateType().getTemplateKind()
+                            == TemplateType.TemplateKind.DELTEMPLATE)
                 .map(TemplateMetadata::getTemplateName)
                 .collect(toImmutableSet()),
             new CompilingClassLoader(

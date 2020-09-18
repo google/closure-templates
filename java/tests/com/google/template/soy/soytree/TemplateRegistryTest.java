@@ -450,8 +450,7 @@ public final class TemplateRegistryTest {
             NO_ATTRS,
             false,
             FAIL);
-    node.getCalleeExpr()
-        .setType(TemplateMetadata.asTemplateType(registry.getBasicTemplateOrElement("ns.foo")));
+    node.getCalleeExpr().setType(registry.getBasicTemplateOrElement("ns.foo").getTemplateType());
     assertThat(registry.getCallContentKind(node)).hasValue(SanitizedContentKind.ATTRIBUTES);
   }
 

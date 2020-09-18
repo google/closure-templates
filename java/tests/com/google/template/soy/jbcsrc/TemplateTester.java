@@ -391,7 +391,10 @@ public final class TemplateTester {
         CompiledTemplates compiledTemplates =
             new CompiledTemplates(
                 /* delTemplateNames=*/ registry.getAllTemplates().stream()
-                    .filter(t -> t.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE)
+                    .filter(
+                        t ->
+                            t.getTemplateType().getTemplateKind()
+                                == TemplateType.TemplateKind.DELTEMPLATE)
                     .map(TemplateMetadata::getTemplateName)
                     .collect(toImmutableSet()),
                 new MemoryClassLoader(classData));

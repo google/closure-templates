@@ -185,8 +185,7 @@ public final class IndirectParamsCalculator {
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateNode node) {
-    return calculateIndirectParams(
-        TemplateMetadata.asTemplateType(templateRegistry.getMetadata(node)));
+    return calculateIndirectParams(templateRegistry.getMetadata(node).getTemplateType());
   }
 
   public IndirectParamsInfo calculateIndirectParams(TemplateType template) {
@@ -252,12 +251,12 @@ public final class IndirectParamsCalculator {
       TemplateMetadata callee,
       Set<String> allCallParamKeys,
       Set<TemplateType> allCallers) {
-    TemplateType calleeSignature = TemplateMetadata.asTemplateType(callee);
+    TemplateType calleeSignature = callee.getTemplateType();
     if (caller.equals(calleeSignature) || allCallers.contains(calleeSignature)) {
       // We never recursive calls to bring in an indirect param.
       return;
     }
-    for (Parameter p : callee.getParameters()) {
+    for (Parameter p : callee.getTemplateType().getParameters()) {
       if (!allCallParamKeys.contains(p.getName())) {
         // For some reason we only record the first one.
         indirectParams.putIfAbsent(p.getName(), p);

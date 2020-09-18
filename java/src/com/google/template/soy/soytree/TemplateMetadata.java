@@ -21,7 +21,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
-import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -147,11 +146,6 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract SoyElementMetadataP getSoyElement();
 
-  // TODO(b/168821294): Inline this method
-  public TemplateType.TemplateKind getTemplateKind() {
-    return getTemplateType().getTemplateKind();
-  }
-
   public abstract String getTemplateName();
 
   /** Guaranteed to be non-null for deltemplates, null otherwise. */
@@ -163,30 +157,10 @@ public abstract class TemplateMetadata {
 
   public abstract TemplateType getTemplateType();
 
-  // TODO(b/168821294): Inline this method
-  public SanitizedContentKind getContentKind() {
-    return getTemplateType().getContentKind().getSanitizedContentKind();
-  }
-
-  // TODO(b/168821294): Inline this method
-  public boolean isStrictHtml() {
-    return getTemplateType().isStrictHtml();
-  }
-
   public abstract Visibility getVisibility();
 
   @Nullable
   public abstract String getDelPackageName();
-
-  // TODO(b/168821294): Inline this method
-  public ImmutableList<Parameter> getParameters() {
-    return getTemplateType().getParameters();
-  }
-
-  // TODO(b/168821294): Inline this method
-  public ImmutableList<DataAllCallSituation> getDataAllCallSituations() {
-    return getTemplateType().getDataAllCallSituations();
-  }
 
   public abstract Builder toBuilder();
 
@@ -215,7 +189,7 @@ public abstract class TemplateMetadata {
 
     public final TemplateMetadata build() {
       TemplateMetadata built = autobuild();
-      if (built.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
+      if (built.getTemplateType().getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE) {
         checkState(built.getDelTemplateName() != null, "Deltemplates must have a deltemplateName");
         checkState(
             built.getDelTemplateVariant() != null, "Deltemplates must have a deltemplateName");
@@ -229,11 +203,6 @@ public abstract class TemplateMetadata {
     }
 
     abstract TemplateMetadata autobuild();
-  }
-
-  // TODO(b/168821294): Inline this method.
-  public static TemplateType asTemplateType(TemplateMetadata templateMetadata) {
-    return templateMetadata.getTemplateType();
   }
 
   private static TemplateType.TemplateKind convertKind(SoyNode.Kind kind) {

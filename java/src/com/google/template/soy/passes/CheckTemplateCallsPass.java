@@ -189,7 +189,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
               .delTemplateNameToValues()
               .get(node.getDelCalleeName());
       for (TemplateMetadata delTemplate : potentialCallees) {
-        TemplateType delTemplateType = TemplateMetadata.asTemplateType(delTemplate);
+        TemplateType delTemplateType = delTemplate.getTemplateType();
         Predicate<String> params = checkCallParamTypes(callerTemplate, node, delTemplateType);
         paramsToCheckByTemplate.put(delTemplate.getTemplateName(), params);
         checkCallParamNames(node, delTemplateType);
@@ -200,8 +200,7 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
       // as an error independently.
       if (!potentialCallees.isEmpty()) {
-        checkStrictHtml(
-            callerTemplate, node, TemplateMetadata.asTemplateType(potentialCallees.get(0)));
+        checkStrictHtml(callerTemplate, node, potentialCallees.get(0).getTemplateType());
       }
     }
 

@@ -134,24 +134,28 @@ public final class TemplateMetadataSerializer {
   }
 
   private static TemplateMetadataP protoFromTemplate(TemplateMetadata meta, SoyFileNode fileNode) {
+    TemplateType templateType = meta.getTemplateType();
     TemplateMetadataP.Builder builder =
         TemplateMetadataP.newBuilder()
             .setTemplateName(
-                meta.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE
+                templateType.getTemplateKind() == TemplateType.TemplateKind.DELTEMPLATE
                     ? meta.getDelTemplateName()
                     : maybeShortenTemplateName(fileNode.getNamespace(), meta.getTemplateName()))
-            .setTemplateKind(TEMPLATE_KIND_CONVERTER.reverse().convert(meta.getTemplateKind()))
+            .setTemplateKind(
+                TEMPLATE_KIND_CONVERTER.reverse().convert(templateType.getTemplateKind()))
             .setVisibility(VISIBILITY_CONVERTER.reverse().convert(meta.getVisibility()))
             .setTemplateType(
                 SoyTypeP.TemplateTypeP.newBuilder()
                     .setReturnType(
-                        SanitizedType.getTypeForContentKind(meta.getContentKind()).toProto())
-                    .addAllParameter(protosFromParameters(meta.getParameters()))
+                        SanitizedType.getTypeForContentKind(
+                                templateType.getContentKind().getSanitizedContentKind())
+                            .toProto())
+                    .addAllParameter(protosFromParameters(templateType.getParameters()))
                     .build())
             .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
-            .setStrictHtml(meta.isStrictHtml())
+            .setStrictHtml(templateType.isStrictHtml())
             .addAllDataAllCallSituation(
-                protosFromCallSitatuations(meta.getDataAllCallSituations(), fileNode));
+                protosFromCallSitatuations(templateType.getDataAllCallSituations(), fileNode));
     // This may be null because some flows such as conformance tests do not run the SoyElementPass.
     if (meta.getHtmlElement() != null && meta.getSoyElement() != null) {
       builder = builder.setHtmlElement(meta.getHtmlElement()).setSoyElement(meta.getSoyElement());
