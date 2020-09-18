@@ -16,7 +16,6 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -25,6 +24,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
@@ -58,31 +58,28 @@ public abstract class TemplateMetadata {
                 SoyElementMetadataP.newBuilder()
                     .setIsSoyElement(template instanceof TemplateElementNode)
                     .build())
-            .setContentKind(template.getContentKind())
-            .setStrictHtml(template.isStrictHtml())
+            .setTemplateType(
+                TemplateType.builder()
+                    .setTemplateKind(convertKind(template.getKind()))
+                    .setContentKind(
+                        TemplateContentKind.fromSanitizedContentKind(template.getContentKind()))
+                    .setStrictHtml(template.isStrictHtml())
+                    .setParameters(directParametersFromTemplate(template))
+                    .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))
+                    .setIdentifierForDebugging(template.getTemplateName())
+                    .setInferredType(true)
+                    .build())
             .setDelPackageName(template.getDelPackageName())
-            .setVisibility(template.getVisibility())
-            .setParameters(directParametersFromTemplate(template))
-            .setDataAllCallSituations(dataAllCallSituationFromTemplate(template));
+            .setVisibility(template.getVisibility());
     // In various conditions such as Conformance tests, this can be null.
     if (template.getHtmlElementMetadata() != null) {
       builder.setHtmlElement(template.getHtmlElementMetadata());
     }
-    switch (template.getKind()) {
-      case TEMPLATE_BASIC_NODE:
-        builder.setTemplateKind(TemplateType.TemplateKind.BASIC);
-        break;
-      case TEMPLATE_DELEGATE_NODE:
-        builder.setTemplateKind(TemplateType.TemplateKind.DELTEMPLATE);
+
+    if (template.getKind() == Kind.TEMPLATE_DELEGATE_NODE) {
         TemplateDelegateNode deltemplate = (TemplateDelegateNode) template;
         builder.setDelTemplateName(deltemplate.getDelTemplateName());
         builder.setDelTemplateVariant(deltemplate.getDelTemplateVariant());
-        break;
-      case TEMPLATE_ELEMENT_NODE:
-        builder.setTemplateKind(TemplateType.TemplateKind.ELEMENT);
-        break;
-      default:
-        throw new AssertionError("unexpected template kind: " + template.getKind());
     }
     return builder.build();
   }
@@ -150,7 +147,10 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract SoyElementMetadataP getSoyElement();
 
-  public abstract TemplateType.TemplateKind getTemplateKind();
+  // TODO(b/168821294): Inline this method
+  public TemplateType.TemplateKind getTemplateKind() {
+    return getTemplateType().getTemplateKind();
+  }
 
   public abstract String getTemplateName();
 
@@ -161,24 +161,32 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract String getDelTemplateVariant();
 
-  public abstract SanitizedContentKind getContentKind();
+  public abstract TemplateType getTemplateType();
 
-  public abstract boolean isStrictHtml();
+  // TODO(b/168821294): Inline this method
+  public SanitizedContentKind getContentKind() {
+    return getTemplateType().getContentKind().getSanitizedContentKind();
+  }
+
+  // TODO(b/168821294): Inline this method
+  public boolean isStrictHtml() {
+    return getTemplateType().isStrictHtml();
+  }
 
   public abstract Visibility getVisibility();
 
   @Nullable
   public abstract String getDelPackageName();
 
-  /** The Parameters defined directly on the template. Includes {@code $ij} parameters. */
-  public abstract ImmutableList<Parameter> getParameters();
+  // TODO(b/168821294): Inline this method
+  public ImmutableList<Parameter> getParameters() {
+    return getTemplateType().getParameters();
+  }
 
-  /**
-   * The unique template calls that are performed by this template.
-   *
-   * <p>This is needed to calculate information about transitive parameters.
-   */
-  public abstract ImmutableList<DataAllCallSituation> getDataAllCallSituations();
+  // TODO(b/168821294): Inline this method
+  public ImmutableList<DataAllCallSituation> getDataAllCallSituations() {
+    return getTemplateType().getDataAllCallSituations();
+  }
 
   public abstract Builder toBuilder();
 
@@ -193,26 +201,17 @@ public abstract class TemplateMetadata {
 
     public abstract Builder setSoyElement(SoyElementMetadataP isSoyEl);
 
-    public abstract Builder setTemplateKind(TemplateType.TemplateKind kind);
-
     public abstract Builder setTemplateName(String templateName);
 
     public abstract Builder setDelTemplateName(String delTemplateName);
 
     public abstract Builder setDelTemplateVariant(String delTemplateVariant);
 
-    public abstract Builder setContentKind(SanitizedContentKind contentKind);
-
-    public abstract Builder setStrictHtml(boolean strictHtml);
+    public abstract Builder setTemplateType(TemplateType templateType);
 
     public abstract Builder setDelPackageName(@Nullable String delPackageName);
 
     public abstract Builder setVisibility(Visibility visibility);
-
-    public abstract Builder setParameters(ImmutableList<Parameter> parameters);
-
-    public abstract Builder setDataAllCallSituations(
-        ImmutableList<DataAllCallSituation> dataAllCallSituations);
 
     public final TemplateMetadata build() {
       TemplateMetadata built = autobuild();
@@ -232,35 +231,21 @@ public abstract class TemplateMetadata {
     abstract TemplateMetadata autobuild();
   }
 
+  // TODO(b/168821294): Inline this method.
   public static TemplateType asTemplateType(TemplateMetadata templateMetadata) {
-    return TemplateType.builder()
-        .setTemplateKind(templateMetadata.getTemplateKind())
-        .setContentKind(
-            TemplateContentKind.fromSanitizedContentKind(templateMetadata.getContentKind()))
-        .setStrictHtml(templateMetadata.isStrictHtml())
-        .setParameters(
-            templateMetadata.getParameters().stream()
-                .map(
-                    (param) ->
-                        TemplateType.Parameter.builder()
-                            .setName(param.getName())
-                            .setType(param.getType())
-                            .setRequired(param.isRequired())
-                            .build())
-                .collect(toImmutableList()))
-        .setDataAllCallSituations(
-            templateMetadata.getDataAllCallSituations().stream()
-                .map(
-                    (dataAllCallSituation) ->
-                        DataAllCallSituation.builder()
-                            .setTemplateName(dataAllCallSituation.getTemplateName())
-                            .setDelCall(dataAllCallSituation.isDelCall())
-                            .setExplicitlyPassedParameters(
-                                dataAllCallSituation.getExplicitlyPassedParameters())
-                            .build())
-                .collect(toImmutableList()))
-        .setIdentifierForDebugging(templateMetadata.getTemplateName())
-        .setInferredType(true)
-        .build();
+    return templateMetadata.getTemplateType();
+  }
+
+  private static TemplateType.TemplateKind convertKind(SoyNode.Kind kind) {
+    switch (kind) {
+      case TEMPLATE_BASIC_NODE:
+        return TemplateType.TemplateKind.BASIC;
+      case TEMPLATE_DELEGATE_NODE:
+        return TemplateType.TemplateKind.DELTEMPLATE;
+      case TEMPLATE_ELEMENT_NODE:
+        return TemplateType.TemplateKind.ELEMENT;
+      default:
+        throw new AssertionError("unexpected template kind: " + kind);
+    }
   }
 }

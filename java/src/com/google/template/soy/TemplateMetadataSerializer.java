@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CompilationUnit;
@@ -198,22 +199,28 @@ public final class TemplateMetadataSerializer {
         .setDelPackageName(delPackageName)
         .setHtmlElement(templateProto.getHtmlElement())
         .setSoyElement(templateProto.getSoyElement())
-        .setStrictHtml(templateProto.getStrictHtml())
-        .setTemplateKind(templateKind)
+        .setTemplateType(
+            TemplateType.builder()
+                .setTemplateKind(templateKind)
+                .setContentKind(
+                    TemplateContentKind.fromSanitizedContentKind(
+                        returnType instanceof StringType
+                            ? SanitizedContentKind.TEXT
+                            : ((SanitizedType) returnType).getContentKind()))
+                .setStrictHtml(templateProto.getStrictHtml())
+                .setDataAllCallSituations(
+                    callSituationsFromProto(templateProto.getDataAllCallSituationList(), fileProto))
+                .setParameters(
+                    parametersFromProto(
+                        templateProto.getTemplateType().getParameterList(),
+                        typeRegistry,
+                        filePath,
+                        errorReporter))
+                .setIdentifierForDebugging(templateName)
+                .setInferredType(true)
+                .build())
         .setSourceLocation(new SourceLocation(fileProto.getFilePath()))
-        .setContentKind(
-            returnType instanceof StringType
-                ? SanitizedContentKind.TEXT
-                : ((SanitizedType) returnType).getContentKind())
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
-        .setDataAllCallSituations(
-            callSituationsFromProto(templateProto.getDataAllCallSituationList(), fileProto))
-        .setParameters(
-            parametersFromProto(
-                templateProto.getTemplateType().getParameterList(),
-                typeRegistry,
-                filePath,
-                errorReporter))
         .build();
   }
 
