@@ -60,10 +60,18 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   private static final class ProtoClass {
     final ImmutableMap<String, FieldWithInterpreter> fields;
     final Message defaultInstance;
+    final String topLevelName;
     final String fullName;
+    final String importPath;
 
     ProtoClass(Message defaultInstance, ImmutableMap<String, FieldWithInterpreter> fields) {
       this.fullName = defaultInstance.getDescriptorForType().getFullName();
+      Descriptor d = defaultInstance.getDescriptorForType();
+      while (d.getContainingType() != null) {
+        d = d.getContainingType();
+      }
+      this.topLevelName = d.getName();
+      this.importPath = defaultInstance.getDescriptorForType().getFile().getFullName();
       this.defaultInstance = checkNotNull(defaultInstance);
       this.fields = checkNotNull(fields);
     }
@@ -333,7 +341,7 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
   @CheckReturnValue
   private boolean asDeprecatedType(String type) {
     Object locationKey = getAndClearLocationKey();
-    String fullName = clazz().fullName;
+    ProtoClass clazz = clazz();
     // TODO(lukes): consider throwing an exception here, this would be inconsistent withh JS but
     // would be more useful.
     if (locationKey == null) {
@@ -343,18 +351,20 @@ public final class SoyProtoValue extends SoyAbstractValue implements SoyLegacyOb
       logger.log(
           Level.SEVERE,
           String.format(
-              "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+              "Accessing a proto of type %s (import {%s} from '%s';) as a %s is deprecated. Add"
+                  + " static types to fix."
               ,
-              fullName, type),
+              clazz.fullName, clazz.topLevelName, clazz.importPath, type),
           e);
     } else {
       // if there is a locationKey (i.e. this is tofu), then we will use the location key
       logger.log(
           Level.SEVERE,
           String.format(
-              "Accessing a proto of type %s as a %s is deprecated. Add static types to fix."
+              "Accessing a proto of type %s (import {%s} from '%s';) as a %s is deprecated. Add"
+                  + " static types to fix."
                   + "\n\t%s",
-              fullName, type, locationKey),
+              clazz.fullName, clazz.topLevelName, clazz.importPath, type, locationKey),
           new Exception("bad proto access @" + locationKey));
     }
     return Flags.allowReflectiveProtoAccess();
