@@ -95,19 +95,42 @@ public abstract class TemplateType extends SoyType {
     public abstract boolean isRequired();
   }
 
+  /**
+   * Represents information about a {@code data="all"} calls to a template.
+   *
+   * <p>This doesn't necessarily represent a single call site since if a template is called multiple
+   * times in ways that aren't different according to this data structure we only record it once.
+   */
   @AutoValue
   public abstract static class DataAllCallSituation {
-    public static DataAllCallSituation create(
-        String templateName, boolean delCall, ImmutableSet<String> explicitlyPassedParameters) {
-      return new AutoValue_TemplateType_DataAllCallSituation(
-          templateName, delCall, explicitlyPassedParameters);
+    public static Builder builder() {
+      return new AutoValue_TemplateType_DataAllCallSituation.Builder();
     }
 
+    /** The fully qualified name of the called template. */
     public abstract String getTemplateName();
 
+    /** Whether this is a delcall or not. */
     public abstract boolean isDelCall();
 
+    /**
+     * Records the names of the parameters that were explicitly.
+     *
+     * <p>This is necessary to calculate indirect parameters.
+     */
     public abstract ImmutableSet<String> getExplicitlyPassedParameters();
+
+    /** Builder for {@link DataAllCallSituation} */
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract Builder setTemplateName(String templateName);
+
+      public abstract Builder setDelCall(boolean isDelCall);
+
+      public abstract Builder setExplicitlyPassedParameters(ImmutableSet<String> parameters);
+
+      public abstract DataAllCallSituation build();
+    }
   }
 
   public static TemplateType declaredTypeOf(Iterable<Parameter> parameters, SoyType returnType) {

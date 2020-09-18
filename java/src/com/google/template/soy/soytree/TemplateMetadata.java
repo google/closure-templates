@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.DataAllCallSituation;
 import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 
@@ -65,7 +66,7 @@ public abstract class TemplateMetadata {
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility())
             .setParameters(Parameter.directParametersFromTemplate(template))
-            .setDataAllCallSituations(DataAllCallSituation.fromTemplate(template));
+            .setDataAllCallSituations(dataAllCallSituationFromTemplate(template));
     // In various conditions such as Conformance tests, this can be null.
     if (template.getHtmlElementMetadata() != null) {
       builder.setHtmlElement(template.getHtmlElementMetadata());
@@ -226,70 +227,31 @@ public abstract class TemplateMetadata {
     }
   }
 
-  /**
-   * Represents information about a {@code data="all"} calls to a template.
-   *
-   * <p>This doesn't necessarily represent a single call site since if a template is called multiple
-   * times in ways that aren't different according to this data structure we only record it once.
-   */
-  @AutoValue
-  public abstract static class DataAllCallSituation {
-    static ImmutableList<DataAllCallSituation> fromTemplate(TemplateNode node) {
-      ImmutableSet.Builder<DataAllCallSituation> calls = ImmutableSet.builder();
-      for (CallNode call : SoyTreeUtils.getAllNodesOfType(node, CallNode.class)) {
-        if (call.isPassingAllData()) {
-          DataAllCallSituation.Builder builder = builder();
-          ImmutableSet.Builder<String> explicitlyPassedParams = ImmutableSet.builder();
-          for (CallParamNode param : call.getChildren()) {
-            explicitlyPassedParams.add(param.getKey().identifier());
-          }
-          builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
-          switch (call.getKind()) {
-            case CALL_BASIC_NODE:
-              builder.setDelCall(false).setTemplateName(((CallBasicNode) call).getCalleeName());
-              break;
-            case CALL_DELEGATE_NODE:
-              builder
-                  .setDelCall(true)
-                  .setTemplateName(((CallDelegateNode) call).getDelCalleeName());
-              break;
-            default:
-              throw new AssertionError("unexpected call kind: " + call.getKind());
-          }
-          calls.add(builder.build());
+  private static ImmutableList<DataAllCallSituation> dataAllCallSituationFromTemplate(
+      TemplateNode node) {
+    ImmutableSet.Builder<DataAllCallSituation> calls = ImmutableSet.builder();
+    for (CallNode call : SoyTreeUtils.getAllNodesOfType(node, CallNode.class)) {
+      if (call.isPassingAllData()) {
+        DataAllCallSituation.Builder builder = DataAllCallSituation.builder();
+        ImmutableSet.Builder<String> explicitlyPassedParams = ImmutableSet.builder();
+        for (CallParamNode param : call.getChildren()) {
+          explicitlyPassedParams.add(param.getKey().identifier());
         }
+        builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
+        switch (call.getKind()) {
+          case CALL_BASIC_NODE:
+            builder.setDelCall(false).setTemplateName(((CallBasicNode) call).getCalleeName());
+            break;
+          case CALL_DELEGATE_NODE:
+            builder.setDelCall(true).setTemplateName(((CallDelegateNode) call).getDelCalleeName());
+            break;
+          default:
+            throw new AssertionError("unexpected call kind: " + call.getKind());
+        }
+        calls.add(builder.build());
       }
-      return calls.build().asList();
     }
-
-    public static Builder builder() {
-      return new AutoValue_TemplateMetadata_DataAllCallSituation.Builder();
-    }
-
-    /** The fully qualified name of the called template. */
-    public abstract String getTemplateName();
-
-    /** Whether this is a delcall or not. */
-    public abstract boolean isDelCall();
-
-    /**
-     * Records the names of the parameters that were explicitly.
-     *
-     * <p>This is necessary to calculate indirect parameters.
-     */
-    public abstract ImmutableSet<String> getExplicitlyPassedParameters();
-
-    /** Builder for {@link CallSituation} */
-    @AutoValue.Builder
-    public abstract static class Builder {
-      public abstract Builder setTemplateName(String templateName);
-
-      public abstract Builder setDelCall(boolean isDelCall);
-
-      public abstract Builder setExplicitlyPassedParameters(ImmutableSet<String> parameters);
-
-      public abstract DataAllCallSituation build();
-    }
+    return calls.build().asList();
   }
 
   public abstract SoyFileKind getSoyFileKind();
@@ -405,10 +367,12 @@ public abstract class TemplateMetadata {
             templateMetadata.getDataAllCallSituations().stream()
                 .map(
                     (dataAllCallSituation) ->
-                        TemplateType.DataAllCallSituation.create(
-                            dataAllCallSituation.getTemplateName(),
-                            dataAllCallSituation.isDelCall(),
-                            dataAllCallSituation.getExplicitlyPassedParameters()))
+                        DataAllCallSituation.builder()
+                            .setTemplateName(dataAllCallSituation.getTemplateName())
+                            .setDelCall(dataAllCallSituation.isDelCall())
+                            .setExplicitlyPassedParameters(
+                                dataAllCallSituation.getExplicitlyPassedParameters())
+                            .build())
                 .collect(toImmutableList()))
         .setIdentifierForDebugging(templateMetadata.getTemplateName())
         .setInferredType(true)
