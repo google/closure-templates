@@ -238,42 +238,40 @@ public final class TypeNodeConverter
   @Override
   public SoyType visit(NamedTypeNode node) {
     String name = node.name().identifier();
-    SanitizedType safeProtoType = SAFE_PROTO_TO_SANITIZED_TYPE.get(name);
-    SoyType type;
-    if (safeProtoType != null) {
-      String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();
-      errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
-      type = UnknownType.getInstance();
-    } else {
-      type =
-          typeRegistry instanceof SoyTypeRegistry
-              ? TypeRegistries.getTypeOrProtoFqn(
-                  (SoyTypeRegistry) typeRegistry, errorReporter, node.name())
-              : typeRegistry.getType(name);
-      if (type == null && protoRegistry != null) {
-        type = protoRegistry.getProtoType(name);
-      }
-      if (type == null) {
-        GenericTypeInfo genericType = GENERIC_TYPES.get(name);
-        if (genericType != null) {
+    SoyType type =
+        typeRegistry instanceof SoyTypeRegistry
+            ? TypeRegistries.getTypeOrProtoFqn(
+                (SoyTypeRegistry) typeRegistry, errorReporter, node.name())
+            : typeRegistry.getType(name);
+    if (type == null && protoRegistry != null) {
+      type = protoRegistry.getProtoType(name);
+    }
+
+    if (type == null) {
+      GenericTypeInfo genericType = GENERIC_TYPES.get(name);
+      if (genericType != null) {
+        errorReporter.report(
+            node.sourceLocation(),
+            MISSING_GENERIC_TYPE_PARAMETERS,
+            name,
+            genericType.formatNumTypeParams());
+      } else {
+        if (!disableAllTypeChecking) {
           errorReporter.report(
               node.sourceLocation(),
-              MISSING_GENERIC_TYPE_PARAMETERS,
+              UNKNOWN_TYPE,
               name,
-              genericType.formatNumTypeParams());
-          type = UnknownType.getInstance();
-        } else {
-          if (disableAllTypeChecking) {
-            type = UnknownType.getInstance();
-          } else {
-            errorReporter.report(
-                node.sourceLocation(),
-                UNKNOWN_TYPE,
-                name,
-                SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
-            type = UnknownType.getInstance();
-          }
+              SoyErrors.getDidYouMeanMessage(typeRegistry.getAllSortedTypeNames(), name));
         }
+      }
+      type = UnknownType.getInstance();
+    } else if (type.getKind() == Kind.PROTO) {
+      SanitizedType safeProtoType = SAFE_PROTO_TO_SANITIZED_TYPE.get(type.toString());
+
+      if (safeProtoType != null) {
+        String safeProtoNativeType = safeProtoType.getContentKind().asAttributeValue();
+        errorReporter.report(node.sourceLocation(), SAFE_PROTO_TYPE, safeProtoNativeType, name);
+        type = UnknownType.getInstance();
       }
     }
     node.setResolvedType(type);

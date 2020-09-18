@@ -1488,7 +1488,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         node.setType(UnknownType.getInstance());
         return;
       }
-      if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(protoName)) {
+      if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(type.toString())) {
         errorReporter.report(
             node.getSourceLocation(),
             TypeNodeConverter.SAFE_PROTO_TYPE,
