@@ -37,7 +37,6 @@ import com.google.template.soy.shared.internal.gencode.JavaGenerationUtils;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
@@ -46,6 +45,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -193,7 +193,7 @@ public class SoyFileNodeTransformer {
   public abstract static class ParamInfo {
     static ParamInfo of(TemplateParam param, ParamStatus status) {
       return of(
-          Parameter.fromParam(param),
+          TemplateMetadata.parameterFromTemplateParam(param),
           status,
           false,
           param.isInjected(),
@@ -203,7 +203,7 @@ public class SoyFileNodeTransformer {
 
     static ParamInfo of(TemplateParam param, ParamStatus status, boolean indirect) {
       return of(
-          Parameter.fromParam(param),
+          TemplateMetadata.parameterFromTemplateParam(param),
           status,
           indirect,
           param.isInjected(),

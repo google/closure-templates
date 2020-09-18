@@ -37,7 +37,6 @@ import com.google.template.soy.soytree.SoyTypeP;
 import com.google.template.soy.soytree.TemplateDelegateNodeBuilder;
 import com.google.template.soy.soytree.TemplateKindP;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateMetadataP;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -65,6 +64,7 @@ import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
+import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import java.util.ArrayList;
@@ -379,14 +379,15 @@ public final class TemplateMetadataSerializer {
         }
       case TEMPLATE:
         {
-          List<TemplateType.Parameter> parameters = new ArrayList<>();
+          List<Parameter> parameters = new ArrayList<>();
           // TODO: this relies on proto list insertion order, which is not guaranteed by the spec.
           for (ParameterP parameter : proto.getTemplate().getParameterList()) {
             parameters.add(
-                TemplateType.Parameter.create(
-                    parameter.getName(),
-                    fromProto(parameter.getType(), typeRegistry, filePath, errorReporter),
-                    parameter.getRequired()));
+                Parameter.builder()
+                    .setName(parameter.getName())
+                    .setType(fromProto(parameter.getType(), typeRegistry, filePath, errorReporter))
+                    .setRequired(parameter.getRequired())
+                    .build());
           }
           return typeRegistry.internTemplateType(
               TemplateType.declaredTypeOf(

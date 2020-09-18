@@ -356,8 +356,11 @@ public final class TypeNodeConverter
       TemplateType.Parameter oldParameter =
           map.put(
               parameter.name(),
-              TemplateType.Parameter.create(
-                  parameter.name(), parameter.type().accept(this), true /* isRequired */));
+              TemplateType.Parameter.builder()
+                  .setName(parameter.name())
+                  .setType(parameter.type().accept(this))
+                  .setRequired(true)
+                  .build());
       if (oldParameter != null) {
         errorReporter.report(
             parameter.nameLocation(), DUPLICATE_TEMPLATE_ARGUMENT, parameter.name());

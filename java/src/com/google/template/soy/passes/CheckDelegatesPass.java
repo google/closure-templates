@@ -32,9 +32,9 @@ import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +134,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         // group must be empty
         continue;
       }
-      Set<TemplateMetadata.Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
+      Set<Parameter> firstRequiredParamSet = getRequiredParamSet(firstDelTemplate);
       SanitizedContentKind firstContentKind = firstDelTemplate.getContentKind();
       boolean firstStrictHtml = firstDelTemplate.isStrictHtml() && firstContentKind.isHtml();
       // loop over all members of the deltemplate group.
@@ -143,13 +143,13 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
           continue; // skip
         }
         // Not first template encountered.
-        Set<TemplateMetadata.Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
+        Set<Parameter> currRequiredParamSet = getRequiredParamSet(delTemplate);
         if (!paramSetsEqual(currRequiredParamSet, firstRequiredParamSet)) {
           List<Parameter> firstParamList = firstDelTemplate.getParameters();
           List<Parameter> currParamList = delTemplate.getParameters();
-          Set<TemplateMetadata.Parameter> missingParamSet =
+          Set<Parameter> missingParamSet =
               getRequiredParamsDifference(firstParamList, currParamList);
-          Set<TemplateMetadata.Parameter> unexpectedParamSet =
+          Set<Parameter> unexpectedParamSet =
               getRequiredParamsDifference(currParamList, firstParamList);
           errorReporter.report(
               delTemplate.getSourceLocation(),
@@ -188,16 +188,15 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     }
   }
 
-  private static boolean paramSetsEqual(
-      Set<TemplateMetadata.Parameter> s1, Set<TemplateMetadata.Parameter> s2) {
+  private static boolean paramSetsEqual(Set<Parameter> s1, Set<Parameter> s2) {
     // We can use Set equality because we normalize parameters with toComparable().
     return s1.equals(s2);
   }
 
-  private static Set<TemplateMetadata.Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
+  private static Set<Parameter> getRequiredParamSet(TemplateMetadata delTemplate) {
     return delTemplate.getParameters().stream()
-        .filter(TemplateMetadata.Parameter::isRequired)
-        .map(TemplateMetadata.Parameter::toComparable)
+        .filter(Parameter::isRequired)
+        .map(Parameter::toComparable)
         .collect(Collectors.toSet());
   }
 
@@ -254,8 +253,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
   }
 
   private static String getInconsistentParamMessage(
-      Set<TemplateMetadata.Parameter> missingParamSet,
-      Set<TemplateMetadata.Parameter> unexpectedParamSet) {
+      Set<Parameter> missingParamSet, Set<Parameter> unexpectedParamSet) {
     StringBuilder message = new StringBuilder();
     if (!missingParamSet.isEmpty()) {
       message.append(String.format("\n  Missing params: %s", formatParamSet(missingParamSet)));
@@ -267,7 +265,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
     return message.toString();
   }
 
-  private static Set<String> formatParamSet(Set<TemplateMetadata.Parameter> paramSet) {
+  private static Set<String> formatParamSet(Set<Parameter> paramSet) {
     return paramSet.stream()
         .map(
             (param) -> {
@@ -278,7 +276,7 @@ final class CheckDelegatesPass implements CompilerFileSetPass {
         .collect(Collectors.toSet());
   }
 
-  private static Set<TemplateMetadata.Parameter> getRequiredParamsDifference(
+  private static Set<Parameter> getRequiredParamsDifference(
       List<Parameter> paramList1, List<Parameter> paramList2) {
     Map<String, Parameter> nameToParamMap =
         paramList2.stream()

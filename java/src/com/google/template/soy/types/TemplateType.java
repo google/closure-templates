@@ -20,13 +20,17 @@ import static com.google.common.collect.Streams.stream;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.annotations.ForOverride;
+import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
+import javax.annotation.Nullable;
 
 /** Template type, containing a list of named, typed parameters and a return type. */
 @AutoValue
@@ -82,17 +86,119 @@ public abstract class TemplateType extends SoyType {
     public abstract TemplateType build();
   }
 
+  /**
+   * Represents minimal information about a template parameter.
+   *
+   * <p>This only represents normal parameters. Information about injected params or state variables
+   * is not recorded.
+   */
   @AutoValue
   public abstract static class Parameter {
-    public static Parameter create(String name, SoyType type, boolean required) {
-      return new AutoValue_TemplateType_Parameter(name, type, required);
+
+    /**
+     * A simple wrapper so that Parameter continues to have correct equals/hashCode methods even
+     * though we might only lazily calculate the type.
+     */
+    abstract static class LazyTypeWrapper {
+      static LazyTypeWrapper constant(final SoyType type) {
+        return new LazyTypeWrapper() {
+          @Override
+          SoyType getType() {
+            return type;
+          }
+        };
+      }
+
+      static LazyTypeWrapper fromSupplier(final Supplier<SoyType> typeSupplier) {
+        return new LazyTypeWrapper() {
+          @LazyInit SoyType type;
+
+          @Override
+          SoyType getType() {
+            SoyType local = type;
+            if (local == null) {
+              local = typeSupplier.get();
+              if (local == null) {
+                throw new IllegalStateException("typeSupplier returned null");
+              }
+              this.type = local;
+            }
+            return local;
+          }
+        };
+      }
+
+      @ForOverride
+      abstract SoyType getType();
+
+      @Override
+      public final int hashCode() {
+        return getType().hashCode();
+      }
+
+      @Override
+      public final boolean equals(Object other) {
+        return other instanceof LazyTypeWrapper
+            && ((LazyTypeWrapper) other).getType().equals(getType());
+      }
+
+      @Override
+      public String toString() {
+        return getType().toString();
+      }
+    }
+
+    public static Builder builder() {
+      return new AutoValue_TemplateType_Parameter.Builder();
     }
 
     public abstract String getName();
 
-    public abstract SoyType getType();
+    // TODO(lukes): this will likely not work once we start compiling templates separately,
+    // especially if we want to start pruning the proto descriptors required by the compiler.
+    public SoyType getType() {
+      return getTypeWrapper().getType();
+    }
+
+    abstract LazyTypeWrapper getTypeWrapper();
 
     public abstract boolean isRequired();
+
+    /**
+     * Note that description is not serialized by TemplateMetadataSerializer so this field will be
+     * null if this instance is created via deserialization.
+     */
+    @Nullable
+    public abstract String getDescription();
+
+    public abstract Builder toBuilder();
+
+    /** If comparing parameters (ignoring description), normalize instances with this method. */
+    public Parameter toComparable() {
+      return getDescription() == null ? this : toBuilder().setDescription(null).build();
+    }
+
+    /** Builder for {@link Parameter} */
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract Builder setName(String name);
+
+      public Builder setTypeLazily(final Supplier<SoyType> typeSupplier) {
+        return setTypeWrapper(LazyTypeWrapper.fromSupplier(typeSupplier));
+      }
+
+      public Builder setType(final SoyType type) {
+        return setTypeWrapper(LazyTypeWrapper.constant(type));
+      }
+
+      abstract Builder setTypeWrapper(LazyTypeWrapper typeWrapper);
+
+      public abstract Builder setRequired(boolean isRequired);
+
+      public abstract Builder setDescription(String description);
+
+      public abstract Parameter build();
+    }
   }
 
   /**

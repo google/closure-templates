@@ -19,19 +19,16 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.errorprone.annotations.ForOverride;
-import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
+import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 
@@ -65,7 +62,7 @@ public abstract class TemplateMetadata {
             .setStrictHtml(template.isStrictHtml())
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility())
-            .setParameters(Parameter.directParametersFromTemplate(template))
+            .setParameters(directParametersFromTemplate(template))
             .setDataAllCallSituations(dataAllCallSituationFromTemplate(template));
     // In various conditions such as Conformance tests, this can be null.
     if (template.getHtmlElementMetadata() != null) {
@@ -94,137 +91,22 @@ public abstract class TemplateMetadata {
     return new AutoValue_TemplateMetadata.Builder();
   }
 
-  /**
-   * Represents minimal information about a template parameter.
-   *
-   * <p>This only represents normal parameters. Information about injected params or state variables
-   * is not recorded.
-   */
-  @AutoValue
-  public abstract static class Parameter {
-    public static Parameter fromParam(TemplateParam param) {
-      return builder()
-          .setName(param.name())
-          // Proto imports when compiler is not given proto descriptors will cause type to be unset.
-          .setType(param.hasType() ? param.type() : UnknownType.getInstance())
-          .setRequired(param.isRequired())
-          .setDescription(param.desc())
-          .build();
+  private static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
+    ImmutableList.Builder<Parameter> params = ImmutableList.builder();
+    for (TemplateParam param : node.getParams()) {
+      params.add(parameterFromTemplateParam(param));
     }
+    return params.build();
+  }
 
-    /**
-     * A simple wrapper so that Parameter continues to have correct equals/hashCode methods even
-     * though we might only lazily calculate the type.
-     */
-    abstract static class LazyTypeWrapper {
-      static LazyTypeWrapper constant(final SoyType type) {
-        return new LazyTypeWrapper() {
-          @Override
-          SoyType getType() {
-            return type;
-          }
-        };
-      }
-
-      static LazyTypeWrapper fromSupplier(final Supplier<SoyType> typeSupplier) {
-        return new LazyTypeWrapper() {
-          @LazyInit SoyType type;
-
-          @Override
-          SoyType getType() {
-            SoyType local = type;
-            if (local == null) {
-              local = typeSupplier.get();
-              if (local == null) {
-                throw new IllegalStateException("typeSupplier returned null");
-              }
-              this.type = local;
-            }
-            return local;
-          }
-        };
-      }
-
-      @ForOverride
-      abstract SoyType getType();
-
-      @Override
-      public final int hashCode() {
-        return getType().hashCode();
-      }
-
-      @Override
-      public final boolean equals(Object other) {
-        return other instanceof LazyTypeWrapper
-            && ((LazyTypeWrapper) other).getType().equals(getType());
-      }
-
-      @Override
-      public String toString() {
-        return getType().toString();
-      }
-    }
-
-    static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
-      ImmutableList.Builder<Parameter> params = ImmutableList.builder();
-      for (TemplateParam param : node.getParams()) {
-        params.add(fromParam(param));
-      }
-      return params.build();
-    }
-
-    public static Builder builder() {
-      return new AutoValue_TemplateMetadata_Parameter.Builder();
-    }
-
-    public abstract String getName();
-
-    // TODO(lukes): this will likely not work once we start compiling templates separately,
-    // especially if we want to start pruning the proto descriptors required by the compiler.
-    public SoyType getType() {
-      return getTypeWrapper().getType();
-    }
-
-    abstract LazyTypeWrapper getTypeWrapper();
-
-    public abstract boolean isRequired();
-
-    /**
-     * Note that description is not serialized by TemplateMetadataSerializer so this field will be
-     * null if this instance is created via deserialization.
-     */
-    @Nullable
-    public abstract String getDescription();
-
-    /** If comparing parameters (ignoring description), normalize instances with this method. */
-    public Parameter toComparable() {
-      return getDescription() == null ? this : toBuilder().setDescription(null).build();
-    }
-
-    public abstract Builder toBuilder();
-
-    /** Builder for {@link Parameter} */
-    @AutoValue.Builder
-    public abstract static class Builder {
-
-      public abstract Builder setName(String name);
-
-      public Builder setTypeLazily(final Supplier<SoyType> typeSupplier) {
-        return setTypeWrapper(LazyTypeWrapper.fromSupplier(typeSupplier));
-      }
-
-      public Builder setType(final SoyType type) {
-        return setTypeWrapper(LazyTypeWrapper.constant(type));
-      }
-
-      abstract Builder setTypeWrapper(LazyTypeWrapper typeWrapper);
-
-      public abstract Builder setRequired(boolean isRequired);
-
-      public abstract Builder setDescription(String description);
-
-      public abstract Parameter build();
-    }
+  public static Parameter parameterFromTemplateParam(TemplateParam param) {
+    return Parameter.builder()
+        .setName(param.name())
+        // Proto imports when compiler is not given proto descriptors will cause type to be unset.
+        .setType(param.hasType() ? param.type() : UnknownType.getInstance())
+        .setRequired(param.isRequired())
+        .setDescription(param.desc())
+        .build();
   }
 
   private static ImmutableList<DataAllCallSituation> dataAllCallSituationFromTemplate(
@@ -360,8 +242,11 @@ public abstract class TemplateMetadata {
             templateMetadata.getParameters().stream()
                 .map(
                     (param) ->
-                        TemplateType.Parameter.create(
-                            param.getName(), param.getType(), param.isRequired()))
+                        TemplateType.Parameter.builder()
+                            .setName(param.getName())
+                            .setType(param.getType())
+                            .setRequired(param.isRequired())
+                            .build())
                 .collect(toImmutableList()))
         .setDataAllCallSituations(
             templateMetadata.getDataAllCallSituations().stream()

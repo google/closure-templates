@@ -26,11 +26,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.soytree.TemplateMetadata;
-import com.google.template.soy.soytree.TemplateMetadata.Parameter;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +51,7 @@ public final class IndirectParamsCalculator {
     // TODO(lukes): combine indirectParams and indirectParamTypes, they are largely redundant
 
     /** Map from indirect param key to param object. */
-    public final ImmutableSortedMap<String, TemplateMetadata.Parameter> indirectParams;
+    public final ImmutableSortedMap<String, Parameter> indirectParams;
 
     /**
      * Multimap from param key (direct or indirect) to transitive callees that declare the param.
@@ -83,7 +83,7 @@ public final class IndirectParamsCalculator {
      *     on) may have indirect params in external delegate calls.
      */
     public IndirectParamsInfo(
-        ImmutableSortedMap<String, TemplateMetadata.Parameter> indirectParams,
+        ImmutableSortedMap<String, Parameter> indirectParams,
         ImmutableSetMultimap<String, TemplateMetadata> paramKeyToCalleesMultimap,
         ImmutableSetMultimap<String, SoyType> indirectParamTypes,
         boolean mayHaveIndirectParamsInExternalCalls,

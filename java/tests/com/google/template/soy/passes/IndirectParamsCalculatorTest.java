@@ -23,6 +23,7 @@ import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInf
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -144,7 +145,7 @@ public final class IndirectParamsCalculatorTest {
     assertThat(ipi.mayHaveIndirectParamsInExternalCalls).isFalse();
     assertThat(ipi.mayHaveIndirectParamsInExternalDelCalls).isFalse();
 
-    Map<String, TemplateMetadata.Parameter> ipMap = ipi.indirectParams;
+    Map<String, Parameter> ipMap = ipi.indirectParams;
     assertThat(ipMap).doesNotContainKey("a0");
     assertThat(ipMap).containsKey("a1");
     assertThat(ipMap).doesNotContainKey("a2");
