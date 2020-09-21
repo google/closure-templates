@@ -72,7 +72,8 @@ public final class ProtoSupportTest {
           SomeExtension.getDescriptor(),
           Proto3Message.getDescriptor(),
           Example.someBoolExtension.getDescriptor(),
-          Example.someIntExtension.getDescriptor());
+          Example.someIntExtension.getDescriptor(),
+          Example.listExtension.getDescriptor());
 
   @Test
   public void testSimpleProto() {
