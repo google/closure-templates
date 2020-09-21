@@ -142,7 +142,6 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.callerTemplate").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
           .hasMessageThat()
           .isEqualTo(
@@ -162,17 +161,14 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      assertThat(ste).hasCauseThat().isNull();
       assertThat(ste)
+          .hasCauseThat()
           .hasMessageThat()
           .isEqualTo(
-              "When evaluating \"$content\": When evaluating \"$foo\": Parameter type mismatch: "
+              "When evaluating \"$foo\": Parameter type mismatch: "
                   + "attempt to bind value 'not an int' (a StringData) to parameter 'foo' which "
                   + "has a declared type of 'int'.");
-      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:14)");
-      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
-      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
-      assertThat(ste.getStackTrace()[3].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCallee(no-path:21)");
     }
   }
 
@@ -185,16 +181,9 @@ public final class TofuExceptionsTest {
       tofu.newRenderer("ns.transclusionCaller").setData(data).render();
       fail();
     } catch (SoyTofuException ste) {
-      SoyFutureException sfe = (SoyFutureException) ste.getCause();
-      assertThat(sfe).hasMessageThat().isEqualTo("Error dereferencing future");
-      assertThat(sfe).hasCauseThat().isEqualTo(futureFailureCause);
-      assertThat(ste)
-          .hasMessageThat()
-          .isEqualTo(
-              "When evaluating \"$content\": When evaluating \"$foo\": Error dereferencing future");
-      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCaller(no-path:17)");
-      assertThat(ste.getStackTrace()[1].toString()).isEqualTo("ns.transclusionCallee(no-path:23)");
-      assertThat(ste.getStackTrace()[2].toString()).isEqualTo("ns.transclusionCaller(no-path:16)");
+      assertThat(ste).hasMessageThat().isEqualTo("failed to evaluate param: content");
+      assertThat(ste).hasCauseThat().hasCauseThat().hasCauseThat().isEqualTo(futureFailureCause);
+      assertThat(ste.getStackTrace()[0].toString()).isEqualTo("ns.transclusionCallee(no-path:21)");
     }
   }
 }

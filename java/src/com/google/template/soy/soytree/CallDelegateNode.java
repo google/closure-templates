@@ -16,14 +16,11 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.Identifier;
@@ -34,7 +31,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import java.util.List;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -63,17 +59,6 @@ public final class CallDelegateNode extends CallNode {
    * there is no active implementation. Default is false.
    */
   private final boolean allowEmptyDefault;
-
-  /**
-   * The list of params that need to be type checked when this node is run on a per delegate basis.
-   * All the params that could be statically verified will be checked up front (by the {@code
-   * CheckCallingParamTypesVisitor}), this list contains the params that could not be statically
-   * checked.
-   *
-   * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
-   * passed from this caller.
-   */
-  @Nullable private ImmutableMap<String, Predicate<String>> paramsToRuntimeCheckByDelegate = null;
 
   public CallDelegateNode(
       int id,
@@ -143,7 +128,6 @@ public final class CallDelegateNode extends CallNode {
     this.sourceDelCalleeName = orig.sourceDelCalleeName;
     this.variantExpr = (orig.variantExpr != null) ? orig.variantExpr.copy(copyState) : null;
     this.allowEmptyDefault = orig.allowEmptyDefault;
-    this.paramsToRuntimeCheckByDelegate = orig.paramsToRuntimeCheckByDelegate;
   }
 
   @Override
@@ -165,30 +149,6 @@ public final class CallDelegateNode extends CallNode {
   @Nullable
   public ExprRootNode getDelCalleeVariantExpr() {
     return variantExpr;
-  }
-
-  /**
-   * Sets the params that require runtime type checking for each possible delegate target.
-   *
-   * <p>This mechanism is used by the TOFU runtime only to save some work when calling templates.
-   */
-  public void setParamsToRuntimeCheck(
-      ImmutableMap<String, Predicate<String>> paramsToRuntimeCheck) {
-    checkState(this.paramsToRuntimeCheckByDelegate == null);
-    this.paramsToRuntimeCheckByDelegate = checkNotNull(paramsToRuntimeCheck);
-  }
-
-  @Override
-  public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
-    if (paramsToRuntimeCheckByDelegate == null) {
-      return arg -> true;
-    }
-    Predicate<String> params = paramsToRuntimeCheckByDelegate.get(calleeTemplateName);
-    if (params == null) {
-      // The callee was not known when we performed static type checking.  Check all params.
-      return arg -> true;
-    }
-    return params;
   }
 
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */

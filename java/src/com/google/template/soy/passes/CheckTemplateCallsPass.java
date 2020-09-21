@@ -16,11 +16,8 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -53,7 +50,6 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.UnionType;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -139,11 +135,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
     void checkCall(TemplateNode callerTemplate, CallBasicNode node) {
       SoyType calleeType = node.getCalleeExpr().getType();
       if (calleeType.getKind() == SoyType.Kind.TEMPLATE) {
-        Predicate<String> paramsToRuntimeCheck =
-            checkCall(callerTemplate, node, (TemplateType) calleeType);
-        node.setParamsToRuntimeCheck(paramsToRuntimeCheck);
+        checkCall(callerTemplate, node, (TemplateType) calleeType);
       } else if (calleeType.getKind() == SoyType.Kind.UNION) {
-        List<Predicate<String>> paramsToRuntimeCheckList = new ArrayList<>();
         TemplateContentKind templateContentKind = null;
         for (SoyType member : ((UnionType) calleeType).getMembers()) {
           if (member.getKind() == SoyType.Kind.TEMPLATE) {
@@ -158,13 +151,12 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
                   templateContentKind,
                   templateType.getContentKind());
             }
-            paramsToRuntimeCheckList.add(checkCall(callerTemplate, node, templateType));
+            checkCall(callerTemplate, node, templateType);
           } else {
             errorReporter.report(
                 node.getSourceLocation(), CAN_ONLY_CALL_TEMPLATE_TYPES, calleeType);
           }
         }
-        node.setParamsToRuntimeCheck(Predicates.or(paramsToRuntimeCheckList));
       } else if (calleeType.getKind() == SoyType.Kind.UNKNOWN) {
         // We may end up with UNKNOWN here for external calls.
       } else {
@@ -172,17 +164,14 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       }
     }
 
-    Predicate<String> checkCall(
-        TemplateNode callerTemplate, CallBasicNode node, TemplateType calleeType) {
+    void checkCall(TemplateNode callerTemplate, CallBasicNode node, TemplateType calleeType) {
       checkCallParamNames(node, calleeType);
       checkPassesUnusedParams(node, calleeType);
       checkStrictHtml(callerTemplate, node, calleeType);
-      return checkCallParamTypes(callerTemplate, node, calleeType);
+      checkCallParamTypes(callerTemplate, node, calleeType);
     }
 
     void checkCall(TemplateNode callerTemplate, CallDelegateNode node) {
-      ImmutableMap.Builder<String, java.util.function.Predicate<String>> paramsToCheckByTemplate =
-          ImmutableMap.builder();
       ImmutableList<TemplateMetadata> potentialCallees =
           templateRegistry
               .getDelTemplateSelector()
@@ -190,12 +179,10 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
               .get(node.getDelCalleeName());
       for (TemplateMetadata delTemplate : potentialCallees) {
         TemplateType delTemplateType = delTemplate.getTemplateType();
-        Predicate<String> params = checkCallParamTypes(callerTemplate, node, delTemplateType);
-        paramsToCheckByTemplate.put(delTemplate.getTemplateName(), params);
+        checkCallParamTypes(callerTemplate, node, delTemplateType);
         checkCallParamNames(node, delTemplateType);
         // We don't call checkPassesUnusedParams here because we might not know all delegates.
       }
-      node.setParamsToRuntimeCheck(paramsToCheckByTemplate.build());
       // NOTE: we only need to check one of them.  If there is more than one of them and they have
       // different content kinds of stricthtml settings then the CheckDelegatesPass will flag that
       // as an error independently.
@@ -205,19 +192,14 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
     }
 
     /**
-     * Returns the subset of {@link TemplateNode#getParams() callee params} that require runtime
-     * type checking.
+     * Checks that the parameters being passed have compatble types and reports errors if they do
+     * not.
      */
-    private Predicate<String> checkCallParamTypes(
+    private void checkCallParamTypes(
         TemplateNode callerTemplate, CallNode call, TemplateType callee) {
       TemplateParamTypes calleeParamTypes = getTemplateParamTypes(callee);
       // Explicit params being passed by the CallNode
       Set<String> explicitParams = new HashSet<>();
-      // The set of params that need runtime type checking at template call time. We start this with
-      // all the params of the callee and remove each param that is statically verified.
-      Set<String> paramNamesToRuntimeCheck = new HashSet<>(calleeParamTypes.params.keySet());
-      // indirect params should be checked at their callsites, not this one.
-      paramNamesToRuntimeCheck.removeAll(calleeParamTypes.indirectParamNames);
 
       // First check all the {param} blocks of the caller to make sure that the types match.
       for (CallParamNode callerParam : call.getChildren()) {
@@ -248,18 +230,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           throw new AssertionError(); // CallParamNode shouldn't have any other kind of child
         }
 
-        boolean staticTypeSafe = true;
         for (SoyType formalType : declaredParamTypes) {
-          staticTypeSafe &=
-              checkArgumentAgainstParamType(
-                  callerParam.getSourceLocation(),
-                  paramName,
-                  argType,
-                  formalType,
-                  calleeParamTypes);
-        }
-        if (staticTypeSafe) {
-          paramNamesToRuntimeCheck.remove(paramName);
+          checkArgumentAgainstParamType(
+              callerParam.getSourceLocation(), paramName, argType, formalType, calleeParamTypes);
         }
 
         explicitParams.add(paramName);
@@ -281,18 +254,13 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
             }
 
             Collection<SoyType> declaredParamTypes = calleeParamTypes.params.get(paramName);
-            boolean staticTypeSafe = true;
             for (SoyType formalType : declaredParamTypes) {
-              staticTypeSafe &=
-                  checkArgumentAgainstParamType(
-                      call.getSourceLocation(),
-                      paramName,
-                      callerParam.type(),
-                      formalType,
-                      calleeParamTypes);
-            }
-            if (staticTypeSafe) {
-              paramNamesToRuntimeCheck.remove(paramName);
+              checkArgumentAgainstParamType(
+                  call.getSourceLocation(),
+                  paramName,
+                  callerParam.type(),
+                  formalType,
+                  calleeParamTypes);
             }
           }
         } else {
@@ -300,8 +268,6 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // This is possible for some types, and never allowed for other types.
         }
       }
-
-      return ImmutableSet.copyOf(paramNamesToRuntimeCheck)::contains;
     }
 
     /**
@@ -313,9 +279,8 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * @param argType The type of the value being passed.
      * @param formalType The type of the parameter.
      * @param calleeParams metadata about the callee parameters
-     * @return true if runtime type checks can be elided for this param
      */
-    private boolean checkArgumentAgainstParamType(
+    private void checkArgumentAgainstParamType(
         SourceLocation location,
         String paramName,
         SoyType argType,
@@ -332,11 +297,10 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
           // The reason is because without flow analysis, we can't know whether or not
           // there are if-statements preventing null from being passed as an indirect
           // param, so we assume all indirect params are optional.
-          return false;
+          return;
         }
         errorReporter.report(location, ARGUMENT_TYPE_MISMATCH, paramName, formalType, argType);
       }
-      return true;
     }
 
     /**

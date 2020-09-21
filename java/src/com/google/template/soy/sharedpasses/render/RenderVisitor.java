@@ -263,9 +263,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
   }
 
   /** A private helper to render templates with optimized type checking. */
-  private void renderTemplate(TemplateNode template, Predicate<String> paramsToTypeCheck) {
+  private void renderTemplate(TemplateNode template) {
     env = Environment.create(template, data, ijData);
-    checkStrictParamTypes(template, paramsToTypeCheck);
+    checkStrictParamTypes(template);
     visitChildren(template);
     env = null; // unpin for gc
   }
@@ -275,10 +275,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
 
   @Override
   protected void visitTemplateNode(TemplateNode node) {
-    // check all params of the node. This callpath should only be called in the case of external
-    // calls into soy (e.g. RenderVisitor.exec(node)).  For calls to templates from soy, the
-    // renderTemplate() method is called directly.
-    renderTemplate(node, /*paramsToTypeCheck=*/ arg -> true);
+    renderTemplate(node);
   }
 
   @Override
@@ -552,7 +549,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       // No escaping at the call site -- render directly into the output buffer.
       RenderVisitor rv = this.createHelperInstance(currOutputBuf, callData);
       try {
-        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee.getTemplateName()));
+        rv.renderTemplate(callee);
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -567,7 +564,7 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
       StringBuilder calleeBuilder = new StringBuilder();
       RenderVisitor rv = this.createHelperInstance(calleeBuilder, callData);
       try {
-        rv.renderTemplate(callee, node.getParamsToRuntimeCheck(callee.getTemplateName()));
+        rv.renderTemplate(callee);
       } catch (RenderException re) {
         // The {call .XXX} failed to render - a new partial stack trace element is added to capture
         // this template call.
@@ -894,11 +891,9 @@ public class RenderVisitor extends AbstractSoyNodeVisitor<Void> {
     }
   }
 
-  private void checkStrictParamTypes(TemplateNode node, Predicate<String> paramsToTypeCheck) {
+  private void checkStrictParamTypes(TemplateNode node) {
     for (TemplateParam param : node.getParams()) {
-      if (paramsToTypeCheck.test(param.name())) {
-        checkStrictParamType(node, param, env.getVarProvider(param));
-      }
+      checkStrictParamType(node, param, env.getVarProvider(param));
     }
     for (TemplateParam param : node.getInjectedParams()) {
       checkStrictParamType(node, param, env.getVarProvider(param));

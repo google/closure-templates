@@ -1671,9 +1671,9 @@ public class RenderVisitorTest {
                 arg -> false,
                 outputSb))
         .isEqualTo("<div>static-content future-content</div>");
-    // we only get the <div>.  we used to get the 'static-content' as well but that was only
-    // because we aren't using the autoescaper.
-    assertThat(outputAtFutureGetTime.get()).isEqualTo("<div>");
+    // We immediately type check the future, and so when .get() is called we haven't rendered
+    // anything
+    assertThat(outputAtFutureGetTime.get()).isEmpty();
   }
 
   @Test

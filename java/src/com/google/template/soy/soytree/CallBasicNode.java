@@ -16,7 +16,6 @@
 
 package com.google.template.soy.soytree;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
@@ -31,8 +30,6 @@ import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import java.util.List;
-import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 /**
  * Node representing a call to a basic template.
@@ -49,17 +46,6 @@ public final class CallBasicNode extends CallNode {
    * be called.
    */
   private final ExprRootNode calleeExpr;
-
-  /**
-   * The list of params that need to be type checked when this node is run. All the params that
-   * could be statically verified will be checked up front (by the {@code
-   * CheckCallingParamTypesVisitor}), this list contains the params that could not be statically
-   * checked.
-   *
-   * <p>NOTE:This list will be a subset of the params of the callee, not a subset of the params
-   * passed from this caller.
-   */
-  @Nullable private Predicate<String> paramsToRuntimeTypeCheck = null;
 
   public CallBasicNode(
       int id,
@@ -105,7 +91,6 @@ public final class CallBasicNode extends CallNode {
   private CallBasicNode(CallBasicNode orig, CopyState copyState) {
     super(orig, copyState);
     this.calleeExpr = orig.calleeExpr.copy(copyState);
-    this.paramsToRuntimeTypeCheck = orig.paramsToRuntimeTypeCheck;
   }
 
   @Override
@@ -145,20 +130,6 @@ public final class CallBasicNode extends CallNode {
     return allExprs.build();
   }
 
-  /**
-   * Sets the names of the params that require runtime type checking against callee's types.
-   *
-   * <p>This mechanism is used by the TOFU runtime only to save some work when calling templates.
-   */
-  public void setParamsToRuntimeCheck(Predicate<String> paramNames) {
-    checkState(this.paramsToRuntimeTypeCheck == null);
-    this.paramsToRuntimeTypeCheck = checkNotNull(paramNames);
-  }
-
-  @Override
-  public Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName) {
-    return paramsToRuntimeTypeCheck == null ? arg -> true : paramsToRuntimeTypeCheck;
-  }
 
   @Override
   public String getCommandText() {

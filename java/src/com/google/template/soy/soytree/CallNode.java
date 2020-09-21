@@ -38,10 +38,8 @@ import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
-import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -286,11 +284,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
   /** Returns the location of the callee name in the source code. */
   public abstract SourceLocation getSourceCalleeLocation();
 
-  /**
-   * Returns the subset of {@link TemplateParam params} of the {@code callee} that require runtime
-   * type checking when this node is being rendered.
-   */
-  public abstract Predicate<String> getParamsToRuntimeCheck(String calleeTemplateName);
 
   /**
    * Returns the escaping directives, applied from left to right.
