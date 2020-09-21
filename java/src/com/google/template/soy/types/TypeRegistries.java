@@ -48,7 +48,7 @@ public final class TypeRegistries {
 
   private static final SoyErrorKind PROTO_FQN =
       SoyErrorKind.of(
-          "Proto types should be imported rather than referenced by their fully qualified names.");
+          "Proto types must be imported rather than referenced by their fully qualified names.");
 
   private TypeRegistries() {}
 
@@ -65,9 +65,6 @@ public final class TypeRegistries {
   public static SoyTypeRegistry newComposite(TypeRegistry typeRegistry, TypeInterner typeInterner) {
     return new CompositeSoyTypeRegistry(typeRegistry, typeInterner);
   }
-
-  private static final boolean PROTO_FQN_IS_ERROR =
-      false;
 
   /**
    * Looks up a type by name, including by FQN proto name. Depending on whether FQN names are
@@ -89,12 +86,7 @@ public final class TypeRegistries {
 
     SoyType protoFqnType = registry.getProtoRegistry().getProtoType(typeName);
     if (protoFqnType != null) {
-      if (PROTO_FQN_IS_ERROR) {
-        errorReporter.report(id.location(), PROTO_FQN);
-      } else {
-        errorReporter.warn(id.location(), PROTO_FQN);
-        return protoFqnType;
-      }
+      errorReporter.report(id.location(), PROTO_FQN);
     }
 
     return null;
