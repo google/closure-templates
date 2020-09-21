@@ -237,9 +237,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
 
   /** Resolves a qualified name against the aliases for this file. */
   public Identifier resolveAlias(Identifier identifier) {
-    Preconditions.checkState(
-        importsContext != null, "Called resolveAlias() before ImportsPass was run");
-    return importsContext.resolveAlias(identifier, headerInfo);
+    return headerInfo.resolveAlias(identifier);
   }
 
   public boolean aliasUsed(String alias) {

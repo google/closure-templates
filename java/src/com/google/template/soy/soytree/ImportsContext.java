@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.types.DelegatingSoyTypeRegistry;
 import com.google.template.soy.types.SoyType;
@@ -83,13 +82,6 @@ public final class ImportsContext {
     return checkNotNull(templateRegistry, "Template registry has not been set yet.");
   }
 
-  public Identifier resolveAlias(Identifier id, SoyFileHeaderInfo headerInfo) {
-    // If we have an imports type registry, try to resolve the potentially-aliased identifier as a
-    // proto extension.
-    Identifier resolved = typeRegistry.resolve(id);
-    return resolved.equals(id) ? headerInfo.resolveAlias(id) : resolved;
-  }
-
   /**
    * A {@link SoyTypeRegistry} that includes imported symbols (possibly aliased) in a given file.
    */
@@ -120,7 +112,7 @@ public final class ImportsContext {
     public Identifier resolve(Identifier id) {
       String resolved = SoyTypes.localToFqn(id.identifier(), allLocalToFqn);
       if (resolved != null) {
-        return Identifier.create(resolved, id.location());
+        return Identifier.create(resolved, id.originalName(), id.location());
       }
       return super.resolve(id);
     }

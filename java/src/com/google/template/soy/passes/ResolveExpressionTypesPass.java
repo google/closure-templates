@@ -998,6 +998,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     private void finishMethodCallNode(MethodCallNode node, boolean nullSafe) {
+      boolean firstTime = !node.isMethodResolved();
+
       for (ExprNode child : node.getParams()) {
         visit(child);
       }
@@ -1011,6 +1013,19 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
 
       node.setSoyMethod(method);
+
+      if (firstTime
+          && method == BuiltinMethod.GET_EXTENSION
+          && node.getParams().size() == 1
+          && node.getParams().get(0).getKind() == ExprNode.Kind.GLOBAL_NODE) {
+        GlobalNode param = (GlobalNode) node.getParams().get(0);
+        Identifier resolvedName = typeRegistry.resolve(param.getIdentifier());
+        if (resolvedName != null) {
+          if (!resolvedName.equals(param.getIdentifier())) {
+            param.setName(resolvedName.identifier());
+          }
+        }
+      }
 
       if (method instanceof BuiltinMethod) {
         node.setType(((BuiltinMethod) method).getReturnType(node, typeRegistry, errorReporter));
@@ -1505,20 +1520,22 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       Set<String> givenParams = new HashSet<>();
       ImmutableSet<String> fields = protoType.getFieldNames();
 
-      SoyFileNode file = exprHolderNode.getNearestAncestor(SoyFileNode.class);
       boolean hasAliasedParams = false;
       List<Identifier> resolvedIdentifiers = new ArrayList<>();
 
       // Resolve aliases for the given field names of the proto.
       for (Identifier id : node.getParamNames()) {
         String originalName = id.identifier();
-        Identifier resolvedName = file.resolveAlias(id);
-        if (!resolvedName.identifier().equals(originalName)) {
+        boolean hasOriginal = fields.contains(originalName);
+        boolean hasOriginalExt =
+            hasOriginal && protoType.getFieldDescriptor(originalName).isExtension();
+        Identifier resolvedName = typeRegistry.resolve(id);
+
+        if (resolvedName != null && !resolvedName.identifier().equals(originalName)) {
           // Check that the aliased name does not conflict with a field in the proto as we cannot
           // determine whether the intended field to instantiate is the regular field or the
           // aliased value.
-          if (fields.contains(originalName)
-              && !protoType.getFieldDescriptor(originalName).isExtension()) {
+          if (hasOriginal && !hasOriginalExt) {
             errorReporter.report(
                 id.location(),
                 PROTO_FIELD_NAME_ALIAS_CONFLICT,

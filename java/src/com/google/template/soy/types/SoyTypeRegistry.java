@@ -45,8 +45,10 @@ public interface SoyTypeRegistry extends TypeRegistry, TypeInterner {
     return ImmutableSet.of();
   }
 
+  /** Resolves a local proto symbol to a FQN. Returns null if no match is found. */
+  @Nullable
   default Identifier resolve(Identifier id) {
-    return id;
+    return null;
   }
 
   default ProtoTypeRegistry getProtoRegistry() {

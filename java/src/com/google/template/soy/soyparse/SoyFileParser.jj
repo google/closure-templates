@@ -4128,8 +4128,7 @@ private ExprNode GlobalOrFunctionCallLike() :
               }
             } else {
               // TODO(user): Also add type, then remove code from RETV
-              node = FunctionNode.newNamed(
-                  headerInfo.resolveAlias(ident), paramIds, loc);
+              node = FunctionNode.newNamed(ident, paramIds, loc);
             }
             node.addChildren(params);
             return node;
@@ -4163,8 +4162,7 @@ private ExprNode GlobalOrFunctionCallLike() :
 
   { // If we did not find parens, this is a global node
     if (openParen == null) {
-      return new GlobalNode(
-          headerInfo.resolveAlias(ident));
+      return new GlobalNode(headerInfo.resolveAlias(ident));
     }
 
     // Check if this is a record. If not, look up ident in the type registry to see if it's a proto.
@@ -4174,7 +4172,7 @@ private ExprNode GlobalOrFunctionCallLike() :
       errorReporter.report(ident.location(), EMPTY_RECORD_LITERAL);
       return new RecordLiteralNode(ident, ImmutableList.of(), loc);
     }
-    return FunctionNode.newNone(headerInfo.resolveAlias(ident), loc);
+    return FunctionNode.newNone(ident, loc);
   }
 }
 
@@ -4737,8 +4735,6 @@ private TypeNode NamedType() :
 
   identifier = Identifier()
   {
-    // TODO(lukes): we support aliasing list and map.... but why...?
-    identifier = headerInfo.resolveAlias(identifier);
     fullLocation = identifier.location();
   }
 

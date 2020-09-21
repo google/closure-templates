@@ -35,6 +35,7 @@ import java.util.Optional;
  * identifies some ambiguous function nodes as {@link BuiltinFunction#PROTO_INIT}.
  */
 final class ResolvePluginsPass implements CompilerFilePass {
+
   private final PluginResolver resolver;
   // Proto FQN will be warned in ResolveExpressionTypesPass.
   private final ErrorReporter ignoreFqnWarnings = ErrorReporter.create(ImmutableMap.of());
@@ -48,16 +49,10 @@ final class ResolvePluginsPass implements CompilerFilePass {
     for (FunctionNode function :
         SoyTreeUtils.getAllMatchingNodesOfType(file, FunctionNode.class, fn -> !fn.isResolved())) {
 
-      Identifier resolvedName = function.getIdentifier();
+      Identifier functionName = function.getIdentifier();
       SoyType type =
           TypeRegistries.getTypeOrProtoFqn(
-              file.getSoyTypeRegistry(), ignoreFqnWarnings, resolvedName);
-      if (type == null) {
-        resolvedName = file.resolveAlias(resolvedName);
-        type =
-            TypeRegistries.getTypeOrProtoFqn(
-                file.getSoyTypeRegistry(), ignoreFqnWarnings, resolvedName);
-      }
+              file.getSoyTypeRegistry(), ignoreFqnWarnings, functionName);
       if (type != null && type.getKind() == SoyType.Kind.PROTO) {
         function.setSoyFunction(BuiltinFunction.PROTO_INIT);
         continue;

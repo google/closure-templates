@@ -288,7 +288,7 @@ public final class SharedTestUtils {
     public Identifier resolve(Identifier id) {
       String resolved = SoyTypes.localToFqn(id.identifier(), localToFqn);
       if (resolved != null) {
-        return Identifier.create(resolved, id.location());
+        return Identifier.create(resolved, id.originalName(), id.location());
       }
       return super.resolve(id);
     }
