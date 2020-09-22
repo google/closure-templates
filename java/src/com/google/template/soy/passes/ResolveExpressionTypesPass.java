@@ -290,6 +290,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES =
       SoyErrorKind.of(
           "Template type parameters cannot be inferred. Instead, explicitly declare the type.");
+  private static final SoyErrorKind PROTO_EXT_FQN =
+      SoyErrorKind.of(
+          "Extensions fields in proto init functions must be imported symbols. Fully qualified"
+              + " names are not allowed.");
 
   private final ErrorReporter errorReporter;
 
@@ -1024,6 +1028,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           if (!resolvedName.equals(param.getIdentifier())) {
             param.setName(resolvedName.identifier());
           }
+        } else {
+          errorReporter.report(param.getSourceLocation(), PROTO_EXT_FQN);
         }
       }
 
@@ -1531,7 +1537,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
             hasOriginal && protoType.getFieldDescriptor(originalName).isExtension();
         Identifier resolvedName = typeRegistry.resolve(id);
 
-        if (resolvedName != null && !resolvedName.identifier().equals(originalName)) {
+        if (resolvedName == null) {
+          if (hasOriginalExt) {
+            // FQN extension names are not allowed.
+            errorReporter.report(id.location(), PROTO_EXT_FQN);
+          }
+        } else if (!resolvedName.identifier().equals(originalName)) {
           // Check that the aliased name does not conflict with a field in the proto as we cannot
           // determine whether the intended field to instantiate is the regular field or the
           // aliased value.
