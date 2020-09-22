@@ -31,6 +31,7 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
+import com.google.template.soy.soytree.SanitizedContentKindP;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileP;
 import com.google.template.soy.soytree.SoyFileSetNode;
@@ -88,6 +89,9 @@ public final class TemplateMetadataSerializer {
       createEnumConverter(VisibilityP.class, Visibility.class);
   private static final Converter<TemplateKindP, TemplateType.TemplateKind> TEMPLATE_KIND_CONVERTER =
       createEnumConverter(TemplateKindP.class, TemplateType.TemplateKind.class);
+  private static final Converter<SanitizedContentKindP, SanitizedContentKind>
+      CONTENT_KIND_CONVERTER =
+          createEnumConverter(SanitizedContentKindP.class, SanitizedContentKind.class);
 
   private TemplateMetadataSerializer() {}
 
@@ -144,6 +148,13 @@ public final class TemplateMetadataSerializer {
             .setTemplateKind(
                 TEMPLATE_KIND_CONVERTER.reverse().convert(templateType.getTemplateKind()))
             .setVisibility(VISIBILITY_CONVERTER.reverse().convert(meta.getVisibility()))
+            // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
+            .setContentKind(
+                templateType.getContentKind() == null
+                    ? SanitizedContentKindP.NONE
+                    : CONTENT_KIND_CONVERTER
+                        .reverse()
+                        .convert(templateType.getContentKind().getSanitizedContentKind()))
             .setTemplateType(
                 SoyTypeP.TemplateTypeP.newBuilder()
                     .setReturnType(
@@ -155,7 +166,9 @@ public final class TemplateMetadataSerializer {
             .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
             .setStrictHtml(templateType.isStrictHtml())
             .addAllDataAllCallSituation(
-                protosFromCallSitatuations(templateType.getDataAllCallSituations(), fileNode));
+                protosFromCallSitatuations(templateType.getDataAllCallSituations(), fileNode))
+            // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
+            .addAllParameter(protosFromParameters(templateType.getParameters()));
     // This may be null because some flows such as conformance tests do not run the SoyElementPass.
     if (meta.getHtmlElement() != null && meta.getSoyElement() != null) {
       builder = builder.setHtmlElement(meta.getHtmlElement()).setSoyElement(meta.getSoyElement());

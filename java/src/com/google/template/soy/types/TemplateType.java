@@ -340,15 +340,20 @@ public abstract class TemplateType extends SoyType {
         !isInferredType(), "Only declared types may be serialized to proto form.");
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
     for (Parameter parameter : getParameters()) {
-      templateBuilder.addParameter(
-          ParameterP.newBuilder()
-              .setName(parameter.getName())
-              .setType(parameter.getType().toProto())
-              .setRequired(parameter.isRequired())
-              .build());
+      // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
+      templateBuilder
+          .putParameterOld(parameter.getName(), parameter.getType().toProto())
+          .addParameter(
+              ParameterP.newBuilder()
+                  .setName(parameter.getName())
+                  .setType(parameter.getType().toProto())
+                  .setRequired(parameter.isRequired())
+                  .build());
     }
-    templateBuilder.setReturnType(
-        SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind()).toProto());
+    SoyTypeP returnType =
+        SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind()).toProto();
+    // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
+    templateBuilder.setReturnTypeOld(returnType.getPrimitive()).setReturnType(returnType);
   }
 
   @Override
