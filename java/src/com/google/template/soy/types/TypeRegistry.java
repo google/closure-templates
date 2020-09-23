@@ -29,10 +29,6 @@ public interface TypeRegistry {
   @Nullable
   SoyType getType(String typeName);
 
-  /** Returns the first type in this registry whose name begins with "prefix.". */
-  @Nullable
-  String findTypeWithMatchingNamespace(String prefix);
-
   /** Returns the sorted set of all types in this registry. */
   Iterable<String> getAllSortedTypeNames();
 

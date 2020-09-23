@@ -41,8 +41,6 @@ final class ValidateAliasesPass implements CompilerFilePass {
 
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_TYPE_NAME =
       SoyErrorKind.of("Alias ''{0}'' conflicts with a type of the same name.");
-  private static final SoyErrorKind ALIAS_CONFLICTS_WITH_TYPE_PREFIX =
-      SoyErrorKind.of("Alias ''{0}'' conflicts with namespace for type ''{1}''.");
 
   private static final SoyErrorKind ALIAS_CONFLICTS_WITH_VE =
       SoyErrorKind.of("Alias ''{0}'' conflicts with a VE of the same name.");
@@ -94,15 +92,6 @@ final class ValidateAliasesPass implements CompilerFilePass {
               .equals(tmplImports.get(alias.alias().identifier()).fullyQualifiedName())) {
         errorReporter.report(
             alias.alias().location(), ALIAS_CONFLICTS_WITH_AN_IMPORT_SYMBOL, alias.alias());
-      }
-      String conflictingNamespacedType =
-          registry.findTypeWithMatchingNamespace(alias.alias().identifier());
-      if (conflictingNamespacedType != null) {
-        errorReporter.report(
-            alias.alias().location(),
-            ALIAS_CONFLICTS_WITH_TYPE_PREFIX,
-            alias.alias(),
-            conflictingNamespacedType);
       }
       String prefix = alias.alias().identifier() + ".";
       for (String global : options.getCompileTimeGlobals().keySet()) {

@@ -115,11 +115,6 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   }
 
   @Override
-  public String findTypeWithMatchingNamespace(String prefix) {
-    return delegate.findTypeWithMatchingNamespace(prefix);
-  }
-
-  @Override
   public Iterable<String> getAllSortedTypeNames() {
     return delegate.getAllSortedTypeNames();
   }

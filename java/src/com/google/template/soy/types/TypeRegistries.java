@@ -253,11 +253,6 @@ public final class TypeRegistries {
     }
 
     @Override
-    public String findTypeWithMatchingNamespace(String prefix) {
-      return null;
-    }
-
-    @Override
     public ImmutableSet<String> getAllSortedTypeNames() {
       return BUILTIN_TYPES.keySet();
     }
@@ -277,11 +272,6 @@ public final class TypeRegistries {
     @Nullable
     public SoyType getType(String typeName) {
       return typeRegistry.getType(typeName);
-    }
-
-    @Override
-    public String findTypeWithMatchingNamespace(String prefix) {
-      return typeRegistry.findTypeWithMatchingNamespace(prefix);
     }
 
     @Override

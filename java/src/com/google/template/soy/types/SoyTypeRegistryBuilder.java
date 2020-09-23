@@ -17,17 +17,14 @@
 package com.google.template.soy.types;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static java.util.Comparator.naturalOrder;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
@@ -45,7 +42,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /** Helper class that assists in the construction of {@link SoyTypeRegistry}. */
@@ -238,16 +234,6 @@ public final class SoyTypeRegistryBuilder {
    */
   static class SoyTypeRegistryImpl extends DelegatingSoyTypeRegistry {
 
-    /** All of the known type names for this registry (including its delegate), sorted. */
-    private final Supplier<Iterable<String>> allSortedTypeNames;
-
-    /**
-     * Map of the first dotted prefix in a type to its full type name (e.g. "foo." ->
-     * "foo.bar.Baz"). Used to check for namespace conflicts in {@link
-     * com.google.template.soy.passes.ValidateAliasesPass}.
-     */
-    private final Supplier<ImmutableMap<String, String>> prefixesToTypeNames;
-
     private final ImmutableSet<FileDescriptor> fileDescriptors;
     private final ProtoFqnTypeRegistry protoFqnRegistry;
 
@@ -258,9 +244,6 @@ public final class SoyTypeRegistryBuilder {
       super(delegate);
       this.protoFqnRegistry = protoFqnRegistry;
       this.fileDescriptors = fileDescriptors;
-
-      this.allSortedTypeNames = Suppliers.memoize(this::buildAllSortedTypeNames);
-      this.prefixesToTypeNames = Suppliers.memoize(this::buildPrefixToTypeNamesMap);
     }
 
     @Override
@@ -271,39 +254,6 @@ public final class SoyTypeRegistryBuilder {
     @Override
     public ProtoTypeRegistry getProtoRegistry() {
       return protoFqnRegistry;
-    }
-
-    @Override
-    public String findTypeWithMatchingNamespace(String prefix) {
-      return prefixesToTypeNames.get().get(prefix + ".");
-    }
-
-    private Iterable<String> buildAllSortedTypeNames() {
-      return Iterables.mergeSorted(
-          ImmutableList.of(
-              super.getAllSortedTypeNames(),
-              ImmutableList.sortedCopyOf(protoFqnRegistry.getAllKeys())),
-          naturalOrder());
-    }
-
-    /**
-     * Takes a list of fully qualified type names (e.g. "foo.bar.Baz"), and returns a map of the
-     * first dotted prefix to each full name (e.g. "foo." -> "foo.bar.Baz"). If multiple types have
-     * the same prefix, the map will store the first one.
-     */
-    private ImmutableMap<String, String> buildPrefixToTypeNamesMap() {
-      Map<String, String> prefixesToTypeNamesBuilder = new HashMap<>();
-      for (String typeName : allSortedTypeNames.get()) {
-        String prefix = typeName;
-        int indexOfFirstDot = typeName.indexOf(".");
-        // If there was no dot, or a dot was the last char, return the whole string.
-        // Otherwise, return "foo." in "foo.bar.baz".
-        if (indexOfFirstDot >= 0 && indexOfFirstDot < typeName.length() - 1) {
-          prefix = typeName.substring(0, indexOfFirstDot + 1);
-        }
-        prefixesToTypeNamesBuilder.putIfAbsent(prefix, typeName);
-      }
-      return ImmutableMap.copyOf(prefixesToTypeNamesBuilder);
     }
   }
 
@@ -338,11 +288,6 @@ public final class SoyTypeRegistryBuilder {
                     interner, this, (Descriptor) descriptor, msgFqnToExts.get(protoFqn)));
       }
       return null;
-    }
-
-    @Override
-    public ImmutableSet<String> getAllKeys() {
-      return msgAndEnumFqnToDesc.keySet();
     }
   }
 }
