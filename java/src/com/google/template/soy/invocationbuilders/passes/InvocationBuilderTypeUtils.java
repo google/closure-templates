@@ -49,11 +49,11 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Utils for handling types used in Soy Java invocation builders. */
-final class InvocationBuilderTypeUtils {
+public final class InvocationBuilderTypeUtils {
 
   private InvocationBuilderTypeUtils() {}
 
-  static ImmutableList<JavaType> getJavaTypes(SoyType soyType) {
+  public static ImmutableList<JavaType> getJavaTypes(SoyType soyType) {
     return getJavaTypes(soyType, false);
   }
 
@@ -198,7 +198,7 @@ final class InvocationBuilderTypeUtils {
     }
   }
 
-  static Optional<SoyType> upcastTypesForIndirectParams(Set<SoyType> allTypes) {
+  public static Optional<SoyType> upcastTypesForIndirectParams(Set<SoyType> allTypes) {
     if (allTypes.size() == 1) {
       return Optional.of(Iterables.getOnlyElement(allTypes));
     }

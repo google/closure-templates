@@ -43,7 +43,8 @@ public class RecordJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    throw new UnsupportedOperationException();
+    // Invocation builder code special cases this type and avoids calling this method altogether.
+    return "java.util.Map<String, ?>";
   }
 
   @Override
@@ -59,11 +60,6 @@ public class RecordJavaType extends JavaType {
   @Override
   public boolean isGenericsTypeSupported() {
     return false;
-  }
-
-  @Override
-  public String asTypeLiteralString() {
-    throw new UnsupportedOperationException();
   }
 
   @Override
