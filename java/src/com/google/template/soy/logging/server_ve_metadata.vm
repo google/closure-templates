@@ -22,10 +22,12 @@ package $package;
 
 import com.google.protobuf.ExtensionRegistry;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.template.soy.jbcsrc.api.SoyVeMetadata;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import javax.annotation.Generated;
 
 @Generated("$generator")
+@SoyVeMetadata
 public final class $className {
 #foreach ( $veMetadata in $veMetadatas )
 
