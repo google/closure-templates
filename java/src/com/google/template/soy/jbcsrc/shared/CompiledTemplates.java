@@ -85,6 +85,10 @@ public class CompiledTemplates {
     this.selector = builder.build();
   }
 
+  ClassLoader getClassLoader() {
+    return loader;
+  }
+
   /** Returns the strict content type of the template. */
   public ContentKind getTemplateContentKind(String name) {
     return getTemplateData(name).kind;

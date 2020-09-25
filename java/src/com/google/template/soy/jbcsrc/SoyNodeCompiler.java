@@ -65,8 +65,8 @@ import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streama
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
+import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import com.google.template.soy.jbcsrc.shared.TemplateCallFactory;
 import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
@@ -923,7 +923,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
 
   private static final Handle CONSTRUCTION_HANDLE =
       MethodRef.create(
-              TemplateCallFactory.class,
+              ClassLoaderFallbackCallFactory.class,
               "bootstrapConstruction",
               MethodHandles.Lookup.class,
               String.class,

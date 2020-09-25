@@ -39,6 +39,7 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.ClassData;
@@ -63,6 +64,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
@@ -130,10 +132,24 @@ final class TemplateCompiler {
   }
 
   private static boolean shouldResolveParamValueInConstructor(TemplateParam param) {
-    // Template-type params with defaults need access to a RenderContext to resolve, so we resolve
-    // them in the render method, not the constructor.
+    // Template-type and VE literal (with metadata) params with defaults need access to a
+    // RenderContext to resolve, so we resolve them in the render method, not the constructor.
     return !(param.hasDefault()
-        && SoyTypes.transitivelyContainsKind(param.type(), SoyType.Kind.TEMPLATE));
+        && (SoyTypes.transitivelyContainsKind(param.type(), SoyType.Kind.TEMPLATE)
+            || hasVeMetadataDefault(param)));
+  }
+
+  private static boolean hasVeMetadataDefault(TemplateParam param) {
+    if (param.hasDefault()) {
+      List<VeLiteralNode> veChildren =
+          SoyTreeUtils.getAllNodesOfType(param.defaultValue(), VeLiteralNode.class);
+      for (VeLiteralNode ve : veChildren) {
+        if (ve.getLoggableElement().hasMetadata()) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

@@ -220,10 +220,10 @@ final class StubbingCompiledTemplates extends CompiledTemplates {
         }
         // For other Soy templates, we need to load the class manually using this ClassLoader, so
         // that their ClassLoader references point back to this class. This is important because
-        // TemplateCallFactory uses the calling-class's ClassLoader to look up the subtemplates at
-        // call sites (invoked automatically by Java by the invokedynamic instruction). We need this
-        // class to be in control of which templates are stubbed so that we can properly swap out
-        // stub templates when a call chain finds itself in one.
+        // ClassLoaderFallbackCallFactory uses the calling-class's ClassLoader to look up the
+        // subtemplates at call sites (invoked automatically by Java by the invokedynamic
+        // instruction). We need this class to be in control of which templates are stubbed so that
+        // we can properly swap out stub templates when a call chain finds itself in one.
         Class<?> c = findLoadedClass(name);
         if (c == null) {
           return super.findClass(name);

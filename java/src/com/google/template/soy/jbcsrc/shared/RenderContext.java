@@ -29,6 +29,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
 import com.google.template.soy.jbcsrc.api.RenderResult;
+import com.google.template.soy.logging.LoggableElementMetadata;
 import com.google.template.soy.logging.SoyLogger;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -264,6 +265,22 @@ public final class RenderContext {
       return msgPartsByAlternateId;
     }
     return msgParts;
+  }
+
+  /**
+   * Returns the VE metadata in the given class with the given method name. This uses the same
+   * ClassLoader as is used to load template references.
+   */
+  public LoggableElementMetadata getVeMetadata(
+      String metadataClassName, String metadataMethodName) {
+    try {
+      return (LoggableElementMetadata)
+          Class.forName(metadataClassName, /* initialize= */ true, templates.getClassLoader())
+              .getMethod(metadataMethodName)
+              .invoke(null);
+    } catch (ReflectiveOperationException e) {
+      throw new AssertionError(e);
+    }
   }
 
   @VisibleForTesting

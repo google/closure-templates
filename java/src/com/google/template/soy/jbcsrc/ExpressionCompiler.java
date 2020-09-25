@@ -94,9 +94,8 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
-import com.google.template.soy.jbcsrc.restricted.TypeInfo;
+import com.google.template.soy.jbcsrc.shared.ClassLoaderFallbackCallFactory;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
-import com.google.template.soy.jbcsrc.shared.TemplateCallFactory;
 import com.google.template.soy.logging.ValidatedLoggingConfig.ValidatedLoggableElement;
 import com.google.template.soy.plugin.internal.JavaPluginExecContext;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
@@ -125,7 +124,6 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Method;
 
 /**
  * Compiles an {@link ExprNode} to a {@link SoyExpression}.
@@ -1520,25 +1518,45 @@ final class ExpressionCompiler {
       return ProtoUtils.createProto(node, this::visit, detacher, varManager);
     }
 
+    private static final Handle GET_VE_WITH_METADATA_HANDLE =
+        MethodRef.create(
+                ClassLoaderFallbackCallFactory.class,
+                "bootstrapVeWithMetadata",
+                MethodHandles.Lookup.class,
+                String.class,
+                MethodType.class,
+                String.class,
+                String.class)
+            .asHandle();
+
+    private static final String VE_WITH_METADATA_SIGNATURE =
+        Type.getMethodDescriptor(
+            BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE,
+            Type.LONG_TYPE,
+            BytecodeUtils.STRING_TYPE,
+            BytecodeUtils.RENDER_CONTEXT_TYPE);
+
     @Override
     protected SoyExpression visitVeLiteralNode(VeLiteralNode node) {
       Expression visualElement;
       ValidatedLoggableElement element = node.getLoggableElement();
       if (element.hasMetadata()) {
-        MethodRef metadata =
-            MethodRef.createStaticMethod(
-                    TypeInfo.create(
-                        String.format("%s.%s", element.getJavaPackage(), element.getClassName()),
-                        /* isInterface= */ false),
-                    new Method(
-                        element.getGeneratedVeMetadataMethodName(),
-                        BytecodeUtils.LOGGABLE_ELEMENT_METADATA_TYPE,
-                        MethodRef.NO_METHOD_ARGS))
-                .asNonNullable()
-                .asCheap();
+        Expression renderContext = parameters.getRenderContext();
         visualElement =
-            MethodRef.SOY_VISUAL_ELEMENT_CREATE_METADATA.invoke(
-                constant(node.getId()), constant(node.getName().identifier()), metadata.invoke());
+            new Expression(BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE) {
+              @Override
+              protected void doGen(CodeBuilder adapter) {
+                adapter.pushLong(node.getId());
+                adapter.pushString(node.getName().identifier());
+                renderContext.gen(adapter);
+                adapter.visitInvokeDynamicInsn(
+                    "getVeWithMetadata",
+                    VE_WITH_METADATA_SIGNATURE,
+                    GET_VE_WITH_METADATA_HANDLE,
+                    String.format("%s.%s", element.getJavaPackage(), element.getClassName()),
+                    element.getGeneratedVeMetadataMethodName());
+              }
+            };
       } else {
         visualElement =
             MethodRef.SOY_VISUAL_ELEMENT_CREATE.invoke(
@@ -1549,7 +1567,7 @@ final class ExpressionCompiler {
 
     private static final Handle GETFACTORY_HANDLE =
         MethodRef.create(
-                TemplateCallFactory.class,
+                ClassLoaderFallbackCallFactory.class,
                 "bootstrapFactoryLookup",
                 MethodHandles.Lookup.class,
                 String.class,
@@ -1623,8 +1641,8 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitVeLiteralNode(VeLiteralNode node) {
-      // this is essentially a primitive
-      return true;
+      // VE metadata needs a RenderContext to resolve.
+      return !node.getLoggableElement().hasMetadata();
     }
 
     @Override
