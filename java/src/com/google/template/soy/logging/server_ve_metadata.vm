@@ -31,4 +31,6 @@ public final class $className {
 
 #veMetadata( $veMetadata )
 #end
+
+  private $className() {}
 }
