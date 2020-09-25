@@ -30,6 +30,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallDelegateNode;
@@ -93,6 +94,9 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
       SoyErrorKind.of("'{'call'}' is only valid on template types, but found type ''{0}''.");
   private static final SoyErrorKind CANNOT_CALL_MIXED_CONTENT_TYPE =
       SoyErrorKind.of("Cannot call expressions of different content types; found {0} and {1}.");
+
+  private static final SoyErrorKind INVALID_DATA_EXPR =
+      SoyErrorKind.of("''data='' should be a record type, found ''{0}''.", StyleAllowance.NO_CAPS);
 
   /** The error reporter that is used in this compiler pass. */
   private final ErrorReporter errorReporter;
@@ -264,8 +268,15 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
             }
           }
         } else {
-          // TODO: Check if the fields of the type of data arg can be assigned to the params.
-          // This is possible for some types, and never allowed for other types.
+          ExprNode dataExpr = call.getDataExpr();
+          // TODO(b/168852179): enforce that the correct set of properties are present
+          if (!SoyTypes.isKindOrUnionOfKind(dataExpr.getType(), SoyType.Kind.RECORD)
+              && dataExpr.getType().getKind() != SoyType.Kind.UNKNOWN
+              // We allow 'any' due to a convention in wiz components :(
+              && dataExpr.getType().getKind() != SoyType.Kind.ANY) {
+            errorReporter.report(
+                dataExpr.getSourceLocation(), INVALID_DATA_EXPR, dataExpr.getType());
+          }
         }
       }
     }
