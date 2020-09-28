@@ -307,6 +307,10 @@ public final class BasicFunctionsRuntime {
             .splitToList(str).stream().map(StringData::forValue).collect(toImmutableList()));
   }
 
+  public static String strReplaceAll(String str, String match, String token) {
+    return str.replace(match, token);
+  }
+
   public static String strTrim(String str) {
     return str.trim();
   }

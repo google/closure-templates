@@ -1933,6 +1933,18 @@ soy.$$strSplit = function(s, sep) {
 };
 
 
+/**
+ * Replaces all occurrences in s of match with token.
+ * @param {string} s
+ * @param {string} match
+ * @param {string} token
+ * @return {string}
+ */
+soy.$$strReplaceAll = function(s, match, token) {
+  return goog.string.replaceAll(s, match, token);
+};
+
+
 // -----------------------------------------------------------------------------
 // Bidi directives/functions.
 

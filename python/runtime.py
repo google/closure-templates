@@ -535,6 +535,11 @@ def str_ends_with(s, val):
   return s.endswith(val)
 
 
+def str_replace_all(s, match, token):
+  """Replaces all occurrences in s of match with token."""
+  return s.replace(match, token)
+
+
 def str_trim(s):
   """Trims leading and trailing whitespace from s."""
   return s.strip()

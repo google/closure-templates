@@ -54,6 +54,7 @@ public class BasicFunctions {
         new StrEndsWithMethod(),
         new StrIndexOfFunction(),
         new StrLenFunction(),
+        new StrReplaceAllMethod(),
         new StrSmsUriToUriFunction(),
         new StrSplitMethod(),
         new StrStartsWithMethod(),
