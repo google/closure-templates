@@ -56,6 +56,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
@@ -74,7 +75,6 @@ import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SwitchCaseNode;
@@ -291,7 +291,7 @@ final class TemplateAnalysis {
       // * no children => don't evaluate the switch expression
       // * no cases => don't evaluate the switch expression
 
-      List<BlockNode> children = node.getChildren();
+      List<CaseOrDefaultNode> children = node.getChildren();
       if (children.isEmpty()) {
         return;
       }

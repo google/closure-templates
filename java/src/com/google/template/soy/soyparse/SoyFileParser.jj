@@ -3092,7 +3092,7 @@ private SwitchNode SwitchStmt() :
   }
 
   {
-    List<BlockNode> cases = new ArrayList<BlockNode>();
+    List<CaseOrDefaultNode> cases = new ArrayList<CaseOrDefaultNode>();
   }
 
   // consume all whitespace between {switch} and the first {case}

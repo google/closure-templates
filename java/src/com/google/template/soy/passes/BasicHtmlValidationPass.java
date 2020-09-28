@@ -142,7 +142,8 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
       visitControlFlowNode(node, /* exhaustive=*/ node.hasIfEmptyBlock());
     }
 
-    private void visitControlFlowNode(SplitLevelTopNode<BlockNode> parent, boolean exhaustive) {
+    private void visitControlFlowNode(
+        SplitLevelTopNode<? extends BlockNode> parent, boolean exhaustive) {
       if (exhaustive) {
         Set<String> definiteBlockAttrs = null;
         for (BlockNode block : parent.getChildren()) {

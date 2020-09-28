@@ -22,7 +22,6 @@ import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
@@ -36,9 +35,9 @@ import com.google.template.soy.soytree.SoyNode.StatementNode;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class SwitchNode extends AbstractParentCommandNode<BlockNode>
+public final class SwitchNode extends AbstractParentCommandNode<CaseOrDefaultNode>
     implements StandaloneNode,
-        SplitLevelTopNode<BlockNode>,
+        SplitLevelTopNode<CaseOrDefaultNode>,
         StatementNode,
         ExprHolderNode,
         CommandTagAttributesHolder {

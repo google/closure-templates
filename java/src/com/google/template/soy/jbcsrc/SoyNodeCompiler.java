@@ -81,6 +81,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
 import com.google.template.soy.soytree.CallParamValueNode;
+import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -300,7 +301,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // 2. no children.  Just return the empty statement
     // Note that in both of these cases we do not evalutate (or generate code) for the switch
     // expression.
-    List<BlockNode> children = node.getChildren();
+    List<CaseOrDefaultNode> children = node.getChildren();
     if (children.isEmpty()) {
       return Statement.NULL_STATEMENT;
     }
