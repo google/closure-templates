@@ -7,5 +7,5 @@
     for autoprefixing in [css function](functions.md#css) calls.
 
 *   `requirecsspath` takes a list of global or relative paths for css files
-    (this can be either GSS or SASS). This does NOT have any autoprefix
+    (this can be either GSS or Sass). This does NOT have any autoprefix
     behavior. Use of cssbase is required to autoprefix.
