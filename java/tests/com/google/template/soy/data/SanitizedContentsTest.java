@@ -27,9 +27,11 @@ import com.google.common.html.types.SafeHtmls;
 import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeScriptProto;
 import com.google.common.html.types.SafeScripts;
+import com.google.common.html.types.SafeStyle;
 import com.google.common.html.types.SafeStyleSheet;
 import com.google.common.html.types.SafeStyleSheetProto;
 import com.google.common.html.types.SafeStyleSheets;
+import com.google.common.html.types.SafeStyles;
 import com.google.common.html.types.SafeUrl;
 import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.SafeUrls;
@@ -207,6 +209,27 @@ public class SanitizedContentsTest {
     js = SanitizedContents.numberJs(4.2);
     assertThat(js.getContent()).isEqualTo("4.2");
     assertThat(js.getContentKind()).isEqualTo(ContentKind.JS);
+  }
+
+  @Test
+  public void testCssTypeConversions() {
+    final String testStyleSheetContent = "div { display: none; }";
+    final SafeStyleSheet safeStyleSheet = SafeStyleSheets.fromConstant(testStyleSheetContent);
+    final CssParam styleSheetParam = CssParam.of(safeStyleSheet);
+    final SanitizedContent sanitizedStyleSheet = SanitizedContents.fromCss(styleSheetParam);
+
+    assertThat(sanitizedStyleSheet.getContentKind()).isEqualTo(ContentKind.CSS);
+    assertThat(sanitizedStyleSheet.getContent()).isEqualTo(testStyleSheetContent);
+    assertThat(sanitizedStyleSheet.toSafeStyleSheet()).isEqualTo(safeStyleSheet);
+
+    final String testStyleContent = "display: none;";
+    final SafeStyle safeStyle = SafeStyles.fromConstant(testStyleContent);
+    final CssParam styleParam = CssParam.of(safeStyle);
+    final SanitizedContent sanitizedStyle = SanitizedContents.fromCss(styleParam);
+
+    assertThat(sanitizedStyle.getContentKind()).isEqualTo(ContentKind.CSS);
+    assertThat(sanitizedStyle.getContent()).isEqualTo(testStyleContent);
+    assertThat(sanitizedStyle.toSafeStyle()).isEqualTo(safeStyle);
   }
 
   @Test

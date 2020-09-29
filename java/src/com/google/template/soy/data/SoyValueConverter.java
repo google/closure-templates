@@ -103,6 +103,7 @@ public final class SoyValueConverter {
     // Proto enum that was directly passed into the template
     cheapConverterMap.put(
         ProtocolMessageEnum.class, input -> IntegerData.forValue(input.getNumber()));
+    cheapConverterMap.put(CssParam.class, SanitizedContents::fromCss);
     cheapConverterMap.put(SafeHtml.class, SanitizedContents::fromSafeHtml);
     cheapConverterMap.put(SafeHtmlProto.class, SanitizedContents::fromSafeHtmlProto);
     cheapConverterMap.put(SafeScript.class, SanitizedContents::fromSafeScript);

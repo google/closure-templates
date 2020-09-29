@@ -247,6 +247,17 @@ public final class SanitizedContents {
     return SanitizedContent.create(constant, kind, dir);
   }
 
+  /** Converts a {@link CssParam} into a Soy {@link SanitizedContent} of kind HTML. */
+  public static SanitizedContent fromCss(CssParam css) {
+    switch (css.type()) {
+      case SAFE_STYLE:
+        return fromSafeStyle(css.safeStyle());
+      case SAFE_STYLE_SHEET:
+        return fromSafeStyleSheet(css.safeStyleSheet());
+    }
+    throw new AssertionError();
+  }
+
   /** Converts a {@link SafeHtml} into a Soy {@link SanitizedContent} of kind HTML. */
   public static SanitizedContent fromSafeHtml(SafeHtml html) {
     return SanitizedContent.create(html.getSafeHtmlString(), ContentKind.HTML);
