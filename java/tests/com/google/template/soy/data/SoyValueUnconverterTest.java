@@ -20,8 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.template.soy.data.SoyValueUnconverter.unconvert;
 import static com.google.template.soy.data.UnsafeSanitizedContentOrdainer.ordainAsSafe;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.html.types.SafeHtml;
 import com.google.common.html.types.SafeScript;
 import com.google.common.html.types.SafeStyle;
@@ -36,6 +35,7 @@ import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -62,10 +62,13 @@ public class SoyValueUnconverterTest {
     Message message = SomeEmbeddedMessage.newBuilder().setSomeEmbeddedString("foo").build();
     assertThat(unconvert(SoyProtoValue.create(message))).isEqualTo(message);
 
-    List<String> list = ImmutableList.of("a", "b", "c");
+    List<String> list = Lists.newArrayList("a", "b", null, "c");
     assertThat((List<?>) unconvert(CONVERTER.convert(list))).isEqualTo(list);
 
-    Map<String, String> map = ImmutableMap.of("k1", "v1", "k2", "v2");
+    Map<String, String> map = new HashMap<>();
+    map.put("k1", "v1");
+    map.put("k2", "v2");
+    map.put("k3", null);
     assertThat((Map<?, ?>) unconvert(CONVERTER.convert(map))).isEqualTo(map);
 
     SafeHtml safeHtml = ordainAsSafe("<p>foo</p>", ContentKind.HTML).toSafeHtml();

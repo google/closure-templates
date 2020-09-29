@@ -16,14 +16,14 @@
 
 package com.google.template.soy.data;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.StringData;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Performs the inverse operation to {@link SoyValueConverter#convert(Object)}. */
 final class SoyValueUnconverter {
@@ -43,23 +43,28 @@ final class SoyValueUnconverter {
     } else if (soyValue instanceof StringData) {
       return ((StringData) soyValue).getValue();
     } else if (soyValue instanceof SoyList) {
+      // Use ArrayList to allow nulls.
       return ((SoyList) soyValue)
           .asResolvedJavaList().stream()
               .map(SoyValueUnconverter::unconvert)
-              .collect(toImmutableList());
+              .collect(Collectors.toList());
     } else if (soyValue instanceof SoyMap) {
-      // Use ImmutableMap to preserve ordering.
-      return ((SoyMap) soyValue)
-          .asJavaMap().entrySet().stream()
-              .collect(toImmutableMap(e -> unconvert(e.getKey()), e -> unconvert(e.getValue())));
+      // Use LinkedHashMap to preserve ordering and allow nulls.
+      Map<Object, Object> unconverted = new LinkedHashMap<>();
+      ((SoyMap) soyValue)
+          .asJavaMap()
+          .forEach((key, value) -> unconverted.put(unconvert(key), unconvert(value)));
+      return unconverted;
     } else if (soyValue instanceof SoyProtoValue) {
       return ((SoyProtoValue) soyValue).getProto();
     } else if (soyValue instanceof SoyRecord) {
       // this needs to come after checking for SoyProtoValue since SoyProtoValue implements
       // SoyRecord
-      return ((SoyRecord) soyValue)
-          .recordAsMap().entrySet().stream()
-              .collect(toImmutableMap(e -> e.getKey(), e -> unconvert(e.getValue())));
+      Map<String, Object> unconverted = new LinkedHashMap<>();
+      ((SoyRecord) soyValue)
+          .recordAsMap()
+          .forEach((key, value) -> unconverted.put(key, unconvert(value)));
+      return unconverted;
     } else if (soyValue instanceof SanitizedContent) {
       SanitizedContent sc = (SanitizedContent) soyValue;
       switch (sc.getContentKind()) {
