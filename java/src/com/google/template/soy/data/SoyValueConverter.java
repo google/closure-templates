@@ -332,9 +332,51 @@ public final class SoyValueConverter {
   private interface Converter<T> extends Function<T, SoyValueProvider> {}
 
   private static final class TypeMap {
-    // An explicit marker used to record failed lookups.
-    private static final Object NULL_MARKER = new Object();
-    private final Map<Class<?>, Object> map = new ConcurrentHashMap<>();
+
+    /**
+     * Returns the converter for the given type. The lookup algorithm is:
+     *
+     * <ul>
+     *   <li>Explicit mapping
+     *   <li>Check the superclass
+     *   <li>Check each interface
+     * </ul>
+     *
+     * <p>This caches converters for types that aren't explicitly configured. These are types like
+     * protos and subtypes of explicitly configured types. This caches the created converter, but
+     * with a weak reference to the Class instance, so the Class can be garbage collected if this is
+     * the last reference to it.
+     */
+    private final ClassValue<Converter<?>> converterValue =
+        new ClassValue<Converter<?>>() {
+
+          @Override
+          protected Converter<?> computeValue(Class<?> clz) {
+            Converter<?> c = map.get(clz);
+            if (c != null) {
+              return c;
+            }
+            c = getConverterOrNull(clz.getSuperclass());
+            if (c == null) {
+              for (Class<?> iface : clz.getInterfaces()) {
+                c = getConverterOrNull(iface);
+                if (c != null) {
+                  return c;
+                }
+              }
+            }
+            return c;
+          }
+
+          private Converter<?> getConverterOrNull(Class<?> clz) {
+            if (clz == null) {
+              return null;
+            }
+            return get(clz);
+          }
+        };
+
+    private final Map<Class<?>, Converter<?>> map = new ConcurrentHashMap<>();
 
     <T> SoyValueProvider convert(T o) {
       @SuppressWarnings("unchecked")
@@ -347,11 +389,7 @@ public final class SoyValueConverter {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     <T> Converter<T> getConverter(Class<T> clz) {
-      Object o = resolveConverter(checkNotNull(clz));
-      if (o == NULL_MARKER) {
-        return null;
-      }
-      return (Converter) o;
+      return (Converter) converterValue.get(checkNotNull(clz));
     }
 
     <T> void put(Class<T> clazz, Converter<? extends T> converter) {
@@ -360,43 +398,6 @@ public final class SoyValueConverter {
 
     void putStringMap(Converter<Map<String, ?>> converter) {
       put(Map.class, converter);
-    }
-
-    /**
-     * Returns the converter for the given type. The lookup algorithm is:
-     *
-     * <ul>
-     *   <li>Explicit mapping
-     *   <li>Check the superclass
-     *   <li>Check each interface
-     * </ul>
-     *
-     * @param clazz the type to lookup
-     * @return the registered handler, or null if none could be found
-     */
-    private Object resolveConverter(@Nullable Class<?> clazz) {
-      if (clazz == null) {
-        // recursive base case
-        return NULL_MARKER;
-      }
-      Object c = map.get(clazz);
-      if (c != null) {
-        return c;
-      }
-      // Walk the ancestors classes and interfaces.
-      c = resolveConverter(clazz.getSuperclass());
-      if (c == NULL_MARKER) {
-        for (Class<?> iface : clazz.getInterfaces()) {
-          c = resolveConverter(iface);
-          if (c != NULL_MARKER) {
-            break;
-          }
-        }
-      }
-      // at this point c is either a valid converter or NULL_MARKER, store the result to speed
-      // future lookups
-      map.put(clazz, c);
-      return c;
     }
   }
 
