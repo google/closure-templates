@@ -497,7 +497,8 @@ final class MsgCompiler {
                   // 2. we need to only generate 'half' of it
                   Label restartPoint = new Label();
                   Expression veData =
-                      exprCompiler.compile(veLogNode.getVeDataExpression(), detachState);
+                      exprCompiler.compileRootExpression(
+                          veLogNode.getVeDataExpression(), detachState);
                   return appendable
                       .enterLoggableElement(
                           MethodRef.CREATE_LOG_STATEMENT.invoke(
