@@ -26,10 +26,14 @@ interface ExtraCodeCompiler {
   ExtraCodeCompiler NO_OP =
       new ExtraCodeCompiler() {
         @Override
-        public Statement compile(ExpressionCompiler exprCompiler, AppendableExpression appendable) {
+        public Statement compile(
+            ExpressionCompiler exprCompiler,
+            AppendableExpression appendable,
+            DetachState detachState) {
           return Statement.NULL_STATEMENT;
         }
       };
 
-  Statement compile(ExpressionCompiler exprCompiler, AppendableExpression appendable);
+  Statement compile(
+      ExpressionCompiler exprCompiler, AppendableExpression appendable, DetachState detachState);
 }

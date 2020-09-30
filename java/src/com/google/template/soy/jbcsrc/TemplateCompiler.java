@@ -303,7 +303,7 @@ final class TemplateCompiler {
     // We skipped resolving default values for template-type parameters earlier, but now we have
     // access to the RenderContext and can do so.
     ExtraCodeCompiler resolveDefaultValuesForTemplateParams =
-        (expressionCompiler, appendable) -> {
+        (expressionCompiler, appendable, detachState) -> {
           List<Statement> statements = new ArrayList<>();
           for (TemplateParam param : templateNode.getAllParams()) {
             if (!shouldResolveParamValueInConstructor(param)) {

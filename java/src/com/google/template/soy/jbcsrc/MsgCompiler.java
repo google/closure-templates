@@ -102,7 +102,10 @@ final class MsgCompiler {
   private static final ExtraCodeCompiler EXIT_LOGGABLE_ELEMENT =
       new ExtraCodeCompiler() {
         @Override
-        public Statement compile(ExpressionCompiler exprCompiler, AppendableExpression appendable) {
+        public Statement compile(
+            ExpressionCompiler exprCompiler,
+            AppendableExpression appendable,
+            DetachState detachState) {
           return appendable.exitLoggableElement().toStatement();
         }
       };
@@ -491,14 +494,17 @@ final class MsgCompiler {
               new ExtraCodeCompiler() {
                 @Override
                 public Statement compile(
-                    ExpressionCompiler exprCompiler, AppendableExpression appendable) {
+                    ExpressionCompiler exprCompiler,
+                    AppendableExpression appendable,
+                    DetachState detachStateForExtraCodeCompiler) {
                   // this is very similar to SoyNodeCompiler.visitVeLogNode but
                   // 1. we don't have to worry about logonly
                   // 2. we need to only generate 'half' of it
                   Label restartPoint = new Label();
                   Expression veData =
-                      exprCompiler.compileRootExpression(
-                          veLogNode.getVeDataExpression(), detachState);
+                      exprCompiler.compileSubExpression(
+                          veLogNode.getVeDataExpression(),
+                          detachStateForExtraCodeCompiler.createExpressionDetacher(restartPoint));
                   return appendable
                       .enterLoggableElement(
                           MethodRef.CREATE_LOG_STATEMENT.invoke(

@@ -50,6 +50,7 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
@@ -489,6 +490,24 @@ public final class TemplateTester {
   static CompiledTemplates compileFile(String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(file).build();
+    ParseResult parseResult = parser.parse();
+    return BytecodeCompiler.compile(
+            parseResult.registry(),
+            parseResult.fileSet(),
+            ErrorReporter.exploding(),
+            parser.soyFileSuppliers(),
+            parser.typeRegistry())
+        .get();
+  }
+
+  static CompiledTemplates compileFileWithLoggingConfig(
+      ValidatedLoggingConfig loggingConfig, SoyTypeRegistry typeRegistry, String... fileBody) {
+    String file = Joiner.on('\n').join(fileBody);
+    SoyFileSetParser parser =
+        SoyFileSetParserBuilder.forFileContents(file)
+            .setLoggingConfig(loggingConfig)
+            .typeRegistry(typeRegistry)
+            .build();
     ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(
             parseResult.registry(),

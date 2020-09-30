@@ -78,6 +78,7 @@ java_individual_tests(
     # triggers additional checks in the compiler
     jvm_flags = [
         "-Dsoy_jbcsrc_debug_mode=true",
+        "-Xverify:remote",
     ],
     deps = [":tests"],
 )

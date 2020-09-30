@@ -239,9 +239,9 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .setSanitizedContentDirectionality(
                 ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
             .toStatement());
-    statements.add(prefix.compile(exprCompiler, appendableExpression));
+    statements.add(prefix.compile(exprCompiler, appendableExpression, detachState));
     statements.add(visitChildrenInNewScope(node));
-    statements.add(suffix.compile(exprCompiler, appendableExpression));
+    statements.add(suffix.compile(exprCompiler, appendableExpression, detachState));
     statements.add(
         // needs to go at the beginning but can only be generated after the whole method body.
         0, detachState.generateReattachTable());

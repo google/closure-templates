@@ -35,6 +35,11 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.logging.LoggableElement;
+import com.google.template.soy.logging.ValidatedLoggingConfig;
+import com.google.template.soy.logging.testing.LoggingConfigs;
+import com.google.template.soy.testing.Foo;
+import com.google.template.soy.testing.SharedTestUtils;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
@@ -387,6 +392,53 @@ public final class DetachStateTest {
     param.set("foo");
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEqualTo("Hello foo!");
+  }
+
+  /** Tests a ve log inside msg to make we can successfully detach in the ve_data expr. */
+  @Test
+  public void testDetach_veLogInsideMsg() throws IOException {
+    ValidatedLoggingConfig config =
+        LoggingConfigs.createLoggingConfig(
+            LoggableElement.newBuilder()
+                .setName("WithData")
+                .setId(1L)
+                .setProtoType("soy.test.Foo")
+                .build());
+
+    CompiledTemplates templates =
+        TemplateTester.compileFileWithLoggingConfig(
+            config,
+            SharedTestUtils.importing(Foo.getDescriptor()),
+            "{namespace ns}",
+            "",
+            "{template .t}",
+            "  {@param myBool : bool}",
+            "  {msg desc=\"foo\" hidden=\"true\"}",
+            "    No definitions found for this word.{sp}",
+            "    {velog ve_data(WithData, Foo(stringField: $myBool ? 'www.google.es' :"
+                + " 'www.google.com'))}",
+            "      <a phname=\"START_LINK\">",
+            "        Try searching the web",
+            "      </a phname=\"END_LINK\">",
+            "    {/velog}",
+            "    .",
+            "  {/msg}",
+            "{/template}",
+            "");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.t");
+    RenderContext context = getDefaultContext(templates);
+    SettableFuture<Boolean> param = SettableFuture.create();
+    SoyRecord params = asRecord(ImmutableMap.of("myBool", param));
+    CompiledTemplate template = factory.create(params, ParamStore.EMPTY_INSTANCE);
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
+    assertThat(output.toString()).isEqualTo("No definitions found for this word. ");
+
+    // Resolve $myBool and finish rendering.
+    param.set(false);
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString())
+        .isEqualTo("No definitions found for this word. <a>Try searching the web</a>.");
   }
 
   @Test
