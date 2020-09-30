@@ -42,7 +42,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
@@ -104,7 +104,7 @@ public final class BytecodeUtils {
   public static final Type SOY_RECORD_TYPE = Type.getType(SoyRecord.class);
   public static final Type SOY_VALUE_TYPE = Type.getType(SoyValue.class);
   public static final Type SOY_VALUE_PROVIDER_TYPE = Type.getType(SoyValueProvider.class);
-  public static final Type SOY_STRING_TYPE = Type.getType(SoyString.class);
+  public static final Type SOY_STRING_TYPE = Type.getType(StringData.class);
   public static final Type STRING_TYPE = Type.getType(String.class);
   public static final Type THROWABLE_TYPE = Type.getType(Throwable.class);
   public static final Type ILLEGAL_STATE_EXCEPTION_TYPE = Type.getType(IllegalStateException.class);

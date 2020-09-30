@@ -29,7 +29,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.testing3.Foo3;
 import com.google.template.soy.testing3.Proto3Message;
 import com.google.template.soy.types.AnyType;
@@ -63,7 +63,7 @@ public class SoyRuntimeTypeTest {
 
     assertThat(BoolType.getInstance()).isBoxedAs(BooleanData.class).isUnboxedAs(boolean.class);
 
-    assertThat(StringType.getInstance()).isBoxedAs(SoyString.class).isUnboxedAs(String.class);
+    assertThat(StringType.getInstance()).isBoxedAs(StringData.class).isUnboxedAs(String.class);
 
     assertThat(FloatType.getInstance()).isBoxedAs(FloatData.class).isUnboxedAs(double.class);
 

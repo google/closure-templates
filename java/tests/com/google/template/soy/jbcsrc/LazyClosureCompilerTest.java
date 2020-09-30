@@ -36,7 +36,7 @@ import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendabl
 import com.google.template.soy.data.SoyList;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.TemplateTester.CompiledTemplateSubject;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
@@ -340,7 +340,7 @@ public class LazyClosureCompilerTest {
     Field barField = template.getDeclaredField("let_bar");
     assertThat(asList(template.getDeclaredFields()))
         .containsExactly(template.getDeclaredField("$state"), barField);
-    assertThat(barField.getType()).isEqualTo(SoyString.class);
+    assertThat(barField.getType()).isEqualTo(StringData.class);
     assertThat(barField.getModifiers())
         .isEqualTo(Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL);
   }

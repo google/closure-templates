@@ -27,7 +27,7 @@ import java.io.IOException;
  *
  */
 @Immutable
-public final class StringData extends PrimitiveData implements SoyString {
+public final class StringData extends PrimitiveData {
 
   /** Static instance of StringData with value "". */
   public static final StringData EMPTY_STRING = new StringData("");

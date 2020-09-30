@@ -32,7 +32,7 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NullData;
-import com.google.template.soy.data.restricted.SoyString;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.data.restricted.UndefinedData;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -155,7 +155,7 @@ public final class TofuTypeChecks {
       case RECORD:
         return CheckResult.fromBool(value instanceof SoyRecord);
       case STRING:
-          return CheckResult.fromBool(value instanceof SoyString);
+        return CheckResult.fromBool(value instanceof StringData);
       case NAMED_TEMPLATE:
         throw new AssertionError("Named template types should be resolved in the compiler.");
       case TEMPLATE:

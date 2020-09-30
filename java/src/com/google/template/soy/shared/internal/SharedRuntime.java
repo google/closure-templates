@@ -21,7 +21,6 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
-import com.google.template.soy.data.restricted.SoyString;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.Objects;
 
@@ -88,7 +87,7 @@ public final class SharedRuntime {
 
   /** Performs the {@code <} operator on the two values. */
   public static boolean lessThan(SoyValue left, SoyValue right) {
-    if (left instanceof SoyString && right instanceof SoyString) {
+    if (left instanceof StringData && right instanceof StringData) {
       return left.stringValue().compareTo(right.stringValue()) < 0;
     } else if (left instanceof IntegerData && right instanceof IntegerData) {
       return left.longValue() < right.longValue();
@@ -99,7 +98,7 @@ public final class SharedRuntime {
 
   /** Performs the {@code <=} operator on the two values. */
   public static boolean lessThanOrEqual(SoyValue left, SoyValue right) {
-    if (left instanceof SoyString && right instanceof SoyString) {
+    if (left instanceof StringData && right instanceof StringData) {
       return left.stringValue().compareTo(right.stringValue()) <= 0;
     } else if (left instanceof IntegerData && right instanceof IntegerData) {
       return left.longValue() <= right.longValue();
