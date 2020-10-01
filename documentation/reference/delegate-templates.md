@@ -61,7 +61,9 @@ is the identifier used to select the implementation at usage time.
 The delegate template names are not within the file's namespace; namespaces only
 apply to basic templates. Instead, delegate template names are just strings that
 are always written in full. They can be any identifier or multiple identifiers
-connected with dots.
+connected with dots. The namespace of any delegate template file, however, must
+be different from the default file and any other included delegate template
+file.
 
 Template files can have an optional `delpackage` declaration at the top, just
 above the `namespace` declaration. And multiple files can have the same
@@ -129,11 +131,6 @@ Syntax:
   ...
 {/deltemplate}
 ```
-
-The delegate template names are not within the file's namespace; namespaces only
-apply to basic templates. Instead, delegate template names are just strings that
-are always written in full. They can be any identifier or multiple identifiers
-connected with dots.
 
 The variant in a `deltemplate` command must be a string literal containing an
 identifier. If no variant is specified, then it defaults to the empty string.
