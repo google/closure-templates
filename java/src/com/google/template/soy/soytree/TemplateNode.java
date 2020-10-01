@@ -545,7 +545,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   /** Returns all params from template header, both regular and injected. */
-  public Iterable<TemplateParam> getAllParams() {
+  public ImmutableList<TemplateParam> getAllParams() {
     ImmutableList.Builder<TemplateParam> builder = ImmutableList.builder();
     for (TemplateHeaderVarDefn header : this.getHeaderParams()) {
       if (header instanceof TemplateParam) {
