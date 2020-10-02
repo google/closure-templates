@@ -55,7 +55,6 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -352,10 +351,13 @@ public final class SoyValueConverter {
 
           @Override
           protected Converter<?> computeValue(Class<?> clz) {
-            Converter<?> c = map.get(clz);
+            // See if we are bootstrapping a value.
+            Converter<?> c = toLoad;
             if (c != null) {
+              toLoad = null;
               return c;
             }
+            // Otherwise recurse through the type hierarchy.
             c = getConverterOrNull(clz.getSuperclass());
             if (c == null) {
               for (Class<?> iface : clz.getInterfaces()) {
@@ -376,7 +378,7 @@ public final class SoyValueConverter {
           }
         };
 
-    private final Map<Class<?>, Converter<?>> map = new ConcurrentHashMap<>();
+    private Converter<?> toLoad;
 
     <T> SoyValueProvider convert(T o) {
       @SuppressWarnings("unchecked")
@@ -393,7 +395,17 @@ public final class SoyValueConverter {
     }
 
     <T> void put(Class<T> clazz, Converter<? extends T> converter) {
-      checkState(map.put(clazz, checkNotNull(converter)) == null);
+      // bootstrap the ClassValue by putting the converter to use in a field and then eagerly
+      // fetching from the ClassValue.
+      // This is a little unusual however, this put() method is called only ever from a single
+      // thread at SoyValueConverter initialization time.
+      toLoad = converter;
+      // Fetch the value from the classValue to initialize it.
+      Converter<?> loaded = converterValue.get(clazz);
+      // check that we actually loaded the expected converter
+      checkState(loaded == converter);
+      // Check that the classValue cleared the field.
+      checkState(toLoad == null);
     }
 
     void putStringMap(Converter<Map<String, ?>> converter) {
