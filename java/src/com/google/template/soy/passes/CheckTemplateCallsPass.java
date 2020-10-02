@@ -57,7 +57,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 /**
  * This compiler pass runs several checks on {@code CallNode}s.
@@ -321,32 +320,29 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * @return The set of template parameters, both explicit and implicit.
      */
     private TemplateParamTypes getTemplateParamTypes(TemplateType callee) {
-      TemplateParamTypes paramTypes = paramTypesMap.get(callee);
-      if (paramTypes == null) {
-        paramTypes = new TemplateParamTypes();
+      return paramTypesMap.computeIfAbsent(callee, this::computeTemplateParamTypes);
+    }
 
-        // Store all of the explicitly declared param types
-        for (TemplateType.Parameter param : callee.getParameters()) {
-          paramTypes.params.put(param.getName(), param.getType());
+    private TemplateParamTypes computeTemplateParamTypes(TemplateType callee) {
+      TemplateParamTypes paramTypes = new TemplateParamTypes();
+
+      // Store all of the explicitly declared param types
+      for (TemplateType.Parameter param : callee.getParameters()) {
+        paramTypes.params.put(param.getName(), param.getType());
+      }
+
+      // Store indirect params where there's no conflict with explicit params.
+      // Note that we don't check here whether the explicit type and the implicit
+      // types are in agreement - that will be done when it's this template's
+      // turn to be analyzed as a caller.
+      IndirectParamsInfo ipi =
+          new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(callee);
+      for (String indirectParamName : ipi.indirectParamTypes.keySet()) {
+        if (paramTypes.params.containsKey(indirectParamName)) {
+          continue;
         }
-
-        // Store indirect params where there's no conflict with explicit params.
-        // Note that we don't check here whether the explicit type and the implicit
-        // types are in agreement - that will be done when it's this template's
-        // turn to be analyzed as a caller.
-        IndirectParamsInfo ipi =
-            new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(callee);
-        for (String indirectParamName : ipi.indirectParamTypes.keySet()) {
-          if (paramTypes.params.containsKey(indirectParamName)) {
-            continue;
-          }
-          paramTypes.params.putAll(
-              indirectParamName, ipi.indirectParamTypes.get(indirectParamName));
-          paramTypes.indirectParamNames.add(indirectParamName);
-        }
-
-        // Save the param types map
-        paramTypesMap.put(callee, paramTypes);
+        paramTypes.params.putAll(indirectParamName, ipi.indirectParamTypes.get(indirectParamName));
+        paramTypes.indirectParamNames.add(indirectParamName);
       }
       return paramTypes;
     }
@@ -356,13 +352,12 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * template from HTML context.
      */
     private void checkStrictHtml(
-        TemplateNode callerTemplate, CallNode caller, @Nullable TemplateType callee) {
+        TemplateNode callerTemplate, CallNode caller, TemplateType callee) {
       // We should only check strict html if 1) the current template
       // sets stricthtml to true, and 2) the current call node is in HTML context.
       // Then we report an error if the callee is HTML but is not a strict HTML template.
       if (callerTemplate.isStrictHtml()
           && caller.getIsPcData()
-          && callee != null
           && (callee.getContentKind().getSanitizedContentKind().isHtml()
               && !callee.isStrictHtml())) {
         errorReporter.report(caller.getSourceLocation(), STRICT_HTML);
@@ -378,37 +373,33 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
      * </ul>
      */
     private void checkCallParamNames(CallNode caller, TemplateType callee) {
-      if (callee != null) {
-        // Get param keys passed by caller.
-        Set<String> callerParamKeys = Sets.newHashSet();
-        for (CallParamNode callerParam : caller.getChildren()) {
-          boolean isUnique = callerParamKeys.add(callerParam.getKey().identifier());
-          if (!isUnique) {
-            // Found a duplicate param.
-            errorReporter.report(
-                callerParam.getKey().location(),
-                DUPLICATE_PARAM,
-                callerParam.getKey().identifier());
+      // Get param keys passed by caller.
+      Set<String> callerParamKeys = Sets.newHashSet();
+      for (CallParamNode callerParam : caller.getChildren()) {
+        boolean isUnique = callerParamKeys.add(callerParam.getKey().identifier());
+        if (!isUnique) {
+          // Found a duplicate param.
+          errorReporter.report(
+              callerParam.getKey().location(), DUPLICATE_PARAM, callerParam.getKey().identifier());
+        }
+      }
+      // If all the data keys being passed are listed using 'param' commands, then check that all
+      // required params of the callee are included.
+      if (!caller.isPassingData()) {
+        // Check param keys required by callee.
+        List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
+        for (TemplateType.Parameter calleeParam : callee.getParameters()) {
+          if (calleeParam.isRequired() && !callerParamKeys.contains(calleeParam.getName())) {
+            missingParamKeys.add(calleeParam.getName());
           }
         }
-        // If all the data keys being passed are listed using 'param' commands, then check that all
-        // required params of the callee are included.
-        if (!caller.isPassingData()) {
-          // Check param keys required by callee.
-          List<String> missingParamKeys = Lists.newArrayListWithCapacity(2);
-          for (TemplateType.Parameter calleeParam : callee.getParameters()) {
-            if (calleeParam.isRequired() && !callerParamKeys.contains(calleeParam.getName())) {
-              missingParamKeys.add(calleeParam.getName());
-            }
-          }
-          // Report errors.
-          if (!missingParamKeys.isEmpty()) {
-            String errorMsgEnd =
-                (missingParamKeys.size() == 1)
-                    ? "param '" + missingParamKeys.get(0) + "'"
-                    : "params " + missingParamKeys;
-            errorReporter.report(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
-          }
+        // Report errors.
+        if (!missingParamKeys.isEmpty()) {
+          String errorMsgEnd =
+              (missingParamKeys.size() == 1)
+                  ? "param '" + missingParamKeys.get(0) + "'"
+                  : "params " + missingParamKeys;
+          errorReporter.report(caller.getSourceLocation(), MISSING_PARAM, errorMsgEnd);
         }
       }
     }
@@ -452,14 +443,14 @@ final class CheckTemplateCallsPass implements CompilerFileSetPass {
         }
       }
     }
+  }
 
-    private class TemplateParamTypes {
-      public final Multimap<String, SoyType> params = HashMultimap.create();
-      public final Set<String> indirectParamNames = new HashSet<>();
+  private static final class TemplateParamTypes {
+    final Multimap<String, SoyType> params = HashMultimap.create();
+    final Set<String> indirectParamNames = new HashSet<>();
 
-      public boolean isIndirect(String paramName) {
-        return indirectParamNames.contains(paramName);
-      }
+    boolean isIndirect(String paramName) {
+      return indirectParamNames.contains(paramName);
     }
   }
 }
