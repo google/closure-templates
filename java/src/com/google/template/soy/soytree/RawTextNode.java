@@ -23,6 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.basetree.CopyState;
@@ -669,7 +670,7 @@ public final class RawTextNode extends AbstractSoyNode
     }
 
     /** Returns the sourcelocation for the whole span. */
-    public SourceLocation getSourceLocation(String filePath) {
+    public SourceLocation getSourceLocation(SourceFilePath filePath) {
       return new SourceLocation(
           filePath, lines[0], columns[0], lines[lines.length - 1], columns[columns.length - 1]);
     }

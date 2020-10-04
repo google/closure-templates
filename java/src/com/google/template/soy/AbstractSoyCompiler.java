@@ -32,6 +32,7 @@ import com.google.inject.Module;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.restricted.PrimitiveData;
 import com.google.template.soy.error.SoyCompilationException;
@@ -294,7 +295,9 @@ public abstract class AbstractSoyCompiler {
     // add sources
     for (File src : srcs) {
       try {
-        String normalizedPath = generatedFiles.getOrDefault(src.getPath(), src.getPath());
+        // TODO(b/162524005): model genfiles in SourceFilePath directly.
+        SourceFilePath normalizedPath =
+            SourceFilePath.create(generatedFiles.getOrDefault(src.getPath(), src.getPath()));
         sfsBuilder.add(cache.createFileSupplier(src, normalizedPath, soyCompilerFileReader));
       } catch (FileNotFoundException fnfe) {
         throw new CommandLineError(
@@ -398,7 +401,7 @@ public abstract class AbstractSoyCompiler {
       try {
         sfsBuilder.addCompilationUnit(
             depKind,
-            depFile.getPath(),
+            SourceFilePath.create(depFile.getPath()),
             cache.read(depFile, CacheLoaders.COMPILATION_UNIT_LOADER, soyCompilerFileReader));
       } catch (IOException e) {
         throw new CommandLineError(

@@ -19,6 +19,7 @@ package com.google.template.soy.msgs.restricted;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +30,7 @@ import org.junit.runners.JUnit4;
 public final class SoyMsgTest {
 
   private static final SourceLocation SOURCE =
-      new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+      new SourceLocation(SourceFilePath.create("/path/to/source1"), 10, 1, 10, 10);
   private static final String TEMPLATE = "ns.foo.templates.tmpl";
 
   private static final SoyMsg MSG =

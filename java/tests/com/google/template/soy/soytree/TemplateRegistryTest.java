@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.TemplateMetadataSerializer;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -46,6 +47,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public final class TemplateRegistryTest {
 
+  private static final SourceFilePath FILE_PATH = SourceFilePath.create("example.soy");
+
   private static final ImmutableList<CommandTagAttribute> NO_ATTRS = ImmutableList.of();
   private static final ErrorReporter FAIL = ErrorReporter.exploding();
 
@@ -61,16 +64,16 @@ public final class TemplateRegistryTest {
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz}\n"
                         + "{/deltemplate}",
-                    "example.soy"))
+                    FILE_PATH))
             .parse()
             .registry();
     assertThatRegistry(registry)
         .containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("example.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation(FILE_PATH, 3, 1, 4, 11));
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
     assertThatRegistry(registry)
         .containsDelTemplate("bar.baz")
-        .definedAt(new SourceLocation("example.soy", 6, 1, 7, 14));
+        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 14));
     assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
   }
 
@@ -92,12 +95,12 @@ public final class TemplateRegistryTest {
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz}\n"
                         + "{/deltemplate}",
-                    "example.soy"))
+                    FILE_PATH))
             .parse();
     CompilationUnitAndKind dependencyCompilationUnit =
         CompilationUnitAndKind.create(
             SoyFileKind.DEP,
-            "example_header.soy",
+            SourceFilePath.create("example_header.soy"),
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 dependencyParseResult.fileSet(), dependencyParseResult.registry()));
 
@@ -113,7 +116,7 @@ public final class TemplateRegistryTest {
                         + "/** Simple deltemplate. */\n"
                         + "{deltemplate bar.baz2}\n"
                         + "{/deltemplate}",
-                    "example.soy"))
+                    FILE_PATH))
             .addCompilationUnits(ImmutableList.of(dependencyCompilationUnit))
             .options(new SoyGeneralOptions().setAllowExternalCalls(false))
             .build()
@@ -124,17 +127,17 @@ public final class TemplateRegistryTest {
     // files were retained.
     assertThatRegistry(registry)
         .containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("example.soy"));
+        .definedAt(new SourceLocation(FILE_PATH));
     assertThatRegistry(registry)
         .containsBasicTemplate("ns.foo2")
-        .definedAt(new SourceLocation("example.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation(FILE_PATH, 3, 1, 4, 11));
     assertThatRegistry(registry).doesNotContainBasicTemplate("foo");
     assertThatRegistry(registry)
         .containsDelTemplate("bar.baz")
-        .definedAt(new SourceLocation("example.soy"));
+        .definedAt(new SourceLocation(FILE_PATH));
     assertThatRegistry(registry)
         .containsDelTemplate("bar.baz2")
-        .definedAt(new SourceLocation("example.soy", 6, 1, 7, 14));
+        .definedAt(new SourceLocation(FILE_PATH, 6, 1, 7, 14));
     assertThatRegistry(registry).doesNotContainDelTemplate("ns.bar.baz");
   }
 
@@ -147,22 +150,22 @@ public final class TemplateRegistryTest {
                         + "/** Template. */\n"
                         + "{template .foo}\n"
                         + "{/template}\n",
-                    "bar.soy"),
+                    SourceFilePath.create("bar.soy")),
                 SoyFileSupplier.Factory.create(
                     "{namespace ns2}\n"
                         + "/** Template. */\n"
                         + "{template .foo}\n"
                         + "{/template}\n",
-                    "baz.soy"))
+                    SourceFilePath.create("baz.soy")))
             .parse()
             .registry();
 
     assertThatRegistry(registry)
         .containsBasicTemplate("ns.foo")
-        .definedAt(new SourceLocation("bar.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation(SourceFilePath.create("bar.soy"), 3, 1, 4, 11));
     assertThatRegistry(registry)
         .containsBasicTemplate("ns2.foo")
-        .definedAt(new SourceLocation("baz.soy", 3, 1, 4, 11));
+        .definedAt(new SourceLocation(SourceFilePath.create("baz.soy"), 3, 1, 4, 11));
   }
 
   @Test
@@ -174,23 +177,23 @@ public final class TemplateRegistryTest {
                         + "/** Deltemplate. */\n"
                         + "{deltemplate foo.bar}\n"
                         + "{/deltemplate}",
-                    "foo.soy"),
+                    SourceFilePath.create("foo.soy")),
                 SoyFileSupplier.Factory.create(
                     "{delpackage foo}\n"
                         + "{namespace ns}\n"
                         + "/** Deltemplate. */\n"
                         + "{deltemplate foo.bar}\n"
                         + "{/deltemplate}",
-                    "bar.soy"))
+                    SourceFilePath.create("bar.soy")))
             .parse()
             .registry();
 
     assertThatRegistry(registry)
         .containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation("foo.soy", 3, 1, 4, 14));
+        .definedAt(new SourceLocation(SourceFilePath.create("foo.soy"), 3, 1, 4, 14));
     assertThatRegistry(registry)
         .containsDelTemplate("foo.bar")
-        .definedAt(new SourceLocation("bar.soy", 4, 1, 5, 14));
+        .definedAt(new SourceLocation(SourceFilePath.create("bar.soy"), 4, 1, 5, 14));
   }
 
   @Test
@@ -436,7 +439,7 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{template .foo kind=\"attributes\"}\n"
                         + "{/template}\n",
-                    "example.soy"))
+                    FILE_PATH))
             .parse()
             .registry();
 
@@ -463,7 +466,7 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{template .foo kind=\"attributes\"}\n"
                         + "{/template}\n",
-                    "example.soy"))
+                    FILE_PATH))
             .parse()
             .registry();
     CallBasicNode node =
@@ -488,7 +491,7 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{deltemplate ns.foo kind=\"attributes\"}\n"
                         + "{/deltemplate}\n",
-                    "example.soy"))
+                    FILE_PATH))
             .parse()
             .registry();
     CallDelegateNode node =
@@ -512,7 +515,7 @@ public final class TemplateRegistryTest {
                         + "/** Simple template. */\n"
                         + "{deltemplate ns.foo kind=\"attributes\"}\n"
                         + "{/deltemplate}\n",
-                    "example.soy"))
+                    FILE_PATH))
             .parse()
             .registry();
     CallDelegateNode node =

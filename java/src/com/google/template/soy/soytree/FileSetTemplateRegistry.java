@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -59,7 +60,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
           StyleAllowance.NO_PUNCTUATION);
 
   /** Map of file paths to a registry of templates in that file. */
-  private final ImmutableMap<String, TemplatesPerFile> templatesPerFile;
+  private final ImmutableMap<SourceFilePath, TemplatesPerFile> templatesPerFile;
 
   /**
    * Map from basic template or element name to node, for all files in the file set & its
@@ -77,7 +78,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
 
   /** Constructor. */
   private FileSetTemplateRegistry(
-      ImmutableMap<String, TemplatesPerFile> templatesPerFile,
+      ImmutableMap<SourceFilePath, TemplatesPerFile> templatesPerFile,
       ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap,
       DelTemplateSelector<TemplateMetadata> delTemplateSelector,
       ImmutableMap<String, TemplateMetadata> allTemplates) {
@@ -94,7 +95,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
   /** Builder for FileSetTemplateRegistry */
   public static final class Builder {
     private final ErrorReporter errorReporter;
-    private final Map<String, TemplatesPerFile.Builder> templatesPerFileBuilder =
+    private final Map<SourceFilePath, TemplatesPerFile.Builder> templatesPerFileBuilder =
         new LinkedHashMap<>();
     DelTemplateSelector.Builder<TemplateMetadata> delTemplateSelectorBuilder =
         new DelTemplateSelector.Builder<>();
@@ -106,11 +107,12 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
       this.errorReporter = errorReporter;
     }
 
-    public void addTemplatesForFile(String filePath, ImmutableList<TemplateMetadata> templates) {
+    public void addTemplatesForFile(
+        SourceFilePath filePath, ImmutableList<TemplateMetadata> templates) {
       templates.forEach(t -> addTemplateForFile(filePath, t));
     }
 
-    public void addTemplateForFile(String filePath, TemplateMetadata template) {
+    public void addTemplateForFile(SourceFilePath filePath, TemplateMetadata template) {
       addTemplateToPerFileRegistry(filePath, template);
       allTemplatesBuilder.put(template.getTemplateName(), template);
 
@@ -161,11 +163,11 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
       }
     }
 
-    public Map<String, TemplatesPerFile.Builder> getTemplatesPerFileBuilder() {
+    public Map<SourceFilePath, TemplatesPerFile.Builder> getTemplatesPerFileBuilder() {
       return templatesPerFileBuilder;
     }
 
-    private void addTemplateToPerFileRegistry(String filePath, TemplateMetadata template) {
+    private void addTemplateToPerFileRegistry(SourceFilePath filePath, TemplateMetadata template) {
       TemplatesPerFile.Builder fileRegistry =
           templatesPerFileBuilder.computeIfAbsent(filePath, TemplatesPerFile::builder);
       fileRegistry.addTemplate(template);
@@ -232,12 +234,12 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
   }
 
   @Override
-  public ImmutableMap<String, TemplatesPerFile> getTemplatesPerFile() {
+  public ImmutableMap<SourceFilePath, TemplatesPerFile> getTemplatesPerFile() {
     return templatesPerFile;
   }
 
   @Override
-  public TemplatesPerFile getTemplatesPerFile(String fileName) {
+  public TemplatesPerFile getTemplatesPerFile(SourceFilePath fileName) {
     return templatesPerFile.get(fileName);
   }
 
@@ -279,7 +281,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
   }
 
   @Override
-  public ImmutableSet<String> getAllFileNames() {
+  public ImmutableSet<SourceFilePath> getAllFileNames() {
     return templatesPerFile.keySet();
   }
 

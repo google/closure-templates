@@ -61,6 +61,7 @@ java_library(
     deps = [
         ":shared_test_utils",
         "//java/src/com/google/template/soy:impl",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/conformance",
         "//java/src/com/google/template/soy/css",

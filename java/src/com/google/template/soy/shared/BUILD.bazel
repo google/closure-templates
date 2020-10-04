@@ -18,6 +18,7 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         "//java/src/com/google/template/soy:soy_utils",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basicfunctions",
         "//java/src/com/google/template/soy/data",

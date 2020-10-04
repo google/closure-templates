@@ -16,9 +16,12 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
@@ -100,7 +103,8 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
      */
     @Override
     void processImportedSymbols(ImportNode node) {
-      TemplatesPerFile templatesPerFile = templateNameRegistry.getTemplatesForFile(node.getPath());
+      TemplatesPerFile templatesPerFile =
+          templateNameRegistry.getTemplatesForFile(SourceFilePath.create(node.getPath()));
       for (ImportedVar symbol : node.getIdentifiers()) {
         String name = symbol.name();
         // Report an error if the template name is invalid.
@@ -126,7 +130,8 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
      */
     @Override
     void processImportedModule(ImportNode node) {
-      TemplatesPerFile templatesPerFile = templateNameRegistry.getTemplatesForFile(node.getPath());
+      TemplatesPerFile templatesPerFile =
+          templateNameRegistry.getTemplatesForFile(SourceFilePath.create(node.getPath()));
       // For each template, add a mapping from "ModuleName.templateName" -> templateFqn.
       templatesPerFile
           .getUnqualifiedTemplateNames()
@@ -140,14 +145,16 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     @Override
     boolean importExists(ImportType type, String path) {
       // We can ignore the type param because this visitor only visits template imports.
-      return templateNameRegistry.hasFile(path);
+      return templateNameRegistry.hasFile(SourceFilePath.create(path));
     }
 
     @Override
     ImmutableSet<String> getValidImportPathsForType(ImportType type) {
       // Get the names of all Soy files registered in the file set (including its deps). We can
       // ignore the type param because this visitor only visits template imports.
-      return templateNameRegistry.allFiles();
+      return templateNameRegistry.allFiles().stream()
+          .map(SourceFilePath::path)
+          .collect(toImmutableSet());
     }
 
     @Override

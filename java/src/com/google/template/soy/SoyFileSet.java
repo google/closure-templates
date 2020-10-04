@@ -34,6 +34,7 @@ import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.TriState;
@@ -131,7 +132,7 @@ public final class SoyFileSet {
    */
   public static final class Builder {
     /** The SoyFileSuppliers collected so far in added order, as a set to prevent dupes. */
-    private final ImmutableMap.Builder<String, SoyFileSupplier> filesBuilder =
+    private final ImmutableMap.Builder<SourceFilePath, SoyFileSupplier> filesBuilder =
         ImmutableMap.builder();
 
     private final ImmutableList.Builder<CompilationUnitAndKind> compilationUnitsBuilder =
@@ -307,7 +308,8 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSource contentSource, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(contentSource, filePath));
+      return addFile(
+          SoyFileSupplier.Factory.create(contentSource, SourceFilePath.create(filePath)));
     }
 
     /**
@@ -319,7 +321,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(URL inputFileUrl, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, filePath));
+      return addFile(SoyFileSupplier.Factory.create(inputFileUrl, SourceFilePath.create(filePath)));
     }
 
     /**
@@ -350,7 +352,7 @@ public final class SoyFileSet {
      * @return This builder.
      */
     public Builder add(CharSequence content, String filePath) {
-      return addFile(SoyFileSupplier.Factory.create(content, filePath));
+      return addFile(SoyFileSupplier.Factory.create(content, SourceFilePath.create(filePath)));
     }
 
     /**
@@ -506,7 +508,7 @@ public final class SoyFileSet {
     }
 
     Builder addCompilationUnit(
-        SoyFileKind fileKind, String filePath, CompilationUnit compilationUnit) {
+        SoyFileKind fileKind, SourceFilePath filePath, CompilationUnit compilationUnit) {
       compilationUnitsBuilder.add(
           CompilationUnitAndKind.create(fileKind, filePath, compilationUnit));
       return this;
@@ -572,7 +574,7 @@ public final class SoyFileSet {
   private final SoyScopedData scopedData;
 
   private final SoyTypeRegistry typeRegistry;
-  private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers;
   private final ImmutableList<CompilationUnitAndKind> compilationUnits;
 
   /** Optional soy tree cache for faster recompile times. */
@@ -606,7 +608,7 @@ public final class SoyFileSet {
       ImmutableList<SoyPrintDirective> printDirectives,
       ImmutableList<SoySourceFunction> soySourceFunctions,
       ImmutableList<SoySourceFunction> soyMethods,
-      ImmutableMap<String, SoyFileSupplier> soyFileSuppliers,
+      ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers,
       ImmutableList<CompilationUnitAndKind> compilationUnits,
       SoyGeneralOptions generalOptions,
       @Nullable SoyAstCache cache,
@@ -638,7 +640,7 @@ public final class SoyFileSet {
 
   /** Returns the list of suppliers for the input Soy files. For testing use only! */
   @VisibleForTesting
-  ImmutableMap<String, SoyFileSupplier> getSoyFileSuppliersForTesting() {
+  ImmutableMap<SourceFilePath, SoyFileSupplier> getSoyFileSuppliersForTesting() {
     return soyFileSuppliers;
   }
 

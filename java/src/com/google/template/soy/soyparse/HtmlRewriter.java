@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.errorprone.annotations.FormatMethod;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -507,7 +508,7 @@ final class HtmlRewriter {
         CharMatcher.noneOf(">\"'").precomputed();
 
     final IdGenerator nodeIdGen;
-    final String filePath;
+    final SourceFilePath filePath;
     final AstEdits edits = new AstEdits();
     final ErrorReporter errorReporter;
 
@@ -531,7 +532,7 @@ final class HtmlRewriter {
      * @param filePath The current file path
      * @param errorReporter The error reporter
      */
-    Visitor(IdGenerator nodeIdGen, String filePath, ErrorReporter errorReporter) {
+    Visitor(IdGenerator nodeIdGen, SourceFilePath filePath, ErrorReporter errorReporter) {
       this.nodeIdGen = nodeIdGen;
       this.filePath = filePath;
       this.errorReporter = errorReporter;
@@ -2069,7 +2070,7 @@ final class HtmlRewriter {
   private static final class ParsingContext {
     final String blockName;
     final State startingState;
-    final String filePath;
+    final SourceFilePath filePath;
     final IdGenerator nodeIdGen;
     final ErrorReporter errorReporter;
     final AstEdits edits;
@@ -2116,7 +2117,7 @@ final class HtmlRewriter {
         String blockName,
         State startingState,
         SourceLocation.Point startPoint,
-        String filePath,
+        SourceFilePath filePath,
         AstEdits edits,
         ErrorReporter errorReporter,
         IdGenerator nodeIdGen) {

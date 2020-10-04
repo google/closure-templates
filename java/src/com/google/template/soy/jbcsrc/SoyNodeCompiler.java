@@ -801,7 +801,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // Call JbcSrcRuntime.debuggger.  This logs a stack trace by default and is an obvious place to
     // put a breakpoint.
     return MethodRef.RUNTIME_DEBUGGER.invokeVoid(
-        constant(node.getSourceLocation().getFilePath()),
+        constant(node.getSourceLocation().getFilePath().path()),
         constant(node.getSourceLocation().getBeginLine()));
   }
 

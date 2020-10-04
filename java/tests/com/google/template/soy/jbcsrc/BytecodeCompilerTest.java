@@ -38,6 +38,7 @@ import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.TemplateMetadataSerializer;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.coredirectives.EscapeHtmlDirective;
 import com.google.template.soy.css.CssRegistry;
@@ -1295,7 +1296,7 @@ public class BytecodeCompilerTest {
     CompilationUnitAndKind dependency1 =
         CompilationUnitAndKind.create(
             SoyFileKind.DEP,
-            "foo.soy",
+            SourceFilePath.create("foo.soy"),
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 parseResult1.fileSet(), parseResult1.registry()));
 
@@ -1379,7 +1380,7 @@ public class BytecodeCompilerTest {
     CompilationUnitAndKind dependency1 =
         CompilationUnitAndKind.create(
             SoyFileKind.DEP,
-            "foo.soy",
+            SourceFilePath.create("foo.soy"),
             TemplateMetadataSerializer.compilationUnitFromFileSet(
                 parseResult1.fileSet(), parseResult1.registry()));
 

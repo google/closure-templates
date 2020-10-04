@@ -27,6 +27,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
@@ -46,8 +47,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType.Parameter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -74,7 +73,7 @@ public class SoyFileNodeTransformer {
 
     abstract SoyFileNode fileNode();
 
-    abstract Path soyFilePath();
+    abstract SourceFilePath soyFilePath();
 
     /**
      * Returns the fully qualified name of the outer class created to hold the SoyTemplate
@@ -90,7 +89,7 @@ public class SoyFileNodeTransformer {
     }
 
     public String soyFileName() {
-      return soyFilePath().getFileName().toString();
+      return soyFilePath().fileName();
     }
 
     public String packageName() {
@@ -295,7 +294,6 @@ public class SoyFileNodeTransformer {
   }
 
   public FileInfo transform(SoyFileNode node) {
-    Path path = Paths.get(node.getFilePath());
     String fqClassName = javaPackage + "." + convertSoyFileNameToJavaClassName(node);
     List<TemplateInfo> templates = new ArrayList<>();
 
@@ -315,7 +313,7 @@ public class SoyFileNodeTransformer {
     }
 
     return new AutoValue_SoyFileNodeTransformer_FileInfo(
-        node, path, fqClassName, ImmutableList.copyOf(templates));
+        node, node.getFilePath(), fqClassName, ImmutableList.copyOf(templates));
   }
 
   private TemplateInfo transform(TemplateNode template, String className) {

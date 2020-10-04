@@ -23,6 +23,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
@@ -993,7 +994,8 @@ public final class ResolveExpressionTypesPassTest {
 
   private SoyType parseSoyType(String type, ErrorReporter errorReporter) {
     TypeNode parsed =
-        SoyFileParser.parseType(type, "com.google.foo.bar.FakeSoyFunction", errorReporter);
+        SoyFileParser.parseType(
+            type, SourceFilePath.create("com.google.foo.bar.FakeSoyFunction"), errorReporter);
     return TypeNodeConverter.builder(errorReporter)
         .setTypeRegistry(TYPE_REGISTRY)
         .build()

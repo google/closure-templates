@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.google.common.truth.StringSubject;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
@@ -767,7 +768,10 @@ public final class HtmlRewriterTest {
             .join("{namespace ns}", "", "{template .t stricthtml=\"false\"}", input, "{/template}");
     SoyFileNode node =
         new SoyFileParser(
-                new IncrementingIdGenerator(), new StringReader(soyFile), "test.soy", errorReporter)
+                new IncrementingIdGenerator(),
+                new StringReader(soyFile),
+                SourceFilePath.create("test.soy"),
+                errorReporter)
             .parseSoyFile();
     if (node != null) {
       return (TemplateNode) node.getChild(0);

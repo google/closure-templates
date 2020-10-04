@@ -52,6 +52,7 @@ java_library(
     ),
     deps = [
         ":builtin_function",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/basicdirectives",
         "//java/src/com/google/template/soy/basicfunctions",

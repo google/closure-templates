@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
@@ -244,7 +245,8 @@ public final class TypeNodeTest {
 
   private TypeNode parse(String typeString) {
     TypeNode typeNode =
-        SoyFileParser.parseType(typeString, "fake-file.soy", ErrorReporter.exploding());
+        SoyFileParser.parseType(
+            typeString, SourceFilePath.create("fake-file.soy"), ErrorReporter.exploding());
     // sanity, make sure copies work
     assertThat(typeNode).isEqualTo(typeNode.copy());
     return typeNode;

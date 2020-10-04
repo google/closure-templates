@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -117,7 +118,7 @@ public final class TemplateSubject extends Subject {
     SoyFileSupplier sourceFile =
         SoyFileSupplier.Factory.create(
             "{namespace test}\n" + "{template .foo}\n" + actual + "\n" + "{/template}",
-            "example.soy");
+            SourceFilePath.create("example.soy"));
     ErrorReporter errorReporter =
         ErrorReporter.create(ImmutableMap.of(sourceFile.getFilePath(), sourceFile));
     SoyFileSetNode fileSet =

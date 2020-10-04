@@ -17,6 +17,7 @@
 package com.google.template.soy.soyparse;
 
 import com.google.common.base.MoreObjects;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 
 /** Helpers for dealing with {@link Token tokens} */
@@ -27,7 +28,7 @@ final class Tokens {
    *
    * <p>All the provided tokens should be in strictly increasing order.
    */
-  static SourceLocation createSrcLoc(String filePath, Token first, Token... rest) {
+  static SourceLocation createSrcLoc(SourceFilePath filePath, Token first, Token... rest) {
     int beginLine = first.beginLine;
     int beginColumn = first.beginColumn;
     int endLine = first.endLine;

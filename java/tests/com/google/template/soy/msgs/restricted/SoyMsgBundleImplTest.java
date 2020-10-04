@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import java.util.List;
@@ -35,13 +36,13 @@ import org.junit.runners.JUnit4;
 public class SoyMsgBundleImplTest {
 
   private static final SourceLocation SOURCE_1 =
-      new SourceLocation("/path/to/source1", 10, 1, 10, 10);
+      new SourceLocation(SourceFilePath.create("/path/to/source1"), 10, 1, 10, 10);
   private static final SourceLocation SOURCE_2 =
-      new SourceLocation("/path/to/source2", 20, 1, 20, 10);
+      new SourceLocation(SourceFilePath.create("/path/to/source2"), 20, 1, 20, 10);
   private static final SourceLocation SOURCE_3 =
-      new SourceLocation("/path/to/source3", 20, 1, 20, 10);
+      new SourceLocation(SourceFilePath.create("/path/to/source3"), 20, 1, 20, 10);
   private static final SourceLocation SOURCE_4 =
-      new SourceLocation("/path/to/source4", 20, 1, 20, 10);
+      new SourceLocation(SourceFilePath.create("/path/to/source4"), 20, 1, 20, 10);
   private static final String TEMPLATE = "ns.foo.templates.tmpl";
 
   @Test

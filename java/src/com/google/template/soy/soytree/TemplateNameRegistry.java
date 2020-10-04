@@ -20,29 +20,30 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 
 /** Names of the templates in each file (a lightweight template registry, without the metadata). */
 @AutoValue
 public abstract class TemplateNameRegistry {
 
   public static TemplateNameRegistry create(
-      ImmutableMap<String, TemplatesPerFile> filePathsToTemplates) {
+      ImmutableMap<SourceFilePath, TemplatesPerFile> filePathsToTemplates) {
     return new AutoValue_TemplateNameRegistry(filePathsToTemplates);
   }
 
-  abstract ImmutableMap<String, TemplatesPerFile> filePathsToTemplates();
+  abstract ImmutableMap<SourceFilePath, TemplatesPerFile> filePathsToTemplates();
 
-  public boolean hasFile(String filePath) {
+  public boolean hasFile(SourceFilePath filePath) {
     return filePathsToTemplates().containsKey(filePath);
   }
 
-  public TemplatesPerFile getTemplatesForFile(String filePath) {
+  public TemplatesPerFile getTemplatesForFile(SourceFilePath filePath) {
     checkState(
         hasFile(filePath), "TemplateNameRegistry does not contain info for file: %s", filePath);
     return filePathsToTemplates().get(filePath);
   }
 
-  public ImmutableSet<String> allFiles() {
+  public ImmutableSet<SourceFilePath> allFiles() {
     return filePathsToTemplates().keySet();
   }
 }

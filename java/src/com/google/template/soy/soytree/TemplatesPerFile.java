@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,16 +32,16 @@ import java.util.Set;
  */
 public final class TemplatesPerFile {
 
-  private final String filePath;
+  private final SourceFilePath filePath;
   private final ImmutableSet<TemplateName> templates;
 
-  private TemplatesPerFile(String filePath, ImmutableSet<TemplateName> templates) {
+  private TemplatesPerFile(SourceFilePath filePath, ImmutableSet<TemplateName> templates) {
     this.filePath = filePath;
     this.templates = templates;
   }
 
   /** The file path for this registry. */
-  public String getFilePath() {
+  public SourceFilePath getFilePath() {
     return filePath;
   }
 
@@ -77,17 +78,17 @@ public final class TemplatesPerFile {
   }
 
   /** Creates a new builder. */
-  public static Builder builder(String filePath) {
+  public static Builder builder(SourceFilePath filePath) {
     return new Builder(filePath);
   }
 
   /** Builder for TemplatesPerFile */
   public static class Builder {
 
-    private final String filePath;
+    private final SourceFilePath filePath;
     private final Set<TemplateName> templates;
 
-    private Builder(String filePath) {
+    private Builder(SourceFilePath filePath) {
       this.filePath = filePath;
       this.templates = new LinkedHashSet<>();
     }

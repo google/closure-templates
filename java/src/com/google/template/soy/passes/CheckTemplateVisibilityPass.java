@@ -56,7 +56,7 @@ final class CheckTemplateVisibilityPass implements CompilerFileSetPass {
               CALLEE_NOT_VISIBLE,
               calleeName,
               definition.getVisibility().getAttributeValue(),
-              definition.getSourceLocation().getFilePath());
+              definition.getSourceLocation().getFilePath().path());
         }
       }
     }

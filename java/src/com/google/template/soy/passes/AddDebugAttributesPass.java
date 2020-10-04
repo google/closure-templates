@@ -175,7 +175,7 @@ final class AddDebugAttributesPass implements CompilerFilePass {
               Sanitizers.escapeHtmlAttribute(
                   currentTemplate
                       + " "
-                      + insertionLocation.getFilePath()
+                      + insertionLocation.getFilePath().path()
                       + ":"
                       + insertionLocation.getBeginLine()),
               insertionLocation));

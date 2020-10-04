@@ -23,6 +23,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -66,7 +67,7 @@ public abstract class SoyFileSetParser {
   @AutoValue
   public abstract static class CompilationUnitAndKind {
     public static CompilationUnitAndKind create(
-        SoyFileKind fileKind, String filePath, CompilationUnit compilationUnit) {
+        SoyFileKind fileKind, SourceFilePath filePath, CompilationUnit compilationUnit) {
       // sanity check
       checkArgument(
           fileKind != SoyFileKind.SRC, "compilation units should only represent dependencies");
@@ -76,7 +77,7 @@ public abstract class SoyFileSetParser {
 
     abstract SoyFileKind fileKind();
 
-    abstract String filePath();
+    abstract SourceFilePath filePath();
 
     abstract CompilationUnit compilationUnit();
   }
@@ -124,7 +125,7 @@ public abstract class SoyFileSetParser {
   @Nullable
   abstract SoyAstCache cache();
   /** Files to parse. Each must have a unique file name. */
-  public abstract ImmutableMap<String, SoyFileSupplier> soyFileSuppliers();
+  public abstract ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers();
 
   abstract ImmutableList<CompilationUnitAndKind> compilationUnits();
 
@@ -142,7 +143,7 @@ public abstract class SoyFileSetParser {
     public abstract Builder setCache(SoyAstCache cache);
 
     public abstract Builder setSoyFileSuppliers(
-        ImmutableMap<String, SoyFileSupplier> soyFileSuppliers);
+        ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers);
 
     public abstract Builder setCompilationUnits(
         ImmutableList<CompilationUnitAndKind> compilationUnits);
@@ -225,7 +226,7 @@ public abstract class SoyFileSetParser {
     for (CompilationUnitAndKind unit : compilationUnits()) {
       for (SoyFileP file : unit.compilationUnit().getFileList()) {
         builder.addTemplatesForFile(
-            file.getFilePath(),
+            SourceFilePath.create(file.getFilePath()),
             TemplateMetadataSerializer.templatesFromSoyFileP(
                 file, unit.fileKind(), typeRegistry(), unit.filePath(), errorReporter()));
       }
@@ -268,7 +269,7 @@ public abstract class SoyFileSetParser {
   private SoyFileNode parseSoyFileHelper(SoyFileSupplier soyFileSupplier, IdGenerator nodeIdGen)
       throws IOException {
     try (Reader soyFileReader = soyFileSupplier.open()) {
-      String filePath = soyFileSupplier.getFilePath();
+      String filePath = soyFileSupplier.getFilePath().path();
       // TODO(lukes): this logic should move into relevant SoyFileSupplier implementations
       int lastBangIndex = filePath.lastIndexOf('!');
       if (lastBangIndex != -1) {
@@ -278,7 +279,9 @@ public abstract class SoyFileSetParser {
       // Think carefully before adding new parameters to the parser.
       // Currently the only parameters are the id generator, the file, and the errorReporter.
       // This ensures that the file be cached without worrying about other compiler inputs.
-      return new SoyFileParser(nodeIdGen, soyFileReader, filePath, errorReporter()).parseSoyFile();
+      return new SoyFileParser(
+              nodeIdGen, soyFileReader, SourceFilePath.create(filePath), errorReporter())
+          .parseSoyFile();
     }
   }
 
@@ -288,7 +291,7 @@ public abstract class SoyFileSetParser {
    */
   private static TemplateNameRegistry buildTemplateNameRegistryForDepsAndFileset(
       FileSetTemplateRegistry.Builder fileSetRegistryWithDeps, SoyFileSetNode fileSet) {
-    Map<String, TemplatesPerFile.Builder> soyFilePathsToTemplates =
+    Map<SourceFilePath, TemplatesPerFile.Builder> soyFilePathsToTemplates =
         fileSetRegistryWithDeps.getTemplatesPerFileBuilder();
 
     for (SoyFileNode file : fileSet.getChildren()) {

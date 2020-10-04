@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.IncrementingIdGenerator;
@@ -57,7 +58,7 @@ import org.junit.runners.JUnit4;
 public final class SourceLocationTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
-  private static final String FAKE_FILE_PATH = "fakefile.soy";
+  private static final SourceFilePath FAKE_FILE_PATH = SourceFilePath.create("fakefile.soy");
 
   @Test
   public void testLocationsInParsedContent() throws Exception {
@@ -693,7 +694,8 @@ public final class SourceLocationTest {
     // JavaCC is pretty good about never using null as a token value.
     ErrorReporter reporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forSuppliers(
-            SoyFileSupplier.Factory.create("{template t}\nHello, World!\n", "broken.soy"))
+            SoyFileSupplier.Factory.create(
+                "{template t}\nHello, World!\n", SourceFilePath.create("broken.soy")))
         .errorReporter(reporter)
         .parse();
     assertThat(reporter.getErrors()).isNotEmpty();
@@ -1113,7 +1115,7 @@ public final class SourceLocationTest {
         new SoyFileParser(
                 new IncrementingIdGenerator(),
                 new StringReader(soySourceCode),
-                "/example/file.soy",
+                SourceFilePath.create("/example/file.soy"),
                 ErrorReporter.createForTest())
             .parseSoyFile();
 
@@ -1122,7 +1124,7 @@ public final class SourceLocationTest {
     for (TemplateNode templateNode : SoyTreeUtils.getAllNodesOfType(soyFile, TemplateNode.class)) {
       for (SoyNode node : SoyTreeUtils.getAllNodesOfType(templateNode, SoyNode.class)) {
         assertWithMessage("Wrong file path for node %s", node)
-            .that(node.getSourceLocation().getFilePath())
+            .that(node.getSourceLocation().getFilePath().path())
             .isEqualTo("/example/file.soy");
       }
     }

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyCompilationException;
@@ -44,7 +45,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
   private final CompiledTemplateRegistry registry;
-  private final ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers;
+  private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
   private final ImmutableMap<String, TemplateNode> classNameToTemplateNode;
   private final ImmutableMap<String, CompiledTemplateMetadata> classNameToTemplateMetadata;
   private final SoyTypeRegistry typeRegistry;
@@ -52,7 +53,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   CompilingClassLoader(
       CompiledTemplateRegistry registry,
       SoyFileSetNode fileSet,
-      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
+      ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
     this.registry = registry;
     ImmutableMap.Builder<String, TemplateNode> classNameToTemplateNode = ImmutableMap.builder();

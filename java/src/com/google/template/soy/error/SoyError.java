@@ -67,7 +67,7 @@ public abstract class SoyError implements Comparable<SoyError> {
   }
 
   private String toStringInternal(boolean snippet) {
-    return location().getFilePath()
+    return location().getFilePath().path()
         + ':'
         + location().getBeginLine()
         + ": "

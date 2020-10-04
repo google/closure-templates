@@ -19,6 +19,7 @@ package com.google.template.soy.plugin.internal;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.ErrorReporter.Checkpoint;
@@ -66,7 +67,7 @@ public final class PluginValidator {
   private void validateJavaFunction(SoyJavaSourceFunction fn) {
     SoyFunctionSignature fnSig = fn.getClass().getAnnotation(SoyFunctionSignature.class);
     String fnName = fnSig.name();
-    SourceLocation location = new SourceLocation(fn.getClass().getName());
+    SourceLocation location = new SourceLocation(SourceFilePath.create(fn.getClass().getName()));
     methodSignatureValidator.validate(
         fnName, fn, location, /* includeTriggeredInTemplateMsg= */ false);
     ValidatorErrorReporter validatorReporter =
@@ -102,7 +103,8 @@ public final class PluginValidator {
       Class<? extends SoySourceFunction> fnClass,
       ValidatorErrorReporter validatorReporter) {
     ErrorReporter localReporter = ErrorReporter.create(ImmutableMap.of());
-    TypeNode typeNode = SoyFileParser.parseType(typeStr, fnClass.getName(), localReporter);
+    TypeNode typeNode =
+        SoyFileParser.parseType(typeStr, SourceFilePath.create(fnClass.getName()), localReporter);
     SoyType type =
         typeNode == null
             ? UnknownType.getInstance()

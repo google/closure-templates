@@ -24,6 +24,7 @@ import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.TemplateMetadataSerializer;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
@@ -49,7 +50,7 @@ public final class ResolveTemplateImportsPassTest {
         parseDep(
             Joiner.on("\n")
                 .join("{namespace dep.namespace}", "{template .aTemplate}", " hi!", "{/template}"),
-            "foo.soy");
+            SourceFilePath.create("foo.soy"));
 
     parseFileWithDeps(
         createSoyFileSupplier(
@@ -60,7 +61,7 @@ public final class ResolveTemplateImportsPassTest {
                     "{template .mainTemplate}",
                     " hi!",
                     "{/template}"),
-            "main.soy"),
+            SourceFilePath.create("main.soy")),
         ImmutableList.of(dependencyCompilationUnit));
     assertThat(errorReporter.getErrors()).isEmpty();
   }
@@ -71,7 +72,7 @@ public final class ResolveTemplateImportsPassTest {
         parseDep(
             Joiner.on("\n")
                 .join("{namespace dep.namespace}", "{template .aTemplate}", " hi!", "{/template}"),
-            "foo.soy");
+            SourceFilePath.create("foo.soy"));
 
     parseFileWithDeps(
         createSoyFileSupplier(
@@ -82,7 +83,7 @@ public final class ResolveTemplateImportsPassTest {
                     "{template .aTemplate}",
                     " hi!",
                     "{/template}"),
-            "main.soy"),
+            SourceFilePath.create("main.soy")),
         ImmutableList.of(dependencyCompilationUnit));
 
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -102,7 +103,7 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .mainTemplate}",
                         " hi!",
                         "{/template}"),
-                "main.soy"),
+                SourceFilePath.create("main.soy")),
             createSoyFileSupplier(
                 Joiner.on("\n")
                     .join(
@@ -110,7 +111,7 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .aTemplate}",
                         " hi!",
                         "{/template}"),
-                "foo.soy")));
+                SourceFilePath.create("foo.soy"))));
 
     assertThat(errorReporter.getErrors()).isEmpty();
   }
@@ -127,7 +128,7 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .aTemplate}",
                         " hi!",
                         "{/template}"),
-                "main.soy"),
+                SourceFilePath.create("main.soy")),
             createSoyFileSupplier(
                 Joiner.on("\n")
                     .join(
@@ -135,7 +136,7 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .aTemplate}",
                         " hi!",
                         "{/template}"),
-                "foo.soy")));
+                SourceFilePath.create("foo.soy"))));
 
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
@@ -148,7 +149,7 @@ public final class ResolveTemplateImportsPassTest {
         parseDep(
             Joiner.on("\n")
                 .join("{namespace dep.namespace}", "{template .aTemplate}", " hi!", "{/template}"),
-            "foo.soy");
+            SourceFilePath.create("foo.soy"));
 
     parseFilesWithDeps(
         ImmutableList.of(
@@ -163,7 +164,7 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .mainTemplate}",
                         " hi!",
                         "{/template}"),
-                "main.soy"),
+                SourceFilePath.create("main.soy")),
             createSoyFileSupplier(
                 Joiner.on("\n")
                     .join(
@@ -171,7 +172,7 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .myOtherTemplate}",
                         " hi!",
                         "{/template}"),
-                "siblingFile.soy")),
+                SourceFilePath.create("siblingFile.soy"))),
         ImmutableList.of(dependencyCompilationUnit));
 
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -191,20 +192,20 @@ public final class ResolveTemplateImportsPassTest {
                         "{template .aTemplate}",
                         " hi!",
                         "{/template}"),
-                "main.soy")));
+                SourceFilePath.create("main.soy"))));
 
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .contains("Unknown import dep foo.soy");
   }
 
-  private CompilationUnitAndKind parseDep(String fileContents, String fileName) {
+  private CompilationUnitAndKind parseDep(String fileContents, SourceFilePath fileName) {
     SoyFileSetParser parserForDeps =
         createParserForFiles(ImmutableList.of(createSoyFileSupplier(fileContents, fileName)));
     ParseResult dependencyParseResult = parserForDeps.parse();
     return CompilationUnitAndKind.create(
         SoyFileKind.DEP,
-        "foo_unit.soy",
+        SourceFilePath.create("foo_unit.soy"),
         TemplateMetadataSerializer.compilationUnitFromFileSet(
             dependencyParseResult.fileSet(), dependencyParseResult.registry()));
   }
@@ -223,7 +224,8 @@ public final class ResolveTemplateImportsPassTest {
     return createParserForFilesWithDependencies(files, ImmutableList.of()).parse();
   }
 
-  private static SoyFileSupplier createSoyFileSupplier(String soyFileContents, String fileName) {
+  private static SoyFileSupplier createSoyFileSupplier(
+      String soyFileContents, SourceFilePath fileName) {
     return SoyFileSupplier.Factory.create(soyFileContents, fileName);
   }
 

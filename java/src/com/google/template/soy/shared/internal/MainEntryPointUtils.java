@@ -19,6 +19,7 @@ package com.google.template.soy.shared.internal;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.soytree.SoyFileNode;
 import java.io.File;
@@ -56,9 +57,8 @@ public class MainEntryPointUtils {
     // contains no wildcards.
     for (int i = 0; i < fileNodes.size(); ++i) {
       SoyFileNode inputFile = fileNodes.get(i);
-      String inputFilePath = inputFile.getFilePath();
-      String outputFilePath =
-          MainEntryPointUtils.buildFilePath(outputPathFormat, locale, inputFilePath);
+      SourceFilePath inputFilePath = inputFile.getFilePath();
+      String outputFilePath = buildFilePath(outputPathFormat, locale, inputFilePath.path());
 
       BaseUtils.ensureDirsExistInPath(outputFilePath);
       outputs.put(outputFilePath, i);

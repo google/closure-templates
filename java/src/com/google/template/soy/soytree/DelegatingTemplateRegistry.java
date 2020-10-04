@@ -19,6 +19,7 @@ package com.google.template.soy.soytree;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
 import com.google.template.soy.types.TemplateType;
@@ -35,12 +36,12 @@ public abstract class DelegatingTemplateRegistry implements TemplateRegistry {
   abstract TemplateRegistry getDelegate();
 
   @Override
-  public ImmutableMap<String, TemplatesPerFile> getTemplatesPerFile() {
+  public ImmutableMap<SourceFilePath, TemplatesPerFile> getTemplatesPerFile() {
     return getDelegate().getTemplatesPerFile();
   }
 
   @Override
-  public TemplatesPerFile getTemplatesPerFile(String fileName) {
+  public TemplatesPerFile getTemplatesPerFile(SourceFilePath fileName) {
     return getDelegate().getTemplatesPerFile(fileName);
   }
 
@@ -75,7 +76,7 @@ public abstract class DelegatingTemplateRegistry implements TemplateRegistry {
   }
 
   @Override
-  public ImmutableSet<String> getAllFileNames() {
+  public ImmutableSet<SourceFilePath> getAllFileNames() {
     return getDelegate().getAllFileNames();
   }
 

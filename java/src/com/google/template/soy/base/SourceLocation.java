@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.base.CharMatcher;
 import com.google.common.collect.ComparisonChain;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.Immutable;
@@ -39,9 +38,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @Immutable
 @CheckReturnValue
 public final class SourceLocation implements Comparable<SourceLocation> {
-
   /** A file path or URI useful for error messages. */
-  @Nonnull private final String filePath;
+  @Nonnull private final SourceFilePath filePath;
 
   private final Point begin;
   private final Point end;
@@ -53,7 +51,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * when you may or may not have a location. Obviously, associating real locations is always
    * preferred when possible.
    */
-  public static final SourceLocation UNKNOWN = new SourceLocation("unknown");
+  public static final SourceLocation UNKNOWN = new SourceLocation(SourceFilePath.create("unknown"));
 
   /**
    * @param filePath A file path or URI useful for error messages.
@@ -67,15 +65,15 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    *     if associated with the entire file instead of a line.
    */
   public SourceLocation(
-      String filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
+      SourceFilePath filePath, int beginLine, int beginColumn, int endLine, int endColumn) {
     this(filePath, Point.create(beginLine, beginColumn), Point.create(endLine, endColumn));
   }
 
-  public SourceLocation(String filePath) {
+  public SourceLocation(SourceFilePath filePath) {
     this(filePath, -1, -1, -1, -1);
   }
 
-  public SourceLocation(String filePath, Point begin, Point end) {
+  public SourceLocation(SourceFilePath filePath, Point begin, Point end) {
     checkNotNull(filePath, "filePath is null");
     checkNotNull(begin, "begin is null");
     checkNotNull(end, "end is null");
@@ -101,7 +99,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
    * from the file system.
    */
   @Nonnull
-  public String getFilePath() {
+  public SourceFilePath getFilePath() {
     return filePath;
   }
 
@@ -112,12 +110,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       // invalid SoyFileNode is created.
       return null;
     }
-    // TODO(lukes): consider using Java 7 File APIs here.
-    int lastSlashIndex = CharMatcher.anyOf("/\\").lastIndexIn(filePath);
-    if (lastSlashIndex != -1 && lastSlashIndex != filePath.length() - 1) {
-      return filePath.substring(lastSlashIndex + 1);
-    }
-    return filePath;
+    return filePath.fileName();
   }
 
   /** Returns the line number in the source file where this location begins (1-based). */
@@ -165,7 +158,6 @@ public final class SourceLocation implements Comparable<SourceLocation> {
 
   @Override
   public int compareTo(SourceLocation o) {
-    // TODO(user): use Comparator.comparing(...)
     return ComparisonChain.start()
         .compare(this.filePath, o.filePath)
         .compare(this.begin, o.begin)
@@ -195,8 +187,8 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   public String toString() {
     String lineColumnString = toLineColumnString();
     return (lineColumnString == null)
-        ? filePath
-        : String.format("%s:%s", filePath, lineColumnString);
+        ? filePath.path()
+        : String.format("%s:%s", filePath.path(), lineColumnString);
   }
 
   /**
@@ -372,7 +364,7 @@ public final class SourceLocation implements Comparable<SourceLocation> {
       return Point.create(line() + byLines, column() + byColumns);
     }
 
-    public final SourceLocation asLocation(String filePath) {
+    public final SourceLocation asLocation(SourceFilePath filePath) {
       return new SourceLocation(filePath, this, this);
     }
 

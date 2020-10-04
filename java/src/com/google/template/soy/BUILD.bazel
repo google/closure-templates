@@ -25,6 +25,7 @@ java_library(
         "SoyInputCache.java",
     ],
     deps = [
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/shared",
         "@maven//:com_google_code_findbugs_jsr305",
@@ -69,6 +70,7 @@ java_library(
         ":cache",
         ":soy",
         ":soy_utils",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/error:error_reporter",
@@ -101,6 +103,7 @@ java_library(
     ],
     deps = [
         ":impl",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/conformance",
         "//java/src/com/google/template/soy/css",

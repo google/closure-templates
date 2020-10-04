@@ -17,6 +17,7 @@
 package com.google.template.soy.conformance;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
@@ -53,9 +54,9 @@ public final class SoyConformance {
   public void check(SoyFileNode file, final ErrorReporter errorReporter) {
     // first filter to only the rules that need to be checked for this file.
     final List<Rule<?>> rulesForFile = new ArrayList<>(rules.size());
-    String filePath = file.getFilePath();
+    SourceFilePath filePath = file.getFilePath();
     for (RuleWithExemptions rule : rules) {
-      if (rule.shouldCheckConformanceFor(filePath)) {
+      if (rule.shouldCheckConformanceFor(filePath.path())) {
         rulesForFile.add(rule.getRule());
       }
     }

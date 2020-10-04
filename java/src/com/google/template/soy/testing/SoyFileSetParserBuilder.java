@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
 import com.google.template.soy.css.CssRegistry;
@@ -57,7 +58,7 @@ import javax.annotation.Nullable;
  */
 public final class SoyFileSetParserBuilder {
 
-  private final ImmutableMap<String, SoyFileSupplier> soyFileSuppliers;
+  private final ImmutableMap<SourceFilePath, SoyFileSupplier> soyFileSuppliers;
   private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
   @Nullable private SoyAstCache astCache = null;
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
@@ -129,7 +130,7 @@ public final class SoyFileSetParserBuilder {
   }
 
   private SoyFileSetParserBuilder(Iterable<SoyFileSupplier> suppliers) {
-    ImmutableMap.Builder<String, SoyFileSupplier> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<SourceFilePath, SoyFileSupplier> builder = ImmutableMap.builder();
     for (SoyFileSupplier supplier : suppliers) {
       builder.put(supplier.getFilePath(), supplier);
     }
@@ -286,7 +287,7 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public static final String FILE_PATH = "no-path";
+  public static final SourceFilePath FILE_PATH = SourceFilePath.create("no-path");
 
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
 
@@ -294,7 +295,8 @@ public final class SoyFileSetParserBuilder {
     for (int i = 0; i < soyFileContents.length; i++) {
       String soyFileContent = soyFileContents[i];
       // Names are now required to be unique in a SoyFileSet. Use one-based indexing.
-      String filePath = (i == 0) ? FILE_PATH : (FILE_PATH + "-" + (i + 1));
+      SourceFilePath filePath =
+          i == 0 ? FILE_PATH : SourceFilePath.create(FILE_PATH.path() + "-" + (i + 1));
       soyFileSuppliers.add(SoyFileSupplier.Factory.create(soyFileContent, filePath));
     }
     return soyFileSuppliers;

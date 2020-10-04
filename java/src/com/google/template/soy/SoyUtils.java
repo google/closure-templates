@@ -18,6 +18,7 @@ package com.google.template.soy;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.internalutils.InternalValueUtils;
 import com.google.template.soy.data.restricted.PrimitiveData;
@@ -105,7 +106,8 @@ public final class SoyUtils {
           continue;
         }
 
-        SourceLocation sourceLocation = new SourceLocation("globals", lineNum, 1, lineNum, 1);
+        SourceLocation sourceLocation =
+            new SourceLocation(SourceFilePath.create("globals"), lineNum, 1, lineNum, 1);
 
         Matcher matcher = COMPILE_TIME_GLOBAL_LINE.matcher(line);
         if (!matcher.matches()) {

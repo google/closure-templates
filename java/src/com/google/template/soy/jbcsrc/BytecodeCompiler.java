@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
@@ -66,7 +67,7 @@ public final class BytecodeCompiler {
       final TemplateRegistry registry,
       final SoyFileSetNode fileSet,
       ErrorReporter reporter,
-      ImmutableMap<String, SoyFileSupplier> filePathsToSuppliers,
+      ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
     if (reporter.errorsSince(checkpoint)) {
@@ -213,7 +214,7 @@ public final class BytecodeCompiler {
    * @param sink The source to write the jar file
    */
   public static void writeSrcJar(
-      SoyFileSetNode soyFileSet, ImmutableMap<String, SoyFileSupplier> files, ByteSink sink)
+      SoyFileSetNode soyFileSet, ImmutableMap<SourceFilePath, SoyFileSupplier> files, ByteSink sink)
       throws IOException {
     try (SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       for (SoyFileNode file : soyFileSet.getChildren()) {

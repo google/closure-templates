@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -1354,15 +1355,16 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         return resolvedSignature;
       }
       ImmutableList.Builder<SoyType> paramTypes = ImmutableList.builder();
+      SourceFilePath classFilePath = SourceFilePath.create(className);
       for (String paramTypeString : signature.parameterTypes()) {
-        TypeNode paramType = SoyFileParser.parseType(paramTypeString, className, errorReporter);
+        TypeNode paramType = SoyFileParser.parseType(paramTypeString, classFilePath, errorReporter);
         if (paramType == null) {
           return null;
         }
         paramTypes.add(pluginTypeConverter.getOrCreateType(paramType));
       }
       TypeNode returnType =
-          SoyFileParser.parseType(signature.returnType(), className, errorReporter);
+          SoyFileParser.parseType(signature.returnType(), classFilePath, errorReporter);
       if (returnType == null) {
         return null;
       }
@@ -2486,13 +2488,14 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                     for (SoySourceFunction function : functions) {
                       SoyMethodSignature methodSig =
                           function.getClass().getAnnotation(SoyMethodSignature.class);
-                      SoyType baseType = parseType(methodSig.baseType(), function);
-
+                      SourceFilePath fakeFunctionPath =
+                          SourceFilePath.create(function.getClass().getName());
+                      SoyType baseType = parseType(methodSig.baseType(), fakeFunctionPath);
                       for (Signature signature : methodSig.value()) {
-                        SoyType returnType = parseType(signature.returnType(), function);
+                        SoyType returnType = parseType(signature.returnType(), fakeFunctionPath);
                         ImmutableList<SoyType> argTypes =
                             Arrays.stream(signature.parameterTypes())
-                                .map(s -> parseType(s, function))
+                                .map(s -> parseType(s, fakeFunctionPath))
                                 .collect(toImmutableList());
 
                         methods.add(
@@ -2503,9 +2506,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                     return methods.build();
                   }
 
-                  private SoyType parseType(String t, SoySourceFunction fct) {
-                    TypeNode typeNode =
-                        SoyFileParser.parseType(t, fct.getClass().getName(), errorReporter);
+                  private SoyType parseType(String t, SourceFilePath path) {
+                    TypeNode typeNode = SoyFileParser.parseType(t, path, errorReporter);
                     return typeNode != null
                         ? pluginTypeConverter.getOrCreateType(typeNode)
                         : UnknownType.getInstance();

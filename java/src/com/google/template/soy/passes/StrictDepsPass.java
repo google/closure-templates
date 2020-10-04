@@ -73,8 +73,8 @@ public final class StrictDepsPass implements CompilerFileSetPass {
       reportUndefinedTemplateErrors(node, registry);
     } else {
       SoyFileKind calleeKind = callee.getSoyFileKind();
-      String callerFilePath = node.getSourceLocation().getFilePath();
-      String calleeFilePath = callee.getSourceLocation().getFilePath();
+      String callerFilePath = node.getSourceLocation().getFilePath().path();
+      String calleeFilePath = callee.getSourceLocation().getFilePath().path();
       if (calleeKind == SoyFileKind.INDIRECT_DEP) {
         errorReporter.report(
             node.getSourceLocation(),

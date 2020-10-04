@@ -381,7 +381,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         .append("// Please don't edit this file by hand.\n")
         // This "source" comment makes Code Search link the gencode to the Soy source:
         .append("// source: ")
-        .append(node.getFilePath())
+        .append(node.getFilePath().path())
         .append('\n');
 
     // Output a section containing optionally-parsed compiler directives in comments. Since these

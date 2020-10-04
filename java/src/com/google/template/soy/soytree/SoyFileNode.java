@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
@@ -204,7 +205,7 @@ public final class SoyFileNode extends AbstractParentSoyNode<SoyNode>
   }
 
   /** Returns the path to the source Soy file ("unknown" if not supplied). */
-  public String getFilePath() {
+  public SourceFilePath getFilePath() {
     return getSourceLocation().getFilePath();
   }
 

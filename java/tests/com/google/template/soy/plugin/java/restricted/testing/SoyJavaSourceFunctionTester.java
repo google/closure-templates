@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.template.soy.jbcsrc.restricted.FieldRef.staticFieldReference;
 
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
@@ -162,7 +163,8 @@ public class SoyJavaSourceFunctionTester {
 
   private SoyType parseType(String type) {
     TypeNode parsed =
-        SoyFileParser.parseType(type, fn.getClass().getName(), ErrorReporter.exploding());
+        SoyFileParser.parseType(
+            type, SourceFilePath.create(fn.getClass().getName()), ErrorReporter.exploding());
     return TypeNodeConverter.builder(ErrorReporter.exploding())
         .setTypeRegistry(SoyTypeRegistryBuilder.create())
         .build()

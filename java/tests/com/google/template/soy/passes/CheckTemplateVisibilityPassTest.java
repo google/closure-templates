@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.collect.Iterables;
+import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -148,14 +149,14 @@ public final class CheckTemplateVisibilityPassTest {
                     + "{template .foo visibility=\"private\"}\n"
                     + "oops!\n"
                     + "{/template}",
-                "foo/bar.soy"),
+                SourceFilePath.create("foo/bar.soy")),
             SoyFileSupplier.Factory.create(
                 "{namespace ns2}\n"
                     + "/** Public template. */\n"
                     + "{template .bar}\n"
                     + "{call ns.foo /}\n"
                     + "{/template}",
-                "baz/bar.soy"))
+                SourceFilePath.create("baz/bar.soy")))
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
@@ -173,7 +174,7 @@ public final class CheckTemplateVisibilityPassTest {
                     + "{template .foo visibility=\"private\"}\n"
                     + "oops!\n"
                     + "{/template}",
-                "foo/bar.soy"),
+                SourceFilePath.create("foo/bar.soy")),
             SoyFileSupplier.Factory.create(
                 "{namespace ns2}\n"
                     + "/** Public template. */\n"
@@ -181,7 +182,7 @@ public final class CheckTemplateVisibilityPassTest {
                     + "{let $foo: template(ns.foo) /}\n"
                     + "{call $foo /}\n"
                     + "{/template}",
-                "baz/bar.soy"))
+                SourceFilePath.create("baz/bar.soy")))
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
