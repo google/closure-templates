@@ -72,6 +72,15 @@ public interface SoySauce {
   ImmutableList<String> getAllRequiredCssNamespaces(
       String templateName, Predicate<String> enabledDelpackages, boolean collectCssFromDelvariants);
 
+  /** As above, but given a SoyTemplate instead of a template name. */
+  default ImmutableList<String> getAllRequiredCssNamespaces(
+      SoyTemplate template,
+      Predicate<String> enabledDelpackages,
+      boolean collectCssFromDelvariants) {
+    return getAllRequiredCssNamespaces(
+        template.getTemplateName(), enabledDelpackages, collectCssFromDelvariants);
+  }
+
   /**
    * Indicates whether the current {@link SoySauce} instance holds a given template.
    *
