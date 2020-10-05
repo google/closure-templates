@@ -51,6 +51,11 @@ public abstract class PluginRuntimeInstanceInfo {
 
     public abstract ImmutableList.Builder<String> sourceLocationsBuilder();
 
+    public Builder addSourceLocation(String sourceLocation) {
+      sourceLocationsBuilder().add(sourceLocation);
+      return this;
+    }
+
     public abstract PluginRuntimeInstanceInfo build();
   }
 }
