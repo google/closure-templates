@@ -73,14 +73,8 @@ import javax.inject.Inject;
  */
 public final class SoyValueConverter {
 
-  /**
-   * Static instance of this class that does not include any custom value converters.
-   *
-   * @deprecated Use {@link #INSTANCE} instead
-   */
-  @Deprecated public static final SoyValueConverter UNCUSTOMIZED_INSTANCE = new SoyValueConverter();
-
-  public static final SoyValueConverter INSTANCE = UNCUSTOMIZED_INSTANCE;
+  /** Static instance of this class */
+  public static final SoyValueConverter INSTANCE = new SoyValueConverter();
 
   private final TypeMap cheapConverterMap = new TypeMap();
   private final TypeMap expensiveConverterMap = new TypeMap();
