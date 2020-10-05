@@ -3339,7 +3339,7 @@ private CallNode CallStmt() :
       CallDelegateNode node = new CallDelegateNode(
           nodeIdGen.genId(),
           tag,
-          (tagBeginEnd != null) ? createSrcLoc(tagBeginEnd) : tag,
+          (tagBeginEnd != null) ? createSrcLoc(tagBegin, tagBeginEnd) : tag,
           calleeName,
           attributes,
           selfClosing,
