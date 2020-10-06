@@ -2130,6 +2130,11 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     private SoyType getGenericListType(Iterable<ExprNode> intersectionOf) {
       ImmutableSet.Builder<SoyType> elementTypesBuilder = ImmutableSet.builder();
       for (ExprNode childNode : intersectionOf) {
+        // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
+        // and assume the caller is already reporting an error for bad args.
+        if (!(childNode.getType() instanceof ListType)) {
+          return UnknownType.getInstance();
+        }
         SoyType elementType = ((ListType) childNode.getType()).getElementType();
         if (elementType != null) { // Empty lists have no element type
           elementTypesBuilder.add(elementType);
