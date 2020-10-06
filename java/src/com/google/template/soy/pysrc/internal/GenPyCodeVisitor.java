@@ -334,9 +334,9 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           ", ",
           node.getDelPriority().toString(),
           ", ",
-          node.getPartialTemplateName().substring(1),
+          node.getLocalTemplateSymbol(),
           ", '",
-          node.getPartialTemplateName().substring(1),
+          node.getLocalTemplateSymbol(),
           "')");
     }
 
@@ -761,7 +761,6 @@ final class GenPyCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       pyCodeBuilder.popOutputVar();
       pyCodeBuilder.appendLine("print " + outputVarName);
     }
-
 
     // ---------------------------------------------------------------------------------------------
     // Fallback implementation.

@@ -30,6 +30,9 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Resolves function calls to template names inside of the dynamic names of HTML open tags, where
@@ -44,6 +47,11 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     ImportsTemplateRegistry templateRegistry = file.getTemplateRegistry();
+    // TODO(b/170213185): Come up with a unified vision for template resolution.
+    Set<String> localTemplateNames =
+        file.getTemplates().stream()
+            .map(TemplateNode::getLocalTemplateSymbol)
+            .collect(Collectors.toSet());
 
     for (HtmlOpenTagNode tag :
         SoyTreeUtils.getAllMatchingNodesOfType(
@@ -57,21 +65,24 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
                   fct.getParamsStyle() == ParamsStyle.NONE
                       || fct.getParamsStyle() == ParamsStyle.NAMED)) {
         if (templateRegistry.getImportedSymbols().contains(fct.getFunctionName())) {
-          convertToBind(fct);
+          convertToBind(fct, fct.getIdentifier());
+        } else if (localTemplateNames.contains(fct.getFunctionName())) {
+          // Special case allowing local template .foo to be called as foo() -- without leading dot.
+          convertToBind(
+              fct, Identifier.create("." + fct.getFunctionName(), fct.getFunctionNameLocation()));
         }
       }
     }
   }
 
-  private static void convertToBind(FunctionNode fct) {
+  private static void convertToBind(FunctionNode fct, Identifier templateLiteralId) {
     // Move original function's parameters into a record() literal.
     RecordLiteralNode record =
         new RecordLiteralNode(Identifier.create("record", UNKNOWN), fct.getParamNames(), UNKNOWN);
     record.addChildren(fct.getChildren());
 
     // Create a template(foo) literal from function node foo()
-    TemplateLiteralNode templateLiteral =
-        new TemplateLiteralNode(fct.getIdentifier(), UNKNOWN, true);
+    TemplateLiteralNode templateLiteral = new TemplateLiteralNode(templateLiteralId, UNKNOWN, true);
 
     // Bind and replace.
     MethodCallNode bind =

@@ -416,6 +416,12 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return partialTemplateName.identifier();
   }
 
+  /** Returns this template's partial name, with any leading dot removed. */
+  public String getLocalTemplateSymbol() {
+    String s = partialTemplateName.identifier();
+    return s != null && s.startsWith(".") ? s.substring(1) : s;
+  }
+
   /** Returns the visibility of this template. */
   public Visibility getVisibility() {
     return visibility;

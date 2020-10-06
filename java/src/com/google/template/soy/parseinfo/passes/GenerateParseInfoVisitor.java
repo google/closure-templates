@@ -249,7 +249,7 @@ public final class GenerateParseInfoVisitor
       if (template.getVisibility() == Visibility.PUBLIC
           && template.getKind() != SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {
         publicBasicTemplateMap.put(
-            convertToUpperUnderscore(template.getPartialTemplateName().substring(1)), template);
+            convertToUpperUnderscore(template.getLocalTemplateSymbol()), template);
       }
       for (TemplateParam param : template.getParams()) {
         allParamKeys.add(param.name());
@@ -480,8 +480,7 @@ public final class GenerateParseInfoVisitor
         new IndirectParamsCalculator(templateRegistry).calculateIndirectParams(node);
 
     @SuppressWarnings("ConstantConditions") // for IntelliJ
-    String upperUnderscoreName =
-        convertToUpperUnderscore(node.getPartialTemplateName().substring(1));
+    String upperUnderscoreName = convertToUpperUnderscore(node.getLocalTemplateSymbol());
     String templateInfoClassName =
         CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, upperUnderscoreName)
             + "SoyTemplateInfo";

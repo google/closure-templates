@@ -85,7 +85,7 @@ final class AliasUtils {
         .addAll(SoyTreeUtils.getAllNodesOfType(fileNode, TemplateElementNode.class));
     // Go through templates first and just alias them to their local name.
     for (TemplateNode templateNode : templates.build()) {
-      String partialName = templateNode.getPartialTemplateName();
+      String partialName = templateNode.getLocalTemplateSymbol();
       String fullyQualifiedName = templateNode.getTemplateName();
       localTemplates.add(fullyQualifiedName);
 
@@ -93,7 +93,7 @@ final class AliasUtils {
 
       // Need to start the alias with something that cannot be a part of a reserved
       // JavaScript identifier like 'function' or 'catch'.
-      String alias = "$" + partialName.substring(1);
+      String alias = "$" + partialName;
       aliasMap.put(fullyQualifiedName, alias);
     }
 

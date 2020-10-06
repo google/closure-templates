@@ -682,7 +682,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   @Override
   protected void visitTemplateNode(TemplateNode node) {
     String templateName = node.getTemplateName();
-    String partialName = node.getPartialTemplateName().substring(1);
+    String partialName = node.getLocalTemplateSymbol();
     String alias;
 
     if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
