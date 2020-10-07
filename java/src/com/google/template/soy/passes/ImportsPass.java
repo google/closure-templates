@@ -61,6 +61,8 @@ abstract class ImportsPass {
       SoyErrorKind.of("Import ''{0}'' conflicts with namespace for global ''{1}''.");
   private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TYPE_NAME =
       SoyErrorKind.of("Import ''{0}'' conflicts with a builtin type of the same name.");
+  private static final SoyErrorKind IMPORT_SAME_FILE =
+      SoyErrorKind.of("Importing from the same file is not allowed.");
 
   /**
    * Visits a Soy file, validating its imports and updating the file's {@link
@@ -132,6 +134,11 @@ abstract class ImportsPass {
      */
     private void visit(ImportNode node) {
       if (!importTypesToVisit.contains(node.getImportType()) || !shouldVisit(node)) {
+        return;
+      }
+
+      if (node.getPath().equals(file.getFilePath().path())) {
+        errorReporter.report(node.getPathSourceLocation(), IMPORT_SAME_FILE);
         return;
       }
 
