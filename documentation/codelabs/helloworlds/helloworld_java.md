@@ -14,8 +14,11 @@ Follow these steps to create a simple Hello World template and use it in Java:
     └── src
         └── main
             └── java
+            |   └── example
+            |       └── HelloWorld.java
+            |
+            └── resources
                 └── example
-                    └── HelloWorld.java
                     └── simple.soy
     ```
 
@@ -54,7 +57,7 @@ Follow these steps to create a simple Hello World template and use it in Java:
       <dependency>
         <groupId>com.google.template</groupId>
         <artifactId>soy</artifactId>
-        <version>2018-03-14 </version> <!-- Or latest version.-->
+        <version>2020-08-24</version> <!-- Or latest version. -->
       </dependency>
     </dependencies>
     ```
@@ -270,7 +273,7 @@ classes for the template and parameter names in your templates. Follow the steps
 below to use `SoyParseInfoGenerator` with the Hello World example:
 
 1.  Download the latest version of `SoyParseInfoGenerator.jar` from
-    [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22soy%22)
+    [Maven Central](https://search.maven.org/artifact/com.google.template/soy)
     and put it at the project root.
 
     Unlike the main Soy jar, `SoyParseInfoGenerator.jar` is executable, and can
@@ -284,9 +287,11 @@ below to use `SoyParseInfoGenerator` with the Hello World example:
 
     ```
     $ java -jar SoyParseInfoGenerator.jar \
-        --generateInvocationBuilders
+        --generateInvocationBuilders \
         --javaPackage example \
-        --srcs src/main/java/example/simple.soy
+        --javaClassNameSource filename \
+        --srcs src/main/resources/example/simple.soy \
+        --outputDirectory src/main/java/example
     ```
 
     This step creates the file `src/main/java/example/SimpleTemplates.java`.
