@@ -28,6 +28,7 @@ import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
+import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import java.util.Optional;
 
@@ -106,7 +107,10 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
       case DOT_IDENT:
         // Case 1: ".foo" Source callee name is partial.
         templateLiteralNode.resolveTemplateName(
-            Identifier.create(header.getNamespace() + name, name, unresolvedIdent.location()));
+            Identifier.create(
+                TemplateNodeBuilder.combineNsAndName(header.getNamespace(), name),
+                name,
+                unresolvedIdent.location()));
         return;
       case DOTTED_IDENT:
         // Case 2: "foo.bar.baz" Source callee name is a proper dotted ident, which might start with

@@ -301,8 +301,12 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     this.cssBaseNamespace = cssBaseNamespace;
   }
 
-  protected final void setTemplateNames(String templateName, Identifier partialTemplateName) {
-    this.templateName = checkNotNull(templateName);
+  public static String combineNsAndName(String namespace, String templateName) {
+    return namespace + (templateName.startsWith(".") ? "" : ".") + templateName;
+  }
+
+  protected final void setTemplateNames(Identifier partialTemplateName, String namespace) {
+    this.templateName = combineNsAndName(namespace, partialTemplateName.identifier());
     this.partialTemplateName = checkNotNull(partialTemplateName);
   }
 

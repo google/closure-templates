@@ -42,6 +42,7 @@ import com.google.template.soy.soytree.TemplateKindP;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateMetadataP;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.VisibilityP;
@@ -192,15 +193,18 @@ public final class TemplateMetadataSerializer {
     switch (templateKind) {
       case ELEMENT:
       case BASIC:
-        templateName = fileProto.getNamespace() + templateProto.getTemplateName();
+        templateName =
+            TemplateNodeBuilder.combineNsAndName(
+                fileProto.getNamespace(), templateProto.getTemplateName());
         break;
       case DELTEMPLATE:
         String variant = templateProto.getDelTemplateVariant();
         String delTemplateName = templateProto.getTemplateName();
         templateName =
-            fileProto.getNamespace()
-                + TemplateDelegateNodeBuilder.partialDeltemplateTemplateName(
-                    delTemplateName, delPackageName, variant);
+            TemplateNodeBuilder.combineNsAndName(
+                fileProto.getNamespace(),
+                TemplateDelegateNodeBuilder.partialDeltemplateTemplateName(
+                    delTemplateName, delPackageName, variant));
         builder.setDelTemplateVariant(variant).setDelTemplateName(delTemplateName);
         break;
       default:
