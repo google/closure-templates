@@ -1246,8 +1246,8 @@ public final class EscapingConventions {
   /**
    * Implements the {@code |filterCspNonceValue} directive
    *
-   * <p>This only allows alphanumeric, plus, slash, and equals (in suffix position). So importantly
-   * it shouldn't be used in any programming-languagey context, such as:
+   * <p>This only allows alphanumeric, plus, slash, undescore, dash and equals (in suffix position).
+   * So importantly it shouldn't be used in any programming-languagey context, such as:
    *
    * <ul>
    *   <li>JavaScript outside a string
@@ -1269,13 +1269,13 @@ public final class EscapingConventions {
    *   <li>HTML attribute values
    * </ul>
    *
-   * <p>See also https://www.w3.org/TR/CSP2/#nonce_value
+   * <p>See also https://www.w3.org/TR/CSP3/#grammardef-base64-value
    */
   public static final class FilterCspNonceValue extends CrossLanguageStringXform {
     public static final FilterCspNonceValue INSTANCE = new FilterCspNonceValue();
 
     private FilterCspNonceValue() {
-      super(Pattern.compile("^[a-zA-Z0-9+/]+=*$"), null);
+      super(Pattern.compile("^[a-zA-Z0-9+/_-]+={0,2}$"), null);
     }
 
     @Override

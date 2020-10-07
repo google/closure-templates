@@ -319,4 +319,4 @@ and not reusing nonces
 
 For step 2, render with an [injected data](../concepts/ij-data) bundle that
 includes an `$csp_nonce` value that is a
-[valid nonce](https://w3c.github.io/webappsec/specs/content-security-policy/#source-list-valid-nonces).
+[valid nonce](https://www.w3.org/TR/CSP3/#grammardef-base64-value).

@@ -230,7 +230,7 @@ _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:action|archive
 
 _FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_CSP_NONCE_VALUE = re.compile(r"""^[a-zA-Z0-9+/]+=*$""", re.U)
+_FILTER_FOR_FILTER_CSP_NONCE_VALUE = re.compile(r"""^[a-zA-Z0-9+/_-]+={0,2}$""", re.U)
 
 def escape_html_helper(value):
   value = str(value)

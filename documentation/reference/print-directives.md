@@ -129,8 +129,8 @@ delimiters.
 ### `|filterCspNonceValue` {#filterCspNonceValue}
 
 Validates the values printed in `nonce=` attributes. Ensures that the value is a
-base64 encoded string as defined by the specification:
-https://www.w3.org/TR/CSP2/#nonce_value
+base64 encoded string as defined by the
+[CSP3 specification](https://www.w3.org/TR/CSP3/#grammardef-base64-value)
 
 This directives is used internally by the compiler as part of its support for
 ContentSecurityPolicy nonces. See our

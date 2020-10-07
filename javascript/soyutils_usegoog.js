@@ -539,7 +539,7 @@ soy.$$strContains = function(/** string */ haystack, /** string */ needle) {
  * For objects of type `SanitizedContent`, the contents are used to determine
  * the boolean value; this is because the outer `SanitizedContent` object
  * instance is always truthy (unless it's null).
- * 
+ *
  * @param {*} arg The argument to coerce.
  * @return {boolean}
  */
@@ -2548,7 +2548,7 @@ soy.esc.$$FILTER_FOR_FILTER_HTML_ELEMENT_NAME_ = /^(?!base|iframe|link|no|script
  * A pattern that vets values produced by the named directives.
  * @private {!RegExp}
  */
-soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/]+=*$/;
+soy.esc.$$FILTER_FOR_FILTER_CSP_NONCE_VALUE_ = /^[a-zA-Z0-9+\/_-]+={0,2}$/;
 
 /**
  * A helper for the Soy directive |normalizeHtml
