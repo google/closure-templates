@@ -31,6 +31,9 @@ final class ValidateSkipNodesPass implements CompilerFilePass {
   private static final SoyErrorKind SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS =
       SoyErrorKind.of("Skip element open tags must map to exactly one close tag.");
 
+  private static final SoyErrorKind SOY_SKIP_MUST_BE_DIRECT_CHILD_OF_TAG =
+      SoyErrorKind.of("Skip commands must be direct children of html tags.");
+
   private final ErrorReporter errorReporter;
 
   public ValidateSkipNodesPass(ErrorReporter errorReporter) {
@@ -42,12 +45,16 @@ final class ValidateSkipNodesPass implements CompilerFilePass {
     for (TemplateNode template : file.getTemplates()) {
       int id = 0;
       for (SkipNode skipNode : SoyTreeUtils.getAllNodesOfType(template, SkipNode.class)) {
-        HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
-        openTag.setSkipRoot();
-        if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
-          errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
+        if (skipNode.getParent() instanceof HtmlOpenTagNode) {
+          HtmlOpenTagNode openTag = (HtmlOpenTagNode) skipNode.getParent();
+          openTag.setSkipRoot();
+          if (!openTag.isSelfClosing() && openTag.getTaggedPairs().size() > 1) {
+            errorReporter.report(openTag.getSourceLocation(), SOY_SKIP_OPEN_TAG_CLOSE_AMBIGUOUS);
+          } else {
+            skipNode.setSkipId(template.getTemplateName() + "-skip-" + id++);
+          }
         } else {
-          skipNode.setSkipId(template.getTemplateName() + "-skip-" + id++);
+          errorReporter.report(skipNode.getSourceLocation(), SOY_SKIP_MUST_BE_DIRECT_CHILD_OF_TAG);
         }
       }
     }
