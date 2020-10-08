@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
@@ -24,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
@@ -31,6 +33,7 @@ import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNameRegistry;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplatesPerFile;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
@@ -46,6 +49,10 @@ import java.util.Map;
   ResolveTemplateNamesPass.class,
 })
 public final class ResolveTemplateImportsPass extends ImportsPass implements CompilerFileSetPass {
+
+  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TEMPLATE =
+      SoyErrorKind.of("Import conflicts with local template ''{0}''.");
+
   private TemplateNameRegistry templateNameRegistry;
   private final SoyGeneralOptions options;
   private final ErrorReporter errorReporter;
@@ -84,6 +91,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
 
     // Map of imported symbols to full template names.
     final Map<String, TemplateName> symbolsToTemplatesMap = new LinkedHashMap<>();
+    private final ImmutableMap<String, String> symbolToTemplateName;
 
     TemplateImportVisitor(
         SoyFileNode file,
@@ -93,6 +101,14 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
       super(file, ImmutableSet.of(ImportType.TEMPLATE), options, errorReporter);
 
       this.templateNameRegistry = templateNameRegistry;
+      // TODO(b/170213185): Come up with a unified vision for template resolution.
+      this.symbolToTemplateName =
+          file.getTemplates().stream()
+              .collect(
+                  toImmutableMap(
+                      TemplateNode::getLocalTemplateSymbol,
+                      TemplateNode::getPartialTemplateName,
+                      (existing, replacement) -> existing));
     }
 
     /**
@@ -116,6 +132,15 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
               /* validSymbols= */ templatesPerFile.getUnqualifiedTemplateNames());
           continue;
         }
+
+        // Consider moving this to ImportsPass.
+        String partialTemplateName = symbolToTemplateName.get(symbol.aliasOrName());
+        if (partialTemplateName != null) {
+          errorReporter.report(
+              symbol.nameLocation(), IMPORT_CONFLICTS_WITH_TEMPLATE, partialTemplateName);
+          continue;
+        }
+
         // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
         // compiler error (if they have the same path).
         symbolsToTemplatesMap.put(symbol.aliasOrName(), templatesPerFile.getFullTemplateName(name));
