@@ -114,25 +114,6 @@ java_library(
 )
 
 java_library(
-    name = "module",
-    srcs = [
-        "PluginInstances.java",
-        "Precompiled.java",
-        "PrecompiledSoyModule.java",
-    ],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":api_impl",
-        ":builder",
-        "//java/src/com/google/template/soy/shared/restricted",
-        "@maven//:com_google_guava_guava",
-        "@maven//:com_google_inject_extensions_guice_multibindings",
-        "@maven//:com_google_inject_guice",
-        "@maven//:javax_inject_javax_inject",
-    ],
-)
-
-java_library(
     name = "builder",
     srcs = [
         "SoySauceBuilder.java",
