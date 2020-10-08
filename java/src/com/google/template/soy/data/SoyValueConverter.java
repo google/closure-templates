@@ -59,7 +59,6 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 
 /**
  * A converter that knows how to convert all expected Java objects into SoyValues or
@@ -79,8 +78,7 @@ public final class SoyValueConverter {
   private final TypeMap cheapConverterMap = new TypeMap();
   private final TypeMap expensiveConverterMap = new TypeMap();
 
-  @Inject
-  SoyValueConverter() {
+  private SoyValueConverter() {
     cheapConverterMap.put(SoyValueProvider.class, input -> input);
     cheapConverterMap.put(String.class, StringData::forValue);
     cheapConverterMap.put(Boolean.class, BooleanData::forValue);
