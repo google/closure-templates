@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
+public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarDefn {
   private final TypeNode typeNode;
   private final TypeNode originalTypeNode;
   private String desc;

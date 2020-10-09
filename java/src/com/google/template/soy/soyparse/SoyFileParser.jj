@@ -141,6 +141,7 @@ import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
 import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.WhitespaceMode;
+import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -1102,6 +1103,8 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
+| < DECL_BEGIN_ATTR              : "{@attribute"    > : IN_CMD_TAG
+| < DECL_BEGIN_OPT_ATTR          : "{@attribute?"   > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG
 | < DECL_BEGIN_INJECT_PARAM      : "{@inject"       > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_INJECT_PARAM  : "{@inject?"      > : IN_CMD_TAG
@@ -1184,9 +1187,11 @@ TOKEN_MGR_DECLS: {
 
 <IN_CMD_TAG> TOKEN: {
   < NAME: <RAW_IDENT> >
+| < ATTRIBUTE: <RAW_IDENT_WITH_DASH> >
 | < CMD_COLON: ":" > : EXPR  // for type expressions or param/let expressions
 | < CMD_COLON_EQ: ":=" > : EXPR  // @state declarations where the type is inferred
 | < CMD_EQ: "=" >
+| < CMD_DASH: "-" >
 | < CMD_DOT: "." >
 }
 
@@ -1343,6 +1348,7 @@ TOKEN_MGR_DECLS: {
 <*> TOKEN: {
   < #WS: [" ", "\t", "\n", "\r"] | "\r\n" >
 | < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+| < #RAW_IDENT_WITH_DASH: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9", "-"] )* >
 | < #DEC_DIGITS: ( ["0"-"9"] )+ >
 | < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
 | < #LINE_COMMENT: "//" ( ~["\n","\r"] )* >
@@ -2109,7 +2115,11 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
       { whitespace = builder.build(); }
     |
       (
-        param = ParamDecl(soyDoc)
+        (
+            param = ParamDecl(soyDoc)
+            |
+            param = AttrDecl(soyDoc)
+        )
         {
           docSinkParam = param;
           switch (param.kind()) {
@@ -2120,7 +2130,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
             if (params.isEmpty()) {
               params = new ArrayList<TemplateHeaderVarDefn>();
             }
-            params.add((TemplateParam) param);
+            params.add(param);
             break;
           case STATE:
             if (params.isEmpty()) {
@@ -2181,7 +2191,6 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
   }
 
   name = <NAME>
-
   try {
     (
       <CMD_COLON>
@@ -2234,6 +2243,65 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           desc,
           value);
     }
+  }
+}
+
+/**
+ * ParamDecl -> ( <DECL_BEGIN_PARAM> | <DECL_BEGIN_OPT_PARAM> | <DECL_BEGIN_INJECT_PARAM
+                | <DECL_BEGIN_OPT_INJECT_PARAM ) <NAME> <CMD_COLON> TypeExpr() <CMD_END>
+ *
+ * @param desc The doc comment that was attached to whitespace preceding this param, if any.
+ */
+private TemplateHeaderVarDefn AttrDecl(@Nullable String desc) :
+{
+  Token tagBegin, name, lastName = null;
+  Token tagEnd = null;
+  TypeNode paramTypeNode = null;
+  boolean optional = false;
+}
+{
+  (
+    tagBegin = <DECL_BEGIN_ATTR>
+  | tagBegin = <DECL_BEGIN_OPT_ATTR>
+    {
+      optional = true;
+    }
+  )
+  // If there is a special token directly attached to the {@attribute, use that instead of whatever
+  // was passed to us.
+  { if (tagBegin.specialToken != null && tagBegin.specialToken.kind == SOYDOC) {
+      desc = tagBegin.specialToken.image;
+    }
+  }
+
+  (
+    name = <ATTRIBUTE>
+    |
+    name = <NAME>
+  )
+
+  try {
+    (
+      <CMD_COLON>
+      paramTypeNode = TypeExpr()
+    )
+    tagEnd = <CMD_END>
+  } catch (ParseException parseException) {
+    tagEnd = reportTemplateBodyErrorAndSkipTo(parseException, CMD_END);
+  }
+
+  {
+    if (desc != null) {
+      // trim the leading /** and trailing */ as well as the whitespace from the doc comment.
+      desc = desc.substring(3, desc.length() - 2).trim();
+    }
+    return new AttrParam(
+        name.image,
+        optional,
+        paramTypeNode,
+        desc,
+        lastName == null ? createSrcLoc(name) : createSrcLoc(name, lastName),
+        tagEnd == null? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagEnd));
   }
 }
 
