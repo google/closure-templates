@@ -35,8 +35,7 @@ import javax.annotation.Nullable;
  */
 public interface TemplateRegistry {
 
-  public static final TemplateRegistry EMPTY =
-      FileSetTemplateRegistry.builder(ErrorReporter.exploding()).build();
+  TemplateRegistry EMPTY = FileSetTemplateRegistry.builder(ErrorReporter.exploding()).build();
 
   /** Returns all basic template names. */
   ImmutableSet<String> getBasicTemplateOrElementNames();

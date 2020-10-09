@@ -176,7 +176,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
             + variant;
     delPackageTemplateAndVariantStr = delPackageTemplateAndVariantStr.replace('.', '_');
     // Generate the actual internal-use template name.
-    return ".__deltemplate_" + delPackageTemplateAndVariantStr;
+    return "__deltemplate_" + delPackageTemplateAndVariantStr;
   }
 
   @Override

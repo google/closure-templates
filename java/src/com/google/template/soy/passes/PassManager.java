@@ -372,7 +372,7 @@ public final class PassManager {
       if (astRewrites) {
         addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
       }
-      addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(new ResolveTemplateNamesPass(), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(

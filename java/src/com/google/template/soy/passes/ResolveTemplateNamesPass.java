@@ -15,14 +15,9 @@
  */
 package com.google.template.soy.passes;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
-import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -32,11 +27,7 @@ import com.google.template.soy.soytree.TemplateNodeBuilder;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import java.util.Optional;
 
-/**
- * Resolves template names in calls, checking against template names & imports. Since template
- * imports are resolved in two passes (once for deps and once for the current fileset), this pass
- * also needs to be run twice for the passes that require a partial template registry.
- */
+/** Resolves template names in calls, checking against template names & imports. */
 @RunAfter({
   ResolveTemplateImportsPass.class,
 })
@@ -44,20 +35,8 @@ import java.util.Optional;
   SoyElementPass.class, // Needs {@link CallBasicNode#getCalleeName} to be resolved.
 })
 public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
-  private static final SoyErrorKind CALL_COLLIDES_WITH_NAMESPACE_ALIAS =
-      SoyErrorKind.of("Call collides with namespace alias ''{0}''.");
 
-  private static final SoyErrorKind MISSING_CALLEE_NAMESPACE =
-      SoyErrorKind.of(
-          "Callee ''{0}'' should be relative to a namespace (preceded by a \".\"), or it must be"
-              + " imported. {1}",
-          StyleAllowance.NO_PUNCTUATION);
-
-  private final ErrorReporter errorReporter;
-
-  public ResolveTemplateNamesPass(ErrorReporter errorReporter) {
-    this.errorReporter = errorReporter;
-  }
+  public ResolveTemplateNamesPass() {}
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
@@ -104,8 +83,9 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     }
 
     switch (unresolvedIdent.type()) {
+      case SINGLE_IDENT:
       case DOT_IDENT:
-        // Case 1: ".foo" Source callee name is partial.
+        // Case 1: ".foo" and "foo" Source callee name is partial.
         templateLiteralNode.resolveTemplateName(
             Identifier.create(
                 TemplateNodeBuilder.combineNsAndName(header.getNamespace(), name),
@@ -117,46 +97,7 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
         // an alias.
         templateLiteralNode.resolveTemplateName(header.resolveAlias(unresolvedIdent));
         return;
-      case SINGLE_IDENT:
-        // Since we already know the symbol wasn't imported, there's no other valid reason for an
-        // un-dotted identifier. Report an error but set the "resolved" name to the original name,
-        // so that we can still create the template registry / report better errors (we can't create
-        // the template registry for data="all" calls without "resolving" template call names; it
-        // will crash).
-        reportUnresolveableTemplateNameError(unresolvedIdent, header, importsTemplateRegistry);
-        templateLiteralNode.resolveTemplateName(unresolvedIdent);
-        return;
     }
     throw new AssertionError(unresolvedIdent.type());
-  }
-
-  private void reportUnresolveableTemplateNameError(
-      Identifier unresolvedTemplateNameIdent,
-      SoyFileHeaderInfo header,
-      Optional<ImportsTemplateRegistry> importsTemplateRegistry) {
-    String unresolvedName = unresolvedTemplateNameIdent.identifier();
-    if (header.hasAlias(unresolvedName)) {
-      // This callee collides with a namespace alias, which likely means the alias
-      // incorrectly references a template.
-      errorReporter.report(
-          unresolvedTemplateNameIdent.location(),
-          CALL_COLLIDES_WITH_NAMESPACE_ALIAS,
-          unresolvedName);
-      return;
-    }
-    String importSuggestion = "";
-    if (importsTemplateRegistry.isPresent()) {
-      //  The callee name needs a namespace, or should have been imported.
-      importSuggestion =
-          SoyErrors.getClosest(importsTemplateRegistry.get().getImportedSymbols(), unresolvedName);
-      if (!Strings.isNullOrEmpty(importSuggestion)) {
-        importSuggestion = "'" + importSuggestion + "' (with no '.')";
-      }
-    }
-    errorReporter.report(
-        unresolvedTemplateNameIdent.location(),
-        MISSING_CALLEE_NAMESPACE,
-        unresolvedName,
-        SoyErrors.getDidYouMeanMessage("." + unresolvedName, importSuggestion));
   }
 }

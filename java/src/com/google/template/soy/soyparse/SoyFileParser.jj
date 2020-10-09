@@ -1908,7 +1908,9 @@ private Identifier TemplateNameInDef(boolean isDeltemplate) :
 {
   templateName = TemplateName()
   {
-    if (!isDeltemplate && templateName.type() != Identifier.Type.DOT_IDENT) {
+    if (!isDeltemplate &&
+        templateName.type() != Identifier.Type.DOT_IDENT &&
+        templateName.type() != Identifier.Type.SINGLE_IDENT) {
       errorReporter.report(
           templateName.location(), INVALID_TEMPLATE_NAME, templateName.identifier());
     } else if (isDeltemplate && templateName.type() == Identifier.Type.DOT_IDENT) {

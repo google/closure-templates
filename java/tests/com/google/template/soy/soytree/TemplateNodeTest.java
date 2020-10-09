@@ -93,13 +93,9 @@ public class TemplateNodeTest {
   public void testCommandTextErrors() {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     parse("{namespace ns}\n{template requirecss=\"strict\"}{/template}", errorReporter);
-    assertThat(errorReporter.getErrors()).hasSize(2);
-    assertThat(errorReporter.getErrors().get(0).message())
-        .isEqualTo(
-            "Template name 'requirecss' must be relative to the file namespace, i.e. a dot "
-                + "followed by an identifier.");
+    assertThat(errorReporter.getErrors()).hasSize(1);
 
-    assertThat(errorReporter.getErrors().get(1).message())
+    assertThat(errorReporter.getErrors().get(0).message())
         .isEqualTo("parse error at '=': expected }, identifier, or .");
 
     errorReporter = ErrorReporter.createForTest();
