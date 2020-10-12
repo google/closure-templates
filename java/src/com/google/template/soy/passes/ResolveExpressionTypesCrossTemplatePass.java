@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -37,20 +38,22 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
@@ -68,6 +71,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeType;
@@ -76,6 +80,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Pass that runs secondary resolution of expressions after the template registry is executed.
@@ -109,11 +114,23 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   private static final SoyErrorKind NEED_WRAP =
       SoyErrorKind.of("A dynamic tag name should be wrapped in the ''legacyDynamicTag'' function.");
 
-  private static final SoyErrorKind UNIMPLEMENTED_FEATURES =
-      SoyErrorKind.of("Element calls do not support HTML attributes.");
-
   private static final SoyErrorKind ONLY_ONE_CLOSE_TAG =
       SoyErrorKind.of("Element calls require exactly one close tag.");
+
+  private static final SoyErrorKind NON_STATIC_ATTRIBUTE_NAME =
+      SoyErrorKind.of("Element call attribute names must be static.");
+
+  private static final SoyErrorKind BAD_ATTRIBUTE_NAME =
+      SoyErrorKind.of("Element attribute names must be lower hyphen case.");
+
+  private static final SoyErrorKind NO_ATTRIBUTE_VALUE =
+      SoyErrorKind.of("Element call attributes must have values.");
+
+  private static final SoyErrorKind NO_ATTRIBUTE_VALUE_NODE =
+      SoyErrorKind.of("Element call attributes must have simple quoted values.");
+
+  private static final SoyErrorKind COMPLEX_ATTRIBUTE_VALUE_NODE =
+      SoyErrorKind.of("Attribute values can only be text or print nodes.");
 
   private static final SoyErrorKind NO_ATTRIBUTES_ON_SLOT =
       SoyErrorKind.of("Slot elements cannot have attributes.");
@@ -281,16 +298,19 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   }
 
   private void validateTemplateCall(HtmlTagNode openTagNode, Consumer<HtmlTagNode> consumer) {
-    if (openTagNode.numChildren() != 1) {
-      errorReporter.report(openTagNode.getSourceLocation(), UNIMPLEMENTED_FEATURES);
-    }
-
     if (openTagNode.getTaggedPairs().size() > 1) {
       errorReporter.report(openTagNode.getSourceLocation(), ONLY_ONE_CLOSE_TAG);
     }
+    Set<String> seenSlots = new HashSet<>();
+    Set<String> seenAttributes = new HashSet<>();
+
+    openTagNode.getChildren().stream()
+        .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
+        .map(HtmlAttributeNode.class::cast)
+        .forEach(a -> validateAttribute(a, seenAttributes::add));
+
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
-    List<String> seenParams = new ArrayList<>();
     while (next != closeTag) {
       if (next == null) {
         break;
@@ -300,22 +320,64 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
               next,
               openTagNode.getTagName().getDynamicTagName().getExpr(),
               openTagNode.getSourceLocation(),
-              seenParams,
+              seenSlots::add,
               consumer);
     }
     TemplateType templateType =
         (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
+
+    // TODO(user): Validate seenAttributes against template's attributes specifically.
+    Set<String> allParams = Sets.union(seenSlots, seenAttributes);
     templateType.getParameters().stream()
-        .filter(p -> !seenParams.contains(p.getName()) && p.isRequired())
+        .filter(p -> !allParams.contains(p.getName()) && p.isRequired())
         .forEach(
             p -> errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName()));
+  }
+
+  private void validateAttribute(HtmlAttributeNode attr, Function<String, Boolean> addAttr) {
+    String name = attr.getStaticKey();
+    if (name != null) {
+      if (AttrParam.isValidAttrName(name)) {
+        String paramName = AttrParam.attrToParamName(name);
+        if (!addAttr.apply(paramName)) {
+          errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_PARAM, name);
+        }
+      } else {
+        errorReporter.report(attr.getChild(0).getSourceLocation(), BAD_ATTRIBUTE_NAME);
+      }
+    } else {
+      errorReporter.report(attr.getChild(0).getSourceLocation(), NON_STATIC_ATTRIBUTE_NAME);
+    }
+
+    if (!attr.hasValue()) {
+      // TODO(user): Attributes without values can be pass-through.
+      errorReporter.report(attr.getSourceLocation(), NO_ATTRIBUTE_VALUE);
+      return;
+    }
+
+    StandaloneNode attrValue = attr.getChild(1);
+    if (attrValue.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE) {
+      HtmlAttributeValueNode htmlAttrValue = (HtmlAttributeValueNode) attrValue;
+      if (htmlAttrValue.numChildren() > 1) {
+        errorReporter.report(attrValue.getSourceLocation(), NO_ATTRIBUTE_VALUE_NODE);
+      } else if (htmlAttrValue.numChildren() == 1) {
+        StandaloneNode valueChild = htmlAttrValue.getChild(0);
+        if (valueChild.getKind() != SoyNode.Kind.RAW_TEXT_NODE
+            && valueChild.getKind() != SoyNode.Kind.PRINT_NODE) {
+          // TODO(user): Allow some simple logic tags.
+          errorReporter.report(attrValue.getSourceLocation(), COMPLEX_ATTRIBUTE_VALUE_NODE);
+        }
+      }
+    } else {
+      errorReporter.report(attr.getChild(1).getSourceLocation(), COMPLEX_ATTRIBUTE_VALUE_NODE);
+    }
   }
 
   private SoyNode consumeSlot(
       SoyNode startNode,
       ExprNode template,
       SourceLocation templateLocation,
-      List<String> seenParams,
+      Function<String, Boolean> addParam,
       Consumer<HtmlTagNode> consumer) {
     if (!(startNode instanceof HtmlOpenTagNode)
         || !((HtmlOpenTagNode) startNode).getTagName().isSlot()) {
@@ -348,14 +410,13 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
           template.toSourceString(),
           SoyErrors.getDidYouMeanMessage(
               templateType.getParameters().stream()
-                  .map(p -> p.getName())
+                  .map(Parameter::getName)
                   .collect(toImmutableList()),
               attributeNode.getStaticKey()));
     }
-    if (seenParams.contains(attributeNode.getStaticKey())) {
+    if (!addParam.apply(attributeNode.getStaticKey())) {
       errorReporter.report(templateLocation, DUPLICATE_PARAM, attributeNode.getStaticKey());
     }
-    seenParams.add(attributeNode.getStaticKey());
     HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
     consumer.accept(nextOpenTag);
     return SoyTreeUtils.nextSibling(closeTag);

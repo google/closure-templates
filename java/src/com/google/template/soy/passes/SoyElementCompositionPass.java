@@ -24,19 +24,26 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.HtmlAttributeNode;
+import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
+import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.soytree.defn.AttrParam;
 
 /**
  * Rewrites {@code <{legacyTagName($tag)}>} to {@code <{$tag}>} and disallows all other print nodes
@@ -69,34 +76,42 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         continue;
       }
       PrintNode printNode = name.getDynamicTagName();
-      if (tagNode.getTagName().isTemplateCall()) {
-        Preconditions.checkState(tagNode.numChildren() == 1);
-        Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
-        SourceLocation location = tagNode.getSourceLocation();
-        if (!tagNode.getTaggedPairs().isEmpty()) {
-          location = location.extend(tagNode.getTaggedPairs().get(0).getSourceLocation());
-        }
-        CallBasicNode call =
-            new CallBasicNode(
-                nodeIdGen.genId(),
-                location,
-                SourceLocation.UNKNOWN,
-                printNode.getExpr().getRoot().copy(new CopyState()),
-                ImmutableList.of(),
-                false,
-                errorReporter);
-        if (!tagNode.getTaggedPairs().isEmpty()) {
-          HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
-          SoyNode next = SoyTreeUtils.nextSibling(tagNode);
-          while (next != closeTag) {
-            next = consumeSlot(call, next, nodeIdGen);
-          }
-          closeTag.getParent().removeChild(closeTag);
-        }
-        call.getCalleeExpr().setType(printNode.getExpr().getType());
-        call.setHtmlContext(HtmlContext.HTML_PCDATA);
-        tagNode.getParent().replaceChild(tagNode, call);
+      if (!tagNode.getTagName().isTemplateCall()) {
+        continue;
       }
+      Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
+
+      SourceLocation location = tagNode.getSourceLocation();
+      if (!tagNode.getTaggedPairs().isEmpty()) {
+        location = location.extend(tagNode.getTaggedPairs().get(0).getSourceLocation());
+      }
+      CallBasicNode call =
+          new CallBasicNode(
+              nodeIdGen.genId(),
+              location,
+              SourceLocation.UNKNOWN,
+              printNode.getExpr().getRoot().copy(new CopyState()),
+              ImmutableList.of(),
+              false,
+              errorReporter);
+
+      tagNode.getChildren().stream()
+          .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
+          .map(HtmlAttributeNode.class::cast)
+          .filter(attr -> attr.getStaticKey() != null)
+          .forEach(attr -> consumeAttribute(call, attr, nodeIdGen));
+
+      if (!tagNode.getTaggedPairs().isEmpty()) {
+        HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
+        SoyNode next = SoyTreeUtils.nextSibling(tagNode);
+        while (next != closeTag) {
+          next = consumeSlot(call, next, nodeIdGen);
+        }
+        closeTag.getParent().removeChild(closeTag);
+      }
+      call.getCalleeExpr().setType(printNode.getExpr().getType());
+      call.setHtmlContext(HtmlContext.HTML_PCDATA);
+      tagNode.getParent().replaceChild(tagNode, call);
     }
   }
 
@@ -129,5 +144,41 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     SoyNode retNode = SoyTreeUtils.nextSibling(closeTag);
     closeTag.getParent().removeChild(closeTag);
     return retNode;
+  }
+
+  private void consumeAttribute(
+      CallBasicNode callNode, HtmlAttributeNode attr, IdGenerator nodeIdGen) {
+    StandaloneNode value = attr.getChild(1);
+    if (value.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
+      return;
+    }
+    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
+    ExprNode valueNode;
+    if (attrValue.numChildren() == 0) {
+      // TODO(user): Pass-through if same attribute is in this template scope.
+      valueNode = new StringNode("", QuoteStyle.SINGLE, attrValue.getSourceLocation());
+    } else {
+      StandaloneNode onlyChild = attrValue.getChild(0);
+      if (onlyChild.getKind() == Kind.RAW_TEXT_NODE) {
+        valueNode =
+            new StringNode(
+                ((RawTextNode) onlyChild).getRawText(),
+                QuoteStyle.SINGLE,
+                attrValue.getSourceLocation());
+      } else if (onlyChild.getKind() == Kind.PRINT_NODE) {
+        valueNode = ((PrintNode) onlyChild).getExpr().getRoot();
+      } else {
+        throw new IllegalArgumentException("Unexpected attribute AST: " + attr);
+      }
+    }
+    CallParamValueNode callParamContent =
+        new CallParamValueNode(
+            nodeIdGen.genId(),
+            attr.getSourceLocation(),
+            Identifier.create(
+                AttrParam.attrToParamName(attr.getStaticKey()),
+                attr.getChild(0).getSourceLocation()),
+            valueNode);
+    callNode.addChild(callParamContent);
   }
 }

@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
-import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import java.util.Objects;
@@ -264,12 +263,6 @@ public final class TagName {
     TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
     if (!(templateType.getContentKind() instanceof TemplateContentKind.ElementContentKind)) {
       return false;
-    }
-    for (TemplateType.Parameter parameter : templateType.getParameters()) {
-      SoyType htmlType = SanitizedType.HtmlType.getInstance();
-      if (parameter.isRequired() && !htmlType.isAssignableFromStrict(parameter.getType())) {
-        return false;
-      }
     }
     return true;
   }

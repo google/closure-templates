@@ -311,6 +311,8 @@ public final class SimplifyVisitor {
 
     @Override
     protected void visitCallBasicNode(CallBasicNode node) {
+      super.visitCallBasicNode(node);
+
       ExprNode calleeRoot = node.getCalleeExpr().getRoot();
 
       // Simplify call(bind(args1), args2) to call(args1+args2).
@@ -334,10 +336,7 @@ public final class SimplifyVisitor {
           CallParamValueNode paramNode = new CallParamValueNode(nodeIdGen.genId(), loc, key, value);
           node.addChild(i, paramNode);
         }
-        return;
       }
-
-      super.visitCallBasicNode(node);
     }
 
     @Override

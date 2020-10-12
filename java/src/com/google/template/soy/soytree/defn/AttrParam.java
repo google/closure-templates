@@ -20,6 +20,7 @@ import com.google.common.base.CaseFormat;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.ast.TypeNode;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /**
@@ -28,6 +29,16 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  */
 public final class AttrParam extends TemplateParam implements TemplateHeaderVarDefn {
+  private static final Pattern ATTR_NAME = Pattern.compile("^[a-z_][a-z_\\d]*(-[a-z_\\d]+)*$");
+
+  public static String attrToParamName(String attrName) {
+    return CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, attrName);
+  }
+
+  public static boolean isValidAttrName(String attrName) {
+    return ATTR_NAME.matcher(attrName).matches();
+  }
+
   private final String originalAttributeName;
 
   public AttrParam(
@@ -38,14 +49,7 @@ public final class AttrParam extends TemplateParam implements TemplateHeaderVarD
       @Nullable SourceLocation nameLocation,
       SourceLocation sourceLocation) {
     super(
-        CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name),
-        nameLocation,
-        sourceLocation,
-        typeNode,
-        false,
-        optional,
-        desc,
-        null);
+        attrToParamName(name), nameLocation, sourceLocation, typeNode, false, optional, desc, null);
     this.originalAttributeName = name;
   }
 
