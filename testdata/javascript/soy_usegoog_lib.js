@@ -19738,6 +19738,13 @@ goog.structs.every = function(col, f, opt_obj) {
 /**
  * @fileoverview Simple utilities for dealing with URI strings.
  *
+ * This package is deprecated in favour of the Closure URL package (goog.url)
+ * when manipulating URIs for use by a browser. This package uses regular
+ * expressions to parse a potential URI which can fall out of sync with how a
+ * browser will actually interpret the URI. See
+ * `goog.uri.utils.setUrlPackageSupportLoggingHandler` for one way to identify
+ * URIs that should instead be parsed using the URL package.
+ *
  * This is intended to be a lightweight alternative to constructing goog.Uri
  * objects.  Whereas goog.Uri adds several kilobytes to the binary regardless
  * of how much of its functionality you use, this is designed to be a set of
@@ -20900,6 +20907,13 @@ goog.uri.utils.makeUnique = function(uri) {
 
 /**
  * @fileoverview Class for parsing and formatting URIs.
+ *
+ * This package is deprecated in favour of the Closure URL package (goog.url)
+ * when manipulating URIs for use by a browser. This package uses regular
+ * expressions to parse a potential URI which can fall out of sync with how a
+ * browser will actually interpret the URI. See
+ * `goog.uri.utils.setUrlPackageSupportLoggingHandler` for one way to identify
+ * URIs that should instead be parsed using the URL package.
  *
  * Use goog.Uri(string) to parse a URI string.  Use goog.Uri.create(...) to
  * create a new instance of the goog.Uri object from Uri parts.
