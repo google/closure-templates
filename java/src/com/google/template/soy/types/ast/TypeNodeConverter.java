@@ -356,6 +356,7 @@ public final class TypeNodeConverter
               parameter.name(),
               TemplateType.Parameter.builder()
                   .setName(parameter.name())
+                  .setKind(parameter.kind())
                   .setType(parameter.type().accept(this))
                   .setRequired(true)
                   .build());

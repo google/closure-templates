@@ -69,6 +69,7 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.DataAllCallSituation;
 import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
 import java.util.ArrayList;
@@ -257,6 +258,7 @@ public final class TemplateMetadataSerializer {
       builder.add(
           Parameter.builder()
               .setName(parameter.getName())
+              .setKind(ParameterKind.fromProto(parameter.getKind()))
               .setRequired(parameter.getRequired())
               .setTypeLazily(
                   new SoyTypeSupplier(parameter.getType(), typeRegistry, filePath, errorReporter))
@@ -420,6 +422,7 @@ public final class TemplateMetadataSerializer {
             parameters.add(
                 Parameter.builder()
                     .setName(parameter.getName())
+                    .setKind(ParameterKind.fromProto(parameter.getKind()))
                     .setType(fromProto(parameter.getType(), typeRegistry, filePath, errorReporter))
                     .setRequired(parameter.getRequired())
                     .build());
@@ -453,6 +456,7 @@ public final class TemplateMetadataSerializer {
       builder.add(
           ParameterP.newBuilder()
               .setName(parameter.getName())
+              .setKind(parameter.getKind().toProto())
               .setType(parameter.getType().toProto())
               .setRequired(parameter.isRequired())
               .build());

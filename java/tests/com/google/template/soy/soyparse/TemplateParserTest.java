@@ -127,7 +127,7 @@ public final class TemplateParserTest {
 
     TemplateSubject.assertThatTemplateContent("{@blah}")
         .causesError(
-            "parse error at '@': expected null, true, false, number, string, -, not, "
+            "parse error at '@blah': expected null, true, false, number, string, -, not, "
                 + "[, (, !, identifier, or variable");
     TemplateSubject.assertThatTemplateContent("{sp ace}")
         .causesError("parse error at '}': expected =");

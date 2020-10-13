@@ -100,12 +100,19 @@ message SoyTypeP {
 
 // A single declared template parameter
 message ParameterP {
+  enum KindP {
+    DEFAULT = 0;
+    PARAM = 1;
+    ATTRIBUTE = 2;
+  }
   // The parameter name
   string name = 1;
   // The type of the parameter.
   SoyTypeP type = 2;
   // Whether or not the parameter is required.
   bool required = 3;
+  // How this parameter is declared.
+  KindP kind = 4;
 }
 
 // Represents a call within a template.

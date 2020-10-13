@@ -146,6 +146,8 @@ import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.ast.GenericTypeNode;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import com.google.template.soy.types.ast.RecordTypeNode;
@@ -1324,6 +1326,7 @@ TOKEN_MGR_DECLS: {
 <EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE, DEFAULT> TOKEN: {
   < IDENT: <RAW_IDENT> >
 | < DOLLAR_IDENT: "$" <IDENT> >
+| < ATTR_IDENT: "@" <RAW_IDENT_WITH_DASH> >
 }
 
 
@@ -4705,12 +4708,23 @@ private TemplateTypeNode.Parameter TemplateParameter() :
   TypeNode parameterType;
 }
 {
-  parameterName = <IDENT>
+  (
+    parameterName = <IDENT>
+  |
+    parameterName = <ATTR_IDENT>
+  )
+
   <COLON>
   parameterType = TypeExpr()
 
   {
-    return TemplateTypeNode.Parameter.create(createSrcLoc(parameterName), parameterName.image, parameterType);
+    ParameterKind kind = ParameterKind.PARAM;
+    String paramName = parameterName.image;
+    if (paramName.startsWith("@")) {
+      kind = ParameterKind.ATTRIBUTE;
+      paramName = TemplateType.Parameter.attrToParamName(paramName.substring(1));
+    }
+    return TemplateTypeNode.Parameter.create(createSrcLoc(parameterName), paramName, kind, parameterType);
   }
 }
 

@@ -145,6 +145,8 @@ final class Tokens {
       case SoyFileParserConstants.NAME:
       case SoyFileParserConstants.IDENT:
         return "identifier";
+      case SoyFileParserConstants.ATTR_IDENT:
+        return "attribute identifier";
       case SoyFileParserConstants.SQ_ATTRIBUTE_VALUE:
       case SoyFileParserConstants.DQ_ATTRIBUTE_VALUE:
         return "attribute value";

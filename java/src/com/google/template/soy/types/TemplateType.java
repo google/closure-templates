@@ -19,6 +19,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Streams.stream;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.CaseFormat;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -30,15 +31,34 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /** Template type, containing a list of named, typed parameters and a return type. */
 @AutoValue
 public abstract class TemplateType extends SoyType {
+  /** The kind of template. */
   public enum TemplateKind {
     BASIC,
     DELTEMPLATE,
     ELEMENT;
+  }
+
+  /** The kind of template parameter. */
+  public enum ParameterKind {
+    PARAM,
+    ATTRIBUTE;
+
+    public ParameterP.KindP toProto() {
+      return ParameterP.KindP.valueOf(name());
+    }
+
+    public static ParameterKind fromProto(ParameterP.KindP proto) {
+      if (proto == null || proto == ParameterP.KindP.DEFAULT) {
+        return PARAM;
+      }
+      return valueOf(proto.name());
+    }
   }
 
   public abstract TemplateKind getTemplateKind();
@@ -65,6 +85,7 @@ public abstract class TemplateType extends SoyType {
     return new AutoValue_TemplateType.Builder();
   }
 
+  /** Builder pattern. */
   @AutoValue.Builder
   public abstract static class Builder {
 
@@ -94,6 +115,20 @@ public abstract class TemplateType extends SoyType {
    */
   @AutoValue
   public abstract static class Parameter {
+
+    private static final Pattern ATTR_NAME = Pattern.compile("^[a-z_][a-z_\\d]*(-[a-z_\\d]+)*$");
+
+    public static String attrToParamName(String attrName) {
+      return CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, attrName);
+    }
+
+    public static String paramToAttrName(String paramName) {
+      return CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, paramName);
+    }
+
+    public static boolean isValidAttrName(String attrName) {
+      return ATTR_NAME.matcher(attrName).matches();
+    }
 
     /**
      * A simple wrapper so that Parameter continues to have correct equals/hashCode methods even
@@ -154,6 +189,8 @@ public abstract class TemplateType extends SoyType {
 
     public abstract String getName();
 
+    public abstract ParameterKind getKind();
+
     // TODO(lukes): this will likely not work once we start compiling templates separately,
     // especially if we want to start pruning the proto descriptors required by the compiler.
     public SoyType getType() {
@@ -190,6 +227,8 @@ public abstract class TemplateType extends SoyType {
       public Builder setType(final SoyType type) {
         return setTypeWrapper(LazyTypeWrapper.constant(type));
       }
+
+      public abstract Builder setKind(ParameterKind kind);
 
       abstract Builder setTypeWrapper(LazyTypeWrapper typeWrapper);
 
@@ -346,6 +385,7 @@ public abstract class TemplateType extends SoyType {
           .addParameter(
               ParameterP.newBuilder()
                   .setName(parameter.getName())
+                  .setKind(parameter.getKind().toProto())
                   .setType(parameter.getType().toProto())
                   .setRequired(parameter.isRequired())
                   .build());

@@ -19,6 +19,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.types.TemplateType.ParameterKind;
 
 /** Node representing a template type, e.g. () => html. */
 @AutoValue
@@ -33,23 +34,26 @@ public abstract class TemplateTypeNode extends TypeNode {
   /** A single named, typed parameter to a template. */
   @AutoValue
   public abstract static class Parameter {
-    public static Parameter create(SourceLocation nameLocation, String name, TypeNode type) {
-      return new AutoValue_TemplateTypeNode_Parameter(nameLocation, name, type);
+    public static Parameter create(
+        SourceLocation nameLocation, String name, ParameterKind kind, TypeNode type) {
+      return new AutoValue_TemplateTypeNode_Parameter(nameLocation, name, kind, type);
     }
 
     public abstract SourceLocation nameLocation();
 
     public abstract String name();
 
+    public abstract ParameterKind kind();
+
     public abstract TypeNode type();
 
     @Override
     public final String toString() {
-      return name() + ": " + type();
+      return (kind() == ParameterKind.ATTRIBUTE ? "@" : "") + name() + ": " + type();
     }
 
     Parameter copy() {
-      return create(nameLocation(), name(), type().copy());
+      return create(nameLocation(), name(), kind(), type().copy());
     }
   }
 

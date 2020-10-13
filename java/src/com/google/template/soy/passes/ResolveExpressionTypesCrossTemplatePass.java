@@ -17,11 +17,12 @@
 package com.google.template.soy.passes;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -53,7 +54,6 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
-import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
@@ -72,15 +72,18 @@ import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateBindingUtil;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.TemplateType.ParameterKind;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Pass that runs secondary resolution of expressions after the template registry is executed.
@@ -120,6 +123,12 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   private static final SoyErrorKind NON_STATIC_ATTRIBUTE_NAME =
       SoyErrorKind.of("Element call attribute names must be static.");
 
+  private static final SoyErrorKind PARAM_AS_ATTRIBUTE =
+      SoyErrorKind.of("Param ''{0}'' may not be set as an attribute.");
+
+  private static final SoyErrorKind NO_SUCH_ATTRIBUTE =
+      SoyErrorKind.of("Unrecognized attribute.{0}", StyleAllowance.NO_PUNCTUATION);
+
   private static final SoyErrorKind BAD_ATTRIBUTE_NAME =
       SoyErrorKind.of("Element attribute names must be lower hyphen case.");
 
@@ -142,11 +151,17 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SoyErrorKind.of("Slot elements can only be direct descendents of template calls.");
 
   private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
+
   private static final SoyErrorKind PASSES_UNUSED_PARAM =
       SoyErrorKind.of(
           "''{0}'' is not a declared parameter of {1} or any indirect callee.{2}",
           StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind MISSING_PARAM = SoyErrorKind.of("Call missing required {0}.");
+
+  private static final SoyErrorKind MISSING_PARAM =
+      SoyErrorKind.of("Call missing required param ''{0}''.");
+
+  private static final SoyErrorKind MISSING_ATTRIBUTE =
+      SoyErrorKind.of("Call missing required attribute ''{0}''.");
 
   private static final SoyErrorKind ONLY_SLOTS_ALLOWED =
       SoyErrorKind.of("Element calls require all children to be <@slot> elements.");
@@ -304,10 +319,16 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     Set<String> seenSlots = new HashSet<>();
     Set<String> seenAttributes = new HashSet<>();
 
+    TemplateType templateType =
+        (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
+    ImmutableMap<String, Parameter> allParamsByAttrName =
+        templateType.getParameters().stream()
+            .collect(toImmutableMap(p -> Parameter.paramToAttrName(p.getName()), p -> p));
+
     openTagNode.getChildren().stream()
         .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
         .map(HtmlAttributeNode.class::cast)
-        .forEach(a -> validateAttribute(a, seenAttributes::add));
+        .forEach(a -> validateAttribute(a, seenAttributes::add, allParamsByAttrName));
 
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
@@ -323,30 +344,63 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
               seenSlots::add,
               consumer);
     }
-    TemplateType templateType =
-        (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
 
-    // TODO(user): Validate seenAttributes against template's attributes specifically.
-    Set<String> allParams = Sets.union(seenSlots, seenAttributes);
     templateType.getParameters().stream()
-        .filter(p -> !allParams.contains(p.getName()) && p.isRequired())
+        .filter(Parameter::isRequired)
         .forEach(
-            p -> errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName()));
+            p -> {
+              if (p.getKind() == ParameterKind.ATTRIBUTE) {
+                if (!seenAttributes.contains(p.getName())) {
+                  errorReporter.report(
+                      openTagNode.getSourceLocation(),
+                      MISSING_ATTRIBUTE,
+                      Parameter.paramToAttrName(p.getName()));
+                }
+              } else {
+                if (!seenSlots.contains(p.getName())) {
+                  errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName());
+                }
+              }
+            });
   }
 
-  private void validateAttribute(HtmlAttributeNode attr, Function<String, Boolean> addAttr) {
+  private void validateAttribute(
+      HtmlAttributeNode attr,
+      Function<String, Boolean> addAttr,
+      ImmutableMap<String, Parameter> allParamsByAttrName) {
     String name = attr.getStaticKey();
     if (name != null) {
-      if (AttrParam.isValidAttrName(name)) {
-        String paramName = AttrParam.attrToParamName(name);
+      if (Parameter.isValidAttrName(name)) {
+        String paramName = Parameter.attrToParamName(name);
         if (!addAttr.apply(paramName)) {
           errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_PARAM, name);
+          return;
+        } else {
+          Parameter param = allParamsByAttrName.get(name);
+          if (param == null) {
+            String didYouMeanMessage =
+                SoyErrors.getDidYouMeanMessage(
+                    allParamsByAttrName.entrySet().stream()
+                        .filter(e -> e.getValue().getKind() == ParameterKind.ATTRIBUTE)
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toList()),
+                    name);
+            errorReporter.report(
+                attr.getChild(0).getSourceLocation(), NO_SUCH_ATTRIBUTE, didYouMeanMessage);
+            return;
+          } else if (param.getKind() != ParameterKind.ATTRIBUTE) {
+            errorReporter.report(
+                attr.getChild(0).getSourceLocation(), PARAM_AS_ATTRIBUTE, param.getName());
+            return;
+          }
         }
       } else {
         errorReporter.report(attr.getChild(0).getSourceLocation(), BAD_ATTRIBUTE_NAME);
+        return;
       }
     } else {
       errorReporter.report(attr.getChild(0).getSourceLocation(), NON_STATIC_ATTRIBUTE_NAME);
+      return;
     }
 
     if (!attr.hasValue()) {

@@ -43,7 +43,7 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
-import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.types.TemplateType.Parameter;
 
 /**
  * Rewrites {@code <{legacyTagName($tag)}>} to {@code <{$tag}>} and disallows all other print nodes
@@ -168,6 +168,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       } else if (onlyChild.getKind() == Kind.PRINT_NODE) {
         valueNode = ((PrintNode) onlyChild).getExpr().getRoot();
       } else {
+        // We will eventually support more nodes here once ResolveExpressionTypesCrossTemplatePass
+        // allows them through.
         throw new IllegalArgumentException("Unexpected attribute AST: " + attr);
       }
     }
@@ -176,7 +178,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             nodeIdGen.genId(),
             attr.getSourceLocation(),
             Identifier.create(
-                AttrParam.attrToParamName(attr.getStaticKey()),
+                Parameter.attrToParamName(attr.getStaticKey()),
                 attr.getChild(0).getSourceLocation()),
             valueNode);
     callNode.addChild(callParamContent);

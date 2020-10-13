@@ -14,6 +14,7 @@ java_library(
         "//java/src/com/google/template/soy/base/internal",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/soyparse",
+        "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/types/ast",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",
