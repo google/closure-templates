@@ -401,9 +401,7 @@ public final class PassManager {
       addPass(
           new RewriteGlobalsPass(options.getCompileTimeGlobals(), errorReporter),
           partialTemplateRegistryPassesBuilder);
-      // needs to happen after rewrite globals
       addPass(new XidPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      // Needs to be before ResolveNamesPass.
       addPass(
           new V1ExpressionPass(allowV1Expression, errorReporter),
           partialTemplateRegistryPassesBuilder);
@@ -414,6 +412,9 @@ public final class PassManager {
       // needs to be after ResolveNames and MsgsPass
       if (astRewrites) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
+        addPass(
+            new ElementAttributePass(errorReporter, pluginResolver),
+            partialTemplateRegistryPassesBuilder);
       }
 
       // The StrictHtmlValidatorPass needs to run after ResolveNames.

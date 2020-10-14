@@ -161,13 +161,11 @@ public final class PassManagerTest {
             SimplifyAssertNonNullPass.class,
             StrictDepsPass.class,
             UnknownJsGlobalPass.class,
-            V1ExpressionPass.class,
             ValidateAliasesPass.class,
             ValidateSkipNodesPass.class,
             VeLogRewritePass.class,
             VeLogValidationPass.class,
-            VeRewritePass.class,
-            XidPass.class);
+            VeRewritePass.class);
     assertWithMessage("Passes with annotations should be removed from the allowlist")
         .that(passesWithoutAnnotations)
         .containsAtLeastElementsIn(unannotatedAllowList);

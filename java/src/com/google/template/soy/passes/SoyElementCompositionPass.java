@@ -46,8 +46,10 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.types.TemplateType.Parameter;
 
 /**
- * Rewrites {@code <{legacyTagName($tag)}>} to {@code <{$tag}>} and disallows all other print nodes
- * that name HTML tags.
+ * Rewrites element calls with attributes and slots as regular calls.
+ *
+ * <p>Rewrites {@code <{legacyTagName($tag)}>} to {@code <{$tag}>} and disallows all other print
+ * nodes that name HTML tags.
  */
 @RunAfter(ResolveExpressionTypesPass.class)
 final class SoyElementCompositionPass implements CompilerFileSetPass {

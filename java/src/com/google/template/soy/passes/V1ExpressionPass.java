@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
  * Rewrites {@code v1Expression('$a.b($c)')} to {@code v1Expression('$a.b($c)', $a, $c)} so that the
  * variables could be resolved.
  */
+@RunBefore(ResolveNamesPass.class)
 final class V1ExpressionPass implements CompilerFilePass {
 
   private static final SoyErrorKind INCORRECT_V1_EXPRESSION_USE =

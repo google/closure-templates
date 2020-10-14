@@ -55,6 +55,10 @@ public final class AttrParam extends TemplateParam implements TemplateHeaderVarD
     this.originalAttributeName = old.originalAttributeName;
   }
 
+  public String getAttrName() {
+    return originalAttributeName;
+  }
+
   @Override
   public AttrParam copy(CopyState copyState) {
     return new AttrParam(this);
