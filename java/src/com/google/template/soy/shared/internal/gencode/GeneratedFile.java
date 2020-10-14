@@ -21,8 +21,14 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class GeneratedFile {
   public static GeneratedFile create(String fileName, String contents) {
-    return new AutoValue_GeneratedFile(fileName, contents);
+    return create("", fileName, contents);
   }
+
+  public static GeneratedFile create(String resourcePath, String fileName, String contents) {
+    return new AutoValue_GeneratedFile(resourcePath, fileName, contents);
+  }
+
+  public abstract String resourcePath(); // Resource path.
 
   public abstract String fileName(); // File name (without path).
 
