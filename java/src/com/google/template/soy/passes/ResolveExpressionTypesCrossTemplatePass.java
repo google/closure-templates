@@ -323,12 +323,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         .map(HtmlAttributeNode.class::cast)
         .forEach(a -> validateAttribute(a, seenAttributes::add, allParamsByAttrName));
 
-    if (openTagNode.isSelfClosing()) {
-      return;
-    }
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
-    while (next != closeTag) {
+    while (next != closeTag && !openTagNode.isSelfClosing()) {
       if (next == null) {
         break;
       }
