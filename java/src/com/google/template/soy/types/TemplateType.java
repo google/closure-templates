@@ -69,7 +69,7 @@ public abstract class TemplateType extends SoyType {
 
   public abstract ImmutableList<Parameter> getParameters();
 
-  final ImmutableMap<String, SoyType> getParameterMap() {
+  public final ImmutableMap<String, SoyType> getParameterMap() {
     return stream(getParameters()).collect(toImmutableMap(Parameter::getName, Parameter::getType));
   }
 

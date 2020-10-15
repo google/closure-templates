@@ -24,11 +24,8 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
-import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -36,14 +33,17 @@ import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
-import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import java.util.Map;
 
 /**
  * Rewrites element calls with attributes and slots as regular calls.
@@ -154,35 +154,32 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     if (value.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
       return;
     }
+    TemplateType templateType = (TemplateType) callNode.getCalleeExpr().getRoot().getType();
     HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
-    ExprNode valueNode;
-    if (attrValue.numChildren() == 0) {
-      // TODO(user): Pass-through if same attribute is in this template scope.
-      valueNode = new StringNode("", QuoteStyle.SINGLE, attrValue.getSourceLocation());
-    } else {
-      StandaloneNode onlyChild = attrValue.getChild(0);
-      if (onlyChild.getKind() == Kind.RAW_TEXT_NODE) {
-        valueNode =
-            new StringNode(
-                ((RawTextNode) onlyChild).getRawText(),
-                QuoteStyle.SINGLE,
-                attrValue.getSourceLocation());
-      } else if (onlyChild.getKind() == Kind.PRINT_NODE) {
-        valueNode = ((PrintNode) onlyChild).getExpr().getRoot();
-      } else {
-        // We will eventually support more nodes here once ResolveExpressionTypesCrossTemplatePass
-        // allows them through.
-        throw new IllegalArgumentException("Unexpected attribute AST: " + attr);
-      }
-    }
-    CallParamValueNode callParamContent =
-        new CallParamValueNode(
+    String paramName = Parameter.attrToParamName(attr.getStaticKey());
+    Map<String, SoyType> parameterMap = templateType.getParameterMap();
+    CallParamContentNode contentNode =
+        new CallParamContentNode(
             nodeIdGen.genId(),
             attr.getSourceLocation(),
-            Identifier.create(
-                Parameter.attrToParamName(attr.getStaticKey()),
-                attr.getChild(0).getSourceLocation()),
-            valueNode);
-    callNode.addChild(callParamContent);
+            SourceLocation.UNKNOWN,
+            Identifier.create(paramName, SourceLocation.UNKNOWN),
+            // TODO(tomnguyen) Verify that @attribute is only string or uri or string|uri.
+            new CommandTagAttribute(
+                Identifier.create("kind", SourceLocation.UNKNOWN),
+                QuoteStyle.SINGLE,
+                SanitizedType.TrustedResourceUriType.getInstance()
+                        .isAssignableFromStrict(parameterMap.get(paramName))
+                    ? "uri"
+                    : "text",
+                SourceLocation.UNKNOWN,
+                SourceLocation.UNKNOWN),
+            errorReporter);
+    // TODO(user): Pass-through if same attribute is in this template scope when attrValue.children()
+    // == 0
+    for (StandaloneNode node : attrValue.getChildren()) {
+      contentNode.addChild(node.copy(new CopyState()));
+    }
+    callNode.addChild(contentNode);
   }
 }

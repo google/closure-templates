@@ -39,16 +39,15 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.HtmlAttributeNode;
-import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -134,12 +133,6 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
   private static final SoyErrorKind NO_ATTRIBUTE_VALUE =
       SoyErrorKind.of("Element call attributes must have values.");
-
-  private static final SoyErrorKind NO_ATTRIBUTE_VALUE_NODE =
-      SoyErrorKind.of("Element call attributes must have simple quoted values.");
-
-  private static final SoyErrorKind COMPLEX_ATTRIBUTE_VALUE_NODE =
-      SoyErrorKind.of("Attribute values can only be text or print nodes.");
 
   private static final SoyErrorKind NO_ATTRIBUTES_ON_SLOT =
       SoyErrorKind.of("Slot elements cannot have attributes.");
@@ -407,23 +400,6 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       // TODO(user): Attributes without values can be pass-through.
       errorReporter.report(attr.getSourceLocation(), NO_ATTRIBUTE_VALUE);
       return;
-    }
-
-    StandaloneNode attrValue = attr.getChild(1);
-    if (attrValue.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE) {
-      HtmlAttributeValueNode htmlAttrValue = (HtmlAttributeValueNode) attrValue;
-      if (htmlAttrValue.numChildren() > 1) {
-        errorReporter.report(attrValue.getSourceLocation(), NO_ATTRIBUTE_VALUE_NODE);
-      } else if (htmlAttrValue.numChildren() == 1) {
-        StandaloneNode valueChild = htmlAttrValue.getChild(0);
-        if (valueChild.getKind() != SoyNode.Kind.RAW_TEXT_NODE
-            && valueChild.getKind() != SoyNode.Kind.PRINT_NODE) {
-          // TODO(user): Allow some simple logic tags.
-          errorReporter.report(attrValue.getSourceLocation(), COMPLEX_ATTRIBUTE_VALUE_NODE);
-        }
-      }
-    } else {
-      errorReporter.report(attr.getChild(1).getSourceLocation(), COMPLEX_ATTRIBUTE_VALUE_NODE);
     }
   }
 
