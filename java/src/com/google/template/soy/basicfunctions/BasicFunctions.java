@@ -46,6 +46,7 @@ public class BasicFunctions {
         new NumberListSortMethod(),
         new ParseFloatFunction(),
         new ParseIntFunction(),
+        new PowFunction(),
         new RandomIntFunction(),
         new RangeFunction(),
         new RoundFunction(),

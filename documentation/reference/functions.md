@@ -129,6 +129,11 @@ positive integer).
 
 Returns the square root of the number.
 
+### `pow(number, number)` {#pow}
+
+Returns the value of the first argument raised to the power of the second
+argument.
+
 ## List Methods
 
 ### `list.length()` {#length}
