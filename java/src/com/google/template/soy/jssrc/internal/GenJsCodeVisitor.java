@@ -1536,45 +1536,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       boolean declareStatic) {
     checkArgument(param.hasDefault());
 
-    Statement defaultValueAssignment;
     Expression defaultValue = translateExpr(param.defaultValue());
-    if (defaultValue.isCheap()) {
-      defaultValueAssignment = Statement.assign(paramTempVar, defaultValue);
-    } else {
-      Statement staticVar;
-      Expression staticVarRef;
-      JsDoc jsDoc =
-          JsDoc.builder()
-              .addParameterizedAnnotation(
-                  "private", defaultType.typeExprForRecordMember(/* isOptional= */ true))
-              .build();
-      if (jsSrcOptions.shouldGenerateGoogModules()) {
-        String varName = String.format("%s$defaultValue$%s", alias, param.name());
-        staticVar = VariableDeclaration.builder(varName).setJsDoc(jsDoc).build();
-        staticVarRef = id(varName);
-      } else {
-        staticVarRef =
-            dottedIdNoRequire(alias).dotAccess(String.format("defaultValue$%s_", param.name()));
-        staticVar = staticVarRef.asStatement(jsDoc);
-      }
-      if (declareStatic) {
-        staticVarDeclarations.add(staticVar);
-        defaultValueAssignment =
-            Statement.of(
-                Statement.assign(paramTempVar, staticVarRef),
-                Statement.ifStatement(
-                        paramTempVar.tripleEquals(Expression.LITERAL_UNDEFINED),
-                        Statement.assign(paramTempVar, staticVarRef.assign(defaultValue)))
-                    .build());
-      } else {
-        defaultValueAssignment =
-            Statement.assign(
-                paramTempVar,
-                JsRuntime.GOOG_ASSERTS_ASSERT.call(
-                    staticVarRef,
-                    stringLiteral("cached default value will be initialized during render")));
-      }
-    }
+    Statement defaultValueAssignment = Statement.assign(paramTempVar, defaultValue);
     return Statement.ifStatement(
             paramTempVar.tripleEquals(Expression.LITERAL_UNDEFINED), defaultValueAssignment)
         .build();
