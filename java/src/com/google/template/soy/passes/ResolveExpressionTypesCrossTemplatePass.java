@@ -285,7 +285,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
             ELEMENT_CALL_TO_HTML_TEMPLATE,
             tagNode.getTagName().getDynamicTagName().getExpr().getType());
       } else {
-        validateTemplateCall(tagNode, allowedSlots::add);
+        validateTemplateCall((HtmlOpenTagNode) tagNode, allowedSlots::add);
       }
     }
     // No other uses of legacyDynamicTag are allowed.
@@ -305,7 +305,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     }
   }
 
-  private void validateTemplateCall(HtmlTagNode openTagNode, Consumer<HtmlTagNode> consumer) {
+  private void validateTemplateCall(HtmlOpenTagNode openTagNode, Consumer<HtmlTagNode> consumer) {
     if (openTagNode.getTaggedPairs().size() > 1) {
       errorReporter.report(openTagNode.getSourceLocation(), ONLY_ONE_CLOSE_TAG);
     }
@@ -323,6 +323,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         .map(HtmlAttributeNode.class::cast)
         .forEach(a -> validateAttribute(a, seenAttributes::add, allParamsByAttrName));
 
+    if (openTagNode.isSelfClosing()) {
+      return;
+    }
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
     while (next != closeTag) {

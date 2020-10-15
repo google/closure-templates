@@ -36,19 +36,44 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
   /** Will be null if this attribute node doesn't have a value. */
   @Nullable private final SourceLocation.Point equalsSignLocation;
 
+  private final ValueStrategy valueStrategy;
+
+  /** Whether this attribute has a += (for concat) or = (for default) */
+  public enum ValueStrategy {
+    NONE,
+    DEFAULT,
+    CONCAT;
+  }
+
   public HtmlAttributeNode(
       int id, SourceLocation location, @Nullable SourceLocation.Point equalsSignLocation) {
     super(id, location);
     this.equalsSignLocation = equalsSignLocation;
+    this.valueStrategy = ValueStrategy.NONE;
+  }
+
+  public HtmlAttributeNode(
+      int id,
+      SourceLocation location,
+      @Nullable SourceLocation.Point equalsSignLocation,
+      ValueStrategy valueStrategy) {
+    super(id, location);
+    this.equalsSignLocation = equalsSignLocation;
+    this.valueStrategy = valueStrategy;
   }
 
   private HtmlAttributeNode(HtmlAttributeNode orig, CopyState copyState) {
     super(orig, copyState);
     this.equalsSignLocation = orig.equalsSignLocation;
+    this.valueStrategy = orig.valueStrategy;
   }
 
   public boolean hasValue() {
     return equalsSignLocation != null;
+  }
+
+  public ValueStrategy getValueStrategy() {
+    return valueStrategy;
   }
 
   /** Returns the static value, if one exists, or null otherwise. */

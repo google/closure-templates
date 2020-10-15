@@ -144,6 +144,9 @@ final class HtmlRewriter {
   private static final SoyErrorKind BLOCK_TRANSITION_DISALLOWED =
       SoyErrorKind.of("{0} started in ''{1}'', cannot create a {2}.");
 
+  private static final SoyErrorKind COMPOSITION_ATTRIBUTE_MUST_HAVE_VALUE =
+      SoyErrorKind.of("{0} must have an attribute value.");
+
   private static final SoyErrorKind
       CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE =
           SoyErrorKind.of(
@@ -187,6 +190,9 @@ final class HtmlRewriter {
       SoyErrorKind.of(
           "Found the end of a tag that was started in another block. Html tags should be opened "
               + "and closed in the same block.");
+
+  private static final SoyErrorKind CONCAT_NOT_ALLOWED_FOR_NORMAL_ATTRIBUTES =
+      SoyErrorKind.of("Concatentation (+=) is not allowed for HTML attributes.");
 
   private static final SoyErrorKind FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
@@ -465,7 +471,7 @@ final class HtmlRewriter {
      * numeric, underscore color and dash, ending in alpha, numeric, question or dollar characters.
      */
     static final Pattern ATTRIBUTE_NAME =
-        Pattern.compile("[a-z_$](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$_])?", Pattern.CASE_INSENSITIVE);
+        Pattern.compile("[a-z_$_@](?:[a-z0-9_:?$\\\\-]*[a-z0-9?$_])?", Pattern.CASE_INSENSITIVE);
 
     /**
      * Matches raw text in a tag that isn't a special character or whitespace.
@@ -477,7 +483,7 @@ final class HtmlRewriter {
     static final CharMatcher TAG_DELIMITER_MATCHER =
         // delimiter characters
         CharMatcher.whitespace()
-            .or(CharMatcher.anyOf(">=/"))
+            .or(CharMatcher.anyOf(">=/+"))
             .or(
                 new CharMatcher() {
                   @Override
@@ -1131,6 +1137,15 @@ final class HtmlRewriter {
         consume(); // eat the '='
         consumeWhitespace();
         context.setEqualsSignLocation(equalsSignPoint, currentPointOrEnd());
+        context.setHtmlCallAttributeStrategy(HtmlAttributeNode.ValueStrategy.DEFAULT);
+      } else if (matchPrefix("+=", false)) {
+        SourceLocation.Point equalsSignPoint = currentPoint();
+        advance();
+        advance();
+        consume(); // eat the '='
+        consumeWhitespace();
+        context.setEqualsSignLocation(equalsSignPoint, currentPointOrEnd());
+        context.setHtmlCallAttributeStrategy(HtmlAttributeNode.ValueStrategy.CONCAT);
       } else {
         // we must have seen some non '=' character (or the end of the text), it doesn't matter
         // what it is, switch to the next state.  (creation of the attribute will happen
@@ -2098,6 +2113,7 @@ final class HtmlRewriter {
     StandaloneNode attributeName;
 
     SourceLocation.Point equalsSignLocation;
+    HtmlAttributeNode.ValueStrategy htmlCallAttributeStrategy;
     StandaloneNode attributeValue;
 
     // For the attribute value,  where the quoted attribute value started
@@ -2209,6 +2225,13 @@ final class HtmlRewriter {
         error =
             format(error, "Expected equalsSignLocation to be null, got: %s", equalsSignLocation);
       }
+      if (htmlCallAttributeStrategy != null) {
+        error =
+            format(
+                error,
+                "Expected htmlCallAttributeStrategy to be null, got: %s",
+                htmlCallAttributeStrategy);
+      }
       if (attributeValue != null) {
         error = format(error, "Expected attributeValue to be null, got: %s", attributeValue);
       }
@@ -2280,6 +2303,7 @@ final class HtmlRewriter {
     void resetAttribute() {
       attributeName = null;
       equalsSignLocation = null;
+      htmlCallAttributeStrategy = null;
       attributeValue = null;
       quotedAttributeValueStart = null;
       attributeValueChildren.clear();
@@ -2370,6 +2394,10 @@ final class HtmlRewriter {
       checkState(equalsSignLocation == null);
       equalsSignLocation = equalsSignPoint;
       setState(State.BEFORE_ATTRIBUTE_VALUE, stateTransitionPoint);
+    }
+
+    void setHtmlCallAttributeStrategy(HtmlAttributeNode.ValueStrategy htmlCallAttributeStrategy) {
+      this.htmlCallAttributeStrategy = htmlCallAttributeStrategy;
     }
 
     void setAttributeValue(StandaloneNode node) {
@@ -2545,19 +2573,43 @@ final class HtmlRewriter {
       }
       if (attributeName != null) {
         SourceLocation location = attributeName.getSourceLocation();
+        boolean isCallAttribute =
+            attributeName instanceof RawTextNode
+                && ((RawTextNode) attributeName).getRawText().startsWith("@");
         HtmlAttributeNode attribute;
         if (attributeValue != null) {
           location = location.extend(attributeValue.getSourceLocation());
-          attribute =
-              new HtmlAttributeNode(nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
+          if (isCallAttribute) {
+            attribute =
+                new HtmlAttributeNode(
+                    nodeIdGen.genId(),
+                    location,
+                    checkNotNull(equalsSignLocation),
+                    htmlCallAttributeStrategy);
+          } else {
+            if (htmlCallAttributeStrategy == HtmlAttributeNode.ValueStrategy.CONCAT) {
+              errorReporter.report(
+                  attributeName.getSourceLocation(), CONCAT_NOT_ALLOWED_FOR_NORMAL_ATTRIBUTES);
+            }
+            attribute =
+                new HtmlAttributeNode(
+                    nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
+          }
           edits.addChild(attribute, attributeName);
           edits.addChild(attribute, attributeValue);
         } else {
+          if (isCallAttribute) {
+            errorReporter.report(
+                attributeName.getSourceLocation(),
+                COMPOSITION_ATTRIBUTE_MUST_HAVE_VALUE,
+                ((RawTextNode) attributeName).getRawText());
+          }
           attribute = new HtmlAttributeNode(nodeIdGen.genId(), location, null);
           edits.addChild(attribute, attributeName);
         }
         attributeName = null;
         equalsSignLocation = null;
+        htmlCallAttributeStrategy = null;
         attributeValue = null;
         // We don't call addDirectTagChild to avoid
         // 1. calling maybeFinishPendingAttribute recursively
