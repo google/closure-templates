@@ -75,6 +75,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private static final SoyErrorKind ATTRIBUTE_AS_PARAM =
       SoyErrorKind.of("Attribute ''{0}'' should be set as a param.");
 
+  private static final SoyErrorKind ATTRIBUTE_NOT_REQUIRED =
+      SoyErrorKind.of("Attribute ''{0}'' should be set as optional.");
+
   private static final SoyErrorKind ATTRIBUTE_PARAM_NOT_ALLOWED =
       SoyErrorKind.of(
           "Attribute ''{0}'' can only be present on root elements of html<?> templates.");
@@ -151,6 +154,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 return;
               }
               AttrParam attr = attrs.get(staticKey);
+              if (attr.isRequired()) {
+                errorReporter.report(node.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, staticKey);
+              }
               explicitAttributes.add(staticKey);
               // Creates an HTML attribute containing the original name with the @ chopped off
               HtmlAttributeNode attrNode = new HtmlAttributeNode(id.get(), UNKNOWN, UNKNOWN_POINT);
