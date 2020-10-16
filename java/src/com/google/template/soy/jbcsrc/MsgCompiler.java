@@ -365,7 +365,7 @@ final class MsgCompiler {
                           appendable,
                           // set the isLast field to true since we know this will only be rendered
                           // once.
-                          /* isLast=*/ constant(true))),
+                          /* isLast */ constant(true))),
               clearAppendable);
     } else {
       Label start = new Label();
