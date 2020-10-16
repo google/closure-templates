@@ -326,9 +326,10 @@ public final class SimplifyVisitor {
         ExprNode bindCallee = methodCallNode.getBaseExprChild();
         node.getCalleeExpr().replaceChild(calleeRoot, bindCallee);
 
-        for (int i = 0; i < record.numChildren(); i++) {
+        List<ExprNode> children = new ArrayList<>(record.getChildren());
+        for (int i = 0; i < children.size(); i++) {
           Identifier key = record.getKey(i);
-          ExprNode value = record.getChild(i);
+          ExprNode value = children.get(i);
           SourceLocation loc = key.location();
           if (loc.isBefore(value.getSourceLocation())) {
             loc = loc.extend(value.getSourceLocation());

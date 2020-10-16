@@ -206,6 +206,13 @@ public class SimplifyVisitorTest {
         .isEqualTo(
             "{@param tpl: (a: string, b: string) => html<?>}\n"
                 + "{call $tpl}{param a: 'anA' /}{param b: 'aB' /}{/call}");
+
+    assertSimplification(
+            "{@param tpl: (a: string, b: string) => html<?>}",
+            "{call $tpl.bind(record(a:'anA', b:'aB')) /}")
+        .isEqualTo(
+            "{@param tpl: (a: string, b: string) => html<?>}\n"
+                + "{call $tpl}{param a: 'anA' /}{param b: 'aB' /}{/call}");
   }
 
   @Test
