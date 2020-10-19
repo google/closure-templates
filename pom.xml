@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <name>Closure Templates</name>
@@ -55,16 +55,21 @@
   <mailingLists>
     <mailingList>
       <name>closure-templates-discuss</name>
-      <subscribe>closure-templates-discuss+subscribe@googlegroups.com</subscribe>
-      <unsubscribe>closure-templates-discuss+unsubscribe@googlegroups.com</unsubscribe>
+      <subscribe>closure-templates-discuss+subscribe@googlegroups.com
+      </subscribe>
+      <unsubscribe>closure-templates-discuss+unsubscribe@googlegroups.com
+      </unsubscribe>
       <post>closure-templates-discuss@googlegroups.com</post>
-      <archive>https://groups.google.com/group/closure-templates-discuss</archive>
+      <archive>https://groups.google.com/group/closure-templates-discuss
+      </archive>
     </mailingList>
   </mailingLists>
 
   <scm>
-    <connection>scm:git:https://github.com/google/closure-templates.git</connection>
-    <developerConnection>scm:git:git@github.com:google/closure-templates.git</developerConnection>
+    <connection>scm:git:https://github.com/google/closure-templates.git
+    </connection>
+    <developerConnection>scm:git:git@github.com:google/closure-templates.git
+    </developerConnection>
     <url>https://github.com/google/closure-templates.git</url>
     <tag>HEAD</tag>
   </scm>
@@ -76,7 +81,7 @@
     <guice.version>4.1.0</guice.version>
     <guava.version>25.1-jre</guava.version>
     <asm.version>7.0</asm.version>
-    <autovalue.version>1.6.3</autovalue.version>
+    <autovalue.version>1.7.4</autovalue.version>
     <proto.version>3.3.0</proto.version>
     <truth.version>0.45</truth.version>
     <soy.examples>${project.basedir}/examples</soy.examples>
@@ -255,6 +260,11 @@
         <exclusion>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
+        </exclusion>
+        <!--Truth depends on auto-value-annotation 1.6.3, so exclude it -->
+        <exclusion>
+          <groupId>com.google.auto.value</groupId>
+          <artifactId>auto-value-annotations</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -448,11 +458,11 @@
     <!-- Make sure the metadata templates are where the Java code expects them to be. -->
     <resources>
       <resource>
-      <targetPath>com/google/template/soy/logging</targetPath>
-      <directory>java/src/com/google/template/soy/logging</directory>
-      <includes>
-        <include>*.vm</include>
-      </includes>
+        <targetPath>com/google/template/soy/logging</targetPath>
+        <directory>java/src/com/google/template/soy/logging</directory>
+        <includes>
+          <include>*.vm</include>
+        </includes>
       </resource>
     </resources>
 
@@ -474,11 +484,13 @@
             <configuration>
               <target>
                 <taskdef name="gen.escape.directives"
-                         classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode"
-                         classpathref="maven.runtime.classpath"/>
+                    classname="com.google.template.soy.jssrc.internal.GenerateSoyUtilsEscapingDirectiveCode"
+                    classpathref="maven.runtime.classpath"/>
                 <gen.escape.directives>
-                  <input path="${project.basedir}/javascript/soyutils_usegoog.js"/>
-                  <output path="${project.build.directory}/soyutils_usegoog.js"/>
+                  <input
+                      path="${project.basedir}/javascript/soyutils_usegoog.js"/>
+                  <output
+                      path="${project.build.directory}/soyutils_usegoog.js"/>
                   <libdefined pattern="goog.string.*"/>
                   <libdefined pattern="goog.asserts.*"/>
                 </gen.escape.directives>
@@ -524,7 +536,9 @@
                     <file>${soy.examples.out}/features_generated_x-zz.js</file>
                     <file>${soy.examples.out}/FeaturesSoyInfo.java</file>
                     <file>${soy.examples.out}/examples_extracted.xlf</file>
-                    <file>${project.build.directory}/soy-${project.version}-jssrc_js.jar</file>
+                    <file>
+                      ${project.build.directory}/soy-${project.version}-jssrc_js.jar
+                    </file>
                   </files>
                 </requireFilesExist>
                 <!-- fences-maven-enforcer-rule doesn't support Java 9 yet, see
@@ -607,11 +621,14 @@
             </goals>
             <configuration>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>SoyToIncrementalDomSrcCompiler</shadedClassifierName>
+              <shadedClassifierName>SoyToIncrementalDomSrcCompiler
+              </shadedClassifierName>
               <transformers>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyToIncrementalDomSrcCompiler</mainClass>
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>
+                    com.google.template.soy.SoyToIncrementalDomSrcCompiler
+                  </mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -627,8 +644,9 @@
               <shadedClassifierName>SoyToJsSrcCompiler</shadedClassifierName>
               <transformers>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyToJsSrcCompiler</mainClass>
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToJsSrcCompiler
+                  </mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -644,8 +662,9 @@
               <shadedClassifierName>SoyToPySrcCompiler</shadedClassifierName>
               <transformers>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyToPySrcCompiler</mainClass>
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToPySrcCompiler
+                  </mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -661,8 +680,9 @@
               <shadedClassifierName>SoyHeaderCompiler</shadedClassifierName>
               <transformers>
                 <transformer
-                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyHeaderCompiler</mainClass>
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyHeaderCompiler
+                  </mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -678,7 +698,7 @@
               <shadedClassifierName>SoyParseInfoGenerator</shadedClassifierName>
               <transformers>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyParseInfoGenerator
                   </mainClass>
                 </transformer>
@@ -696,7 +716,7 @@
               <shadedClassifierName>SoyMsgExtractor</shadedClassifierName>
               <transformers>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.google.template.soy.SoyMsgExtractor</mainClass>
                 </transformer>
               </transformers>
@@ -713,8 +733,9 @@
               <shadedClassifierName>SoyToJbcSrcCompiler</shadedClassifierName>
               <transformers>
                 <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.google.template.soy.SoyToJbcSrcCompiler</mainClass>
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.google.template.soy.SoyToJbcSrcCompiler
+                  </mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -764,8 +785,10 @@
               <sources>
                 <!-- For compiling the tests, include testonly sources that are in the main source tree, but not compiled with it. -->
                 <source>java/src/com/google/template/soy/testing</source>
-                <source>java/src/com/google/template/soy/exprtree/testing</source>
-                <source>java/src/com/google/template/soy/logging/testing</source>
+                <source>java/src/com/google/template/soy/exprtree/testing
+                </source>
+                <source>java/src/com/google/template/soy/logging/testing
+                </source>
               </sources>
             </configuration>
           </execution>
@@ -818,12 +841,16 @@
                 <argument>--locales</argument>
                 <argument>en,x-zz</argument>
                 <argument>--messageFilePathFormat</argument>
-                <argument>${soy.examples}/examples_translated_{LOCALE}.xlf</argument>
+                <argument>${soy.examples}/examples_translated_{LOCALE}.xlf
+                </argument>
                 <argument>--compileTimeGlobalsFile</argument>
-                <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
+                <argument>
+                  ${project.basedir}/javascript/examples/features-usage_globals.txt
                 </argument>
                 <argument>--srcs</argument>
-                <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
+                <argument>
+                  ${soy.examples}/simple.soy,${soy.examples}/features.soy
+                </argument>
               </arguments>
             </configuration>
             <goals>
@@ -834,7 +861,8 @@
             <id>java-simple-example</id>
             <phase>pre-integration-test</phase>
             <configuration>
-              <mainClass>com.google.template.soy.examples.SimpleUsage</mainClass>
+              <mainClass>com.google.template.soy.examples.SimpleUsage
+              </mainClass>
               <cleanupDaemonThreads>false</cleanupDaemonThreads>
               <additionalClasspathElements>
                 <additionalClasspathElement>
@@ -850,10 +878,12 @@
             <id>java-features-example</id>
             <phase>pre-integration-test</phase>
             <configuration>
-              <mainClass>com.google.template.soy.examples.FeaturesUsage</mainClass>
+              <mainClass>com.google.template.soy.examples.FeaturesUsage
+              </mainClass>
               <cleanupDaemonThreads>false</cleanupDaemonThreads>
               <additionalClasspathElements>
-                <additionalClasspathElement>${soy.examples}/</additionalClasspathElement>
+                <additionalClasspathElement>${soy.examples}/
+                </additionalClasspathElement>
                 <additionalClasspathElement>
                   ${project.build.sourceDirectory}/com/google/template/soy/examples/
                 </additionalClasspathElement>
@@ -880,7 +910,8 @@
                 <argument>--javaClassNameSource</argument>
                 <argument>filename</argument>
                 <argument>--compileTimeGlobalsFile</argument>
-                <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
+                <argument>
+                  ${project.basedir}/javascript/examples/features-usage_globals.txt
                 </argument>
                 <argument>--srcs</argument>
                 <argument>${soy.examples}/features.soy</argument>
@@ -904,7 +935,9 @@
                 <argument>${soy.examples.out}/examples_extracted.xlf
                 </argument>
                 <argument>--srcs</argument>
-                <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
+                <argument>
+                  ${soy.examples}/simple.soy,${soy.examples}/features.soy
+                </argument>
               </arguments>
             </configuration>
             <goals>
@@ -926,10 +959,13 @@
                 <argument>--outputSrcJar</argument>
                 <argument>${soy.examples.out}/examples-src.jar</argument>
                 <argument>--compileTimeGlobalsFile</argument>
-                <argument>${project.basedir}/javascript/examples/features-usage_globals.txt
+                <argument>
+                  ${project.basedir}/javascript/examples/features-usage_globals.txt
                 </argument>
                 <argument>--srcs</argument>
-                <argument>${soy.examples}/simple.soy,${soy.examples}/features.soy</argument>
+                <argument>
+                  ${soy.examples}/simple.soy,${soy.examples}/features.soy
+                </argument>
               </arguments>
             </configuration>
             <goals>
@@ -985,10 +1021,10 @@
         </executions>
       </plugin>
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-help-plugin</artifactId>
-          <version>2.2</version>
-        </plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-help-plugin</artifactId>
+        <version>2.2</version>
+      </plugin>
       <plugin>
         <!-- Allow publishing to Maven Central via
           `mvn -P release clean deploy`.
@@ -1011,8 +1047,10 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+              <addDefaultImplementationEntries>true
+              </addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true
+              </addDefaultSpecificationEntries>
               <Sealed>true</Sealed>
             </manifestEntries>
           </archive>
@@ -1035,7 +1073,7 @@
               <excludes>
                 <exclude>**/*_test.js</exclude>
               </excludes>
-              <archive />
+              <archive/>
             </configuration>
           </execution>
         </executions>
