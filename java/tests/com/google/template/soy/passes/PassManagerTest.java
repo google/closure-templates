@@ -77,6 +77,8 @@ public final class PassManagerTest {
 
     assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
+            "ContentSecurityPolicyNonceInjection",
+            "CheckEscapingSanityFile",
             "ResolveProtoImports",
             "ResolveTemplateImports",
             "ResolveTemplateFunctions",
@@ -97,6 +99,8 @@ public final class PassManagerTest {
 
     assertThat(names(manager.partialTemplateRegistryPasses))
         .containsExactly(
+            "ContentSecurityPolicyNonceInjection",
+            "CheckEscapingSanityFile",
             "ResolveProtoImports",
             "ResolveTemplateImports",
             "ResolveTemplateFunctions",

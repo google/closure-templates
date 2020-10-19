@@ -363,6 +363,14 @@ public final class PassManager {
       // imports.
       ImmutableList.Builder<CompilerFileSetPass> partialTemplateRegistryPassesBuilder =
           ImmutableList.builder();
+      if (astRewrites) {
+        addPass(
+            new ContentSecurityPolicyNonceInjectionPass(errorReporter),
+            partialTemplateRegistryPassesBuilder);
+        // Needs to come after ContentSecurityPolicyNonceInjectionPass.
+        addPass(
+            new CheckEscapingSanityFilePass(errorReporter), partialTemplateRegistryPassesBuilder);
+      }
       addPass(
           new ResolveProtoImportsPass(registry, options, errorReporter, disableAllTypeChecking),
           partialTemplateRegistryPassesBuilder);
@@ -601,10 +609,8 @@ public final class PassManager {
   private static ImmutableList<CompilerFilePass> createParsePasses(ErrorReporter reporter) {
     return ImmutableList.of(
         new DesugarGroupNodesPass(),
-        new ContentSecurityPolicyNonceInjectionPass(reporter),
         new BasicHtmlValidationPass(reporter),
-        new InsertMsgPlaceholderNodesPass(reporter),
-        new CheckEscapingSanityFilePass(reporter));
+        new InsertMsgPlaceholderNodesPass(reporter));
   }
 
   private static Class<? extends CompilerPass> getPassClass(CompilerPass pass) {
