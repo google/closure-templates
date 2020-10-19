@@ -24,8 +24,13 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
+import com.google.template.soy.soytree.CallParamNode;
+import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -39,11 +44,18 @@ import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
+import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 /**
  * Rewrites element calls with attributes and slots as regular calls.
@@ -53,6 +65,12 @@ import java.util.Map;
  */
 @RunAfter(ResolveExpressionTypesPass.class)
 final class SoyElementCompositionPass implements CompilerFileSetPass {
+
+  private static final SoyErrorKind ILLEGAL_CHILD =
+      SoyErrorKind.of("In an element call commands must be contained within an attribute value.");
+
+  private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
+      SoyErrorKind.of("Attribute specified multiple times.");
 
   private final ErrorReporter errorReporter;
 
@@ -72,52 +90,81 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   }
 
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(file, HtmlTagNode.class)) {
-      TagName name = tagNode.getTagName();
-      if (name.isStatic()) {
-        continue;
+    for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
+      for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
+        process(template, tagNode, nodeIdGen);
       }
-      PrintNode printNode = name.getDynamicTagName();
-      if (!tagNode.getTagName().isTemplateCall()) {
-        continue;
-      }
-      Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
-
-      SourceLocation location = tagNode.getSourceLocation();
-      if (!tagNode.getTaggedPairs().isEmpty()) {
-        location = location.extend(tagNode.getTaggedPairs().get(0).getSourceLocation());
-      }
-      CallBasicNode call =
-          new CallBasicNode(
-              nodeIdGen.genId(),
-              location,
-              SourceLocation.UNKNOWN,
-              printNode.getExpr().getRoot().copy(new CopyState()),
-              ImmutableList.of(),
-              false,
-              errorReporter);
-
-      tagNode.getChildren().stream()
-          .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
-          .map(HtmlAttributeNode.class::cast)
-          .filter(attr -> attr.getStaticKey() != null)
-          .forEach(attr -> consumeAttribute(call, attr, nodeIdGen));
-
-      if (!tagNode.getTaggedPairs().isEmpty()) {
-        HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
-        SoyNode next = SoyTreeUtils.nextSibling(tagNode);
-        while (next != closeTag) {
-          next = consumeSlot(call, next, nodeIdGen);
-        }
-        closeTag.getParent().removeChild(closeTag);
-      }
-      call.getCalleeExpr().setType(printNode.getExpr().getType());
-      call.setHtmlContext(HtmlContext.HTML_PCDATA);
-      tagNode.getParent().replaceChild(tagNode, call);
     }
   }
 
+  private void process(TemplateNode template, HtmlTagNode tagNode, IdGenerator nodeIdGen) {
+    TagName name = tagNode.getTagName();
+    if (name.isStatic()) {
+      return;
+    }
+    PrintNode printNode = name.getDynamicTagName();
+    if (!tagNode.getTagName().isTemplateCall()) {
+      return;
+    }
+
+    Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
+    SourceLocation unknown = template.getSourceLocation().clearRange();
+    Map<String, AttrParam> attrs =
+        template.getAllParams().stream()
+            .filter(p -> p instanceof AttrParam)
+            .map(AttrParam.class::cast)
+            .collect(Collectors.toMap(AttrParam::name, Function.identity()));
+
+    SourceLocation location = tagNode.getSourceLocation();
+    if (!tagNode.getTaggedPairs().isEmpty()) {
+      location = location.extend(tagNode.getTaggedPairs().get(0).getSourceLocation());
+    }
+    CallBasicNode call =
+        new CallBasicNode(
+            nodeIdGen.genId(),
+            location,
+            unknown,
+            printNode.getExpr().getRoot().copy(new CopyState()),
+            ImmutableList.of(),
+            false,
+            errorReporter);
+
+    if (!tagNode.getTaggedPairs().isEmpty()) {
+      HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
+      SoyNode next = SoyTreeUtils.nextSibling(tagNode);
+      while (next != closeTag) {
+        next = consumeSlot(call, next, nodeIdGen);
+      }
+      closeTag.getParent().removeChild(closeTag);
+    }
+    call.getCalleeExpr().setType(printNode.getExpr().getType());
+    call.setHtmlContext(HtmlContext.HTML_PCDATA);
+    tagNode.getParent().replaceChild(tagNode, call);
+
+    TemplateType templateType = (TemplateType) call.getCalleeExpr().getRoot().getType();
+    Map<String, SoyType> parameterMap = templateType.getParameterMap();
+
+    Set<String> seenAttr = new HashSet<>();
+    tagNode.getChildren().stream()
+        .skip(1) // skip the first print node with the function call
+        .forEach(
+            c -> {
+              if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE
+                  && ((HtmlAttributeNode) c).getStaticKey() != null) {
+                CallParamNode param =
+                    consumeAttribute(
+                        (HtmlAttributeNode) c, nodeIdGen, seenAttr, parameterMap, attrs);
+                if (param != null) {
+                  call.addChild(param);
+                }
+              } else {
+                errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+              }
+            });
+  }
+
   private SoyNode consumeSlot(CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
+    SourceLocation unknown = startNode.getSourceLocation().clearRange();
     HtmlOpenTagNode nextOpenTag = (HtmlOpenTagNode) startNode;
     HtmlAttributeNode attributeNode = (HtmlAttributeNode) nextOpenTag.getChild(1);
     HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
@@ -125,14 +172,14 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         new CallParamContentNode(
             nodeIdGen.genId(),
             startNode.getSourceLocation(),
-            SourceLocation.UNKNOWN,
-            Identifier.create(attributeNode.getStaticKey(), SourceLocation.UNKNOWN),
+            unknown,
+            Identifier.create(attributeNode.getStaticKey(), unknown),
             new CommandTagAttribute(
-                Identifier.create("kind", SourceLocation.UNKNOWN),
+                Identifier.create("kind", unknown),
                 QuoteStyle.SINGLE,
                 "html",
                 startNode.getSourceLocation().extend(closeTag.getSourceLocation()),
-                SourceLocation.UNKNOWN),
+                unknown),
             errorReporter);
     callNode.addChild(callParamContent);
     SoyNode.StandaloneNode next = (SoyNode.StandaloneNode) SoyTreeUtils.nextSibling(nextOpenTag);
@@ -148,38 +195,59 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     return retNode;
   }
 
-  private void consumeAttribute(
-      CallBasicNode callNode, HtmlAttributeNode attr, IdGenerator nodeIdGen) {
-    StandaloneNode value = attr.getChild(1);
-    if (value.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
-      return;
+  @Nullable
+  private CallParamNode consumeAttribute(
+      HtmlAttributeNode attr,
+      IdGenerator nodeIdGen,
+      Set<String> seenAttr,
+      Map<String, SoyType> parameterMap,
+      Map<String, AttrParam> attrs) {
+    SourceLocation unknown = attr.getSourceLocation().clearRange();
+
+    String attrName = attr.getStaticKey();
+    boolean isSoyAttr = attrName.startsWith("@");
+    if (isSoyAttr) {
+      attrName = attrName.substring(1);
     }
-    TemplateType templateType = (TemplateType) callNode.getCalleeExpr().getRoot().getType();
-    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
-    String paramName = Parameter.attrToParamName(attr.getStaticKey());
-    Map<String, SoyType> parameterMap = templateType.getParameterMap();
-    CallParamContentNode contentNode =
-        new CallParamContentNode(
-            nodeIdGen.genId(),
-            attr.getSourceLocation(),
-            SourceLocation.UNKNOWN,
-            Identifier.create(paramName, SourceLocation.UNKNOWN),
-            // TODO(tomnguyen) Verify that @attribute is only string or uri or string|uri.
-            new CommandTagAttribute(
-                Identifier.create("kind", SourceLocation.UNKNOWN),
-                QuoteStyle.SINGLE,
-                SanitizedType.TrustedResourceUriType.getInstance()
-                        .isAssignableFromStrict(parameterMap.get(paramName))
-                    ? "uri"
-                    : "text",
-                SourceLocation.UNKNOWN,
-                SourceLocation.UNKNOWN),
-            errorReporter);
-    // TODO(user): Pass-through if same attribute is in this template scope when attrValue.children()
-    // == 0
-    for (StandaloneNode node : attrValue.getChildren()) {
-      contentNode.addChild(node.copy(new CopyState()));
+
+    if (!seenAttr.add(attrName)) {
+      errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_ATTRIBUTE);
+      return null;
     }
-    callNode.addChild(contentNode);
+
+    String paramName = Parameter.attrToParamName(attrName);
+    if (isSoyAttr) {
+      ExprNode val = new VarRefNode(paramName, unknown, attrs.get(paramName));
+      return new CallParamValueNode(
+          nodeIdGen.genId(), attr.getSourceLocation(), Identifier.create(paramName, unknown), val);
+    } else {
+      StandaloneNode value = attr.getChild(1);
+      if (value.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
+        return null;
+      }
+      HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
+
+      CallParamContentNode contentNode =
+          new CallParamContentNode(
+              nodeIdGen.genId(),
+              attr.getSourceLocation(),
+              unknown,
+              Identifier.create(paramName, unknown),
+              // TODO(tomnguyen) Verify that @attribute is only string or uri or string|uri.
+              new CommandTagAttribute(
+                  Identifier.create("kind", unknown),
+                  QuoteStyle.SINGLE,
+                  SanitizedType.TrustedResourceUriType.getInstance()
+                          .isAssignableFromStrict(parameterMap.get(paramName))
+                      ? "uri"
+                      : "text",
+                  unknown,
+                  unknown),
+              errorReporter);
+      for (StandaloneNode node : attrValue.getChildren()) {
+        contentNode.addChild(node.copy(new CopyState()));
+      }
+      return contentNode;
+    }
   }
 }

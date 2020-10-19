@@ -39,7 +39,6 @@ import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -362,42 +361,45 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       Function<String, Boolean> addAttr,
       ImmutableMap<String, Parameter> allParamsByAttrName) {
     String name = attr.getStaticKey();
-    if (name != null) {
-      if (Parameter.isValidAttrName(name)) {
-        String paramName = Parameter.attrToParamName(name);
-        if (!addAttr.apply(paramName)) {
-          errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_PARAM, name);
-          return;
-        } else {
-          Parameter param = allParamsByAttrName.get(name);
-          if (param == null) {
-            String didYouMeanMessage =
-                SoyErrors.getDidYouMeanMessage(
-                    allParamsByAttrName.entrySet().stream()
-                        .filter(e -> e.getValue().getKind() == ParameterKind.ATTRIBUTE)
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList()),
-                    name);
-            errorReporter.report(
-                attr.getChild(0).getSourceLocation(), NO_SUCH_ATTRIBUTE, didYouMeanMessage);
-            return;
-          } else if (param.getKind() != ParameterKind.ATTRIBUTE) {
-            errorReporter.report(
-                attr.getChild(0).getSourceLocation(), PARAM_AS_ATTRIBUTE, param.getName());
-            return;
-          }
-        }
-      } else {
-        errorReporter.report(attr.getChild(0).getSourceLocation(), BAD_ATTRIBUTE_NAME);
-        return;
-      }
-    } else {
+    if (name == null) {
       errorReporter.report(attr.getChild(0).getSourceLocation(), NON_STATIC_ATTRIBUTE_NAME);
       return;
     }
 
-    if (!attr.hasValue()) {
-      // TODO(user): Attributes without values can be pass-through.
+    boolean isSoyAttr = name.startsWith("@");
+    if (isSoyAttr) {
+      name = name.substring(1);
+    }
+    if (Parameter.isValidAttrName(name)) {
+      String paramName = Parameter.attrToParamName(name);
+      if (!addAttr.apply(paramName)) {
+        errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_PARAM, name);
+        return;
+      } else {
+        Parameter param = allParamsByAttrName.get(name);
+        if (param == null) {
+          String didYouMeanMessage =
+              SoyErrors.getDidYouMeanMessage(
+                  allParamsByAttrName.entrySet().stream()
+                      .filter(e -> e.getValue().getKind() == ParameterKind.ATTRIBUTE)
+                      .map(Map.Entry::getKey)
+                      .collect(Collectors.toList()),
+                  name);
+          errorReporter.report(
+              attr.getChild(0).getSourceLocation(), NO_SUCH_ATTRIBUTE, didYouMeanMessage);
+          return;
+        } else if (param.getKind() != ParameterKind.ATTRIBUTE) {
+          errorReporter.report(
+              attr.getChild(0).getSourceLocation(), PARAM_AS_ATTRIBUTE, param.getName());
+          return;
+        }
+      }
+    } else {
+      errorReporter.report(attr.getChild(0).getSourceLocation(), BAD_ATTRIBUTE_NAME);
+      return;
+    }
+
+    if (!attr.hasValue() && !isSoyAttr) {
       errorReporter.report(attr.getSourceLocation(), NO_ATTRIBUTE_VALUE);
       return;
     }

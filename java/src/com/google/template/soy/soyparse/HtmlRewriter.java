@@ -144,9 +144,6 @@ final class HtmlRewriter {
   private static final SoyErrorKind BLOCK_TRANSITION_DISALLOWED =
       SoyErrorKind.of("{0} started in ''{1}'', cannot create a {2}.");
 
-  private static final SoyErrorKind COMPOSITION_ATTRIBUTE_MUST_HAVE_VALUE =
-      SoyErrorKind.of("{0} must have an attribute value.");
-
   private static final SoyErrorKind
       CONDITIONAL_BLOCK_ISNT_GUARANTEED_TO_PRODUCE_ONE_ATTRIBUTE_VALUE =
           SoyErrorKind.of(
@@ -2573,13 +2570,13 @@ final class HtmlRewriter {
       }
       if (attributeName != null) {
         SourceLocation location = attributeName.getSourceLocation();
-        boolean isCallAttribute =
+        boolean isSoyAttr =
             attributeName instanceof RawTextNode
                 && ((RawTextNode) attributeName).getRawText().startsWith("@");
         HtmlAttributeNode attribute;
         if (attributeValue != null) {
           location = location.extend(attributeValue.getSourceLocation());
-          if (isCallAttribute) {
+          if (isSoyAttr) {
             attribute =
                 new HtmlAttributeNode(
                     nodeIdGen.genId(),
@@ -2598,12 +2595,6 @@ final class HtmlRewriter {
           edits.addChild(attribute, attributeName);
           edits.addChild(attribute, attributeValue);
         } else {
-          if (isCallAttribute) {
-            errorReporter.report(
-                attributeName.getSourceLocation(),
-                COMPOSITION_ATTRIBUTE_MUST_HAVE_VALUE,
-                ((RawTextNode) attributeName).getRawText());
-          }
           attribute = new HtmlAttributeNode(nodeIdGen.genId(), location, null);
           edits.addChild(attribute, attributeName);
         }

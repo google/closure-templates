@@ -334,6 +334,11 @@ public final class SourceLocation implements Comparable<SourceLocation> {
     return begin.compareTo(point) <= 0 && end.compareTo(point) >= 0;
   }
 
+  /** Returns a new source location in the same file with unknown start and end points. */
+  public SourceLocation clearRange() {
+    return new SourceLocation(filePath);
+  }
+
   /** A Point in a source file. */
   @AutoValue
   @Immutable
