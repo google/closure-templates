@@ -17,6 +17,8 @@
 package com.google.template.soy.pysrc;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.base.SourceFilePath;
+import java.nio.file.Path;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -40,6 +42,8 @@ public final class SoyPySrcOptions implements Cloneable {
   /** A namespace manifest mapping soy namespaces to their python path. */
   private final ImmutableMap<String, String> namespaceManifest;
 
+  private final ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths;
+
   /** The name of a manifest file to generate, or null. */
   @Nullable private final String namespaceManifestFile;
 
@@ -49,12 +53,14 @@ public final class SoyPySrcOptions implements Cloneable {
       String bidiIsRtlFn,
       String translationClass,
       ImmutableMap<String, String> namespaceManifest,
+      ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths,
       String namespaceManifestFile) {
     this.runtimePath = runtimePath;
     this.environmentModulePath = environmentModulePath;
     this.bidiIsRtlFn = bidiIsRtlFn;
     this.translationClass = translationClass;
     this.namespaceManifest = namespaceManifest;
+    this.inputToOutputFilePaths = inputToOutputFilePaths;
     this.namespaceManifestFile = namespaceManifestFile;
   }
 
@@ -64,6 +70,7 @@ public final class SoyPySrcOptions implements Cloneable {
     this.bidiIsRtlFn = orig.bidiIsRtlFn;
     this.translationClass = orig.translationClass;
     this.namespaceManifest = orig.namespaceManifest;
+    this.inputToOutputFilePaths = orig.inputToOutputFilePaths;
     this.namespaceManifestFile = orig.namespaceManifestFile;
   }
 
@@ -90,6 +97,10 @@ public final class SoyPySrcOptions implements Cloneable {
   @Nullable
   public String namespaceManifestFile() {
     return namespaceManifestFile;
+  }
+
+  public ImmutableMap<SourceFilePath, Path> getInputToOutputFilePaths() {
+    return inputToOutputFilePaths;
   }
 
   @Override

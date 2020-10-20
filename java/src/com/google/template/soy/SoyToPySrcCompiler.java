@@ -16,6 +16,7 @@
 
 package com.google.template.soy;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.template.soy.pysrc.SoyPySrcOptions;
@@ -39,25 +40,11 @@ import org.kohsuke.args4j.Option;
 public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
 
   @Option(
-    name = "--outputPathFormat",
-    required = true,
-    usage =
-        "[Required] A format string that specifies how to build the path to each"
-            + " output file. There will be one output Python file (UTF-8) for each input Soy"
-            + " file. The format string can include literal characters as well as the"
-            + " placeholders {INPUT_DIRECTORY}, {INPUT_FILE_NAME}, and"
-            + " {INPUT_FILE_NAME_NO_EXT}. Additionally periods are not allowed in the"
-            + " outputted filename outside of the final py extension."
-  )
-  private String outputPathFormat = "";
-
-  @Option(
-    name = "--runtimePath",
-    required = true,
-    usage =
-        "[Required] The module path used to find the python runtime libraries. This"
-            + " should be in dot notation format."
-  )
+      name = "--runtimePath",
+      required = true,
+      usage =
+          "[Required] The module path used to find the python runtime libraries. This"
+              + " should be in dot notation format.")
   private String runtimePath = "";
 
   @Option(
@@ -106,6 +93,14 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
   )
   private String outputNamespaceManifest = null;
 
+  private final PerInputOutputFiles outputFiles = new PerInputOutputFiles("py");
+
+  SoyToPySrcCompiler(PluginLoader loader, SoyInputCache cache) {
+    super(loader, cache);
+  }
+
+  SoyToPySrcCompiler() {}
+
   /**
    * Compiles a set of Soy files into corresponding Python source files.
    *
@@ -121,9 +116,13 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
     if (runtimePath.length() == 0) {
       exitWithError("Must provide the Python runtime library path.");
     }
-    if (outputPathFormat.isEmpty()) {
-      exitWithError("Must provide the output path format.");
-    }
+
+    outputFiles.validateFlags();
+  }
+
+  @Override
+  Iterable<?> extraFlagsObjects() {
+    return ImmutableList.of(outputFiles);
   }
 
   @Override
@@ -145,10 +144,10 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
             bidiIsRtlFn,
             translationClass,
             manifest,
+            outputFiles.getOutputFilePathsForInputs(sfs.getSourceFilePaths()),
             outputNamespaceManifest);
 
-    // Compile.
-    sfs.compileToPySrcFiles(outputPathFormat, pySrcOptions);
+    outputFiles.writeFiles(srcs, sfs.compileToPySrcFiles(pySrcOptions));
   }
 
   /**

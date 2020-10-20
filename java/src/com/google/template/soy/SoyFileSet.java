@@ -644,6 +644,10 @@ public final class SoyFileSet {
     return soyFileSuppliers;
   }
 
+  ImmutableList<SourceFilePath> getSourceFilePaths() {
+    return soyFileSuppliers.keySet().asList();
+  }
+
   @VisibleForTesting
   SoyTypeRegistry getTypeRegistryForTesting() {
     return typeRegistry;
@@ -1102,14 +1106,14 @@ public final class SoyFileSet {
    * @throws RuntimeException If there is an error in opening/reading a message file or
    *     opening/writing an output JS file.
    */
-  void compileToPySrcFiles(String outputPathFormat, SoyPySrcOptions pySrcOptions) {
-    entryPointVoid(
+  List<String> compileToPySrcFiles(SoyPySrcOptions pySrcOptions) {
+    return entryPoint(
         () -> {
           try {
             ParseResult result = parse();
             throwIfErrorsPresent();
-            new PySrcMain(scopedData.enterable())
-                .genPyFiles(result.fileSet(), pySrcOptions, outputPathFormat, errorReporter);
+            return new PySrcMain(scopedData.enterable())
+                .genPyFiles(result.fileSet(), pySrcOptions, errorReporter);
           } catch (IOException e) {
             throw new RuntimeException(e);
           }

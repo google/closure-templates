@@ -199,6 +199,7 @@ java_library(
     srcs = ["PerInputOutputFiles.java"],
     deps = [
         ":soy_cmdline",
+        "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/shared/internal",
         "@maven//:args4j_args4j",
         "@maven//:com_google_code_findbugs_jsr305",
@@ -240,6 +241,8 @@ java_library(
     name = "soy_to_py_src_compiler",
     srcs = ["SoyToPySrcCompiler.java"],
     deps = [
+        ":cache",
+        ":per_input_output_files",
         ":soy",
         ":soy_cmdline",
         "//java/src/com/google/template/soy/pysrc",
