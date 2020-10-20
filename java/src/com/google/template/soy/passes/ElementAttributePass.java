@@ -20,12 +20,14 @@ import static com.google.template.soy.base.SourceLocation.Point.UNKNOWN_POINT;
 import static com.google.template.soy.error.ErrorReporter.exploding;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -55,6 +57,11 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
+import com.google.template.soy.types.SanitizedType.UriType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
+import com.google.template.soy.types.StringType;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -97,6 +104,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
       SoyErrorKind.of(
           "Attribute ''{0}'' can only be present on root elements of html<?> templates.");
 
+  private static final SoyErrorKind BAD_ATTRIBUTE_TYPE =
+      SoyErrorKind.of("Attributes must be of type string, trusted_resource_uri, or uri.");
+
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
 
@@ -114,6 +124,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    checkAttributeTypes(file);
+
     // Rewrite all @attribute values in root elements.
     SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
         .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
@@ -127,6 +139,24 @@ final class ElementAttributePass implements CompilerFileSetPass {
             attr ->
                 errorReporter.report(
                     attr.getSourceLocation(), ATTRIBUTE_PARAM_NOT_ALLOWED, attr.getStaticKey()));
+  }
+
+  private static final ImmutableSet<SoyType> ALLOWED_ATTR_TYPES =
+      ImmutableSet.of(
+          StringType.getInstance(), UriType.getInstance(), TrustedResourceUriType.getInstance());
+
+  private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
+    SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
+        .flatMap(t -> t.getHeaderParams().stream())
+        .filter(p -> p instanceof AttrParam)
+        .map(AttrParam.class::cast)
+        .forEach(
+            attr -> {
+              SoyType type = SoyTypes.removeNull(attr.type());
+              if (!ALLOWED_ATTR_TYPES.contains(type)) {
+                errorReporter.report(attr.getSourceLocation(), BAD_ATTRIBUTE_TYPE);
+              }
+            });
   }
 
   private NotOpNode buildNotNull(AttrParam attr) {

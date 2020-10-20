@@ -46,8 +46,10 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
-import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
+import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import java.util.HashSet;
@@ -63,6 +65,7 @@ import javax.annotation.Nullable;
  * <p>Rewrites {@code <{legacyTagName($tag)}>} to {@code <{$tag}>} and disallows all other print
  * nodes that name HTML tags.
  */
+@RunBefore(AutoescaperPass.class /* Creates trusted_resource_uri params. */)
 @RunAfter(ResolveExpressionTypesPass.class)
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
@@ -226,7 +229,6 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         return null;
       }
       HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
-
       CallParamContentNode contentNode =
           new CallParamContentNode(
               nodeIdGen.genId(),
@@ -237,10 +239,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
               new CommandTagAttribute(
                   Identifier.create("kind", unknown),
                   QuoteStyle.SINGLE,
-                  SanitizedType.TrustedResourceUriType.getInstance()
-                          .isAssignableFromStrict(parameterMap.get(paramName))
-                      ? "uri"
-                      : "text",
+                  getKind(parameterMap.get(paramName)),
                   unknown,
                   unknown),
               errorReporter);
@@ -248,6 +247,17 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         contentNode.addChild(node.copy(new CopyState()));
       }
       return contentNode;
+    }
+  }
+
+  private static String getKind(SoyType attrType) {
+    attrType = SoyTypes.removeNull(attrType);
+    if (TrustedResourceUriType.getInstance().isAssignableFromStrict(attrType)) {
+      return "trusted_resource_uri";
+    } else if (UriType.getInstance().isAssignableFromStrict(attrType)) {
+      return "uri";
+    } else {
+      return "text";
     }
   }
 }
