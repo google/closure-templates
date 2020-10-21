@@ -506,6 +506,8 @@ public final class PassManager {
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
         if (astRewrites
             && options.getExperimentalFeatures().contains("enableTemplateElementKind")) {
+          addPass(
+              new ElementCheckCrossTemplatePass(errorReporter), crossTemplateCheckingPassesBuilder);
           addPass(new SoyElementCompositionPass(errorReporter), crossTemplateCheckingPassesBuilder);
         }
       }

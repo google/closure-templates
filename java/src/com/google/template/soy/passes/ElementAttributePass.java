@@ -16,10 +16,12 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.base.SourceLocation.Point.UNKNOWN_POINT;
 import static com.google.template.soy.error.ErrorReporter.exploding;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
@@ -64,12 +66,10 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Enforces rules on the usage of @attribute parameters within a template. Rewrites templates for
@@ -173,11 +173,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   private void processTemplate(TemplateNode templateNode, Supplier<Integer> id) {
-    Map<String, AttrParam> attrs =
+    ImmutableMap<String, AttrParam> attrs =
         templateNode.getAllParams().stream()
             .filter(p -> p instanceof AttrParam)
             .map(AttrParam.class::cast)
-            .collect(Collectors.toMap(AttrParam::getAttrName, Function.identity()));
+            .collect(toImmutableMap(AttrParam::getAttrName, Function.identity()));
 
     Set<AttrParam> unseenParams = new HashSet<>(attrs.values());
     checkAttributeRefs(templateNode, unseenParams);
@@ -193,15 +193,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
     boolean iAmAnElementCallingAnElement = isElementCall(openTagNode);
 
     openTagNode.getChildren().stream()
-        .filter(p -> p instanceof HtmlAttributeNode)
+        .filter(p -> p.getKind() == Kind.HTML_ATTRIBUTE_NODE)
         .map(HtmlAttributeNode.class::cast)
+        .filter(attr -> attr.getStaticKey() != null)
         .forEach(
             attrNode -> {
               String attrKey = attrNode.getStaticKey();
-              if (attrKey == null) {
-                return;
-              }
-
               // Remove the @ at the beginning of the attribute.
               boolean isSoyAttr = attrKey.startsWith("@");
               String attrName = isSoyAttr ? attrKey.substring(1) : attrKey;
@@ -352,7 +349,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
         .forEach(attrParam -> errorReporter.warn(attrParam.getSourceLocation(), UNUSED_ATTRIBUTE));
   }
 
-  private static Optional<HtmlOpenTagNode> getElementOpen(TemplateNode node) {
+  static Optional<HtmlOpenTagNode> getElementOpen(TemplateNode node) {
     // TODO(user): Dedupe logic with SoyElementPass?
     return node.getChildren().stream()
         .filter(n -> n.getKind() == Kind.HTML_OPEN_TAG_NODE)
