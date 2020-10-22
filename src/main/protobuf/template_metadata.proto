@@ -114,6 +114,8 @@ message ParameterP {
   bool required = 3;
   // How this parameter is declared.
   KindP kind = 4;
+  // Whether or not the parameter is implicitly added by the Soy framework.
+  bool implicit = 5;
 }
 
 // Represents a call within a template.

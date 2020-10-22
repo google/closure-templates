@@ -204,6 +204,8 @@ public abstract class TemplateType extends SoyType {
 
     public abstract boolean isRequired();
 
+    public abstract boolean isImplicit();
+
     /**
      * Note that description is not serialized by TemplateMetadataSerializer so this field will be
      * null if this instance is created via deserialization.
@@ -236,6 +238,8 @@ public abstract class TemplateType extends SoyType {
       abstract Builder setTypeWrapper(LazyTypeWrapper typeWrapper);
 
       public abstract Builder setRequired(boolean isRequired);
+
+      public abstract Builder setImplicit(boolean isImplicit);
 
       public abstract Builder setDescription(String description);
 
@@ -365,6 +369,9 @@ public abstract class TemplateType extends SoyType {
       } else {
         sb.append(", ");
       }
+      if (parameter.isImplicit()) {
+        sb.append("(implicit)");
+      }
       sb.append(parameter.getName());
       if (!parameter.isRequired()) {
         sb.append("?");
@@ -390,6 +397,7 @@ public abstract class TemplateType extends SoyType {
                   .setKind(parameter.getKind().toProto())
                   .setType(parameter.getType().toProto())
                   .setRequired(parameter.isRequired())
+                  .setImplicit(parameter.isImplicit())
                   .build());
     }
     SoyTypeP returnType =
