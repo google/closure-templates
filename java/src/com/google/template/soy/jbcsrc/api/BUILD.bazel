@@ -129,3 +129,23 @@ java_library(
         "@maven//:com_google_guava_guava",
     ],
 )
+
+java_library(
+    name = "plugin_runtime_instance_info",
+    srcs = ["PluginRuntimeInstanceInfo.java"],
+    deps = [
+        "@com_google_auto_value_auto_value",
+        "@maven//:com_google_guava_guava",
+    ],
+)
+
+java_library(
+    name = "soy_plugin_runtime_instance_meta_parser",
+    srcs = ["SoyPluginRuntimeInstanceMetaParser.java"],
+    deps = [
+        ":plugin_runtime_instance_info",
+        "//java/src/com/google/template/soy/jbcsrc/shared:names",
+        "@maven//:com_google_guava_guava",
+        "@maven//:com_google_inject_guice",
+    ],
+)

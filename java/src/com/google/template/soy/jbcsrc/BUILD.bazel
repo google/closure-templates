@@ -13,6 +13,7 @@ java_library(
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/exprtree",
         "//java/src/com/google/template/soy/internal/proto",
+        "//java/src/com/google/template/soy/jbcsrc/api:plugin_runtime_instance_info",
         "//java/src/com/google/template/soy/jbcsrc/internal",
         "//java/src/com/google/template/soy/jbcsrc/restricted",
         "//java/src/com/google/template/soy/jbcsrc/runtime",

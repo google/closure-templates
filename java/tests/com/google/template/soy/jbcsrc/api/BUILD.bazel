@@ -22,6 +22,7 @@ java_library(
         "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer_testonly",
         "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/jbcsrc/api:internal",
+        "//java/src/com/google/template/soy/jbcsrc/api:plugin_runtime_instance_info",
         "//java/src/com/google/template/soy/jbcsrc/runtime",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_truth_truth",

@@ -29,11 +29,11 @@ import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.base.internal.SoyJarFileWriter;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.jbcsrc.api.PluginRuntimeInstanceInfo;
 import com.google.template.soy.jbcsrc.internal.ClassData;
 import com.google.template.soy.jbcsrc.restricted.Flags;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.Names;
-import com.google.template.soy.jbcsrc.shared.PluginRuntimeInstanceInfo;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -51,6 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /** The entry point to the {@code jbcsrc} compiler. */
 public final class BytecodeCompiler {
@@ -166,8 +167,7 @@ public final class BytecodeCompiler {
                   // Add the source location to the list of places the function is used.
                   pluginInstances
                       .get(fnNode.getFunctionName())
-                      .sourceLocationsBuilder()
-                      .add(fnNode.getSourceLocation().toString());
+                      .addSourceLocation(fnNode.getSourceLocation().toString());
                 }
               }
             }
@@ -180,21 +180,14 @@ public final class BytecodeCompiler {
 
       // If there were required plugin runtime instances, write a meta-inf file containing each
       // plugin's name, it's runtime class name, and the locations in soy where the function is
-      // used. Each line is formatted as:
-      // pluginName:instanceClassName:srcLoc1,srcLoc2,srcLoc3
+      // used.
       if (!pluginInstances.isEmpty()) {
-        String pluginData = "";
-        for (String pluginName : pluginInstances.keySet()) {
-          PluginRuntimeInstanceInfo pluginInstanceInfo = pluginInstances.get(pluginName).build();
-          pluginData +=
-              pluginName
-                  + ":"
-                  + pluginInstanceInfo.instanceClassName()
-                  + ":"
-                  + String.join(",", pluginInstanceInfo.sourceLocations())
-                  + "\n";
-        }
-        writer.writeEntry(Names.META_INF_PLUGIN_PATH, ByteSource.wrap(pluginData.getBytes(UTF_8)));
+        writer.writeEntry(
+            Names.META_INF_PLUGIN_PATH,
+            PluginRuntimeInstanceInfo.serialize(
+                pluginInstances.values().stream()
+                    .map(PluginRuntimeInstanceInfo.Builder::build)
+                    .collect(Collectors.toList())));
       }
     }
   }
