@@ -320,7 +320,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     // This is true if there are any calls with data="all" (which implicitly add optional parameters
     // from those template) or if all parameters are optional (but there are some parameters).
     boolean noRequiredParams = new ShouldEnsureDataIsDefinedVisitor().exec(node);
-    if (node.getParams().isEmpty()) {
+    if (hasOnlyImplicitParams(node)) {
       // If there are indirect parameters, allow an arbitrary object.
       // Either way, allow null, since the caller may not pass parameters.
       jsDocBuilder.addParam("opt_data", noRequiredParams ? "?Object<string, *>=" : "null=");
@@ -443,7 +443,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   private VariableDeclaration generateClassForSoyElement(
       String soyElementClassName, String soyElementAccessorName, TemplateElementNode node) {
 
-    String paramsType = node.getParams().isEmpty() ? "null" : "!" + alias + ".Params";
+    String paramsType = hasOnlyImplicitParams(node) ? "null" : "!" + alias + ".Params";
 
     ImmutableList.Builder<MethodDeclaration> stateMethods = ImmutableList.builder();
     for (TemplateStateVar stateVar : node.getStateVars()) {
@@ -452,6 +452,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
     }
     ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
     for (TemplateParam param : node.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       parameterMethods.add(
           this.generateGetParamMethodForSoyElementClass(
               param, /* isAbstract= */ false, /* isInjected= */ false));
@@ -546,6 +549,9 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       String className, TemplateElementNode node) {
     ImmutableList.Builder<MethodDeclaration> parameterMethods = ImmutableList.builder();
     for (TemplateParam param : node.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       parameterMethods.add(
           this.generateGetParamMethodForSoyElementClass(
               param, /* isAbstract= */ true, /* isInjected= */ false));

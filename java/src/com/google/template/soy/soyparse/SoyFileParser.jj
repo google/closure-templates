@@ -2242,6 +2242,7 @@ private TemplateHeaderVarDefn ParamDecl(@Nullable String desc) :
           tagEnd == null? createSrcLoc(tagBegin) : createSrcLoc(tagBegin, tagEnd),
           paramTypeNode,
           inject,
+          /* isImplicit= */ false,
           optional,
           desc,
           value);

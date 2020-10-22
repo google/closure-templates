@@ -718,7 +718,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // ------ Add the @typedef of opt_data. ------
-    if (!node.getParams().isEmpty()) {
+    if (!hasOnlyImplicitParams(node)) {
       declarations.add(
           aliasExp
               .dotAccess("Params")
@@ -755,10 +755,19 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder.append(Statement.of(declarations.build()));
   }
 
+  protected boolean hasOnlyImplicitParams(TemplateNode node) {
+    for (TemplateParam param : node.getParams()) {
+      if (!param.isImplicit()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   protected JsDoc generateFunctionJsDoc(TemplateNode node, String alias) {
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
 
-    if (node.getParams().isEmpty()) {
+    if (hasOnlyImplicitParams(node)) {
       jsDocBuilder.addParam("opt_data", "?Object<string, *>=");
     } else if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       // All parameters are optional or only owned by an indirect callee; caller doesn't need to
@@ -1478,6 +1487,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Generate members for explicit params.
     Map<String, String> record = new LinkedHashMap<>();
     for (TemplateParam param : node.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       JsType jsType = getJsTypeForParamForDeclaration(param.type());
       record.put(
           param.name(), jsType.typeExprForRecordMember(/* isOptional= */ !param.isRequired()));

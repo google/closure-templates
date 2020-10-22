@@ -40,6 +40,9 @@ public final class ShouldEnsureDataIsDefinedVisitor {
 
     boolean hasOptional = false;
     for (TemplateParam param : template.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       if (param.isRequired()) {
         // If there exists a required param, then data should already be defined (no need to
         // ensure).
@@ -76,6 +79,7 @@ public final class ShouldEnsureDataIsDefinedVisitor {
           // Don't include injected params in this analysis
           if (varRefNode.isPossibleHeaderVar()
               && var.kind() != VarDefn.Kind.STATE
+              && !((TemplateParam) var).isImplicit()
               && (var.kind() != VarDefn.Kind.PARAM // a soydoc param -> not ij
                   || !((TemplateParam) var).isInjected())) { // an {@param but not {@inject
             shouldEnsureDataIsDefined = true;

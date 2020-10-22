@@ -330,7 +330,9 @@ public class SoyFileNodeTransformer {
     Map<String, ParamInfo> params = new LinkedHashMap<>();
 
     for (TemplateParam param : template.getAllParams()) {
-      params.put(param.name(), ParamInfo.of(param, ParamStatus.HANDLED));
+      if (!param.isImplicit()) {
+        params.put(param.name(), ParamInfo.of(param, ParamStatus.HANDLED));
+      }
     }
 
     addIndirectParams(template, params);

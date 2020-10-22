@@ -44,6 +44,7 @@ public final class AttrParam extends TemplateParam implements TemplateHeaderVarD
         sourceLocation,
         typeNode,
         false,
+        false,
         optional,
         desc,
         null);

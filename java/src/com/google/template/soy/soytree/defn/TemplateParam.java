@@ -49,6 +49,12 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   /** Whether the param is an injected param. */
   private final boolean isInjected;
 
+  /**
+   * Whether the param is implicitly added by the Soy framework. These are omitted from the Java
+   * invocation builders and the template JsDoc declarations.
+   */
+  private final boolean isImplicit;
+
   private final boolean isExplicitlyOptional;
 
   @Nullable private final ExprRootNode defaultValue;
@@ -59,12 +65,14 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
       SourceLocation sourceLocation,
       @Nullable TypeNode typeNode,
       boolean isInjected,
+      boolean isImplicit,
       boolean optional,
       @Nullable String desc,
       @Nullable ExprNode defaultValue) {
     super(name, nameLocation, /* type= */ null);
     this.originalTypeNode = typeNode;
     this.isInjected = isInjected;
+    this.isImplicit = isImplicit;
     this.desc = desc;
     this.defaultValue = defaultValue == null ? null : new ExprRootNode(defaultValue);
     this.sourceLocation = sourceLocation;
@@ -105,6 +113,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.typeNode = param.typeNode == null ? null : param.typeNode.copy();
     this.isRequired = param.isRequired;
     this.isInjected = param.isInjected;
+    this.isImplicit = param.isImplicit;
     this.sourceLocation = param.sourceLocation;
     this.desc = param.desc;
     this.isExplicitlyOptional = param.isExplicitlyOptional;
@@ -148,6 +157,11 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   @Override
   public boolean isInjected() {
     return isInjected;
+  }
+
+  /** Returns whether the param is implicit */
+  public boolean isImplicit() {
+    return this.isImplicit;
   }
 
   @Override
