@@ -136,7 +136,7 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
         // goog.soy.data.UnsanitizedText.
         NamedTypeNode.create(SourceLocation.UNKNOWN, "any"),
         /* isInjected= */ true,
-        /* isImplicit = */ true,
+        /* isImplicit = */ false,
         /* optional= */ true,
         /* desc= */ "Created by ContentSecurityPolicyNonceInjectionPass.",
         /* defaultValue= */ null);
