@@ -300,6 +300,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
+  private final boolean allowExtraAttributes;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -333,6 +335,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
     this.attributes = nodeBuilder.getAttributes();
+    this.allowExtraAttributes = nodeBuilder.getAllowExtraAttributes();
   }
 
   /**
@@ -359,6 +362,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.templateMetadata = orig.templateMetadata;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
+    this.allowExtraAttributes = orig.allowExtraAttributes;
   }
 
   private static ImmutableList<TemplateHeaderVarDefn> copyParams(
@@ -385,6 +389,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   @Override
   public List<CommandTagAttribute> getAttributes() {
     return attributes;
+  }
+
+  public boolean getAllowExtraAttributes() {
+    return allowExtraAttributes;
   }
 
   /** Returns a template name suitable for display in user msgs. */
@@ -583,7 +591,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return exprs.build();
   }
 
-  public void addCspNonceParam(TemplateParam cspNonce) {
+  public void addImplicitParam(TemplateParam cspNonce) {
     headerParams =
         ImmutableList.<TemplateHeaderVarDefn>builder().addAll(headerParams).add(cspNonce).build();
   }

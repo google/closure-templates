@@ -1105,6 +1105,7 @@ TOKEN_MGR_DECLS: {
 | < CMD_CLOSE_ELEMENT            : "{/element}" > { resetState(); } : DEFAULT
 
 | < DECL_BEGIN_PARAM             : "{@param"        > : IN_CMD_TAG
+| < DECL_ATTRIBUTE_STAR          : "{@attribute *}" >
 | < DECL_BEGIN_ATTR              : "{@attribute"    > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_ATTR          : "{@attribute?"   > : IN_CMD_TAG
 | < DECL_BEGIN_OPT_PARAM         : "{@param?"       > : IN_CMD_TAG
@@ -2118,6 +2119,11 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
       { whitespace = builder.build(); }
     |
       (
+        <DECL_ATTRIBUTE_STAR>
+        {
+          templateBuilder.setAllowExtraAttributes();
+        }
+        |
         (
             param = ParamDecl(soyDoc)
             |

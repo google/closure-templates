@@ -39,6 +39,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -59,11 +60,14 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.ast.NamedTypeNode;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
@@ -82,6 +86,8 @@ import java.util.function.Supplier;
   AutoescaperPass.class // since it inserts print directives
 })
 final class ElementAttributePass implements CompilerFileSetPass {
+
+  public static final String ATTRIBUTES_HIDDEN_PARAM = "__soyInternalAttributes";
 
   private static final SoyErrorKind UNUSED_ATTRIBUTE =
       SoyErrorKind.of("Declared @attribute unused in template element.");
@@ -159,17 +165,34 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
   }
 
-  private NotOpNode buildNotNull(AttrParam attr) {
-    SourceLocation unknown = attr.getSourceLocation().clearRange();
+  private NotOpNode buildNotNull(VarDefn defn) {
+    SourceLocation unknown = defn.nameLocation().clearRange();
     NotOpNode not = new NotOpNode(unknown, unknown);
     FunctionNode isNull =
         FunctionNode.newPositional(
             Identifier.create("isNull", unknown),
             (SoySourceFunction) pluginResolver.lookupSoyFunction("isNull", 1, unknown),
             unknown);
-    isNull.addChild(new ExprRootNode(new VarRefNode(attr.name(), unknown, attr)));
+    isNull.addChild(new ExprRootNode(new VarRefNode(defn.name(), unknown, defn)));
     not.addChild(isNull);
     return not;
+  }
+
+  private IfNode buildPrintIfNotNull(VarDefn defn, Supplier<Integer> id) {
+    SourceLocation unknown = defn.nameLocation().clearRange();
+    IfNode ifNode = new IfNode(id.get(), unknown);
+    IfCondNode ifCondNode = new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(defn));
+    ifNode.addChild(ifCondNode);
+    PrintNode printNode =
+        new PrintNode(
+            id.get(),
+            unknown,
+            true,
+            new VarRefNode(defn.name(), unknown, defn),
+            ImmutableList.of(),
+            exploding());
+    ifCondNode.addChild(printNode);
+    return ifNode;
   }
 
   private void processTemplate(TemplateNode templateNode, Supplier<Integer> id) {
@@ -223,6 +246,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               }
 
               AttrParam attr = attrs.get(attrName);
+              VarRefNode attrExpr = new VarRefNode(attr.name(), unknown, attr);
               unseenParams.remove(attr);
 
               StandaloneNode replacementNode;
@@ -241,21 +265,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
                 // Creates a conditional around the parameter name
                 // This should look like class="{if not isNull($foo)}{$foo}{/if}"
-                VarRefNode attrExpr = new VarRefNode(attr.name(), unknown, attr);
                 HtmlAttributeValueNode valueNode =
                     new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
                 newAttrNode.addChild(valueNode);
                 // We do not check required here since all += and = are implicitly optional.
-                IfNode ifNode = new IfNode(id.get(), unknown);
+                IfNode ifNode = buildPrintIfNotNull(attr, id);
                 valueNode.addChild(ifNode);
-                IfCondNode ifCondNode =
-                    new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(attr));
-                ifNode.addChild(ifCondNode);
-
-                PrintNode printNode =
-                    new PrintNode(
-                        id.get(), unknown, true, attrExpr, ImmutableList.of(), exploding());
-                ifCondNode.addChild(printNode);
 
                 if (attrNode.getValueStrategy() == ValueStrategy.DEFAULT) {
                   // In the default case, we append an {else}...{/if} for the default case.
@@ -264,7 +279,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   copyChildren(attrNode, ifElseNode);
                 } else {
                   // In the concat case, we add a space and then the default.
-                  ifCondNode.addChild(new RawTextNode(id.get(), " ", unknown));
+                  ifNode.getChild(0).addChild(new RawTextNode(id.get(), " ", unknown));
                   copyChildren(attrNode, valueNode);
                 }
 
@@ -277,7 +292,6 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 }
 
                 // <... @attr ...> rewrite as: {if not isNull($attr)}attr="{$attr}"{/if}
-                ExprNode attrExpr = new VarRefNode(attr.name(), unknown, attr);
                 HtmlAttributeNode newAttrNode =
                     new HtmlAttributeNode(id.get(), unknown, UNKNOWN_POINT);
                 newAttrNode.addChild(new RawTextNode(id.get(), attr.getAttrName(), unknown));
@@ -304,7 +318,26 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
             });
-
+    if (templateNode.getAllowExtraAttributes()) {
+      TemplateParam attrsParam =
+          new TemplateParam(
+              ATTRIBUTES_HIDDEN_PARAM,
+              SourceLocation.UNKNOWN,
+              SourceLocation.UNKNOWN,
+              NamedTypeNode.create(SourceLocation.UNKNOWN, ATTRIBUTES_HIDDEN_PARAM),
+              /* isInjected= */ false,
+              /* isImplicit= */ true,
+              /* optional= */ true,
+              /* desc= */ "Created by ElementAttributePass.",
+              /* defaultValue= */ null);
+      templateNode.addImplicitParam(attrsParam);
+      attrsParam.setType(SanitizedType.AttributesType.getInstance());
+      // To add a whitespace between the tag and the print node. This has no effect in Incremental
+      // DOM.
+      openTagNode.addChild(new RawTextNode(id.get(), " ", unknown));
+      IfNode ifNode = buildPrintIfNotNull(attrsParam, id);
+      openTagNode.addChild(ifNode);
+    }
     warnUnusedAttributes(unseenParams);
   }
 

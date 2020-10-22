@@ -94,6 +94,8 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /** Base CSS namespace for package-relative CSS selectors. */
   private String cssBaseNamespace;
 
+  private boolean allowExtraAttrributes = false;
+
   /**
    * Strict mode context. This is private instead of protected to enforce use of setContentKind().
    */
@@ -149,6 +151,15 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
     checkState(openTagLocation == null);
     this.openTagLocation = checkNotNull(location);
     return self();
+  }
+
+  public T setAllowExtraAttributes() {
+    this.allowExtraAttrributes = true;
+    return self();
+  }
+
+  public boolean getAllowExtraAttributes() {
+    return allowExtraAttrributes;
   }
 
   /**

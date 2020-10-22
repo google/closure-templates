@@ -313,6 +313,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
     TemplateType templateType =
         (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
+    boolean hasAllAttributes = templateType.getAllowAttributes();
     ImmutableMap<String, Parameter> allParamsByAttrName =
         templateType.getParameters().stream()
             .collect(toImmutableMap(p -> Parameter.paramToAttrName(p.getName()), p -> p));
@@ -320,7 +321,8 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     openTagNode.getChildren().stream()
         .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
         .map(HtmlAttributeNode.class::cast)
-        .forEach(a -> validateAttribute(a, seenAttributes::add, allParamsByAttrName));
+        .forEach(
+            a -> validateAttribute(hasAllAttributes, a, seenAttributes::add, allParamsByAttrName));
 
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
@@ -336,27 +338,25 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
               seenSlots::add,
               consumer);
     }
-
     templateType.getParameters().stream()
         .filter(Parameter::isRequired)
         .forEach(
             p -> {
-              if (p.getKind() == ParameterKind.ATTRIBUTE) {
+              if (!hasAllAttributes && p.getKind() == ParameterKind.ATTRIBUTE) {
                 if (!seenAttributes.contains(p.getName())) {
                   errorReporter.report(
                       openTagNode.getSourceLocation(),
                       MISSING_ATTRIBUTE,
                       Parameter.paramToAttrName(p.getName()));
                 }
-              } else {
-                if (!seenSlots.contains(p.getName())) {
-                  errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName());
-                }
+              } else if (!seenSlots.contains(p.getName())) {
+                errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName());
               }
             });
   }
 
   private void validateAttribute(
+      boolean hasAllAttributes,
       HtmlAttributeNode attr,
       Function<String, Boolean> addAttr,
       ImmutableMap<String, Parameter> allParamsByAttrName) {
@@ -375,7 +375,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       if (!addAttr.apply(paramName)) {
         errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_PARAM, name);
         return;
-      } else {
+      } else if (!hasAllAttributes) {
         Parameter param = allParamsByAttrName.get(name);
         if (param == null) {
           String didYouMeanMessage =

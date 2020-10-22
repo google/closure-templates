@@ -20,7 +20,6 @@ import static com.google.common.collect.Streams.stream;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -61,6 +60,8 @@ public abstract class TemplateType extends SoyType {
     }
   }
 
+  public abstract boolean getAllowAttributes();
+
   public abstract TemplateKind getTemplateKind();
 
   public abstract TemplateContentKind getContentKind();
@@ -88,6 +89,8 @@ public abstract class TemplateType extends SoyType {
   /** Builder pattern. */
   @AutoValue.Builder
   public abstract static class Builder {
+
+    public abstract Builder setAllowAttributes(boolean allowAttributes);
 
     public abstract Builder setTemplateKind(TemplateKind templateKind);
 
@@ -300,6 +303,7 @@ public abstract class TemplateType extends SoyType {
         .setDataAllCallSituations(ImmutableList.of())
         .setIdentifierForDebugging(stringRepresentation(parameters, templateContentKind))
         .setInferredType(false)
+        .setAllowAttributes(false)
         .build();
   }
 
@@ -375,8 +379,6 @@ public abstract class TemplateType extends SoyType {
 
   @Override
   final void doToProto(SoyTypeP.Builder builder) {
-    Preconditions.checkState(
-        !isInferredType(), "Only declared types may be serialized to proto form.");
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
     for (Parameter parameter : getParameters()) {
       // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
@@ -392,6 +394,15 @@ public abstract class TemplateType extends SoyType {
     }
     SoyTypeP returnType =
         SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind()).toProto();
+    if (getAllowAttributes()) {
+      returnType =
+          SoyTypeP.newBuilder(returnType)
+              .setHtml(
+                  returnType.getHtml().toBuilder()
+                      .setAllowExtraAttributes(true)
+                      .setIsElement(returnType.getHtml().getIsElement()))
+              .build();
+    }
     // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
     templateBuilder.setReturnTypeOld(returnType.getPrimitive()).setReturnType(returnType);
   }

@@ -131,7 +131,20 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             ImmutableList.of(),
             false,
             errorReporter);
-
+    TemplateType templateType = (TemplateType) call.getCalleeExpr().getRoot().getType();
+    CallParamContentNode attributesNode =
+        new CallParamContentNode(
+            nodeIdGen.genId(),
+            location,
+            SourceLocation.UNKNOWN,
+            Identifier.create(ElementAttributePass.ATTRIBUTES_HIDDEN_PARAM, SourceLocation.UNKNOWN),
+            new CommandTagAttribute(
+                Identifier.create("kind", SourceLocation.UNKNOWN),
+                QuoteStyle.SINGLE,
+                "attributes",
+                SourceLocation.UNKNOWN,
+                SourceLocation.UNKNOWN),
+            errorReporter);
     if (!tagNode.getTaggedPairs().isEmpty()) {
       HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
       SoyNode next = SoyTreeUtils.nextSibling(tagNode);
@@ -144,7 +157,6 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     call.setHtmlContext(HtmlContext.HTML_PCDATA);
     tagNode.getParent().replaceChild(tagNode, call);
 
-    TemplateType templateType = (TemplateType) call.getCalleeExpr().getRoot().getType();
     Map<String, SoyType> parameterMap = templateType.getParameterMap();
 
     Set<String> seenAttr = new HashSet<>();
@@ -156,7 +168,12 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                   && ((HtmlAttributeNode) c).getStaticKey() != null) {
                 CallParamNode param =
                     consumeAttribute(
-                        (HtmlAttributeNode) c, nodeIdGen, seenAttr, parameterMap, attrs);
+                        (HtmlAttributeNode) c,
+                        nodeIdGen,
+                        seenAttr,
+                        parameterMap,
+                        attrs,
+                        attributesNode);
                 if (param != null) {
                   call.addChild(param);
                 }
@@ -164,6 +181,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
               }
             });
+    if (attributesNode.numChildren() > 0) {
+      call.addChild(attributesNode);
+    }
   }
 
   private SoyNode consumeSlot(CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
@@ -204,7 +224,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       IdGenerator nodeIdGen,
       Set<String> seenAttr,
       Map<String, SoyType> parameterMap,
-      Map<String, AttrParam> attrs) {
+      Map<String, AttrParam> attrs,
+      CallParamContentNode attributesNode) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();
 
     String attrName = attr.getStaticKey();
@@ -219,6 +240,10 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     }
 
     String paramName = Parameter.attrToParamName(attrName);
+    if (!parameterMap.containsKey(paramName)) {
+      attributesNode.addChild(attr.copy(new CopyState()));
+      return null;
+    }
     if (isSoyAttr) {
       ExprNode val = new VarRefNode(paramName, unknown, attrs.get(paramName));
       return new CallParamValueNode(

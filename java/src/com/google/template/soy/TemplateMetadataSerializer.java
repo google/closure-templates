@@ -158,14 +158,7 @@ public final class TemplateMetadataSerializer {
                     : CONTENT_KIND_CONVERTER
                         .reverse()
                         .convert(templateType.getContentKind().getSanitizedContentKind()))
-            .setTemplateType(
-                SoyTypeP.TemplateTypeP.newBuilder()
-                    .setReturnType(
-                        SanitizedType.getTypeForContentKind(
-                                templateType.getContentKind().getSanitizedContentKind())
-                            .toProto())
-                    .addAllParameter(protosFromParameters(templateType.getParameters()))
-                    .build())
+            .setTemplateType(templateType.toProto().getTemplate())
             .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
             .setStrictHtml(templateType.isStrictHtml())
             .addAllDataAllCallSituation(
@@ -231,6 +224,12 @@ public final class TemplateMetadataSerializer {
                             ? SanitizedContentKind.TEXT
                             : ((SanitizedType) returnType).getContentKind()))
                 .setStrictHtml(templateProto.getStrictHtml())
+                .setAllowAttributes(
+                    templateProto
+                        .getTemplateType()
+                        .getReturnType()
+                        .getHtml()
+                        .getAllowExtraAttributes())
                 .setDataAllCallSituations(
                     callSituationsFromProto(templateProto.getDataAllCallSituationList(), fileProto))
                 .setParameters(
