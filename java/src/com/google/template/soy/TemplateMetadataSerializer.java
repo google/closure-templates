@@ -205,9 +205,8 @@ public final class TemplateMetadataSerializer {
         throw new AssertionError();
     }
 
-    SoyType returnType =
-        fromProto(
-            templateProto.getTemplateType().getReturnType(), typeRegistry, filePath, errorReporter);
+    SoyTypeP returnTypeP = templateProto.getTemplateType().getReturnType();
+    SoyType returnType = fromProto(returnTypeP, typeRegistry, filePath, errorReporter);
 
     return builder
         .setTemplateName(templateName)
@@ -224,12 +223,9 @@ public final class TemplateMetadataSerializer {
                             ? SanitizedContentKind.TEXT
                             : ((SanitizedType) returnType).getContentKind()))
                 .setStrictHtml(templateProto.getStrictHtml())
-                .setAllowAttributes(
-                    templateProto
-                        .getTemplateType()
-                        .getReturnType()
-                        .getHtml()
-                        .getAllowExtraAttributes())
+                .setAllowExtraAttributes(returnTypeP.getHtml().getAllowExtraAttributes())
+                .setReservedAttributes(
+                    ImmutableSet.copyOf(returnTypeP.getHtml().getReservedAttributesList()))
                 .setDataAllCallSituations(
                     callSituationsFromProto(templateProto.getDataAllCallSituationList(), fileProto))
                 .setParameters(

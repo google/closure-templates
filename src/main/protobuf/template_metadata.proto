@@ -58,6 +58,7 @@ message SoyTypeP {
   message HtmlTypeP {
     bool is_element = 1;
     bool allow_extra_attributes = 2;
+    repeated string reserved_attributes = 3;
     // TODO(user): Add tag name.
   }
   message RecordTypeP {

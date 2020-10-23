@@ -62,7 +62,8 @@ public abstract class TemplateMetadata {
             .setTemplateType(
                 TemplateType.builder()
                     .setTemplateKind(convertKind(template.getKind()))
-                    .setAllowAttributes(template.getAllowExtraAttributes())
+                    .setAllowExtraAttributes(template.getAllowExtraAttributes())
+                    .setReservedAttributes(template.getReservedAttributes())
                     .setContentKind(
                         TemplateContentKind.fromSanitizedContentKind(template.getContentKind()))
                     .setStrictHtml(template.isStrictHtml())

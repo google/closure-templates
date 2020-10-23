@@ -15,8 +15,9 @@
  */
 package com.google.template.soy.types;
 
+import static com.google.common.base.Functions.identity;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
-import static com.google.common.collect.Streams.stream;
+import static java.util.stream.Collectors.joining;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.CaseFormat;
@@ -30,12 +31,16 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 /** Template type, containing a list of named, typed parameters and a return type. */
 @AutoValue
 public abstract class TemplateType extends SoyType {
+
+  public static final String ATTRIBUTES_HIDDEN_PARAM = "__soyInternalAttributes";
+
   /** The kind of template. */
   public enum TemplateKind {
     BASIC,
@@ -60,7 +65,9 @@ public abstract class TemplateType extends SoyType {
     }
   }
 
-  public abstract boolean getAllowAttributes();
+  public abstract boolean getAllowExtraAttributes();
+
+  public abstract ImmutableSet<String> getReservedAttributes();
 
   public abstract TemplateKind getTemplateKind();
 
@@ -71,7 +78,7 @@ public abstract class TemplateType extends SoyType {
   public abstract ImmutableList<Parameter> getParameters();
 
   public final ImmutableMap<String, SoyType> getParameterMap() {
-    return stream(getParameters()).collect(toImmutableMap(Parameter::getName, Parameter::getType));
+    return getParameters().stream().collect(toImmutableMap(Parameter::getName, Parameter::getType));
   }
 
   public abstract ImmutableList<DataAllCallSituation> getDataAllCallSituations();
@@ -90,7 +97,9 @@ public abstract class TemplateType extends SoyType {
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder setAllowAttributes(boolean allowAttributes);
+    public abstract Builder setAllowExtraAttributes(boolean allowAttributes);
+
+    public abstract Builder setReservedAttributes(ImmutableSet<String> attributes);
 
     public abstract Builder setTemplateKind(TemplateKind templateKind);
 
@@ -305,9 +314,11 @@ public abstract class TemplateType extends SoyType {
         .setParameters(ImmutableList.copyOf(parameters))
         // data=all is banned on declared templates.
         .setDataAllCallSituations(ImmutableList.of())
-        .setIdentifierForDebugging(stringRepresentation(parameters, templateContentKind))
+        .setIdentifierForDebugging(
+            stringRepresentation(parameters, templateContentKind, ImmutableSet.of()))
         .setInferredType(false)
-        .setAllowAttributes(false)
+        .setAllowExtraAttributes(false)
+        .setReservedAttributes(ImmutableSet.of())
         .build();
   }
 
@@ -319,47 +330,69 @@ public abstract class TemplateType extends SoyType {
   @Override
   final boolean doIsAssignableFromNonUnionType(
       SoyType srcType, UnknownAssignmentPolicy unknownPolicy) {
-    if (srcType.getKind() == SoyType.Kind.TEMPLATE) {
-      TemplateType srcTemplate = (TemplateType) srcType;
-      // The source template type's arguments must be a superset of this type's arguments (possibly
-      // containing some optional parameters omitted from this type).
-      if (!srcTemplate.getParameterMap().keySet().containsAll(this.getParameterMap().keySet())) {
-        return false;
-      }
-      for (Parameter srcParameter : srcTemplate.getParameters()) {
-        if (!this.getParameterMap().containsKey(srcParameter.getName())) {
-          if (srcParameter.isRequired()) {
-            return false;
-          }
-        } else {
-          SoyType thisParameterType = this.getParameterMap().get(srcParameter.getName());
-          // Check that each argument of the source type is assignable FROM the corresponding
-          // argument
-          // of this type. This is because the parameter types are constraints; assignability of a
-          // template type is only possible when the constraints of the from-type are narrower.
-          if (!srcParameter.getType().isAssignableFromInternal(thisParameterType, unknownPolicy)) {
-            return false;
-          }
+    if (srcType.getKind() != SoyType.Kind.TEMPLATE) {
+      return false;
+    }
+
+    TemplateType srcTemplate = (TemplateType) srcType;
+
+    Map<String, Parameter> thisParams =
+        getParameters().stream().collect(toImmutableMap(Parameter::getName, identity()));
+    Map<String, Parameter> srcParams =
+        srcTemplate.getParameters().stream()
+            .collect(toImmutableMap(Parameter::getName, identity()));
+
+    // The source template type's arguments must be a superset of this type's arguments (possibly
+    // containing some optional parameters omitted from this type).
+    for (Parameter thisParam : getParameters()) {
+      if (thisParam.getKind() == ParameterKind.ATTRIBUTE) {
+        if (!(srcParams.containsKey(thisParam.getName())
+            || (srcTemplate.getAllowExtraAttributes()
+                && !srcTemplate
+                    .getReservedAttributes()
+                    .contains(Parameter.paramToAttrName(thisParam.getName()))))) {
+          return false;
+        }
+      } else {
+        if (!srcParams.containsKey(thisParam.getName())) {
+          return false;
         }
       }
-      // TODO(b/167574941): Add element support.
-      SanitizedContentKind thisKind = this.getContentKind().getSanitizedContentKind();
-      SanitizedContentKind srcKind = srcTemplate.getContentKind().getSanitizedContentKind();
-      if (!thisKind.isAssignableFrom(srcKind)) {
-        return false;
-      }
-      return true;
     }
-    return false;
+
+    for (Parameter srcParam : srcTemplate.getParameters()) {
+      Parameter thisParam = thisParams.get(srcParam.getName());
+      if (thisParam == null) {
+        if (srcParam.isRequired()) {
+          return false;
+        }
+      } else {
+        // Check that each argument of the source type is assignable FROM the corresponding
+        // argument of this type. This is because the parameter types are constraints; assignability
+        // of a template type is only possible when the constraints of the from-type are narrower.
+        if (!srcParam.getType().isAssignableFromInternal(thisParam.getType(), unknownPolicy)) {
+          return false;
+        }
+      }
+    }
+    // TODO(b/167574941): Add element support.
+    SanitizedContentKind thisKind = this.getContentKind().getSanitizedContentKind();
+    SanitizedContentKind srcKind = srcTemplate.getContentKind().getSanitizedContentKind();
+    if (!thisKind.isAssignableFrom(srcKind)) {
+      return false;
+    }
+    return true;
   }
 
   @Override
   public final String toString() {
-    return stringRepresentation(getParameters(), getContentKind());
+    return stringRepresentation(getParameters(), getContentKind(), getReservedAttributes());
   }
 
   static String stringRepresentation(
-      Iterable<Parameter> parameters, TemplateContentKind contentKind) {
+      Iterable<Parameter> parameters,
+      TemplateContentKind contentKind,
+      ImmutableSet<String> reservedAttributes) {
     StringBuilder sb = new StringBuilder();
     sb.append("(");
     boolean first = true;
@@ -369,10 +402,19 @@ public abstract class TemplateType extends SoyType {
       } else {
         sb.append(", ");
       }
-      if (parameter.isImplicit()) {
-        sb.append("(implicit)");
+      String name = parameter.getName();
+      if (parameter.getKind() == ParameterKind.ATTRIBUTE) {
+        name = "@" + Parameter.paramToAttrName(name);
       }
-      sb.append(parameter.getName());
+      if (ATTRIBUTES_HIDDEN_PARAM.equals(name)) {
+        name = "*";
+        if (!reservedAttributes.isEmpty()) {
+          name += "-{" + reservedAttributes.stream().map(a -> "@" + a).collect(joining(", ")) + "}";
+        }
+      } else if (parameter.isImplicit()) {
+        name = "(implicit)" + name;
+      }
+      sb.append(name);
       if (!parameter.isRequired()) {
         sb.append("?");
       }
@@ -402,12 +444,13 @@ public abstract class TemplateType extends SoyType {
     }
     SoyTypeP returnType =
         SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind()).toProto();
-    if (getAllowAttributes()) {
+    if (getAllowExtraAttributes()) {
       returnType =
           SoyTypeP.newBuilder(returnType)
               .setHtml(
                   returnType.getHtml().toBuilder()
                       .setAllowExtraAttributes(true)
+                      .addAllReservedAttributes(getReservedAttributes())
                       .setIsElement(returnType.getHtml().getIsElement()))
               .build();
     }

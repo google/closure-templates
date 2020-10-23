@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.template.soy.base.SourceLocation.Point.UNKNOWN_POINT;
 import static com.google.template.soy.error.ErrorReporter.exploding;
+import static java.util.stream.Collectors.toMap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -39,6 +40,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -50,6 +52,7 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -67,13 +70,18 @@ import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
+import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.ast.NamedTypeNode;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Enforces rules on the usage of @attribute parameters within a template. Rewrites templates for
@@ -86,8 +94,6 @@ import java.util.function.Supplier;
   AutoescaperPass.class // since it inserts print directives
 })
 final class ElementAttributePass implements CompilerFileSetPass {
-
-  public static final String ATTRIBUTES_HIDDEN_PARAM = "__soyInternalAttributes";
 
   private static final SoyErrorKind UNUSED_ATTRIBUTE =
       SoyErrorKind.of("Declared @attribute unused in template element.");
@@ -132,10 +138,17 @@ final class ElementAttributePass implements CompilerFileSetPass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     checkAttributeTypes(file);
 
+    Set<TemplateNode> delegatingElementsWithAllAttrs = new HashSet<>();
+    Map<String, TemplateNode> allTemplatesThisCompile = new HashMap<>();
+
     // Rewrite all @attribute values in root elements.
     SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
         .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
-        .forEach(t -> processTemplate(t, nodeIdGen::genId));
+        .forEach(
+            t -> {
+              allTemplatesThisCompile.put(t.getTemplateName(), t);
+              processTemplate(t, nodeIdGen::genId, delegatingElementsWithAllAttrs);
+            });
 
     // All other @attributes (outside of root elements) are illegal.
     SoyTreeUtils.getAllNodesOfType(file, HtmlAttributeNode.class).stream()
@@ -145,6 +158,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
             attr ->
                 errorReporter.report(
                     attr.getSourceLocation(), ATTRIBUTE_PARAM_NOT_ALLOWED, attr.getStaticKey()));
+
+    if (!delegatingElementsWithAllAttrs.isEmpty()) {
+      updateReservedAttributesForDelegateCalls(
+          delegatingElementsWithAllAttrs, allTemplatesThisCompile, file.getTemplateRegistry());
+    }
   }
 
   private static final ImmutableSet<SoyType> ALLOWED_ATTR_TYPES =
@@ -195,7 +213,10 @@ final class ElementAttributePass implements CompilerFileSetPass {
     return ifNode;
   }
 
-  private void processTemplate(TemplateNode templateNode, Supplier<Integer> id) {
+  private void processTemplate(
+      TemplateNode templateNode,
+      Supplier<Integer> id,
+      Set<TemplateNode> delegatingElementsWithAllAttrs) {
     ImmutableMap<String, AttrParam> attrs =
         templateNode.getAllParams().stream()
             .filter(p -> p instanceof AttrParam)
@@ -213,7 +234,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
     SourceLocation unknown = templateNode.getSourceLocation().clearRange();
 
     HtmlOpenTagNode openTagNode = elmOpen.get();
-    boolean iAmAnElementCallingAnElement = isElementCall(openTagNode);
+    String delegateTemplateName = getElementCall(openTagNode);
+    boolean iAmAnElementCallingAnElement = delegateTemplateName != null;
+    ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
 
     openTagNode.getChildren().stream()
         .filter(p -> p.getKind() == Kind.HTML_ATTRIBUTE_NODE)
@@ -227,6 +250,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
               String attrName = isSoyAttr ? attrKey.substring(1) : attrKey;
 
               if (!isSoyAttr) {
+                foundNormalAttr.add(attrName);
+
                 // e.g. Not allowed to write aria-label= if @aria-label is in scope.
                 if (attrs.containsKey(attrName)) {
                   errorReporter.report(
@@ -318,13 +343,19 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
             });
+
     if (templateNode.getAllowExtraAttributes()) {
+      templateNode.setReservedAttributes(foundNormalAttr.build());
+      if (iAmAnElementCallingAnElement) {
+        delegatingElementsWithAllAttrs.add(templateNode);
+      }
+
       TemplateParam attrsParam =
           new TemplateParam(
-              ATTRIBUTES_HIDDEN_PARAM,
+              TemplateType.ATTRIBUTES_HIDDEN_PARAM,
               SourceLocation.UNKNOWN,
               SourceLocation.UNKNOWN,
-              NamedTypeNode.create(SourceLocation.UNKNOWN, ATTRIBUTES_HIDDEN_PARAM),
+              NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM),
               /* isInjected= */ false,
               /* isImplicit= */ true,
               /* optional= */ true,
@@ -338,19 +369,74 @@ final class ElementAttributePass implements CompilerFileSetPass {
       IfNode ifNode = buildPrintIfNotNull(attrsParam, id);
       openTagNode.addChild(ifNode);
     }
+
     warnUnusedAttributes(unseenParams);
   }
 
-  private static boolean isElementCall(HtmlOpenTagNode openTag) {
+  private void updateReservedAttributesForDelegateCalls(
+      Set<TemplateNode> templates,
+      Map<String, TemplateNode> localTemplateLookup,
+      ImportsTemplateRegistry templateRegistry) {
+
+    Map<String, String> templateFqnCall =
+        templates.stream()
+            .collect(toMap(TemplateNode::getTemplateName, ElementAttributePass::getElementCall));
+
+    // Simple topological sort.
+    while (!templateFqnCall.isEmpty()) {
+      List<Map.Entry<String, String>> leaves =
+          templateFqnCall.entrySet().stream()
+              .filter(e -> !templateFqnCall.containsKey(e.getValue()))
+              .collect(Collectors.toList());
+      if (leaves.isEmpty()) {
+        throw new IllegalArgumentException("Cyclical graph: " + templateFqnCall);
+      }
+      for (Map.Entry<String, String> leaf : leaves) {
+        TemplateNode caller = localTemplateLookup.get(leaf.getKey());
+        TemplateNode callee = localTemplateLookup.get(leaf.getValue());
+        ImmutableSet<String> reservedAttr;
+        if (callee != null) {
+          reservedAttr = callee.getReservedAttributes();
+        } else {
+          reservedAttr =
+              templateRegistry
+                  .getBasicTemplateOrElement(leaf.getValue())
+                  .getTemplateType()
+                  .getReservedAttributes();
+        }
+        caller.setReservedAttributes(
+            ImmutableSet.<String>builder()
+                .addAll(caller.getReservedAttributes())
+                .addAll(reservedAttr)
+                .build());
+        templateFqnCall.remove(leaf.getKey());
+      }
+    }
+  }
+
+  private static String getElementCall(TemplateNode templateNode) {
+    return getElementCall(getElementOpen(templateNode).get());
+  }
+
+  private static String getElementCall(HtmlOpenTagNode openTag) {
     // The normal TagName.isTemplateCall() doesn't work this early in the pass manager.
     TagName tagName = openTag.getTagName();
     if (tagName.isStatic()) {
-      return false;
+      return null;
     }
     PrintNode printNode = tagName.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
-    return exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
-        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind");
+    if (!(exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
+        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind"))) {
+      return null;
+    }
+
+    MethodCallNode bind = (MethodCallNode) exprNode;
+    if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
+      return null;
+    }
+
+    return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
   }
 
   private static void copyChildren(HtmlAttributeNode from, ParentSoyNode<StandaloneNode> to) {

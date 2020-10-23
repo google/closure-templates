@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -302,6 +303,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private final boolean allowExtraAttributes;
 
+  private ImmutableSet<String> reservedAttributes;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -335,7 +338,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
     this.attributes = nodeBuilder.getAttributes();
-    this.allowExtraAttributes = nodeBuilder.getAllowExtraAttributes();
+    this.allowExtraAttributes = nodeBuilder.allowExtraAttributes;
+    this.reservedAttributes = ImmutableSet.of();
   }
 
   /**
@@ -363,6 +367,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     this.allowExtraAttributes = orig.allowExtraAttributes;
+    this.reservedAttributes = orig.reservedAttributes;
   }
 
   private static ImmutableList<TemplateHeaderVarDefn> copyParams(
@@ -393,6 +398,14 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   public boolean getAllowExtraAttributes() {
     return allowExtraAttributes;
+  }
+
+  public ImmutableSet<String> getReservedAttributes() {
+    return reservedAttributes;
+  }
+
+  public void setReservedAttributes(ImmutableSet<String> reservedAttributes) {
+    this.reservedAttributes = reservedAttributes;
   }
 
   /** Returns a template name suitable for display in user msgs. */

@@ -22,6 +22,7 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
@@ -120,6 +121,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
   private static final SoyErrorKind NON_STATIC_ATTRIBUTE_NAME =
       SoyErrorKind.of("Element call attribute names must be static.");
+
+  private static final SoyErrorKind NEGATIVE_ATTRIBUTE =
+      SoyErrorKind.of("Callee template does not allow attribute ''{0}''.");
 
   private static final SoyErrorKind PARAM_AS_ATTRIBUTE =
       SoyErrorKind.of("Param ''{0}'' may not be set as an attribute.");
@@ -313,7 +317,8 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
     TemplateType templateType =
         (TemplateType) openTagNode.getTagName().getDynamicTagName().getExpr().getType();
-    boolean hasAllAttributes = templateType.getAllowAttributes();
+    boolean hasAllAttributes = templateType.getAllowExtraAttributes();
+    ImmutableSet<String> reservedAttributes = templateType.getReservedAttributes();
     ImmutableMap<String, Parameter> allParamsByAttrName =
         templateType.getParameters().stream()
             .collect(toImmutableMap(p -> Parameter.paramToAttrName(p.getName()), p -> p));
@@ -322,7 +327,13 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
         .map(HtmlAttributeNode.class::cast)
         .forEach(
-            a -> validateAttribute(hasAllAttributes, a, seenAttributes::add, allParamsByAttrName));
+            a ->
+                validateAttribute(
+                    a,
+                    seenAttributes::add,
+                    allParamsByAttrName,
+                    hasAllAttributes,
+                    reservedAttributes));
 
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
@@ -356,13 +367,15 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   }
 
   private void validateAttribute(
-      boolean hasAllAttributes,
       HtmlAttributeNode attr,
       Function<String, Boolean> addAttr,
-      ImmutableMap<String, Parameter> allParamsByAttrName) {
+      ImmutableMap<String, Parameter> allParamsByAttrName,
+      boolean hasAllAttributes,
+      ImmutableSet<String> reservedAttributes) {
     String name = attr.getStaticKey();
+    SourceLocation loc = attr.getChild(0).getSourceLocation();
     if (name == null) {
-      errorReporter.report(attr.getChild(0).getSourceLocation(), NON_STATIC_ATTRIBUTE_NAME);
+      errorReporter.report(loc, NON_STATIC_ATTRIBUTE_NAME);
       return;
     }
 
@@ -373,7 +386,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     if (Parameter.isValidAttrName(name)) {
       String paramName = Parameter.attrToParamName(name);
       if (!addAttr.apply(paramName)) {
-        errorReporter.report(attr.getChild(0).getSourceLocation(), DUPLICATE_PARAM, name);
+        errorReporter.report(loc, DUPLICATE_PARAM, name);
         return;
       } else if (!hasAllAttributes) {
         Parameter param = allParamsByAttrName.get(name);
@@ -385,17 +398,18 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                       .map(Map.Entry::getKey)
                       .collect(Collectors.toList()),
                   name);
-          errorReporter.report(
-              attr.getChild(0).getSourceLocation(), NO_SUCH_ATTRIBUTE, didYouMeanMessage);
+          errorReporter.report(loc, NO_SUCH_ATTRIBUTE, didYouMeanMessage);
           return;
         } else if (param.getKind() != ParameterKind.ATTRIBUTE) {
-          errorReporter.report(
-              attr.getChild(0).getSourceLocation(), PARAM_AS_ATTRIBUTE, param.getName());
+          errorReporter.report(loc, PARAM_AS_ATTRIBUTE, param.getName());
           return;
         }
+      } else if (reservedAttributes.contains(name)) {
+        errorReporter.report(loc, NEGATIVE_ATTRIBUTE, name);
+        return;
       }
     } else {
-      errorReporter.report(attr.getChild(0).getSourceLocation(), BAD_ATTRIBUTE_NAME);
+      errorReporter.report(loc, BAD_ATTRIBUTE_NAME);
       return;
     }
 
