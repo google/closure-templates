@@ -591,9 +591,9 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return exprs.build();
   }
 
-  public void addImplicitParam(TemplateParam cspNonce) {
+  public void addParam(TemplateParam param) {
     headerParams =
-        ImmutableList.<TemplateHeaderVarDefn>builder().addAll(headerParams).add(cspNonce).build();
+        ImmutableList.<TemplateHeaderVarDefn>builder().addAll(headerParams).add(param).build();
   }
 
   public ImmutableList<TemplateHeaderVarDefn> getHeaderParams() {

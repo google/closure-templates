@@ -330,7 +330,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               /* optional= */ true,
               /* desc= */ "Created by ElementAttributePass.",
               /* defaultValue= */ null);
-      templateNode.addImplicitParam(attrsParam);
+      templateNode.addParam(attrsParam);
       attrsParam.setType(SanitizedType.AttributesType.getInstance());
       // To add a whitespace between the tag and the print node. This has no effect in Incremental
       // DOM.

@@ -111,7 +111,7 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
         if (isTagNonceable(openTag)) {
           if (defn == null) {
             defn = createDefn();
-            template.addImplicitParam(defn);
+            template.addParam(defn);
           }
           // this should point to the character immediately before the '>' or '/>' at the end of the
           // open tag
