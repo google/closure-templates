@@ -17,7 +17,7 @@
 package com.google.template.soy.invocationbuilders.passes;
 
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
-import static com.google.template.soy.invocationbuilders.passes.InvocationBuilderTypeUtils.upcastTypesForIndirectParams;
+import static com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils.upcastTypesForIndirectParams;
 import static com.google.template.soy.shared.internal.gencode.JavaGenerationUtils.makeUpperCamelCase;
 
 import com.google.auto.value.AutoValue;
@@ -31,6 +31,7 @@ import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.invocationbuilders.javatypes.JavaType;
+import com.google.template.soy.invocationbuilders.javatypes.JavaTypeUtils;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer.ParamStatus;
 import com.google.template.soy.passes.IndirectParamsCalculator;
 import com.google.template.soy.passes.IndirectParamsCalculator.IndirectParamsInfo;
@@ -66,6 +67,14 @@ import java.util.stream.Collectors;
  */
 public class SoyFileNodeTransformer {
   public static final ImmutableList<String> RESERVED_IDENTIFIERS = ImmutableList.of("Builder");
+
+  // Soy types that are not supported for invocation builders.
+  private static final ImmutableSet<SoyType.Kind> UNSUPPORTED_SOY_TYPES =
+      ImmutableSet.of(
+          SoyType.Kind.TEMPLATE,
+          SoyType.Kind.NAMED_TEMPLATE,
+          SoyType.Kind.VE,
+          SoyType.Kind.VE_DATA);
 
   /** The transformed {@link SoyFileNode}. */
   @AutoValue
@@ -275,7 +284,7 @@ public class SoyFileNodeTransformer {
     }
 
     public List<JavaType> javaTypes() {
-      return InvocationBuilderTypeUtils.getJavaTypes(type());
+      return JavaTypeUtils.getJavaTypes(type(), UNSUPPORTED_SOY_TYPES);
     }
 
     public boolean required() {
@@ -399,7 +408,7 @@ public class SoyFileNodeTransformer {
       String paramName = entry.getKey();
       ParamInfo param = entry.getValue();
 
-      if (InvocationBuilderTypeUtils.isJavaIncompatible(param.type())) {
+      if (JavaTypeUtils.isJavaIncompatible(param.type())) {
         changeParamStatus(params, paramName, ParamStatus.JAVA_INCOMPATIBLE);
         continue;
       }

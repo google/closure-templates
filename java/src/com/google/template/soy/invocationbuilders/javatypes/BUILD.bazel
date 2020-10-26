@@ -8,6 +8,7 @@ java_library(
     deps = [
         "//java/src/com/google/template/soy/data:codegen",
         "//java/src/com/google/template/soy/data:template",
+        "//java/src/com/google/template/soy/types",
         "//java/src/com/google/template/soy/internal/proto",
         "@com_google_protobuf//:protobuf_java",
         "@maven//:com_google_errorprone_error_prone_annotations",
