@@ -252,8 +252,10 @@ public final class GenerateParseInfoVisitor
             convertToUpperUnderscore(template.getLocalTemplateSymbol()), template);
       }
       for (TemplateParam param : template.getParams()) {
-        allParamKeys.add(param.name());
-        paramKeyToTemplatesMultimap.put(param.name(), template);
+        if (!param.isImplicit()) {
+          allParamKeys.add(param.name());
+          paramKeyToTemplatesMultimap.put(param.name(), template);
+        }
       }
     }
     SortedSet<String> protoTypes =
@@ -471,7 +473,9 @@ public final class GenerateParseInfoVisitor
     Set<String> directParamNames = Sets.newHashSet();
     // Direct params.
     for (TemplateParam param : node.getParams()) {
-      directParamNames.add(param.name());
+      if (!param.isImplicit()) {
+        directParamNames.add(param.name());
+      }
     }
 
     TemplateMetadata nodeMetadata = templateRegistry.getMetadata(node);
@@ -517,6 +521,9 @@ public final class GenerateParseInfoVisitor
     boolean hasSwitchedToIndirectParams = false;
     // Direct params.
     for (TemplateParam param : node.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       if (!hasSeenFirstDirectParam) {
         ilb.appendLine();
         hasSeenFirstDirectParam = true;
@@ -584,6 +591,9 @@ public final class GenerateParseInfoVisitor
           Iterables.concat(
               nodeMetadata.getTemplateType().getParameters(),
               indirectParamsInfo.indirectParams.values())) {
+        if (param.isImplicit()) {
+          continue;
+        }
         if (seenParams.add(param.getName())) {
           entrySnippetPairs.put(
               "\"" + param.getName() + "\"",
