@@ -36,6 +36,7 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -462,6 +463,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   private String getDeclName(TemplateHeaderVarDefn headerVar) {
     if (headerVar instanceof TemplateStateVar) {
       return "@state";
+    } else if (headerVar instanceof AttrParam) {
+      return "@attribute";
     } else if (headerVar.isInjected()) {
       return "@inject";
     } else {
