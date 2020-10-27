@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceFilePath;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
@@ -44,6 +45,8 @@ public final class SoyPySrcOptions implements Cloneable {
 
   private final ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths;
 
+  private final Optional<Path> outputDirectoryFlag;
+
   /** The name of a manifest file to generate, or null. */
   @Nullable private final String namespaceManifestFile;
 
@@ -54,6 +57,7 @@ public final class SoyPySrcOptions implements Cloneable {
       String translationClass,
       ImmutableMap<String, String> namespaceManifest,
       ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths,
+      Optional<Path> outputDirectoryFlag,
       String namespaceManifestFile) {
     this.runtimePath = runtimePath;
     this.environmentModulePath = environmentModulePath;
@@ -61,6 +65,7 @@ public final class SoyPySrcOptions implements Cloneable {
     this.translationClass = translationClass;
     this.namespaceManifest = namespaceManifest;
     this.inputToOutputFilePaths = inputToOutputFilePaths;
+    this.outputDirectoryFlag = outputDirectoryFlag;
     this.namespaceManifestFile = namespaceManifestFile;
   }
 
@@ -71,6 +76,7 @@ public final class SoyPySrcOptions implements Cloneable {
     this.translationClass = orig.translationClass;
     this.namespaceManifest = orig.namespaceManifest;
     this.inputToOutputFilePaths = orig.inputToOutputFilePaths;
+    this.outputDirectoryFlag = orig.outputDirectoryFlag;
     this.namespaceManifestFile = orig.namespaceManifestFile;
   }
 
@@ -101,6 +107,11 @@ public final class SoyPySrcOptions implements Cloneable {
 
   public ImmutableMap<SourceFilePath, Path> getInputToOutputFilePaths() {
     return inputToOutputFilePaths;
+  }
+
+  /** Returns the genfiles root directory (e.g. "blaze-out/k8-opt/bin/"). */
+  public Optional<Path> getOutputDirectoryFlag() {
+    return outputDirectoryFlag;
   }
 
   @Override

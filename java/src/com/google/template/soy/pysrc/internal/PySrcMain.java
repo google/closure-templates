@@ -41,6 +41,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Main entry point for the Python Src backend (output target).
@@ -102,7 +103,10 @@ public final class PySrcMain {
     // Generate the manifest and add it to the current manifest.
     ImmutableMap<String, String> manifest =
         generateManifest(
-            getSoyNamespaces(soyTree), pySrcOptions.getInputToOutputFilePaths(), errorReporter);
+            getSoyNamespaces(soyTree),
+            pySrcOptions.getInputToOutputFilePaths(),
+            pySrcOptions.getOutputDirectoryFlag(),
+            errorReporter);
 
     // Generate the Python source.
     List<String> pyFileContents = genPySrc(soyTree, pySrcOptions, manifest, errorReporter);
@@ -135,12 +139,13 @@ public final class PySrcMain {
   private static ImmutableMap<String, String> generateManifest(
       Map<SourceFilePath, String> soyNamespaces,
       Map<SourceFilePath, Path> inputToOutputPaths,
+      Optional<Path> outputDirectoryFlag,
       ErrorReporter errorReporter) {
     Map<String, String> manifest = new HashMap<>();
 
     for (SourceFilePath inputFilePath : inputToOutputPaths.keySet()) {
-      Path outputFilePath = inputToOutputPaths.get(inputFilePath);
-      String pythonPath = outputFilePath.toString().replace(".py", "").replace('/', '.');
+      String outputFilePath = inputToOutputPaths.get(inputFilePath).toString();
+      String pythonPath = outputFilePath.replace(".py", "").replace('/', '.');
 
       String namespace = soyNamespaces.get(inputFilePath);
       if (manifest.containsKey(namespace)) {

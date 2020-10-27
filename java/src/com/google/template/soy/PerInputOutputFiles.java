@@ -186,6 +186,10 @@ final class PerInputOutputFiles {
     }
   }
 
+  Optional<Path> getOutputDirectoryFlag() {
+    return Optional.ofNullable(outputDirectory);
+  }
+
   /**
    * Prints an error message and the usage string, and then exits.
    *

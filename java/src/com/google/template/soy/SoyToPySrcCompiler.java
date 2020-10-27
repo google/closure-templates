@@ -145,6 +145,7 @@ public final class SoyToPySrcCompiler extends AbstractSoyCompiler {
             translationClass,
             manifest,
             outputFiles.getOutputFilePathsForInputs(sfs.getSourceFilePaths()),
+            outputFiles.getOutputDirectoryFlag(),
             outputNamespaceManifest);
 
     outputFiles.writeFiles(srcs, sfs.compileToPySrcFiles(pySrcOptions));

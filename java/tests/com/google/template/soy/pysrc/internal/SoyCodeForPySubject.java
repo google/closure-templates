@@ -34,7 +34,9 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Truth assertion which compiles the provided soy code and asserts that the generated Python code
@@ -55,6 +57,8 @@ public final class SoyCodeForPySubject extends Subject {
   ImmutableMap<SourceFilePath, Path> inputToOutputFilePaths = ImmutableMap.of();
 
   private ImmutableMap<String, String> namespaceManifest = ImmutableMap.of();
+
+  private final Optional<Path> genfilesOutputDir = Optional.of(Paths.get("blaze-out/bin/"));
 
   private boolean isFile;
 
@@ -210,6 +214,7 @@ public final class SoyCodeForPySubject extends Subject {
         translationClass,
         namespaceManifest,
         inputToOutputFilePaths,
+        genfilesOutputDir,
         null);
   }
   // -----------------------------------------------------------------------------------------------
