@@ -28,7 +28,7 @@ public final class TemplateJavaType extends JavaType {
 
   @Override
   public String toJavaTypeString() {
-    return "com.google.template.soy.testing.metadata.placeholdertypes.TeplatePlaceholderType";
+    return "com.google.template.soy.testing.metadata.placeholdertypes.TemplatePlaceholderType";
   }
 
   @Override
