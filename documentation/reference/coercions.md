@@ -18,7 +18,7 @@ TODO(lukes): this page is insufficiently exhaustive, but it is a start
 There are a few ways to cause an implicit string coercion in Soy.
 
 *   [print commands](print) implicitly coerce their expression to a string
-*   [concatentation](expressions#plus) with a string will coerce a value to a
+*   [concatenation](expressions#plus) with a string will coerce a value to a
     string
 
 While every value in Soy can be coerced to a string, not every value has a
