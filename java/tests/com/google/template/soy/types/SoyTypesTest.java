@@ -32,6 +32,7 @@ import com.google.common.truth.Truth;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType.Kind;
@@ -283,6 +284,16 @@ public class SoyTypesTest {
   public void testMapTypeAssignability() {
     assertThat(MapType.of(ANY_TYPE, ANY_TYPE).isAssignableFromStrict(UNKNOWN_TYPE)).isFalse();
     assertThat(UNKNOWN_TYPE.isAssignableFromStrict(MapType.of(ANY_TYPE, ANY_TYPE))).isFalse();
+  }
+
+  @Test
+  public void testElementTypeAssignability() {
+    assertThat(ElementType.getInstance("").isAssignableFromStrict(ElementType.getInstance("")))
+        .isTrue();
+    assertThat(ElementType.getInstance("").isAssignableFromStrict(ElementType.getInstance("div")))
+        .isTrue();
+    assertThat(ElementType.getInstance("div").isAssignableFromStrict(ElementType.getInstance("")))
+        .isFalse();
   }
 
   @Test

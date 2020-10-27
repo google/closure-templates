@@ -17,6 +17,8 @@
 package com.google.template.soy.types;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.soytree.SoyTypeP;
 
@@ -50,7 +52,7 @@ public abstract class SanitizedType extends PrimitiveType {
         return StyleType.getInstance();
 
       case HTML_ELEMENT:
-        return ElementType.getInstance();
+        return ElementType.getInstance("");
 
       case HTML:
         return HtmlType.getInstance();
@@ -105,10 +107,18 @@ public abstract class SanitizedType extends PrimitiveType {
   /** Type produced by templates whose kind is "html<?>". */
   public static final class ElementType extends SanitizedType {
 
-    private static final ElementType INSTANCE = new ElementType();
+    private static final ElementType WILDCARD = new ElementType("");
+
+    private final String tagName;
 
     // Not constructible - use getInstance().
-    private ElementType() {}
+    private ElementType(String tagName) {
+      this.tagName = Preconditions.checkNotNull(tagName);
+    }
+
+    public String getTagName() {
+      return tagName;
+    }
 
     @Override
     public Kind getKind() {
@@ -122,17 +132,45 @@ public abstract class SanitizedType extends PrimitiveType {
 
     @Override
     void doToProto(SoyTypeP.Builder builder) {
-      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(true));
+      builder.setHtml(SoyTypeP.HtmlTypeP.newBuilder().setIsElement(true).setTagName(tagName));
     }
 
     /** Return the single instance of this type. */
-    public static ElementType getInstance() {
-      return INSTANCE;
+    public static ElementType getInstance(String tagName) {
+      return tagName.isEmpty() ? WILDCARD : new ElementType(tagName);
     }
 
     @Override
     public String toString() {
-      return "html<?>";
+      return "html<" + (tagName.isEmpty() ? "?" : tagName) + ">";
+    }
+
+    @Override
+    boolean doIsAssignableFromNonUnionType(SoyType srcType) {
+      if (!(srcType instanceof ElementType)) {
+        return false;
+      }
+      if (tagName.isEmpty()) {
+        return true;
+      }
+      return tagName.equals(((ElementType) srcType).tagName);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ElementType that = (ElementType) o;
+      return Objects.equal(tagName, that.tagName);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(super.hashCode(), tagName);
     }
   }
 

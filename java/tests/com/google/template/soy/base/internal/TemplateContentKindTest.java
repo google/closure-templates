@@ -28,28 +28,37 @@ public final class TemplateContentKindTest {
 
   @Test
   public void testForAttributeValue_simpleTypes() {
-    assertThat(TemplateContentKind.fromAttributeValue("html").get().getSanitizedContentKind())
-        .isEqualTo(SanitizedContentKind.HTML);
-    assertThat(TemplateContentKind.fromAttributeValue("text").get().getSanitizedContentKind())
-        .isEqualTo(SanitizedContentKind.TEXT);
+    assertThat(of("html").getSanitizedContentKind()).isEqualTo(SanitizedContentKind.HTML);
+    assertThat(of("text").getSanitizedContentKind()).isEqualTo(SanitizedContentKind.TEXT);
     assertThat(TemplateContentKind.fromAttributeValue("blarg")).isEmpty();
   }
 
   @Test
   public void testForAttributeValue_element() {
-    assertThat(TemplateContentKind.fromAttributeValue("html<?>").get().getSanitizedContentKind())
+    assertThat(of("html<?>").getSanitizedContentKind())
         .isEqualTo(SanitizedContentKind.HTML_ELEMENT);
   }
 
   @Test
   public void testAsAttributeValue_simpleTypes() {
-    assertThat(TemplateContentKind.fromAttributeValue("html").get().asAttributeValue())
-        .isEqualTo("html");
+    assertThat(of("html").asAttributeValue()).isEqualTo("html");
   }
 
   @Test
   public void testAsAttributeValue_element() {
-    assertThat(TemplateContentKind.fromAttributeValue("html<?>").get().asAttributeValue())
-        .isEqualTo("html<?>");
+    assertThat(of("html<?>").asAttributeValue()).isEqualTo("html<?>");
+  }
+
+  @Test
+  public void isAssignableFrom() {
+    assertThat(of("html").isAssignableFrom(of("html"))).isTrue();
+    assertThat(of("html").isAssignableFrom(of("text"))).isFalse();
+    assertThat(of("html<?>").isAssignableFrom(of("html<?>"))).isTrue();
+    assertThat(of("html<?>").isAssignableFrom(of("html<div>"))).isTrue();
+    assertThat(of("html<div>").isAssignableFrom(of("html<?>"))).isFalse();
+  }
+
+  private static TemplateContentKind of(String attr) {
+    return TemplateContentKind.fromAttributeValue(attr).get();
   }
 }

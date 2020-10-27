@@ -171,21 +171,21 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
     this.attributes = attrs;
-    TemplateContentKind kind = TemplateContentKind.HTML;
+    TemplateContentKind kind = TemplateContentKind.DEFAULT;
     for (CommandTagAttribute attribute : attrs) {
       Identifier name = attribute.getName();
       switch (name.identifier()) {
         case "kind":
           Optional<TemplateContentKind> parsedKind =
               attribute.valueAsTemplateContentKind(errorReporter);
-          if (parsedKind.orElse(null) == TemplateContentKind.HTML) {
+          if (parsedKind.orElse(null) == TemplateContentKind.DEFAULT) {
             errorReporter.report(
                 attribute.getValueLocation(),
                 CommandTagAttribute.EXPLICIT_DEFAULT_ATTRIBUTE,
                 "kind",
                 "html");
           }
-          kind = parsedKind.orElse(TemplateContentKind.HTML);
+          kind = parsedKind.orElse(TemplateContentKind.DEFAULT);
           break;
         case "requirecss":
           setRequiredCssNamespaces(attribute.valueAsRequireCss(errorReporter));

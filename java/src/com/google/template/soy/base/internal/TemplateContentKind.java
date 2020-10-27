@@ -18,6 +18,7 @@ package com.google.template.soy.base.internal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.template.soy.error.SoyErrorKind;
 import java.util.Optional;
 
@@ -32,7 +33,10 @@ public abstract class TemplateContentKind {
   public static final SoyErrorKind INVALID_ATTRIBUTE_VALUE =
       SoyErrorKind.of(
           "Invalid value for template attribute ''kind'', expected one of "
-              + BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.keySet()
+              + ImmutableSortedSet.naturalOrder()
+                  .addAll(BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.keySet())
+                  .add("html<...>")
+                  .build()
               + ".");
 
   /**
@@ -41,8 +45,9 @@ public abstract class TemplateContentKind {
    */
   public static Optional<TemplateContentKind> fromAttributeValue(String attrValue) {
     checkNotNull(attrValue);
-    if (attrValue.equals("html<?>")) {
-      return Optional.of(ElementContentKind.ELEMENT);
+    if (attrValue.startsWith("html<") && attrValue.endsWith(">")) {
+      return Optional.of(
+          ElementContentKind.valueOf(attrValue.substring(5, attrValue.length() - 1)));
     }
     if (BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.containsKey(attrValue)) {
       return Optional.of(BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.get(attrValue));
@@ -57,9 +62,13 @@ public abstract class TemplateContentKind {
     return BasicTemplateContentKind.KINDS_BY_KIND.get(sanitizedContentKind);
   }
 
-  public static final TemplateContentKind HTML =
+  public static final TemplateContentKind DEFAULT =
       BasicTemplateContentKind.KINDS_BY_ATTR_VALUE.get(
           SanitizedContentKind.HTML.asAttributeValue());
+
+  public boolean isAssignableFrom(TemplateContentKind src) {
+    return getSanitizedContentKind().isAssignableFrom(src.getSanitizedContentKind());
+  }
 
   /**
    * Simple template content kinds that map 1:1 with {@link SanitizedContentKind} types. For
@@ -78,7 +87,7 @@ public abstract class TemplateContentKind {
       for (SanitizedContentKind kind : SanitizedContentKind.values()) {
         TemplateContentKind contentKind;
         if (kind == SanitizedContentKind.HTML_ELEMENT) {
-          contentKind = new ElementContentKind("html<?>");
+          continue;
         } else {
           contentKind = new BasicTemplateContentKind(kind);
         }
@@ -132,20 +141,29 @@ public abstract class TemplateContentKind {
    */
   public static class ElementContentKind extends TemplateContentKind {
 
-    public static final ElementContentKind ELEMENT = new ElementContentKind("html<?>");
+    private static final String WILDCARD_CHAR = "?";
+    public static final ElementContentKind WILDCARD = new ElementContentKind("");
 
-    // TODO(b/163796852): Flip when ready.
-    public static final boolean IS_GA = false;
+    public static ElementContentKind valueOf(String tag) {
+      if (WILDCARD_CHAR.equals(tag) || tag.isEmpty()) {
+        return WILDCARD;
+      }
+      return new ElementContentKind(tag);
+    }
 
-    private final String attrValue;
+    private final String tagName;
 
-    private ElementContentKind(String attrValue) {
-      this.attrValue = attrValue;
+    private ElementContentKind(String tagName) {
+      this.tagName = tagName;
+    }
+
+    public String getTagName() {
+      return tagName;
     }
 
     @Override
     public String asAttributeValue() {
-      return attrValue;
+      return "html<" + (tagName.isEmpty() ? WILDCARD_CHAR : tagName) + ">";
     }
 
     @Override
@@ -154,22 +172,30 @@ public abstract class TemplateContentKind {
     }
 
     @Override
+    public boolean isAssignableFrom(TemplateContentKind src) {
+      if (!super.isAssignableFrom(src) || !(src instanceof ElementContentKind)) {
+        return false;
+      }
+      return tagName.isEmpty() || tagName.equals(((ElementContentKind) src).tagName);
+    }
+
+    @Override
     public boolean equals(Object o) {
       if (!(o instanceof ElementContentKind)) {
         return false;
       }
       ElementContentKind other = (ElementContentKind) o;
-      return this.attrValue.equals(other.attrValue);
+      return this.tagName.equals(other.tagName);
     }
 
     @Override
     public int hashCode() {
-      return this.attrValue.hashCode();
+      return this.tagName.hashCode();
     }
 
     @Override
     public String toString() {
-      return this.attrValue;
+      return asAttributeValue();
     }
   }
 

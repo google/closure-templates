@@ -46,4 +46,6 @@ public interface TypeInterner {
       Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper);
 
   SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor);
+
+  SoyType getOrCreateElementType(String tagName);
 }

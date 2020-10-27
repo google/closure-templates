@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SoyFileKind;
-import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
@@ -64,8 +63,7 @@ public abstract class TemplateMetadata {
                     .setTemplateKind(convertKind(template.getKind()))
                     .setAllowExtraAttributes(template.getAllowExtraAttributes())
                     .setReservedAttributes(template.getReservedAttributes())
-                    .setContentKind(
-                        TemplateContentKind.fromSanitizedContentKind(template.getContentKind()))
+                    .setContentKind(template.getTemplateContentKind())
                     .setStrictHtml(template.isStrictHtml())
                     .setParameters(directParametersFromTemplate(template))
                     .setDataAllCallSituations(dataAllCallSituationFromTemplate(template))

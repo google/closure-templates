@@ -57,9 +57,9 @@ message SoyTypeP {
   }
   message HtmlTypeP {
     bool is_element = 1;
+    string tag_name = 4;
     bool allow_extra_attributes = 2;
     repeated string reserved_attributes = 3;
-    // TODO(user): Add tag name.
   }
   message RecordTypeP {
     map<string, SoyTypeP> field = 1;
@@ -178,6 +178,8 @@ message HtmlElementMetadataP {
   string tag = 3;
   // Whether or not a template contains an element with {skip} directive.
   bool is_skip = 4;
+  // If this element delegates to another element then this is its FQN.
+  string delegate = 5;
 }
 
 // Metadata around whether the template is a Soy element or not.

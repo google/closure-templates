@@ -27,6 +27,7 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CompilationUnit;
@@ -55,7 +56,6 @@ import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
-import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -208,6 +208,14 @@ public final class TemplateMetadataSerializer {
     SoyTypeP returnTypeP = templateProto.getTemplateType().getReturnType();
     SoyType returnType = fromProto(returnTypeP, typeRegistry, filePath, errorReporter);
 
+    TemplateContentKind templateContentKind =
+        returnTypeP.getHtml().getIsElement()
+            ? ElementContentKind.valueOf(returnTypeP.getHtml().getTagName())
+            : TemplateContentKind.fromSanitizedContentKind(
+                returnType instanceof StringType
+                    ? SanitizedContentKind.TEXT
+                    : ((SanitizedType) returnType).getContentKind());
+
     return builder
         .setTemplateName(templateName)
         .setSoyFileKind(fileKind)
@@ -217,11 +225,7 @@ public final class TemplateMetadataSerializer {
         .setTemplateType(
             TemplateType.builder()
                 .setTemplateKind(templateKind)
-                .setContentKind(
-                    TemplateContentKind.fromSanitizedContentKind(
-                        returnType instanceof StringType
-                            ? SanitizedContentKind.TEXT
-                            : ((SanitizedType) returnType).getContentKind()))
+                .setContentKind(templateContentKind)
                 .setStrictHtml(templateProto.getStrictHtml())
                 .setAllowExtraAttributes(returnTypeP.getHtml().getAllowExtraAttributes())
                 .setReservedAttributes(
@@ -334,7 +338,7 @@ public final class TemplateMetadataSerializer {
         throw new AssertionError("Unknown primitive: " + proto.getPrimitive());
       case HTML:
         if (proto.getHtml().getIsElement()) {
-          return ElementType.getInstance();
+          return typeRegistry.getOrCreateElementType(proto.getHtml().getTagName());
         } else {
           return HtmlType.getInstance();
         }

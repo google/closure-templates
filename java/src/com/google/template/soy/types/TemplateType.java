@@ -29,8 +29,10 @@ import com.google.errorprone.annotations.ForOverride;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyTypeP;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -295,15 +297,8 @@ public abstract class TemplateType extends SoyType {
   }
 
   public static TemplateType declaredTypeOf(Iterable<Parameter> parameters, SoyType returnType) {
-    SanitizedContentKind contentKind;
-    if (returnType instanceof SanitizedType) {
-      contentKind = ((SanitizedType) returnType).getContentKind();
-    } else {
-      // Only other valid type is string.
-      contentKind = SanitizedContentKind.TEXT;
-    }
-    TemplateContentKind templateContentKind =
-        TemplateContentKind.fromSanitizedContentKind(contentKind);
+    TemplateContentKind templateContentKind = fromType(returnType);
+    SanitizedContentKind contentKind = templateContentKind.getSanitizedContentKind();
     return builder()
         // Declared templates can only be basic templates (no deltemplates/elements allowed).
         .setTemplateKind(TemplateKind.BASIC)
@@ -320,6 +315,16 @@ public abstract class TemplateType extends SoyType {
         .setAllowExtraAttributes(false)
         .setReservedAttributes(ImmutableSet.of())
         .build();
+  }
+
+  public static TemplateContentKind fromType(SoyType type) {
+    if (type instanceof ElementType) {
+      return ElementContentKind.valueOf(((ElementType) type).getTagName());
+    } else if (type instanceof SanitizedType) {
+      return TemplateContentKind.fromSanitizedContentKind(((SanitizedType) type).getContentKind());
+    } else {
+      return TemplateContentKind.fromSanitizedContentKind(SanitizedContentKind.TEXT);
+    }
   }
 
   @Override
@@ -375,13 +380,7 @@ public abstract class TemplateType extends SoyType {
         }
       }
     }
-    // TODO(b/167574941): Add element support.
-    SanitizedContentKind thisKind = this.getContentKind().getSanitizedContentKind();
-    SanitizedContentKind srcKind = srcTemplate.getContentKind().getSanitizedContentKind();
-    if (!thisKind.isAssignableFrom(srcKind)) {
-      return false;
-    }
-    return true;
+    return this.getContentKind().isAssignableFrom(srcTemplate.getContentKind());
   }
 
   @Override
@@ -422,7 +421,7 @@ public abstract class TemplateType extends SoyType {
       sb.append(parameter.getType());
     }
     sb.append(") => ");
-    sb.append(SanitizedType.getTypeForContentKind(contentKind.getSanitizedContentKind()));
+    sb.append(contentKind.asAttributeValue());
     return sb.toString();
   }
 
@@ -442,20 +441,26 @@ public abstract class TemplateType extends SoyType {
                   .setImplicit(parameter.isImplicit())
                   .build());
     }
-    SoyTypeP returnType =
-        SanitizedType.getTypeForContentKind(getContentKind().getSanitizedContentKind()).toProto();
+    SoyTypeP returnType = templateContentKindToType(getContentKind()).toProto();
     if (getAllowExtraAttributes()) {
       returnType =
           SoyTypeP.newBuilder(returnType)
               .setHtml(
                   returnType.getHtml().toBuilder()
                       .setAllowExtraAttributes(true)
-                      .addAllReservedAttributes(getReservedAttributes())
-                      .setIsElement(returnType.getHtml().getIsElement()))
+                      .addAllReservedAttributes(getReservedAttributes()))
               .build();
     }
     // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
     templateBuilder.setReturnTypeOld(returnType.getPrimitive()).setReturnType(returnType);
+  }
+
+  private static SoyType templateContentKindToType(TemplateContentKind kind) {
+    if (kind instanceof ElementContentKind) {
+      return ElementType.getInstance(((ElementContentKind) kind).getTagName());
+    } else {
+      return SanitizedType.getTypeForContentKind(kind.getSanitizedContentKind());
+    }
   }
 
   @Override

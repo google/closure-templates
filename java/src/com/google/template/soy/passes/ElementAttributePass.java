@@ -28,19 +28,16 @@ import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
-import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -87,7 +84,11 @@ import java.util.stream.Collectors;
  * Enforces rules on the usage of @attribute parameters within a template. Rewrites templates for
  * implicit @attribute usage.
  */
-@RunAfter({ResolveNamesPass.class, ResolveTemplateParamTypesPass.class})
+@RunAfter({
+  ResolveNamesPass.class, // Needs full template names resolved.
+  ResolveTemplateParamTypesPass.class,
+  SoyElementPass.class // Uses HtmlElementMetadataP
+})
 @RunBefore({
   ResolveExpressionTypesPass.class,
   SoyElementCompositionPass.class,
@@ -119,6 +120,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private static final SoyErrorKind BAD_ATTRIBUTE_TYPE =
       SoyErrorKind.of("Attributes must be of type string, trusted_resource_uri, or uri.");
 
+  private static final SoyErrorKind ROOT_TAG_KIND_MISMATCH =
+      SoyErrorKind.of("Expected root tag to be {0}.");
+
+  private static final SoyErrorKind DELEGATE_KIND_MISMATCH =
+      SoyErrorKind.of("Expected the called template to have root tag {0}, found {1}.");
+
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
 
@@ -139,14 +146,14 @@ final class ElementAttributePass implements CompilerFileSetPass {
     checkAttributeTypes(file);
 
     Set<TemplateNode> delegatingElementsWithAllAttrs = new HashSet<>();
-    Map<String, TemplateNode> allTemplatesThisCompile = new HashMap<>();
+    Map<String, TemplateNode> allElementsThisCompile = new HashMap<>();
 
     // Rewrite all @attribute values in root elements.
     SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
-        .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
+        .filter(t -> t.getTemplateContentKind() instanceof ElementContentKind)
         .forEach(
             t -> {
-              allTemplatesThisCompile.put(t.getTemplateName(), t);
+              allElementsThisCompile.put(t.getTemplateName(), t);
               processTemplate(t, nodeIdGen::genId, delegatingElementsWithAllAttrs);
             });
 
@@ -161,8 +168,10 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
     if (!delegatingElementsWithAllAttrs.isEmpty()) {
       updateReservedAttributesForDelegateCalls(
-          delegatingElementsWithAllAttrs, allTemplatesThisCompile, file.getTemplateRegistry());
+          delegatingElementsWithAllAttrs, allElementsThisCompile, file.getTemplateRegistry());
     }
+
+    checkRootElementTagNames(allElementsThisCompile);
   }
 
   private static final ImmutableSet<SoyType> ALLOWED_ATTR_TYPES =
@@ -234,8 +243,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
     SourceLocation unknown = templateNode.getSourceLocation().clearRange();
 
     HtmlOpenTagNode openTagNode = elmOpen.get();
-    String delegateTemplateName = getElementCall(openTagNode);
-    boolean iAmAnElementCallingAnElement = delegateTemplateName != null;
+    String delegateTemplateName = getDelegateCall(templateNode);
+    boolean iAmAnElementCallingAnElement = !delegateTemplateName.isEmpty();
     ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
 
     openTagNode.getChildren().stream()
@@ -380,7 +389,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
     Map<String, String> templateFqnCall =
         templates.stream()
-            .collect(toMap(TemplateNode::getTemplateName, ElementAttributePass::getElementCall));
+            .collect(toMap(TemplateNode::getTemplateName, ElementAttributePass::getDelegateCall));
 
     // Simple topological sort.
     while (!templateFqnCall.isEmpty()) {
@@ -414,29 +423,38 @@ final class ElementAttributePass implements CompilerFileSetPass {
     }
   }
 
-  private static String getElementCall(TemplateNode templateNode) {
-    return getElementCall(getElementOpen(templateNode).get());
+  private void checkRootElementTagNames(Map<String, TemplateNode> elements) {
+    for (Map.Entry<String, TemplateNode> entry : elements.entrySet()) {
+      ElementContentKind contentKind =
+          (ElementContentKind) entry.getValue().getTemplateContentKind();
+      String expectedTagName = contentKind.getTagName();
+      // html<?> matches anything
+      if (expectedTagName.isEmpty()) {
+        continue;
+      }
+
+      String tag = entry.getValue().getHtmlElementMetadata().getTag();
+      if (!"?".equals(tag)) {
+        if (!expectedTagName.equals(tag)) {
+          TagName tagName = getElementOpen(entry.getValue()).get().getTagName();
+
+          if (tagName.isStatic()) {
+            errorReporter.report(tagName.getTagLocation(), ROOT_TAG_KIND_MISMATCH, expectedTagName);
+          } else {
+            errorReporter.report(
+                tagName.getTagLocation(), DELEGATE_KIND_MISMATCH, expectedTagName, tag);
+          }
+        }
+      }
+    }
   }
 
-  private static String getElementCall(HtmlOpenTagNode openTag) {
-    // The normal TagName.isTemplateCall() doesn't work this early in the pass manager.
-    TagName tagName = openTag.getTagName();
-    if (tagName.isStatic()) {
-      return null;
-    }
-    PrintNode printNode = tagName.getDynamicTagName();
-    ExprNode exprNode = printNode.getExpr().getRoot();
-    if (!(exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
-        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind"))) {
-      return null;
-    }
-
-    MethodCallNode bind = (MethodCallNode) exprNode;
-    if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
-      return null;
-    }
-
-    return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
+  /**
+   * Returns the FQN template name of the template to which this element delegates, or null if this
+   * template does not delegate.
+   */
+  private static String getDelegateCall(TemplateNode templateNode) {
+    return templateNode.getHtmlElementMetadata().getDelegate();
   }
 
   private static void copyChildren(HtmlAttributeNode from, ParentSoyNode<StandaloneNode> to) {

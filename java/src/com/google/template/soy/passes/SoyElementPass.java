@@ -23,19 +23,25 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.MethodCallNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.HtmlElementMetadataP;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.KeyNode;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateMetadata;
@@ -209,16 +215,18 @@ public final class SoyElementPass implements CompilerFileSetPass {
     boolean isValid = openTag != null && closeTag != null;
     HtmlElementMetadataP.Builder builder = HtmlElementMetadataP.newBuilder();
     boolean hasSkipNode = false;
+    String delegateTemplate = "";
     if (isValid) {
       for (StandaloneNode child : openTag.getChildren()) {
         if (child instanceof SkipNode) {
           hasSkipNode = true;
         }
       }
+      delegateTemplate = getDelegateCall(openTag);
       builder.setTag(
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
-              : DYNAMIC_ELEMENT_TAG);
+              : tryGetDelegateTagName(delegateTemplate, templatesInLibrary, registry));
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
       }
@@ -228,9 +236,57 @@ public final class SoyElementPass implements CompilerFileSetPass {
             .setIsHtmlElement(isValid)
             .setIsVelogged(veLogNode != null)
             .setIsSkip(hasSkipNode)
+            .setDelegate(delegateTemplate)
             .build();
     template.setHtmlElementMetadata(info);
     return info;
+  }
+
+  private String tryGetDelegateTagName(
+      String delegateName, Map<String, TemplateNode> templates, ImportsTemplateRegistry registry) {
+    if (delegateName.isEmpty()) {
+      return DYNAMIC_ELEMENT_TAG;
+    }
+
+    TemplateContentKind calleeKind;
+    TemplateNode callee = templates.get(delegateName);
+    if (callee != null) {
+      calleeKind = callee.getTemplateContentKind();
+    } else {
+      calleeKind =
+          registry.getBasicTemplateOrElement(delegateName).getTemplateType().getContentKind();
+    }
+
+    if (calleeKind instanceof ElementContentKind) {
+      return ((ElementContentKind) calleeKind).getTagName();
+    }
+
+    return DYNAMIC_ELEMENT_TAG;
+  }
+
+  /**
+   * Returns the FQN template name of the template to which this element delegates, or null if this
+   * template does not delegate.
+   */
+  private static String getDelegateCall(HtmlOpenTagNode openTag) {
+    // The normal TagName.isTemplateCall() doesn't work before ResolveExpressionTypesPass.
+    TagName tagName = openTag.getTagName();
+    if (tagName.isStatic()) {
+      return "";
+    }
+    PrintNode printNode = tagName.getDynamicTagName();
+    ExprNode exprNode = printNode.getExpr().getRoot();
+    if (!(exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
+        && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind"))) {
+      return "";
+    }
+
+    MethodCallNode bind = (MethodCallNode) exprNode;
+    if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
+      return "";
+    }
+
+    return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
   }
 
   /**

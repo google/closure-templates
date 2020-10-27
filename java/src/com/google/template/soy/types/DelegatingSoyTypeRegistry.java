@@ -109,6 +109,11 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   }
 
   @Override
+  public SoyType getOrCreateElementType(String tagName) {
+    return delegate.getOrCreateElementType(tagName);
+  }
+
+  @Override
   @Nullable
   public SoyType getType(String typeName) {
     return delegate.getType(typeName);

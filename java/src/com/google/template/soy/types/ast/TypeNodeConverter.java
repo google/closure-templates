@@ -35,7 +35,6 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.types.ProtoTypeRegistry;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
-import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
@@ -47,6 +46,7 @@ import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Resolves {@link TypeNode}s into {@link SoyType}s. */
 public final class TypeNodeConverter
@@ -93,7 +93,7 @@ public final class TypeNodeConverter
           Kind.URI,
           Kind.TRUSTED_RESOURCE_URI);
 
-  private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES =
+  private static final ImmutableMap<String, BaseGenericTypeInfo> GENERIC_TYPES =
       ImmutableMap.of(
           "list",
           new GenericTypeInfo(1) {
@@ -124,35 +124,56 @@ public final class TypeNodeConverter
             }
           });
 
-  private static final ImmutableMap<String, GenericTypeInfo> GENERIC_TYPES_WITH_ELEMENT =
-      new ImmutableMap.Builder<String, GenericTypeInfo>()
+  private static final ImmutableMap<String, BaseGenericTypeInfo> GENERIC_TYPES_WITH_ELEMENT =
+      new ImmutableMap.Builder<String, BaseGenericTypeInfo>()
           .putAll(GENERIC_TYPES)
           .put(
               "html",
-              new GenericTypeInfo(1) {
+              new StringArgGenericTypeInfo(1) {
                 @Override
-                SoyType create(List<SoyType> types, TypeInterner interner) {
-                  return ElementType.getInstance();
+                SoyType create(List<String> types, TypeInterner interner) {
+                  String tag = "";
+                  if (types.size() == 1) {
+                    String type = types.get(0);
+                    if (!"?".equals(type)) {
+                      tag = type;
+                    }
+                  }
+                  return interner.getOrCreateElementType(tag);
                 }
               })
           .build();
 
-  /** Simple representation of a generic type specification. */
-  private abstract static class GenericTypeInfo {
+  private abstract static class BaseGenericTypeInfo {
     final int numParams;
 
-    GenericTypeInfo(int numParams) {
+    BaseGenericTypeInfo(int numParams) {
       this.numParams = numParams;
     }
 
     final String formatNumTypeParams() {
       return numParams + " type parameter" + (numParams > 1 ? "s" : "");
     }
+  }
+
+  /** Simple representation of a generic type specification. */
+  private abstract static class GenericTypeInfo extends BaseGenericTypeInfo {
+    public GenericTypeInfo(int numParams) {
+      super(numParams);
+    }
 
     /**
      * Creates the given type. There are guaranteed to be exactly {@link #numParams} in the list.
      */
     abstract SoyType create(List<SoyType> types, TypeInterner interner);
+  }
+
+  private abstract static class StringArgGenericTypeInfo extends BaseGenericTypeInfo {
+    public StringArgGenericTypeInfo(int numParams) {
+      super(numParams);
+    }
+
+    abstract SoyType create(List<String> types, TypeInterner interner);
   }
 
   public static Builder builder(ErrorReporter errorReporter) {
@@ -248,7 +269,7 @@ public final class TypeNodeConverter
     }
 
     if (type == null) {
-      GenericTypeInfo genericType = GENERIC_TYPES.get(name);
+      BaseGenericTypeInfo genericType = GENERIC_TYPES.get(name);
       if (genericType != null) {
         errorReporter.report(
             node.sourceLocation(),
@@ -283,10 +304,11 @@ public final class TypeNodeConverter
     return visit(node, GENERIC_TYPES);
   }
 
-  private SoyType visit(GenericTypeNode node, ImmutableMap<String, GenericTypeInfo> genericTypes) {
+  private SoyType visit(
+      GenericTypeNode node, ImmutableMap<String, BaseGenericTypeInfo> genericTypes) {
     ImmutableList<TypeNode> args = node.arguments();
     String name = node.name();
-    GenericTypeInfo genericType = genericTypes.get(name);
+    BaseGenericTypeInfo genericType = genericTypes.get(name);
     if (genericType == null) {
       errorReporter.report(node.sourceLocation(), NOT_A_GENERIC_TYPE, name);
       return UnknownType.getInstance();
@@ -309,7 +331,16 @@ public final class TypeNodeConverter
       return UnknownType.getInstance();
     }
 
-    SoyType type = genericType.create(Lists.transform(args, this), interner);
+    SoyType type;
+    if (genericType instanceof GenericTypeInfo) {
+      type = ((GenericTypeInfo) genericType).create(Lists.transform(args, this), interner);
+    } else if (genericType instanceof StringArgGenericTypeInfo) {
+      type =
+          ((StringArgGenericTypeInfo) genericType)
+              .create(args.stream().map(TypeNode::toString).collect(Collectors.toList()), interner);
+    } else {
+      throw new AssertionError();
+    }
     node.setResolvedType(type);
     return type;
   }

@@ -420,13 +420,18 @@ public final class PassManager {
       // needs to be after ResolveNames and MsgsPass
       if (astRewrites) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      }
+
+      // The StrictHtmlValidatorPass needs to run after ResolveNames.
+      addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
+
+      addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      if (astRewrites) {
         addPass(
             new ElementAttributePass(errorReporter, pluginResolver),
             partialTemplateRegistryPassesBuilder);
       }
 
-      // The StrictHtmlValidatorPass needs to run after ResolveNames.
-      addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
         // and before ResolveExpressionTypesPass (since we insert expressions).
@@ -476,8 +481,6 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
       addPass(new ValidateSkipNodesPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
-      // Needs to run after StrictHtmlValidationPass (for single root validation).
-      addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {
         addPass(
             new VeLogValidationPass(errorReporter, registry), partialTemplateRegistryPassesBuilder);

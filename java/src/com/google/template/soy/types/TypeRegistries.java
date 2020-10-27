@@ -31,6 +31,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.ElementType;
 import com.google.template.soy.types.SanitizedType.HtmlType;
 import com.google.template.soy.types.SanitizedType.JsType;
 import com.google.template.soy.types.SanitizedType.StyleType;
@@ -104,6 +105,7 @@ public final class TypeRegistries {
     private final Interner<VeType> veTypes = Interners.newStrongInterner();
     private final Map<String, SoyProtoType> protoTypes = new ConcurrentHashMap<>();
     private final Interner<SoyProtoEnumType> enumTypes = Interners.newStrongInterner();
+    private final Interner<ElementType> elementTypes = Interners.newStrongInterner();
 
     public TypeInternerImpl() {
       // Register the special number type so == comparisons work
@@ -220,6 +222,11 @@ public final class TypeRegistries {
     public SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
       return enumTypes.intern(new SoyProtoEnumType(descriptor));
     }
+
+    @Override
+    public SoyType getOrCreateElementType(String tagName) {
+      return elementTypes.intern(ElementType.getInstance(tagName));
+    }
   }
 
   private static final class BuiltinTypeRegistry implements TypeRegistry {
@@ -328,6 +335,11 @@ public final class TypeRegistries {
     @Override
     public SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
       return typeInterner.getOrCreateProtoEnumType(descriptor);
+    }
+
+    @Override
+    public SoyType getOrCreateElementType(String tagName) {
+      return typeInterner.getOrCreateElementType(tagName);
     }
   }
 }
