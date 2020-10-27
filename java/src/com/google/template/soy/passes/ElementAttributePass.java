@@ -24,10 +24,10 @@ import static java.util.stream.Collectors.toMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -35,12 +35,16 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
-import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
+import com.google.template.soy.soytree.ForNode;
+import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlAttributeNode.ValueStrategy;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
@@ -61,6 +65,8 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
+import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
@@ -68,6 +74,7 @@ import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
+import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.ast.NamedTypeNode;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -150,7 +157,10 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
     // Rewrite all @attribute values in root elements.
     SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
-        .filter(t -> t.getTemplateContentKind() instanceof ElementContentKind)
+        .filter(
+            t ->
+                t.getTemplateContentKind() instanceof ElementContentKind
+                    && t.getHtmlElementMetadata() != null)
         .forEach(
             t -> {
               allElementsThisCompile.put(t.getTemplateName(), t);
@@ -192,32 +202,26 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
   }
 
-  private NotOpNode buildNotNull(VarDefn defn) {
-    SourceLocation unknown = defn.nameLocation().clearRange();
+  private NotOpNode buildNotNull(ExprNode node) {
+    SourceLocation unknown = node.getSourceLocation().clearRange();
     NotOpNode not = new NotOpNode(unknown, unknown);
     FunctionNode isNull =
         FunctionNode.newPositional(
             Identifier.create("isNull", unknown),
             (SoySourceFunction) pluginResolver.lookupSoyFunction("isNull", 1, unknown),
             unknown);
-    isNull.addChild(new ExprRootNode(new VarRefNode(defn.name(), unknown, defn)));
+    isNull.addChild(new ExprRootNode(node.copy(new CopyState())));
     not.addChild(isNull);
     return not;
   }
 
-  private IfNode buildPrintIfNotNull(VarDefn defn, Supplier<Integer> id) {
-    SourceLocation unknown = defn.nameLocation().clearRange();
+  private IfNode buildPrintIfNotNull(ExprNode node, Supplier<Integer> id) {
+    SourceLocation unknown = node.getSourceLocation().clearRange();
     IfNode ifNode = new IfNode(id.get(), unknown);
-    IfCondNode ifCondNode = new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(defn));
+    IfCondNode ifCondNode = new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node));
     ifNode.addChild(ifCondNode);
     PrintNode printNode =
-        new PrintNode(
-            id.get(),
-            unknown,
-            true,
-            new VarRefNode(defn.name(), unknown, defn),
-            ImmutableList.of(),
-            exploding());
+        new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());
     ifCondNode.addChild(printNode);
     return ifNode;
   }
@@ -239,7 +243,27 @@ final class ElementAttributePass implements CompilerFileSetPass {
     if (!elmOpen.isPresent()) {
       return;
     }
-
+    TemplateParam attrsParam =
+        new TemplateParam(
+            TemplateType.ATTRIBUTES_HIDDEN_PARAM,
+            SourceLocation.UNKNOWN,
+            SourceLocation.UNKNOWN,
+            NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM),
+            /* isInjected= */ false,
+            /* isImplicit= */ true,
+            /* optional= */ true,
+            /* desc= */ "Created by ElementAttributePass.",
+            /* defaultValue= */ null);
+    VarRefNode attrExpr = new VarRefNode(attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
+    attrsParam.setType(
+        MapType.of(
+            StringType.getInstance(),
+            UnionType.of(
+                StringType.getInstance(),
+                SanitizedType.UriType.getInstance(),
+                NullType.getInstance(),
+                SanitizedType.TrustedResourceUriType.getInstance())));
+    templateNode.addParam(attrsParam);
     SourceLocation unknown = templateNode.getSourceLocation().clearRange();
 
     HtmlOpenTagNode openTagNode = elmOpen.get();
@@ -280,7 +304,13 @@ final class ElementAttributePass implements CompilerFileSetPass {
               }
 
               AttrParam attr = attrs.get(attrName);
-              VarRefNode attrExpr = new VarRefNode(attr.name(), unknown, attr);
+              unseenParams.remove(attr);
+              ItemAccessNode itemAccessNode =
+                  new ItemAccessNode(
+                      attrExpr.copy(new CopyState()),
+                      new StringNode(attr.getAttrName(), QuoteStyle.SINGLE, unknown),
+                      unknown,
+                      true);
               unseenParams.remove(attr);
 
               StandaloneNode replacementNode;
@@ -303,7 +333,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                     new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
                 newAttrNode.addChild(valueNode);
                 // We do not check required here since all += and = are implicitly optional.
-                IfNode ifNode = buildPrintIfNotNull(attr, id);
+                IfNode ifNode = buildPrintIfNotNull(itemAccessNode, id);
                 valueNode.addChild(ifNode);
 
                 if (attrNode.getValueStrategy() == ValueStrategy.DEFAULT) {
@@ -333,14 +363,15 @@ final class ElementAttributePass implements CompilerFileSetPass {
                     new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
                 valueNode.addChild(
                     new PrintNode(
-                        id.get(), unknown, true, attrExpr, ImmutableList.of(), exploding()));
+                        id.get(), unknown, true, itemAccessNode, ImmutableList.of(), exploding()));
                 newAttrNode.addChild(valueNode);
 
                 replacementNode = newAttrNode;
                 if (!attr.isRequired()) {
                   IfNode ifNode = new IfNode(id.get(), unknown);
                   IfCondNode ifCondNode =
-                      new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(attr));
+                      new IfCondNode(
+                          id.get(), unknown, unknown, "if", buildNotNull(itemAccessNode));
                   ifCondNode.addChild(newAttrNode);
                   ifNode.addChild(ifCondNode);
                   replacementNode = ifNode;
@@ -352,31 +383,57 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
             });
-
+    /**
+     * This will generate the following code:
+     *
+     * <pre>
+     * {template .foo}
+     *   {@param soyInternalAttributes:map<string|uri|trusted_resource_uri>}
+     *   <div {for $attr in mapKeys($soyInternalAttributes)}
+     *      {$attr}={soyInternalAttributes[$attr]}
+     *   ></div>
+     * {/template}
+     * </pre>
+     */
     if (templateNode.getAllowExtraAttributes()) {
       templateNode.setReservedAttributes(foundNormalAttr.build());
       if (iAmAnElementCallingAnElement) {
         delegatingElementsWithAllAttrs.add(templateNode);
       }
+      FunctionNode keys =
+          FunctionNode.newPositional(
+              Identifier.create("mapKeys", unknown),
+              (SoySourceFunction) pluginResolver.lookupSoyFunction("mapKeys", 1, unknown),
+              unknown);
+      keys.addChild(new ExprRootNode(attrExpr.copy(new CopyState())));
+      ForNode forNode = new ForNode(id.get(), unknown, unknown, keys);
+      ForNonemptyNode forNonemptyNode =
+          new ForNonemptyNode(id.get(), Identifier.create("$__attrKey", unknown), null, unknown);
+      forNode.addChild(forNonemptyNode);
+      HtmlAttributeNode htmlAttributeNode =
+          new HtmlAttributeNode(id.get(), unknown, unknown.getBeginPoint());
+      VarRefNode varRef =
+          new VarRefNode(
+              forNonemptyNode.getVarName(), SourceLocation.UNKNOWN, forNonemptyNode.getVar());
+      htmlAttributeNode.addChild(
+          new PrintNode(id.get(), unknown, true, varRef, ImmutableList.of(), errorReporter));
+      HtmlAttributeValueNode value = new HtmlAttributeValueNode(id.get(), unknown, Quotes.SINGLE);
+      htmlAttributeNode.addChild(value);
+      value.addChild(
+          new PrintNode(
+              id.get(),
+              unknown,
+              false,
+              new ItemAccessNode(
+                  attrExpr.copy(new CopyState()),
+                  new ExprRootNode(varRef.copy(new CopyState())),
+                  unknown,
+                  true),
+              ImmutableList.of(),
+              errorReporter));
 
-      TemplateParam attrsParam =
-          new TemplateParam(
-              TemplateType.ATTRIBUTES_HIDDEN_PARAM,
-              SourceLocation.UNKNOWN,
-              SourceLocation.UNKNOWN,
-              NamedTypeNode.create(SourceLocation.UNKNOWN, TemplateType.ATTRIBUTES_HIDDEN_PARAM),
-              /* isInjected= */ false,
-              /* isImplicit= */ true,
-              /* optional= */ true,
-              /* desc= */ "Created by ElementAttributePass.",
-              /* defaultValue= */ null);
-      templateNode.addParam(attrsParam);
-      attrsParam.setType(SanitizedType.AttributesType.getInstance());
-      // To add a whitespace between the tag and the print node. This has no effect in Incremental
-      // DOM.
-      openTagNode.addChild(new RawTextNode(id.get(), " ", unknown));
-      IfNode ifNode = buildPrintIfNotNull(attrsParam, id);
-      openTagNode.addChild(ifNode);
+      forNonemptyNode.addChild(htmlAttributeNode);
+      openTagNode.addChild(forNode);
     }
 
     warnUnusedAttributes(unseenParams);
@@ -482,8 +539,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   private void warnUnusedAttributes(Iterable<AttrParam> unseenParams) {
-    Streams.stream(unseenParams)
-        .forEach(attrParam -> errorReporter.warn(attrParam.getSourceLocation(), UNUSED_ATTRIBUTE));
+    unseenParams.forEach(
+        attrParam -> errorReporter.warn(attrParam.getSourceLocation(), UNUSED_ATTRIBUTE));
   }
 
   static Optional<HtmlOpenTagNode> getElementOpen(TemplateNode node) {

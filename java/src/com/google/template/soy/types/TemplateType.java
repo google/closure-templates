@@ -351,7 +351,8 @@ public abstract class TemplateType extends SoyType {
     // containing some optional parameters omitted from this type).
     for (Parameter thisParam : getParameters()) {
       if (thisParam.getKind() == ParameterKind.ATTRIBUTE) {
-        if (!(srcParams.containsKey(thisParam.getName())
+        if (!((srcParams.containsKey(thisParam.getName())
+                && srcParams.get(thisParam.getName()).getKind() == ParameterKind.ATTRIBUTE)
             || (srcTemplate.getAllowExtraAttributes()
                 && !srcTemplate
                     .getReservedAttributes()
@@ -405,20 +406,20 @@ public abstract class TemplateType extends SoyType {
       if (parameter.getKind() == ParameterKind.ATTRIBUTE) {
         name = "@" + Parameter.paramToAttrName(name);
       }
-      if (ATTRIBUTES_HIDDEN_PARAM.equals(name)) {
-        name = "*";
-        if (!reservedAttributes.isEmpty()) {
-          name += "-{" + reservedAttributes.stream().map(a -> "@" + a).collect(joining(", ")) + "}";
-        }
-      } else if (parameter.isImplicit()) {
-        name = "(implicit)" + name;
-      }
       sb.append(name);
       if (!parameter.isRequired()) {
         sb.append("?");
       }
       sb.append(": ");
       sb.append(parameter.getType());
+    }
+    if (!reservedAttributes.isEmpty()) {
+      if (!first) {
+        sb.append(",");
+      }
+      sb.append("*-{")
+          .append(reservedAttributes.stream().map(a -> "@" + a).collect(joining(", ")))
+          .append("}");
     }
     sb.append(") => ");
     sb.append(contentKind.asAttributeValue());

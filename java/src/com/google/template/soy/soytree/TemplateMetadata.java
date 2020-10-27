@@ -92,6 +92,9 @@ public abstract class TemplateMetadata {
   private static ImmutableList<Parameter> directParametersFromTemplate(TemplateNode node) {
     ImmutableList.Builder<Parameter> params = ImmutableList.builder();
     for (TemplateParam param : node.getParams()) {
+      if (param.isImplicit()) {
+        continue;
+      }
       params.add(parameterFromTemplateParam(param));
     }
     return params.build();
