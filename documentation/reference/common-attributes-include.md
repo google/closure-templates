@@ -6,6 +6,9 @@
 *   `cssbase`: takes a single css namespace (dotted identifier). This is used
     for autoprefixing in [css function](functions.md#css) calls.
 
+*   `cssprefix`: takes an explicit prefix to use for autoprefixing in
+    [css function](functions.md#css) calls.
+
 *   `requirecsspath` takes a list of global or relative paths for css files
-    (this can be either GSS or Sass). This does NOT have any autoprefix
-    behavior. Use of cssbase is required to autoprefix.
+    (these can be either GSS or Sass). This does NOT have any autoprefix
+    behavior. Use of `cssbase` or `cssprefix` is required to autoprefix.
