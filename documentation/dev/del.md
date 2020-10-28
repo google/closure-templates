@@ -53,8 +53,8 @@ like this
 ### foo_dialog.soy
 
 ```soy
-{namespace my.project.dialog_foo}
 {delpackage foo}
+{namespace my.project.dialog_foo}
 
 {deltemplate my.project.dialog}
   ...
@@ -64,8 +64,8 @@ like this
 ### bar_dialog.soy
 
 ```soy
-{namespace my.project.dialog_bar}
 {delpackage bar}
+{namespace my.project.dialog_bar}
 
 {deltemplate my.project.dialog}
   ...
