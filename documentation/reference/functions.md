@@ -436,6 +436,23 @@ parameter record must be a record literal, and each member must match the name
 and type of an unbound parameter in the template-type expression. Parameters
 already bound to the template type may not be bound again.
 
+```soy
+{template foo}
+  {@param fn: (a:string) => html}
+{/template}
+
+{template bar}
+  {@param a: string}
+  {@param i2: string}
+{/template}
+
+{template example}
+  {call foo}
+    {param fn: template(bar).bind(record(i2: 'Hello')) /}
+  {/call}
+{/template}
+```
+
 
 ## Localization (l10n) Functions
 
