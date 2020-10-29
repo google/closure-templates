@@ -178,8 +178,15 @@ message HtmlElementMetadataP {
   string tag = 3;
   // Whether or not a template contains an element with {skip} directive.
   bool is_skip = 4;
-  // If this element delegates to another element then this is its FQN.
-  string delegate = 5;
+
+  oneof delegate {
+    // If this element delegates to another element (element call syntax) then
+    // this is its FQN.
+    string delegate_element = 5;
+    // If this element delegates to another template (call syntax) then this is
+    // its FQN.
+    string delegate_callee = 6;
+  }
 }
 
 // Metadata around whether the template is a Soy element or not.

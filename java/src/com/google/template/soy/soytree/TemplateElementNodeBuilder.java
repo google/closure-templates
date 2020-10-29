@@ -37,10 +37,13 @@ public final class TemplateElementNodeBuilder
     extends TemplateNodeBuilder<TemplateElementNodeBuilder> {
 
   static final ImmutableSet<String> BANNED_ATTRIBUTE_NAMES =
-      ImmutableSet.of("autoescape", "kind", "stricthtml", "visibility");
+      ImmutableSet.of("autoescape", "stricthtml", "visibility");
 
   private static final SoyErrorKind BANNED_ATTRIBUTE_NAMES_ERROR =
       SoyErrorKind.of("Attribute ''{0}'' is not allowed on Soy elements.");
+
+  private static final SoyErrorKind INVALID_ELEMENT_KIND =
+      SoyErrorKind.of("Soy element kind must be html or html<...>.");
 
   private List<CommandTagAttribute> attrs = ImmutableList.of();
 
@@ -66,9 +69,13 @@ public final class TemplateElementNodeBuilder
   public TemplateElementNode build() {
     Preconditions.checkState(id != null && cmdText != null);
     for (CommandTagAttribute attr : attrs) {
-      if (BANNED_ATTRIBUTE_NAMES.contains(attr.getName().identifier())) {
+      if (attr.getName().identifier().equals("kind")) {
+        if (!getContentKind().getSanitizedContentKind().isHtml()) {
+          errorReporter.report(attr.getValueLocation(), INVALID_ELEMENT_KIND);
+        }
+      } else if (BANNED_ATTRIBUTE_NAMES.contains(attr.getName().identifier())) {
         this.errorReporter.report(
-            this.sourceLocation, BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
+            attr.getName().location(), BANNED_ATTRIBUTE_NAMES_ERROR, attr.getName().identifier());
       }
     }
     return new TemplateElementNode(this, soyFileHeaderInfo, params);

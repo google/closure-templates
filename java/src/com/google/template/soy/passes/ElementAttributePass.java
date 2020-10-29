@@ -511,7 +511,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
    * template does not delegate.
    */
   private static String getDelegateCall(TemplateNode templateNode) {
-    return templateNode.getHtmlElementMetadata().getDelegate();
+    return templateNode.getHtmlElementMetadata().getDelegateElement();
   }
 
   private static void copyChildren(HtmlAttributeNode from, ParentSoyNode<StandaloneNode> to) {

@@ -66,6 +66,7 @@ import com.google.template.soy.parseinfo.passes.GenerateParseInfoVisitor;
 import com.google.template.soy.passes.CheckTemplateHeaderVarsPass;
 import com.google.template.soy.passes.ClearSoyDocStringsVisitor;
 import com.google.template.soy.passes.PassManager;
+import com.google.template.soy.passes.PassManager.AstRewrites;
 import com.google.template.soy.passes.PassManager.PassContinuationRule;
 import com.google.template.soy.passes.PluginResolver;
 import com.google.template.soy.passes.SoyConformancePass;
@@ -1173,7 +1174,7 @@ public final class SoyFileSet {
   }
 
   /** Performs enough work to retrieve all possible warnings in a compile. */
-  public AnalysisResult compileForAnalysis(boolean treatErrorsAsWarnings) {
+  public AnalysisResult compileForAnalysis(boolean treatErrorsAsWarnings, AstRewrites astRewrites) {
     return entryPoint(
         () -> {
           disallowExternalCalls();
@@ -1184,7 +1185,7 @@ public final class SoyFileSet {
                       // analysis
                       // rules.
                       .optimize(false)
-                      .astRewrites(false)
+                      .astRewrites(astRewrites)
                       // skip adding extra attributes
                       .addHtmlAttributesForDebugging(false)
                       // skip the autoescaper

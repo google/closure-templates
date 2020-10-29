@@ -182,6 +182,20 @@ public final class PassManager {
     executed.add(getPassClass(pass));
   }
 
+  /** @see Builder#astRewrites */
+  public enum AstRewrites {
+    /** No AST rewrites whatsoever. */
+    NONE,
+    /** Enough AST rewrites for Tricorder analysis to work. */
+    TRICORDER,
+    /** All the AST rewrites. */
+    ALL;
+
+    boolean atLeast(AstRewrites v) {
+      return this.ordinal() >= v.ordinal();
+    }
+  }
+
   /** A builder for configuring the pass manager. */
   public static final class Builder {
     private SoyTypeRegistry registry;
@@ -201,7 +215,7 @@ public final class PassManager {
     private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
     private boolean insertEscapingDirectives = true;
     private boolean addHtmlAttributesForDebugging = true;
-    private boolean astRewrites = true;
+    private AstRewrites astRewrites = AstRewrites.ALL;
     private final Map<Class<? extends CompilerPass>, PassContinuationRule>
         passContinuationRegistry = Maps.newHashMap();
     private boolean building;
@@ -273,7 +287,7 @@ public final class PassManager {
      * Determines whether passes that modify the AST run. Typically analysis tools set this to false
      * since the resulting AST will not match the original source file.
      */
-    public Builder astRewrites(boolean astRewrites) {
+    public Builder astRewrites(AstRewrites astRewrites) {
       this.astRewrites = astRewrites;
       return this;
     }
@@ -363,7 +377,7 @@ public final class PassManager {
       // imports.
       ImmutableList.Builder<CompilerFileSetPass> partialTemplateRegistryPassesBuilder =
           ImmutableList.builder();
-      if (astRewrites) {
+      if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(
             new ContentSecurityPolicyNonceInjectionPass(errorReporter),
             partialTemplateRegistryPassesBuilder);
@@ -377,7 +391,7 @@ public final class PassManager {
       addPass(
           new ResolveTemplateImportsPass(options, errorReporter),
           partialTemplateRegistryPassesBuilder);
-      if (astRewrites) {
+      if (astRewrites.atLeast(AstRewrites.TRICORDER)) {
         addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
       }
       addPass(new ResolveTemplateNamesPass(), partialTemplateRegistryPassesBuilder);
@@ -391,7 +405,7 @@ public final class PassManager {
       addPass(new ResolvePluginsPass(pluginResolver), partialTemplateRegistryPassesBuilder);
 
       // Must come after ResolvePluginsPass.
-      if (astRewrites) {
+      if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(
             new RewriteDirectivesCallableAsFunctionsPass(errorReporter),
             partialTemplateRegistryPassesBuilder);
@@ -418,7 +432,7 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
       addPass(new ResolveNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to be after ResolveNames and MsgsPass
-      if (astRewrites) {
+      if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);
       }
 
@@ -426,7 +440,7 @@ public final class PassManager {
       addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      if (astRewrites) {
+      if (astRewrites.atLeast(AstRewrites.TRICORDER)) {
         addPass(
             new ElementAttributePass(errorReporter, pluginResolver),
             partialTemplateRegistryPassesBuilder);
@@ -500,14 +514,15 @@ public final class PassManager {
         // Upgrade the "named template" placeholder types to proper template types, now that their
         // signatures are known.
         addPass(
-            new ResolveExpressionTypesCrossTemplatePass(registry, errorReporter, astRewrites),
+            new ResolveExpressionTypesCrossTemplatePass(
+                registry, errorReporter, astRewrites.atLeast(AstRewrites.ALL)),
             crossTemplateCheckingPassesBuilder);
         // Needs to come after types have been set.
         addPass(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
             crossTemplateCheckingPassesBuilder);
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
-        if (astRewrites
+        if (astRewrites.atLeast(AstRewrites.TRICORDER)
             && options.getExperimentalFeatures().contains("enableTemplateElementKind")) {
           addPass(
               new ElementCheckCrossTemplatePass(errorReporter), crossTemplateCheckingPassesBuilder);
