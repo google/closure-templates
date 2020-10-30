@@ -271,10 +271,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
     boolean iAmAnElementCallingAnElement = !delegateTemplateName.isEmpty();
     ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
 
-    openTagNode.getChildren().stream()
-        .filter(p -> p.getKind() == Kind.HTML_ATTRIBUTE_NODE)
-        .map(HtmlAttributeNode.class::cast)
-        .filter(attr -> attr.getStaticKey() != null)
+    SoyTreeUtils.getAllMatchingNodesOfType(
+            openTagNode, HtmlAttributeNode.class, attr -> attr.getStaticKey() != null)
+        .stream()
         .forEach(
             attrNode -> {
               String attrKey = attrNode.getStaticKey();
