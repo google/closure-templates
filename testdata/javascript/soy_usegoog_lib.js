@@ -1071,41 +1071,6 @@ goog.hasBadLetScoping = null;
 
 
 /**
- * @return {boolean}
- * @package Visible for testing.
- */
-goog.useSafari10Workaround = function() {
-  if (goog.hasBadLetScoping == null) {
-    var hasBadLetScoping;
-    try {
-      hasBadLetScoping = !eval(goog.CLOSURE_EVAL_PREFILTER_.createScript(
-          '"use strict";' +
-          'let x = 1; function f() { return typeof x; };' +
-          'f() == "number";'));
-    } catch (e) {
-      // Assume that ES6 syntax isn't supported.
-      hasBadLetScoping = false;
-    }
-    goog.hasBadLetScoping = hasBadLetScoping;
-  }
-  return goog.hasBadLetScoping;
-};
-
-
-/**
- * @param {string} moduleDef
- * @return {string}
- * @package Visible for testing.
- */
-goog.workaroundSafari10EvalBug = function(moduleDef) {
-  return '(function(){' + moduleDef +
-      '\n' +  // Terminate any trailing single line comment.
-      ';' +   // Terminate any trailing expression.
-      '})();\n';
-};
-
-
-/**
  * @param {function(?):?|string} moduleDef The module definition.
  */
 goog.loadModule = function(moduleDef) {
@@ -1126,10 +1091,6 @@ goog.loadModule = function(moduleDef) {
     if (typeof moduleDef === 'function') {
       exports = moduleDef.call(undefined, exports);
     } else if (typeof moduleDef === 'string') {
-      if (goog.useSafari10Workaround()) {
-        moduleDef = goog.workaroundSafari10EvalBug(moduleDef);
-      }
-
       exports = goog.loadModuleFromSource_.call(undefined, exports, moduleDef);
     } else {
       throw new Error('Invalid module definition');
@@ -40048,7 +40009,8 @@ goog.format.stringToNumericValue_ = function(stringValue, conversion) {
   'use strict';
   var match = stringValue.match(goog.format.SCALED_NUMERIC_RE_);
   if (!match) {
-    return NaN;
+    // Parse signed `Infinity`, `NaN`, or scientific notation.
+    return Number(stringValue);
   }
   var val = Number(match[1]) * conversion[match[2]];
   return val;
@@ -40071,13 +40033,14 @@ goog.format.numericValueToString_ = function(
     val, conversion, opt_decimals, opt_suffix, opt_useSeparator) {
   'use strict';
   var prefixes = goog.format.NUMERIC_SCALE_PREFIXES_;
-  var orig_val = val;
+  var origVal = val;
   var symbol = '';
   var separator = '';
   var scale = 1;
   if (val < 0) {
     val = -val;
   }
+  if (val === Infinity) return (Infinity * Math.sign(origVal)).toString();
   for (var i = 0; i < prefixes.length; i++) {
     var unit = prefixes[i];
     scale = conversion[unit];
@@ -40099,7 +40062,7 @@ goog.format.numericValueToString_ = function(
     }
   }
   var ex = Math.pow(10, opt_decimals !== undefined ? opt_decimals : 2);
-  return Math.round(orig_val / scale * ex) / ex + separator + symbol;
+  return Math.round(origVal / scale * ex) / ex + separator + symbol;
 };
 
 
@@ -40116,8 +40079,7 @@ goog.format.numericValueToString_ = function(
  * @type {RegExp}
  * @private
  */
-goog.format.SCALED_NUMERIC_RE_ =
-    /^([-]?\d+\.?\d*)([K,M,G,T,P,E,Z,Y,k,m,u,n]?)[B]?$/;
+goog.format.SCALED_NUMERIC_RE_ = /^(-?\d+\.?\d*)([KMGTPEZYkmun]?)B?$/;
 
 
 /**
@@ -40405,10 +40367,10 @@ goog.format.IS_IE8_OR_ABOVE_ =
  * use &lt;wbr&gt;.
  * @type {string}
  */
-goog.format.WORD_BREAK_HTML =
-    goog.userAgent.WEBKIT ? '<wbr></wbr>' : goog.userAgent.OPERA ?
-                            '&shy;' :
-                            goog.format.IS_IE8_OR_ABOVE_ ? '&#8203;' : '<wbr>';
+goog.format.WORD_BREAK_HTML = goog.userAgent.WEBKIT ? '<wbr></wbr>' :
+    goog.userAgent.OPERA                            ? '&shy;' :
+    goog.format.IS_IE8_OR_ABOVE_                    ? '&#8203;' :
+                                                      '<wbr>';
 
 
 /**

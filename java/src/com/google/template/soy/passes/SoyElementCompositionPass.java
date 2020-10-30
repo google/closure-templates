@@ -30,6 +30,9 @@ import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -41,7 +44,10 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -52,6 +58,7 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
@@ -59,6 +66,7 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.UnionType;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -75,7 +83,7 @@ import java.util.Set;
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ILLEGAL_CHILD =
-      SoyErrorKind.of("In an element call commands must be contained within an attribute value.");
+      SoyErrorKind.of("Only HTML attributes are allowed as children of this template call.");
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
       SoyErrorKind.of("Attribute specified multiple times.");
@@ -157,18 +165,45 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         .skip(1) // skip the first print node with the function call
         .forEach(
             c -> {
-              if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE
-                  && ((HtmlAttributeNode) c).getStaticKey() != null) {
-                consumeAttribute(
-                    (HtmlAttributeNode) c,
+              if (c.getKind() == SoyNode.Kind.IF_NODE) {
+                IfNode ifNode = (IfNode) c;
+                if (ifNode.numChildren() != 1) {
+                  errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+                  return;
+                }
+                IfCondNode ifCond = (IfCondNode) ifNode.getChild(0);
+                LetValueNode letValueNode =
+                    new LetValueNode(
+                        nodeIdGen.genId(),
+                        unknown,
+                        "$__internal_call_" + nodeIdGen.genId(),
+                        unknown,
+                        ifCond.getExpr().getRoot().copy(new CopyState()));
+                letValueNode.getVar().setType(ifCond.getExpr().getRoot().getType());
+                call.getParent().addChild(call.getParent().getChildIndex(call), letValueNode);
+                for (StandaloneNode child : ifCond.getChildren()) {
+                  processChildrenOfHtmlTagNode(
+                      child,
+                      nodeIdGen,
+                      seenAttr,
+                      attributesParam,
+                      parameterMap,
+                      attributesBuilder,
+                      call,
+                      Optional.of(
+                          new VarRefNode(
+                              letValueNode.getVarName(), unknown, letValueNode.getVar())));
+                }
+              } else {
+                processChildrenOfHtmlTagNode(
+                    c,
                     nodeIdGen,
                     seenAttr,
                     attributesParam,
                     parameterMap,
                     attributesBuilder,
-                    call);
-              } else {
-                errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+                    call,
+                    Optional.empty());
               }
             });
     ImmutableMap<ExprNode, ExprNode> attributes = attributesBuilder.build();
@@ -216,6 +251,31 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     return retNode;
   }
 
+  private void processChildrenOfHtmlTagNode(
+      StandaloneNode node,
+      IdGenerator nodeIdGen,
+      Set<String> seenAttr,
+      Optional<TemplateParam> attributesParam,
+      Map<String, SoyType> parameterMap,
+      ImmutableMap.Builder<ExprNode, ExprNode> attributesBuilder,
+      CallBasicNode call,
+      Optional<ExprNode> conditional) {
+    if (node.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE
+        && ((HtmlAttributeNode) node).getStaticKey() != null) {
+      consumeAttribute(
+          (HtmlAttributeNode) node,
+          nodeIdGen,
+          seenAttr,
+          attributesParam,
+          parameterMap,
+          attributesBuilder,
+          call,
+          conditional);
+    } else {
+      errorReporter.report(node.getSourceLocation(), ILLEGAL_CHILD);
+    }
+  }
+
   private void consumeAttribute(
       HtmlAttributeNode attr,
       IdGenerator nodeIdGen,
@@ -223,7 +283,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Optional<TemplateParam> attributesParam,
       Map<String, SoyType> parameterMap,
       ImmutableMap.Builder<ExprNode, ExprNode> attributes,
-      CallBasicNode callNode) {
+      CallBasicNode callNode,
+      Optional<ExprNode> condition) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();
 
     String attrName = attr.getStaticKey();
@@ -289,9 +350,18 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                     .get()
                 : SanitizedContentKind.TEXT);
     callNode.getParent().addChild(callNode.getParent().getChildIndex(callNode), letContentNode);
-    attributes.put(
-        new StringNode(attrName, QuoteStyle.SINGLE, unknown),
-        new VarRefNode(letContentNode.getVar().name(), unknown, letContentNode.getVar()));
+    VarRefNode varRef =
+        new VarRefNode(letContentNode.getVar().name(), unknown, letContentNode.getVar());
+    if (condition.isPresent()) {
+      ConditionalOpNode op =
+          (ConditionalOpNode)
+              Operator.CONDITIONAL.createNode(
+                  unknown, unknown, condition.get(), varRef, new NullNode(unknown));
+      op.setType(UnionType.of(NullType.getInstance(), varRef.getType()));
+      attributes.put(new StringNode(attrName, QuoteStyle.SINGLE, unknown), op);
+    } else {
+      attributes.put(new StringNode(attrName, QuoteStyle.SINGLE, unknown), varRef);
+    }
     for (StandaloneNode node : attrValue.getChildren()) {
       letContentNode.addChild(node.copy(new CopyState()));
     }
