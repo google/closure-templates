@@ -140,25 +140,25 @@ argument.
 
 Returns the length of a list.
 
-Also callable by function syntax: `length(list)`
+Also callable as deprecated global function: `length(list)`
 
 ### `list.concat(list)` {#concatLists}
 
 Joins two or more lists together.
 
-Also callable by function syntax: `concatLists(list, list...)`
+Also callable as deprecated global function: `concatLists(list, list...)`
 
 ### `list.contains(value)` {#listContains}
 
 Checks if the given value is inside the list.
 
-Also callable by function syntax: `listContains(list, value)`
+Also callable as deprecated global function: `listContains(list, value)`
 
 ### `list.indexOf(value)` {#listIndexOf}
 
 Return the index of the value in list, or -1.
 
-Also callable by function syntax: `listIndexOf(list, value)`
+Also callable as deprecated global function: `listIndexOf(list, value)`
 
 ### `list.slice(from[, to])` {#listSlice}
 
@@ -170,7 +170,7 @@ Negative indices are supported and match the
 
 Joins a list of strings or integers with a string separator.
 
-Also callable by function syntax: `join(list, separator)`
+Also callable as deprecated global function: `join(list, separator)`
 
 ### `list<number>.sort()` {#sort}
 
@@ -199,7 +199,7 @@ information on i18n-safe string sorting.
 
 Checks whether a string contains a particular substring.
 
-Also callable by function syntax: `strContains(str, subStr)`
+Also callable as deprecated global function: `strContains(str, subStr)`
 
 ### `str.endsWith(subStr)` {#strEndsWith}
 
@@ -210,13 +210,13 @@ Checks whether a string ends with a particular substring.
 Returns the index of the first occurrence of `substr` within `str`, or `-1`.
 Case-sensitive, 0-based index.
 
-Also callable by function syntax: `strIndexOf(str, subStr)`
+Also callable as deprecated global function: `strIndexOf(str, subStr)`
 
 ### `str.length()` {#strLen}
 
 Returns the length of a string in characters.
 
-Also callable by function syntax: `strLen(str)`
+Also callable as deprecated global function: `strLen(str)`
 
 ### `str.split(sep)` {#strSplit}
 
@@ -238,7 +238,7 @@ concepts like graphemes. It is almost never valid to use this to break text
 meant for users into parts since it will be very easy to break the string (e.g.
 split an emoji in half).
 
-Also callable by function syntax: `strSub(str, start[, end])`
+Also callable as deprecated global function: `strSub(str, start[, end])`
 
 ### `str.toAsciiLowerCase()` {#strToAsciiLowerCase}
 
@@ -248,7 +248,7 @@ NOTE: This function doesn't consider locales when tranforming the string and it
 only transforms ASCII characters `A-Z`. Do not use it to lowercase string that
 are localized and/or UNICODE.
 
-Also callable by function syntax: `strToAsciiLowerCase(str)`
+Also callable as deprecated global function: `strToAsciiLowerCase(str)`
 
 ### `str.toAsciiUpperCase()` {#strToAsciiUpperCase}
 
@@ -258,7 +258,7 @@ NOTE: This function doesn't consider locales when tranforming the string and it
 only transforms ASCII characters `a-z`. Do not use it to uppercase string that
 are localized and/or UNICODE.
 
-Also callable by function syntax: `strToAsciiUpperCase(str)`
+Also callable as deprecated global function: `strToAsciiUpperCase(str)`
 
 ### `strSmsUriToUri(string)` {#strSmsUriToUri}
 
