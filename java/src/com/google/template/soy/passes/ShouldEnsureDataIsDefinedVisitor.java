@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
@@ -40,7 +41,9 @@ public final class ShouldEnsureDataIsDefinedVisitor {
 
     boolean hasOptional = false;
     for (TemplateParam param : template.getParams()) {
-      if (param.isImplicit()) {
+      if (param.isImplicit()
+          && !(template.getTemplateContentKind()
+              instanceof TemplateContentKind.ElementContentKind)) {
         continue;
       }
       if (param.isRequired()) {

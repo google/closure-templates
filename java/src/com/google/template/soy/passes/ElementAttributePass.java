@@ -133,6 +133,15 @@ final class ElementAttributePass implements CompilerFileSetPass {
   private static final SoyErrorKind DELEGATE_KIND_MISMATCH =
       SoyErrorKind.of("Expected the called template to have root tag {0}, found {1}.");
 
+  private static final MapType ATTRIBUTE_MAP_TYPE =
+      MapType.of(
+          StringType.getInstance(),
+          UnionType.of(
+              StringType.getInstance(),
+              SanitizedType.UriType.getInstance(),
+              NullType.getInstance(),
+              SanitizedType.TrustedResourceUriType.getInstance()));
+
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
 
@@ -255,14 +264,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
             /* desc= */ "Created by ElementAttributePass.",
             /* defaultValue= */ null);
     VarRefNode attrExpr = new VarRefNode(attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
-    attrsParam.setType(
-        MapType.of(
-            StringType.getInstance(),
-            UnionType.of(
-                StringType.getInstance(),
-                SanitizedType.UriType.getInstance(),
-                NullType.getInstance(),
-                SanitizedType.TrustedResourceUriType.getInstance())));
+    attrsParam.setType(SoyTypes.makeNullable(ATTRIBUTE_MAP_TYPE));
     templateNode.addParam(attrsParam);
     SourceLocation unknown = templateNode.getSourceLocation().clearRange();
 
@@ -418,21 +420,26 @@ final class ElementAttributePass implements CompilerFileSetPass {
           new PrintNode(id.get(), unknown, true, varRef, ImmutableList.of(), errorReporter));
       HtmlAttributeValueNode value = new HtmlAttributeValueNode(id.get(), unknown, Quotes.SINGLE);
       htmlAttributeNode.addChild(value);
+      VarRefNode root = varRef.copy(new CopyState());
+      VarRefNode attrRef = attrExpr.copy(new CopyState());
+      attrRef.setSubstituteType(ATTRIBUTE_MAP_TYPE);
       value.addChild(
           new PrintNode(
               id.get(),
               unknown,
               false,
-              new ItemAccessNode(
-                  attrExpr.copy(new CopyState()),
-                  new ExprRootNode(varRef.copy(new CopyState())),
-                  unknown,
-                  true),
+              new ItemAccessNode(attrRef, new ExprRootNode(root), unknown, false),
               ImmutableList.of(),
               errorReporter));
 
       forNonemptyNode.addChild(htmlAttributeNode);
-      openTagNode.addChild(forNode);
+      IfNode ifNode = new IfNode(id.get(), unknown);
+      IfCondNode ifCondNode =
+          new IfCondNode(
+              id.get(), unknown, unknown, "if", buildNotNull(attrExpr.copy(new CopyState())));
+      ifNode.addChild(ifCondNode);
+      ifCondNode.addChild(forNode);
+      openTagNode.addChild(ifNode);
     }
 
     warnUnusedAttributes(unseenParams);
