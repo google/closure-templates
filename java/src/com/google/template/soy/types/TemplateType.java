@@ -430,9 +430,7 @@ public abstract class TemplateType extends SoyType {
   final void doToProto(SoyTypeP.Builder builder) {
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
     for (Parameter parameter : getParameters()) {
-      // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
       templateBuilder
-          .putParameterOld(parameter.getName(), parameter.getType().toProto())
           .addParameter(
               ParameterP.newBuilder()
                   .setName(parameter.getName())
@@ -452,8 +450,7 @@ public abstract class TemplateType extends SoyType {
                       .addAllReservedAttributes(getReservedAttributes()))
               .build();
     }
-    // TODO(b/168821294): Stop setting this field once a new Kythe is deployed.
-    templateBuilder.setReturnTypeOld(returnType.getPrimitive()).setReturnType(returnType);
+    templateBuilder.setReturnType(returnType);
   }
 
   private static SoyType templateContentKindToType(TemplateContentKind kind) {
