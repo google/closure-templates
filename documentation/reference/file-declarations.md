@@ -55,6 +55,8 @@ import * as fooMagic from 'path/to/soy/file/foo.soy';
 {/call}
 ```
 
+Import statements should be sorted by path.
+
 **Note:** Always prefer imports over referencing fully qualified names or using
 aliases (both are now deprecated and will soon be banned; we are in the process
 of migrating all existing users to use imports).
