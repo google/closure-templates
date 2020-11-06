@@ -351,12 +351,8 @@ public abstract class TemplateType extends SoyType {
     // containing some optional parameters omitted from this type).
     for (Parameter thisParam : getParameters()) {
       if (thisParam.getKind() == ParameterKind.ATTRIBUTE) {
-        if (!((srcParams.containsKey(thisParam.getName())
-                && srcParams.get(thisParam.getName()).getKind() == ParameterKind.ATTRIBUTE)
-            || (srcTemplate.getAllowExtraAttributes()
-                && !srcTemplate
-                    .getReservedAttributes()
-                    .contains(Parameter.paramToAttrName(thisParam.getName()))))) {
+        if (!(srcParams.containsKey(thisParam.getName())
+            && srcParams.get(thisParam.getName()).getKind() == ParameterKind.ATTRIBUTE)) {
           return false;
         }
       } else {
@@ -403,6 +399,9 @@ public abstract class TemplateType extends SoyType {
         sb.append(", ");
       }
       String name = parameter.getName();
+      if (name.equals(ATTRIBUTES_HIDDEN_PARAM)) {
+        continue;
+      }
       if (parameter.getKind() == ParameterKind.ATTRIBUTE) {
         name = "@" + Parameter.paramToAttrName(name);
       }
@@ -430,15 +429,14 @@ public abstract class TemplateType extends SoyType {
   final void doToProto(SoyTypeP.Builder builder) {
     SoyTypeP.TemplateTypeP.Builder templateBuilder = builder.getTemplateBuilder();
     for (Parameter parameter : getParameters()) {
-      templateBuilder
-          .addParameter(
-              ParameterP.newBuilder()
-                  .setName(parameter.getName())
-                  .setKind(parameter.getKind().toProto())
-                  .setType(parameter.getType().toProto())
-                  .setRequired(parameter.isRequired())
-                  .setImplicit(parameter.isImplicit())
-                  .build());
+      templateBuilder.addParameter(
+          ParameterP.newBuilder()
+              .setName(parameter.getName())
+              .setKind(parameter.getKind().toProto())
+              .setType(parameter.getType().toProto())
+              .setRequired(parameter.isRequired())
+              .setImplicit(parameter.isImplicit())
+              .build());
     }
     SoyTypeP returnType = templateContentKindToType(getContentKind()).toProto();
     if (getAllowExtraAttributes()) {

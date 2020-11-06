@@ -555,13 +555,6 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     return builder.build();
   }
 
-  public void removeAttributeParams() {
-    this.headerParams =
-        this.headerParams.stream()
-            .filter(p -> !(p instanceof AttrParam))
-            .collect(toImmutableList());
-  }
-
   public void setHtmlElementMetadata(HtmlElementMetadataP metadata) {
     this.templateMetadata = metadata;
   }
