@@ -22,10 +22,14 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.NullNode;
+import com.google.template.soy.exprtree.Operator;
+import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
@@ -37,6 +41,10 @@ import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
+import com.google.template.soy.soytree.IfCondNode;
+import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
@@ -46,14 +54,17 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
+import com.google.template.soy.types.UnionType;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -70,7 +81,7 @@ import javax.annotation.Nullable;
 final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind ILLEGAL_CHILD =
-      SoyErrorKind.of("In an element call commands must be contained within an attribute value.");
+      SoyErrorKind.of("Only HTML attributes are allowed as children of this template call.");
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
       SoyErrorKind.of("Attribute specified multiple times.");
@@ -164,25 +175,79 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         .skip(1) // skip the first print node with the function call
         .forEach(
             c -> {
-              if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE
-                  && ((HtmlAttributeNode) c).getStaticKey() != null) {
-                CallParamNode param =
-                    consumeAttribute(
-                        (HtmlAttributeNode) c,
-                        nodeIdGen,
-                        seenAttr,
-                        parameterMap,
-                        attrs,
-                        attributesNode);
-                if (param != null) {
-                  call.addChild(param);
+              if (c.getKind() == SoyNode.Kind.IF_NODE) {
+                IfNode ifNode = (IfNode) c;
+                if (ifNode.numChildren() != 1) {
+                  errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+                  return;
+                }
+                IfCondNode ifCond = (IfCondNode) ifNode.getChild(0);
+                LetValueNode letValueNode =
+                    new LetValueNode(
+                        nodeIdGen.genId(),
+                        unknown,
+                        "$__internal_call_" + nodeIdGen.genId(),
+                        unknown,
+                        ifCond.getExpr().getRoot().copy(new CopyState()));
+                letValueNode.getVar().setType(ifCond.getExpr().getRoot().getType());
+                call.getParent().addChild(call.getParent().getChildIndex(call), letValueNode);
+                for (StandaloneNode child : ifCond.getChildren()) {
+                  VarRefNode ref =
+                      new VarRefNode(letValueNode.getVarName(), unknown, letValueNode.getVar());
+                  ref.setSubstituteType(letValueNode.getVar().type());
+                  maybeConsumeAttribute(
+                      child,
+                      call,
+                      nodeIdGen,
+                      seenAttr,
+                      parameterMap,
+                      attrs,
+                      attributesNode,
+                      Optional.of(ref));
                 }
               } else {
-                errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+                maybeConsumeAttribute(
+                    c,
+                    call,
+                    nodeIdGen,
+                    seenAttr,
+                    parameterMap,
+                    attrs,
+                    attributesNode,
+                    Optional.empty());
               }
             });
     if (attributesNode.numChildren() > 0) {
       call.addChild(attributesNode);
+    }
+  }
+
+  private void maybeConsumeAttribute(
+      StandaloneNode c,
+      CallBasicNode call,
+      IdGenerator nodeIdGen,
+      Set<String> seenAttr,
+      Map<String, SoyType> parameterMap,
+      Map<String, AttrParam> attrs,
+      CallParamContentNode attributesNode,
+      Optional<ExprNode> conditional) {
+    if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE
+        && ((HtmlAttributeNode) c).getStaticKey() != null) {
+      CallParamNode param =
+          consumeAttribute(
+              (HtmlAttributeNode) c,
+              nodeIdGen,
+              seenAttr,
+              parameterMap,
+              attrs,
+              attributesNode,
+              call,
+              conditional);
+      if (param != null) {
+        call.addChild(param);
+      }
+    } else {
+      errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
     }
   }
 
@@ -225,7 +290,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Set<String> seenAttr,
       Map<String, SoyType> parameterMap,
       Map<String, AttrParam> attrs,
-      CallParamContentNode attributesNode) {
+      CallParamContentNode attributesNode,
+      CallBasicNode call,
+      Optional<ExprNode> condition) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();
 
     String attrName = attr.getStaticKey();
@@ -246,14 +313,27 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     }
     if (isSoyAttr) {
       ExprNode val = new VarRefNode(paramName, unknown, attrs.get(paramName));
-      return new CallParamValueNode(
-          nodeIdGen.genId(), attr.getSourceLocation(), Identifier.create(paramName, unknown), val);
-    } else {
-      StandaloneNode value = attr.getChild(1);
-      if (value.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
-        return null;
+      if (condition.isPresent()) {
+        return new CallParamValueNode(
+            nodeIdGen.genId(),
+            attr.getSourceLocation(),
+            Identifier.create(paramName, unknown),
+            Operator.CONDITIONAL.createNode(
+                unknown, unknown, condition.get(), val, new NullNode(unknown)));
+      } else {
+        return new CallParamValueNode(
+            nodeIdGen.genId(),
+            attr.getSourceLocation(),
+            Identifier.create(paramName, unknown),
+            val);
       }
-      HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
+    }
+    StandaloneNode value = attr.getChild(1);
+    if (value.getKind() != Kind.HTML_ATTRIBUTE_VALUE_NODE) {
+      return null;
+    }
+    HtmlAttributeValueNode attrValue = (HtmlAttributeValueNode) value;
+    if (!condition.isPresent()) {
       CallParamContentNode contentNode =
           new CallParamContentNode(
               nodeIdGen.genId(),
@@ -273,6 +353,46 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       }
       return contentNode;
     }
+    /**
+     * Otherwise, construct a {let} for each attribute and pass them as values in the map
+     *
+     * <pre>
+     *   {let $__internal_call_someAttr_0 kind="text"}{if $cond}...{/if}{/let}
+     *   {call foo}
+     *     {param someAttr: $cond ? $__internal_call_someAttr_0 : null /}
+     *   {/call}
+     * </pre>
+     */
+    LetContentNode letContentNode =
+        LetContentNode.forVariable(
+            nodeIdGen.genId(),
+            unknown,
+            "$__internal_call_" + paramName + nodeIdGen.genId(),
+            unknown,
+            parameterMap.containsKey(paramName)
+                ? SanitizedContentKind.fromAttributeValue(getKind(parameterMap.get(paramName)))
+                    .get()
+                : SanitizedContentKind.TEXT);
+    call.getParent().addChild(call.getParent().getChildIndex(call), letContentNode);
+    IfNode ifNode = new IfNode(nodeIdGen.genId(), unknown);
+    letContentNode.addChild(ifNode);
+    IfCondNode ifCondNode =
+        new IfCondNode(
+            nodeIdGen.genId(), unknown, unknown, "if", condition.get().copy(new CopyState()));
+    ifNode.addChild(ifCondNode);
+    ifCondNode.getExpr().setType(condition.get().getType());
+    for (StandaloneNode node : attrValue.getChildren()) {
+      ifCondNode.addChild(node.copy(new CopyState()));
+    }
+    VarRefNode varRef =
+        new VarRefNode(letContentNode.getVar().name(), unknown, letContentNode.getVar());
+    ConditionalOpNode op =
+        (ConditionalOpNode)
+            Operator.CONDITIONAL.createNode(
+                unknown, unknown, condition.get(), varRef, new NullNode(unknown));
+    op.setType(UnionType.of(NullType.getInstance(), varRef.getType()));
+    return new CallParamValueNode(
+        nodeIdGen.genId(), unknown, Identifier.create(paramName, unknown), op);
   }
 
   private static String getKind(SoyType attrType) {

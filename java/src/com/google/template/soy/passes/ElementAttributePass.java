@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -34,10 +33,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -194,30 +189,6 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
   }
 
-  private NotOpNode buildNotNull(ExprNode node) {
-    SourceLocation unknown = node.getSourceLocation().clearRange();
-    NotOpNode not = new NotOpNode(unknown, unknown);
-    FunctionNode isNull =
-        FunctionNode.newPositional(
-            Identifier.create("isNull", unknown),
-            (SoySourceFunction) pluginResolver.lookupSoyFunction("isNull", 1, unknown),
-            unknown);
-    isNull.addChild(new ExprRootNode(node.copy(new CopyState())));
-    not.addChild(isNull);
-    return not;
-  }
-
-  private IfNode buildPrintIfNotNull(ExprNode node, Supplier<Integer> id) {
-    SourceLocation unknown = node.getSourceLocation().clearRange();
-    IfNode ifNode = new IfNode(id.get(), unknown);
-    IfCondNode ifCondNode = new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node));
-    ifNode.addChild(ifCondNode);
-    PrintNode printNode =
-        new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());
-    ifCondNode.addChild(printNode);
-    return ifNode;
-  }
-
   private void processTemplate(
       TemplateNode templateNode,
       Supplier<Integer> id,
@@ -240,6 +211,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
     HtmlOpenTagNode openTagNode = elmOpen.get();
     String delegateTemplateName = getDelegateCall(templateNode);
     boolean iAmAnElementCallingAnElement = !delegateTemplateName.isEmpty();
+    SoySourceFunction isNullFn =
+        (SoySourceFunction) pluginResolver.lookupSoyFunction("isNull", 1, SourceLocation.UNKNOWN);
     ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
 
     SoyTreeUtils.getAllMatchingNodesOfType(
@@ -298,7 +271,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                     new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
                 newAttrNode.addChild(valueNode);
                 // We do not check required here since all += and = are implicitly optional.
-                IfNode ifNode = buildPrintIfNotNull(attrExpr, id);
+                IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNullFn);
                 valueNode.addChild(ifNode);
 
                 if (attrNode.getValueStrategy() == ValueStrategy.DEFAULT) {
@@ -335,7 +308,12 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 if (!attr.isRequired()) {
                   IfNode ifNode = new IfNode(id.get(), unknown);
                   IfCondNode ifCondNode =
-                      new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(attrExpr));
+                      new IfCondNode(
+                          id.get(),
+                          unknown,
+                          unknown,
+                          "if",
+                          SoyTreeUtils.buildNotNull(attrExpr, isNullFn));
                   ifCondNode.addChild(newAttrNode);
                   ifNode.addChild(ifCondNode);
                   replacementNode = ifNode;
@@ -381,7 +359,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       // To add a whitespace between the tag and the print node. This has no effect in Incremental
       // DOM.
       openTagNode.addChild(new RawTextNode(id.get(), " ", unknown));
-      IfNode ifNode = buildPrintIfNotNull(extraAttributesRef, id);
+      IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(extraAttributesRef, id, isNullFn);
       openTagNode.addChild(ifNode);
     }
 

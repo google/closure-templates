@@ -16,11 +16,15 @@
 
 package com.google.template.soy.soytree;
 
+import static com.google.template.soy.error.ErrorReporter.exploding;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.AbstractNodeVisitor;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -32,14 +36,18 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
+import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
+import com.google.template.soy.types.BoolType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Shared utilities for the 'soytree' package.
@@ -227,6 +235,31 @@ public final class SoyTreeUtils {
       }
     }
     return sb;
+  }
+
+  public static NotOpNode buildNotNull(ExprNode node, SoySourceFunction isNullFn) {
+    SourceLocation unknown = node.getSourceLocation().clearRange();
+    NotOpNode not = new NotOpNode(unknown, unknown);
+    FunctionNode isNull =
+        FunctionNode.newPositional(Identifier.create("isNull", unknown), isNullFn, unknown);
+    isNull.addChild(new ExprRootNode(node.copy(new CopyState())));
+    isNull.setType(BoolType.getInstance());
+    not.addChild(isNull);
+    not.setType(BoolType.getInstance());
+    return not;
+  }
+
+  public static IfNode buildPrintIfNotNull(
+      ExprNode node, Supplier<Integer> id, SoySourceFunction isNull) {
+    SourceLocation unknown = node.getSourceLocation().clearRange();
+    IfNode ifNode = new IfNode(id.get(), unknown);
+    IfCondNode ifCondNode =
+        new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node, isNull));
+    ifNode.addChild(ifCondNode);
+    PrintNode printNode =
+        new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());
+    ifCondNode.addChild(printNode);
+    return ifNode;
   }
 
   /** Similar to {@link #buildAstString}, but also print the source string for debug usages. */
