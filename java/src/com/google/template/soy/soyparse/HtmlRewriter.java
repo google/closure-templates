@@ -188,9 +188,6 @@ final class HtmlRewriter {
           "Found the end of a tag that was started in another block. Html tags should be opened "
               + "and closed in the same block.");
 
-  private static final SoyErrorKind CONCAT_NOT_ALLOWED_FOR_NORMAL_ATTRIBUTES =
-      SoyErrorKind.of("Concatentation (+=) is not allowed for HTML attributes.");
-
   private static final SoyErrorKind FOUND_END_COMMENT_STARTED_IN_ANOTHER_BLOCK =
       SoyErrorKind.of(
           "Found the end of an html comment that was started in another block. Html comments"
@@ -480,7 +477,7 @@ final class HtmlRewriter {
     static final CharMatcher TAG_DELIMITER_MATCHER =
         // delimiter characters
         CharMatcher.whitespace()
-            .or(CharMatcher.anyOf(">=/+"))
+            .or(CharMatcher.anyOf(">=/"))
             .or(
                 new CharMatcher() {
                   @Override
@@ -1134,15 +1131,6 @@ final class HtmlRewriter {
         consume(); // eat the '='
         consumeWhitespace();
         context.setEqualsSignLocation(equalsSignPoint, currentPointOrEnd());
-        context.setHtmlCallAttributeStrategy(HtmlAttributeNode.ValueStrategy.DEFAULT);
-      } else if (matchPrefix("+=", false)) {
-        SourceLocation.Point equalsSignPoint = currentPoint();
-        advance();
-        advance();
-        consume(); // eat the '='
-        consumeWhitespace();
-        context.setEqualsSignLocation(equalsSignPoint, currentPointOrEnd());
-        context.setHtmlCallAttributeStrategy(HtmlAttributeNode.ValueStrategy.CONCAT);
       } else {
         // we must have seen some non '=' character (or the end of the text), it doesn't matter
         // what it is, switch to the next state.  (creation of the attribute will happen
@@ -2110,7 +2098,6 @@ final class HtmlRewriter {
     StandaloneNode attributeName;
 
     SourceLocation.Point equalsSignLocation;
-    HtmlAttributeNode.ValueStrategy htmlCallAttributeStrategy;
     StandaloneNode attributeValue;
 
     // For the attribute value,  where the quoted attribute value started
@@ -2222,13 +2209,6 @@ final class HtmlRewriter {
         error =
             format(error, "Expected equalsSignLocation to be null, got: %s", equalsSignLocation);
       }
-      if (htmlCallAttributeStrategy != null) {
-        error =
-            format(
-                error,
-                "Expected htmlCallAttributeStrategy to be null, got: %s",
-                htmlCallAttributeStrategy);
-      }
       if (attributeValue != null) {
         error = format(error, "Expected attributeValue to be null, got: %s", attributeValue);
       }
@@ -2300,7 +2280,6 @@ final class HtmlRewriter {
     void resetAttribute() {
       attributeName = null;
       equalsSignLocation = null;
-      htmlCallAttributeStrategy = null;
       attributeValue = null;
       quotedAttributeValueStart = null;
       attributeValueChildren.clear();
@@ -2391,10 +2370,6 @@ final class HtmlRewriter {
       checkState(equalsSignLocation == null);
       equalsSignLocation = equalsSignPoint;
       setState(State.BEFORE_ATTRIBUTE_VALUE, stateTransitionPoint);
-    }
-
-    void setHtmlCallAttributeStrategy(HtmlAttributeNode.ValueStrategy htmlCallAttributeStrategy) {
-      this.htmlCallAttributeStrategy = htmlCallAttributeStrategy;
     }
 
     void setAttributeValue(StandaloneNode node) {
@@ -2570,28 +2545,11 @@ final class HtmlRewriter {
       }
       if (attributeName != null) {
         SourceLocation location = attributeName.getSourceLocation();
-        boolean isSoyAttr =
-            attributeName instanceof RawTextNode
-                && ((RawTextNode) attributeName).getRawText().startsWith("@");
         HtmlAttributeNode attribute;
         if (attributeValue != null) {
           location = location.extend(attributeValue.getSourceLocation());
-          if (isSoyAttr) {
-            attribute =
-                new HtmlAttributeNode(
-                    nodeIdGen.genId(),
-                    location,
-                    checkNotNull(equalsSignLocation),
-                    htmlCallAttributeStrategy);
-          } else {
-            if (htmlCallAttributeStrategy == HtmlAttributeNode.ValueStrategy.CONCAT) {
-              errorReporter.report(
-                  attributeName.getSourceLocation(), CONCAT_NOT_ALLOWED_FOR_NORMAL_ATTRIBUTES);
-            }
-            attribute =
-                new HtmlAttributeNode(
-                    nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
-          }
+          attribute =
+              new HtmlAttributeNode(nodeIdGen.genId(), location, checkNotNull(equalsSignLocation));
           edits.addChild(attribute, attributeName);
           edits.addChild(attribute, attributeValue);
         } else {
@@ -2600,7 +2558,6 @@ final class HtmlRewriter {
         }
         attributeName = null;
         equalsSignLocation = null;
-        htmlCallAttributeStrategy = null;
         attributeValue = null;
         // We don't call addDirectTagChild to avoid
         // 1. calling maybeFinishPendingAttribute recursively

@@ -36,7 +36,6 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
-import com.google.template.soy.soytree.HtmlAttributeNode.ValueStrategy;
 import com.google.template.soy.soytree.HtmlAttributeValueNode;
 import com.google.template.soy.soytree.HtmlAttributeValueNode.Quotes;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
@@ -155,13 +154,22 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
 
     // All other @attributes (outside of root elements) are illegal.
-    SoyTreeUtils.getAllNodesOfType(file, HtmlAttributeNode.class).stream()
-        .map(HtmlAttributeNode.class::cast)
-        .filter(attr -> attr.getValueStrategy() != HtmlAttributeNode.ValueStrategy.NONE)
+    SoyTreeUtils.getAllMatchingNodesOfType(
+            file,
+            TemplateNode.class,
+            t -> t.getHtmlElementMetadata() != null && getDelegateCall(t).isEmpty())
         .forEach(
-            attr ->
-                errorReporter.report(
-                    attr.getSourceLocation(), ATTRIBUTE_PARAM_NOT_ALLOWED, attr.getStaticKey()));
+            t -> {
+              SoyTreeUtils.getAllNodesOfType(t, HtmlAttributeNode.class).stream()
+                  .map(HtmlAttributeNode.class::cast)
+                  .filter(HtmlAttributeNode::isSoyAttr)
+                  .forEach(
+                      attr ->
+                          errorReporter.report(
+                              attr.getSourceLocation(),
+                              ATTRIBUTE_PARAM_NOT_ALLOWED,
+                              attr.getStaticKey()));
+            });
 
     if (!delegatingElementsWithAllAttrs.isEmpty()) {
       updateReservedAttributesForDelegateCalls(
@@ -222,7 +230,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
             attrNode -> {
               String attrKey = attrNode.getStaticKey();
               // Remove the @ at the beginning of the attribute.
-              boolean isSoyAttr = attrKey.startsWith("@");
+              boolean isSoyAttr = attrNode.isSoyAttr();
               String attrName = isSoyAttr ? attrKey.substring(1) : attrKey;
 
               if (!isSoyAttr) {
@@ -253,8 +261,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               StandaloneNode replacementNode;
 
-              if (attrNode.getValueStrategy() == ValueStrategy.DEFAULT
-                  || attrNode.getValueStrategy() == ValueStrategy.CONCAT) {
+              if (attrNode.isSoyAttr() && attrNode.hasValue()) {
                 if (attr.isRequired()) {
                   errorReporter.report(
                       attrNode.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, attr.getAttrName());
@@ -274,14 +281,17 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNullFn);
                 valueNode.addChild(ifNode);
 
-                if (attrNode.getValueStrategy() == ValueStrategy.DEFAULT) {
+                if (attrNode.getConcatenationDelimiter() == null) {
                   // In the default case, we append an {else}...{/if} for the default case.
                   IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
                   ifNode.addChild(ifElseNode);
                   copyChildren(attrNode, ifElseNode);
                 } else {
-                  // In the concat case, we add a space and then the default.
-                  ifNode.getChild(0).addChild(new RawTextNode(id.get(), " ", unknown));
+                  // Separate the default and the attribute value by a delimiter.
+                  ifNode
+                      .getChild(0)
+                      .addChild(
+                          new RawTextNode(id.get(), attrNode.getConcatenationDelimiter(), unknown));
                   copyChildren(attrNode, valueNode);
                 }
 
