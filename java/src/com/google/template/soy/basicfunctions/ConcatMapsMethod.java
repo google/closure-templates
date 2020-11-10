@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Google Inc.
+ * Copyright 2018 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,58 +30,44 @@ import com.google.template.soy.plugin.python.restricted.PythonValue;
 import com.google.template.soy.plugin.python.restricted.PythonValueFactory;
 import com.google.template.soy.plugin.python.restricted.SoyPythonSourceFunction;
 import com.google.template.soy.shared.restricted.Signature;
-import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyMethodSignature;
 import com.google.template.soy.shared.restricted.SoyPureFunction;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Soy function that gets the keys in a map.
- *
- * <p>The keys are returned as a list with no guarantees on the order (may be different on each run
- * or for each backend).
- *
- * <p>This enables iteration over the keys in a map, e.g. {@code {for $key in keys($myMap)} ...
- * {/for}}
- *
- */
-@SoyFunctionSignature(
-    name = "mapKeys",
-    // Note: the return type is overridden in ResolveTypeExpressionsPass
-    value = @Signature(parameterTypes = "map<any, any>", returnType = "list<any>"))
+/** Soy function that concatenates two maps together. */
 @SoyMethodSignature(
-    name = "keys",
-    baseType = "map<any, any>",
-    value = @Signature(returnType = "list<any>"))
+    name = "concat",
+    baseType = "map<any,any>",
+    value = {
+      @Signature(parameterTypes = "map<any,any>", returnType = "map<any,any>"),
+    })
 @SoyPureFunction
-public final class MapKeysFunction
+public final class ConcatMapsMethod
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    // TODO(lukes) this could be callModuleFunction but other parts of soy don't generate aliased
-    // requires so we can't generate one here without create a 'multiple require' error
-    // this could be handled via more clever require handling in the compiler.
-    return factory.callNamespaceFunction("soy.map", "soy.map.$$getMapKeys", args.get(0));
+    return factory.callNamespaceFunction("soy", "soy.map.$$concatMaps", args.get(0), args.get(1));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return args.get(0).getProp("keys").call();
+    return factory.global("runtime.concat_maps").call(args.get(0), args.get(1));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method MAP_KEYS_FN =
-        JavaValueFactory.createMethod(BasicFunctionsRuntime.class, "mapKeys", SoyMap.class);
+    static final Method CONCAT_MAPS_FN =
+        JavaValueFactory.createMethod(
+            BasicFunctionsRuntime.class, "concatMaps", SoyMap.class, SoyMap.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(Methods.MAP_KEYS_FN, args.get(0));
+    return factory.callStaticMethod(Methods.CONCAT_MAPS_FN, args.get(0), args.get(1));
   }
 }

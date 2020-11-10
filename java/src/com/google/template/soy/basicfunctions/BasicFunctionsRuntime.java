@@ -21,6 +21,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
@@ -34,12 +35,15 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
+import com.google.template.soy.data.internal.SoyMapImpl;
+import com.google.template.soy.data.internal.SoyRecordImpl;
 import com.google.template.soy.data.restricted.FloatData;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.data.restricted.StringData;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +70,14 @@ public final class BasicFunctionsRuntime {
       flattened.addAll(soyList.asJavaList());
     }
     return flattened.build();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static SoyMap concatMaps(SoyMap map, SoyMap mapTwo) {
+    LinkedHashMap<SoyValue, SoyValueProvider> mapBuilder = new LinkedHashMap<>();
+    mapBuilder.putAll((Map<SoyValue, SoyValueProvider>) map.asJavaMap());
+    mapBuilder.putAll((Map<SoyValue, SoyValueProvider>) mapTwo.asJavaMap());
+    return SoyMapImpl.forProviderMap(mapBuilder);
   }
 
   /** Checks if list contains a value. */
@@ -161,6 +173,20 @@ public final class BasicFunctionsRuntime {
   /** Returns a list of all the keys in the given map. */
   public static List<SoyValue> mapKeys(SoyMap map) {
     return ImmutableList.copyOf(map.keys());
+  }
+
+  public static ImmutableList<SoyValueProvider> mapValues(SoyMap map) {
+    return ImmutableList.copyOf(map.values());
+  }
+
+  public static ImmutableList<SoyValueProvider> mapEntries(SoyMap map) {
+    return map.entrySet().stream()
+        .map(e -> new SoyRecordImpl(ImmutableMap.of("key", e.getKey(), "value", e.getValue())))
+        .collect(toImmutableList());
+  }
+
+  public static int mapSize(SoyMap map) {
+    return map.size();
   }
 
   public static SoyDict mapToLegacyObjectMap(SoyMap map) {

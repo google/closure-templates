@@ -384,6 +384,18 @@ def list_indexof(l, item):
   return -1
 
 
+def concat_maps(d1, d2):
+  """Merges two maps together."""
+  d3 = dict(d1)
+  d3.update(d2)
+  return d3
+
+
+def map_entries(m):
+  """Return map entries."""
+  return [{'key': k, 'value': m[k]} for k in m]
+
+
 def list_slice(l, start, stop):
   """Equivalent of JavaScript Array.prototype.slice."""
   return l[slice(start, stop)]

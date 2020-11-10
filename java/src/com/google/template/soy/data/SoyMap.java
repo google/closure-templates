@@ -16,7 +16,9 @@
 
 package com.google.template.soy.data;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -54,6 +56,14 @@ public interface SoyMap extends SoyValue {
    */
   @Nonnull
   Iterable<? extends SoyValue> keys();
+
+  default Collection<? extends SoyValueProvider> values() {
+    return asJavaMap().values();
+  }
+
+  default Set<? extends Map.Entry<? extends SoyValue, ? extends SoyValueProvider>> entrySet() {
+    return asJavaMap().entrySet();
+  }
 
   /**
    * Checks whether this SoyMap has an item with the given key.

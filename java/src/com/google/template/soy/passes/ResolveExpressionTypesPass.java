@@ -39,11 +39,14 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basicfunctions.ConcatListsFunction;
+import com.google.template.soy.basicfunctions.ConcatMapsMethod;
 import com.google.template.soy.basicfunctions.KeysFunction;
 import com.google.template.soy.basicfunctions.LegacyObjectMapToMapFunction;
 import com.google.template.soy.basicfunctions.ListSliceMethod;
+import com.google.template.soy.basicfunctions.MapEntriesMethod;
 import com.google.template.soy.basicfunctions.MapKeysFunction;
 import com.google.template.soy.basicfunctions.MapToLegacyObjectMapFunction;
+import com.google.template.soy.basicfunctions.MapValuesMethod;
 import com.google.template.soy.basicfunctions.MaxFunction;
 import com.google.template.soy.basicfunctions.MinFunction;
 import com.google.template.soy.basicfunctions.NumberListSortMethod;
@@ -1041,6 +1044,20 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         SoySourceFunction sourceFunction = sourceMethod.getImpl();
         if (sourceFunction instanceof ConcatListsFunction) {
           node.setType(getGenericListType(node.getChildren()));
+        } else if (sourceFunction instanceof ConcatMapsMethod) {
+          node.setType(getGenericMapType(node.getChildren()));
+        } else if (sourceFunction instanceof MapKeysFunction) {
+          MapType type = (MapType) node.getChild(0).getType();
+          node.setType(ListType.of(type.getKeyType()));
+        } else if (sourceFunction instanceof MapValuesMethod) {
+          MapType type = (MapType) node.getChild(0).getType();
+          node.setType(ListType.of(type.getValueType()));
+        } else if (sourceFunction instanceof MapEntriesMethod) {
+          MapType type = (MapType) node.getChild(0).getType();
+          node.setType(
+              ListType.of(
+                  RecordType.of(
+                      ImmutableMap.of("key", type.getKeyType(), "value", type.getValueType()))));
         } else if (sourceFunction instanceof ListSliceMethod) {
           // list<T>.slice(...) returns list<T>
           node.setType(node.getBaseExprChild().getType());
@@ -2145,6 +2162,31 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       return elementTypes.isEmpty()
           ? ListType.EMPTY_LIST
           : typeRegistry.getOrCreateListType(typeRegistry.getOrCreateUnionType(elementTypes));
+    }
+
+    private SoyType getGenericMapType(Iterable<ExprNode> intersectionOf) {
+      ImmutableSet.Builder<SoyType> keyTypesBuilder = ImmutableSet.builder();
+      ImmutableSet.Builder<SoyType> valueTypesBuilder = ImmutableSet.builder();
+      for (ExprNode childNode : intersectionOf) {
+        // If one of the types isn't a list, we can't compute the intersection. Return UnknownType
+        // and assume the caller is already reporting an error for bad args.
+        if (!(childNode.getType() instanceof MapType)) {
+          return UnknownType.getInstance();
+        }
+        MapType mapType = ((MapType) childNode.getType());
+        if (mapType.getKeyType() != null) {
+          keyTypesBuilder.add(mapType.getKeyType());
+        }
+        if (mapType.getValueType() != null) {
+          valueTypesBuilder.add(mapType.getValueType());
+        }
+      }
+
+      ImmutableSet<SoyType> keys = keyTypesBuilder.build();
+      ImmutableSet<SoyType> values = valueTypesBuilder.build();
+      return MapType.of(
+          keys.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(keys),
+          values.isEmpty() ? UnknownType.getInstance() : typeRegistry.getOrCreateUnionType(values));
     }
 
     /** @param fn The function that must take a loop variable. */

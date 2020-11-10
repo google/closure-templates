@@ -36,10 +36,6 @@ values.
 The keys of a [legacy object map](types.md#legacy_object_map) as a list. There
 is no guarantee on order.
 
-### `mapKeys(map)` {#mapKeys}
-
-The keys of a [map](types.md#map) as a list. There is no guarantee on order.
-
 ### `mapToLegacyObjectMap(map)` {#mapToLegacyObjectMap}
 
 Converts a [map](types.md#map) to an equivalent
@@ -192,6 +188,32 @@ should not use this method to sort any user-visible string. Only use this method
 for non-user visible strings, e.g. to normalize the order of a list of
 identifiers. See go/unicode-codelab-cc#sorting-in-alphabetical-order for more
 information on i18n-safe string sorting.
+
+## Map Methods
+
+### `map.keys()` {#mapKeys}
+
+The keys of a [map](types.md#map) as a list. There is no guarantee on order.
+
+Also callable as deprecated global function: `mapKeys(map)`
+
+### `map.values()` {#mapValues}
+
+The values of a [map](types.md#map) as a list. There is no guarantee on order.
+
+### `map.entries()` {#mapEntries}
+
+The entries of a [map](types.md#map) as a list of records with fields `key` and
+`value`. There is no guarantee on order.
+
+### `map.length()` {#mapLength}
+
+The number of keys in a [map](types.md#map).
+
+### `map.concat(map)` {#mapConcat}
+
+Combines two [map](types.md#map)s into one. If there's a key collision the value
+from the method parameter wins.
 
 ## String Methods
 

@@ -142,11 +142,62 @@ function $$isSoyMap(map) {
       typeof map.entries === 'function';
 }
 
+
+/**
+ * @param {!Map<?, ?>} mapOne
+ * @param {!Map<?, ?>} mapTwo
+ * @return {!Map<?,?>}
+ */
+function $$concatMaps(mapOne, mapTwo) {
+  return new Map([...mapOne, ...mapTwo]);
+}
+
+
+/**
+ * Gets the values in a map as an array. There are no guarantees on the order.
+ * @param {!Map<?, ?>} map The map to get the values of.
+ * @return {!Array<?>} The array of values in the given map.
+ */
+function $$getMapValues(map) {
+  const values = Array.from(map.values());
+  if (goog.DEBUG) {
+    shuffle(values);
+  }
+  return values;
+}
+
+
+/**
+ * Gets the values in a map as an array. There are no guarantees on the order.
+ * @param {!Map<?, ?>} map The map to get the values of.
+ * @return {!Array<?>} The array of values in the given map.
+ */
+function $$getMapEntries(map) {
+  const entries = [];
+  map.forEach((v, k) => entries.push({"key": k, "value": v}));
+  return entries;
+}
+
+
+/**
+ * Gets the size of a map.
+ * @param {!Map<?, ?>} map The map to get the values of.
+ * @return {number} The number of keys in the map.
+ */
+function $$getMapLength(map) {
+  return map.size;
+}
+
+
 exports = {
   $$mapToLegacyObjectMap,
   $$populateMap,
   $$getMapKeys,
   $$isSoyMap,
+  $$getMapValues,
+  $$getMapEntries,
+  $$getMapLength,
+  $$concatMaps,
   // This is declared as SoyMap instead of Map to avoid shadowing ES6 Map, which
   // is used by $$legacyObjectMapToMap. But the external name can still be Map.
   Map: SoyMap,
