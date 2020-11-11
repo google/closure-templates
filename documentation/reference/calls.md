@@ -55,7 +55,7 @@ We'll use this callee template for the following examples:
 {/template}
 ```
 
-#### Pass values using `param` commands (recommended)
+#### Pass values using `param` commands (recommended) {#param}
 
 To pass values to the callee, use `param` commands inside the `call` function
 with names that match the callee's parameters.
@@ -94,7 +94,7 @@ previous section.
 {/template}
 ```
 
-**WARNING**: When passing data in this way much of the call-site type checking
+**Warning:**: When passing data in this way much of the call-site type checking
 that Soy normally performs is *disabled*. So it can be easy to make simple
 mistakes like forgetting to pass a required parameter or passing a parameter of
 the wrong type.
@@ -104,7 +104,9 @@ these are ignored by the callee. Similarly, if there are any parameters whose
 names do not match any field names, these are not set; whether this causes an
 error depends on [whether the parameter is required](templates.md#param).
 
-#### Pass all of the caller's `data`
+#### Pass all of the caller's `data` (discouraged) {#data-all}
+
+**Warning:** This technique is discouraged.
 
 A template's *data* is a record that contains:
 
@@ -324,8 +326,3 @@ import {content as hotelReviewContent} from 'path/to/soy/file/bar.soy'
   {call hotelReviewContent /}
 {/template}
 ```
-
-### Aliasing
-
-Check out how to shorten calls with [alias
-declarations](file-declarations.md#alias).
