@@ -230,6 +230,23 @@ public final class VeLoggingTest {
     assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
   }
 
+  // Regression test for a bug where logging would get dropped if there was a velog, in a msg around
+  // a void element.
+  @Test
+  public void testLogging_msg_void_element() throws Exception {
+    StringBuilder sb = new StringBuilder();
+    TestLogger testLogger = new TestLogger();
+    renderTemplate(
+        OutputAppendable.create(sb, testLogger),
+        testLogger,
+        ""
+            + "{msg desc=\"a message!\"}\n"
+            + "  Greetings, {velog Foo}<input type=text>{/velog}\n"
+            + "{/msg}");
+    assertThat(sb.toString()).isEqualTo("Greetings, <input type=text>");
+    assertThat(testLogger.builder.toString()).isEqualTo("velog{id=1}");
+  }
+
   @Test
   public void testLogging_nestedLogOnly() throws IOException {
     StringBuilder sb = new StringBuilder();

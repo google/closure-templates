@@ -261,12 +261,14 @@ final class LazyClosureCompiler {
     // Attempt to compile the whole thing to a string if possible.  The presense of a non-trivial
     // ExtraCodeCompiler means that it isn't just textual.
     Optional<Expression> asRawText =
-        prefix != ExtraCodeCompiler.NO_OP && suffix != ExtraCodeCompiler.NO_OP
+        prefix == ExtraCodeCompiler.NO_OP && suffix == ExtraCodeCompiler.NO_OP
             ? asRawTextOnly(proposedName, renderUnit)
             : Optional.empty();
     if (asRawText.isPresent()) {
       return LazyClosure.create(varName, asRawText.get(), /*isTrivial=*/ true);
     }
+    // TODO(b/172970101): add a case for when these nodes can be compiled without detaches. A simple
+    // example would be composing some css class names.
     TypeInfo type =
         innerClasses.registerInnerClassWithGeneratedName(proposedName, LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
