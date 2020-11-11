@@ -16,6 +16,8 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.base.SourceLocation.UNKNOWN;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
@@ -55,6 +57,7 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
@@ -144,18 +147,20 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             errorReporter);
     TemplateType templateType = (TemplateType) call.getCalleeExpr().getRoot().getType();
     CallParamContentNode attributesNode =
-        new CallParamContentNode(
-            nodeIdGen.genId(),
-            location,
-            SourceLocation.UNKNOWN,
-            Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM, SourceLocation.UNKNOWN),
-            new CommandTagAttribute(
-                Identifier.create("kind", SourceLocation.UNKNOWN),
-                QuoteStyle.SINGLE,
-                "attributes",
-                SourceLocation.UNKNOWN,
-                SourceLocation.UNKNOWN),
-            errorReporter);
+        templateType.getAllowExtraAttributes()
+            ? new CallParamContentNode(
+                nodeIdGen.genId(),
+                location,
+                UNKNOWN,
+                Identifier.create(TemplateType.ATTRIBUTES_HIDDEN_PARAM, UNKNOWN),
+                new CommandTagAttribute(
+                    Identifier.create("kind", UNKNOWN),
+                    QuoteStyle.SINGLE,
+                    "attributes",
+                    UNKNOWN,
+                    UNKNOWN),
+                errorReporter)
+            : null;
     if (!tagNode.getTaggedPairs().isEmpty()) {
       HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
       SoyNode next = SoyTreeUtils.nextSibling(tagNode);
@@ -217,7 +222,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                     Optional.empty());
               }
             });
-    if (attributesNode.numChildren() > 0) {
+
+    if (attributesNode != null && attributesNode.numChildren() > 0) {
       call.addChild(attributesNode);
     }
   }
@@ -229,26 +235,47 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Set<String> seenAttr,
       Map<String, SoyType> parameterMap,
       Map<String, AttrParam> attrs,
-      CallParamContentNode attributesNode,
+      @Nullable CallParamContentNode attributesNode,
       Optional<ExprNode> conditional) {
-    if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE
-        && ((HtmlAttributeNode) c).getStaticKey() != null) {
-      CallParamNode param =
-          consumeAttribute(
-              (HtmlAttributeNode) c,
-              nodeIdGen,
-              seenAttr,
-              parameterMap,
-              attrs,
-              attributesNode,
-              call,
-              conditional);
-      if (param != null) {
-        call.addChild(param);
+    if (c.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE) {
+      HtmlAttributeNode attrNode = (HtmlAttributeNode) c;
+      if (attrNode.getStaticKey() != null) {
+        CallParamNode param =
+            consumeAttribute(
+                attrNode,
+                nodeIdGen,
+                seenAttr,
+                parameterMap,
+                attrs,
+                attributesNode,
+                call,
+                conditional);
+        if (param != null) {
+          call.addChild(param);
+        }
+        return;
+      } else if (attrNode.numChildren() == 1 && attributesNode != null) {
+        HtmlAttributeNode nodeToCopy = null;
+        if (attrNode.getChild(0).getKind() == Kind.PRINT_NODE
+            && ((PrintNode) attrNode.getChild(0)).getExpr().getType()
+                == AttributesType.getInstance()) {
+          nodeToCopy = attrNode;
+        } else if (attrNode.getChild(0).getKind() == Kind.CALL_BASIC_NODE
+            && ((TemplateType) ((CallBasicNode) attrNode.getChild(0)).getCalleeExpr().getType())
+                    .getContentKind()
+                    .getSanitizedContentKind()
+                == SanitizedContentKind.ATTRIBUTES) {
+          nodeToCopy = attrNode;
+        }
+
+        if (nodeToCopy != null) {
+          attributesNode.addChild(nodeToCopy.copy(new CopyState()));
+          return;
+        }
       }
-    } else {
-      errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
     }
+
+    errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
   }
 
   private SoyNode consumeSlot(CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
@@ -290,7 +317,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       Set<String> seenAttr,
       Map<String, SoyType> parameterMap,
       Map<String, AttrParam> attrs,
-      CallParamContentNode attributesNode,
+      @Nullable CallParamContentNode attributesNode,
       CallBasicNode call,
       Optional<ExprNode> condition) {
     SourceLocation unknown = attr.getSourceLocation().clearRange();
@@ -308,6 +335,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
     String paramName = Parameter.attrToParamName(attrName);
     if (!parameterMap.containsKey(paramName)) {
+      // attributesNode can't be null, bad attrs caught in ResolveExpressionTypesCrossTemplatePass
       attributesNode.addChild(attr.copy(new CopyState()));
       return null;
     }
@@ -353,7 +381,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       }
       return contentNode;
     }
-    /**
+
+    /*
      * Otherwise, construct a {let} for each attribute and pass them as values in the map
      *
      * <pre>

@@ -375,7 +375,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     String name = attr.getStaticKey();
     SourceLocation loc = attr.getChild(0).getSourceLocation();
     if (name == null) {
-      errorReporter.report(loc, NON_STATIC_ATTRIBUTE_NAME);
+      if (attr.numChildren() != 1) {
+        errorReporter.report(loc, NON_STATIC_ATTRIBUTE_NAME);
+      }
       return;
     }
 

@@ -335,7 +335,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
             });
-    /**
+
+    /*
      * This will generate the following code:
      *
      * <pre>
