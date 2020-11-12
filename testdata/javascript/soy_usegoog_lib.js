@@ -23158,7 +23158,7 @@ soy.checks.isURI = function(value) {
 /**
  * @fileoverview Compact number formatting symbols.
  *
- * File generated from CLDR ver. 37
+ * File generated from CLDR ver. 38
  *
  * To reduce the file size (which may cause issues in some JS
  * developing environments), this file will only contain locales
@@ -23168,7 +23168,7 @@ soy.checks.isURI = function(value) {
  * "compactnumberformatsymbolsext.js", which will be generated at
  * the same time together with this file.
  *
- * @suppress {const}
+ * @suppress {const,useOfGoogProvide}
  */
 
 // clang-format off
@@ -23385,13 +23385,13 @@ goog.i18n.CompactNumberFormatSymbols_am = {
       'other': '000 ሺ'
     },
     '1000000': {
-      'other': '0 ሜትር'
+      'other': '0 ሚ'
     },
     '10000000': {
-      'other': '00 ሜትር'
+      'other': '00 ሚ'
     },
     '100000000': {
-      'other': '000ሜ'
+      'other': '000 ሚ'
     },
     '1000000000': {
       'other': '0 ቢ'
@@ -23827,7 +23827,7 @@ goog.i18n.CompactNumberFormatSymbols_bn = {
       'other': '00শত কো'
     },
     '100000000000': {
-      'other': '00000 কো'
+      'other': '000কো'
     },
     '1000000000000': {
       'other': '0 লা.কো.'
@@ -25062,13 +25062,13 @@ goog.i18n.CompactNumberFormatSymbols_et = {
 goog.i18n.CompactNumberFormatSymbols_eu = {
   COMPACT_DECIMAL_SHORT_PATTERN: {
     '1000': {
-      'other': '0000'
+      'other': '0'
     },
     '10000': {
-      'other': '00000'
+      'other': '0'
     },
     '100000': {
-      'other': '000000'
+      'other': '0'
     },
     '1000000': {
       'other': '0 M'
@@ -25100,13 +25100,13 @@ goog.i18n.CompactNumberFormatSymbols_eu = {
   },
   COMPACT_DECIMAL_LONG_PATTERN: {
     '1000': {
-      'other': '0000'
+      'other': '0'
     },
     '10000': {
-      'other': '00000'
+      'other': '0'
     },
     '100000': {
-      'other': '000000'
+      'other': '0'
     },
     '1000000': {
       'other': '0 milioi'
@@ -25169,7 +25169,7 @@ goog.i18n.CompactNumberFormatSymbols_fa = {
       'other': '00 م'
     },
     '100000000000': {
-      'other': '000 میلیارد'
+      'other': '000B'
     },
     '1000000000000': {
       'other': '0 تریلیون'
@@ -25616,13 +25616,13 @@ goog.i18n.CompactNumberFormatSymbols_gl = {
       'other': '000 M'
     },
     '1000000000': {
-      'other': '0'
+      'other': '0000 M'
     },
     '10000000000': {
-      'other': '0'
+      'other': '00000 M'
     },
     '100000000000': {
-      'other': '0'
+      'other': '000000 M'
     },
     '1000000000000': {
       'other': '0 B'
@@ -25654,13 +25654,13 @@ goog.i18n.CompactNumberFormatSymbols_gl = {
       'other': '000 millóns'
     },
     '1000000000': {
-      'other': '0'
+      'other': '0000 millóns'
     },
     '10000000000': {
-      'other': '0'
+      'other': '00000 millóns'
     },
     '100000000000': {
-      'other': '0'
+      'other': '000000 millóns'
     },
     '1000000000000': {
       'other': '0 billóns'
@@ -31909,7 +31909,7 @@ goog.i18n.currency.CurrencyInfoTier2 = {
 /**
  * @fileoverview Number formatting symbols.
  *
- * File generated from CLDR ver. 37
+ * File generated from CLDR ver. 38
  *
  * To reduce the file size (which may cause issues in some JS
  * developing environments), this file will only contain locales
@@ -31919,7 +31919,7 @@ goog.i18n.currency.CurrencyInfoTier2 = {
  * "numberformatsymbolsext.js", which will be generated at
  * the same time together with this file.
  *
- * @suppress {const}
+ * @suppress {const,useOfGoogProvide}
  */
 
 // clang-format off
@@ -33039,7 +33039,7 @@ goog.i18n.NumberFormatSymbols_ga = {
   EXP_SYMBOL: 'E',
   PERMILL: '‰',
   INFINITY: '∞',
-  NAN: 'NaN',
+  NAN: 'Nuimh',
   DECIMAL_PATTERN: '#,##0.###',
   SCIENTIFIC_PATTERN: '#E0',
   PERCENT_PATTERN: '#,##0%',
@@ -33196,7 +33196,7 @@ goog.i18n.NumberFormatSymbols_hr = {
   PERCENT: '%',
   ZERO_DIGIT: '0',
   PLUS_SIGN: '+',
-  MINUS_SIGN: '-',
+  MINUS_SIGN: '−',
   EXP_SYMBOL: 'E',
   PERMILL: '‰',
   INFINITY: '∞',
