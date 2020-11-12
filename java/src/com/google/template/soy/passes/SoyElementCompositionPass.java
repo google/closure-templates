@@ -336,7 +336,18 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     String paramName = Parameter.attrToParamName(attrName);
     if (!parameterMap.containsKey(paramName)) {
       // attributesNode can't be null, bad attrs caught in ResolveExpressionTypesCrossTemplatePass
-      attributesNode.addChild(attr.copy(new CopyState()));
+      if (condition.isPresent()) {
+        IfNode ifNode = new IfNode(nodeIdGen.genId(), unknown);
+        IfCondNode ifCondNode =
+            new IfCondNode(
+                nodeIdGen.genId(), unknown, unknown, "if", condition.get().copy(new CopyState()));
+        ifNode.addChild(ifCondNode);
+        ifCondNode.getExpr().setType(condition.get().getType());
+        ifCondNode.addChild(attr.copy(new CopyState()));
+        attributesNode.addChild(ifNode);
+      } else {
+        attributesNode.addChild(attr.copy(new CopyState()));
+      }
       return null;
     }
     if (isSoyAttr) {

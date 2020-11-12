@@ -367,10 +367,25 @@ final class ElementAttributePass implements CompilerFileSetPass {
           new VarRefNode(attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
       templateNode.addParam(attrsParam);
       attrsParam.setType(SanitizedType.AttributesType.getInstance());
-      // To add a whitespace between the tag and the print node. This has no effect in Incremental
-      // DOM.
-      openTagNode.addChild(new RawTextNode(id.get(), " ", unknown));
-      IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(extraAttributesRef, id, isNullFn);
+
+      // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
+      // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
+      IfNode ifNode = new IfNode(id.get(), unknown);
+      IfCondNode ifCondNode =
+          new IfCondNode(
+              id.get(),
+              unknown,
+              unknown,
+              "if",
+              SoyTreeUtils.buildNotNull(extraAttributesRef, isNullFn));
+      ifNode.addChild(ifCondNode);
+      HtmlAttributeNode htmlAttributeNode = new HtmlAttributeNode(id.get(), unknown, null);
+      PrintNode printNode =
+          new PrintNode(
+              id.get(), unknown, true, extraAttributesRef, ImmutableList.of(), exploding());
+      htmlAttributeNode.addChild(printNode);
+      ifCondNode.addChild(htmlAttributeNode);
+
       openTagNode.addChild(ifNode);
     }
 

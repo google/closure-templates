@@ -36,7 +36,8 @@ public final class HtmlAttributeNode extends AbstractParentSoyNode<StandaloneNod
     implements StandaloneNode {
 
   private static final ImmutableMap<String, String> CONCATENATED_ATTRIBUTES =
-      ImmutableMap.of("@class", " ", "@style", ";", "@jsdata", ";", "@jsaction", ";");
+      ImmutableMap.of(
+          "@class", " ", "@style", ";", "@jsdata", ";", "@jsaction", ";", "@jsmodel", ";");
 
   /** Will be null if this attribute node doesn't have a value. */
   @Nullable private final SourceLocation.Point equalsSignLocation;
