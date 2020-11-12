@@ -227,6 +227,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
               : tryGetDelegateTagName(delegateTemplate, templatesInLibrary, registry);
+      if (tagName.equals(DYNAMIC_ELEMENT_TAG) && isSoyElement) {
+        errorReporter.report(openTag.getSourceLocation(), ROOT_IS_DYNAMIC_TAG);
+      }
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
       }
@@ -352,7 +355,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
       boolean isSoyElement) {
     if (isSoyElement) {
       validateNoKey(openTagNode, errorReporter);
-      validateNoDynamicTag(openTagNode, errorReporter);
     }
     if (openTagNode.isSelfClosing()
         || (openTagNode.getTagName().isDefinitelyVoid()
@@ -390,13 +392,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
       if (child instanceof KeyNode) {
         errorReporter.report(firstTagNode.getSourceLocation(), ROOT_HAS_KEY_NODE);
       }
-    }
-  }
-
-  private static void validateNoDynamicTag(
-      HtmlOpenTagNode firstTagNode, ErrorReporter errorReporter) {
-    if (!firstTagNode.getTagName().isStatic()) {
-      errorReporter.report(firstTagNode.getSourceLocation(), ROOT_IS_DYNAMIC_TAG);
     }
   }
 }
