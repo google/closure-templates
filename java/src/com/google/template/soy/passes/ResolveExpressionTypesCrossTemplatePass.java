@@ -323,9 +323,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         templateType.getParameters().stream()
             .collect(toImmutableMap(p -> Parameter.paramToAttrName(p.getName()), p -> p));
 
-    openTagNode.getChildren().stream()
-        .filter(n -> n.getKind() == SoyNode.Kind.HTML_ATTRIBUTE_NODE)
-        .map(HtmlAttributeNode.class::cast)
+    SoyTreeUtils.getAllNodesOfType(openTagNode, HtmlAttributeNode.class)
         .forEach(
             a ->
                 validateAttribute(
