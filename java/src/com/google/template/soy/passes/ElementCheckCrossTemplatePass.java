@@ -23,7 +23,6 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -46,15 +45,14 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
-      ImportsTemplateRegistry registry = file.getTemplateRegistry();
       SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
           .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
-          .forEach(t -> processTemplate(t, registry));
+          .forEach(t -> processTemplate(t));
     }
     return Result.CONTINUE;
   }
 
-  private void processTemplate(TemplateNode template, ImportsTemplateRegistry registry) {
+  private void processTemplate(TemplateNode template) {
     Optional<HtmlOpenTagNode> elmOpen = ElementAttributePass.getElementOpen(template);
     if (!elmOpen.isPresent()) {
       return;
@@ -67,14 +65,13 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
         .filter(attr -> attr.getStaticKey() == null)
         .forEach(
             attr -> {
-              if (!filterNonAttribute(attr, registry)) {
+              if (!filterNonAttribute(attr)) {
                 errorReporter.report(attr.getSourceLocation(), BAD_CONTENT_IN_ROOT_ELM);
               }
             });
   }
 
-  private boolean filterNonAttribute(HtmlAttributeNode attr, ImportsTemplateRegistry registry) {
-    // TODO(user): Consider allowing calls to templates of kind=attributes.
-    return false;
+  private boolean filterNonAttribute(HtmlAttributeNode attr) {
+    return SoyElementCompositionPass.isOkToPutInElement(attr);
   }
 }

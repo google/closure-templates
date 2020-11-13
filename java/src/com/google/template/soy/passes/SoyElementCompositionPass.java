@@ -255,27 +255,27 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         }
         return;
       } else if (attrNode.numChildren() == 1 && attributesNode != null) {
-        HtmlAttributeNode nodeToCopy = null;
-        if (attrNode.getChild(0).getKind() == Kind.PRINT_NODE
-            && ((PrintNode) attrNode.getChild(0)).getExpr().getType()
-                == AttributesType.getInstance()) {
-          nodeToCopy = attrNode;
-        } else if (attrNode.getChild(0).getKind() == Kind.CALL_BASIC_NODE
-            && ((TemplateType) ((CallBasicNode) attrNode.getChild(0)).getCalleeExpr().getType())
-                    .getContentKind()
-                    .getSanitizedContentKind()
-                == SanitizedContentKind.ATTRIBUTES) {
-          nodeToCopy = attrNode;
-        }
-
-        if (nodeToCopy != null) {
-          attributesNode.addChild(nodeToCopy.copy(new CopyState()));
+        if (isOkToPutInElement(attrNode)) {
+          attributesNode.addChild(attrNode.copy(new CopyState()));
           return;
         }
       }
     }
 
     errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+  }
+
+  static boolean isOkToPutInElement(HtmlAttributeNode attrNode) {
+    // Any print node or call node whose type/kind is 'attributes' may appear within the root
+    // element HTML node.
+    return (attrNode.getChild(0).getKind() == Kind.PRINT_NODE
+            && ((PrintNode) attrNode.getChild(0)).getExpr().getType()
+                == AttributesType.getInstance())
+        || (attrNode.getChild(0).getKind() == Kind.CALL_BASIC_NODE
+            && ((TemplateType) ((CallBasicNode) attrNode.getChild(0)).getCalleeExpr().getType())
+                    .getContentKind()
+                    .getSanitizedContentKind()
+                == SanitizedContentKind.ATTRIBUTES);
   }
 
   private SoyNode consumeSlot(CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
