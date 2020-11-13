@@ -77,7 +77,6 @@ passing makes code more readable and easier to debug.
 
 #### Pass values using the `data` attribute
 
-
 You can also pass data to the callee with the `call` command's `data` attribute.
 This accepts a variable of type [record](types.md#record). The `call` command
 sets the values of any parameters in the callee whose names match fields in the
@@ -97,7 +96,7 @@ previous section.
 **Warning:**: When passing data in this way much of the call-site type checking
 that Soy normally performs is *disabled*. So it can be easy to make simple
 mistakes like forgetting to pass a required parameter or passing a parameter of
-the wrong type.
+the wrong type. See b/168852179
 
 If the record contains fields whose names do not match any parameter names,
 these are ignored by the callee. Similarly, if there are any parameters whose
