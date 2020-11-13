@@ -74,8 +74,6 @@ public class EscapeHtmlDirective
   private static final class JbcSrcMethods {
     static final MethodRef ESCAPE_HTML =
         MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", SoyValue.class).asNonNullable();
-    static final MethodRef ESCAPE_HTML_STRING =
-        MethodRef.create(CoreDirectivesRuntime.class, "escapeHtml", String.class).asNonNullable();
     static final MethodRef STREAMING_ESCAPE_HTML =
         MethodRef.create(
                 CoreDirectivesRuntime.class, "streamingEscapeHtml", LoggingAdvisingAppendable.class)
@@ -86,10 +84,7 @@ public class EscapeHtmlDirective
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
     return SoyExpression.forSoyValue(
-        SanitizedType.HtmlType.getInstance(),
-        value.isBoxed()
-            ? JbcSrcMethods.ESCAPE_HTML.invoke(value)
-            : JbcSrcMethods.ESCAPE_HTML_STRING.invoke(value.coerceToString()));
+        SanitizedType.HtmlType.getInstance(), JbcSrcMethods.ESCAPE_HTML.invoke(value.box()));
   }
 
   @Override

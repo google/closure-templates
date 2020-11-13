@@ -51,11 +51,6 @@ public final class CoreDirectivesRuntime {
         valueDir);
   }
 
-  public static SanitizedContent escapeHtml(String value) {
-    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
-        EscapingConventions.EscapeHtml.INSTANCE.escape(value), SanitizedContent.ContentKind.HTML);
-  }
-
   public static LoggingAdvisingAppendable streamingEscapeHtml(
       final LoggingAdvisingAppendable delegate) {
     return new StreamingHtmlEscaper(delegate);

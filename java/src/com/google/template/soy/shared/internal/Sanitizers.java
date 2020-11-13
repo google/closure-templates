@@ -238,11 +238,7 @@ public final class Sanitizers {
       return normalizeHtml(value.coerceToString());
     }
 
-    return escapeHtmlRcdata(value.coerceToString());
-  }
-
-  public static String escapeHtmlRcdata(String value) {
-    return escapeHtml(value);
+    return escapeHtml(value.coerceToString());
   }
 
   /** Streaming version of {@code |escapeHtmlRcData}. */
@@ -612,13 +608,13 @@ public final class Sanitizers {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
       return value.coerceToString();
     }
-    return filterTrustedResourceUri(value.coerceToString());
+    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
+    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
   }
 
   /** For string inputs this function just returns the input string itself. */
   public static String filterTrustedResourceUri(String value) {
-    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
-    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
+    return value;
   }
 
   /** Filters out strings that cannot be a substring of a valid <script> tag. */
@@ -902,12 +898,8 @@ public final class Sanitizers {
   }
 
   /** Filters bad csp values. */
-  public static String filterCspNonceValue(SoyValue value) {
-    value = normalizeNull(value);
-    return filterCspNonceValue(value.coerceToString());
-  }
-
-  public static String filterCspNonceValue(String value) {
+  public static String filterCspNonceValue(SoyValue soyValue) {
+    String value = soyValue.coerceToString();
     if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
