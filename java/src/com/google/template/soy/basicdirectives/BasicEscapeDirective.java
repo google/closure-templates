@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicdirectives;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
@@ -63,6 +64,7 @@ public abstract class BasicEscapeDirective
   private final String name;
 
   @LazyInit private MethodRef javaSoyValueSanitizer;
+  @LazyInit private MethodRef javaStringSanitizer;
   @LazyInit private MethodRef javaStreamingSanitizer;
 
   /** @param name E.g. {@code |escapeUri}. */
@@ -118,6 +120,18 @@ public abstract class BasicEscapeDirective
   @Override
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+    // All the escaper functions have versions which accept a raw String and we should prefer
+    // that one if we can avoid boxing.  However, we have to be careful not to throw away
+    // information about the contentKind of the string.  So we only do this if the value is already
+    // unboxed.  In all other cases we call the SoyValue version
+    if (!value.isBoxed()) {
+      return SoyExpression.forString(javaStringSanitizer().invoke(value.coerceToString()));
+    }
+    return SoyExpression.forString(javaSoyValueSanitizer().invoke(value));
+  }
+
+  @VisibleForTesting
+  MethodRef javaSoyValueSanitizer() {
     MethodRef sanitizerMethod = javaSoyValueSanitizer;
     if (sanitizerMethod == null) {
       // lazily allocated
@@ -125,10 +139,19 @@ public abstract class BasicEscapeDirective
           MethodRef.create(Sanitizers.class, name.substring(1), SoyValue.class).asNonNullable();
       javaSoyValueSanitizer = sanitizerMethod;
     }
-    // almost all the escaper functions have versions which accept a raw String, in theory we could
-    // take advantage of this to avoid boxing, but the risk is that we might throw away information
-    // about the content kind of the string.
-    return SoyExpression.forString(sanitizerMethod.invoke(value.box()));
+    return sanitizerMethod;
+  }
+
+  @VisibleForTesting
+  MethodRef javaStringSanitizer() {
+    MethodRef sanitizerMethod = javaStringSanitizer;
+    if (sanitizerMethod == null) {
+      // lazily allocated
+      sanitizerMethod =
+          MethodRef.create(Sanitizers.class, name.substring(1), String.class).asNonNullable();
+      javaStringSanitizer = sanitizerMethod;
+    }
+    return sanitizerMethod;
   }
 
   /**
