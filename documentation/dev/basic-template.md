@@ -127,13 +127,14 @@ be called from their host languages (see how to call from [Java](java.md) and
 
 ```soy
 {namespace my.other.namespace}
+import * as myNamespace from 'path/to/hello.soy';
 
 {template .helloEveryone}
   {@param names: list<string>}
   <ul>
     {for $name in $names}
       <li>
-      {call my.namespace.hello}
+      {call myNamespace.hello}
         {param name : $name/}
       {/call}
       </li>

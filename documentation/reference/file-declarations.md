@@ -87,6 +87,9 @@ The syntax for calling imported templates is:
 
 ## alias (DEPRECATED; will be deleted soon) {#alias}
 
+**Warning:** The `alias` command will be deprecated soon. Use
+[`import`](#import) instead.
+
 Syntax:
 
 ```soy
