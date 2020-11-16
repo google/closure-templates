@@ -42761,6 +42761,25 @@ soy.$$insertWordBreaks = function(value, maxCharsBetweenWordBreaks) {
   return result;
 };
 
+/**
+ * Conditionally concatenates two attribute values with a delimiter if they are
+ * both non-empty.
+ *
+ * @param {string} l
+ * @param {string} r
+ * @param {string} delimiter
+ * @return {string}
+ */
+soy.$$concatAttributeValues = function(l, r, delimiter) {
+  if (!l) {
+    return r;
+  }
+  if (!r) {
+    return l;
+  }
+  return l + delimiter + r;
+};
+
 
 /**
  * Truncates a string to a given max length (if it's currently longer),

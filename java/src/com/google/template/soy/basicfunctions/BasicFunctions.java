@@ -27,6 +27,7 @@ public class BasicFunctions {
   public static ImmutableList<SoySourceFunction> functions() {
     return ImmutableList.of(
         new CeilingFunction(),
+        new ConcatAttributeValuesFunction(),
         new ConcatListsFunction(),
         new ConcatMapsMethod(),
         new FloorFunction(),

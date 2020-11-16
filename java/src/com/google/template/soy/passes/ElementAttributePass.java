@@ -26,6 +26,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.base.internal.QuoteStyle;
+import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
@@ -33,6 +36,8 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.soytree.HtmlAttributeNode;
@@ -43,6 +48,7 @@ import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
+import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -277,22 +283,50 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 HtmlAttributeValueNode valueNode =
                     new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
                 newAttrNode.addChild(valueNode);
-                // We do not check required here since all += and = are implicitly optional.
-                IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNullFn);
-                valueNode.addChild(ifNode);
 
                 if (attrNode.getConcatenationDelimiter() == null) {
+                  IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNullFn);
+                  valueNode.addChild(ifNode);
                   // In the default case, we append an {else}...{/if} for the default case.
                   IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
                   ifNode.addChild(ifElseNode);
                   copyChildren(attrNode, ifElseNode);
                 } else {
-                  // Separate the default and the attribute value by a delimiter.
-                  ifNode
-                      .getChild(0)
-                      .addChild(
-                          new RawTextNode(id.get(), attrNode.getConcatenationDelimiter(), unknown));
-                  copyChildren(attrNode, valueNode);
+                  // In order to properly concatentate defaults and incoming attributes,
+                  // we need to first put all of the default into a {let} and then pass them into
+                  // a soy function called concatAttributeValues. This will possibly omit the
+                  // delimiter if one of the values is nullish.
+                  LetContentNode letContentNode =
+                      LetContentNode.forVariable(
+                          id.get(),
+                          unknown,
+                          "$__internal_soy_attribute_" + id.get(),
+                          unknown,
+                          SanitizedContentKind.TEXT);
+                  openTagNode
+                      .getParent()
+                      .addChild(openTagNode.getParent().getChildIndex(openTagNode), letContentNode);
+                  copyChildren(attrNode, letContentNode);
+                  VarRefNode letRef =
+                      new VarRefNode(
+                          letContentNode.getVarName(),
+                          SourceLocation.UNKNOWN,
+                          letContentNode.getVar());
+                  FunctionNode fn =
+                      FunctionNode.newPositional(
+                          Identifier.create("$$concatAttributeValues", unknown),
+                          (SoySourceFunction)
+                              pluginResolver.lookupSoyFunction(
+                                  "_concatAttributeValues", 3, SourceLocation.UNKNOWN),
+                          unknown);
+                  fn.addChild(attrExpr);
+                  fn.addChild(letRef);
+                  fn.addChild(
+                      new StringNode(
+                          attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, unknown));
+                  valueNode.addChild(
+                      new PrintNode(
+                          id.get(), unknown, true, fn, ImmutableList.of(), errorReporter));
                 }
 
                 replacementNode = newAttrNode;

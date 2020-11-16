@@ -99,6 +99,30 @@ public final class BasicFunctionsRuntime {
     return Joiner.on(separator).join(stringList);
   }
 
+  public static String concatAttributeValues(SoyValue l, SoyValue r, String delimiter) {
+    if (l == null && r == null) {
+      return "";
+    }
+    if (l == null) {
+      return r.coerceToString();
+    }
+    if (r == null) {
+      return l.coerceToString();
+    }
+    String lValue = l.stringValue();
+    String rValue = r.stringValue();
+    if (lValue.isEmpty()) {
+      return rValue;
+    }
+    if (rValue.isEmpty()) {
+      return lValue;
+    }
+    if (lValue.isEmpty() && rValue.isEmpty()) {
+      return "";
+    }
+    return lValue + delimiter + rValue;
+  }
+
   /**
    * Implements JavaScript-like Array slice. Negative and out-of-bounds indexes emulate the JS
    * behavior.
@@ -260,7 +284,7 @@ public final class BasicFunctionsRuntime {
     }
   }
 
-  public static List<IntegerData> range(int start, int end, int step) {
+  public static ImmutableList<IntegerData> range(int start, int end, int step) {
     if (step == 0) {
       throw new IllegalArgumentException(String.format("step must be non-zero: %d", step));
     }
@@ -281,7 +305,7 @@ public final class BasicFunctionsRuntime {
         list.add(IntegerData.forValue(i));
       }
     }
-    return list;
+    return ImmutableList.copyOf(list);
   }
 
   public static boolean strContains(SoyValue left, String right) {
