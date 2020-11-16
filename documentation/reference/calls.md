@@ -293,11 +293,8 @@ record, the value from the `param` command is used. In subsequent calls that use
 
 ### Calling a template in a different file
 
-All of the above examples demonstrate calling a template in the same file, hence
-the partial template name (beginning with a dot) used in the `call` command
-text.
-
-To call a template in a different file, you must
+All of the above examples demonstrate calling a template in the same file. To
+call a template in a different file, you must
 [import the template](file-declarations.md#import), and then you can call it
 using the usual syntax:
 
@@ -311,9 +308,6 @@ import {button, dialog} from 'path/to/soy/file/foo.soy'
   {/call}
 {/template}
 ```
-
-Note that there is no "." dot in the call, since the imported template symbol is
-not relative to the current namespace.
 
 In case of naming collisions, or if the imported template name is unclear from a
 readability perspective (e.g. "content"), you can alias the imported template:

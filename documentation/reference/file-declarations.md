@@ -82,8 +82,6 @@ The syntax for calling imported templates is:
 {call fooRender /}
 ```
 
-(with no dot (".") in the call)
-
 
 ## alias (DEPRECATED; will be deleted soon) {#alias}
 
