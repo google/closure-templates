@@ -16,6 +16,7 @@
 
 package com.google.template.soy;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.Iterables;
@@ -24,11 +25,16 @@ import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
+import com.google.template.soy.soytree.CallBasicNode;
+import com.google.template.soy.soytree.CallDelegateNode;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CompilationUnit;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.templatecall.TemplateCallMetadata;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,6 +53,8 @@ import org.kohsuke.args4j.Option;
  * more cacheable.
  */
 final class SoyHeaderCompiler extends AbstractSoyCompiler {
+  private static final int OUTPUT_STREAM_BUFFER_SIZE = 64 * 1024;
+
   @Option(
       name = "--output",
       required = true,
@@ -61,6 +69,13 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
           "Where to write metadata about CSS.  This will be a file containing a gzipped"
               + " CssMetadata proto")
   private File cssMetadataOutput = null;
+
+  @Option(
+      name = "--templateCallMetadataOutput",
+      usage =
+          "Where to write metadata about the template calls.  This will be a file containing"
+              + " a gzipped TemplateCallMetadata proto")
+  private File templateCallMetadataOutput = null;
 
   SoyHeaderCompiler(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
@@ -77,14 +92,21 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
     // some small tests revealed about a 5x compression ratio.  This is likely due to template names
     // sharing common prefixes and repeated parameter names and types.
     try (OutputStream os =
-        new GZIPOutputStream(new FileOutputStream(output), /* buffer size */ 64 * 1024)) {
+        new GZIPOutputStream(new FileOutputStream(output), OUTPUT_STREAM_BUFFER_SIZE)) {
       unit.writeTo(os);
     }
     if (cssMetadataOutput != null) {
       try (OutputStream os =
           new GZIPOutputStream(
-              new FileOutputStream(cssMetadataOutput), /* buffer size */ 64 * 1024)) {
+              new FileOutputStream(cssMetadataOutput), OUTPUT_STREAM_BUFFER_SIZE)) {
         calculateCssMetadata(result.fileSet(), result.cssRegistry()).writeTo(os);
+      }
+    }
+    if (templateCallMetadataOutput != null) {
+      try (OutputStream os =
+          new GZIPOutputStream(
+              new FileOutputStream(templateCallMetadataOutput), OUTPUT_STREAM_BUFFER_SIZE)) {
+        calculateTemplateCallMetadata(result.fileSet()).writeTo(os);
       }
     }
   }
@@ -122,6 +144,52 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
                 .collect(toList()))
         .addAllCssClassNames(cssClassNames)
         .build();
+  }
+
+  private static TemplateCallMetadata calculateTemplateCallMetadata(SoyFileSetNode fileSet) {
+
+    TemplateCallMetadata.Builder templateCallMetadata = TemplateCallMetadata.newBuilder();
+
+    for (SoyFileNode file : fileSet.getChildren()) {
+      for (TemplateNode template : file.getTemplates()) {
+        TemplateCallMetadata.Template.Builder templateMetadata =
+            TemplateCallMetadata.Template.newBuilder()
+                .setName(template.getTemplateName())
+                .setDelpackage(nullToEmpty(template.getDelPackageName()));
+
+        // TODO(b/172278368): incorporate Soy Element Composition (see
+
+        for (CallNode callNode : SoyTreeUtils.getAllNodesOfType(template, CallNode.class)) {
+          templateMetadata.addCalls(
+              TemplateCallMetadata.TemplateCall.newBuilder()
+                  .setDestTemplateName(getDestTemplateName(callNode))
+                  .setIsDelcall(callNode.getKind() == SoyNode.Kind.CALL_DELEGATE_NODE)
+                  .setDataArg(getDataArgStr(callNode)));
+        }
+        templateCallMetadata.addTemplates(templateMetadata.build());
+      }
+    }
+    return templateCallMetadata.build();
+  }
+
+  private static String getDestTemplateName(CallNode callNode) {
+    switch (callNode.getKind()) {
+      case CALL_BASIC_NODE:
+        CallBasicNode basicNode = ((CallBasicNode) callNode);
+        return basicNode.isStaticCall()
+            ? basicNode.getCalleeName()
+            : basicNode.getCalleeExpr().toSourceString();
+      case CALL_DELEGATE_NODE:
+        return ((CallDelegateNode) callNode).getDelCalleeName();
+      default:
+        throw new IllegalStateException("Unknown CallNode kind");
+    }
+  }
+
+  private static String getDataArgStr(CallNode callNode) {
+    return callNode.getDataExpr() != null
+        ? callNode.getDataExpr().toSourceString()
+        : callNode.isPassingAllData() ? "all" : "";
   }
 
   /**

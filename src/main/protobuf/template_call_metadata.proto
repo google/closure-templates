@@ -1,0 +1,49 @@
+// Contains metadata describing Soy template calls.
+// - Produced by the SoyHeader compiler
+// - Intended for use by the Wiz Component compiler for validation
+syntax = "proto3";
+
+package soy.compiler;
+
+option java_package = "com.google.template.soy.templatecall";
+option java_outer_classname = "TemplateCallMetadataProto";
+option java_multiple_files = true;
+
+// A set of source files containing template definitions
+message TemplateCallMetadata {
+  message Template {
+    // Globally unique name of the template
+    string name = 1;
+
+    // delpackage if it is specified
+    string delpackage = 2;
+
+    // Includes all calls invoked within the template definition, including:
+    // - Direct calls made within the template definition
+    // - Calls scoped within blocks like let, if, for, etc.
+    // - Calls scoped within other templates
+    repeated TemplateCall calls = 3;
+  }
+
+  message TemplateCall {
+    // Explicit params provided at call site
+    repeated ParamArg param_args = 1;
+
+    // Template being called
+    string dest_template_name = 2;
+
+    // Populated if the call site uses data="something"
+    string data_arg = 3;
+    // true if this is a delcall (the name lookup behaves differently)
+    bool is_delcall = 5;
+  }
+
+  message ParamArg {
+    string param_name = 1;
+    string param_val = 2;
+
+    repeated TemplateCall calls = 3;  // Calls made within html type params.
+  }
+
+  repeated Template templates = 1;
+}
