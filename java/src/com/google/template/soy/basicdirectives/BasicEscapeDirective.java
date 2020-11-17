@@ -16,6 +16,7 @@
 
 package com.google.template.soy.basicdirectives;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.LazyInit;
@@ -38,8 +39,8 @@ import com.google.template.soy.shared.internal.Sanitizers;
 import com.google.template.soy.shared.internal.ShortCircuitable;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPurePrintDirective;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * An escaping directive that is backed by {@link Sanitizers} in java, {@code soyutils.js} or the
@@ -62,7 +63,7 @@ public abstract class BasicEscapeDirective
   /** The directive name, including the leading vertical bar ("|"). */
   private final String name;
 
-  @LazyInit private MethodRef javaSoyValueSanitizer;
+  @LazyInit private IdentityHashMap<Class<?>, MethodRef> javaSanitizerByParamType;
   @LazyInit private MethodRef javaStreamingSanitizer;
 
   /** @param name E.g. {@code |escapeUri}. */
@@ -80,7 +81,7 @@ public abstract class BasicEscapeDirective
   }
 
   @Override
-  public final Set<Integer> getValidArgsSizes() {
+  public final ImmutableSet<Integer> getValidArgsSizes() {
     return VALID_ARGS_SIZES;
   }
 
@@ -118,17 +119,26 @@ public abstract class BasicEscapeDirective
   @Override
   public SoyExpression applyForJbcSrc(
       JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
-    MethodRef sanitizerMethod = javaSoyValueSanitizer;
-    if (sanitizerMethod == null) {
-      // lazily allocated
-      sanitizerMethod =
-          MethodRef.create(Sanitizers.class, name.substring(1), SoyValue.class).asNonNullable();
-      javaSoyValueSanitizer = sanitizerMethod;
+    // All the escaper functions have versions which accept a raw String and we should prefer
+    // that one if we can avoid boxing.  However, we have to be careful not to throw away
+    // information about the contentKind of the string.  So we only do this if the value is already
+    // unboxed.  In all other cases we call the SoyValue version
+    if (!value.isBoxed()) {
+      return SoyExpression.forString(javaSanitizer(String.class).invoke(value.coerceToString()));
     }
-    // almost all the escaper functions have versions which accept a raw String, in theory we could
-    // take advantage of this to avoid boxing, but the risk is that we might throw away information
-    // about the content kind of the string.
-    return SoyExpression.forString(sanitizerMethod.invoke(value.box()));
+    return SoyExpression.forString(javaSanitizer(SoyValue.class).invoke(value));
+  }
+
+  @VisibleForTesting
+  synchronized MethodRef javaSanitizer(Class<?> paramType) {
+    if (javaSanitizerByParamType == null) {
+      javaSanitizerByParamType = new IdentityHashMap<>();
+    }
+    return javaSanitizerByParamType.computeIfAbsent(paramType, this::findMethodRefForType);
+  }
+
+  private MethodRef findMethodRefForType(Class<?> paramType) {
+    return MethodRef.create(Sanitizers.class, name.substring(1), paramType).asNonNullable();
   }
 
   /**
@@ -342,6 +352,29 @@ public abstract class BasicEscapeDirective
 
     EscapeJsValue() {
       super("|escapeJsValue");
+    }
+
+    @Override
+    public SoyExpression applyForJbcSrc(
+        JbcSrcPluginContext context, SoyExpression value, List<SoyExpression> args) {
+      // escapeJsValue is special since it has special cases for numeric and boolean data
+      if (!value.isBoxed()) {
+        if (value.soyRuntimeType().isKnownString()) {
+          return SoyExpression.forString(
+              javaSanitizer(String.class).invoke(value.coerceToString()));
+        }
+        if (value.soyRuntimeType().isKnownNumber()) {
+          return SoyExpression.forString(
+              javaSanitizer(double.class).invoke(value.coerceToDouble()));
+        }
+        if (value.soyRuntimeType().isKnownBool()) {
+          return SoyExpression.forString(
+              javaSanitizer(boolean.class).invoke(value.coerceToBoolean()));
+        }
+        // otherwise fall through to boxing, this handles cases like 'null'
+        value = value.box();
+      }
+      return SoyExpression.forString(javaSanitizer(SoyValue.class).invoke(value));
     }
 
     @Override

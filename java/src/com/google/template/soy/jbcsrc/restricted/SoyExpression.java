@@ -400,7 +400,11 @@ public final class SoyExpression extends Expression {
   /** Coerce this expression to a string value. */
   public SoyExpression coerceToString() {
     if (soyRuntimeType.isKnownString() && !isBoxed()) {
-      return this;
+      if (isNonNullable()) {
+        return this;
+      } else {
+        return forString(MethodRef.STRING_VALUE_OF.invoke(delegate));
+      }
     }
     if (BytecodeUtils.isPrimitive(resultType())) {
       if (resultType().equals(Type.BOOLEAN_TYPE)) {

@@ -238,7 +238,11 @@ public final class Sanitizers {
       return normalizeHtml(value.coerceToString());
     }
 
-    return escapeHtml(value.coerceToString());
+    return escapeHtmlRcdata(value.coerceToString());
+  }
+
+  public static String escapeHtmlRcdata(String value) {
+    return escapeHtml(value);
   }
 
   /** Streaming version of {@code |escapeHtmlRcData}. */
@@ -430,8 +434,18 @@ public final class Sanitizers {
   }
 
   /** Converts plain text to a quoted javaScript string value. */
+  public static String escapeJsValue(double value) {
+    return " " + value + " ";
+  }
+
+  /** Converts plain text to a quoted javaScript string value. */
+  public static String escapeJsValue(boolean value) {
+    return " " + value + " ";
+  }
+
+  /** Converts plain text to a quoted javaScript string value. */
   public static String escapeJsValue(String value) {
-    return value != null ? "'" + escapeJsString(value) + "'" : " null ";
+    return "'" + escapeJsString(value) + "'";
   }
 
   /** Converts the input to the body of a JavaScript regular expression literal. */
@@ -608,13 +622,13 @@ public final class Sanitizers {
     if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.TRUSTED_RESOURCE_URI)) {
       return value.coerceToString();
     }
-    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
-    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
+    return filterTrustedResourceUri(value.coerceToString());
   }
 
   /** For string inputs this function just returns the input string itself. */
   public static String filterTrustedResourceUri(String value) {
-    return value;
+    logger.log(Level.WARNING, "|filterTrustedResourceUri received bad value ''{0}''", value);
+    return "about:invalid#" + EscapingConventions.INNOCUOUS_OUTPUT;
   }
 
   /** Filters out strings that cannot be a substring of a valid <script> tag. */
@@ -898,8 +912,12 @@ public final class Sanitizers {
   }
 
   /** Filters bad csp values. */
-  public static String filterCspNonceValue(SoyValue soyValue) {
-    String value = soyValue.coerceToString();
+  public static String filterCspNonceValue(SoyValue value) {
+    value = normalizeNull(value);
+    return filterCspNonceValue(value.coerceToString());
+  }
+
+  public static String filterCspNonceValue(String value) {
     if (EscapingConventions.FilterCspNonceValue.INSTANCE.getValueFilter().matcher(value).find()) {
       return value;
     }
