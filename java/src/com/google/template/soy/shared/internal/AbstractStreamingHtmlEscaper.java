@@ -80,6 +80,13 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
     delegate.setSanitizedContentDirectionality(contentDir);
   }
 
+  @Override
+  public void flushBuffers(int depth) throws IOException {
+    if (depth > 0) {
+      delegate.flushBuffers(depth - 1);
+    }
+  }
+
   protected final boolean isInHtml() {
     return getSanitizedContentKind() == ContentKind.HTML;
   }

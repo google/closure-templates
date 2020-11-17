@@ -31,7 +31,6 @@ import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
-import com.google.template.soy.jbcsrc.restricted.LocalVariable;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -86,7 +85,10 @@ final class AppendableExpression extends Expression {
           .asNonNullable()
           .asCheap();
 
-  static AppendableExpression forLocal(LocalVariable delegate) {
+  private static final MethodRef FLUSH_BUFFERS =
+      MethodRef.create(LoggingAdvisingAppendable.class, "flushBuffers", int.class);
+
+  static AppendableExpression forExpression(Expression delegate) {
     return new AppendableExpression(
         delegate, /* hasSideEffects= */ false, /* supportsSoftLimiting= */ true);
   }
@@ -123,7 +125,9 @@ final class AppendableExpression extends Expression {
     super(resultType, delegate.features());
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
-        delegate.isNonNullable(), "advising appendable expressions should always be non null");
+        delegate.isNonNullable(),
+        "advising appendable expressions should always be non null: %s",
+        delegate);
     this.delegate = delegate;
     this.hasSideEffects = hasSideEffects;
     this.supportsSoftLimiting = supportsSoftLimiting;
@@ -201,6 +205,10 @@ final class AppendableExpression extends Expression {
     return withNewDelegate(
         delegate.invoke(SET_SANITIZED_CONTENT_DIRECTIONALITY, BytecodeUtils.constant(contentDir)),
         true);
+  }
+
+  Statement flushBuffers(int depth) {
+    return delegate.invokeVoid(FLUSH_BUFFERS, constant(depth));
   }
 
   @Override

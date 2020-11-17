@@ -53,7 +53,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -421,6 +420,13 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
+    public void flushBuffers(int depth) throws IOException {
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
+      }
+    }
+
+    @Override
     public LoggingAdvisingAppendable append(CharSequence csq) throws IOException {
       delegate.append(wrap(csq));
       return this;
@@ -490,8 +496,7 @@ public final class StreamingPrintDirectivesTest {
   }
 
   /** An appendable that buffers all content until a call to close. */
-  public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable
-      implements Closeable {
+  public static final class CloseableAppendable extends ForwardingLoggingAdvisingAppendable {
     private final String suffix;
     private boolean appendCalled;
 
@@ -520,10 +525,11 @@ public final class StreamingPrintDirectivesTest {
     }
 
     @Override
-    public void close() throws IOException {
+    public void flushBuffers(int depth) throws IOException {
       if (appendCalled) {
         delegate.append(suffix);
       }
+      super.flushBuffers(depth);
     }
   }
 }

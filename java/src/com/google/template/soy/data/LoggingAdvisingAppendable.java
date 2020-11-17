@@ -119,6 +119,14 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
   public abstract LoggingAdvisingAppendable exitLoggableElement();
 
   /**
+   * Flushes all intermediate buffers stored within the appendable.
+   *
+   * @param depth If this is a delegating appendable, the flushBuffers command should only be
+   *     delegated if {@code depth > 0} and depth should be decremented when delegating.
+   */
+  public abstract void flushBuffers(int depth) throws IOException;
+
+  /**
    * Marks the content kind of this appendable. All the {@link #append} commands should be
    * considered to be content of the given kind that has already been sanitized.
    *
@@ -242,6 +250,11 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
     @Override
     public boolean softLimitReached() {
       return false;
+    }
+
+    @Override
+    public void flushBuffers(int depth) {
+      throw new AssertionError("should not be called");
     }
   }
 

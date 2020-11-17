@@ -100,4 +100,11 @@ public final class StreamingEscaper extends LoggingAdvisingAppendable {
   public LoggingAdvisingAppendable exitLoggableElement() {
     return this;
   }
+
+  @Override
+  public void flushBuffers(int depth) throws IOException {
+    if (depth > 0) {
+      delegate.flushBuffers(depth - 1);
+    }
+  }
 }

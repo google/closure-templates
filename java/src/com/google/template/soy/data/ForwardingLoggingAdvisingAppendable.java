@@ -83,4 +83,11 @@ public abstract class ForwardingLoggingAdvisingAppendable extends LoggingAdvisin
     delegate.appendLoggingFunctionInvocation(funCall, escapers);
     return this;
   }
+
+  @Override
+  public void flushBuffers(int depth) throws IOException {
+    if (depth > 0) {
+      delegate.flushBuffers(depth - 1);
+    }
+  }
 }

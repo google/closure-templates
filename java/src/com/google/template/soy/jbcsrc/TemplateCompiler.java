@@ -329,7 +329,7 @@ final class TemplateCompiler {
                 registry,
                 innerClasses,
                 thisVar,
-                AppendableExpression.forLocal(appendableVar),
+                AppendableExpression.forExpression(appendableVar),
                 variableSet,
                 variables,
                 fields,

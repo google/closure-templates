@@ -31,7 +31,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
-import com.google.template.soy.data.ForwardingLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
@@ -70,7 +69,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.internal.ShortCircuitables;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -626,6 +624,11 @@ public final class JbcSrcRuntime {
           }
           System.out.append(val);
         }
+
+        @Override
+        public void flushBuffers(int depth) {
+          throw new AssertionError("should not be called");
+        }
       };
 
   /** Determines if the operand's string form can be equality-compared with a string. */
@@ -715,47 +718,6 @@ public final class JbcSrcRuntime {
     }
   }
 
-  /**
-   * Returns a {@link LoggingAdvisingAppendable} that:
-   *
-   * <ul>
-   *   <li>Forwards all {@link LoggingAdvisingAppendable} methods to {@code delegate}
-   *   <li>Implements {@link Closeable} and forwards all {@link Closeable#close} calls to the given
-   *       closeables in order.
-   * </ul>
-   *
-   * <p>This strategy allows us to make certain directives closeable without requiring them all to
-   * be since this wrapper can propagate the close signals in the rare case that a closeable
-   * directive is wrapped with a non closeable one (or multiple closeable wrappers are composed)
-   */
-  public static ClosePropagatingAppendable propagateClose(
-      LoggingAdvisingAppendable delegate, ImmutableList<Closeable> closeables) {
-    return new ClosePropagatingAppendable(delegate, closeables);
-  }
-
-  private static final class ClosePropagatingAppendable extends ForwardingLoggingAdvisingAppendable
-      implements Closeable {
-    final ImmutableList<Closeable> closeables;
-
-    ClosePropagatingAppendable(
-        LoggingAdvisingAppendable delegate, ImmutableList<Closeable> closeables) {
-      super(delegate);
-      this.closeables = closeables;
-    }
-
-    @Override
-    public void close() throws IOException {
-      // This looks buggy since we don't catch IOExceptions and then propagate close to the
-      // remaining closeables, but that is fine given our usecase since all these closeables are
-      // really wrapping each other and the close command is only to flush a buffer, so if any
-      // throw we just abort anyway and if any of them throw it doesn't really matter if some data
-      // is stuck in a buffer since the whole render is going to fail.
-      for (Closeable c : closeables) {
-        c.close();
-      }
-    }
-  }
-
   public static LogStatement createLogStatement(boolean logOnly, SoyVisualElementData veData) {
     return LogStatement.create(veData.ve().id(), veData.data(), logOnly);
   }
@@ -824,7 +786,8 @@ public final class JbcSrcRuntime {
       Map<String, ?> javaMap) {
     return javaMap.entrySet().stream()
         .collect(
-            toImmutableMap(e -> e.getKey(), e -> SoyValueConverter.INSTANCE.convert(e.getValue())));
+            toImmutableMap(
+                Map.Entry::getKey, e -> SoyValueConverter.INSTANCE.convert(e.getValue())));
   }
 
   /** For repeated extensions, returns all of the extensions values as a list. */

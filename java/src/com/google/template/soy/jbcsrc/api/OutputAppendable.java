@@ -89,4 +89,9 @@ public final class OutputAppendable extends AbstractLoggingAdvisingAppendable {
   protected void doExitLoggableElement() {
     logger.exit();
   }
+
+  @Override
+  public void flushBuffers(int depth) {
+    throw new AssertionError("shouldn't be called");
+  }
 }

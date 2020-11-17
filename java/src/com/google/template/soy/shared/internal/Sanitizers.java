@@ -16,6 +16,8 @@
 
 package com.google.template.soy.shared.internal;
 
+import static java.lang.Math.min;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Function;
@@ -39,7 +41,6 @@ import com.google.template.soy.data.restricted.BooleanData;
 import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.shared.internal.TagWhitelist.OptionalSafeTag;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -115,8 +116,7 @@ public final class Sanitizers {
     return new CleanHtmlAppendable(delegate, optionalSafeTags);
   }
 
-  private static final class CleanHtmlAppendable extends AbstractStreamingHtmlEscaper
-      implements Closeable {
+  private static final class CleanHtmlAppendable extends AbstractStreamingHtmlEscaper {
     private final Collection<? extends OptionalSafeTag> optionalSafeTags;
 
     CleanHtmlAppendable(
@@ -174,7 +174,7 @@ public final class Sanitizers {
     }
 
     @Override
-    public void close() throws IOException {
+    public void flushBuffers(int depth) throws IOException {
       if (!isInHtml()) {
         StringBuilder buffer = (StringBuilder) activeAppendable;
         if (buffer.length() > 0) {
@@ -187,6 +187,7 @@ public final class Sanitizers {
           buffer.setLength(0);
         }
       }
+      super.flushBuffers(depth);
     }
   }
 
@@ -420,14 +421,13 @@ public final class Sanitizers {
     } else if (value instanceof BooleanData) {
       return " " + value.booleanValue() + " ";
     } else if (isSanitizedContentOfKind(value, SanitizedContent.ContentKind.JS)) {
-      String jsCode = value.coerceToString();
       // This value may not be embeddable if it contains the substring "</script".
       // TODO(msamuel): Fixup.  We need to be careful because mucking with '<' can
       // break code like
       //    while (i</foo/.exec(str).length)
       // and mucking with / can break
       //    return untrustedHTML.replace(/</g, '&lt;');
-      return jsCode;
+      return value.coerceToString();
     } else {
       return escapeJsValue(value.coerceToString());
     }
@@ -670,7 +670,7 @@ public final class Sanitizers {
 
   private static boolean matchPrefixIgnoreCasePastEnd(String needle, String haystack, int offset) {
     int charsLeft = haystack.length() - offset;
-    int charsToScan = Math.min(needle.length(), charsLeft);
+    int charsToScan = min(needle.length(), charsLeft);
     for (int i = 0; i < charsToScan; i++) {
       char c1 = needle.charAt(i);
       char c2 = haystack.charAt(i + offset);
@@ -802,8 +802,7 @@ public final class Sanitizers {
     return new FilterHtmlAttributesAppendable(appendable);
   }
 
-  private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable
-      implements Closeable {
+  private static final class FilterHtmlAttributesAppendable extends LoggingAdvisingAppendable {
     private final LoggingAdvisingAppendable delegate;
     private Appendable activeAppendable;
     private char lastChar;
@@ -885,13 +884,16 @@ public final class Sanitizers {
     }
 
     @Override
-    public void close() throws IOException {
+    public void flushBuffers(int depth) throws IOException {
       if (getSanitizedContentKind() == ContentKind.ATTRIBUTES) {
         if (lastChar != 0 && shouldAppendSpace(lastChar)) {
           delegate.append(' ');
         }
       } else {
         delegate.append(filterHtmlAttributes(activeAppendable.toString()));
+      }
+      if (depth > 0) {
+        delegate.flushBuffers(depth - 1);
       }
     }
   }
@@ -1181,7 +1183,7 @@ public final class Sanitizers {
       if (indexOfEndCData != -1) {
         return embedCssIntoHtmlSlow(
             css,
-            Math.min(indexOfEndTag, indexOfEndCData),
+            min(indexOfEndTag, indexOfEndCData),
             /* searchForEndCData= */ true,
             /* searchForEndTag= */ true);
       }
@@ -1247,7 +1249,7 @@ public final class Sanitizers {
           searchForEndCData = false;
         } else {
           nextReplacement =
-              nextReplacement == -1 ? indexOfEndCData : Math.min(nextReplacement, indexOfEndCData);
+              nextReplacement == -1 ? indexOfEndCData : min(nextReplacement, indexOfEndCData);
         }
       }
     } while (nextReplacement != -1);

@@ -200,6 +200,13 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
+    public void flushBuffers(int depth) {
+      // This is a 'root' appendable so while we have a delegate there should never be a case where
+      // we need to be flushed through.
+      throw new AssertionError("should not be called");
+    }
+
+    @Override
     public String toString() {
       return buffer.toString();
     }

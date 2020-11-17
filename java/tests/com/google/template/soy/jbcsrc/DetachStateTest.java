@@ -74,6 +74,11 @@ public final class DetachStateTest {
     }
 
     @Override
+    public void flushBuffers(int depth) {
+      throw new AssertionError("should not be called");
+    }
+
+    @Override
     public String toString() {
       return delegate.toString();
     }

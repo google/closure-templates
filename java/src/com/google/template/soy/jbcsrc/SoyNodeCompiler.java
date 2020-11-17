@@ -61,7 +61,6 @@ import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
@@ -720,33 +719,28 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Expression appendable = appendableExpression;
     if (!directives.isEmpty()) {
       Label printDirectiveArgumentReattachPoint = new Label();
-      AppendableAndOptions wrappedAppendable =
+      PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
           applyStreamingPrintDirectives(
               directives,
               appendable,
               exprCompiler.asBasicCompiler(
                   detachState.createExpressionDetacher(printDirectiveArgumentReattachPoint)),
-              parameterLookup.getPluginContext(),
-              variables);
+              parameterLookup.getPluginContext());
       FieldRef currentAppendableField = fields.getCurrentAppendable();
       initAppendable =
           currentAppendableField
               .putInstanceField(thisVar, wrappedAppendable.appendable())
               .labelStart(printDirectiveArgumentReattachPoint);
-      appendable = currentAppendableField.accessor(thisVar);
+      appendable = currentAppendableField.accessor(thisVar).asNonNullable();
       clearAppendable =
           currentAppendableField.putInstanceField(
               thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
-      if (wrappedAppendable.closeable()) {
+      if (wrappedAppendable.flushBuffersDepth() >= 0) {
         // make sure to call close before clearing
         clearAppendable =
             Statement.concat(
-                // We need to cast because the static type of the field is just plain old
-                // LoggingAdvisingAppendable
-                currentAppendableField
-                    .accessor(thisVar)
-                    .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
-                    .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                AppendableExpression.forExpression(appendable)
+                    .flushBuffers(wrappedAppendable.flushBuffersDepth()),
                 clearAppendable);
       }
     }
@@ -1094,29 +1088,22 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               calleeExpression, getEscapingDirectivesList(node));
     } else {
       if (!node.getEscapingDirectives().isEmpty()) {
-        AppendableAndOptions wrappedAppendable =
+        PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
             applyStreamingEscapingDirectives(
-                node.getEscapingDirectives(),
-                appendable,
-                parameterLookup.getRenderContext(),
-                variables);
+                node.getEscapingDirectives(), appendable, parameterLookup.getPluginContext());
         FieldRef currentAppendableField = fields.getCurrentAppendable();
         initAppendable =
             currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
-        appendable = currentAppendableField.accessor(thisVar);
+        appendable = currentAppendableField.accessor(thisVar).asNonNullable();
         clearAppendable =
             currentAppendableField.putInstanceField(
                 thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
-        if (wrappedAppendable.closeable()) {
+        if (wrappedAppendable.flushBuffersDepth() >= 0) {
           // make sure to call close before clearing
           clearAppendable =
               Statement.concat(
-                  // We need to cast because the static type of the field is just plain old
-                  // LoggingAdvisingAppendable
-                  currentAppendableField
-                      .accessor(thisVar)
-                      .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
-                      .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                  AppendableExpression.forExpression(appendable)
+                      .flushBuffers(wrappedAppendable.flushBuffersDepth()),
                   clearAppendable);
         }
       }
@@ -1285,7 +1272,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return new MsgCompiler(
         thisVar,
         detachState,
-        variables,
         parameterLookup,
         fields,
         appendableExpression,

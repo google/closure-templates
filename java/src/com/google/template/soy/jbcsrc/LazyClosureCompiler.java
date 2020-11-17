@@ -412,7 +412,7 @@ final class LazyClosureCompiler {
               registry,
               innerClasses,
               thisVar,
-              AppendableExpression.forLocal(appendableVar),
+              AppendableExpression.forExpression(appendableVar),
               variableSet,
               lookup,
               fields,

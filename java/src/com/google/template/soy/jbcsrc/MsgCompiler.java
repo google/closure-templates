@@ -35,14 +35,12 @@ import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec.Type;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
@@ -75,7 +73,7 @@ import org.objectweb.asm.Label;
  * actual message formatting so this class is responsible for:
  *
  * <ul>
- *   <li>Stashing a default ImmutableList<SoyMsgPart> in a static field to handle missing
+ *   <li>Stashing a default {@code ImmutableList<SoyMsgPart>} in a static field to handle missing
  *       translations
  *   <li>performing lookup from the RenderContext to get the translation
  *   <li>generating code calculate placeholder values
@@ -99,16 +97,10 @@ final class MsgCompiler {
   private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_LONG =
       ConstructorRef.create(SoyMsgPluralCaseSpec.class, long.class);
 
-  private static final ExtraCodeCompiler EXIT_LOGGABLE_ELEMENT =
-      new ExtraCodeCompiler() {
-        @Override
-        public Statement compile(
-            ExpressionCompiler exprCompiler,
-            AppendableExpression appendable,
-            DetachState detachState) {
-          return appendable.exitLoggableElement().toStatement();
-        }
-      };
+  private static Statement exitLoggableElement(
+      ExpressionCompiler exprCompiler, AppendableExpression appendable, DetachState detachState) {
+    return appendable.exitLoggableElement().toStatement();
+  }
 
   /**
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
@@ -140,7 +132,6 @@ final class MsgCompiler {
 
   private final Expression thisVar;
   private final DetachState detachState;
-  private final TemplateVariableManager variables;
   private final TemplateParameterLookup parameterLookup;
   private final FieldManager fields;
   private final AppendableExpression appendableExpression;
@@ -149,14 +140,12 @@ final class MsgCompiler {
   MsgCompiler(
       Expression thisVar,
       DetachState detachState,
-      TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
       FieldManager fields,
       AppendableExpression appendableExpression,
       PlaceholderCompiler placeholderCompiler) {
     this.thisVar = checkNotNull(thisVar);
     this.detachState = checkNotNull(detachState);
-    this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
     this.fields = checkNotNull(fields);
     this.appendableExpression = checkNotNull(appendableExpression);
@@ -217,7 +206,7 @@ final class MsgCompiler {
         .accessor();
   }
 
-  private Expression partsToPartsList(ImmutableList<SoyMsgPart> parts) throws AssertionError {
+  private Expression partsToPartsList(ImmutableList<SoyMsgPart> parts) {
     List<Expression> partsExprs = new ArrayList<>(parts.size());
     for (SoyMsgPart part : parts) {
       partsExprs.add(partToPartExpression(part));
@@ -236,7 +225,7 @@ final class MsgCompiler {
       List<Expression> caseExprs = new ArrayList<>(pluralPart.getCases().size());
       for (Case<SoyMsgPluralCaseSpec> item : pluralPart.getCases()) {
         Expression spec;
-        if (item.spec().getType() == Type.EXPLICIT) {
+        if (item.spec().getType() == SoyMsgPluralCaseSpec.Type.EXPLICIT) {
           spec = SOY_MSG_PLURAL_CASE_SPEC_LONG.construct(constant(item.spec().getExplicitValue()));
         } else {
           spec =
@@ -334,22 +323,21 @@ final class MsgCompiler {
       Statement clearAppendable = Statement.NULL_STATEMENT;
       Expression appendable = appendableExpression;
       if (!escapingDirectives.isEmpty()) {
-        AppendableAndOptions wrappedAppendable =
+        PrintDirectives.AppendableAndFlushBuffersDepth wrappedAppendable =
             applyStreamingEscapingDirectives(
-                escapingDirectives, appendable, parameterLookup.getPluginContext(), variables);
+                escapingDirectives, appendable, parameterLookup.getPluginContext());
         FieldRef currentAppendableField = fields.getCurrentAppendable();
         initAppendable =
             currentAppendableField.putInstanceField(thisVar, wrappedAppendable.appendable());
-        appendable = currentAppendableField.accessor(thisVar);
+        appendable = currentAppendableField.accessor(thisVar).asNonNullable();
         clearAppendable =
             currentAppendableField.putInstanceField(
                 thisVar, constantNull(LOGGING_ADVISING_APPENDABLE_TYPE));
-        if (wrappedAppendable.closeable()) {
+        if (wrappedAppendable.flushBuffersDepth() >= 0) {
           clearAppendable =
               Statement.concat(
-                  appendableExpression
-                      .checkedCast(BytecodeUtils.CLOSEABLE_TYPE)
-                      .invokeVoid(MethodRef.CLOSEABLE_CLOSE),
+                  AppendableExpression.forExpression(appendable)
+                      .flushBuffers(wrappedAppendable.flushBuffersDepth()),
                   clearAppendable);
         }
       }
@@ -461,8 +449,7 @@ final class MsgCompiler {
   private void putPlaceholderIntoMap(
       MsgNode originalMsg,
       Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
-      SoyMsgPlaceholderPart placeholder)
-      throws AssertionError {
+      SoyMsgPlaceholderPart placeholder) {
     final String placeholderName = placeholder.getPlaceholderName();
     if (!placeholderNameToPutStatement.containsKey(placeholderName)) {
       MsgPlaceholderNode repPlaceholderNode =
@@ -529,7 +516,7 @@ final class MsgCompiler {
                         placeholderName,
                         initialNode,
                         /* prefix= */ enterLoggableElement,
-                        /* suffix= */ EXIT_LOGGABLE_ELEMENT));
+                        /* suffix= */ MsgCompiler::exitLoggableElement));
           } else {
             // We need to call a different method in this case to add the ordering constraint
             // between the start and end tag.
@@ -556,7 +543,7 @@ final class MsgCompiler {
                       placeholderName,
                       initialNode,
                       /* prefix= */ ExtraCodeCompiler.NO_OP,
-                      /* suffix= */ EXIT_LOGGABLE_ELEMENT));
+                      /* suffix= */ MsgCompiler::exitLoggableElement));
         } else {
           // this must be some other html tag within the velog statement, it is just a normal
           // placeholder

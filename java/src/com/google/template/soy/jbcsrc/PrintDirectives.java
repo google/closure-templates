@@ -20,20 +20,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
-import com.google.template.soy.jbcsrc.TemplateVariableManager.Scope;
-import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.JbcSrcPluginContext;
-import com.google.template.soy.jbcsrc.restricted.LocalVariable;
-import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective;
 import com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable.AppendableAndOptions;
-import com.google.template.soy.jbcsrc.restricted.Statement;
-import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
@@ -44,13 +36,6 @@ import java.util.List;
 
 /** Utilities for working with {@link SoyPrintDirective print directives}. */
 final class PrintDirectives {
-
-  private static final MethodRef RUNTIME_PROPAGATE_CLOSE =
-      MethodRef.create(
-          JbcSrcRuntime.class,
-          "propagateClose",
-          LoggingAdvisingAppendable.class,
-          ImmutableList.class);
 
   static boolean areAllPrintDirectivesStreamable(PrintNode node) {
     for (PrintDirectiveNode directiveNode : node.getChildren()) {
@@ -79,6 +64,18 @@ final class PrintDirectives {
     return true;
   }
 
+  @AutoValue
+  abstract static class AppendableAndFlushBuffersDepth {
+    static AppendableAndFlushBuffersDepth create(Expression appendableExpression, int flushDepth) {
+      return new AutoValue_PrintDirectives_AppendableAndFlushBuffersDepth(
+          appendableExpression, flushDepth);
+    }
+
+    abstract Expression appendable();
+
+    abstract int flushBuffersDepth();
+  }
+
   /**
    * Applies all the streaming print directives to the appendable.
    *
@@ -86,21 +83,17 @@ final class PrintDirectives {
    *     com.google.template.soy.jbcsrc.restricted.SoyJbcSrcPrintDirective.Streamable streamable}
    * @param appendable The appendable to wrap
    * @param context The render context for the plugins
-   * @param variables The local variable manager
    * @return The wrapped appendable
    */
-  static AppendableAndOptions applyStreamingEscapingDirectives(
-      List<SoyPrintDirective> directives,
-      Expression appendable,
-      JbcSrcPluginContext context,
-      TemplateVariableManager variables) {
+  static AppendableAndFlushBuffersDepth applyStreamingEscapingDirectives(
+      List<SoyPrintDirective> directives, Expression appendable, JbcSrcPluginContext context) {
     checkArgument(!directives.isEmpty());
-    List<DirectiveWithArgs> directivesToApply = new ArrayList<>();
+    List<StreamingDirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (SoyPrintDirective directive : directives) {
       directivesToApply.add(
-          DirectiveWithArgs.create((SoyJbcSrcPrintDirective.Streamable) directive));
+          StreamingDirectiveWithArgs.create((SoyJbcSrcPrintDirective.Streamable) directive));
     }
-    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, context, variables);
+    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, context);
   }
 
   /**
@@ -111,106 +104,57 @@ final class PrintDirectives {
    * @param appendable The appendable to wrap
    * @param basic The expression compiler to use for compiling the arguments
    * @param renderContext The render context for the plugins
-   * @param variables The local variable manager
    * @return The wrapped appendable
    */
-  static AppendableAndOptions applyStreamingPrintDirectives(
+  static AppendableAndFlushBuffersDepth applyStreamingPrintDirectives(
       List<PrintDirectiveNode> directives,
       Expression appendable,
       BasicExpressionCompiler basic,
-      JbcSrcPluginContext renderContext,
-      TemplateVariableManager variables) {
+      JbcSrcPluginContext renderContext) {
     checkArgument(!directives.isEmpty());
-    List<DirectiveWithArgs> directivesToApply = new ArrayList<>();
+    List<StreamingDirectiveWithArgs> directivesToApply = new ArrayList<>();
     for (PrintDirectiveNode directive : directives) {
       directivesToApply.add(
-          DirectiveWithArgs.create(
+          StreamingDirectiveWithArgs.create(
               (SoyJbcSrcPrintDirective.Streamable) directive.getPrintDirective(),
               basic.compileToList(directive.getArgs())));
     }
-    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, renderContext, variables);
+    return applyStreamingPrintDirectivesTo(directivesToApply, appendable, renderContext);
   }
 
-  private static AppendableAndOptions applyStreamingPrintDirectivesTo(
-      List<DirectiveWithArgs> directivesToApply,
+  private static AppendableAndFlushBuffersDepth applyStreamingPrintDirectivesTo(
+      List<StreamingDirectiveWithArgs> directivesToApply,
       Expression appendable,
-      JbcSrcPluginContext context,
-      TemplateVariableManager variableManager) {
-    final List<LocalVariable> closeables = new ArrayList<>();
-    final List<Statement> wrapVars = new ArrayList<>();
-    Scope scope = variableManager.enterScope();
+      JbcSrcPluginContext context) {
 
-    AppendableAndOptions prev = AppendableAndOptions.create(appendable);
-    LocalVariable prevVar =
-        scope.createTemporary("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
-    wrapVars.add(prevVar.store(prev.appendable(), prevVar.start()));
+    Expression currAppendable = appendable;
 
     // Apply the directives to the appendable in reverse
     // since we are wrapping the directives around the appendable we need to wrap the underlying
     // appendable with the last directive first. so iterate in reverse order.
-    for (DirectiveWithArgs directiveToApply : Lists.reverse(directivesToApply)) {
-      AppendableAndOptions curr = directiveToApply.apply(context, prevVar);
-      LocalVariable currVar =
-          scope.createTemporary("tmp_appendable", BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE);
-      wrapVars.add(currVar.store(curr.appendable(), currVar.start()));
 
-      if (curr.closeable()) {
-        closeables.add(currVar);
+    // how deep in the layers of wrappers the first directive is that requires a flushBuffers call.
+    int flushBuffersDepth = -1;
+    for (StreamingDirectiveWithArgs directiveToApply : Lists.reverse(directivesToApply)) {
+      AppendableAndOptions next = directiveToApply.apply(context, currAppendable);
+      currAppendable = next.appendable();
+      if (next.closeable() || flushBuffersDepth >= 0) {
+        flushBuffersDepth++;
       }
-      prev = curr;
-      prevVar = currVar;
     }
-
-    // Check if we need to apply a wrapper to make sure close propagates to all the right places
-    // this is necessary if there are multiple closeable wrappers.
-    final Expression appendableExpression;
-    final boolean closeable;
-    if (closeables.isEmpty()) {
-      appendableExpression = prev.appendable();
-      closeable = false;
-    } else if (closeables.size() == 1 && prev.closeable()) {
-      // there is exactly one closeable and it is first, we don't need a wrapper
-      appendableExpression = prev.appendable();
-      closeable = true;
-    } else {
-      // there is either more than one closeable, or it is not the first one, so we need a wrapper
-      // We need to reverse the list of closeables so that we close them in the correct order. for
-      // example, given '|foo|bar' we will first wrap the delegate with bar and then with foo but we
-      // need to close foo first.
-      appendableExpression =
-          RUNTIME_PROPAGATE_CLOSE.invoke(
-              prevVar, BytecodeUtils.asImmutableList(Lists.reverse(closeables)));
-      closeable = true;
-    }
-
-    final Statement exitScope = scope.exitScope();
-    Expression result =
-        new Expression(appendableExpression.resultType()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            for (Statement init : wrapVars) {
-              init.gen(adapter);
-            }
-            appendableExpression.gen(adapter);
-            exitScope.gen(adapter);
-          }
-        };
-    if (closeable) {
-      return AppendableAndOptions.createCloseable(result);
-    } else {
-      return AppendableAndOptions.create(result);
-    }
+    return AppendableAndFlushBuffersDepth.create(currAppendable, flushBuffersDepth);
   }
 
   @AutoValue
-  abstract static class DirectiveWithArgs {
-    static DirectiveWithArgs create(SoyJbcSrcPrintDirective.Streamable directive) {
-      return new AutoValue_PrintDirectives_DirectiveWithArgs(directive, ImmutableList.of());
+  abstract static class StreamingDirectiveWithArgs {
+    static StreamingDirectiveWithArgs create(SoyJbcSrcPrintDirective.Streamable directive) {
+      return new AutoValue_PrintDirectives_StreamingDirectiveWithArgs(
+          directive, ImmutableList.of());
     }
 
-    static DirectiveWithArgs create(
+    static StreamingDirectiveWithArgs create(
         SoyJbcSrcPrintDirective.Streamable directive, List<SoyExpression> arguments) {
-      return new AutoValue_PrintDirectives_DirectiveWithArgs(
+      return new AutoValue_PrintDirectives_StreamingDirectiveWithArgs(
           directive, ImmutableList.copyOf(arguments));
     }
 
