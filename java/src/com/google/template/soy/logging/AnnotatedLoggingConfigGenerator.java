@@ -44,7 +44,6 @@ public final class AnnotatedLoggingConfigGenerator {
   private final String javaPackage;
   private final String jsPackage;
   private final String className;
-  private final String javaResourceFilename;
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
 
@@ -53,14 +52,12 @@ public final class AnnotatedLoggingConfigGenerator {
       String javaPackage,
       String jsPackage,
       String className,
-      String javaResourceFilename,
       SoyTypeRegistry typeRegistry,
       ErrorReporter errorReporter) {
     this.rawLoggingConfig = rawLoggingConfig;
     this.javaPackage = javaPackage;
     this.jsPackage = jsPackage;
     this.className = className;
-    this.javaResourceFilename = javaResourceFilename;
     this.typeRegistry = typeRegistry;
     this.errorReporter = errorReporter;
   }
@@ -90,7 +87,6 @@ public final class AnnotatedLoggingConfigGenerator {
                     .setJavaPackage(javaPackage)
                     .setJsPackage(jsPackage)
                     .setClassName(className)
-                    .setJavaResourceFilename(javaResourceFilename)
                     .build());
     Map<Long, LoggableElement> elements = new HashMap<>();
     for (LoggableElement element : loggingConfig.getElementList()) {
@@ -101,7 +97,6 @@ public final class AnnotatedLoggingConfigGenerator {
               .setJavaPackage(javaPackage)
               .setJsPackage(jsPackage)
               .setClassName(className)
-              .setJavaResourceFilename(javaResourceFilename)
               .build();
 
       if (elements.containsKey(element.getId())) {

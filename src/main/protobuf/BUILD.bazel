@@ -92,17 +92,6 @@ java_proto_library(
 )
 
 proto_library(
-    name = "runtime_ve_metadata_proto",
-    srcs = ["runtime_ve_metadata.proto"],
-    deps = [":ve_metadata_proto"],
-)
-
-java_proto_library(
-    name = "runtime_ve_metadata_java_proto",
-    deps = [":runtime_ve_metadata_proto"],
-)
-
-proto_library(
     name = "annotated_logging_config_proto",
     srcs = ["annotated_logging_config.proto"],
     deps = [":logging_config_proto"],

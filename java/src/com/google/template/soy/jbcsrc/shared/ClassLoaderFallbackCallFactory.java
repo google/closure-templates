@@ -77,7 +77,7 @@ public final class ClassLoaderFallbackCallFactory {
 
   private static final MethodType VE_METADATA_SLOW_PATH_TYPE =
       MethodType.methodType(
-          LoggableElementMetadata.class, String.class, RenderContext.class, long.class);
+          LoggableElementMetadata.class, String.class, String.class, RenderContext.class);
 
   private static final MethodType CREATE_VE_TYPE =
       MethodType.methodType(
@@ -181,11 +181,18 @@ public final class ClassLoaderFallbackCallFactory {
    *     method it is always (long, String, RenderContext)->SoyVisualElement.
    * @param metadataClassName A constant that is used for bootstrapping. This is the name of the
    *     class containing the VE metadata.
+   * @param metadataMethodName A constant that is used for bootstrapping. This is the name of the
+   *     method (in {@code metadataClassName}) for the VE metadata.
    */
   public static CallSite bootstrapVeWithMetadata(
-      MethodHandles.Lookup lookup, String name, MethodType type, String metadataClassName) {
+      MethodHandles.Lookup lookup,
+      String name,
+      MethodType type,
+      String metadataClassName,
+      String metadataMethodName) {
     try {
-      MethodHandle metadataGetter = getMetadataGetter(lookup, metadataClassName);
+      MethodHandle metadataGetter =
+          getMetadataGetter(lookup, metadataClassName, metadataMethodName);
       MethodHandle createVe = lookup.findStatic(SoyVisualElement.class, "create", CREATE_VE_TYPE);
       // Pass the metadata (returned from metadataGetter) to createVe.
       MethodHandle handle = collectArguments(createVe, 2, metadataGetter);
@@ -196,15 +203,16 @@ public final class ClassLoaderFallbackCallFactory {
   }
 
   private static MethodHandle getMetadataGetter(
-      MethodHandles.Lookup lookup, String metadataClassName) throws ReflectiveOperationException {
+      MethodHandles.Lookup lookup, String metadataClassName, String metadataMethodName)
+      throws ReflectiveOperationException {
     ClassLoader callerClassLoader = lookup.lookupClass().getClassLoader();
     try {
       Class<?> metadataClass = callerClassLoader.loadClass(metadataClassName);
       MethodHandle handle =
           lookup.findStatic(
               metadataClass,
-              "getMetadata",
-              MethodType.methodType(LoggableElementMetadata.class, long.class));
+              metadataMethodName,
+              MethodType.methodType(LoggableElementMetadata.class));
       // the initial renderContext is ignored in this case
       return dropArguments(handle, 0, RenderContext.class);
     } catch (ClassNotFoundException classNotFoundException) {
@@ -213,7 +221,7 @@ public final class ClassLoaderFallbackCallFactory {
     MethodHandle handle =
         lookup.findStatic(
             ClassLoaderFallbackCallFactory.class, "veMetadataSlowPath", VE_METADATA_SLOW_PATH_TYPE);
-    return insertArguments(handle, 0, metadataClassName);
+    return insertArguments(handle, 0, metadataClassName, metadataMethodName);
   }
 
   /** The slow path for resolving a factory. */
@@ -230,7 +238,7 @@ public final class ClassLoaderFallbackCallFactory {
 
   /** The slow path for resolving VE metadata. */
   public static LoggableElementMetadata veMetadataSlowPath(
-      String metadataClassName, RenderContext renderContext, long veId) {
-    return renderContext.getVeMetadata(metadataClassName, veId);
+      String metadataClassName, String metadataMethodName, RenderContext renderContext) {
+    return renderContext.getVeMetadata(metadataClassName, metadataMethodName);
   }
 }

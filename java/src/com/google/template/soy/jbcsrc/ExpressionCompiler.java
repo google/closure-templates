@@ -1535,6 +1535,7 @@ final class ExpressionCompiler {
                 MethodHandles.Lookup.class,
                 String.class,
                 MethodType.class,
+                String.class,
                 String.class)
             .asHandle();
 
@@ -1543,8 +1544,7 @@ final class ExpressionCompiler {
             BytecodeUtils.SOY_VISUAL_ELEMENT_TYPE,
             Type.LONG_TYPE,
             BytecodeUtils.STRING_TYPE,
-            BytecodeUtils.RENDER_CONTEXT_TYPE,
-            Type.LONG_TYPE);
+            BytecodeUtils.RENDER_CONTEXT_TYPE);
 
     @Override
     protected SoyExpression visitVeLiteralNode(VeLiteralNode node) {
@@ -1559,12 +1559,12 @@ final class ExpressionCompiler {
                 adapter.pushLong(node.getId());
                 adapter.pushString(node.getName().identifier());
                 renderContext.gen(adapter);
-                adapter.pushLong(node.getId());
                 adapter.visitInvokeDynamicInsn(
                     "getVeWithMetadata",
                     VE_WITH_METADATA_SIGNATURE,
                     GET_VE_WITH_METADATA_HANDLE,
-                    String.format("%s.%s", element.getJavaPackage(), element.getClassName()));
+                    String.format("%s.%s", element.getJavaPackage(), element.getClassName()),
+                    element.getGeneratedVeMetadataMethodName());
               }
             };
       } else {

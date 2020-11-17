@@ -271,12 +271,13 @@ public final class RenderContext {
    * Returns the VE metadata in the given class with the given method name. This uses the same
    * ClassLoader as is used to load template references.
    */
-  public LoggableElementMetadata getVeMetadata(String metadataClassName, long veId) {
+  public LoggableElementMetadata getVeMetadata(
+      String metadataClassName, String metadataMethodName) {
     try {
       return (LoggableElementMetadata)
           Class.forName(metadataClassName, /* initialize= */ true, templates.getClassLoader())
-              .getMethod("getMetadata", long.class)
-              .invoke(null, veId);
+              .getMethod(metadataMethodName)
+              .invoke(null);
     } catch (ReflectiveOperationException e) {
       throw new AssertionError(e);
     }
