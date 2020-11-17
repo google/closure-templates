@@ -256,13 +256,33 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
         return;
       } else if (attrNode.numChildren() == 1 && attributesNode != null) {
         if (isOkToPutInElement(attrNode)) {
-          attributesNode.addChild(attrNode.copy(new CopyState()));
+          maybePrintAttribute(attributesNode, conditional, nodeIdGen, attrNode);
           return;
         }
       }
     }
 
     errorReporter.report(c.getSourceLocation(), ILLEGAL_CHILD);
+  }
+
+  private static void maybePrintAttribute(
+      CallParamContentNode attributesNode,
+      Optional<ExprNode> conditional,
+      IdGenerator nodeIdGen,
+      HtmlAttributeNode attrNode) {
+    SourceLocation unknown = attributesNode.getSourceLocation().clearRange();
+    if (conditional.isPresent()) {
+      IfNode ifNode = new IfNode(nodeIdGen.genId(), unknown);
+      IfCondNode ifCondNode =
+          new IfCondNode(
+              nodeIdGen.genId(), unknown, unknown, "if", conditional.get().copy(new CopyState()));
+      ifNode.addChild(ifCondNode);
+      ifCondNode.getExpr().setType(conditional.get().getType());
+      ifCondNode.addChild(attrNode.copy(new CopyState()));
+      attributesNode.addChild(ifNode);
+    } else {
+      attributesNode.addChild(attrNode.copy(new CopyState()));
+    }
   }
 
   static boolean isOkToPutInElement(HtmlAttributeNode attrNode) {
@@ -336,18 +356,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     String paramName = Parameter.attrToParamName(attrName);
     if (!parameterMap.containsKey(paramName)) {
       // attributesNode can't be null, bad attrs caught in ResolveExpressionTypesCrossTemplatePass
-      if (condition.isPresent()) {
-        IfNode ifNode = new IfNode(nodeIdGen.genId(), unknown);
-        IfCondNode ifCondNode =
-            new IfCondNode(
-                nodeIdGen.genId(), unknown, unknown, "if", condition.get().copy(new CopyState()));
-        ifNode.addChild(ifCondNode);
-        ifCondNode.getExpr().setType(condition.get().getType());
-        ifCondNode.addChild(attr.copy(new CopyState()));
-        attributesNode.addChild(ifNode);
-      } else {
-        attributesNode.addChild(attr.copy(new CopyState()));
-      }
+      maybePrintAttribute(attributesNode, condition, nodeIdGen, attr);
       return null;
     }
     if (isSoyAttr) {
