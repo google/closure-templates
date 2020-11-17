@@ -50,6 +50,13 @@ public final class SoyAnnotatedLoggingConfigGenerator extends AbstractSoyCompile
   @Option(name = "--output_file", usage = "Where to write the annotated logging config.")
   private File outputFile;
 
+  @Option(
+      name = "--java_resource_filename",
+      usage =
+          "The filename of the Java resource containing the VE metadata as a binary"
+              + " RuntimeVeMetadata proto.")
+  private String javaResourceFilename;
+
   SoyAnnotatedLoggingConfigGenerator(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -66,7 +73,11 @@ public final class SoyAnnotatedLoggingConfigGenerator extends AbstractSoyCompile
         sfsBuilder
             .build()
             .generateAnnotatedLoggingConfig(
-                Files.asCharSource(rawLoggingConfigFile, UTF_8), javaPackage, jsPackage, className);
+                Files.asCharSource(rawLoggingConfigFile, UTF_8),
+                javaPackage,
+                jsPackage,
+                className,
+                javaResourceFilename);
 
     try (OutputStream output = new FileOutputStream(outputFile)) {
       loggingConfig.writeTo(output);

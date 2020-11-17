@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package soy;
+
+import "src/main/protobuf/ve_metadata.proto";
+
+option java_multiple_files = true;
+option java_package = "com.google.template.soy.logging";
+
+// VE metadata used at runtime during server rendering.
+message RuntimeVeMetadata {
+  // A map from VE ID to the VE metadata for that ID. If the VE ID is not in the
+  // map then the VE does not have metadata.
+  map<int64, LoggableElementMetadata> metadata = 1;
+}

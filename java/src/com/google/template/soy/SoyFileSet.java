@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
+import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.CompilationUnitAndKind;
@@ -781,7 +782,11 @@ public final class SoyFileSet {
   }
 
   AnnotatedLoggingConfig generateAnnotatedLoggingConfig(
-      CharSource rawLoggingConfig, String javaPackage, String jsPackage, String className) {
+      CharSource rawLoggingConfig,
+      String javaPackage,
+      String jsPackage,
+      String className,
+      String javaResourceFilename) {
     return entryPoint(
         () -> {
           try {
@@ -790,6 +795,7 @@ public final class SoyFileSet {
                     javaPackage,
                     jsPackage,
                     className,
+                    javaResourceFilename,
                     typeRegistry,
                     errorReporter)
                 .generate();
@@ -799,10 +805,16 @@ public final class SoyFileSet {
         });
   }
 
-  String generateVeMetadata(
-      VeMetadataGenerator.Mode mode, ByteSource loggingConfigBytes, String generator)
+  void generateAndWriteVeMetadata(
+      VeMetadataGenerator.Mode mode,
+      ByteSource loggingConfigBytes,
+      String generator,
+      CharSink output,
+      Optional<ByteSink> resourceOutput)
       throws IOException {
-    return new VeMetadataGenerator(mode, loggingConfigBytes, generator, typeRegistry).generate();
+    new VeMetadataGenerator(
+            mode, loggingConfigBytes, generator, typeRegistry, output, resourceOutput)
+        .generateAndWrite();
   }
 
   /**

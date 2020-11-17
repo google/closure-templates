@@ -4,7 +4,10 @@ package(default_visibility = ["//:soy_internal"])
 
 java_library(
     name = "runtime",
-    srcs = glob(["*.java"]),
+    srcs = glob(
+        ["*.java"],
+        exclude = ["VeMetadataRuntime.java"],
+    ),
     deps = [
         "//java/src/com/google/template/soy/data",
         "//java/src/com/google/template/soy/data:data_internal",
@@ -21,6 +24,17 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
         "@maven//:com_ibm_icu_icu4j",
+    ],
+)
+
+java_library(
+    name = "ve_metadata_runtime",
+    srcs = ["VeMetadataRuntime.java"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/main/protobuf:runtime_ve_metadata_java_proto",
+        "@com_google_protobuf//:protobuf_java",
+        "@maven//:com_google_guava_guava",
     ],
 )
 
