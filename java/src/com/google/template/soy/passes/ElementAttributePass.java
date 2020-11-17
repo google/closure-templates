@@ -49,6 +49,7 @@ import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.LetContentNode;
+import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -291,6 +292,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
                   ifNode.addChild(ifElseNode);
                   copyChildren(attrNode, ifElseNode);
+                  replacementNode = newAttrNode;
                 } else {
                   // In order to properly concatentate defaults and incoming attributes,
                   // we need to first put all of the default into a {let} and then pass them into
@@ -300,7 +302,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                       LetContentNode.forVariable(
                           id.get(),
                           unknown,
-                          "$__internal_soy_attribute_" + id.get(),
+                          "$__internal_soy_letContent_" + id.get(),
                           unknown,
                           SanitizedContentKind.TEXT);
                   openTagNode
@@ -324,12 +326,33 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   fn.addChild(
                       new StringNode(
                           attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, unknown));
+                  /**
+                   * In the event that the attribute value is an empty string, we should not emit
+                   * the attribute. This block produces the following code: {let $value:
+                   * $$concatAttributeValues(...) /} {if $value}class="{$value}"{/if}
+                   */
+                  LetValueNode letValueNode =
+                      new LetValueNode(
+                          id.get(), unknown, "$__internal_soy_letValue_" + id.get(), unknown, fn);
+                  letContentNode
+                      .getParent()
+                      .addChild(
+                          letContentNode.getParent().getChildIndex(letContentNode) + 1,
+                          letValueNode);
+                  VarRefNode valueRef =
+                      new VarRefNode(
+                          letValueNode.getVarName(), SourceLocation.UNKNOWN, letValueNode.getVar());
+                  IfNode wrappingIf = new IfNode(id.get(), unknown);
+                  IfCondNode wrappingIfCond =
+                      new IfCondNode(
+                          id.get(), unknown, unknown, "if", valueRef.copy(new CopyState()));
+                  wrappingIf.addChild(wrappingIfCond);
                   valueNode.addChild(
                       new PrintNode(
-                          id.get(), unknown, true, fn, ImmutableList.of(), errorReporter));
+                          id.get(), unknown, true, valueRef, ImmutableList.of(), errorReporter));
+                  wrappingIfCond.addChild(newAttrNode);
+                  replacementNode = wrappingIf;
                 }
-
-                replacementNode = newAttrNode;
               } else if (!attrNode.hasValue()) {
                 if (iAmAnElementCallingAnElement) {
                   // Pass through and handle in SoyElementCompositionPass since we cannot encode
