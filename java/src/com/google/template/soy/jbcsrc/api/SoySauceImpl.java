@@ -267,6 +267,11 @@ public final class SoySauceImpl implements SoySauce {
     }
 
     @Override
+    public Continuation<SanitizedContent> renderHtmlElement() {
+      return renderSanitizedContent(ContentKind.HTML_ELEMENT);
+    }
+
+    @Override
     public WriteContinuation renderJs(AdvisingAppendable out) throws IOException {
       enforceContentKind(ContentKind.JS);
       return startRender(OutputAppendable.create(out, logger));

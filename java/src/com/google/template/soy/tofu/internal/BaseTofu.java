@@ -493,6 +493,11 @@ public final class BaseTofu implements SoyTofu {
     }
 
     @Override
+    public SanitizedContent renderHtmlElement() {
+      return renderSanitizedContent(ContentKind.HTML_ELEMENT);
+    }
+
+    @Override
     public void renderJs(Appendable out) {
       renderSanitizedContent(ContentKind.JS, out);
     }

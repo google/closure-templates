@@ -209,6 +209,16 @@ public interface SoyTofu {
     SanitizedContent renderHtml();
 
     /**
+     * Renders the configured html template as a {@link SanitizedContent} of type {@link
+     * ContentKind.HTML_ELEMENT}.
+     *
+     * @throws IllegalArgumentException If the content kind is not {@link ContentKind.HTML_ELEMENT}
+     *     (corresponding to kind="html" in the template).
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    SanitizedContent renderHtmlElement();
+
+    /**
      * Renders the configured javascript template to the given appendable.
      *
      * @throws IllegalArgumentException If the content kind is not {@link ContentKind.JS}
