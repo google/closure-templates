@@ -423,7 +423,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
       VarRefNode extraAttributesRef =
           new VarRefNode(attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
       templateNode.addParam(attrsParam);
-      attrsParam.setType(SanitizedType.AttributesType.getInstance());
+      attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
 
       // This requires a different handling than SoyTreeUtils.printIfNotNull because we need to
       // put an HTMLAttributeNode inside it so that we can concatenate using a whitespace.
