@@ -413,7 +413,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       return;
     }
 
-    if (!attr.hasValue() && !isSoyAttr) {
+    if (!attr.hasValue() && !isSoyAttr && allParamsByAttrName.containsKey(name)) {
       errorReporter.report(attr.getSourceLocation(), NO_ATTRIBUTE_VALUE);
       return;
     }
