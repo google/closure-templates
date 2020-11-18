@@ -4,7 +4,7 @@
  * Functions necessary to interact with the Soy-Idom runtime.
  */
 
-import * as googSoy from 'goog:goog.soy';  // from //javascript/closure/soy
+import * as googSoy from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
 import Message from 'goog:jspb.Message'; // from //javascript/apps/jspb:message_lib
 import * as soy from 'goog:soy';  // from //javascript/template/soy:soy_usegoog_js
 import {$$VisualElementData, ElementMetadata, Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog

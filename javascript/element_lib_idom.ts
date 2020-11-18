@@ -5,9 +5,9 @@
 
 import './skiphandler';
 
-import {assert} from 'goog:goog.asserts';  // from //javascript/closure/asserts
-import {IjData} from 'goog:goog.soy';      // from //javascript/closure/soy
-import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //javascript/closure/soy:data
+import {assert} from 'goog:goog.asserts';  // from //third_party/javascript/closure/asserts
+import {IjData} from 'goog:goog.soy';  // from //third_party/javascript/closure/soy
+import SanitizedContentKind from 'goog:goog.soy.data.SanitizedContentKind'; // from //third_party/javascript/closure/soy:data
 import {Logger} from 'goog:soy.velog';  // from //javascript/template/soy:soyutils_velog
 import * as incrementaldom from 'incrementaldom';  // from //third_party/javascript/incremental_dom:incrementaldom
 
