@@ -22,6 +22,7 @@ import com.google.common.io.Files;
 import com.google.template.soy.logging.VeMetadataGenerator;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import org.kohsuke.args4j.Option;
 
 /**
@@ -46,6 +47,11 @@ public final class SoyVeMetadataGenerator extends AbstractSoyCompiler {
   @Option(name = "--output_file", usage = "Where to write the VE metadata file.")
   private File outputFile;
 
+  @Option(
+      name = "--resource_output_file",
+      usage = "Where to write the VE resource file (if the this Mode has a resource file).")
+  private File resourceOutputFile;
+
   SoyVeMetadataGenerator(PluginLoader loader, SoyInputCache cache) {
     super(loader, cache);
   }
@@ -58,12 +64,14 @@ public final class SoyVeMetadataGenerator extends AbstractSoyCompiler {
 
   @Override
   protected void compile(SoyFileSet.Builder sfsBuilder) throws IOException {
-    String contents =
-        sfsBuilder
-            .build()
-            .generateVeMetadata(mode, Files.asByteSource(annotatedLoggingConfigFile), generator);
-
-    Files.asCharSink(outputFile, UTF_8).write(contents);
+    sfsBuilder
+        .build()
+        .generateAndWriteVeMetadata(
+            mode,
+            Files.asByteSource(annotatedLoggingConfigFile),
+            generator,
+            Files.asCharSink(outputFile, UTF_8),
+            Optional.ofNullable(resourceOutputFile).map(Files::asByteSink));
   }
 
   @Override

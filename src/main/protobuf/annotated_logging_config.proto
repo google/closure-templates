@@ -32,4 +32,8 @@ message AnnotatedLoggableElement {
 
   // The class name to use for the generated VE metadata file.
   optional string class_name = 4;
+
+  // The filename of the Java resource containing the VE metadata as a binary
+  // RuntimeVeMetadata proto.
+  optional string java_resource_filename = 6;
 }

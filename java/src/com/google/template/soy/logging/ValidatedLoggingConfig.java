@@ -137,7 +137,12 @@ public final class ValidatedLoggingConfig {
   }
 
   private static AnnotatedLoggableElement createForComparison(AnnotatedLoggableElement e) {
-    return e.toBuilder().clearJavaPackage().clearJsPackage().clearClassName().build();
+    return e.toBuilder()
+        .clearJavaPackage()
+        .clearJsPackage()
+        .clearClassName()
+        .clearJavaResourceFilename()
+        .build();
   }
 
   private final ImmutableMap<String, ValidatedLoggableElement> elementsByName;
