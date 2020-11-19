@@ -175,7 +175,8 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   }
 
   @Override
-  public @Nullable String desc() {
+  @Nullable
+  public String desc() {
     return desc;
   }
 

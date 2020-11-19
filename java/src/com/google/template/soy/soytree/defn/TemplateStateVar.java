@@ -108,7 +108,8 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   }
 
   @Override
-  public @Nullable String desc() {
+  @Nullable
+  public String desc() {
     return desc;
   }
 
