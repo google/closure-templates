@@ -1,10 +1,6 @@
 # Debugger
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the debugger commands.
-
 [TOC]
 
 The `{debugger}` command can be used to help debug your templates. The command

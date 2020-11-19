@@ -1,10 +1,6 @@
 # Translation (Msg, Plurals and Gender)
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the Translation commands.
-
 [TOC]
 
 ## msg {#msg}

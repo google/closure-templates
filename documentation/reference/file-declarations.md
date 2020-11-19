@@ -1,10 +1,6 @@
 # File Declarations
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This section describes the file declaration commands.
-
 [TOC]
 
 ## namespace {#namespace}

@@ -1,10 +1,6 @@
 # Control Flow
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the control flow commands.
-
 [TOC]
 
 ## if, elseif, else {#if}

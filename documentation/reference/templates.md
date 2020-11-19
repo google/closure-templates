@@ -1,10 +1,6 @@
 # Templates
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the template commands.
-
 [TOC]
 
 ## template {#template}

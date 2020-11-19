@@ -1,15 +1,11 @@
 # Coercions
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-[TOC]
-
-This chapter describes implicit coercions that Soy performs.
-
 Some Soy operations will take an expression of a given type and coerce it to
 another type. This page will describe how these operations behave and when they
 trigger.
+
+[TOC]
 
 TODO(lukes): this page is insufficiently exhaustive, but it is a start
 

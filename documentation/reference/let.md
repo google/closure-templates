@@ -1,10 +1,6 @@
 # Let command
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the let command.
-
 ## let {#let}
 
 Syntax for arbitrary values:

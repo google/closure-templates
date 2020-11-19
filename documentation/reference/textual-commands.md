@@ -1,10 +1,6 @@
 # Raw Text Commands
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes textual commands.
-
 [TOC]
 
 ## literal {#literal}

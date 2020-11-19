@@ -1,10 +1,6 @@
 # Logging
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the Log command.
-
 [TOC]
 
 ### Log {#log}

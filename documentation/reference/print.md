@@ -1,10 +1,6 @@
 # Print
 
 
-<!--#include file="commands-blurb-include.md"-->
-
-This chapter describes the print command.
-
 [TOC]
 
 ## print {#print}
