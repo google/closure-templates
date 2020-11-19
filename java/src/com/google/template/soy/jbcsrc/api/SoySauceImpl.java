@@ -19,6 +19,7 @@ package com.google.template.soy.jbcsrc.api;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.template.soy.jbcsrc.api.AppendableAsAdvisingAppendable.asAdvisingAppendable;
 import static com.google.template.soy.jbcsrc.shared.Names.rewriteStackTrace;
 
 import com.google.common.base.Ascii;
@@ -37,6 +38,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyTemplateData;
 import com.google.template.soy.data.SoyValueConverter;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.BasicParamStore;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -55,6 +57,7 @@ import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -257,103 +260,99 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public WriteContinuation renderHtml(AdvisingAppendable out) throws IOException {
-      enforceContentKind(ContentKind.HTML);
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.HTML);
     }
 
     @Override
     public Continuation<SanitizedContent> renderHtml() {
-      return renderSanitizedContent(ContentKind.HTML);
+      return renderToSanitizedContent(ContentKind.HTML);
     }
 
     @Override
     public Continuation<SanitizedContent> renderHtmlElement() {
-      return renderSanitizedContent(ContentKind.HTML_ELEMENT);
+      return renderToSanitizedContent(ContentKind.HTML_ELEMENT);
     }
 
     @Override
     public WriteContinuation renderJs(AdvisingAppendable out) throws IOException {
-      enforceContentKind(ContentKind.JS);
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.JS);
     }
 
     @Override
     public Continuation<SanitizedContent> renderJs() {
-      return renderSanitizedContent(ContentKind.JS);
+      return renderToSanitizedContent(ContentKind.JS);
     }
 
     @Override
     public WriteContinuation renderUri(AdvisingAppendable out) throws IOException {
-      enforceContentKind(ContentKind.URI);
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.URI);
     }
 
     @Override
     public Continuation<SanitizedContent> renderUri() {
-      return renderSanitizedContent(ContentKind.URI);
+      return renderToSanitizedContent(ContentKind.URI);
     }
 
     @Override
     public WriteContinuation renderTrustedResourceUri(AdvisingAppendable out) throws IOException {
-      enforceContentKind(ContentKind.TRUSTED_RESOURCE_URI);
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.TRUSTED_RESOURCE_URI);
     }
 
     @Override
     public Continuation<SanitizedContent> renderTrustedResourceUri() {
-      return renderSanitizedContent(ContentKind.TRUSTED_RESOURCE_URI);
+      return renderToSanitizedContent(ContentKind.TRUSTED_RESOURCE_URI);
     }
 
     @Override
     public WriteContinuation renderAttributes(AdvisingAppendable out) throws IOException {
-      enforceContentKind(ContentKind.ATTRIBUTES);
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.ATTRIBUTES);
     }
 
     @Override
     public Continuation<SanitizedContent> renderAttributes() {
-      return renderSanitizedContent(ContentKind.ATTRIBUTES);
+      return renderToSanitizedContent(ContentKind.ATTRIBUTES);
     }
 
     @Override
     public WriteContinuation renderCss(AdvisingAppendable out) throws IOException {
-      enforceContentKind(ContentKind.CSS);
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.CSS);
     }
 
     @Override
     public Continuation<SanitizedContent> renderCss() {
-      return renderSanitizedContent(ContentKind.CSS);
+      return renderToSanitizedContent(ContentKind.CSS);
     }
 
     @Override
     public WriteContinuation renderText(AdvisingAppendable out) throws IOException {
-      return startRender(OutputAppendable.create(out, logger));
+      return startRender(out, ContentKind.TEXT);
     }
 
     @Override
     public Continuation<String> renderText() {
+      return renderToValue(Function.identity());
+    }
+
+    private Continuation<SanitizedContent> renderToSanitizedContent(ContentKind kind) {
+      enforceContentKind(kind);
+      return renderToValue(s -> UnsafeSanitizedContentOrdainer.ordainAsSafe(s, kind));
+    }
+
+    private < T>
+        Continuation<T> renderToValue(Function<String, T> factory) {
       StringBuilder sb = new StringBuilder();
-      OutputAppendable buf = OutputAppendable.create(sb, logger);
       try {
-        return Continuations.stringContinuation(startRender(buf), sb);
+        return Continuations.valueContinuation(
+            startRender(asAdvisingAppendable(sb), contentKind), () -> factory.apply(sb.toString()));
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
     }
 
-    /**
-     * Renders sanitized content, enforcing that the content matches the given {@link ContentKind}.
-     */
-    private Continuation<SanitizedContent> renderSanitizedContent(ContentKind contentKind) {
+    private <T> WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
+        throws IOException {
       enforceContentKind(contentKind);
-      StringBuilder sb = new StringBuilder();
-      OutputAppendable buf = OutputAppendable.create(sb, logger);
-      try {
-        return Continuations.strictContinuation(startRender(buf), sb, contentKind);
-      } catch (IOException e) {
-        throw new AssertionError("impossible", e);
-      }
+      return startRender(OutputAppendable.create(out, logger));
     }
 
     private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {

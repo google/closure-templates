@@ -18,10 +18,7 @@ package com.google.template.soy.jbcsrc.api;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.jbcsrc.api.SoySauce.Continuation;
 import com.google.template.soy.jbcsrc.api.SoySauce.WriteContinuation;
 import java.io.IOException;
@@ -43,53 +40,32 @@ public final class Continuations {
     return new ResultContinuation<>(value);
   }
 
-  /**
-   * Return a string valued continuation. Rendering logic is delegated to the {@link
-   * WriteContinuation}, but it is assumed that the builder is the render target.
-   */
-  static Continuation<String> stringContinuation(
-      WriteContinuation delegate, final StringBuilder buffer) {
-    if (delegate.result().isDone()) {
-      return done(buffer.toString());
-    }
-    return new AbstractContinuation<String>(delegate) {
-      @Override
-      Continuation<String> nextContinuation(WriteContinuation next) {
-        return stringContinuation(next, buffer);
-      }
-    };
+  @FunctionalInterface
+  interface ValueSupplier< T> {
+    T get();
   }
 
   /**
    * Return a {@link SanitizedContent} valued continuation. Rendering logic is delegated to the
    * {@link WriteContinuation}, but it is assumed that the builder is the render target.
    */
-  static Continuation<SanitizedContent> strictContinuation(
-      WriteContinuation delegate,
-      final StringBuilder buffer,
-      final ContentKind kind) {
+  static < T>
+      Continuation<T> valueContinuation(WriteContinuation delegate, ValueSupplier<T> suppler) {
     if (delegate.result().isDone()) {
-      return new ResultContinuation<>(
-          UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind));
+      return new ResultContinuation<>(suppler.get());
     }
-    return new AbstractContinuation<SanitizedContent>(delegate) {
-      @Override
-      Continuation<SanitizedContent> nextContinuation(WriteContinuation next) {
-        return strictContinuation(next, buffer, kind);
-      }
-    };
+    return new PendingValueContinuation<>(delegate, suppler);
   }
 
-  /**
-   * Base class for logic shared between {@link #strictContinuation} and {@link
-   * #stringContinuation}.
-   */
-  private abstract static class AbstractContinuation< T>
+  /** Implementation of a partially evaluated continuation for {@link #valueContinuation}. */
+  private static final class PendingValueContinuation< T>
       implements Continuation<T> {
     final WriteContinuation delegate;
+    final ValueSupplier<T> supplier;
 
-    AbstractContinuation(WriteContinuation delegate) {
+    PendingValueContinuation(WriteContinuation delegate, ValueSupplier<T> supplier) {
       this.delegate = delegate;
+      this.supplier = supplier;
     }
 
     @Override
@@ -105,16 +81,13 @@ public final class Continuations {
     @Override
     public final Continuation<T> continueRender() {
       try {
-        return nextContinuation(delegate.continueRender());
+        return valueContinuation(delegate.continueRender(), supplier);
       } catch (IOException e) {
         throw new AssertionError("impossible", e);
       }
     }
-
-    abstract Continuation<T> nextContinuation(WriteContinuation next);
   }
 
-  @Immutable
   private enum FinalContinuation implements WriteContinuation {
     INSTANCE;
 

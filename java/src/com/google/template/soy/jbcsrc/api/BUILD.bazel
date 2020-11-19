@@ -8,8 +8,6 @@ java_library(
     deps = [
         ":api",
         "//java/src/com/google/template/soy/data",
-        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
-        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],
 )
@@ -28,10 +26,12 @@ java_library(
     ],
     deps = [
         ":api_impl",
+        ":appendable_as_advising_appendable",
         ":continuations_impl",
         ":helpers",
         ":output_appendable",
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/data:unsafesanitizedcontentordainer",
         "//java/src/com/google/template/soy/internal/i18n",
         "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
