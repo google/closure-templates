@@ -44,19 +44,70 @@ parameter named `s`.
 
 ## How do you pass in a template?
 
-A template can be passed in as a parameter to another template by wrapping it in
-the builtin function `template`. For example:
+To pass a template as a parameter, directly use a template as a value. If a
+template is locally declared in the file, wrap the reference in a `template()`
+call.
 
 ```soy
-{template .renderer}
-  {@param s: string}
-  ...
+{template foo}
+  {@param content: html}
+  {$content}
 {/template}
 
-{template .bar}
-   {call .foo}
-    {param renderer: template(.renderer) /} // Pass the .renderer template
-   {/call}
+{template bar}
+  {@param tpl: (content:html) => html}
+{/template}
+
+{template baz}
+  {call bar}
+    {param tpl: template(foo) /}
+  {/call}
+{/template}
+```
+
+If a template is imported, use the value directly
+
+```soy
+import {foo} from '<PATH>';
+
+{template bar}
+  {@param tpl: (content:html) => html}
+{/template}
+
+{template baz}
+  {call bar}
+    {param tpl: foo /}
+  {/call}
+{/template}
+```
+
+A template can be bound to a template type so long as all of its required
+parameters appear in the type. In short the following templates can be bound to
+`(content:html)=>html`.
+
+```soy
+{template <TEMPLATE_NAME>}
+  {@param tpl: (content:html) => html}
+{/template}
+
+{template <TEMPLATE_NAME2>}
+  {@param content: html}
+  {$content}
+{/template}
+
+{template <TEMPLATE_NAME3>}
+  {@param? content: html}
+  {$content}
+{/template}
+```
+
+but the following template cannot.
+
+```soy
+{template <TEMPLATE_NAME2>}
+  {@param content: html}
+  {@param contentTwo: html}
+  {$content}{$contentTwo}
 {/template}
 ```
 
@@ -85,11 +136,3 @@ In the following example, the type of the template returned by `bind` is
 
 <br>
 
-
---------------------------------------------------------------------------------
-
-You're done with basic Soy concepts! Next, we suggest working through the
-codelabs.
-
-
-<br>

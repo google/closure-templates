@@ -52,6 +52,9 @@ We'll use this callee template for the following examples:
 {/template}
 ```
 
+For information about passing templates as parameters, see
+[Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template).
+
 #### Pass values using `param` commands (recommended) {#param}
 
 To pass values to the callee, use `param` commands inside the `call` function

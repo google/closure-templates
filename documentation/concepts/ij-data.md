@@ -45,6 +45,8 @@ Java](../dev/java.md) for more information.
 
 --------------------------------------------------------------------------------
 
-<section class="nextButton"><a href="template-types.md">Passing Templates as Parameters</a></section>
+You're done with basic Soy concepts! Next, we suggest working through the
+codelabs.
+
 
 <br>

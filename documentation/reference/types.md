@@ -25,8 +25,8 @@ Values typed as `?` are assignable to parameters of all types and visa-versa.
 
 ### `null` {#null}
 
-The `null` type is not very useful on its own, but can be as part of [composite
-types](#composite).
+The `null` type is not very useful on its own, but can be as part of
+[composite types](#composite).
 
 Backend    | type in host language
 ---------- | ----------------------------------------------------------
@@ -287,6 +287,9 @@ For example:
   {/call}
 {/template}
 ```
+
+For more information, see
+[Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template)
 
 ## Composite types {#composite}
 
