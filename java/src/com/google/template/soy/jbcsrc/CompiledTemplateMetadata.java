@@ -16,19 +16,18 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
 
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.jbcsrc.restricted.ConstructorRef;
-import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -57,6 +56,12 @@ abstract class CompiledTemplateMetadata {
   /** The {@link Method} signature of the {@link CompiledTemplate#kind()} method. */
   private static final Method KIND_METHOD;
 
+  /**
+   * The {@link Method} signature of the {@code static CompiledTemplate.Factory factory()} method.
+   */
+  private static final Method FACTORY_METHOD =
+      new Method("factory", Type.getMethodDescriptor(COMPILED_TEMPLATE_FACTORY_TYPE));
+
   static {
     try {
       RENDER_METHOD =
@@ -71,19 +76,12 @@ abstract class CompiledTemplateMetadata {
 
   static CompiledTemplateMetadata create(String templateName, SoyFileKind kind) {
     String className = Names.javaClassNameFromSoyTemplateName(templateName);
-    String factoryClassName = className + "$Factory";
     TypeInfo type = TypeInfo.createClass(className);
-    TypeInfo factoryType = TypeInfo.createClass(factoryClassName);
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
-        FieldRef.create(
-            factoryType,
-            "INSTANCE",
-            factoryType.type(),
-            /*modifiers=*/ Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PUBLIC,
-            /*isNullable=*/ false),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
         MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
+        MethodRef.createStaticMethod(type, FACTORY_METHOD).asCheap(),
         type,
         kind);
   }
@@ -96,17 +94,14 @@ abstract class CompiledTemplateMetadata {
    */
   abstract ConstructorRef constructor();
 
-  /**
-   * The constructor for the generated factory class. Used for template types in expressions /
-   * dyanmic calls.
-   */
-  abstract FieldRef factoryInstance();
-
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();
 
   /** The {@link CompiledTemplate#kind()} method. */
   abstract MethodRef kindMethod();
+
+  /** The {@code static CompiledTemplate.Factory factory()} method. */
+  abstract MethodRef factoryMethod();
 
   /** The name of the compiled template. */
   abstract TypeInfo typeInfo();

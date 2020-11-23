@@ -33,11 +33,8 @@ import java.lang.annotation.Retention;
  */
 @Retention(RUNTIME)
 public @interface TemplateMetadata {
-  /**
-   * The content kind of the template. This will be one of the {@link ContentKind} constant names or
-   * {@code ""} which means that this isn't a strict template.
-   */
-  String contentKind();
+  /** The content kind of the template. */
+  ContentKind contentKind();
 
   /**
    * Returns the list of injected params, both {@code $ij.foo} variables and {@code @inject} params

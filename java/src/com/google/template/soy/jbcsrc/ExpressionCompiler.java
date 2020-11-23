@@ -1578,7 +1578,7 @@ final class ExpressionCompiler {
     private static final Handle GETFACTORY_HANDLE =
         MethodRef.create(
                 ClassLoaderFallbackCallFactory.class,
-                "bootstrapFactoryLookup",
+                "bootstrapFactoryValueLookup",
                 MethodHandles.Lookup.class,
                 String.class,
                 MethodType.class,
@@ -1587,14 +1587,14 @@ final class ExpressionCompiler {
 
     private static final String TEMPLATE_FACTORY_SIGNATURE =
         Type.getMethodDescriptor(
-            BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
+            BytecodeUtils.COMPILED_TEMPLATE_FACTORY_VALUE_TYPE, BytecodeUtils.RENDER_CONTEXT_TYPE);
 
     @Override
     protected SoyExpression visitTemplateLiteralNode(TemplateLiteralNode node) {
       Expression renderContext = parameters.getRenderContext();
       return SoyExpression.forSoyValue(
           node.getType(),
-          new Expression(BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE) {
+          new Expression(BytecodeUtils.COMPILED_TEMPLATE_FACTORY_VALUE_TYPE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);

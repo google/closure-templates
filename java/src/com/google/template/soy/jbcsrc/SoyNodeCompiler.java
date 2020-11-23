@@ -944,10 +944,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.isStaticCall()) {
       CompiledTemplateMetadata callee =
           registry.getBasicTemplateInfoByTemplateName(node.getCalleeName());
-      // If possible, use the constructor to instantiate the template, otherwise go through the
-      // classloader. We do this for templates that are declared as sources in the same fileset.
-      // These are guaranteed to be bundled in the same jar, thus loaded atomically with the same
-      // classloader.
+      // Use invokedynamic to bind to the constructor.  This allows applications using complex
+      // classloader setups to have {call} commands cross classloader boundaries.
       Expression renderContext = parameterLookup.getRenderContext();
       calleeExpression =
           new Expression(callee.typeInfo().type()) {
@@ -968,7 +966,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           exprCompiler
               .compileSubExpression(
                   node.getCalleeExpr(), detachState.createExpressionDetacher(reattachPoint))
-              .invoke(MethodRef.COMPILED_TEMPLATE_FACTORY_CREATE, params, ijRecord);
+              .checkedCast(BytecodeUtils.COMPILED_TEMPLATE_FACTORY_VALUE_TYPE)
+              .invoke(MethodRef.COMPILED_TEMPLATE_FACTORY_VALUE_CREATE_TEMPLATE, params, ijRecord);
     }
     return renderCallNode(reattachPoint, node, calleeExpression);
   }

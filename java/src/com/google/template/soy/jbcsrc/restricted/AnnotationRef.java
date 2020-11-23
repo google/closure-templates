@@ -81,6 +81,8 @@ public final class AnnotationRef<T extends Annotation> {
           @SuppressWarnings("unchecked") // we just checked above
           AnnotationRef<?> forType = forType((Class<? extends Annotation>) returnType);
           writersBuilder.put(method, annotationFieldWriter(method.getName(), forType));
+        } else if (returnType.isEnum()) {
+          writersBuilder.put(method, simpleEumFieldWriter(method.getName(), returnType));
         } else {
           // simple primitive
           writersBuilder.put(method, simpleFieldWriter(method.getName()));
@@ -140,6 +142,21 @@ public final class AnnotationRef<T extends Annotation> {
       @Override
       public void write(AnnotationVisitor visitor, Object value) {
         visitor.visit(name, value);
+      }
+    };
+  }
+
+  /**
+   * Writes an primitive valued field to the writer.
+   *
+   * <p>See {@link AnnotationVisitor#visitEnum(String, String, String)} for the valid types.
+   */
+  private static FieldWriter simpleEumFieldWriter(final String name, Class<?> enumType) {
+    final String descriptor = Type.getDescriptor(enumType);
+    return new FieldWriter() {
+      @Override
+      public void write(AnnotationVisitor visitor, Object value) {
+        visitor.visitEnum(name, descriptor, ((Enum) value).name());
       }
     };
   }

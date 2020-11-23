@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SetMultimap;
+import com.google.errorprone.annotations.Immutable;
 import com.google.protobuf.ExtensionLite;
 import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
@@ -803,14 +804,35 @@ public final class JbcSrcRuntime {
     return LazyProtoToSoyValueList.forList(list.build(), protoFieldInterpreter);
   }
 
-  public static CompiledTemplate.Factory bindTemplateParams(
-      CompiledTemplate.Factory template, SoyRecord boundParams) {
-    return new CompiledTemplate.Factory() {
-      @Override
-      public CompiledTemplate create(SoyRecord params, SoyRecord ij) {
-        return template.create(SoyRecords.merge(boundParams, params), ij);
+  public static CompiledTemplate.FactoryValue bindTemplateParams(
+      CompiledTemplate.FactoryValue template, SoyRecord boundParams) {
+    return CompiledTemplate.FactoryValue.create(
+        template.getTemplateName(), new PartiallyBoundTemplate(boundParams, template.getFactory()));
+  }
+
+  @Immutable
+  private static final class PartiallyBoundTemplate implements CompiledTemplate.Factory {
+    @SuppressWarnings("Immutable") // this is never mutated
+    private final SoyRecord boundParams;
+
+    private final CompiledTemplate.Factory delegate;
+
+    PartiallyBoundTemplate(SoyRecord boundParams, CompiledTemplate.Factory delegate) {
+      if (delegate instanceof PartiallyBoundTemplate) {
+        PartiallyBoundTemplate partiallyBoundTemplate = (PartiallyBoundTemplate) delegate;
+        boundParams = SoyRecords.merge(partiallyBoundTemplate.boundParams, boundParams);
+        delegate = partiallyBoundTemplate.delegate;
       }
-    };
+      this.delegate = delegate;
+      this.boundParams = boundParams;
+    }
+
+    @Override
+    public CompiledTemplate create(SoyRecord params, SoyRecord ij) {
+      // Internally SoyRecords.merge uses an AugmentedParamStore.  This is probably not the best
+      // choice.
+      return delegate.create(SoyRecords.merge(boundParams, params), ij);
+    }
   }
 
   private JbcSrcRuntime() {}

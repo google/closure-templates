@@ -34,6 +34,8 @@ import com.google.auto.value.AutoAnnotation;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -67,20 +69,27 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.Visibility;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * Compiles the top level {@link CompiledTemplate} class for a single template and all related
@@ -158,7 +167,6 @@ final class TemplateCompiler {
    * <p>For each template, we generate:
    *
    * <ul>
-   *   <li>A {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate.Factory}
    *   <li>A {@link CompiledTemplate}
    *   <li>A DetachableSoyValueProvider subclass for each {@link LetValueNode} and {@link
    *       CallParamValueNode}
@@ -172,12 +180,6 @@ final class TemplateCompiler {
    */
   Iterable<ClassData> compile() {
     List<ClassData> classes = new ArrayList<>();
-
-    // first generate the factory
-    // TODO(lukes): consider conditionally generating the factory only if it is referenced as a
-    // template literal; this would reduce the amount of generated code.
-    new TemplateFactoryCompiler(template, templateNode, innerClasses, templateNode.getVisibility())
-        .compile();
 
     // TODO(lukes): change the flow of this method so these methods return method bodies and we only
     // write the methods to the writer after generating everything.
@@ -206,6 +208,7 @@ final class TemplateCompiler {
     fields.defineFields(writer);
     fields.defineStaticInitializer(writer);
 
+    generateFactoryMethod();
     writer.visitEnd();
 
     classes.add(writer.toClassData());
@@ -221,9 +224,61 @@ final class TemplateCompiler {
             Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, template.kindMethod().method(), writer);
   }
 
+  private static final Handle METAFACTORY_HANDLE =
+      MethodRef.create(
+              LambdaMetafactory.class,
+              "metafactory",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              MethodType.class,
+              MethodHandle.class,
+              MethodType.class)
+          .asHandle();
+  private static final String COMPILED_TEMPLATE_FACTORY_INIT_DESCRIPTOR =
+      Type.getMethodDescriptor(BytecodeUtils.COMPILED_TEMPLATE_FACTORY_TYPE);
+  private static final Type COMPILED_TEMPLATE_FACTORY_CREATE_DESCRIPTOR =
+      Type.getMethodType(
+          Type.getType(CompiledTemplate.class),
+          Type.getType(SoyRecord.class),
+          Type.getType(SoyRecord.class));
+
+  private void generateFactoryMethod() {
+    // use invoke dynamic to lazily allocate the factory instance.
+    // factories are needed for direct java->soy calls and references to template literals, which
+    // should mean that the vast majority are not needed.  We can generate a simple factory() method
+    // that uses invoke dynamic to generate a factory instance as needed.  This should be just as
+    // fast as our previous approach of generating an explicit factory subclass while requiring much
+    // less bytecode, since most factory instances are not needed.
+    // The code here is identical to:
+    // public static CompiledTemplate.Factory factory() {
+    //  return foo::new;
+    // }
+    // assuming foo is the name of the template class.
+    Handle ctorHandle = template.constructor().toHandle();
+    Statement.returnExpression(
+            new Expression(template.factoryMethod().returnType()) {
+              @Override
+              protected void doGen(CodeBuilder cb) {
+                cb.visitInvokeDynamicInsn(
+                    "create",
+                    COMPILED_TEMPLATE_FACTORY_INIT_DESCRIPTOR,
+                    METAFACTORY_HANDLE,
+                    COMPILED_TEMPLATE_FACTORY_CREATE_DESCRIPTOR,
+                    ctorHandle,
+                    COMPILED_TEMPLATE_FACTORY_CREATE_DESCRIPTOR);
+              }
+            })
+        .writeMethod(
+            (templateNode.getVisibility() == Visibility.PUBLIC ? Opcodes.ACC_PUBLIC : 0)
+                | Opcodes.ACC_STATIC,
+            template.factoryMethod().method(),
+            writer);
+  }
+
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    String kind = templateNode.getContentKind().name();
+    ContentKind kind = ContentKind.valueOf(templateNode.getContentKind().name());
 
     // using linked hash sets below for determinism
     Set<String> uniqueIjs = new LinkedHashSet<>();
@@ -267,7 +322,7 @@ final class TemplateCompiler {
 
   @AutoAnnotation
   static TemplateMetadata createTemplateMetadata(
-      String contentKind,
+      ContentKind contentKind,
       Set<String> requiredCssNames,
       Set<String> injectedParams,
       Set<String> callees,

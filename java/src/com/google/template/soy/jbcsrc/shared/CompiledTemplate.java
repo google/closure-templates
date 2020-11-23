@@ -27,10 +27,39 @@ import java.io.IOException;
 /** A compiled Soy template. Each instance is suitable for being rendered exactly once. */
 public interface CompiledTemplate {
   /** A factory interface for constructing a {@link CompiledTemplate}. */
+  @FunctionalInterface
   @Immutable
-  abstract class Factory extends SoyAbstractValue {
+  interface Factory {
     /** Returns a new {@link CompiledTemplate} with the given {@link SoyRecord params}. */
-    public abstract CompiledTemplate create(SoyRecord params, SoyRecord ij);
+    CompiledTemplate create(SoyRecord params, SoyRecord ij);
+  }
+
+  // TODO(lukes): move to the runtime package?
+  /** A factory subtype for representing factories as SoyValues. */
+  final class FactoryValue extends SoyAbstractValue {
+    public static FactoryValue create(String templateName, Factory factory) {
+      return new FactoryValue(templateName, factory);
+    }
+
+    private final String templateName;
+    private final Factory delegate;
+
+    private FactoryValue(String templateName, Factory delegate) {
+      this.templateName = templateName;
+      this.delegate = delegate;
+    }
+
+    public Factory getFactory() {
+      return delegate;
+    }
+
+    public String getTemplateName() {
+      return templateName;
+    }
+
+    public CompiledTemplate createTemplate(SoyRecord params, SoyRecord ij) {
+      return delegate.create(params, ij);
+    }
 
     @Override
     public final boolean coerceToBoolean() {
@@ -39,11 +68,7 @@ public interface CompiledTemplate {
 
     @Override
     public final String coerceToString() {
-      String className = getClass().getName();
-      String soyTemplateName =
-          Names.soyTemplateNameFromJavaClassName(
-              className.substring(0, className.length() - "$Factory".length()));
-      return String.format("** FOR DEBUGGING ONLY: template(%s) **", soyTemplateName);
+      return String.format("** FOR DEBUGGING ONLY: template(%s) **", templateName);
     }
 
     @Override
@@ -59,6 +84,11 @@ public interface CompiledTemplate {
     @Override
     public final int hashCode() {
       return System.identityHashCode(this);
+    }
+
+    @Override
+    public final String toString() {
+      return coerceToString();
     }
   }
 

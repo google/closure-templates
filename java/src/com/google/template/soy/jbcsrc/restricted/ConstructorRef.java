@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -132,5 +134,14 @@ public abstract class ConstructorRef {
         mv.invokeConstructor(instanceClass().type(), method());
       }
     };
+  }
+
+  public Handle toHandle() {
+    return new Handle(
+        Opcodes.H_NEWINVOKESPECIAL,
+        instanceClass().type().getInternalName(),
+        "<init>",
+        method().getDescriptor(),
+        /* isInterface=*/ false);
   }
 }

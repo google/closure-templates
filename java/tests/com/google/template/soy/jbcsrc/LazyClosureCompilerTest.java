@@ -259,9 +259,8 @@ public class LazyClosureCompilerTest {
     CompiledTemplate template =
         factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
 
-    assertThat(template.getClass().getDeclaredClasses()).hasLength(2);
+    assertThat(template.getClass().getDeclaredClasses()).hasLength(1);
     List<Class<?>> innerClasses = Lists.newArrayList(template.getClass().getDeclaredClasses());
-    innerClasses.remove(factory.getClass());
     Class<?> let = Iterables.getOnlyElement(innerClasses);
     assertThat(let.getSimpleName()).isEqualTo("let_foo");
     assertThat(let.getDeclaringClass()).isEqualTo(template.getClass());
@@ -335,7 +334,7 @@ public class LazyClosureCompilerTest {
     Class<?> template =
         factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE).getClass();
     // no inner classes besides the factory
-    assertThat(asList(template.getDeclaredClasses())).containsExactly(factory.getClass());
+    assertThat(asList(template.getDeclaredClasses())).isEmpty();
     // we only store bar in a private static field
     Field barField = template.getDeclaredField("let_bar");
     assertThat(asList(template.getDeclaredFields()))

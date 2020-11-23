@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc.shared;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
@@ -27,6 +28,7 @@ import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.jbcsrc.shared.TemplateMetadata.DelTemplateMetadata;
 import com.google.template.soy.shared.internal.DelTemplateSelector;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -96,11 +98,7 @@ public class CompiledTemplates {
 
   /** Returns a factory for the given fully qualified template name. */
   public CompiledTemplate.Factory getTemplateFactory(String name) {
-    CompiledTemplate.Factory factory = getTemplateData(name).factory;
-    if (factory == null) {
-      throw new IllegalArgumentException("cannot get a factory for the private template: " + name);
-    }
-    return factory;
+    return getTemplateData(name).factory();
   }
 
   /**
@@ -148,8 +146,7 @@ public class CompiledTemplates {
     for (TemplateData callee : orderedTemplateCalls) {
       requiredNamespaces.addAll(callee.requiredCssNamespaces);
     }
-    ImmutableList<String> allRequiredCssNamespaces = ImmutableList.copyOf(requiredNamespaces);
-    return allRequiredCssNamespaces;
+    return ImmutableList.copyOf(requiredNamespaces);
   }
 
   /** Returns an active delegate for the given name, variant and active package selector. */
@@ -161,14 +158,11 @@ public class CompiledTemplates {
     if (selectedTemplate == null) {
       return null;
     }
-    if (selectedTemplate.factory == null) {
-      throw new IllegalArgumentException(
-          "cannot get a factory for the private template: " + selectedTemplate.soyTemplateName());
-    }
-    return selectedTemplate.factory;
+    return selectedTemplate.factory();
   }
 
-  protected TemplateData getTemplateData(String name) {
+  @VisibleForTesting
+  public TemplateData getTemplateData(String name) {
     checkNotNull(name);
     TemplateData template = templateNameToFactory.get(name);
     if (template == null) {
@@ -260,10 +254,13 @@ public class CompiledTemplates {
 
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   @Immutable
-  protected static final class TemplateData {
+  @VisibleForTesting
+  public static final class TemplateData {
     final Class<? extends CompiledTemplate> templateClass;
-    // will be null for private templates since we don't compile factories for them.
-    @Nullable final CompiledTemplate.Factory factory;
+    // lazily initialized since it is not always needed
+    @LazyInit CompiledTemplate.Factory factory;
+
+    // many of these fields should probably be only lazily calculated
     final ContentKind kind;
     final ImmutableSet<String> callees;
     final ImmutableSet<String> delCallees;
@@ -281,34 +278,10 @@ public class CompiledTemplates {
 
     TemplateData(Class<? extends CompiledTemplate> template) {
       this.templateClass = template;
-      CompiledTemplate.Factory localFactory = null;
-      for (Class<?> innerClass : template.getClasses()) {
-        if (innerClass.getSimpleName().equals("Factory")) {
-          // Every generated factory has a static final INSTANCE field containing an instance of the
-          // factory.
-          try {
-            localFactory =
-                (CompiledTemplate.Factory)
-                    innerClass
-                        .asSubclass(CompiledTemplate.Factory.class)
-                        .getField("INSTANCE")
-                        .get(null);
-          } catch (ReflectiveOperationException e) {
-            // this should be impossible since our factories are public with a default constructor.
-            // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
-            // consider catching them here to add information about our generated types. (e.g. add
-            // the
-            // class trace and a pointer on how to file a soy bug)
-            throw new AssertionError(e);
-          }
-        }
-      }
-      this.factory = localFactory;
       // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
       // time is expensive.
       TemplateMetadata annotation = template.getAnnotation(TemplateMetadata.class);
-      String contentKind = annotation.contentKind();
-      this.kind = ContentKind.valueOf(contentKind);
+      this.kind = annotation.contentKind();
       this.callees = ImmutableSet.copyOf(annotation.callees());
       this.delCallees = ImmutableSet.copyOf(annotation.delCallees());
       this.injectedParams = ImmutableSet.copyOf(annotation.injectedParams());
@@ -325,6 +298,38 @@ public class CompiledTemplates {
         this.delTemplateName = Optional.empty();
         this.delPackage = Optional.empty();
       }
+    }
+
+    @VisibleForTesting
+    public Class<? extends CompiledTemplate> templateClass() {
+      return templateClass;
+    }
+
+    CompiledTemplate.Factory factory() {
+      CompiledTemplate.Factory local = factory;
+      if (local == null) {
+        Method method;
+        try {
+          method = templateClass.getMethod("factory");
+        } catch (NoSuchMethodException nsme) {
+          // for private templates the factory() method is package private and so getMethod will
+          // fail.
+          throw new IllegalArgumentException(
+              "cannot get a factory for the private template: " + soyTemplateName(), nsme);
+        }
+        try {
+          local = (CompiledTemplate.Factory) method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+          // this should be impossible since our factories are public with a default constructor.
+          // TODO(lukes): failures of bytecode verification will propagate as Errors, we should
+          // consider catching them here to add information about our generated types. (e.g. add
+          // the
+          // class trace and a pointer on how to file a soy bug)
+          throw new AssertionError(e);
+        }
+        factory = local;
+      }
+      return local;
     }
 
     String soyTemplateName() {

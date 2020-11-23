@@ -281,7 +281,7 @@ public abstract class MethodRef {
       create(
           JbcSrcRuntime.class,
           "bindTemplateParams",
-          CompiledTemplate.Factory.class,
+          CompiledTemplate.FactoryValue.class,
           SoyRecord.class);
 
   public static final MethodRef RUNTIME_CALL_LEGACY_FUNCTION =
@@ -411,8 +411,12 @@ public abstract class MethodRef {
   public static final MethodRef SOY_VALUE_STRING_VALUE =
       create(SoyValue.class, "stringValue").asCheap().asNonNullable();
 
-  public static final MethodRef COMPILED_TEMPLATE_FACTORY_CREATE =
-      create(CompiledTemplate.Factory.class, "create", SoyRecord.class, SoyRecord.class)
+  public static final MethodRef COMPILED_TEMPLATE_FACTORY_VALUE_CREATE_TEMPLATE =
+      create(
+              CompiledTemplate.FactoryValue.class,
+              "createTemplate",
+              SoyRecord.class,
+              SoyRecord.class)
           .asNonNullable();
 
   public static final MethodRef SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE =

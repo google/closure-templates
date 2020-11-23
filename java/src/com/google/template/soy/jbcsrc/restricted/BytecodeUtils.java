@@ -83,6 +83,8 @@ public final class BytecodeUtils {
   public static final Type COMPILED_TEMPLATE_TYPE = Type.getType(CompiledTemplate.class);
   public static final Type COMPILED_TEMPLATE_FACTORY_TYPE =
       Type.getType(CompiledTemplate.Factory.class);
+  public static final Type COMPILED_TEMPLATE_FACTORY_VALUE_TYPE =
+      Type.getType(CompiledTemplate.FactoryValue.class);
   public static final Type CONTENT_KIND_TYPE = Type.getType(ContentKind.class);
   public static final Type CLOSEABLE_TYPE = Type.getType(Closeable.class);
   public static final Type DIR_TYPE = Type.getType(Dir.class);

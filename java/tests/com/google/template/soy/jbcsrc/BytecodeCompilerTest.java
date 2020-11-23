@@ -82,6 +82,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -454,11 +455,7 @@ public class BytecodeCompilerTest {
   }
 
   private static TemplateMetadata getTemplateMetadata(CompiledTemplates templates, String name) {
-    return templates
-        .getTemplateFactory(name)
-        .getClass()
-        .getDeclaringClass()
-        .getAnnotation(TemplateMetadata.class);
+    return templates.getTemplateData(name).templateClass().getAnnotation(TemplateMetadata.class);
   }
 
   private String render(CompiledTemplates templates, SoyRecord params, String name)
@@ -467,8 +464,7 @@ public class BytecodeCompilerTest {
         templates.getTemplateFactory(name).create(params, ParamStore.EMPTY_INSTANCE);
     BufferingAppendable builder = LoggingAdvisingAppendable.buffering();
     assertThat(caller.render(builder, getDefaultContext(templates))).isEqualTo(RenderResult.done());
-    String output = builder.toString();
-    return output;
+    return builder.toString();
   }
 
   @Test
@@ -924,9 +920,6 @@ public class BytecodeCompilerTest {
     // make sure we don't break standard reflection access
     CompiledTemplate.Factory factory =
         TemplateTester.compileTemplateBody("hello world").getTemplateFactory("ns.foo");
-    assertThat(factory.getClass().getName())
-        .isEqualTo("com.google.template.soy.jbcsrc.gen.ns.foo$Factory");
-    assertThat(factory.getClass().getSimpleName()).isEqualTo("Factory");
 
     CompiledTemplate templateInstance =
         factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
@@ -935,17 +928,27 @@ public class BytecodeCompilerTest {
     assertThat(templateClass.getSimpleName()).isEqualTo("foo");
 
     TemplateMetadata templateMetadata = templateClass.getAnnotation(TemplateMetadata.class);
-    assertThat(templateMetadata.contentKind()).isEqualTo("HTML");
+    assertThat(templateMetadata.contentKind()).isEqualTo(ContentKind.HTML);
     assertThat(templateInstance.kind()).isEqualTo(ContentKind.HTML);
     assertThat(templateMetadata.injectedParams()).isEmpty();
     assertThat(templateMetadata.callees()).isEmpty();
     assertThat(templateMetadata.delCallees()).isEmpty();
 
-    // ensure that the factory is an inner class of the template.
-    assertThat(factory.getClass().getEnclosingClass()).isEqualTo(templateClass);
-    assertThat(factory.getClass().getDeclaringClass()).isEqualTo(templateClass);
+    assertThat(templateClass.getDeclaredClasses()).isEmpty();
+  }
 
-    assertThat(templateClass.getDeclaredClasses()).asList().contains(factory.getClass());
+  @Test
+  public void factoryReturnsSameInstanceEachTime() throws Exception {
+    // CompiledTemplates returns the same factory each time
+    CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    assertThat(factory).isSameInstanceAs(templates.getTemplateFactory("ns.foo"));
+
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
+    Method factoryMethod = template.getClass().getMethod("factory");
+    assertThat(factory).isSameInstanceAs(factoryMethod.invoke(null));
+    assertThat(factory).isSameInstanceAs(factoryMethod.invoke(null));
   }
 
   @Test
