@@ -61,6 +61,7 @@ import com.google.template.soy.types.MessageType;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.PrimitiveType;
 import com.google.template.soy.types.RecordType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
@@ -335,7 +336,18 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
     HtmlTagNode closeTag = Iterables.getFirst(openTagNode.getTaggedPairs(), openTagNode);
     SoyNode next = SoyTreeUtils.nextSibling(openTagNode);
-    while (next != closeTag && !openTagNode.isSelfClosing()) {
+    boolean defaultSlotFulfilled =
+        !openTagNode.isSelfClosing()
+            && templateType.getParameters().stream()
+                    .filter(
+                        p ->
+                            SoyTypes.makeNullable(SanitizedType.HtmlType.getInstance())
+                                .isAssignableFromStrict(p.getType()))
+                    .count()
+                == 1
+            && !(next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).getTagName().isSlot());
+
+    while (!defaultSlotFulfilled && next != closeTag && !openTagNode.isSelfClosing()) {
       if (next == null) {
         break;
       }
@@ -358,7 +370,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                       MISSING_ATTRIBUTE,
                       Parameter.paramToAttrName(p.getName()));
                 }
-              } else if (!seenSlots.contains(p.getName())) {
+              } else if (!seenSlots.contains(p.getName()) && !defaultSlotFulfilled) {
                 errorReporter.report(openTagNode.getSourceLocation(), MISSING_PARAM, p.getName());
               }
             });

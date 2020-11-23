@@ -17,6 +17,7 @@
 package com.google.template.soy.passes;
 
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
+import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -57,6 +58,7 @@ import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
@@ -65,7 +67,9 @@ import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateType;
 import com.google.template.soy.types.TemplateType.Parameter;
 import com.google.template.soy.types.UnionType;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -163,9 +167,41 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             : null;
     if (!tagNode.getTaggedPairs().isEmpty()) {
       HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
-      SoyNode next = SoyTreeUtils.nextSibling(tagNode);
-      while (next != closeTag) {
-        next = consumeSlot(call, next, nodeIdGen);
+      List<String> params =
+          templateType.getParameters().stream()
+              .filter(p -> SanitizedType.HtmlType.getInstance().isAssignableFromStrict(p.getType()))
+              .map(Parameter::getName)
+              .collect(toCollection(ArrayList::new));
+      StandaloneNode next = (StandaloneNode) SoyTreeUtils.nextSibling(tagNode);
+      if (params.size() != 1
+          || (next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).getTagName().isSlot())) {
+        while (next != closeTag) {
+          next = consumeSlot(call, next, nodeIdGen);
+          if (next == null) {
+            return;
+          }
+        }
+      } else if (params.size() == 1) {
+        CallParamContentNode callParamContent =
+            new CallParamContentNode(
+                nodeIdGen.genId(),
+                unknown,
+                unknown,
+                Identifier.create(params.get(0), unknown),
+                new CommandTagAttribute(
+                    Identifier.create("kind", unknown),
+                    QuoteStyle.SINGLE,
+                    "html",
+                    unknown,
+                    unknown),
+                errorReporter);
+        call.addChild(callParamContent);
+        while (next != closeTag) {
+          StandaloneNode sibling = (StandaloneNode) SoyTreeUtils.nextSibling(next);
+          next.getParent().removeChild(next);
+          callParamContent.addChild(next);
+          next = sibling;
+        }
       }
       closeTag.getParent().removeChild(closeTag);
     }
@@ -298,17 +334,18 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 == SanitizedContentKind.ATTRIBUTES);
   }
 
-  private SoyNode consumeSlot(CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
+  private StandaloneNode consumeSlot(
+      CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
     SourceLocation unknown = startNode.getSourceLocation().clearRange();
     HtmlOpenTagNode nextOpenTag = (HtmlOpenTagNode) startNode;
-    HtmlAttributeNode attributeNode = (HtmlAttributeNode) nextOpenTag.getChild(1);
+    String paramName = ((HtmlAttributeNode) nextOpenTag.getChild(1)).getStaticKey();
     HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
     CallParamContentNode callParamContent =
         new CallParamContentNode(
             nodeIdGen.genId(),
             startNode.getSourceLocation(),
             unknown,
-            Identifier.create(attributeNode.getStaticKey(), unknown),
+            Identifier.create(paramName, unknown),
             new CommandTagAttribute(
                 Identifier.create("kind", unknown),
                 QuoteStyle.SINGLE,
@@ -327,7 +364,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     nextOpenTag.getParent().removeChild(nextOpenTag);
     SoyNode retNode = SoyTreeUtils.nextSibling(closeTag);
     closeTag.getParent().removeChild(closeTag);
-    return retNode;
+    return (StandaloneNode) retNode;
   }
 
   @Nullable
