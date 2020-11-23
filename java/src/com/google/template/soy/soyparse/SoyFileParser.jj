@@ -2119,9 +2119,9 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
       { whitespace = builder.build(); }
     |
       (
-        <DECL_ATTRIBUTE_STAR>
+        tok = <DECL_ATTRIBUTE_STAR>
         {
-          templateBuilder.setAllowExtraAttributes();
+          templateBuilder.setAllowExtraAttributes(createSrcLoc(tok));
         }
         |
         (

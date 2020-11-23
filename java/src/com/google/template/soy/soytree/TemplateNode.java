@@ -302,7 +302,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Used for formatting */
   private final List<CommandTagAttribute> attributes;
 
-  private final boolean allowExtraAttributes;
+  // The presence of this means that we have annotated the template with {@attribute *}.
+  private final SourceLocation allowExtraAttributesLoc;
 
   private ImmutableSet<String> reservedAttributes;
 
@@ -339,7 +340,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.commandText = nodeBuilder.getCmdText().trim();
     this.openTagLocation = nodeBuilder.openTagLocation;
     this.attributes = nodeBuilder.getAttributes();
-    this.allowExtraAttributes = nodeBuilder.allowExtraAttributes;
+    this.allowExtraAttributesLoc = nodeBuilder.allowExtraAttributesLoc;
     this.reservedAttributes = ImmutableSet.of();
   }
 
@@ -367,7 +368,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.templateMetadata = orig.templateMetadata;
     this.attributes =
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
-    this.allowExtraAttributes = orig.allowExtraAttributes;
+    this.allowExtraAttributesLoc = orig.allowExtraAttributesLoc;
     this.reservedAttributes = orig.reservedAttributes;
   }
 
@@ -398,7 +399,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   }
 
   public boolean getAllowExtraAttributes() {
-    return allowExtraAttributes;
+    return allowExtraAttributesLoc != null;
+  }
+
+  public SourceLocation getAllowExtraAttributesLoc() {
+    return allowExtraAttributesLoc;
   }
 
   public ImmutableSet<String> getReservedAttributes() {
