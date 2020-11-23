@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -65,24 +66,31 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
                   fct.getParamsStyle() == ParamsStyle.NONE
                       || fct.getParamsStyle() == ParamsStyle.NAMED)) {
         if (templateRegistry.getImportedSymbols().contains(fct.getFunctionName())) {
-          convertToBind(fct, fct.getIdentifier());
+          convertToBind(fct, fct.getIdentifier(), fct.getFunctionNameLocation());
         } else if (localTemplateNames.contains(fct.getFunctionName())) {
           // Special case allowing local template .foo to be called as foo() -- without leading dot.
           convertToBind(
-              fct, Identifier.create("." + fct.getFunctionName(), fct.getFunctionNameLocation()));
+              fct,
+              Identifier.create("." + fct.getFunctionName(), fct.getFunctionNameLocation()),
+              fct.getFunctionNameLocation());
         }
       }
     }
   }
 
-  private static void convertToBind(FunctionNode fct, Identifier templateLiteralId) {
+  private static void convertToBind(
+      FunctionNode fct, Identifier templateLiteralId, SourceLocation location) {
     // Move original function's parameters into a record() literal.
     RecordLiteralNode record =
-        new RecordLiteralNode(Identifier.create("record", UNKNOWN), fct.getParamNames(), UNKNOWN);
+        new RecordLiteralNode(
+            Identifier.create("record", fct.getSourceLocation()),
+            fct.getParamNames(),
+            fct.getSourceLocation());
     record.addChildren(fct.getChildren());
 
     // Create a template(foo) literal from function node foo()
-    TemplateLiteralNode templateLiteral = new TemplateLiteralNode(templateLiteralId, UNKNOWN, true);
+    TemplateLiteralNode templateLiteral =
+        new TemplateLiteralNode(templateLiteralId, location, true);
 
     // Bind and replace.
     MethodCallNode bind =

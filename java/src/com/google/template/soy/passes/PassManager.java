@@ -186,6 +186,8 @@ public final class PassManager {
   public enum AstRewrites {
     /** No AST rewrites whatsoever. */
     NONE,
+    /** Enough AST rewrites for Kythe analysis to work. */
+    KYTHE,
     /** Enough AST rewrites for Tricorder analysis to work. */
     TRICORDER,
     /** All the AST rewrites. */
@@ -391,7 +393,7 @@ public final class PassManager {
       addPass(
           new ResolveTemplateImportsPass(options, errorReporter),
           partialTemplateRegistryPassesBuilder);
-      if (astRewrites.atLeast(AstRewrites.TRICORDER)) {
+      if (astRewrites.atLeast(AstRewrites.KYTHE)) {
         addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
       }
       addPass(new ResolveTemplateNamesPass(), partialTemplateRegistryPassesBuilder);
