@@ -41,6 +41,7 @@ import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElement;
 import com.google.template.soy.data.SoyVisualElementData;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.restricted.IntegerData;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -382,7 +383,7 @@ public final class BytecodeUtils {
    * equivalent to the given {@link SanitizedContentKind}, or null.
    */
   public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
-    return FieldRef.enumReference(ContentKind.valueOf(kind.name())).accessor();
+    return FieldRef.enumReference(Converters.contentKindfromSanitizedContentKind(kind)).accessor();
   }
 
   /** Returns an {@link Expression} that evaluates to the given Dir, or null. */
@@ -507,7 +508,6 @@ public final class BytecodeUtils {
     thisVar.tableEntry(mg);
     mg.endMethod();
   }
-
 
   // TODO(lukes): some of these branch operators are a little too branchy.  For example, the
   // expression a == b || a == c, could be implemented by

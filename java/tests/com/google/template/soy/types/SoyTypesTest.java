@@ -340,10 +340,15 @@ public class SoyTypesTest {
     Set<SoyType> types = Sets.newIdentityHashSet();
     for (SanitizedContentKind kind : SanitizedContentKind.values()) {
       SoyType typeForContentKind = SanitizedType.getTypeForContentKind(kind);
-      if (kind == SanitizedContentKind.TEXT) {
-        assertThat(typeForContentKind).isEqualTo(STRING_TYPE);
-      } else {
-        assertThat(((SanitizedType) typeForContentKind).getContentKind()).isEqualTo(kind);
+      switch (kind) {
+        case TEXT:
+          assertThat(typeForContentKind).isEqualTo(STRING_TYPE);
+          break;
+        case HTML_ELEMENT:
+          assertThat(typeForContentKind instanceof ElementType).isTrue();
+          break;
+        default:
+          assertThat(((SanitizedType) typeForContentKind).getContentKind()).isEqualTo(kind);
       }
       // ensure there is a unique SoyType for every ContentKind
       assertThat(types.add(typeForContentKind)).isTrue();

@@ -199,9 +199,6 @@ public interface SoySauce {
     @CheckReturnValue
     Continuation<SanitizedContent> renderHtml();
 
-    @CheckReturnValue
-    Continuation<SanitizedContent> renderHtmlElement();
-
     /**
      * Renders the configured js template to the given appendable, returning a continuation.
      *

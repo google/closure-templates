@@ -26,6 +26,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SanitizedContentOperator;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -281,8 +282,8 @@ final class Rewriter {
         if (!targets.isEmpty()) {
           directives =
               ShortCircuitables.filterDirectivesForKind(
-                  ContentKind.valueOf(
-                      targets.get(0).getContentKind().getSanitizedContentKind().name()),
+                  Converters.contentKindfromSanitizedContentKind(
+                      targets.get(0).getContentKind().getSanitizedContentKind()),
                   directives);
         }
       }

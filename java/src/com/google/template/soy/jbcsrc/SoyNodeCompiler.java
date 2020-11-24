@@ -36,9 +36,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.error.ErrorReporter;
@@ -236,7 +236,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         appendableExpression
             .setSanitizedContentKind(node.getContentKind())
             .setSanitizedContentDirectionality(
-                ContentKind.valueOf(node.getContentKind().name()).getDefaultDir())
+                Converters.contentKindfromSanitizedContentKind(node.getContentKind())
+                    .getDefaultDir())
             .toStatement());
     statements.add(prefix.compile(exprCompiler, appendableExpression, detachState));
     statements.add(visitChildrenInNewScope(node));

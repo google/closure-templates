@@ -127,7 +127,7 @@ public abstract class SanitizedType extends PrimitiveType {
 
     @Override
     public SanitizedContentKind getContentKind() {
-      return SanitizedContentKind.HTML_ELEMENT;
+      return SanitizedContentKind.HTML;
     }
 
     @Override

@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
+import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -278,7 +279,8 @@ final class TemplateCompiler {
 
   /** Writes a {@link TemplateMetadata} to the generated class. */
   private void generateTemplateMetadata() {
-    ContentKind kind = ContentKind.valueOf(templateNode.getContentKind().name());
+    ContentKind kind =
+        Converters.contentKindfromSanitizedContentKind(templateNode.getContentKind());
 
     // using linked hash sets below for determinism
     Set<String> uniqueIjs = new LinkedHashSet<>();

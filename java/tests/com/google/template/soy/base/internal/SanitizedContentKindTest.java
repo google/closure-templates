@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth8.assertThat;
 
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.internal.Converters;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,10 +30,12 @@ import org.junit.runners.JUnit4;
 public final class SanitizedContentKindTest {
 
   @Test
-  public void testSanitizedContentKind_valueOfCompatibilityWithContentKind() throws Exception {
-    // Make sure that there is a 1-1 relationship with ContentKind
+  public void testSanitizedContentKind_fromSanitizedContentKindCompatibilityWithContentKind()
+      throws Exception {
+    // Make sure that there is a 1-1 relationship with ContentKind except for HTML, which has two
+    // different SanitizedContentKind (HTML and HTML_ELEMENT)
     for (SanitizedContentKind sck : SanitizedContentKind.values()) {
-      ContentKind.valueOf(sck.name());
+      Converters.contentKindfromSanitizedContentKind(sck);
     }
     for (ContentKind ck : ContentKind.values()) {
       SanitizedContentKind.valueOf(ck.name());
