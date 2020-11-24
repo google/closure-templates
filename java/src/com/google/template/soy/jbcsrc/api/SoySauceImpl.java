@@ -216,7 +216,7 @@ public final class SoySauceImpl implements SoySauce {
     public RendererImpl setData(Map<String, ?> record) {
       checkState(
           !dataSetInConstructor,
-          "May not call setData on a Renderer createdd from a TemplateParams");
+          "May not call setData on a Renderer created from a TemplateParams");
 
       this.data = mapAsParamStore(record);
       return this;
