@@ -180,6 +180,7 @@ final class LazyClosureCompiler {
     }
   }
 
+  private final TemplateAnalysis analysis;
   private final CompiledTemplateRegistry registry;
   private final InnerClasses innerClasses;
   private final AbstractTemplateParameterLookup parentVariableLookup;
@@ -190,6 +191,7 @@ final class LazyClosureCompiler {
   private final SoyTypeRegistry typeRegistry;
 
   LazyClosureCompiler(
+      TemplateAnalysis analysis,
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       AbstractTemplateParameterLookup parentVariableLookup,
@@ -198,6 +200,7 @@ final class LazyClosureCompiler {
       BasicExpressionCompiler parentConstantCompiler,
       ErrorReporter reporter,
       SoyTypeRegistry typeRegistry) {
+    this.analysis = analysis;
     this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
@@ -355,7 +358,7 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
-                  lookup, variableSet, fields, reporter, typeRegistry, registry)
+                  analysis, lookup, variableSet, fields, reporter, typeRegistry, registry)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -398,6 +401,7 @@ final class LazyClosureCompiler {
               .asNonNullable();
       BasicExpressionCompiler constantCompiler =
           ExpressionCompiler.createConstantCompiler(
+              analysis,
               new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
               fields,
               reporter,
@@ -409,6 +413,7 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler =
           SoyNodeCompiler.create(
+              analysis,
               registry,
               innerClasses,
               thisVar,

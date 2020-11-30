@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.stream.Collectors.joining;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -30,15 +31,22 @@ import com.google.template.soy.exprtree.ExprNode.OperatorNode;
 import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
+import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
+import com.google.template.soy.exprtree.MapLiteralNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
+import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
+import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
@@ -64,6 +72,7 @@ import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.LogNode;
@@ -81,6 +90,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.VeLogNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -114,12 +124,12 @@ import java.util.Set;
  *   <li>Identify the last use of a variable. Currently we use variable scopes to decide when to
  *       stop saving/restoring variables, but if we knew they were no longer in use we could save
  *       generating save/restore logic.
- *   <li>Identify the last render of a variable. We could use this to save temporary buffers.
- *   <li>Identify the first use of a variable. We could use this to move {let...} definitions closer
- *       to their uses.
+ *   <li>Identify the last render of a variable. We could use this to save temporary buffers. See
+ *       b/63530876.
  * </ul>
  */
 final class TemplateAnalysis {
+
   static TemplateAnalysis analyze(TemplateNode node) {
     AccessGraph templateGraph = new PseudoEvaluatorVisitor().evaluate(node);
     return new TemplateAnalysis(templateGraph.getResolvedExpressions());
@@ -195,6 +205,20 @@ final class TemplateAnalysis {
     }
 
     @Override
+    protected void visitKeyNode(KeyNode node) {
+      // do nothing
+      // KeyNode is a no-op in jbcsrc, see SoyNodeCompiler.visitKeyNode
+    }
+
+    @Override
+    protected void visitVeLogNode(VeLogNode node) {
+      visitChildren(node);
+
+      // TODO(b/172970101): we always evaluate the logOnly expression and conditionally evaluate
+      // the vedata expression, so we should probably treat it like a dead end branch.
+    }
+
+    @Override
     protected void visitRawTextNode(RawTextNode node) {
       // do nothing
     }
@@ -266,15 +290,18 @@ final class TemplateAnalysis {
 
     @Override
     protected void visitLetContentNode(LetContentNode node) {
-      // Due to lazy evaluation we don't evaluate these at the declaration site.  Instead we have
-      // to fix them up after the fact.  So calculate and store their basic blocks here.  We will
-      // wire them into the graph later.
+      // Add a branch to the content of the let node here so that variables already resolved at this
+      // point will be available when analyzing the let body, then continue on a separate branch.
+      // See visitVarRefNode().
       Block startBlock = new Block();
       Block block = startBlock;
       for (StandaloneNode child : node.getChildren()) {
         block = exec(block, child);
       }
-      letNodes.put(node.getVar(), new AccessGraph(startBlock, block, exprEquivalence));
+      AccessGraph letStatement = new AccessGraph(startBlock, block, exprEquivalence);
+      letNodes.put(node.getVar(), letStatement);
+      this.current.successors.add(letStatement.start);
+      this.current = this.current.addBranch();
     }
 
     @Override
@@ -282,7 +309,10 @@ final class TemplateAnalysis {
       // see visitLetContentNode
       Block start = new Block();
       Block end = exprVisitor.eval(start, node.getExpr());
-      letNodes.put(node.getVar(), new AccessGraph(start, end, exprEquivalence));
+      AccessGraph letStatement = new AccessGraph(start, end, exprEquivalence);
+      letNodes.put(node.getVar(), letStatement);
+      this.current.successors.add(letStatement.start);
+      this.current = this.current.addBranch();
     }
 
     @Override
@@ -490,7 +520,7 @@ final class TemplateAnalysis {
           }
         } else if (part instanceof SoyMsgPlaceholderPart) {
           SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) part;
-          visit(msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName()).getChild(0));
+          visitChildren(msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName()));
         } else {
           throw new AssertionError("unexpected part: " + part);
         }
@@ -609,6 +639,42 @@ final class TemplateAnalysis {
     }
 
     @Override
+    protected void visitGlobalNode(GlobalNode node) {
+      // do nothing
+    }
+
+    @Override
+    protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
+      // The NullSafeAccessNode wraps a base node and DataAccessNode nodes.
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitMapLiteralNode(MapLiteralNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitListComprehensionNode(ListComprehensionNode node) {
+      // TODO(b/172970101): These should be handled the same way as for-loops.
+    }
+
+    @Override
+    protected void visitAssertNonNullOpNode(AssertNonNullOpNode node) {
+      visitChildren(node);
+    }
+
+    @Override
+    protected void visitVeLiteralNode(VeLiteralNode node) {
+      // do nothing
+    }
+
+    @Override
+    protected void visitTemplateLiteralNode(TemplateLiteralNode node) {
+      // do nothing
+    }
+
+    @Override
     protected void visitExprRootNode(ExprRootNode node) {
       visit(node.getRoot());
     }
@@ -617,26 +683,54 @@ final class TemplateAnalysis {
     protected void visitVarRefNode(VarRefNode node) {
       AccessGraph letContent = letNodes.get(node.getDefnDecl());
       if (letContent != null) {
-        // because let nodes are lazily executed, we model this in the access graph as each let
-        // varref branching to a copy of the implementation and back. This ensures that each
-        // variable referenced by the {let} is referenced prior to the let variable.
-        // Additionally we add a dead end branch from just prior the let to the canonical let
-        // implementation block
+        // Due to lazy evaluation we don't evaluate the body of lets at the declaration site. The
+        // set of variables that are in scope at the {let} call are passed into the method generated
+        // for the {let}. However we defensively only treat values that have been referenced by then
+        // as guaranteed to be resolved. To do this, in visitLet*Node() we add the original let
+        // expression in a dead-end branch at the point of the {let}, which will allow the nodes
+        // inside of the let node to be analyzed in this way.
         //
-        // this means that the graph structure for this:
-        // {let $foo : $p /}
+        // When the variable is referenced, a copy of the let block will be inserted just
+        // before the reference, so that the variables referenced by the let will be marked as
+        // referenced in the outer scope, without affecting the nodes inside the let body.
+        // For example:
+        //
+        // {$param p}
         // {$foo}
+        // {let $bar: $foo + $p + $qux /}
+        // {$qux}
+        // {$bar}
+        // {$p}
         //
-        // is
-        //          -> <foo-original>
-        // <begin>
-        //          -> <foo copy> -> <$foo>  -> <end>
-        // This ensures that the variable references within the let are analyzed as being executed
-        // immediately prior to any of the references.
+        // The graph structure would look like this (nodes that are definitely referenced are marked
+        // with an asterisk):
+        //
+        // [ $foo*, $p, $qux ]
+        //     ^
+        //     |                     (copy of let block)
+        // [ $foo ] => [ $qux ] => [ $foo'*, $p', $qux'* ] => [ $bar, $p* ]
+        //
+        // Of the exprs inside the let block, only foo is marked as definitely referenced. The
+        // copies $foo' and $qux' will also be marked as referenced, but they aren't in the AST and
+        // so won't affect any code generating expressions. The final reference to $p will also be
+        // marked as referenced, since it has $p' as predecessors that are references to the same
+        // variable.
+        //
+        // Note that in the example above, when $bar is referenced, $qux has already been
+        // referenced. We could try to model this by emiting the original dead-end branch right
+        // before the $bar reference, which would cause the $qux node inside the let to be marked as
+        // definitely resolved. However this could cause incorrect gencode to be created, because
+        // when evaluating the let, the LazyCompiler checks to see if the {let} can be compiled
+        // without detaches, or if it needs to create a class for the detach. If it can be
+        // compiled without detaches, it inlines the let at that point, which could then invalidate
+        // the original assumption that $qux inside of the {let} can be resolved immediately. See
+        //
+        // There are some ways to fix this that would be a little complicated. When analyzing the
+        // let block, we could have separate logic based on if we know it will be inlined or lazy
+        // and calculate both. We can know this by checking if all references in the entire block
+        // are definitely resolved, or not (although that in turn depends on if the block will be
+        // inlined, or lazy evaluted).
         AccessGraph copy = letContent.copy();
-        // dead end branch to the canonical
-        this.current.successors.add(letContent.start);
-        // branch to and back from the copy
         this.current.successors.add(copy.start);
         this.current = copy.end.addBranch();
       }
@@ -657,24 +751,28 @@ final class TemplateAnalysis {
           case INDEX:
           case IS_FIRST:
           case IS_LAST:
+          case IS_PRIMARY_MSG_IN_USE:
             // early return for these.  the AST looks like we are evaluating a var, but in fact we
             // generate alternate code to reference a synthetic variable.
             // See ExpressionCompiler
             return;
           case CHECK_NOT_NULL:
           case CSS:
-          case XID:
+          case DEBUG_SOY_TEMPLATE_INFO:
           case PROTO_INIT:
+          case SOY_SERVER_KEY:
+          case TO_FLOAT:
+          case VE_DATA:
+          case XID:
             break;
           case UNKNOWN_JS_GLOBAL:
-          case LEGACY_DYNAMIC_TAG:
           case V1_EXPRESSION:
             throw new UnsupportedOperationException(
                 "the "
                     + builtinFunction.getName()
                     + " function can't be used in templates compiled to Java");
           default:
-            throw new AssertionError("unexpected builtin function");
+            throw new AssertionError("unexpected builtin function: " + builtinFunction.getName());
         }
       }
       // eval all arguments in order
@@ -788,10 +886,10 @@ final class TemplateAnalysis {
       this.exprEquivalence = exprEquivalence;
     }
 
-    /** Creates a copy of the block. Note, this does not clone the {@code #exprs}. */
+    /** Creates a deep copy of the block, with all expressions also copied. */
     AccessGraph copy() {
       IdentityHashMap<Block, Block> originalToCopy = new IdentityHashMap<>();
-      Block newStart = shallowCopyBlock(start, originalToCopy);
+      Block newStart = deepCopyBlock(start, originalToCopy);
       Block newEnd = originalToCopy.get(end);
       return new AccessGraph(newStart, newEnd, exprEquivalence);
     }
@@ -818,12 +916,21 @@ final class TemplateAnalysis {
       Set<ExprNode> resolvedExprs = Sets.newIdentityHashSet();
       IdentityHashMap<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs =
           new IdentityHashMap<>();
-      for (Block current : getTopologicalOrdering()) {
+      Set<ExprNode> seenExprs = Sets.newHashSet();
+      List<Block> ordered = getTopologicalOrdering();
+      for (Block current : ordered) {
         // First calculate the set of exprs that were definitely accessed prior to this node
         Set<ExprEquivalence.Wrapper> currentBlockSet =
             mergePredecessors(blockToAccessedExprs, current);
         // Then figure out which nodes in this block were _already_ accessed.
         for (ExprNode expr : current.exprs) {
+          // In some cases e.g. msg plural conditions, the AST contains different nodes which have
+          // references to the same expression. If we see the same exact expression, assume it
+          // refers to the same code and discard it, so that it does not cause itself to be marked
+          // as already resolved.
+          if (!seenExprs.add(expr)) {
+            continue;
+          }
           ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(expr);
           if (!currentBlockSet.add(wrapped)) {
             resolvedExprs.add(expr);
@@ -875,22 +982,26 @@ final class TemplateAnalysis {
       return ordering;
     }
 
-    private static Block shallowCopyBlock(
+    private static Block deepCopyBlock(
         Block original, IdentityHashMap<Block, Block> originalToCopy) {
       if (originalToCopy.containsKey(original)) {
         return originalToCopy.get(original);
       }
       Block copy = new Block();
+      // A copy of the let body is inserted before a variable is referenced. This lets us correctly
+      // calculate variables used inside the let body that are later referenced as definitely
+      // referenced, without marking the original expression inside the body as referenced. See
+      // notes re: $qux' in visitVarRefNode.
       for (ExprNode expr : original.exprs) {
         copy.exprs.add(expr.copy(new CopyState()));
       }
       // update the map before recursing to avoid infinite loops
       originalToCopy.put(original, copy);
       for (Block successor : original.successors) {
-        copy.successors.add(shallowCopyBlock(successor, originalToCopy));
+        copy.successors.add(deepCopyBlock(successor, originalToCopy));
       }
       for (Block predecessor : original.predecessors) {
-        copy.predecessors.add(shallowCopyBlock(predecessor, originalToCopy));
+        copy.predecessors.add(deepCopyBlock(predecessor, originalToCopy));
       }
       return copy;
     }
@@ -933,6 +1044,10 @@ final class TemplateAnalysis {
       exprs.add(dataAccess);
     }
 
+    void add(NullSafeAccessNode dataAccess) {
+      exprs.add(dataAccess);
+    }
+
     // Returns a new block that is a successor to this one
     Block addBranch() {
       Block branch = new Block();
@@ -944,9 +1059,16 @@ final class TemplateAnalysis {
     public String toString() {
       return getClass().getSimpleName()
           + ImmutableMap.of(
+              "id", this.hashCode(),
               "exprs", exprs,
-              "in_edges", predecessors.size(),
-              "out_edges", successors.size());
+              "in_edges",
+                  predecessors.stream()
+                      .map(p -> String.valueOf(p.hashCode()))
+                      .collect(joining(", ")),
+              "out_edges",
+                  successors.stream()
+                      .map(p -> String.valueOf(p.hashCode()))
+                      .collect(joining(", ")));
     }
   }
 }

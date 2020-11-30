@@ -70,24 +70,28 @@ final class ExpressionToSoyValueProviderCompiler {
    * ExpressionDetacher.Factory}
    */
   static ExpressionToSoyValueProviderCompiler create(
+      TemplateAnalysis analysis,
       TemplateVariableManager varManager,
       ExpressionCompiler exprCompiler,
       TemplateParameterLookup variables,
       ExpressionDetacher.Factory detacherFactory) {
     return new ExpressionToSoyValueProviderCompiler(
-        varManager, exprCompiler, variables, detacherFactory);
+        analysis, varManager, exprCompiler, variables, detacherFactory);
   }
 
+  private final TemplateAnalysis analysis;
   private final TemplateParameterLookup variables;
   private final ExpressionCompiler exprCompiler;
   private final TemplateVariableManager varManager;
   private final ExpressionDetacher.Factory detacherFactory;
 
   private ExpressionToSoyValueProviderCompiler(
+      TemplateAnalysis analysis,
       TemplateVariableManager varManager,
       ExpressionCompiler exprCompiler,
       TemplateParameterLookup variables,
       ExpressionDetacher.Factory detacherFactory) {
+    this.analysis = analysis;
     this.exprCompiler = exprCompiler;
     this.variables = variables;
     this.varManager = varManager;
@@ -108,6 +112,7 @@ final class ExpressionToSoyValueProviderCompiler {
     checkNotNull(node);
     ExpressionDetacher detacher = detacherFactory.createExpressionDetacher(reattachPoint);
     return new CompilerVisitor(
+            analysis,
             variables,
             varManager,
             /*exprCompiler=*/ null,
@@ -127,6 +132,7 @@ final class ExpressionToSoyValueProviderCompiler {
   Optional<Expression> compileAvoidingDetaches(ExprNode node) {
     checkNotNull(node);
     return new CompilerVisitor(
+            analysis,
             variables,
             varManager,
             exprCompiler,
@@ -137,6 +143,7 @@ final class ExpressionToSoyValueProviderCompiler {
 
   private static final class CompilerVisitor
       extends EnhancedAbstractExprNodeVisitor<Optional<Expression>> {
+    final TemplateAnalysis analysis;
     final TemplateParameterLookup variables;
     final TemplateVariableManager varManager;
 
@@ -147,11 +154,13 @@ final class ExpressionToSoyValueProviderCompiler {
     @Nullable final ExpressionDetacher detacher;
 
     CompilerVisitor(
+        TemplateAnalysis analysis,
         TemplateParameterLookup variables,
         TemplateVariableManager varManager,
         @Nullable ExpressionCompiler exprCompiler,
         @Nullable BasicExpressionCompiler detachingExprCompiler,
         @Nullable ExpressionDetacher detacher) {
+      this.analysis = analysis;
       this.variables = variables;
       checkArgument((exprCompiler == null) != (detachingExprCompiler == null));
       checkArgument((detacher == null) == (detachingExprCompiler == null));

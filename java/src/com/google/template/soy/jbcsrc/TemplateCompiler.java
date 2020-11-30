@@ -114,6 +114,7 @@ final class TemplateCompiler {
   private final ErrorReporter reporter;
   private final SoyTypeRegistry soyTypeRegistry;
   private SoyClassWriter writer;
+  private TemplateAnalysis analysis;
 
   TemplateCompiler(
       CompiledTemplateRegistry registry,
@@ -180,6 +181,7 @@ final class TemplateCompiler {
    *       ultimately loads the returned classes.
    */
   Iterable<ClassData> compile() {
+    analysis = TemplateAnalysis.analyze(templateNode);
     List<ClassData> classes = new ArrayList<>();
 
     // TODO(lukes): change the flow of this method so these methods return method bodies and we only
@@ -193,6 +195,7 @@ final class TemplateCompiler {
             .build();
     BasicExpressionCompiler constantCompiler =
         ExpressionCompiler.createConstantCompiler(
+            analysis,
             new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
             fields,
             reporter,
@@ -383,6 +386,7 @@ final class TemplateCompiler {
         };
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
+                analysis,
                 registry,
                 innerClasses,
                 thisVar,

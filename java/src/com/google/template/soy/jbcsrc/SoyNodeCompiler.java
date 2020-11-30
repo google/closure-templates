@@ -140,6 +140,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * @param parameterLookup The variable lookup table for reading locals.
    */
   static SoyNodeCompiler create(
+      TemplateAnalysis analysis,
       CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       Expression thisVar,
@@ -153,11 +154,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     DetachState detachState = new DetachState(variables, thisVar, fields);
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(
-            parameterLookup, variables, fields, reporter, typeRegistry, registry);
+            analysis, parameterLookup, variables, fields, reporter, typeRegistry, registry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(
-            variables, expressionCompiler, parameterLookup, detachState);
+            analysis, variables, expressionCompiler, parameterLookup, detachState);
     return new SoyNodeCompiler(
+        analysis,
         thisVar,
         registry,
         detachState,
@@ -168,6 +170,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         expressionCompiler,
         soyValueProviderCompiler,
         new LazyClosureCompiler(
+            analysis,
             registry,
             innerClasses,
             parameterLookup,
@@ -178,6 +181,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             typeRegistry));
   }
 
+  private final TemplateAnalysis analysis;
   private final Expression thisVar;
   private final CompiledTemplateRegistry registry;
   private final DetachState detachState;
@@ -191,6 +195,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   private Scope currentScope;
 
   SoyNodeCompiler(
+      TemplateAnalysis analysis,
       Expression thisVar,
       CompiledTemplateRegistry registry,
       DetachState detachState,
@@ -201,6 +206,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       ExpressionCompiler exprCompiler,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       LazyClosureCompiler lazyClosureCompiler) {
+    this.analysis = checkNotNull(analysis);
     this.thisVar = checkNotNull(thisVar);
     this.registry = checkNotNull(registry);
     this.detachState = checkNotNull(detachState);
@@ -1116,7 +1122,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         currentCalleeField
             .accessor(thisVar)
             .invoke(
-                MethodRef.COMPILED_TEMPLATE_RENDER, appendable, parameterLookup.getRenderContext());
+                MethodRef.COMPILED_TEMPLATE_RENDER, appendable, parameterLookup.getRenderContext())
+            .withSourceLocation(node.getSourceLocation());
     Statement callCallee = detachState.detachForCall(callRender);
     Statement clearCallee =
         currentCalleeField.putInstanceField(
@@ -1317,6 +1324,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /** Returns a {@link SoyNodeCompiler} identical to this one but with an alternate appendable. */
   private SoyNodeCompiler compilerWithNewAppendable(AppendableExpression appendable) {
     return new SoyNodeCompiler(
+        analysis,
         thisVar,
         registry,
         detachState,

@@ -992,7 +992,9 @@ public final class BytecodeUtils {
    */
   public static SoyExpression isNonNull(final Expression expr) {
     if (BytecodeUtils.isPrimitive(expr.resultType())) {
-      return SoyExpression.TRUE;
+      // Reference the statement so that the SoyValueProvider detaches for resolve, and
+      // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
+      return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(true)));
     }
     return SoyExpression.forBool(
         new Expression(Type.BOOLEAN_TYPE, expr.features()) {
@@ -1015,7 +1017,9 @@ public final class BytecodeUtils {
   /** Returns a {@link SoyExpression} that evaluates to true if the expression evaluated to null. */
   public static SoyExpression isNull(final Expression expr) {
     if (BytecodeUtils.isPrimitive(expr.resultType())) {
-      return SoyExpression.FALSE;
+      // Reference the statement so that the SoyValueProvider detaches for resolve, and
+      // TemplateAnalysis will correctly cause subsequent accesses to resolve immediately.
+      return SoyExpression.forBool(expr.toStatement().then(BytecodeUtils.constant(false)));
     }
     // This is what javac generates for 'someObject == null'
     return SoyExpression.forBool(

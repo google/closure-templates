@@ -64,8 +64,28 @@ public final class TemplateAnalysisTest {
   @Test
   public void testDataAccess() {
     runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p[0])}");
+    runTest("{@param p : list<string>}", "{notrefed($p[0])}", "{refed($p)}");
+    runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p[0])}");
+
+    // TODO(user): $p?[0] should imply $p[0] is already referenced.
+    // runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p[0])}");
+    runTest("{@param p : list<string>}", "{notrefed($p?[0])}", "{refed($p)}");
+    runTest("{@param p : list<string>}", "{notrefed($p)}", "{notrefed($p?[0])}");
 
     runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p.field)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p.field)}", "{refed($p)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p.field)}");
+
+    // TODO(user): $p?.field should imply $p.field is already referenced.
+
+    // runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p.field)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p?.field)}", "{refed($p)}");
+    runTest("{@param p : [field:string]}", "{notrefed($p)}", "{notrefed($p?.field)}");
+  }
+
+  @Test
+  public void mapLiteral() {
+    runTest("{let $a: 1 /}", "{let $b: 1 /}", "{map($a: $b)}", "{refed($a)}", "{refed($b)}");
   }
 
   @Test
@@ -278,6 +298,36 @@ public final class TemplateAnalysisTest {
   }
 
   @Test
+  public void testLetWithVariablesRefedBeforeAndAfter() {
+    runTest(
+        "{@param p: ?}",
+        "{let $a: notrefed($p.foo) /}",
+        "{let $b: notrefed($p.bar) /}",
+        "{notrefed($a)}",
+        "{let $c: refed($a) + notrefed($b) /}",
+        // $b is referenced after {let $c ...}, but before the variable refrence $c.
+        "{notrefed($b)}",
+        "{notrefed($c)}");
+  }
+
+  @Test
+  public void testVarRefedMultipleTimes() {
+    runTest(
+        "{@param p: ?}",
+        "{let $a: notrefed($p) + refed($p) /}",
+        "{notrefed($a)}",
+        "{refed($a)}",
+        "{refed($p)}");
+    runTest(
+        "{@param p: ?}",
+        "{let $a: notrefed($p) /}",
+        "{notrefed($p)}",
+        "{notrefed($a)}",
+        "{refed($a)}",
+        "{refed($p)}");
+  }
+
+  @Test
   public void testMsg() {
     runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{refed($p)}");
 
@@ -298,6 +348,25 @@ public final class TemplateAnalysisTest {
         "  Hello old {$p}",
         "{/msg}",
         "{refed($p)}");
+  }
+
+  @Test
+  public void testMsgPlural() {
+    // There are multiple references to the same expression in this case. Test the deduplication
+    // logic such that the single $p.foo does not mark itself as resolved.
+    runTest(
+        "{@param p : ?}",
+        "{@param gender: ?}",
+        "{msg desc=\"...\" genders=\"$gender\"}",
+        "  {plural notrefed($p.foo)}",
+        "    {case 0}",
+        "      None",
+        "    {case 1}",
+        "      Single",
+        "    {default}",
+        "      Many",
+        "  {/plural}",
+        "{/msg}");
   }
 
   @Test

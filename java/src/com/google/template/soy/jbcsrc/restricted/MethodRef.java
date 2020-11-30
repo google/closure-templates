@@ -238,7 +238,8 @@ public abstract class MethodRef {
           Dir.class);
 
   public static final MethodRef PARAM_STORE_SET_FIELD =
-      create(ParamStore.class, "setField", String.class, SoyValueProvider.class);
+      create(
+          JbcSrcRuntime.class, "setField", ParamStore.class, String.class, SoyValueProvider.class);
 
   public static final MethodRef PRINT_STREAM_PRINTLN = create(PrintStream.class, "println");
 
@@ -302,6 +303,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_COMPARE_NULLABLE_STRING =
       create(JbcSrcRuntime.class, "compareNullableString", String.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_GET_FIELD =
+      create(JbcSrcRuntime.class, "getField", SoyRecord.class, String.class);
+
   public static final MethodRef RUNTIME_GET_FIELD_PROVIDER =
       create(JbcSrcRuntime.class, "getFieldProvider", SoyRecord.class, String.class)
           .asNonNullable();
@@ -312,6 +316,9 @@ public abstract class MethodRef {
 
   public static final MethodRef RUNTIME_GET_LIST_ITEM =
       create(JbcSrcRuntime.class, "getSoyListItem", List.class, long.class);
+
+  public static final MethodRef RUNTIME_GET_LIST_ITEM_PROVIDER =
+      create(JbcSrcRuntime.class, "getSoyListItemProvider", List.class, long.class);
 
   public static final MethodRef RUNTIME_GET_LIST_STATUS =
       create(JbcSrcRuntime.class, "getListStatus", List.class);
@@ -326,8 +333,18 @@ public abstract class MethodRef {
           SoyLegacyObjectMap.class,
           SoyValue.class);
 
+  public static final MethodRef RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM_PROVIDER =
+      create(
+          JbcSrcRuntime.class,
+          "getSoyLegacyObjectMapItemProvider",
+          SoyLegacyObjectMap.class,
+          SoyValue.class);
+
   public static final MethodRef RUNTIME_GET_MAP_ITEM =
       create(JbcSrcRuntime.class, "getSoyMapItem", SoyMap.class, SoyValue.class);
+
+  public static final MethodRef RUNTIME_GET_MAP_ITEM_PROVIDER =
+      create(JbcSrcRuntime.class, "getSoyMapItemProvider", SoyMap.class, SoyValue.class);
 
   public static final MethodRef RUNTIME_LESS_THAN =
       create(SharedRuntime.class, "lessThan", SoyValue.class, SoyValue.class).asNonNullable();

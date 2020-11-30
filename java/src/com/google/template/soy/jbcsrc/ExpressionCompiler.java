@@ -147,6 +147,7 @@ final class ExpressionCompiler {
     private final CompilerVisitor compilerVisitor;
 
     private BasicExpressionCompiler(
+        TemplateAnalysis analysis,
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         FieldManager fields,
@@ -155,6 +156,7 @@ final class ExpressionCompiler {
         CompiledTemplateRegistry compiledTemplateRegistry) {
       this.compilerVisitor =
           new CompilerVisitor(
+              analysis,
               parameters,
               varManager,
               fields,
@@ -190,6 +192,7 @@ final class ExpressionCompiler {
    * ExpressionDetacher.Factory}
    */
   static ExpressionCompiler create(
+      TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
@@ -197,10 +200,17 @@ final class ExpressionCompiler {
       SoyTypeRegistry registry,
       CompiledTemplateRegistry compiledTemplateRegistry) {
     return new ExpressionCompiler(
-        checkNotNull(parameters), varManager, fields, reporter, registry, compiledTemplateRegistry);
+        analysis,
+        checkNotNull(parameters),
+        varManager,
+        fields,
+        reporter,
+        registry,
+        compiledTemplateRegistry);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
+      TemplateAnalysis analysis,
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
@@ -208,6 +218,7 @@ final class ExpressionCompiler {
       CompiledTemplateRegistry compiledTemplateRegistry) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
+            analysis,
             new AbstractTemplateParameterLookup() {
               UnsupportedOperationException unsupported() {
                 return new UnsupportedOperationException(
@@ -264,6 +275,7 @@ final class ExpressionCompiler {
    * value is boxed, so it is only valid for use by the {@link LazyClosureCompiler}.
    */
   static BasicExpressionCompiler createBasicCompiler(
+      TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
@@ -271,7 +283,7 @@ final class ExpressionCompiler {
       SoyTypeRegistry registry,
       CompiledTemplateRegistry compiledTemplateRegistry) {
     return new BasicExpressionCompiler(
-        parameters, varManager, fields, reporter, registry, compiledTemplateRegistry);
+        analysis, parameters, varManager, fields, reporter, registry, compiledTemplateRegistry);
   }
 
   /**
@@ -282,6 +294,7 @@ final class ExpressionCompiler {
     return CanCompileToConstantVisitor.INSTANCE.exec(expr);
   }
 
+  private final TemplateAnalysis analysis;
   private final TemplateParameterLookup parameters;
   private final LocalVariableManager varManager;
   private final FieldManager fields;
@@ -290,12 +303,14 @@ final class ExpressionCompiler {
   private final CompiledTemplateRegistry compiledTemplateRegistry;
 
   private ExpressionCompiler(
+      TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
       FieldManager fields,
       ErrorReporter reporter,
       SoyTypeRegistry registry,
       CompiledTemplateRegistry compiledTemplateRegistry) {
+    this.analysis = analysis;
     this.parameters = checkNotNull(parameters);
     this.varManager = checkNotNull(varManager);
     this.fields = checkNotNull(fields);
@@ -339,11 +354,12 @@ final class ExpressionCompiler {
    */
   Optional<SoyExpression> compileWithNoDetaches(ExprNode node) {
     checkNotNull(node);
-    if (RequiresDetachVisitor.INSTANCE.exec(node)) {
+    if (new RequiresDetachVisitor(analysis).exec(node)) {
       return Optional.empty();
     }
     return Optional.of(
         new CompilerVisitor(
+                analysis,
                 parameters,
                 varManager,
                 fields,
@@ -361,6 +377,7 @@ final class ExpressionCompiler {
   BasicExpressionCompiler asBasicCompiler(ExpressionDetacher detacher) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
+            analysis,
             parameters,
             varManager,
             fields,
@@ -374,6 +391,7 @@ final class ExpressionCompiler {
       extends EnhancedAbstractExprNodeVisitor<SoyExpression> {
     // is null when we are generating code with no detaches.
     @Nullable final ExpressionDetacher detacher;
+    final TemplateAnalysis analysis;
     final TemplateParameterLookup parameters;
     final LocalVariableManager varManager;
     final FieldManager fields;
@@ -382,6 +400,7 @@ final class ExpressionCompiler {
     final CompiledTemplateRegistry compiledTemplateRegistry;
 
     CompilerVisitor(
+        TemplateAnalysis analysis,
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
         FieldManager fields,
@@ -389,6 +408,7 @@ final class ExpressionCompiler {
         ErrorReporter reporter,
         SoyTypeRegistry registry,
         CompiledTemplateRegistry compiledTemplateRegistry) {
+      this.analysis = analysis;
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
@@ -960,12 +980,18 @@ final class ExpressionCompiler {
       if (expression.resultType().equals(Type.LONG_TYPE)) {
         // it can be an unboxed long when executing a foreach over a range
         return SoyExpression.forInt(expression);
-      } else {
+      } else if (!analysis.isResolved(varRef)) {
         // otherwise it must be a SoyValueProvider, resolve and cast
         expression = detacher.resolveSoyValueProvider(expression);
         return SoyExpression.forSoyValue(
             varRef.getType(),
             expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+      } else {
+        return SoyExpression.forSoyValue(
+            varRef.getType(),
+            expression
+                .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE)
+                .checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
       }
     }
 
@@ -973,15 +999,6 @@ final class ExpressionCompiler {
 
     @Override
     SoyExpression visitParam(VarRefNode varRef, TemplateParam param) {
-      // TODO(lukes): It would be nice not to generate a detach for every param access, since
-      // after the first successful 'resolve()' we know that all later ones will also resolve
-      // successfully. This means that we will generate a potentially large amount of dead
-      // branches/states/calls to SoyValueProvider.status(). We could eliminate these by doing
-      // some kind of definite assignment analysis to know whether or not a particular varref is
-      // _not_ the first one. This would be super awesome and would save bytecode/branches/states
-      // and technically be useful for all varrefs. For the time being we do the naive thing and
-      // just assume that the jit can handle all the dead branches effectively.
-      Expression paramExpr = detacher.resolveSoyValueProvider(parameters.getParam(param));
       // This inserts a CHECKCAST instruction (aka runtime type checking).  However, it is limited
       // since we do not have good checking for unions (or nullability)
       // TODO(lukes): Where/how should we implement type checking.  For the time being type errors
@@ -989,27 +1006,40 @@ final class ExpressionCompiler {
       // manipulation. And, presumably, in NullPointerExceptions.
       return SoyExpression.forSoyValue(
           varRef.getType(),
-          paramExpr.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+          resolveVarRefNode(varRef, parameters.getParam(param))
+              .checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
     // Let vars
 
     @Override
     SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
-      Expression expression = parameters.getLocal(local);
-      expression = detacher.resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(
           varRef.getType(),
-          expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+          resolveVarRefNode(varRef, parameters.getLocal(local))
+              .checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
     }
 
     @Override
     SoyExpression visitListComprehensionVar(VarRefNode varRef, ComprehensionVarDefn var) {
-      Expression expression = parameters.getLocal(var);
-      expression = detacher.resolveSoyValueProvider(expression);
       return SoyExpression.forSoyValue(
           varRef.getType(),
-          expression.checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+          resolveVarRefNode(varRef, parameters.getLocal(var))
+              .checkedCast(SoyRuntimeType.getBoxedType(varRef.getType()).runtimeType()));
+    }
+
+    /**
+     * Returns either an expression to detach or a direct SOY_VALUE_PROVIDER_RESOLVE invocation.
+     *
+     * @param varRef The variable node that we want to generate an expression for.
+     * @param unresolvedExpression The expression corresponding to the unresolved variable.
+     */
+    private Expression resolveVarRefNode(VarRefNode varRef, Expression unresolvedExpression) {
+      if (!analysis.isResolved(varRef)) {
+        return detacher.resolveSoyValueProvider(unresolvedExpression);
+      } else {
+        return unresolvedExpression.invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
+      }
     }
 
     // Data access
@@ -1119,16 +1149,22 @@ final class ExpressionCompiler {
           return ProtoUtils.accessProtoUnionField(baseExpr, node, varManager);
         }
       }
-      // Otherwise this must be a vanilla SoyRecord.  Box, call getFieldProvider and resolve the
-      // provider
-      Expression fieldProvider =
-          MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
-              baseExpr.box().checkedCast(SoyRecord.class), constant(node.getFieldName()));
+      // Otherwise this must be a vanilla SoyRecord.  Box, call getField or getFieldProvider
+      // depending on the resolution status.
+      Expression fieldAccess;
+      Expression baseExprAsRecord = baseExpr.box().checkedCast(SoyRecord.class);
+      if (analysis.isResolved(node)) {
+        fieldAccess =
+            MethodRef.RUNTIME_GET_FIELD.invoke(baseExprAsRecord, constant(node.getFieldName()));
+      } else {
+        Expression fieldProvider =
+            MethodRef.RUNTIME_GET_FIELD_PROVIDER.invoke(
+                baseExprAsRecord, constant(node.getFieldName()));
+        fieldAccess = detacher.resolveSoyValueProvider(fieldProvider);
+      }
       return SoyExpression.forSoyValue(
           node.getType(),
-          detacher
-              .resolveSoyValueProvider(fieldProvider)
-              .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
+          fieldAccess.checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
     }
 
     private SoyExpression visitItemAccess(SoyExpression baseExpr, ItemAccessNode node) {
@@ -1141,25 +1177,39 @@ final class ExpressionCompiler {
       // Special case index lookups on lists to avoid boxing the int key.  Maps cannot be
       // optimized the same way because there is no real way to 'unbox' a SoyMap.
       if (baseExpr.soyRuntimeType().isKnownListOrUnionOfLists()) {
-        soyValueProvider =
-            MethodRef.RUNTIME_GET_LIST_ITEM.invoke(baseExpr.unboxAsList(), keyExpr.unboxAsLong());
+        SoyExpression list = baseExpr.unboxAsList();
+        SoyExpression index = keyExpr.unboxAsLong();
+        if (analysis.isResolved(node)) {
+          soyValueProvider = MethodRef.RUNTIME_GET_LIST_ITEM.invoke(list, index);
+        } else {
+          soyValueProvider =
+              detacher.resolveSoyValueProvider(
+                  MethodRef.RUNTIME_GET_LIST_ITEM_PROVIDER.invoke(list, index));
+        }
       } else if (baseExpr.soyRuntimeType().isKnownMapOrUnionOfMaps()) {
-        // Box and do a map style lookup.
-        soyValueProvider =
-            MethodRef.RUNTIME_GET_MAP_ITEM.invoke(
-                baseExpr.box().checkedCast(SoyMap.class), keyExpr.box());
+        Expression map = baseExpr.box().checkedCast(SoyMap.class);
+        SoyExpression index = keyExpr.box();
+        if (analysis.isResolved(node)) {
+          soyValueProvider = MethodRef.RUNTIME_GET_MAP_ITEM.invoke(map, index);
+        } else {
+          soyValueProvider =
+              detacher.resolveSoyValueProvider(
+                  MethodRef.RUNTIME_GET_MAP_ITEM_PROVIDER.invoke(map, index));
+        }
       } else {
-        // Box and do a map style lookup.
-        soyValueProvider =
-            MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(
-                baseExpr.box().checkedCast(SoyLegacyObjectMap.class), keyExpr.box());
+        Expression map = baseExpr.box().checkedCast(SoyLegacyObjectMap.class);
+        SoyExpression index = keyExpr.box();
+        if (analysis.isResolved(node)) {
+          soyValueProvider = MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM.invoke(map, index);
+        } else {
+          soyValueProvider =
+              detacher.resolveSoyValueProvider(
+                  MethodRef.RUNTIME_GET_LEGACY_OBJECT_MAP_ITEM_PROVIDER.invoke(map, index));
+        }
       }
-      Expression soyValue =
-          detacher
-              .resolveSoyValueProvider(soyValueProvider)
-              // Just like javac, we insert cast operations when removing from a collection.
-              .checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType());
-      return SoyExpression.forSoyValue(node.getType(), soyValue);
+      return SoyExpression.forSoyValue(
+          node.getType(),
+          soyValueProvider.checkedCast(SoyRuntimeType.getBoxedType(node.getType()).runtimeType()));
     }
 
     private SoyExpression visitMethodCall(SoyExpression baseExpr, MethodCallNode node) {
@@ -1765,11 +1815,15 @@ final class ExpressionCompiler {
    */
   private static final class RequiresDetachVisitor
       extends EnhancedAbstractExprNodeVisitor<Boolean> {
-    static final RequiresDetachVisitor INSTANCE = new RequiresDetachVisitor();
+    final TemplateAnalysis analysis;
+
+    RequiresDetachVisitor(TemplateAnalysis analysis) {
+      this.analysis = analysis;
+    }
 
     @Override
     Boolean visitForLoopVar(VarRefNode varRef, LocalVar local) {
-      return true;
+      return !analysis.isResolved(varRef);
     }
 
     @Override
@@ -1779,12 +1833,12 @@ final class ExpressionCompiler {
 
     @Override
     Boolean visitParam(VarRefNode varRef, TemplateParam param) {
-      return true;
+      return !analysis.isResolved(varRef);
     }
 
     @Override
     Boolean visitLetNodeVar(VarRefNode node, LocalVar local) {
-      return true;
+      return !analysis.isResolved(node);
     }
 
     @Override
@@ -1802,7 +1856,15 @@ final class ExpressionCompiler {
 
     @Override
     protected Boolean visitDataAccessNode(DataAccessNode node) {
-      return true;
+      if (!analysis.isResolved(node)) {
+        return true;
+      }
+      for (ExprNode child : node.getChildren()) {
+        if (visit(child)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override

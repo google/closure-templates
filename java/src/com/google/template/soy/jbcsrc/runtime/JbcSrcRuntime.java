@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
@@ -48,6 +49,7 @@ import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.SoyVisualElementData;
 import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.LazyProtoToSoyValueList;
+import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.data.internal.SoyLegacyObjectMapImpl;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
@@ -163,6 +165,15 @@ public final class JbcSrcRuntime {
     return value;
   }
 
+  public static SoyValue getField(SoyRecord record, String field) {
+    Preconditions.checkNotNull(record, "Attempted to access field '%s' of null", field);
+    return handleTofuNull(record.getField(field));
+  }
+
+  public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
+    return store.setField(field, provider == null ? NullData.INSTANCE : provider);
+  }
+
   /**
    * Helper function to make SoyRecord.getFieldProvider a non-nullable function by returning {@link
    * #NULL_PROVIDER} for missing fields.
@@ -238,7 +249,11 @@ public final class JbcSrcRuntime {
     return new EscapedCompiledTemplate(delegate, directives, kind);
   }
 
-  public static SoyValueProvider getSoyListItem(List<SoyValueProvider> list, long index) {
+  public static SoyValue getSoyListItem(List<SoyValueProvider> list, long index) {
+    return resolveSoyValueProvider(getSoyListItemProvider(list, index));
+  }
+
+  public static SoyValueProvider getSoyListItemProvider(List<SoyValueProvider> list, long index) {
     if (list == null) {
       throw new NullPointerException("Attempted to access list item '" + index + "' of null");
     }
@@ -274,10 +289,13 @@ public final class JbcSrcRuntime {
     return RenderResult.done();
   }
 
-  public static SoyValueProvider getSoyMapItem(SoyMap soyMap, SoyValue key) {
-    if (soyMap == null) {
-      throw new NullPointerException("Attempted to access map item '" + key + "' of null");
-    }
+  public static SoyValue getSoyMapItem(SoyMap soyMap, SoyValue key) {
+    Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
+    return soyMap.get(key);
+  }
+
+  public static SoyValueProvider getSoyMapItemProvider(SoyMap soyMap, SoyValue key) {
+    Preconditions.checkNotNull(soyMap, "Attempted to access map item '%s' of null", key);
     if (key == null) {
       key = NullData.INSTANCE;
     }
@@ -285,7 +303,13 @@ public final class JbcSrcRuntime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
-  public static SoyValueProvider getSoyLegacyObjectMapItem(
+  public static SoyValue getSoyLegacyObjectMapItem(
+      SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
+    Preconditions.checkNotNull(legacyObjectMap, "Attempted to access map item '%s' of null", key);
+    return legacyObjectMap.getItem(key);
+  }
+
+  public static SoyValueProvider getSoyLegacyObjectMapItemProvider(
       SoyLegacyObjectMap legacyObjectMap, SoyValue key) {
     if (legacyObjectMap == null) {
       throw new NullPointerException("Attempted to access map item '" + key + "' of null");

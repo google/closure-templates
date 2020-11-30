@@ -89,53 +89,6 @@ import org.objectweb.asm.commons.Method;
 public class ExpressionCompilerTest {
   private final Map<String, SoyExpression> variables = new HashMap<>();
   private final FieldManager fields = new FieldManager(null);
-  private final ExpressionCompiler testExpressionCompiler =
-      ExpressionCompiler.create(
-          new TemplateParameterLookup() {
-            @Override
-            public Expression getParam(TemplateParam paramName) {
-              return variables.get(paramName.name());
-            }
-
-            @Override
-            public Expression getLocal(SyntheticVarName varName) {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Expression getLocal(AbstractLocalVarDefn<?> localName) {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public RenderContextExpression getRenderContext() {
-              return new RenderContextExpression(
-                  BytecodeUtils.constantNull(BytecodeUtils.RENDER_CONTEXT_TYPE));
-            }
-
-            @Override
-            public JbcSrcPluginContext getPluginContext() {
-              return getRenderContext();
-            }
-
-            @Override
-            public Expression getParamsRecord() {
-              throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Expression getIjRecord() {
-              throw new UnsupportedOperationException();
-            }
-          },
-          new TemplateVariableManager(
-              fields,
-              LocalVariable.createThisVar(TypeInfo.create(Object.class), new Label(), new Label()),
-              getRenderMethod()),
-          fields,
-          ErrorReporter.exploding(),
-          SoyTypeRegistryBuilder.create(),
-          new CompiledTemplateRegistry(TemplateRegistry.EMPTY));
 
   private static Method getRenderMethod() {
     try {
@@ -617,28 +570,77 @@ public class ExpressionCompilerTest {
     String createTemplateBody =
         SharedTestUtils.createTemplateBodyForExpression(
             "fakeFunction(" + soyExpr + ")", types.build());
-    PrintNode code =
-        (PrintNode)
-            ((TemplateNode)
-                    SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
-                        .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
-                        .addSoyFunction(
-                            new SoyFunction() {
-                              @Override
-                              public String getName() {
-                                return "fakeFunction";
-                              }
+    TemplateNode templateNode =
+        (TemplateNode)
+            SoyFileSetParserBuilder.forTemplateContents(createTemplateBody)
+                .errorReporter(ErrorReporter.explodeOnErrorsAndIgnoreWarnings())
+                .addSoyFunction(
+                    new SoyFunction() {
+                      @Override
+                      public String getName() {
+                        return "fakeFunction";
+                      }
 
-                              @Override
-                              public ImmutableSet<Integer> getValidArgsSizes() {
-                                return ImmutableSet.of(1);
-                              }
-                            })
-                        .parse()
-                        .fileSet()
-                        .getChild(0)
-                        .getChild(0))
+                      @Override
+                      public ImmutableSet<Integer> getValidArgsSizes() {
+                        return ImmutableSet.of(1);
+                      }
+                    })
+                .parse()
+                .fileSet()
+                .getChild(0)
                 .getChild(0);
+    PrintNode code = (PrintNode) templateNode.getChild(0);
+    ExpressionCompiler testExpressionCompiler =
+        ExpressionCompiler.create(
+            TemplateAnalysis.analyze(templateNode),
+            new TemplateParameterLookup() {
+              @Override
+              public Expression getParam(TemplateParam paramName) {
+                return variables.get(paramName.name());
+              }
+
+              @Override
+              public Expression getLocal(SyntheticVarName varName) {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Expression getLocal(AbstractLocalVarDefn<?> localName) {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public RenderContextExpression getRenderContext() {
+                return new RenderContextExpression(
+                    BytecodeUtils.constantNull(BytecodeUtils.RENDER_CONTEXT_TYPE));
+              }
+
+              @Override
+              public JbcSrcPluginContext getPluginContext() {
+                return getRenderContext();
+              }
+
+              @Override
+              public Expression getParamsRecord() {
+                throw new UnsupportedOperationException();
+              }
+
+              @Override
+              public Expression getIjRecord() {
+                throw new UnsupportedOperationException();
+              }
+            },
+            new TemplateVariableManager(
+                fields,
+                LocalVariable.createThisVar(
+                    TypeInfo.create(Object.class), new Label(), new Label()),
+                getRenderMethod()),
+            fields,
+            ErrorReporter.exploding(),
+            SoyTypeRegistryBuilder.create(),
+            new CompiledTemplateRegistry(TemplateRegistry.EMPTY));
+
     return testExpressionCompiler.compileRootExpression(
         ((FunctionNode) code.getExpr().getChild(0)).getChild(0),
         new ExpressionDetacher.Factory() {
