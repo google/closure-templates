@@ -24,9 +24,9 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
+import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.VarDefn;
 
 /**
  * This class defines the base interface for a node in the parse tree, as well as a number of
@@ -232,10 +232,12 @@ public interface SoyNode extends Node {
   interface LocalVarNode extends SoyNode {
 
     /** Returns the name of this node's local variable (without the preceding '$'). */
-    String getVarName();
+    default String getVarName() {
+      return getVar().name();
+    }
 
     /** Returns the variable definition. */
-    VarDefn getVar();
+    AbstractLocalVarDefn<?> getVar();
   }
 
   // -----------------------------------------------------------------------------------------------

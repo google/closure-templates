@@ -19,7 +19,6 @@ package com.google.template.soy.soytree;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.soytree.SoyNode.LocalVarInlineNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
 import com.google.template.soy.soytree.defn.LocalVar;
@@ -59,12 +58,6 @@ public abstract class LetNode extends AbstractCommandNode
     super(orig, copyState);
     this.var = new LocalVar(orig.var, this);
     copyState.updateRefs(orig.var, this.var);
-  }
-
-  /** Return The local variable name (without the preceding '$'). */
-  @Override
-  public final String getVarName() {
-    return var.name();
   }
 
   /** Gets a unique version of the local var name (e.g. appending "__soy##" if necessary). */
