@@ -609,6 +609,11 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         exprs.add(defaultValue);
       }
     }
+    for (CommandTagAttribute attribute : attributes) {
+      if (attribute.hasExprValue()) {
+        exprs.addAll(attribute.valueAsExprList());
+      }
+    }
     return exprs.build();
   }
 

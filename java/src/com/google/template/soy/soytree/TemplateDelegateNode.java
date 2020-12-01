@@ -27,7 +27,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.StringNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import javax.annotation.Nullable;
 
@@ -37,7 +36,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class TemplateDelegateNode extends TemplateNode implements ExprHolderNode {
+public final class TemplateDelegateNode extends TemplateNode {
 
   /** Value class for a delegate template key (name and variant). */
   @AutoValue
@@ -61,9 +60,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   /** The delegate template name. */
   private final String delTemplateName;
 
-  /** An expression that defines a delegate template variant. */
-  @Nullable private final ExprRootNode delTemplateVariantExpr;
-
   /** The delegate template key (name and variant). */
   private DelTemplateKey delTemplateKey;
 
@@ -77,14 +73,12 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * @param nodeBuilder Builder containing template initialization params.
    * @param soyFileHeaderInfo Info from the containing Soy file's header declarations.
    * @param delTemplateName The delegate template name.
-   * @param delTemplateVariantExpr An expression that references a delegate template variant.
    * @param delPriority The delegate priority.
    */
   TemplateDelegateNode(
       TemplateDelegateNodeBuilder nodeBuilder,
       SoyFileHeaderInfo soyFileHeaderInfo,
       String delTemplateName,
-      @Nullable ExprRootNode delTemplateVariantExpr,
       Priority delPriority,
       ImmutableList<TemplateHeaderVarDefn> params) {
 
@@ -95,7 +89,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
         Visibility.PUBLIC /* deltemplate always has public visibility */,
         params);
     this.delTemplateName = checkNotNull(delTemplateName);
-    this.delTemplateVariantExpr = delTemplateVariantExpr;
     this.delPriority = checkNotNull(delPriority);
   }
 
@@ -107,12 +100,9 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
   private TemplateDelegateNode(TemplateDelegateNode orig, CopyState copyState) {
     super(orig, copyState);
     this.delTemplateName = orig.delTemplateName;
-    this.delTemplateVariantExpr =
-        orig.delTemplateVariantExpr == null ? null : orig.delTemplateVariantExpr.copy(copyState);
     this.delTemplateKey = orig.delTemplateKey;
     this.delPriority = orig.delPriority;
   }
-
 
   @Override
   public Kind getKind() {
@@ -153,16 +143,6 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
     return new TemplateDelegateNode(this, copyState);
   }
 
-  @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    ImmutableList.Builder<ExprRootNode> exprs = ImmutableList.builder();
-    exprs.addAll(super.getExprList());
-    if (delTemplateVariantExpr != null) {
-      exprs.add(delTemplateVariantExpr);
-    }
-    return exprs.build();
-  }
-
   /**
    * Calculate a DeltemplateKey for the variant.
    *
@@ -173,6 +153,7 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
    * TemplateDelegateNodeBuilder during construction
    */
   private DelTemplateKey resolveVariantExpression() {
+    ExprRootNode delTemplateVariantExpr = delTemplateVariantExpr();
     if (delTemplateVariantExpr == null) {
       delTemplateKey = DelTemplateKey.create(delTemplateName, "");
       return delTemplateKey;
@@ -205,5 +186,14 @@ public final class TemplateDelegateNode extends TemplateNode implements ExprHold
       delTemplateKey = DelTemplateKey.create(delTemplateName, exprNode.toSourceString());
     }
     return delTemplateKey;
+  }
+
+  @Nullable
+  private ExprRootNode delTemplateVariantExpr() {
+    return getAttributes().stream()
+        .filter(a -> a.getName().identifier().equals("variant") && a.hasExprValue())
+        .findFirst()
+        .map(a -> a.valueAsExprList().get(0))
+        .orElse(null);
   }
 }

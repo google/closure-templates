@@ -183,8 +183,7 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
   public TemplateDelegateNode build() {
     Preconditions.checkState(id != null && cmdText != null);
 
-    return new TemplateDelegateNode(
-        this, soyFileHeaderInfo, delTemplateName, delTemplateVariantExpr, delPriority, params);
+    return new TemplateDelegateNode(this, soyFileHeaderInfo, delTemplateName, delPriority, params);
   }
 
   @Override
