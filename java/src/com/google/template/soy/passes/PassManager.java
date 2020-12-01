@@ -169,14 +169,14 @@ public final class PassManager {
     ImmutableList<Class<? extends CompilerPass>> shouldNotHaveAlreadyRun = pass.runBefore();
     if (!Collections.disjoint(executed, shouldNotHaveAlreadyRun)) {
       throw new IllegalStateException(
-          "Attempted to executed pass "
+          "Attempted to execute pass "
               + pass.name()
               + " but it should always run before ("
-              + shouldHaveAlreadyRun.stream()
+              + shouldNotHaveAlreadyRun.stream()
                   .filter(dep -> !executed.contains(dep))
                   .map(Class::getSimpleName)
                   .collect(joining(", "))
-              + ") haven't run yet.\n Passes executed so far: "
+              + ").\n Passes executed so far: "
               + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
     }
     executed.add(getPassClass(pass));
