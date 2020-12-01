@@ -88,7 +88,7 @@ public final class CallDelegateNode extends CallNode {
           ExprRootNode value = attr.valueAsExpr(errorReporter);
           // Do some sanity checks on the variant expression.
           if (value.getRoot() instanceof StringNode) {
-            // If the variant is a fixed string, it evaluate to an identifier.
+            // If the variant is a fixed string, it evaluates to an identifier.
             String variantStr = ((StringNode) value.getRoot()).getValue();
             if (!BaseUtils.isIdentifier(variantStr)) {
               errorReporter.report(location, INVALID_VARIANT_EXPRESSION, variantStr);
