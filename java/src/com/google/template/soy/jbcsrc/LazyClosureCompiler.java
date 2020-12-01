@@ -371,6 +371,9 @@ final class LazyClosureCompiler {
               storeExpr.gen(adapter);
               returnDone.gen(adapter);
               adapter.mark(end);
+
+              thisVar.tableEntry(adapter);
+              variableSet.generateTableEntries(adapter);
             }
           };
       Expression constructExpr =
