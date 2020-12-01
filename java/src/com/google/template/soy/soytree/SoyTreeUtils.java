@@ -36,7 +36,6 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
-import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
@@ -237,24 +236,21 @@ public final class SoyTreeUtils {
     return sb;
   }
 
-  public static NotOpNode buildNotNull(ExprNode node, SoySourceFunction isNullFn) {
+  public static FunctionNode buildNotNull(ExprNode node, SoySourceFunction isNonNullFn) {
     SourceLocation unknown = node.getSourceLocation().clearRange();
-    NotOpNode not = new NotOpNode(unknown, unknown);
-    FunctionNode isNull =
-        FunctionNode.newPositional(Identifier.create("isNull", unknown), isNullFn, unknown);
-    isNull.addChild(new ExprRootNode(node.copy(new CopyState())));
-    isNull.setType(BoolType.getInstance());
-    not.addChild(isNull);
-    not.setType(BoolType.getInstance());
-    return not;
+    FunctionNode isNonnull =
+        FunctionNode.newPositional(Identifier.create("isNonnull", unknown), isNonNullFn, unknown);
+    isNonnull.addChild(new ExprRootNode(node.copy(new CopyState())));
+    isNonnull.setType(BoolType.getInstance());
+    return isNonnull;
   }
 
   public static IfNode buildPrintIfNotNull(
-      ExprNode node, Supplier<Integer> id, SoySourceFunction isNull) {
+      ExprNode node, Supplier<Integer> id, SoySourceFunction isNonnull) {
     SourceLocation unknown = node.getSourceLocation().clearRange();
     IfNode ifNode = new IfNode(id.get(), unknown);
     IfCondNode ifCondNode =
-        new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node, isNull));
+        new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node, isNonnull));
     ifNode.addChild(ifCondNode);
     PrintNode printNode =
         new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());

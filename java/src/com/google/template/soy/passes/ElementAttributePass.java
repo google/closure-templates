@@ -226,8 +226,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
     HtmlOpenTagNode openTagNode = elmOpen.get();
     String delegateTemplateName = getDelegateCall(templateNode);
     boolean iAmAnElementCallingAnElement = !delegateTemplateName.isEmpty();
-    SoySourceFunction isNullFn =
-        (SoySourceFunction) pluginResolver.lookupSoyFunction("isNull", 1, SourceLocation.UNKNOWN);
+    SoySourceFunction isNonnull =
+        (SoySourceFunction)
+            pluginResolver.lookupSoyFunction("isNonnull", 1, SourceLocation.UNKNOWN);
     ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
 
     SoyTreeUtils.getAllMatchingNodesOfType(
@@ -286,7 +287,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                 newAttrNode.addChild(valueNode);
 
                 if (attrNode.getConcatenationDelimiter() == null) {
-                  IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNullFn);
+                  IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNonnull);
                   valueNode.addChild(ifNode);
                   // In the default case, we append an {else}...{/if} for the default case.
                   IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
@@ -380,7 +381,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                           unknown,
                           unknown,
                           "if",
-                          SoyTreeUtils.buildNotNull(attrExpr, isNullFn));
+                          SoyTreeUtils.buildNotNull(attrExpr, isNonnull));
                   ifCondNode.addChild(newAttrNode);
                   ifNode.addChild(ifCondNode);
                   replacementNode = ifNode;
@@ -434,7 +435,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               unknown,
               unknown,
               "if",
-              SoyTreeUtils.buildNotNull(extraAttributesRef, isNullFn));
+              SoyTreeUtils.buildNotNull(extraAttributesRef, isNonnull));
       ifNode.addChild(ifCondNode);
       HtmlAttributeNode htmlAttributeNode = new HtmlAttributeNode(id.get(), unknown, null);
       PrintNode printNode =
