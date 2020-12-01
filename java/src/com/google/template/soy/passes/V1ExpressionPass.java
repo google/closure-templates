@@ -80,11 +80,7 @@ final class V1ExpressionPass implements CompilerFilePass {
           errorReporter.report(varLocation, USING_IJ_VARIABLE);
         } else {
           // This might add the same variable more than once but who cares.
-          fn.addChild(
-              new VarRefNode(
-                  matcher.group(1),
-                  varLocation,
-                  /* defn= */ null));
+          fn.addChild(new VarRefNode("$" + matcher.group(1), varLocation, /* defn= */ null));
         }
       }
     }

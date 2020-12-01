@@ -29,11 +29,13 @@ import javax.annotation.Nullable;
 public final class VarRefNode extends AbstractExprNode {
 
   public static VarRefNode error(SourceLocation location) {
-    return new VarRefNode("error", location, null);
+    return new VarRefNode("$error", location, null);
   }
 
   /** The name of the variable, without the preceding dollar sign. */
   private final String name;
+
+  private final String originalName;
 
   /** Reference to the variable declaration. */
   private VarDefn defn;
@@ -49,31 +51,23 @@ public final class VarRefNode extends AbstractExprNode {
    * @param sourceLocation The node's source location.
    * @param defn (optional) The variable declaration for this variable.
    */
-  public VarRefNode(
-      String name,
-      SourceLocation sourceLocation,
-      @Nullable VarDefn defn) {
+  public VarRefNode(String name, SourceLocation sourceLocation, @Nullable VarDefn defn) {
     super(sourceLocation);
-    this.name = Preconditions.checkNotNull(name);
+    this.name = name.startsWith("$") ? name.substring(1) : name;
+    this.originalName = name;
     this.defn = defn;
   }
 
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
+    this.originalName = orig.originalName;
     this.subtituteType = orig.subtituteType;
     // Maintain the original def in case only a subtree is getting cloned, but also register a
     // listener so that if the defn is replaced we will get updated also.
     this.defn = orig.defn;
     if (orig.defn != null) {
-      copyState.registerRefListener(
-          orig.defn,
-          new CopyState.Listener<VarDefn>() {
-            @Override
-            public void newVersion(VarDefn newObject) {
-              setDefn(newObject);
-            }
-          });
+      copyState.registerRefListener(orig.defn, this::setDefn);
     }
   }
 
@@ -92,6 +86,10 @@ public final class VarRefNode extends AbstractExprNode {
   /** Returns the name of the variable. */
   public String getName() {
     return name;
+  }
+
+  public String getOriginalName() {
+    return originalName;
   }
 
   /** Returns Whether this is an injected parameter reference. */
@@ -139,7 +137,7 @@ public final class VarRefNode extends AbstractExprNode {
 
   @Override
   public String toSourceString() {
-    return "$" + name;
+    return originalName;
   }
 
   @Override

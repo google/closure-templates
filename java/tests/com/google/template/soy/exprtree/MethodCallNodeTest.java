@@ -33,7 +33,7 @@ public class MethodCallNodeTest {
 
   @Test
   public void testGetMethodName() {
-    VarRefNode baseExpr = new VarRefNode("myVar", LOCATION, null);
+    VarRefNode baseExpr = new VarRefNode("$myVar", LOCATION, null);
     MethodCallNode method =
         new MethodCallNode(
             baseExpr,
@@ -47,7 +47,7 @@ public class MethodCallNodeTest {
 
   @Test
   public void testToSourceString() {
-    VarRefNode baseExpr = new VarRefNode("myVar", LOCATION, null);
+    VarRefNode baseExpr = new VarRefNode("$myVar", LOCATION, null);
     MethodCallNode method =
         new MethodCallNode(
             baseExpr,

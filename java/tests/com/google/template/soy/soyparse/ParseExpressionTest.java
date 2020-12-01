@@ -343,18 +343,18 @@ public final class ParseExpressionTest {
     SourceLocation loc = SourceLocation.UNKNOWN;
 
     ExprNode dataRef = assertThatExpression("$boo").isValidExpression();
-    assertNodeEquals(new VarRefNode("boo", loc, null), dataRef);
+    assertNodeEquals(new VarRefNode("$boo", loc, null), dataRef);
 
     dataRef = assertThatExpression("$boo.foo").isValidExpression();
     assertNodeEquals(
-        new FieldAccessNode(new VarRefNode("boo", loc, null), "foo", loc, false), dataRef);
+        new FieldAccessNode(new VarRefNode("$boo", loc, null), "foo", loc, false), dataRef);
 
     dataRef = assertThatExpression("$boo[0][$foo]").isValidExpression();
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, null), new IntegerNode(0, loc), loc, false),
-            new VarRefNode("foo", loc, null),
+                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, false),
+            new VarRefNode("$foo", loc, null),
             loc,
             false),
         dataRef);
@@ -363,8 +363,8 @@ public final class ParseExpressionTest {
     assertNodeEquals(
         new ItemAccessNode(
             new ItemAccessNode(
-                new VarRefNode("boo", loc, null), new IntegerNode(0, loc), loc, true),
-            new VarRefNode("foo", loc, null),
+                new VarRefNode("$boo", loc, null), new IntegerNode(0, loc), loc, true),
+            new VarRefNode("$foo", loc, null),
             loc,
             true),
         dataRef);

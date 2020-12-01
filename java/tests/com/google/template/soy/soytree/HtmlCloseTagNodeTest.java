@@ -42,7 +42,7 @@ public final class HtmlCloseTagNodeTest {
             2,
             SourceLocation.UNKNOWN,
             true,
-            new VarRefNode("tag", SourceLocation.UNKNOWN, null),
+            new VarRefNode("$tag", SourceLocation.UNKNOWN, null),
             ImmutableList.of(),
             ErrorReporter.exploding());
     closeTag =

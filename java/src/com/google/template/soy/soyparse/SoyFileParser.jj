@@ -4076,7 +4076,7 @@ private VarRefNode VarRef() :
 }
 {
   ident = <DOLLAR_IDENT>
-  { return new VarRefNode(ident.image.substring(1), createSrcLoc(ident), null); }
+  { return new VarRefNode(ident.image, createSrcLoc(ident), null); }
 }
 
 

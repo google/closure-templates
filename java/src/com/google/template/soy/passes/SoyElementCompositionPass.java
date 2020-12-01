@@ -234,7 +234,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 call.getParent().addChild(call.getParent().getChildIndex(call), letValueNode);
                 for (StandaloneNode child : ifCond.getChildren()) {
                   VarRefNode ref =
-                      new VarRefNode(letValueNode.getVarName(), unknown, letValueNode.getVar());
+                      new VarRefNode(
+                          "$" + letValueNode.getVarName(), unknown, letValueNode.getVar());
                   ref.setSubstituteType(letValueNode.getVar().type());
                   maybeConsumeAttribute(
                       child,
@@ -397,7 +398,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       return null;
     }
     if (isSoyAttr) {
-      ExprNode val = new VarRefNode(paramName, unknown, attrs.get(paramName));
+      ExprNode val = new VarRefNode("$" + paramName, unknown, attrs.get(paramName));
       if (condition.isPresent()) {
         return new CallParamValueNode(
             nodeIdGen.genId(),
@@ -471,7 +472,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       ifCondNode.addChild(node.copy(new CopyState()));
     }
     VarRefNode varRef =
-        new VarRefNode(letContentNode.getVar().name(), unknown, letContentNode.getVar());
+        new VarRefNode("$" + letContentNode.getVar().name(), unknown, letContentNode.getVar());
     ConditionalOpNode op =
         (ConditionalOpNode)
             Operator.CONDITIONAL.createNode(

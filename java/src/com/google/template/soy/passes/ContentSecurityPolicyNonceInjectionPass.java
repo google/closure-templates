@@ -241,6 +241,6 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
 
   private static VarRefNode referenceCspNonce(
       SourceLocation insertionLocation, TemplateParam defn) {
-    return new VarRefNode(CSP_NONCE_VARIABLE_NAME, insertionLocation, defn);
+    return new VarRefNode("$" + CSP_NONCE_VARIABLE_NAME, insertionLocation, defn);
   }
 }

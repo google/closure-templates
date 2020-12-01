@@ -129,7 +129,9 @@ public final class SharedTestUtils {
 
       @Override
       protected void visitVarRefNode(VarRefNode node) {
-        names.add(node.getName());
+        if (node.getOriginalName().startsWith("$")) {
+          names.add(node.getName());
+        }
       }
 
       @Override

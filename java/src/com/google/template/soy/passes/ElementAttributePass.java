@@ -264,7 +264,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
               AttrParam attr = attrs.get(attrName);
               unseenParams.remove(attr);
-              VarRefNode attrExpr = new VarRefNode(attr.name(), unknown, attr);
+              VarRefNode attrExpr = new VarRefNode("$" + attr.name(), unknown, attr);
               unseenParams.remove(attr);
 
               StandaloneNode replacementNode;
@@ -312,7 +312,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   copyChildren(attrNode, letContentNode);
                   VarRefNode letRef =
                       new VarRefNode(
-                          letContentNode.getVarName(),
+                          "$" + letContentNode.getVarName(),
                           SourceLocation.UNKNOWN,
                           letContentNode.getVar());
                   FunctionNode fn =
@@ -342,7 +342,9 @@ final class ElementAttributePass implements CompilerFileSetPass {
                           letValueNode);
                   VarRefNode valueRef =
                       new VarRefNode(
-                          letValueNode.getVarName(), SourceLocation.UNKNOWN, letValueNode.getVar());
+                          "$" + letValueNode.getVarName(),
+                          SourceLocation.UNKNOWN,
+                          letValueNode.getVar());
                   IfNode wrappingIf = new IfNode(id.get(), unknown);
                   IfCondNode wrappingIfCond =
                       new IfCondNode(
@@ -422,7 +424,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
               /* desc= */ "Created by ElementAttributePass.",
               /* defaultValue= */ null);
       VarRefNode extraAttributesRef =
-          new VarRefNode(attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
+          new VarRefNode("$" + attrsParam.name(), SourceLocation.UNKNOWN, attrsParam);
       templateNode.addParam(attrsParam);
       attrsParam.setType(SoyTypes.makeNullable(SanitizedType.AttributesType.getInstance()));
 
