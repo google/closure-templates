@@ -442,7 +442,7 @@ public final class PassManager {
       addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      if (astRewrites.atLeast(AstRewrites.TRICORDER)) {
+      if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(
             new ElementAttributePass(errorReporter, pluginResolver),
             partialTemplateRegistryPassesBuilder);
