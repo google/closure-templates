@@ -174,7 +174,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
               .collect(toCollection(ArrayList::new));
       StandaloneNode next = (StandaloneNode) SoyTreeUtils.nextSibling(tagNode);
       if (params.size() != 1
-          || (next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).getTagName().isSlot())) {
+          || (next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot())) {
         while (next != closeTag) {
           next = consumeSlot(call, next, nodeIdGen);
           if (next == null) {
@@ -339,7 +339,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       CallBasicNode callNode, SoyNode startNode, IdGenerator nodeIdGen) {
     SourceLocation unknown = startNode.getSourceLocation().clearRange();
     HtmlOpenTagNode nextOpenTag = (HtmlOpenTagNode) startNode;
-    String paramName = ((HtmlAttributeNode) nextOpenTag.getChild(1)).getStaticKey();
+    String paramName = ((HtmlAttributeNode) nextOpenTag.getChild(1)).getStaticContent();
     HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
     CallParamContentNode callParamContent =
         new CallParamContentNode(

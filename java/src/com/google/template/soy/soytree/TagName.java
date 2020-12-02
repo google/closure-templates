@@ -248,10 +248,6 @@ public final class TagName {
     return node instanceof RawTextNode;
   }
 
-  public boolean isSlot() {
-    return isStatic() && getStaticTagName().equals("@slot");
-  }
-
   /**
    * A tag is a template call if it contains either no parameters or only parameters of type html.
    * It must also return a html<?> type.

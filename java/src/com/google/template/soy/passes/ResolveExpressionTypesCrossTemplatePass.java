@@ -139,13 +139,15 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SoyErrorKind.of("Element call attributes must have values.");
 
   private static final SoyErrorKind NO_ATTRIBUTES_ON_SLOT =
-      SoyErrorKind.of("Slot elements cannot have attributes.");
+      SoyErrorKind.of(
+          "<parameter> elements cannot have attributes except slot, which must have a static"
+              + " value.");
 
   private static final SoyErrorKind SLOTS_ONLY_ONE_CLOSE_TAG =
-      SoyErrorKind.of("Slot elements cannot have more than one close tag.");
+      SoyErrorKind.of("<parameter> elements cannot have more than one close tag.");
 
   private static final SoyErrorKind SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL =
-      SoyErrorKind.of("Slot elements can only be direct descendents of template calls.");
+      SoyErrorKind.of("<parameter> elements can only be direct descendents of template calls.");
 
   private static final SoyErrorKind DUPLICATE_PARAM = SoyErrorKind.of("Duplicate param ''{0}''.");
 
@@ -161,7 +163,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SoyErrorKind.of("Call missing required attribute ''{0}''.");
 
   private static final SoyErrorKind ONLY_SLOTS_ALLOWED =
-      SoyErrorKind.of("Element calls require all children to be <@slot> elements.");
+      SoyErrorKind.of("Element calls require all children to be <parameter> elements.");
 
   private final SoyTypeRegistry typeRegistry;
   private final ErrorReporter errorReporter;
@@ -301,9 +303,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     }
     for (HtmlTagNode tagNode :
         SoyTreeUtils.getAllMatchingNodesOfType(
-            file,
-            HtmlOpenTagNode.class,
-            (tag) -> tag.getTagName().isSlot() && !allowedSlots.contains(tag))) {
+            file, HtmlOpenTagNode.class, (tag) -> tag.isSlot() && !allowedSlots.contains(tag))) {
       errorReporter.report(
           tagNode.getSourceLocation(), SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL);
     }
@@ -345,7 +345,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
                                 .isAssignableFromStrict(p.getType()))
                     .count()
                 == 1
-            && !(next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).getTagName().isSlot());
+            && !(next instanceof HtmlOpenTagNode && ((HtmlOpenTagNode) next).isSlot());
 
     while (!defaultSlotFulfilled && next != closeTag && !openTagNode.isSelfClosing()) {
       if (next == null) {
@@ -437,8 +437,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       SourceLocation templateLocation,
       Function<String, Boolean> addParam,
       Consumer<HtmlTagNode> consumer) {
-    if (!(startNode instanceof HtmlOpenTagNode)
-        || !((HtmlOpenTagNode) startNode).getTagName().isSlot()) {
+    if (!(startNode instanceof HtmlOpenTagNode) || !((HtmlOpenTagNode) startNode).isSlot()) {
       errorReporter.report(startNode.getSourceLocation(), ONLY_SLOTS_ALLOWED);
       return null;
     }
@@ -452,28 +451,31 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       return null;
     }
     HtmlAttributeNode attributeNode = (HtmlAttributeNode) nextOpenTag.getChild(1);
-    if (attributeNode.hasValue() || attributeNode.getStaticKey() == null) {
+    if (!attributeNode.hasValue()
+        || attributeNode.getStaticKey() == null
+        || !attributeNode.getStaticKey().equals("slot")
+        || attributeNode.getStaticContent() == null) {
       errorReporter.report(attributeNode.getSourceLocation(), NO_ATTRIBUTES_ON_SLOT);
       return null;
     }
     TemplateType templateType = (TemplateType) template.getType();
     boolean containsParam =
         templateType.getParameters().stream()
-            .anyMatch(p -> p.getName().equals(attributeNode.getStaticKey()));
+            .anyMatch(p -> p.getName().equals(attributeNode.getStaticContent()));
     if (!containsParam) {
       errorReporter.report(
           templateLocation,
           PASSES_UNUSED_PARAM,
-          attributeNode.getStaticKey(),
+          attributeNode.getStaticContent(),
           template.toSourceString(),
           SoyErrors.getDidYouMeanMessage(
               templateType.getParameters().stream()
                   .map(Parameter::getName)
                   .collect(toImmutableList()),
-              attributeNode.getStaticKey()));
+              attributeNode.getStaticContent()));
     }
-    if (!addParam.apply(attributeNode.getStaticKey())) {
-      errorReporter.report(templateLocation, DUPLICATE_PARAM, attributeNode.getStaticKey());
+    if (!addParam.apply(attributeNode.getStaticContent())) {
+      errorReporter.report(templateLocation, DUPLICATE_PARAM, attributeNode.getStaticContent());
     }
     HtmlTagNode closeTag = nextOpenTag.getTaggedPairs().get(0);
     consumer.accept(nextOpenTag);

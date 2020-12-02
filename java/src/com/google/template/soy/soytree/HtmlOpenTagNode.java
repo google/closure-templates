@@ -76,6 +76,12 @@ public final class HtmlOpenTagNode extends HtmlTagNode {
     isElementRoot = true;
   }
 
+  public boolean isSlot() {
+    return getTagName().isStatic()
+        && getTagName().getStaticTagName().equals("parameter")
+        && (getDirectAttributeNamed("slot") != null);
+  }
+
   /** Returns true if this is an skip root. */
   public boolean isSkipRoot() {
     return isSkipRoot;

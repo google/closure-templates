@@ -140,9 +140,9 @@ parameters must be provided with the
 {/template}
 ```
 
-#### Pass `html` parameters as slots. {#slot}
+#### Pass `html` parameters as <parameter>. {#param}
 
-Parameters of type `html` can be passed in as a slotted parameter.
+Parameters of type `html` can be passed in as a `<parameter>` node.
 
 ```soy
 {template example kind="html<div>"}
@@ -152,15 +152,15 @@ Parameters of type `html` can be passed in as a slotted parameter.
 
 {template exampleCaller}
   <{example()}>
-    <@slot content>
+    <parameter slot="myContent">
       Hello
-    </@slot>
+    </parameter>
   </>
 {/template}
 ```
 
-If a template only contains one `html` parameter, it can omit the @slot
-declaration.
+If a template only contains one `html` parameter, it can omit the `<parameter>`
+tag.
 
 ```soy
 {template exampleCaller}
