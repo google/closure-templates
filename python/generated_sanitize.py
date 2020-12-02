@@ -228,7 +228,7 @@ _FILTER_FOR_FILTER_TEL_URI = re.compile(r"""^tel:[0-9a-z;=\-+._!~*' /():&$#?@,]+
 
 _FILTER_FOR_FILTER_HTML_ATTRIBUTES = re.compile(r"""^(?!on|src|(?:action|archive|background|cite|classid|codebase|content|data|dsync|href|http-equiv|longdesc|style|usemap)\s*$)(?:[a-z0-9_$:-]*)\Z""", re.U | re.I)
 
-_FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|no|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
+_FILTER_FOR_FILTER_HTML_ELEMENT_NAME = re.compile(r"""^(?!base|iframe|link|no|object|script|style|textarea|title|xmp)[a-z0-9_$:-]*\Z""", re.U | re.I)
 
 _FILTER_FOR_FILTER_CSP_NONCE_VALUE = re.compile(r"""^[a-zA-Z0-9+/_-]+={0,2}$""", re.U)
 

@@ -175,6 +175,7 @@ This escaping logic applies to:
 *   `script.src`
 *   `iframe.src`
 *   `base.href`
+*   `object.data`
 *   `link.href` unless the `link` also has a whitelisted `rel` attribute, one
     of:
     *   alternate

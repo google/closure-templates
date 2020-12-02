@@ -1107,6 +1107,9 @@ abstract class Context {
                   ? ElementType.META_REFRESH
                   : ElementType.NORMAL;
           break;
+        case "object":
+          elType = ElementType.OBJECT;
+          break;
         case "textarea":
           elType = ElementType.TEXTAREA;
           break;
@@ -1229,6 +1232,7 @@ abstract class Context {
       case META_REFRESH:
       case IFRAME:
       case MEDIA:
+      case OBJECT:
         builder.withState(HtmlContext.HTML_PCDATA).withElType(Context.ElementType.NONE);
         break;
       case NONE:
@@ -1323,6 +1327,7 @@ abstract class Context {
     } else if ((elType() == ElementType.SCRIPT && "src".equals(attrName))
         || (elType() == ElementType.IFRAME && "src".equals(attrName))
         || (elType() == ElementType.LINK_EXECUTABLE && "href".equals(attrName))
+        || (elType() == ElementType.OBJECT && "data".equals(attrName))
         || (elType() == ElementType.BASE && "href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
@@ -1400,6 +1405,9 @@ abstract class Context {
 
     /** A {@code <meta http-equiv="refresh">} element. */
     META_REFRESH,
+
+    /** <object> */
+    OBJECT,
 
     /** An element whose content is normal mixed PCDATA and child elements. */
     NORMAL,

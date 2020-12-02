@@ -164,7 +164,7 @@ public final class ContextualAutoescaperTest {
             "<a xml:base='{$x |filterNormalizeUri |escapeHtmlAttribute}' href='/foo'>link</a>",
             "<button formaction='{$x |filterNormalizeUri |escapeHtmlAttribute}'>do</button>",
             "<command icon='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
-            "<object data='{$x |filterNormalizeUri |escapeHtmlAttribute}'></object>",
+            "<object data='{$x |filterTrustedResourceUri |escapeHtmlAttribute}'></object>",
             "<video poster='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
             "<video src='{$x |filterNormalizeUri |escapeHtmlAttribute}'></video>",
             "<source src='{$x |filterNormalizeUri |escapeHtmlAttribute}'>",
