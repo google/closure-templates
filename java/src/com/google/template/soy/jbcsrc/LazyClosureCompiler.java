@@ -42,6 +42,7 @@ import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
+import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
 import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
@@ -57,6 +58,7 @@ import com.google.template.soy.jbcsrc.restricted.Statement;
 import com.google.template.soy.jbcsrc.restricted.TypeInfo;
 import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
+import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProviderProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
@@ -155,19 +157,28 @@ final class LazyClosureCompiler {
   // classes (or each other)
   private static final int LAZY_CLOSURE_ACCESS = Opcodes.ACC_FINAL;
   private static final Method DO_RESOLVE;
+  private static final Method DO_RESOLVE_DELEGATE;
   private static final Method DO_RENDER;
   private static final Method DETACHABLE_CONTENT_PROVIDER_INIT;
   private static final FieldRef RESOLVED_VALUE =
       FieldRef.instanceFieldReference(DetachableSoyValueProvider.class, "resolvedValue");
+  private static final FieldRef RESOLVED_VALUE_PROVIDER =
+      FieldRef.instanceFieldReference(
+          DetachableSoyValueProviderProvider.class, "resolvedValueProvider");
   private static final TypeInfo DETACHABLE_CONTENT_PROVIDER_TYPE =
       TypeInfo.create(DetachableContentProvider.class);
   private static final TypeInfo DETACHABLE_VALUE_PROVIDER_TYPE =
       TypeInfo.create(DetachableSoyValueProvider.class);
+  private static final TypeInfo DETACHABLE_VALUE_PROVIDER_PROVIDER_TYPE =
+      TypeInfo.create(DetachableSoyValueProviderProvider.class);
 
   static {
     try {
       DO_RESOLVE =
           Method.getMethod(DetachableSoyValueProvider.class.getDeclaredMethod("doResolve"));
+      DO_RESOLVE_DELEGATE =
+          Method.getMethod(
+              DetachableSoyValueProviderProvider.class.getDeclaredMethod("doResolveDelegate"));
       DO_RENDER =
           Method.getMethod(
               DetachableContentProvider.class.getDeclaredMethod(
@@ -230,17 +241,37 @@ final class LazyClosureCompiler {
       return LazyClosure.create(
           varName, svp, /* isTrivial=*/ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE);
     }
+
     TypeInfo type =
         innerClasses.registerInnerClassWithGeneratedName(
             getProposedName(namePrefix, varName), LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
         SoyClassWriter.builder(type)
             .setAccess(LAZY_CLOSURE_ACCESS)
+            .extending(DETACHABLE_VALUE_PROVIDER_PROVIDER_TYPE)
+            .sourceFileName(declaringNode.getSourceLocation().getFileName())
+            .build();
+
+    Optional<Expression> asSoyValueProviderProvider =
+        new CompilationUnit(
+                analysis, writer, type, DETACHABLE_VALUE_PROVIDER_PROVIDER_TYPE, declaringNode)
+            .compileExpressionToSoyValueProviderIfUseful(exprNode);
+
+    if (asSoyValueProviderProvider.isPresent()) {
+      innerClasses.registerAsInnerClass(writer, type);
+      writer.visitEnd();
+      innerClasses.add(writer.toClassData());
+      return LazyClosure.create(varName, asSoyValueProviderProvider.get(), /* isTrivial=*/ false);
+    }
+
+    writer =
+        SoyClassWriter.builder(type)
+            .setAccess(LAZY_CLOSURE_ACCESS)
             .extending(DETACHABLE_VALUE_PROVIDER_TYPE)
             .sourceFileName(declaringNode.getSourceLocation().getFileName())
             .build();
     Expression expr =
-        new CompilationUnit(writer, type, DETACHABLE_VALUE_PROVIDER_TYPE, declaringNode)
+        new CompilationUnit(analysis, writer, type, DETACHABLE_VALUE_PROVIDER_TYPE, declaringNode)
             .compileExpression(exprNode);
 
     innerClasses.registerAsInnerClass(writer, type);
@@ -281,7 +312,7 @@ final class LazyClosureCompiler {
             .sourceFileName(renderUnit.getSourceLocation().getFileName())
             .build();
     Expression expr =
-        new CompilationUnit(writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
+        new CompilationUnit(analysis, writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
             .compileRenderable(renderUnit, prefix, suffix);
 
     innerClasses.registerAsInnerClass(writer, type);
@@ -334,13 +365,20 @@ final class LazyClosureCompiler {
 
   /** A simple object to aid in generating code for a single node. */
   private final class CompilationUnit {
+    final TemplateAnalysis analysis;
     final FieldManager fields;
     final TypeInfo type;
     final TypeInfo baseClass;
     final SoyNode node;
     final SoyClassWriter writer;
 
-    CompilationUnit(SoyClassWriter writer, TypeInfo type, TypeInfo baseClass, SoyNode node) {
+    CompilationUnit(
+        TemplateAnalysis analysis,
+        SoyClassWriter writer,
+        TypeInfo type,
+        TypeInfo baseClass,
+        SoyNode node) {
+      this.analysis = analysis;
       this.writer = writer;
       this.fields = new FieldManager(type);
       this.type = type;
@@ -391,6 +429,59 @@ final class LazyClosureCompiler {
       fields.defineFields(writer);
       fields.defineStaticInitializer(writer);
       return constructExpr;
+    }
+
+    Optional<Expression> compileExpressionToSoyValueProviderIfUseful(ExprNode exprNode) {
+      final Label start = new Label();
+      final Label end = new Label();
+      final LocalVariable thisVar = createThisVar(type, start, end);
+      TemplateVariableManager variableSet =
+          new TemplateVariableManager(fields, thisVar, DO_RESOLVE_DELEGATE);
+      LazyClosureParameterLookup lookup =
+          new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
+      ExpressionCompiler expressionCompiler =
+          ExpressionCompiler.create(
+              analysis, lookup, variableSet, fields, reporter, typeRegistry, registry);
+      Optional<Expression> expr =
+          ExpressionToSoyValueProviderCompiler.create(
+                  analysis, variableSet, expressionCompiler, lookup)
+              .compileToSoyValueProviderIfUsefulToPreserveStreaming(
+                  exprNode, BasicDetacher.INSTANCE);
+
+      if (!expr.isPresent()) {
+        return Optional.empty();
+      }
+
+      final Statement storeExpr = RESOLVED_VALUE_PROVIDER.putInstanceField(thisVar, expr.get());
+      final Statement returnDone = Statement.returnExpression(RENDER_RESULT_DONE.invoke());
+      Statement doResolveImpl =
+          new Statement() {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              adapter.mark(start);
+              storeExpr.gen(adapter);
+              returnDone.gen(adapter);
+              adapter.mark(end);
+
+              thisVar.tableEntry(adapter);
+              variableSet.generateTableEntries(adapter);
+            }
+          };
+      Expression constructExpr =
+          generateConstructor(
+              new Statement() {
+                @Override
+                protected void doGen(CodeBuilder adapter) {
+                  adapter.loadThis();
+                  adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
+                }
+              },
+              lookup.getCapturedFields());
+
+      doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE_DELEGATE, writer);
+      fields.defineFields(writer);
+      fields.defineStaticInitializer(writer);
+      return Optional.of(constructExpr);
     }
 
     Expression compileRenderable(

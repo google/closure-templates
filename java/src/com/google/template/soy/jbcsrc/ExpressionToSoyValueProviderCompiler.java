@@ -38,7 +38,6 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 /**
@@ -48,11 +47,12 @@ import org.objectweb.asm.Type;
  * <p>There are two ways to use this depending on the specific requirements of the caller
  *
  * <ul>
- *   <li>{@link #compileAvoidingBoxing(ExprNode, Label)} attempts to compile the expression to a
- *       {@link SoyValueProvider} but without introducing any unnecessary boxing operations.
- *       Generating detach logic is OK. This case is for print operations, where callers may want to
- *       call {@link SoyValueProvider#renderAndResolve} to incrementally print the value. However,
- *       this is only desirable if the expression is naturally a {@link SoyValueProvider}.
+ *   <li>{@link #compileToSoyValueProviderIfUsefulToPreserveStreaming(ExprNode, ExpressionDetacher)}
+ *       attempts to compile the expression to a {@link SoyValueProvider} but without introducing
+ *       any unnecessary boxing operations. Generating detach logic is OK. This case is for print
+ *       operations, where callers may want to call {@link SoyValueProvider#renderAndResolve} to
+ *       incrementally print the value. However, this is only desirable if the expression is
+ *       naturally a {@link SoyValueProvider}.
  *   <li>{@link #compileAvoidingDetaches(ExprNode)} attempts to compile the expression to a {@link
  *       SoyValueProvider} with no detach logic. This is for passing data to templates or defining
  *       variables with {@code let} statements. In these cases boxing operations are fine (because
@@ -65,37 +65,29 @@ import org.objectweb.asm.Type;
  * {@link SoyValueProvider#renderAndResolve} so that we can render it incrementally.
  */
 final class ExpressionToSoyValueProviderCompiler {
-  /**
-   * Create an expression compiler that can implement complex detaching logic with the given {@link
-   * ExpressionDetacher.Factory}
-   */
+  /** Create an expression compiler that can implement complex detaching logic. */
   static ExpressionToSoyValueProviderCompiler create(
       TemplateAnalysis analysis,
       TemplateVariableManager varManager,
       ExpressionCompiler exprCompiler,
-      TemplateParameterLookup variables,
-      ExpressionDetacher.Factory detacherFactory) {
-    return new ExpressionToSoyValueProviderCompiler(
-        analysis, varManager, exprCompiler, variables, detacherFactory);
+      TemplateParameterLookup variables) {
+    return new ExpressionToSoyValueProviderCompiler(analysis, varManager, exprCompiler, variables);
   }
 
   private final TemplateAnalysis analysis;
   private final TemplateParameterLookup variables;
   private final ExpressionCompiler exprCompiler;
   private final TemplateVariableManager varManager;
-  private final ExpressionDetacher.Factory detacherFactory;
 
   private ExpressionToSoyValueProviderCompiler(
       TemplateAnalysis analysis,
       TemplateVariableManager varManager,
       ExpressionCompiler exprCompiler,
-      TemplateParameterLookup variables,
-      ExpressionDetacher.Factory detacherFactory) {
+      TemplateParameterLookup variables) {
     this.analysis = analysis;
     this.exprCompiler = exprCompiler;
     this.variables = variables;
     this.varManager = varManager;
-    this.detacherFactory = detacherFactory;
   }
 
   /**
@@ -105,12 +97,10 @@ final class ExpressionToSoyValueProviderCompiler {
    * be done without introducing unnecessary boxing operations. This is intended for situations
    * (like print operations) where calling {@link SoyValueProvider#renderAndResolve} would be better
    * than calling {@link #toString()} and passing directly to the output.
-   *
-   * <p>TODO(lukes): this method is confusingly named
    */
-  Optional<Expression> compileAvoidingBoxing(ExprNode node, Label reattachPoint) {
+  Optional<Expression> compileToSoyValueProviderIfUsefulToPreserveStreaming(
+      ExprNode node, ExpressionDetacher detacher) {
     checkNotNull(node);
-    ExpressionDetacher detacher = detacherFactory.createExpressionDetacher(reattachPoint);
     return new CompilerVisitor(
             analysis,
             variables,

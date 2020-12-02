@@ -29,45 +29,46 @@ import java.io.IOException;
  * jbcsrc} implementations of the generated {@code LetValueNode} and {@code CallParamValueNode}
  * implementations.
  *
- * <p>This class resolves to a {@link SoyValue} and calls {@link SoyValue#render}. If you need to
- * resolve to a {@link SoyValueProvider} to call {@link SoyValueProvider#renderAndResolve}, use
- * {@link DetachableSoyValueProviderProvider} instead.
+ * <p>This class resolves to a {@link SoyValueProvider} and calls {@link
+ * SoyValueProvider#renderAndResolve}. If you don't neeed to box as a value provider, use {@link
+ * DetachableSoyValueProvider} instead, which resolves to a {@link SoyValue} and calls {@link
+ * SoyValue#render}.
  */
-public abstract class DetachableSoyValueProvider implements SoyValueProvider {
-  // TOMBSTONE marks this field as uninitialized which allows it to accept 'null' as a valid value.
-  protected SoyValue resolvedValue = TombstoneValue.INSTANCE;
+public abstract class DetachableSoyValueProviderProvider implements SoyValueProvider {
+  protected SoyValueProvider resolvedValueProvider = null;
 
   @Override
   public final SoyValue resolve() {
-    SoyValue local = resolvedValue;
+    SoyValueProvider local = resolvedValueProvider;
     checkState(
-        local != TombstoneValue.INSTANCE, "called resolve() before status() returned ready.");
-    return local;
+        local != null && local.status().isDone(),
+        "called resolve() before status() returned ready.");
+    return local.resolve();
   }
 
   @Override
   public final RenderResult status() {
-    if (resolvedValue != TombstoneValue.INSTANCE) {
-      return RenderResult.done();
+    if (resolvedValueProvider == null) {
+      RenderResult subResult = doResolveDelegate();
+      if (!subResult.isDone()) {
+        return subResult;
+      }
     }
-    return doResolve();
+    return resolvedValueProvider.status();
   }
 
   @Override
   public RenderResult renderAndResolve(LoggingAdvisingAppendable appendable, boolean isLast)
       throws IOException {
     RenderResult result = status();
-    if (result.isDone()) {
-      SoyValue resolved = resolve();
-      if (resolved == null) {
-        appendable.append("null");
-      } else {
-        resolved.render(appendable);
-      }
+    // This means we have not made enough progress to even begin delegating, keep calling status()
+    // until we have.
+    if (resolvedValueProvider == null) {
+      return result;
     }
-    return result;
+    return resolvedValueProvider.renderAndResolve(appendable, isLast);
   }
 
   /** Overridden by generated subclasses to implement lazy detachable resolution. */
-  protected abstract RenderResult doResolve();
+  protected abstract RenderResult doResolveDelegate();
 }

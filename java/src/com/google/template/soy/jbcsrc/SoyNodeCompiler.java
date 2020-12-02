@@ -157,7 +157,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             analysis, parameterLookup, variables, fields, reporter, typeRegistry, registry);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(
-            analysis, variables, expressionCompiler, parameterLookup, detachState);
+            analysis, variables, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
         analysis,
         thisVar,
@@ -600,7 +600,8 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       Label reattachPoint = new Label();
       ExprRootNode expr = node.getExpr();
       Optional<Expression> asSoyValueProvider =
-          expressionToSoyValueProviderCompiler.compileAvoidingBoxing(expr, reattachPoint);
+          expressionToSoyValueProviderCompiler.compileToSoyValueProviderIfUsefulToPreserveStreaming(
+              expr, detachState.createExpressionDetacher(reattachPoint));
       if (asSoyValueProvider.isPresent()) {
         return renderIncrementally(asSoyValueProvider.get(), node.getChildren(), reattachPoint);
       }
