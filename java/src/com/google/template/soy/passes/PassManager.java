@@ -524,11 +524,13 @@ public final class PassManager {
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
             crossTemplateCheckingPassesBuilder);
         addPass(new CheckTemplateCallsPass(errorReporter), crossTemplateCheckingPassesBuilder);
-        if (astRewrites.atLeast(AstRewrites.TRICORDER)
-            && options.getExperimentalFeatures().contains("enableTemplateElementKind")) {
+        if (options.getExperimentalFeatures().contains("enableTemplateElementKind")) {
           addPass(
               new ElementCheckCrossTemplatePass(errorReporter), crossTemplateCheckingPassesBuilder);
-          addPass(new SoyElementCompositionPass(errorReporter), crossTemplateCheckingPassesBuilder);
+          if (astRewrites.atLeast(AstRewrites.ALL)) {
+            addPass(
+                new SoyElementCompositionPass(errorReporter), crossTemplateCheckingPassesBuilder);
+          }
         }
       }
       addPass(new CallAnnotationPass(), crossTemplateCheckingPassesBuilder);
