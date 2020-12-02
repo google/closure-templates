@@ -21,7 +21,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.auto.value.AutoValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.basetree.CopyState;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
@@ -37,6 +40,17 @@ import javax.annotation.Nullable;
  *
  */
 public final class TemplateDelegateNode extends TemplateNode {
+
+  private static final SoyErrorKind INVALID_VARIANT_STRING =
+      SoyErrorKind.of("Invalid variant ''{0}'' value must be an identifier.");
+  private static final SoyErrorKind INVALID_VARIANT_INTEGER =
+      SoyErrorKind.of("Invalid variant ''{0}'' value must non-negative.");
+  private static final SoyErrorKind INVALID_VARIANT_EXPR =
+      SoyErrorKind.of(
+          "Invalid variant expression (must be a string literal containing an identifier or global"
+              + " expression).");
+
+  public static final String VARIANT_ATTR = "variant";
 
   /** Value class for a delegate template key (name and variant). */
   @AutoValue
@@ -191,9 +205,44 @@ public final class TemplateDelegateNode extends TemplateNode {
   @Nullable
   private ExprRootNode delTemplateVariantExpr() {
     return getAttributes().stream()
-        .filter(a -> a.getName().identifier().equals("variant") && a.hasExprValue())
+        .filter(a -> VARIANT_ATTR.equals(a.getName().identifier()) && a.hasExprValue())
         .findFirst()
         .map(a -> a.valueAsExprList().get(0))
         .orElse(null);
+  }
+
+  public void validateVariantExpression(ErrorReporter errorReporter) {
+    getAttributes().stream()
+        .filter(a -> VARIANT_ATTR.equals(a.getName().identifier()))
+        .forEach(
+            a -> validateVariantExpression(a.valueAsExpr(errorReporter).getRoot(), errorReporter));
+  }
+
+  private static void validateVariantExpression(
+      ExprNode primitiveNode, final ErrorReporter reporter) {
+    switch (primitiveNode.getKind()) {
+      case STRING_NODE:
+        StringNode sn = (StringNode) primitiveNode;
+        if (!sn.getValue().isEmpty() && !BaseUtils.isIdentifier(sn.getValue())) {
+          reporter.report(sn.getSourceLocation(), INVALID_VARIANT_STRING, sn.getValue());
+        }
+        break;
+      case INTEGER_NODE:
+        IntegerNode in = (IntegerNode) primitiveNode;
+        if (in.getValue() < 0) {
+          reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.getValue());
+        }
+        break;
+      case GLOBAL_NODE:
+        GlobalNode gn = (GlobalNode) primitiveNode;
+        if (gn.isResolved()) {
+          validateVariantExpression(gn.getValue(), reporter);
+        } else {
+          gn.onResolve(value -> validateVariantExpression(value, reporter));
+        }
+        break;
+      default:
+        reporter.report(primitiveNode.getSourceLocation(), INVALID_VARIANT_EXPR);
+    }
   }
 }
