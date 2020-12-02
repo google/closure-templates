@@ -27,7 +27,5 @@ final class StandardNames {
   static final String CURRENT_RENDEREE_FIELD = "$currentRenderee";
   static final String CURRENT_APPENDABLE_FIELD = "$currentAppendable";
 
-  static final String FACTORY_CLASS = "Factory";
-
   private StandardNames() {}
 }

@@ -83,12 +83,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
     // For each template we compile there are only two 'public' classes that could be loaded prior
     // to compiling the template. The CompiledTemplate.Factory class and the CompiledTemplate itself
-    boolean isFactory = name.endsWith("$" + StandardNames.FACTORY_CLASS);
-    String compiledTemplateName =
-        isFactory
-            ? name.substring(0, name.length() - (StandardNames.FACTORY_CLASS.length() + 1))
-            : name;
-    CompiledTemplateMetadata meta = classNameToTemplateMetadata.get(compiledTemplateName);
+    CompiledTemplateMetadata meta = classNameToTemplateMetadata.get(name);
     if (meta == null) {
       return null;
     }
@@ -96,11 +91,7 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
         new TemplateCompiler(
-                registry,
-                meta,
-                classNameToTemplateNode.get(compiledTemplateName),
-                reporter,
-                typeRegistry)
+                registry, meta, classNameToTemplateNode.get(name), reporter, typeRegistry)
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {
