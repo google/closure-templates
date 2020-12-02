@@ -645,8 +645,17 @@ final class TemplateAnalysis {
 
     @Override
     protected void visitNullSafeAccessNode(NullSafeAccessNode node) {
-      // The NullSafeAccessNode wraps a base node and DataAccessNode nodes.
-      visitChildren(node);
+      // The NullSafeAccessNode wraps a base node and DataAccessNode nodes. {x?.field} becomes:
+      //
+      // NullSafeAccessNode
+      //   +--- VarRefNode(x)
+      //   +--- FieldAccessNode("field")
+      //          +--- GlobalNode(DO_NOT_USE_NULL_SAFE_ACCESS)
+      //
+      // Since the DataAcessNode has a global placeholder for its own base expression, all field
+      // accesses with the same name will match each other, regardless of the actual base
+      // expression. Don't traverse it to avoid marking nodes as incorrectly resolved.
+      visit(node.getBase());
     }
 
     @Override

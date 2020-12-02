@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Joiner;
@@ -24,8 +25,10 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -59,6 +62,31 @@ public final class TemplateAnalysisTest {
         "{notrefed($p1)}",
         "{notrefed($p2)}",
         "{refed($p3)}");
+  }
+
+  @Test
+  public void testNullSafeDataAccessWithDuplicateFieldName() {
+    TemplateNode template =
+        parseTemplate(
+            "{@param p : [field:string]}",
+            "{@param x : [field:string]}",
+            "{$p?.field}",
+            "{$x?.field}");
+    TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
+    ExprNode xField = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
+    DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xField).getDataAccess();
+    assertThat(analysis.isResolved(access)).isFalse();
+  }
+
+  @Test
+  public void testNullSafeDataAccessWithDuplicateIndex() {
+    TemplateNode template =
+        parseTemplate(
+            "{@param p : list<string>}", "{@param x : list<string>}", "{$p?[0]}", "{$x?[0]}");
+    TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
+    ExprNode xList = ((PrintNode) template.getChild(1)).getExpr().getChild(0);
+    DataAccessNode access = (DataAccessNode) ((NullSafeAccessNode) xList).getDataAccess();
+    assertThat(analysis.isResolved(access)).isFalse();
   }
 
   @Test
