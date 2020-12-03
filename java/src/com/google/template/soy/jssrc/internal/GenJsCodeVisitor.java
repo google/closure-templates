@@ -923,9 +923,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     jsCodeBuilder.append(VariableDeclaration.builder(generatedVarName).setRhs(value).build());
 
     // Add a mapping for generating future references to this local var.
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(node.getVarName(), id(generatedVarName));
+    templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(generatedVarName));
   }
 
   /**
@@ -975,7 +973,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     }
 
     // Add a mapping for generating future references to this local var.
-    templateTranslationContext.soyToJsVariableMappings().put(node.getVarName(), generatedVar);
+    templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), generatedVar);
   }
 
   /**
@@ -1267,12 +1265,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       Expression limit,
       Function<Expression, Expression> getDataItemFunction) {
     // Build some local variable names.
-    String varName = node.getVarName();
-    String varPrefix = varName + node.getForNodeId();
+    String refPrefix = node.getVarRefName();
+    String jsLetPrefix = node.getVarName() + node.getForNodeId();
 
     // TODO(b/32224284): A more consistent pattern for local variable management.
-    String loopIndexName = varPrefix + "Index";
-    String dataName = varPrefix + "Data";
+    String loopIndexName = jsLetPrefix + "Index";
+    String dataName = jsLetPrefix + "Data";
 
     Expression loopIndex = id(loopIndexName);
     VariableDeclaration data =
@@ -1281,15 +1279,15 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // Populate the local var translations with the translations from this node.
     templateTranslationContext
         .soyToJsVariableMappings()
-        .put(varName, id(dataName))
-        .put(varName + "__isFirst", loopIndex.doubleEquals(number(0)))
-        .put(varName + "__isLast", loopIndex.doubleEquals(limit.minus(number(1))))
-        .put(varName + "__index", loopIndex);
+        .put(refPrefix, id(dataName))
+        .put(refPrefix + "__isFirst", loopIndex.doubleEquals(number(0)))
+        .put(refPrefix + "__isLast", loopIndex.doubleEquals(limit.minus(number(1))))
+        .put(refPrefix + "__index", loopIndex);
 
     if (node.getIndexVar() != null) {
       templateTranslationContext
           .soyToJsVariableMappings()
-          .put(node.getIndexVarName(), id(loopIndexName));
+          .put(node.getIndexVar(), id(loopIndexName));
     }
 
     // Generate the loop body.
@@ -1617,7 +1615,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
           .soyToJsVariableMappings()
           // TODO(lukes): this should really be declartion.ref() but we cannot do that until
           // everything is on the code chunk api.
-          .put(paramName, id(paramAlias));
+          .put(param, id(paramAlias));
     }
     return Statement.of(declarations.build());
   }

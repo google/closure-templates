@@ -533,7 +533,7 @@ public final class SimplifyVisitor {
             new LetValueNode(
                 node.getId(),
                 node.getSourceLocation(),
-                '$' + node.getVarName(),
+                node.getVarRefName(),
                 node.getVar().nameLocation(),
                 asExpression);
         valueNode.getVar().setType(node.getVar().type());

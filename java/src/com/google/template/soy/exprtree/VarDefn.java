@@ -60,6 +60,11 @@ public interface VarDefn {
    */
   String name();
 
+  /** The name by which this variable should be referenced in expressions. */
+  default String refName() {
+    return name();
+  }
+
   /** The source location of the variable name. */
   @Nullable
   SourceLocation nameLocation();

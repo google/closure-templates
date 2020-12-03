@@ -60,6 +60,11 @@ public final class TemplateStateVar extends AbstractVarDefn implements TemplateH
   }
 
   @Override
+  public String refName() {
+    return "$" + name();
+  }
+
+  @Override
   public SourceLocation getSourceLocation() {
     return sourceLocation;
   }

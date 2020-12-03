@@ -236,6 +236,10 @@ public interface SoyNode extends Node {
       return getVar().name();
     }
 
+    default String getVarRefName() {
+      return getVar().refName();
+    }
+
     /** Returns the variable definition. */
     AbstractLocalVarDefn<?> getVar();
   }

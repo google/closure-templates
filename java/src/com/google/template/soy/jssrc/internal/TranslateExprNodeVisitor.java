@@ -300,13 +300,13 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     Expression base = visit(node.getListExpr());
     String listIterVarTranslation =
         "list_comp_" + node.getNodeId() + "_" + node.getListIterVar().name();
-    variableMappings.put(node.getListIterVar().name(), id(listIterVarTranslation));
+    variableMappings.put(node.getListIterVar(), id(listIterVarTranslation));
     String indexVarTranslation =
         node.getIndexVar() == null
             ? null
             : "list_comp_" + node.getNodeId() + "_" + node.getIndexVar().name();
     if (node.getIndexVar() != null) {
-      variableMappings.put(node.getIndexVar().name(), id(indexVarTranslation));
+      variableMappings.put(node.getIndexVar(), id(indexVarTranslation));
     }
     SoyType listType = SoyTypes.tryRemoveNull(node.getListExpr().getType());
     SoyType elementType =
@@ -350,7 +350,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     // handle a special case for trivial transformations
     if (node.getListItemTransformExpr().getKind() == ExprNode.Kind.VAR_REF_NODE) {
       VarRefNode transformNode = (VarRefNode) node.getListItemTransformExpr();
-      if (transformNode.getName().equals(node.getListIterVar().name())) {
+      if (transformNode.getName().equals(node.getListIterVar().refName())) {
         return base;
       }
     }
@@ -403,7 +403,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
       return translation;
     } else {
       // Case 2: Data reference.
-      return genCodeForParamAccess(node.getName(), node.getDefnDecl());
+      return genCodeForParamAccess(node.getNameWithoutLeadingDollar(), node.getDefnDecl());
     }
   }
 

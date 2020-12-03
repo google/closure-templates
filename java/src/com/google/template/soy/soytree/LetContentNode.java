@@ -150,8 +150,8 @@ public final class LetContentNode extends LetNode
   @Override
   public String getCommandText() {
     return (contentKind == null)
-        ? "$" + getVarName()
-        : "$" + getVarName() + " kind=\"" + contentKind.asAttributeValue() + "\"";
+        ? getVarRefName()
+        : getVarRefName() + " kind=\"" + contentKind.asAttributeValue() + "\"";
   }
 
   @Override

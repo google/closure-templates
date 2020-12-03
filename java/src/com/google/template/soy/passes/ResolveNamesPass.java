@@ -66,7 +66,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
           "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?");
 
   private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
-      SoyErrorKind.of("Variable ''${0}'' already defined{1}.");
+      SoyErrorKind.of("Variable ''{0}'' already defined{1}.");
   private static final SoyErrorKind UKNOWN_VARIABLE =
       SoyErrorKind.of("Unknown variable.{0}", StyleAllowance.NO_PUNCTUATION);
 
@@ -107,8 +107,9 @@ public final class ResolveNamesPass implements CompilerFilePass {
 
     /** Defines a variable. */
     boolean define(VarDefn defn, Node definingNode) {
+      String refName = defn.refName();
       // Search for the name to see if it is being redefined.
-      VarDefn preexisting = lookup(defn.name());
+      VarDefn preexisting = lookup(refName);
       if (preexisting != null) {
         Optional<SourceLocation> preexistingSourceLocation = forVarDefn(preexisting);
         SourceLocation defnSourceLocation =
@@ -117,10 +118,10 @@ public final class ResolveNamesPass implements CompilerFilePass {
             preexistingSourceLocation.isPresent()
                 ? " at line " + preexistingSourceLocation.get().getBeginLine()
                 : "";
-        errorReporter.report(defnSourceLocation, VARIABLE_ALREADY_DEFINED, defn.name(), location);
+        errorReporter.report(defnSourceLocation, VARIABLE_ALREADY_DEFINED, refName, location);
         return false;
       }
-      currentScope.peek().put(defn.name(), defn);
+      currentScope.peek().put(refName, defn);
       return true;
     }
 
@@ -309,7 +310,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
       // Note.  This also makes it impossible for a global to share the same name as a local.  This
       // should be fine since global names are typically qualified strings.
       String globalName = node.getName();
-      VarDefn varDefn = localVariables.lookup(globalName);
+      VarDefn varDefn = localVariables.lookup("$" + globalName);
       if (varDefn != null) {
         node.suppressUnknownGlobalErrors();
         // This means that this global has the same name as an in-scope local or param.  It is

@@ -123,6 +123,11 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
   }
 
   @Override
+  public String refName() {
+    return "$" + name();
+  }
+
+  @Override
   public SourceLocation getSourceLocation() {
     return sourceLocation;
   }

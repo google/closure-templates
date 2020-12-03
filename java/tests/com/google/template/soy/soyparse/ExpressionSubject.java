@@ -121,8 +121,7 @@ final class ExpressionSubject extends Subject {
 
     assertThat(errorReporter.hasErrors()).isFalse();
 
-    check("parseExpression().getName()").that(varNode.getName()).isEqualTo(name);
-    check("parseExpression().getName()").that(varNode.toSourceString()).isEqualTo("$" + name);
+    check("parseExpression().getName()").that(varNode.getName()).isEqualTo("$" + name);
   }
 
   ExpressionSubject withAlias(String alias, String namespace) {

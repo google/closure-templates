@@ -35,8 +35,6 @@ public final class VarRefNode extends AbstractExprNode {
   /** The name of the variable, without the preceding dollar sign. */
   private final String name;
 
-  private final String originalName;
-
   /** Reference to the variable declaration. */
   private VarDefn defn;
 
@@ -53,15 +51,13 @@ public final class VarRefNode extends AbstractExprNode {
    */
   public VarRefNode(String name, SourceLocation sourceLocation, @Nullable VarDefn defn) {
     super(sourceLocation);
-    this.name = name.startsWith("$") ? name.substring(1) : name;
-    this.originalName = name;
+    this.name = name;
     this.defn = defn;
   }
 
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.originalName = orig.originalName;
     this.subtituteType = orig.subtituteType;
     // Maintain the original def in case only a subtree is getting cloned, but also register a
     // listener so that if the defn is replaced we will get updated also.
@@ -83,13 +79,13 @@ public final class VarRefNode extends AbstractExprNode {
     return subtituteType != null ? subtituteType : defn.type();
   }
 
-  /** Returns the name of the variable. */
+  /** Returns the source of the variable reference, possibly with leading "$". */
   public String getName() {
     return name;
   }
 
-  public String getOriginalName() {
-    return originalName;
+  public String getNameWithoutLeadingDollar() {
+    return name.startsWith("$") ? name.substring(1) : name;
   }
 
   /** Returns Whether this is an injected parameter reference. */
@@ -137,7 +133,7 @@ public final class VarRefNode extends AbstractExprNode {
 
   @Override
   public String toSourceString() {
-    return originalName;
+    return name;
   }
 
   @Override

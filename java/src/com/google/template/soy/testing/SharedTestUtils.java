@@ -129,8 +129,8 @@ public final class SharedTestUtils {
 
       @Override
       protected void visitVarRefNode(VarRefNode node) {
-        if (node.getOriginalName().startsWith("$")) {
-          names.add(node.getName());
+        if (node.getName().startsWith("$")) {
+          names.add(node.getNameWithoutLeadingDollar());
         }
       }
 
@@ -140,7 +140,7 @@ public final class SharedTestUtils {
           case "index":
           case "isFirst":
           case "isLast":
-            loopVarNames.add(((VarRefNode) node.getChild(0)).getName());
+            loopVarNames.add(((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar());
             break;
           default: // fall out
         }

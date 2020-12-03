@@ -289,7 +289,7 @@ final class TemplateCompiler {
     Set<String> uniqueIjs = new LinkedHashSet<>();
     for (VarRefNode var : getAllNodesOfType(templateNode, VarRefNode.class)) {
       if (var.isInjected()) {
-        uniqueIjs.add(var.getName());
+        uniqueIjs.add(var.getNameWithoutLeadingDollar());
       }
     }
 

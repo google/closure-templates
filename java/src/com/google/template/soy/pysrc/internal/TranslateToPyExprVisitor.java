@@ -305,9 +305,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       throw new AssertionError(); // should have been desugared
     } else if (node.isInjected()) {
       // Case 1: Injected data reference.
-      return new PyExpr(genCodeForLiteralKeyAccess(IJ_DATA, node.getName()), Integer.MAX_VALUE);
+      return new PyExpr(
+          genCodeForLiteralKeyAccess(IJ_DATA, node.getNameWithoutLeadingDollar()),
+          Integer.MAX_VALUE);
     } else {
-      PyExpr translation = localVarExprs.getVariableExpression(node.getName());
+      PyExpr translation = localVarExprs.getVariableExpression(node.getNameWithoutLeadingDollar());
       if (translation != null) {
         // Case 2: In-scope local var.
         return new PyExpr(translation.getText(), Integer.MAX_VALUE);
@@ -324,7 +326,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
           notFoundBehavior = NotFoundBehavior.defaultValue(defaultValue);
         }
         return new PyExpr(
-            genCodeForLiteralKeyAccess(DATA, node.getName(), notFoundBehavior), Integer.MAX_VALUE);
+            genCodeForLiteralKeyAccess(DATA, node.getNameWithoutLeadingDollar(), notFoundBehavior),
+            Integer.MAX_VALUE);
       }
     }
   }
@@ -624,7 +627,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   }
 
   private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
-    String varName = ((VarRefNode) node.getChild(0)).getName();
+    String varName = ((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar();
     return localVarExprs.getVariableExpression(varName + suffix);
   }
 

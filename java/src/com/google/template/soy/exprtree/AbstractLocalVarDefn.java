@@ -68,6 +68,11 @@ public abstract class AbstractLocalVarDefn<T extends Node> extends AbstractVarDe
     this.declaringNode = declaringNode;
   }
 
+  @Override
+  public String refName() {
+    return "$" + name();
+  }
+
   /**
    * Setter for the type - this is necessary because sometimes we don't know the variable type until
    * after analysis.

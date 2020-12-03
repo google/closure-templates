@@ -37,7 +37,7 @@ public final class V1JsExprTranslatorTest {
 
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
-      ImmutableMap.of("goo", id("gooData8"));
+      ImmutableMap.of("$goo", id("gooData8"));
 
   @Test
   public void testDataRef() {

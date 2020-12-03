@@ -19,6 +19,7 @@ package com.google.template.soy.jssrc.internal;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import java.util.HashMap;
@@ -57,6 +58,10 @@ public final class SoyToJsVariableMappings {
     return new SoyToJsVariableMappings(initialMappings);
   }
 
+  public SoyToJsVariableMappings put(VarDefn var, Expression translation) {
+    return put(var.refName(), translation);
+  }
+
   /**
    * Maps the Soy variable named {@code name} to the given translation. Any previous mapping for the
    * variable is lost.
@@ -76,7 +81,7 @@ public final class SoyToJsVariableMappings {
 
   /** Returns the JavaScript translation for the Soy variable with the given name, */
   public Expression get(String name) {
-    return Preconditions.checkNotNull(mappings.get(name));
+    return Preconditions.checkNotNull(mappings.get(name), "No value for key %s", name);
   }
 
   public Expression isPrimaryMsgInUse(MsgFallbackGroupNode msg) {

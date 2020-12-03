@@ -47,9 +47,9 @@ final class V1JsExprTranslator {
               + "to access this functionality.");
 
   /** Regex for a template variable or data reference. */
-  // 1 capturing group: first part (excluding '$')
-  // Example:  $boo.foo.goo  ==>  group(1) == "boo"
-  private static final String VAR_RE = "\\$([a-zA-Z_][a-zA-Z0-9_]*)";
+  // 1 capturing group: first part (including '$')
+  // Example:  $boo.foo.goo  ==>  group(1) == "$boo"
+  private static final String VAR_RE = "(\\$[a-zA-Z_][a-zA-Z0-9_]*)";
 
   /** Regex pattern for a template variable or data reference. */
   private static final Pattern VAR = Pattern.compile(VAR_RE);
@@ -153,7 +153,7 @@ final class V1JsExprTranslator {
       exprTextSb.append(translation);
     } else {
       // Case 2: Data reference.
-      exprTextSb.append("opt_data.").append(firstPart);
+      exprTextSb.append("opt_data.").append(firstPart.substring(1));
     }
 
     return exprTextSb.toString();

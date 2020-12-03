@@ -66,7 +66,7 @@ public final class LetValueNode extends LetNode implements ExprHolderNode {
 
   @Override
   public String getCommandText() {
-    return "$" + getVarName() + " : " + getExpr().toSourceString();
+    return getVarRefName() + " : " + getExpr().toSourceString();
   }
 
   @Override

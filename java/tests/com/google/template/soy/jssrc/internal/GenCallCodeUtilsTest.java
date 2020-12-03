@@ -226,8 +226,8 @@ public final class GenCallCodeUtilsTest {
     TranslationContext translationContext =
         TranslationContext.of(
             SoyToJsVariableMappings.forNewTemplate()
-                .put("boo", Expression.id("boo"))
-                .put("goo", Expression.id("goo")),
+                .put("$boo", Expression.id("boo"))
+                .put("$goo", Expression.id("goo")),
             CodeChunk.Generator.create(nameGenerator),
             nameGenerator);
     ErrorReporter errorReporter = ErrorReporter.exploding();

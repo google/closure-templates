@@ -86,7 +86,8 @@ public final class MsgSubstUnitPlaceholderNameUtils {
               + " before the NullSafeAccessPass");
     }
     if (exprNode instanceof VarRefNode) {
-      return BaseUtils.convertToUpperUnderscore(((VarRefNode) exprNode).getName());
+      return BaseUtils.convertToUpperUnderscore(
+          ((VarRefNode) exprNode).getNameWithoutLeadingDollar());
     } else if (exprNode instanceof FieldAccessNode) {
       return BaseUtils.convertToUpperUnderscore(((FieldAccessNode) exprNode).getFieldName());
     } else if (exprNode instanceof GlobalNode) {
@@ -255,7 +256,7 @@ public final class MsgSubstUnitPlaceholderNameUtils {
       while (exprNode != null) {
         String nameSegment = null;
         if (exprNode instanceof VarRefNode) {
-          nameSegment = ((VarRefNode) exprNode).getName();
+          nameSegment = ((VarRefNode) exprNode).getNameWithoutLeadingDollar();
           exprNode = null;
         } else if (exprNode instanceof FieldAccessNode) {
           FieldAccessNode fieldAccess = (FieldAccessNode) exprNode;

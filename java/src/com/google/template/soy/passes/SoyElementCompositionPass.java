@@ -234,8 +234,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 call.getParent().addChild(call.getParent().getChildIndex(call), letValueNode);
                 for (StandaloneNode child : ifCond.getChildren()) {
                   VarRefNode ref =
-                      new VarRefNode(
-                          "$" + letValueNode.getVarName(), unknown, letValueNode.getVar());
+                      new VarRefNode(letValueNode.getVarRefName(), unknown, letValueNode.getVar());
                   ref.setSubstituteType(letValueNode.getVar().type());
                   maybeConsumeAttribute(
                       child,

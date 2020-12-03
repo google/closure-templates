@@ -218,7 +218,7 @@ public final class ExprEquivalence {
       // happen in some passes before we assign the VarDefns.
       // Note that this might return true for VarRefNodes from different templates. Be careful when
       // you use this to compare ExprNodes among templates.
-      return typedOther.getOriginalName().equals(node.getOriginalName());
+      return typedOther.getName().equals(node.getName());
     }
 
     @Override

@@ -88,11 +88,11 @@ public final class ForNode extends AbstractParentCommandNode<BlockNode>
   public String getCommandText() {
     return ((ForNonemptyNode) getChild(0)).getIndexVar() == null
         ? String.format(
-            "$%s in %s", ((ForNonemptyNode) getChild(0)).getVarName(), expr.toSourceString())
+            "%s in %s", ((ForNonemptyNode) getChild(0)).getVarRefName(), expr.toSourceString())
         : String.format(
-            "$%s, $%s in %s",
-            ((ForNonemptyNode) getChild(0)).getVarName(),
-            ((ForNonemptyNode) getChild(0)).getIndexVarName(),
+            "%s, %s in %s",
+            ((ForNonemptyNode) getChild(0)).getVarRefName(),
+            ((ForNonemptyNode) getChild(0)).getIndexVar().refName(),
             expr.toSourceString());
   }
 

@@ -312,7 +312,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   copyChildren(attrNode, letContentNode);
                   VarRefNode letRef =
                       new VarRefNode(
-                          "$" + letContentNode.getVarName(),
+                          letContentNode.getVarRefName(),
                           SourceLocation.UNKNOWN,
                           letContentNode.getVar());
                   FunctionNode fn =
@@ -342,7 +342,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
                           letValueNode);
                   VarRefNode valueRef =
                       new VarRefNode(
-                          "$" + letValueNode.getVarName(),
+                          letValueNode.getVarRefName(),
                           SourceLocation.UNKNOWN,
                           letValueNode.getVar());
                   IfNode wrappingIf = new IfNode(id.get(), unknown);

@@ -775,9 +775,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   protected void visitLetContentNode(LetContentNode node) {
     String generatedVarName = node.getUniqueVarName();
     visitLetParamContentNode(node, generatedVarName);
-    templateTranslationContext
-        .soyToJsVariableMappings()
-        .put(node.getVarName(), id(generatedVarName));
+    templateTranslationContext.soyToJsVariableMappings().put(node.getVar(), id(generatedVarName));
   }
 
   @Override

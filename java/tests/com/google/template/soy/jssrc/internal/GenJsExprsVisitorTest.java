@@ -50,10 +50,10 @@ public final class GenJsExprsVisitorTest {
   // Let 'goo' simulate a local variable from a 'foreach' loop.
   private static final ImmutableMap<String, Expression> LOCAL_VAR_TRANSLATIONS =
       ImmutableMap.<String, Expression>builder()
-          .put("goo", id("gooData8"))
-          .put("goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
-          .put("goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
-          .put("goo__index", id("gooIndex8"))
+          .put("$goo", id("gooData8"))
+          .put("$goo__isFirst", id("gooIndex8").doubleEquals(number(0)))
+          .put("$goo__isLast", id("gooIndex8").doubleEquals(id("gooListLen8").minus(number(1))))
+          .put("$goo__index", id("gooIndex8"))
           .build();
 
   @Test
