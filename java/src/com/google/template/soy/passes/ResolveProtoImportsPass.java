@@ -121,24 +121,24 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
           fd.getExtensions().stream().collect(toImmutableMap(Field::computeSoyName, f -> f));
 
       for (ImportedVar symbol : node.getIdentifiers()) {
-        String name = symbol.name();
+        String name = symbol.getSymbol();
         String fullName = fd.getPackage().isEmpty() ? name : fd.getPackage() + "." + name;
 
         Descriptor messageDesc = messages.get(name);
         if (messageDesc != null) {
-          putDistinct(msgAndEnumLocalToFqn, symbol.aliasOrName(), fullName);
+          putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
           continue;
         }
 
         EnumDescriptor enumDesc = enums.get(name);
         if (enumDesc != null) {
-          putDistinct(msgAndEnumLocalToFqn, symbol.aliasOrName(), fullName);
+          putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
           continue;
         }
 
         FieldDescriptor extDesc = extensions.get(name);
         if (extDesc != null) {
-          putDistinct(this.extLocalToFqn, symbol.aliasOrName(), fullName);
+          putDistinct(this.extLocalToFqn, symbol.name(), fullName);
           continue;
         }
 

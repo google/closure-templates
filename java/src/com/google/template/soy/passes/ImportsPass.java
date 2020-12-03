@@ -161,11 +161,11 @@ abstract class ImportsPass {
 
         boolean foundSymbolErrors = false;
         for (ImportedVar symbol : node.getIdentifiers()) {
-          String name = symbol.aliasOrName();
+          String name = symbol.name();
 
           // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
           // to not have a compilation error on duplicates.
-          String path = node.getPath() + "//" + symbol.name();
+          String path = node.getPath() + "//" + symbol.getSymbol();
           String duplicatePath = uniqueImports.put(name, path);
           if (path.equals(duplicatePath)) {
             continue;

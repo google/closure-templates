@@ -126,7 +126,7 @@ public final class ImportNode extends AbstractSoyNode {
    * import node (e.g. "import {foo,bar,baz} from ...").
    */
   public boolean isModuleImport() {
-    return identifiers.size() == 1 && identifiers.get(0).name().equals("*");
+    return identifiers.size() == 1 && identifiers.get(0).isModuleImport();
   }
 
   /**
@@ -139,7 +139,7 @@ public final class ImportNode extends AbstractSoyNode {
         isModuleImport(),
         "Module alias can only be retrieved for module imports (e.g. \"import * as fooTemplates"
             + " from 'my_foo.soy';\")");
-    return identifiers.get(0).getAlias();
+    return identifiers.get(0).name();
   }
 
   public SourceLocation getPathSourceLocation() {
@@ -158,7 +158,7 @@ public final class ImportNode extends AbstractSoyNode {
           String.format(
               "{%s} from ",
               identifiers.stream()
-                  .map(i -> i.isAliased() ? i.name() + " as " + i.getAlias() : i.name())
+                  .map(i -> i.isAliased() ? i.getSymbol() + " as " + i.name() : i.name())
                   .collect(joining(",")));
     }
     return String.format("import %s'%s'", exprs, path.getValue());

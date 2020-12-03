@@ -276,7 +276,7 @@ public final class JavaGenerationUtils {
         node.getImports().stream()
             .filter(i -> i.getImportType() == ImportType.PROTO)
             .flatMap(i -> i.getIdentifiers().stream())
-            .map(varName -> typeRegistry.getType(varName.aliasOrName()))
+            .map(varName -> typeRegistry.getType(varName.name()))
             .filter(Objects::nonNull)
             .map(
                 type -> {

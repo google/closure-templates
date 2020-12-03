@@ -28,36 +28,33 @@ import javax.annotation.Nullable;
  */
 public final class ImportedVar extends AbstractVarDefn {
 
-  private final String alias;
+  public static final String MODULE_IMPORT = "*";
+
+  private final String symbol;
 
   /** @param name The variable name. */
   public ImportedVar(String name, @Nullable String alias, SourceLocation nameLocation) {
-    super(name, nameLocation, UnknownType.getInstance());
+    super(alias != null ? alias : name, nameLocation, UnknownType.getInstance());
     Preconditions.checkArgument(alias == null || (!alias.isEmpty() && !alias.equals(name)));
-    this.alias = alias;
+    this.symbol = name;
   }
 
   private ImportedVar(ImportedVar var) {
     super(var);
-    this.alias = var.alias;
+    this.symbol = var.symbol;
+  }
+
+  public String getSymbol() {
+    return symbol;
   }
 
   @Override
   public Kind kind() {
-    return Kind.UNDECLARED;
-  }
-
-  public String getAlias() {
-    return alias;
+    return Kind.IMPORT_VAR;
   }
 
   public boolean isAliased() {
-    return alias != null;
-  }
-
-  /** Returns the symbol by which this var can be referenced in the file. */
-  public String aliasOrName() {
-    return alias != null ? alias : name();
+    return !name().equals(symbol);
   }
 
   @Override
@@ -68,5 +65,9 @@ public final class ImportedVar extends AbstractVarDefn {
   @Override
   public boolean isInjected() {
     return false;
+  }
+
+  public boolean isModuleImport() {
+    return MODULE_IMPORT.equals(symbol);
   }
 }

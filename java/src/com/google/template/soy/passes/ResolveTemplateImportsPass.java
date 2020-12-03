@@ -122,7 +122,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
       TemplatesPerFile templatesPerFile =
           templateNameRegistry.getTemplatesForFile(SourceFilePath.create(node.getPath()));
       for (ImportedVar symbol : node.getIdentifiers()) {
-        String name = symbol.name();
+        String name = symbol.getSymbol();
         // Report an error if the template name is invalid.
         if (!templatesPerFile.hasTemplateWithUnqualifiedName(name)) {
           reportUnknownSymbolError(
@@ -134,7 +134,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
         }
 
         // Consider moving this to ImportsPass.
-        String partialTemplateName = symbolToTemplateName.get(symbol.aliasOrName());
+        String partialTemplateName = symbolToTemplateName.get(symbol.name());
         if (partialTemplateName != null) {
           errorReporter.report(
               symbol.nameLocation(), IMPORT_CONFLICTS_WITH_TEMPLATE, partialTemplateName);
@@ -143,7 +143,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
 
         // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
         // compiler error (if they have the same path).
-        symbolsToTemplatesMap.put(symbol.aliasOrName(), templatesPerFile.getFullTemplateName(name));
+        symbolsToTemplatesMap.put(symbol.name(), templatesPerFile.getFullTemplateName(name));
       }
     }
 
