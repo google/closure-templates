@@ -35,7 +35,7 @@ public class MethodCallNodeTest {
   public void testGetMethodName() {
     VarRefNode baseExpr = new VarRefNode("$myVar", LOCATION, null);
     MethodCallNode method =
-        new MethodCallNode(
+        MethodCallNode.newWithPositionalArgs(
             baseExpr,
             ImmutableList.of(),
             Identifier.create("myMethod", LOCATION),
@@ -49,7 +49,7 @@ public class MethodCallNodeTest {
   public void testToSourceString() {
     VarRefNode baseExpr = new VarRefNode("$myVar", LOCATION, null);
     MethodCallNode method =
-        new MethodCallNode(
+        MethodCallNode.newWithPositionalArgs(
             baseExpr,
             ImmutableList.of(
                 new IntegerNode(2, LOCATION), new StringNode("str", QuoteStyle.SINGLE, LOCATION)),

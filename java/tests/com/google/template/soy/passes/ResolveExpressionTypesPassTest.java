@@ -526,7 +526,7 @@ public final class ResolveExpressionTypesPassTest {
         .parse()
         .fileSet();
     assertThat(Iterables.getOnlyElement(reporter.getErrors()).message())
-        .isEqualTo("Duplicate record key 'a'.");
+        .isEqualTo("Duplicate argument 'a'.");
   }
 
   @Test

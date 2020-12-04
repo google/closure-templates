@@ -42,14 +42,7 @@ import javax.annotation.Nullable;
  * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
-public final class FunctionNode extends AbstractParentExprNode {
-
-  /** How parameters are passed to the function. */
-  public enum ParamsStyle {
-    NONE,
-    POSITIONAL,
-    NAMED
-  }
+public final class FunctionNode extends AbstractParentExprNode implements ExprNode.CallableExpr {
 
   /**
    * Either a {@link SoyFunction} or a {@link SoySourceFunction}. TODO(b/19252021): use
@@ -96,11 +89,6 @@ public final class FunctionNode extends AbstractParentExprNode {
     @Nullable private ImmutableList<SoyType> allowedParamTypes;
   }
 
-  public static FunctionNode newNone(Identifier name, SourceLocation sourceLocation) {
-    return new FunctionNode(
-        sourceLocation, name, ParamsStyle.NONE, ImmutableList.of(), ImmutableList.of());
-  }
-
   public static FunctionNode newPositional(
       Identifier name, BuiltinFunction soyFunction, SourceLocation sourceLocation) {
     FunctionNode fn =
@@ -143,7 +131,7 @@ public final class FunctionNode extends AbstractParentExprNode {
   // Mutable state stored in this AST node from various passes.
   private final FunctionState state = new FunctionState();
 
-  private FunctionNode(
+  FunctionNode(
       SourceLocation sourceLocation,
       Identifier name,
       ParamsStyle paramsStyle,
@@ -172,6 +160,7 @@ public final class FunctionNode extends AbstractParentExprNode {
     this.commaLocations = orig.commaLocations;
   }
 
+  @Override
   public Optional<ImmutableList<SourceLocation.Point>> getCommaLocations() {
     return Optional.ofNullable(commaLocations);
   }
@@ -186,10 +175,12 @@ public final class FunctionNode extends AbstractParentExprNode {
     return name.identifier();
   }
 
+  @Override
   public ParamsStyle getParamsStyle() {
     return paramsStyle;
   }
 
+  @Override
   public Identifier getIdentifier() {
     return name;
   }
@@ -219,7 +210,7 @@ public final class FunctionNode extends AbstractParentExprNode {
   }
 
   public void setAllowedParamTypes(List<SoyType> allowedParamTypes) {
-    checkState(paramsStyle == ParamsStyle.POSITIONAL || paramsStyle == ParamsStyle.NONE);
+    checkState(paramsStyle == ParamsStyle.POSITIONAL || numChildren() == 0);
     checkState(
         allowedParamTypes.size() == numChildren(),
         "allowedParamTypes.size (%s) != numChildren (%s)",
@@ -231,7 +222,7 @@ public final class FunctionNode extends AbstractParentExprNode {
   /** Returns null if ResolveExpressionTypesPass has not run yet. */
   @Nullable
   public ImmutableList<SoyType> getAllowedParamTypes() {
-    checkState(paramsStyle == ParamsStyle.POSITIONAL || paramsStyle == ParamsStyle.NONE);
+    checkState(paramsStyle == ParamsStyle.POSITIONAL || numChildren() == 0);
     return state.allowedParamTypes;
   }
 
@@ -240,14 +231,10 @@ public final class FunctionNode extends AbstractParentExprNode {
    *
    * <p>Each param name corresponds to each of this node's children, which are the param values.
    */
+  @Override
   public ImmutableList<Identifier> getParamNames() {
-    Preconditions.checkState(paramsStyle == ParamsStyle.NAMED || paramsStyle == ParamsStyle.NONE);
+    Preconditions.checkState(paramsStyle == ParamsStyle.NAMED || numChildren() == 0);
     return paramNames;
-  }
-
-  public Identifier getParamName(int i) {
-    Preconditions.checkState(paramsStyle == ParamsStyle.NAMED || paramsStyle == ParamsStyle.NONE);
-    return paramNames.get(i);
   }
 
   @Override
@@ -291,5 +278,15 @@ public final class FunctionNode extends AbstractParentExprNode {
    */
   public boolean isPure() {
     return SoyFunctions.isPure(state.function.either());
+  }
+
+  @Override
+  public List<ExprNode> getParams() {
+    return getChildren();
+  }
+
+  @Override
+  public int numParams() {
+    return numChildren();
   }
 }

@@ -22,8 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.FunctionNode.ParamsStyle;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -94,7 +94,7 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
 
     // Bind and replace.
     MethodCallNode bind =
-        new MethodCallNode(
+        MethodCallNode.newWithPositionalArgs(
             templateLiteral,
             ImmutableList.of(record),
             Identifier.create("bind", UNKNOWN),

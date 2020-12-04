@@ -19,18 +19,37 @@ package com.google.template.soy.exprtree;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import java.util.List;
+import java.util.Optional;
 
 /** A node representing a method call. (e.g. {@code $myString.length()}) */
-public final class MethodCallNode extends DataAccessNode {
+public final class MethodCallNode extends DataAccessNode implements ExprNode.CallableExpr {
+
+  public static MethodCallNode newWithPositionalArgs(
+      ExprNode base,
+      List<ExprNode> params,
+      Identifier methodName,
+      SourceLocation location,
+      boolean isNullSafe) {
+    MethodCallNode call =
+        new MethodCallNode(
+            base, isNullSafe, location, methodName, ParamsStyle.POSITIONAL, ImmutableList.of());
+    call.addChildren(params);
+    return call;
+  }
 
   private final Identifier methodName;
+  private final ParamsStyle paramsStyle;
+  /** When paramsStyle is NAMED this contains the list of named parameters. Otherwise empty. */
+  private final ImmutableList<Identifier> paramNames;
 
   /**
    * The resolved SoyMethod that corresponds to this node. Resolution occurs in
@@ -43,27 +62,30 @@ public final class MethodCallNode extends DataAccessNode {
   /**
    * @param base The base expression that the method is called on.
    * @param methodName The name of the method.
-   * @param location The location of the method call expression, i.e. the dot, method name and
+   * @param sourceLocation The location of the method call expression, i.e. the dot, method name and
    *     parameters.
    * @param isNullSafe If true, checks during evaluation whether the base expression is null and
    *     returns null instead of causing an invalid dereference.
    */
-  public MethodCallNode(
+  MethodCallNode(
       ExprNode base,
-      List<ExprNode> params,
+      boolean isNullSafe,
+      SourceLocation sourceLocation,
       Identifier methodName,
-      SourceLocation location,
-      boolean isNullSafe) {
-    super(base, location, isNullSafe);
-    Preconditions.checkArgument(methodName != null);
-    this.methodName = methodName;
-    addChildren(params);
+      ParamsStyle paramsStyle,
+      ImmutableList<Identifier> paramNames) {
+    super(base, sourceLocation, isNullSafe);
+    this.methodName = Preconditions.checkNotNull(methodName);
+    this.paramNames = paramNames;
+    this.paramsStyle = paramsStyle;
   }
 
   /** @param orig The node to copy */
   private MethodCallNode(MethodCallNode orig, CopyState copyState) {
     super(orig, copyState);
     this.methodName = orig.methodName;
+    this.paramsStyle = orig.paramsStyle;
+    this.paramNames = orig.paramNames;
     this.method = orig.method;
   }
 
@@ -94,10 +116,12 @@ public final class MethodCallNode extends DataAccessNode {
   }
 
   /** Returns the method's parameters. */
+  @Override
   public List<ExprNode> getParams() {
     return getChildren().subList(1, numChildren()); // First child is the method's base expr.
   }
 
+  @Override
   public int numParams() {
     return numChildren() - 1;
   }
@@ -134,5 +158,26 @@ public final class MethodCallNode extends DataAccessNode {
   @Override
   public ExprNode copy(CopyState copyState) {
     return new MethodCallNode(this, copyState);
+  }
+
+  @Override
+  public ParamsStyle getParamsStyle() {
+    return paramsStyle;
+  }
+
+  @Override
+  public ImmutableList<Identifier> getParamNames() {
+    Preconditions.checkState(paramsStyle != ParamsStyle.POSITIONAL);
+    return paramNames;
+  }
+
+  @Override
+  public Optional<ImmutableList<Point>> getCommaLocations() {
+    return Optional.empty();
+  }
+
+  @Override
+  public Identifier getIdentifier() {
+    return methodName;
   }
 }

@@ -16,10 +16,15 @@
 
 package com.google.template.soy.exprtree;
 
+import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.SourceLocation.Point;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.basetree.ParentNode;
 import com.google.template.soy.types.SoyType;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * This class defines the base interface for a node in the Soy expression parse tree, as well as a
@@ -38,7 +43,7 @@ public interface ExprNode extends Node {
    *
    * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
    */
-  public static enum Kind {
+  enum Kind {
     EXPR_ROOT_NODE,
 
     NULL_NODE,
@@ -108,12 +113,12 @@ public interface ExprNode extends Node {
   // -----------------------------------------------------------------------------------------------
 
   /** A node in an expression parse tree that may be a parent. */
-  public static interface ParentExprNode extends ExprNode, ParentNode<ExprNode> {}
+  interface ParentExprNode extends ExprNode, ParentNode<ExprNode> {}
 
   // -----------------------------------------------------------------------------------------------
 
   /** A node representing an operator (with operands as children). */
-  public static interface OperatorNode extends ParentExprNode {
+  interface OperatorNode extends ParentExprNode {
 
     public Operator getOperator();
 
@@ -124,11 +129,44 @@ public interface ExprNode extends Node {
   // -----------------------------------------------------------------------------------------------
 
   /** A node representing a primitive literal. */
-  public static interface PrimitiveNode extends ExprNode {
+  interface PrimitiveNode extends ExprNode {
     @Override
     PrimitiveNode copy(CopyState copyState);
   }
 
   /** A marker interface for nodes that can be part of access chains, like {@code $r.a[b]!}. */
-  public static interface AccessChainComponentNode extends ParentExprNode {}
+  interface AccessChainComponentNode extends ParentExprNode {}
+
+  /** Common interface for nodes that represent a function or method call. */
+  interface CallableExpr extends ExprNode {
+
+    /** The source positions of commas. Sometimes available to aid the formatter. */
+    Optional<ImmutableList<Point>> getCommaLocations();
+
+    /** The ordered list of parameter values. */
+    List<ExprNode> getParams();
+
+    /** The number of parameter values. */
+    int numParams();
+
+    /** The call style used. */
+    ParamsStyle getParamsStyle();
+
+    /** The name of the function/method called. */
+    Identifier getIdentifier();
+
+    /** The ordered list of parameter names, if call style is NAMED. */
+    ImmutableList<Identifier> getParamNames();
+
+    default Identifier getParamName(int i) {
+      return getParamNames().get(i);
+    }
+
+    /** How parameters are passed to the call. */
+    enum ParamsStyle {
+      NONE,
+      POSITIONAL,
+      NAMED
+    }
+  }
 }

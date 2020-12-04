@@ -20,9 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.exprtree.ExprNode.AccessChainComponentNode;
-import com.google.template.soy.exprtree.ExprNode.Kind;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
 
 /**
@@ -147,7 +144,7 @@ public final class NullSafeAccessNode extends AbstractParentExprNode {
         break;
       case METHOD_CALL_NODE:
         MethodCallNode childMethodCall =
-            new MethodCallNode(
+            MethodCallNode.newWithPositionalArgs(
                 basePlaceholder,
                 node.getChildren().subList(1, node.numChildren()),
                 ((MethodCallNode) node).getMethodName(),
