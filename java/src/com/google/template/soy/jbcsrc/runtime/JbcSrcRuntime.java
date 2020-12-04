@@ -328,7 +328,7 @@ public final class JbcSrcRuntime {
     final ULocale locale;
     private int partIndex;
     private SoyValueProvider pendingRender;
-    final Map<String, Object> placeholders;
+    final Map<String, SoyValueProvider> placeholders;
 
     // Some placeholders have ordering constraints.  This is necessary for the velog to function
     // correctly in the face of translators reordering things.
@@ -360,11 +360,9 @@ public final class JbcSrcRuntime {
      * Sets a placeholder value.
      *
      * @param placeholderName The placeholder name
-     * @param placeholderValue The placeholder value. For a normal placeholder this will be a
-     *     SoyValueProvider but for plurals this will be an IntegerData and for selects this will be
-     *     a string.
+     * @param placeholderValue The placeholder value.
      */
-    public void setPlaceholder(String placeholderName, Object placeholderValue) {
+    public MsgRenderer setPlaceholder(String placeholderName, SoyValueProvider placeholderValue) {
       Object prev = placeholders.put(placeholderName, placeholderValue);
       if (prev != null) {
         throw new IllegalArgumentException(
@@ -375,6 +373,7 @@ public final class JbcSrcRuntime {
                 + " for key "
                 + placeholderName);
       }
+      return this;
     }
 
     public static String escapeHtml(String s) {
@@ -389,12 +388,11 @@ public final class JbcSrcRuntime {
      *
      * @param placeholderName The placeholder name
      * @param placeholderValue The placeholder value. For a normal placeholder this will be a
-     *     SoyValueProvider but for plurals this will be an IntegerData and for selects this will be
-     *     a string.
+     *     SoyValueProvider
      * @param endPlaceholder The name of another placeholder that _must_ come _after_ this one.
      */
-    public void setPlaceholderAndOrdering(
-        String placeholderName, Object placeholderValue, String endPlaceholder) {
+    public MsgRenderer setPlaceholderAndOrdering(
+        String placeholderName, SoyValueProvider placeholderValue, String endPlaceholder) {
       if (endPlaceholderToStartPlaceholder == null) {
         startPlaceholders = new HashSet<>();
         endPlaceholderToStartPlaceholder = HashMultimap.create();
@@ -432,6 +430,7 @@ public final class JbcSrcRuntime {
       setPlaceholder(placeholderName, placeholderValue);
       endPlaceholderToStartPlaceholder.put(endPlaceholder, placeholderName);
       startPlaceholders.add(placeholderName);
+      return this;
     }
 
     /**
@@ -486,7 +485,7 @@ public final class JbcSrcRuntime {
               }
             }
           }
-          SoyValueProvider placeholderValue = (SoyValueProvider) placeholders.get(placeholderName);
+          SoyValueProvider placeholderValue = placeholders.get(placeholderName);
           if (placeholderValue == null) {
             throw new IllegalStateException(
                 "No value provided for placeholder: '"
@@ -495,6 +494,8 @@ public final class JbcSrcRuntime {
                     + placeholders.keySet());
           }
           try {
+            // TODO(lukes): we could set the isLast flag by scanning forward in msgParts for more
+            // occurrences of this placeholder
             RenderResult result = placeholderValue.renderAndResolve(out, /* isLast= */ false);
             if (!result.isDone()) {
               // store partIndex as i + 1 so that after the placeholder is done we proceed to the
@@ -554,25 +555,40 @@ public final class JbcSrcRuntime {
         // loop 3 times.  We do know statically what the first iteration will be, but it is not
         // possible to know anything beyond that.
         ImmutableList<SoyMsgPart> parts = this.msgParts;
+        RenderResult caseSelectionResult = RenderResult.done();
         while (!parts.isEmpty()) {
           SoyMsgPart first = parts.get(0);
           if (first instanceof SoyMsgSelectPart) {
             SoyMsgSelectPart selectPart = (SoyMsgSelectPart) first;
-            String selectCase = getSelectCase(selectPart.getSelectVarName());
-            parts = selectPart.lookupCase(selectCase);
+            SoyValueProvider selectPlaceholder = placeholders.get(selectPart.getSelectVarName());
+            caseSelectionResult = selectPlaceholder.status();
+            if (caseSelectionResult.isDone()) {
+              // Handle null results by coercing to 'null' for compatibility with javascript
+              parts = selectPart.lookupCase(coerceToString(selectPlaceholder.resolve()));
+            } else {
+              break;
+            }
           } else if (first instanceof SoyMsgPluralPart) {
             SoyMsgPluralPart pluralPart = (SoyMsgPluralPart) first;
-            double pluralValue = getPlural(pluralPart.getPluralVarName());
-            parts = pluralPart.lookupCase(pluralValue, locale);
-            // precalculate and store the remainder.
-            remainder = pluralValue - pluralPart.getOffset();
+            SoyValueProvider pluralPlaceholder = placeholders.get(pluralPart.getPluralVarName());
+            caseSelectionResult = pluralPlaceholder.status();
+            if (caseSelectionResult.isDone()) {
+              double pluralValue = pluralPlaceholder.resolve().numberValue();
+              parts = pluralPart.lookupCase(pluralValue, locale);
+              // precalculate and store the remainder.
+              remainder = pluralValue - pluralPart.getOffset();
+            } else {
+              break;
+            }
           } else {
             break;
           }
         }
-        // now that the final case has been selected, stash those parts in our parent so it can run
-        // a simple non-recursive loop.
+        // Store any progress we have made in calculating sub-parts.
         this.msgParts = parts;
+        if (!caseSelectionResult.isDone()) {
+          return caseSelectionResult;
+        }
         resolvedCases = true;
       }
       // render the cases.
@@ -582,32 +598,6 @@ public final class JbcSrcRuntime {
     @Override
     double getPluralRemainder() {
       return remainder;
-    }
-
-    /** Returns the select case variable value. */
-    private String getSelectCase(String selectVarName) {
-      String selectCase = (String) placeholders.get(selectVarName);
-      if (selectCase == null) {
-        throw new IllegalArgumentException(
-            "No value provided for select: '"
-                + selectVarName
-                + "', expected one of "
-                + placeholders.keySet());
-      }
-      return selectCase;
-    }
-
-    /** Returns the plural case variable value. */
-    private double getPlural(String pluralVarName) {
-      NumberData pluralValue = (NumberData) placeholders.get(pluralVarName);
-      if (pluralValue == null) {
-        throw new IllegalArgumentException(
-            "No value provided for plural: '"
-                + pluralVarName
-                + "', expected one of "
-                + placeholders.keySet());
-      }
-      return pluralValue.numberValue();
     }
   }
 
