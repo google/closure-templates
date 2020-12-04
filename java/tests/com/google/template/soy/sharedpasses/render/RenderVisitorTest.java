@@ -666,22 +666,6 @@ public class RenderVisitorTest {
         "Notify <span class=\"sharebox-id-email-number\">10</span> people via email &rsaquo;");
   }
 
-  @Test
-  public void testRenderSelectWithRuntimeErrors() throws Exception {
-    String templateBody =
-        "{@param gender: ?}\n"
-            + "{@param person: ?}\n"
-            + "  {msg desc=\"Simple select message\"}\n"
-            + "    {select $gender}\n"
-            + "      {case 'female'}{$person} shared her photos.\n"
-            + "      {default}{$person} shared his photos.\n"
-            + "    {/select}\n"
-            + "  {/msg}\n";
-
-    SoyDict data = SoyValueConverterUtility.newDict("person", "The president", "gender", 100);
-    assertRenderExceptionWithData(
-        templateBody, data, "Select expression \"$gender\" doesn't evaluate to string.");
-  }
 
   @Test
   public void testRenderPluralWithRuntimeErrors() throws Exception {

@@ -191,7 +191,7 @@ final class RenderVisitorAssistantForMsgs extends AbstractSoyNodeVisitor<Void> {
     ExprRootNode selectExpr = node.getExpr();
     String selectValue;
     try {
-      selectValue = master.evalForUseByAssistants(selectExpr, node).stringValue();
+      selectValue = master.evalForUseByAssistants(selectExpr, node).coerceToString();
     } catch (SoyDataException e) {
       throw RenderException.createWithSource(
           String.format(
