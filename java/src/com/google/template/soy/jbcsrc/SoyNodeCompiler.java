@@ -40,6 +40,7 @@ import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
+import com.google.template.soy.data.restricted.NumberData;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -1284,9 +1285,18 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         appendableExpression,
         new PlaceholderCompiler() {
           @Override
-          public Expression compileToSoyValueProvider(
-              ExprRootNode node, ExpressionDetacher expressionDetatcher) {
-            return expressionToSoyValueProviderCompiler.compile(node, expressionDetatcher);
+          public Expression compileToString(ExprRootNode node, Label reattachPoint) {
+            return exprCompiler
+                .compileSubExpression(node, detachState.createExpressionDetacher(reattachPoint))
+                .coerceToString();
+          }
+
+          @Override
+          public Expression compileToNumber(ExprRootNode node, Label reattachPoint) {
+            return exprCompiler
+                .compileSubExpression(node, detachState.createExpressionDetacher(reattachPoint))
+                .box()
+                .checkedCast(NumberData.class);
           }
 
           @Override

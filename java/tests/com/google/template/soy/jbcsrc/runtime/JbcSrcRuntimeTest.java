@@ -32,7 +32,6 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class JbcSrcRuntimeTest {
-
   @Test
   public void testChainOfOrderConstraints() {
     MsgRenderer renderer = createRenderer(SoyMsgRawTextPart.of("Hello "));

@@ -17,6 +17,7 @@
 package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscapingDirectives;
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
@@ -25,7 +26,7 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYP
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
 
-import com.google.auto.value.AutoValue;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
@@ -45,21 +46,24 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.EscapingMode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.MsgPluralNode;
 import com.google.template.soy.soytree.MsgSelectNode;
+import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
-import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.types.StringType;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 
 /**
@@ -104,11 +108,18 @@ final class MsgCompiler {
    */
   interface PlaceholderCompiler {
     /**
-     * Compiles the expression to a {@link SoyValueProvider} valued expression.
+     * Compiles the expression to a {@link String} valued expression.
      *
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
      */
-    Expression compileToSoyValueProvider(ExprRootNode node, ExpressionDetacher detacher);
+    Expression compileToString(ExprRootNode node, Label reattachPoint);
+
+    /**
+     * Compiles the expression to an {@code NumberData} valued expression.
+     *
+     * <p>If the node requires detach logic, it should use the given label as the reattach point.
+     */
+    Expression compileToNumber(ExprRootNode node, Label reattachPoint);
 
     /**
      * Compiles the given node to a statement that writes the result into the given appendable.
@@ -278,38 +289,34 @@ final class MsgCompiler {
       Expression soyMsgParts,
       Expression locale,
       MsgPartsAndIds partsAndId) {
-    Label reattachPoint = new Label();
+    // We need to render placeholders into a buffer and then pack them into a map to pass to
+    // JbcSrcRuntime.MsgRenderer.
+
+    Map<String, Function<Expression, Statement>> placeholderNameToPutStatement =
+        new LinkedHashMap<>();
+    putPlaceholdersIntoMap(msg, partsAndId.parts, placeholderNameToPutStatement);
+    // sanity check
+    checkState(!placeholderNameToPutStatement.isEmpty());
     ConstructorRef cstruct =
         msg.isPlrselMsg() ? ConstructorRef.PLRSEL_MSG_RENDERER : ConstructorRef.MSG_RENDERER;
-    Expression renderer =
-        cstruct.construct(
-            constant(partsAndId.id),
-            soyMsgParts,
-            locale,
-            constant(msg.getVarNameToRepNodeMap().size()),
-            constant(msg.getEscapingMode() == EscapingMode.ESCAPE_HTML));
-    for (Map.Entry<String, MsgSubstUnitNode> entry : msg.getVarNameToRepNodeMap().entrySet()) {
-      String phName = entry.getKey();
-      PlaceholderAndEndTag placeholder =
-          compilePlaceholder(
-              msg, phName, entry.getValue(), detachState.createExpressionDetacher(reattachPoint));
-      if (placeholder.endTagToMatch().isPresent()) {
-        renderer =
-            renderer.invoke(
-                MethodRef.MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING,
-                constant(phName),
-                placeholder.expression(),
-                constant(placeholder.endTagToMatch().get()));
-      } else {
-        renderer =
-            renderer.invoke(
-                MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(phName), placeholder.expression());
-      }
+    Statement initRendererStatement =
+        fields
+            .getCurrentRenderee()
+            .putInstanceField(
+                thisVar,
+                cstruct.construct(
+                    constant(partsAndId.id),
+                    soyMsgParts,
+                    locale,
+                    constant(placeholderNameToPutStatement.size()),
+                    constant(msg.getEscapingMode() == EscapingMode.ESCAPE_HTML)));
+    List<Statement> initializationStatements = new ArrayList<>();
+    initializationStatements.add(initRendererStatement);
+    for (Function<Expression, Statement> fn : placeholderNameToPutStatement.values()) {
+      initializationStatements.add(fn.apply(fields.getCurrentRenderee().accessor(thisVar)));
     }
 
-    Statement initMsgRenderer =
-        fields.getCurrentRenderee().putInstanceField(thisVar, renderer).labelStart(reattachPoint);
-
+    Statement initMsgRenderer = Statement.concat(initializationStatements);
     Statement render;
     if (areAllPrintDirectivesStreamable(escapingDirectives)) {
       Statement initAppendable = Statement.NULL_STATEMENT;
@@ -374,113 +381,222 @@ final class MsgCompiler {
                 BytecodeUtils.constantNull(ConstructorRef.MSG_RENDERER.instanceClass().type())));
   }
 
-  @AutoValue
-  abstract static class PlaceholderAndEndTag {
-    static PlaceholderAndEndTag create(Expression placeholderValue) {
-      return create(placeholderValue, Optional.empty());
-    }
-
-    static PlaceholderAndEndTag create(
-        Expression placeholderValue, Optional<String> matchingEndTag) {
-      return new AutoValue_MsgCompiler_PlaceholderAndEndTag(placeholderValue, matchingEndTag);
-    }
-
-    abstract Expression expression();
-
-    abstract Optional<String> endTagToMatch();
-  }
-
-  private PlaceholderAndEndTag compilePlaceholder(
+  /**
+   * Adds a {@link Statement} to {@link Map#put} every msg placeholder, plural variable and select
+   * case value into {@code mapExpression}
+   */
+  private void putPlaceholdersIntoMap(
       MsgNode originalMsg,
-      String placeholderName,
-      MsgSubstUnitNode substUnitNode,
-      ExpressionDetacher expressionDetacher) {
-    if (substUnitNode instanceof MsgPluralNode) {
-      return PlaceholderAndEndTag.create(
-          placeholderCompiler.compileToSoyValueProvider(
-              ((MsgPluralNode) substUnitNode).getExpr(), expressionDetacher));
-    } else if (substUnitNode instanceof MsgSelectNode) {
-      return PlaceholderAndEndTag.create(
-          placeholderCompiler.compileToSoyValueProvider(
-              ((MsgSelectNode) substUnitNode).getExpr(), expressionDetacher));
-    } else if (substUnitNode instanceof MsgPlaceholderNode) {
-      return compileNormalPlaceholder(
-          originalMsg, placeholderName, (MsgPlaceholderNode) substUnitNode);
-    } else {
-      throw new AssertionError("unexpected child: " + substUnitNode);
-    }
-  }
-
-  private PlaceholderAndEndTag compileNormalPlaceholder(
-      MsgNode originalMsg, String placeholderName, MsgPlaceholderNode placeholder) {
-    if (placeholder.numChildren() == 0) {
-      // special case for when a placeholder magically compiles to the empty string
-      // the CombineConsecutiveRawTextNodesPass will just delete it, so we end up with an empty
-      // placeholder.
-      return PlaceholderAndEndTag.create(FieldRef.EMPTY_STRING_DATA.accessor());
-    }
-    ExtraCodeCompiler prefix = ExtraCodeCompiler.NO_OP;
-    ExtraCodeCompiler suffix = ExtraCodeCompiler.NO_OP;
-    Optional<String> closeTagPlaceholderNameToMatch = Optional.empty();
-    final StandaloneNode initialNode = placeholder.getChild(0);
-    if (initialNode instanceof MsgHtmlTagNode
-        && placeholder.getParent().getKind() == Kind.VE_LOG_NODE) {
-      final VeLogNode veLogNode = (VeLogNode) placeholder.getParent();
-      // NOTE: we can't call getOpenTagNode or getCloseTagNode since they have been desugared by
-      // now and don't exist.  Instead we rely on the fact that earlier compile passes have
-      // validated the log structure and know that if this is the first or last element in velog
-      // then needs to be instrumented.
-      int childIndex = veLogNode.getChildIndex(placeholder);
-      if (childIndex == 0) {
-        // this corresponds to the open tag node.  We need to prefix the placeholder with an
-        // enterLoggableElement(LogStatement) call.  This may also require additional detaches.
-        prefix =
-            new ExtraCodeCompiler() {
-              @Override
-              public Statement compile(
-                  ExpressionCompiler exprCompiler,
-                  AppendableExpression appendable,
-                  DetachState detachStateForExtraCodeCompiler) {
-                // this is very similar to SoyNodeCompiler.visitVeLogNode but
-                // 1. we don't have to worry about logonly
-                // 2. we need to only generate 'half' of it
-                Label restartPoint = new Label();
-                Expression veData =
-                    exprCompiler.compileSubExpression(
-                        veLogNode.getVeDataExpression(),
-                        detachStateForExtraCodeCompiler.createExpressionDetacher(restartPoint));
-                return appendable
-                    .enterLoggableElement(
-                        MethodRef.CREATE_LOG_STATEMENT.invoke(
-                            /*logonly*/ BytecodeUtils.constant(false), veData))
-                    .toStatement()
-                    .labelStart(restartPoint);
-              }
-            };
-        // we need to get the name of the placeholder that closes this velog node.
-        final String closeTagPlaceholderName =
-            originalMsg
-                .getPlaceholder(
-                    (MsgPlaceholderNode) veLogNode.getChild(veLogNode.numChildren() - 1))
-                .name();
-        if (closeTagPlaceholderName.equals(placeholderName)) {
-          // if they are the same this is a selfclosing tag e.g. <input> which is fine. Don't add
-          // an ordering constraint
-          suffix = MsgCompiler::exitLoggableElement;
-        } else {
-          // To ensure that close tag comes after the open tag we need to track this at runtime.
-          closeTagPlaceholderNameToMatch = Optional.of(closeTagPlaceholderName);
-        }
-      } else if (childIndex == veLogNode.numChildren() - 1) {
-        suffix = MsgCompiler::exitLoggableElement;
+      Iterable<? extends SoyMsgPart> parts,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement) {
+    for (SoyMsgPart child : parts) {
+      if (child instanceof SoyMsgRawTextPart || child instanceof SoyMsgPluralRemainderPart) {
+        // raw text doesn't have placeholders and remainders use the same placeholder as plural they
+        // are a member of.
+        continue;
+      }
+      if (child instanceof SoyMsgPluralPart) {
+        putPluralPartIntoMap(originalMsg, placeholderNameToPutStatement, (SoyMsgPluralPart) child);
+      } else if (child instanceof SoyMsgSelectPart) {
+        putSelectPartIntoMap(originalMsg, placeholderNameToPutStatement, (SoyMsgSelectPart) child);
+      } else if (child instanceof SoyMsgPlaceholderPart) {
+        putPlaceholderIntoMap(
+            originalMsg, placeholderNameToPutStatement, (SoyMsgPlaceholderPart) child);
       } else {
-        // this must be some other html tag within the velog statement, it is just a normal
-        // placeholder. No suffix/prefix/closeTagPlaceholderNameToMatch is necessary.
+        throw new AssertionError("unexpected child: " + child);
       }
     }
+  }
 
-    return PlaceholderAndEndTag.create(
-        placeholderCompiler.compileToSoyValueProvider(placeholderName, initialNode, prefix, suffix),
-        closeTagPlaceholderNameToMatch);
+  private void putSelectPartIntoMap(
+      MsgNode originalMsg,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
+      SoyMsgSelectPart select) {
+    MsgSelectNode repSelectNode = originalMsg.getRepSelectNode(select.getSelectVarName());
+    if (!placeholderNameToPutStatement.containsKey(select.getSelectVarName())) {
+      Label reattachPoint = new Label();
+      Expression value =
+          placeholderCompiler.compileToString(repSelectNode.getExpr(), reattachPoint);
+      placeholderNameToPutStatement.put(
+          select.getSelectVarName(),
+          putToMapFunction(select.getSelectVarName(), value, reattachPoint));
+    }
+    // Recursively visit select cases
+    for (Case<String> caseOrDefault : select.getCases()) {
+      putPlaceholdersIntoMap(originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
+    }
+  }
+
+  private void putPluralPartIntoMap(
+      MsgNode originalMsg,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
+      SoyMsgPluralPart plural) {
+    MsgPluralNode repPluralNode = originalMsg.getRepPluralNode(plural.getPluralVarName());
+    if (!placeholderNameToPutStatement.containsKey(plural.getPluralVarName())) {
+      Label reattachPoint = new Label();
+      Expression value =
+          placeholderCompiler.compileToNumber(repPluralNode.getExpr(), reattachPoint);
+      placeholderNameToPutStatement.put(
+          plural.getPluralVarName(),
+          putToMapFunction(plural.getPluralVarName(), value, reattachPoint));
+    }
+    // Recursively visit plural cases
+    for (Case<SoyMsgPluralCaseSpec> caseOrDefault : plural.getCases()) {
+      putPlaceholdersIntoMap(originalMsg, caseOrDefault.parts(), placeholderNameToPutStatement);
+    }
+  }
+
+  private void putPlaceholderIntoMap(
+      MsgNode originalMsg,
+      Map<String, Function<Expression, Statement>> placeholderNameToPutStatement,
+      SoyMsgPlaceholderPart placeholder) {
+    final String placeholderName = placeholder.getPlaceholderName();
+    if (!placeholderNameToPutStatement.containsKey(placeholderName)) {
+      MsgPlaceholderNode repPlaceholderNode =
+          originalMsg.getRepPlaceholderNode(placeholder.getPlaceholderName());
+      if (repPlaceholderNode.numChildren() == 0) {
+        // special case for when a placeholder magically compiles to the empty string
+        // the CombineConsecutiveRawTextNodesPass will just delete it, so we end up with an empty
+        // placeholder.
+        placeholderNameToPutStatement.put(
+            placeholderName,
+            putToMapFunction(placeholderName, FieldRef.EMPTY_STRING_DATA.accessor()));
+        return;
+      }
+      final StandaloneNode initialNode = repPlaceholderNode.getChild(0);
+      Function<Expression, Statement> putEntyInMap;
+      if (initialNode instanceof MsgHtmlTagNode
+          && repPlaceholderNode.getParent().getKind() == Kind.VE_LOG_NODE) {
+        final VeLogNode veLogNode = (VeLogNode) repPlaceholderNode.getParent();
+        // NOTE: we can't call getOpenTagNode or getCloseTagNode since they have been desugared by
+        // now and don't exist.  Instead we rely on the fact that earlier compile passes have
+        // validated the log structure and know that if this is the first or last element in velog
+        // then needs to be instrumented.
+        int childIndex = veLogNode.getChildIndex(repPlaceholderNode);
+
+        if (childIndex == 0) {
+          // this corresponds to the open tag node.  We need to prefix the placeholder with an
+          // enterLoggableElement(LogStatement) call.  This may also require additional detaches.
+          final ExtraCodeCompiler enterLoggableElement =
+              new ExtraCodeCompiler() {
+                @Override
+                public Statement compile(
+                    ExpressionCompiler exprCompiler,
+                    AppendableExpression appendable,
+                    DetachState detachStateForExtraCodeCompiler) {
+                  // this is very similar to SoyNodeCompiler.visitVeLogNode but
+                  // 1. we don't have to worry about logonly
+                  // 2. we need to only generate 'half' of it
+                  Label restartPoint = new Label();
+                  Expression veData =
+                      exprCompiler.compileSubExpression(
+                          veLogNode.getVeDataExpression(),
+                          detachStateForExtraCodeCompiler.createExpressionDetacher(restartPoint));
+                  return appendable
+                      .enterLoggableElement(
+                          MethodRef.CREATE_LOG_STATEMENT.invoke(
+                              /*logonly*/ BytecodeUtils.constant(false), veData))
+                      .toStatement()
+                      .labelStart(restartPoint);
+                }
+              };
+          // we need to get the name of the placeholder that closes this velog node.
+          final String closeTagPlaceholderName =
+              originalMsg
+                  .getPlaceholder(
+                      (MsgPlaceholderNode) veLogNode.getChild(veLogNode.numChildren() - 1))
+                  .name();
+          if (closeTagPlaceholderName.equals(placeholderName)) {
+            // if they are the same this is a selfclosing tag e.g. <input> which is fine. Don't add
+            // an order constraint
+            putEntyInMap =
+                putToMapFunction(
+                    placeholderName,
+                    placeholderCompiler.compileToSoyValueProvider(
+                        placeholderName,
+                        initialNode,
+                        /* prefix= */ enterLoggableElement,
+                        /* suffix= */ MsgCompiler::exitLoggableElement));
+          } else {
+            // We need to call a different method in this case to add the ordering constraint
+            // between the start and end tag.
+            putEntyInMap =
+                mapExpression ->
+                    mapExpression
+                        // need to cast since it is stored in a SoyValueProvider field
+                        .checkedCast(ConstructorRef.MSG_RENDERER.instanceClass().type())
+                        .invokeVoid(
+                            MethodRef.MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING,
+                            constant(placeholderName),
+                            placeholderCompiler.compileToSoyValueProvider(
+                                placeholderName,
+                                initialNode,
+                                /* prefix= */ enterLoggableElement,
+                                /* suffix= */ ExtraCodeCompiler.NO_OP),
+                            constant(closeTagPlaceholderName));
+          }
+        } else if (childIndex == veLogNode.numChildren() - 1) {
+          putEntyInMap =
+              putToMapFunction(
+                  placeholderName,
+                  placeholderCompiler.compileToSoyValueProvider(
+                      placeholderName,
+                      initialNode,
+                      /* prefix= */ ExtraCodeCompiler.NO_OP,
+                      /* suffix= */ MsgCompiler::exitLoggableElement));
+        } else {
+          // this must be some other html tag within the velog statement, it is just a normal
+          // placeholder
+          putEntyInMap = addNodeToPlaceholderMap(placeholderName, initialNode);
+        }
+      } else if (initialNode instanceof MsgHtmlTagNode
+          || initialNode instanceof CallNode
+          || initialNode instanceof PrintNode
+          || initialNode instanceof RawTextNode) {
+        putEntyInMap = addNodeToPlaceholderMap(placeholderName, initialNode);
+      } else {
+        // the AST for MsgNodes guarantee that these are the only options
+        throw new AssertionError("Unexpected child: " + initialNode.getClass());
+      }
+      placeholderNameToPutStatement.put(placeholderName, putEntyInMap);
+    }
+  }
+
+  /**
+   * Returns a statement that adds the content rendered by the call to the map.
+   *
+   * @param mapKey The map key
+   * @param node The node
+   */
+  private Function<Expression, Statement> addNodeToPlaceholderMap(
+      String mapKey, StandaloneNode node) {
+    return putToMapFunction(
+        mapKey,
+        placeholderCompiler.compileToSoyValueProvider(
+            mapKey,
+            node,
+            /* prefix= */ ExtraCodeCompiler.NO_OP,
+            /* suffix= */ ExtraCodeCompiler.NO_OP));
+  }
+
+  private Function<Expression, Statement> putToMapFunction(
+      String mapKey, Expression valueExpression) {
+    return putToMapFunction(mapKey, valueExpression, null);
+  }
+
+  private Function<Expression, Statement> putToMapFunction(
+      final String mapKey, final Expression valueExpression, @Nullable final Label labelStart) {
+    return mapExpression -> {
+      Statement statement =
+          mapExpression
+              // need to cast since it is stored in a SoyValueProvider field
+              .checkedCast(ConstructorRef.MSG_RENDERER.instanceClass().type())
+              .invokeVoid(
+                  MethodRef.MSG_RENDERER_SET_PLACEHOLDER, constant(mapKey), valueExpression);
+      if (labelStart != null) {
+        statement = statement.labelStart(labelStart);
+      }
+      return statement;
+    };
   }
 }

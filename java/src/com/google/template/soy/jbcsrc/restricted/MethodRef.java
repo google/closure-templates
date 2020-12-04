@@ -369,8 +369,7 @@ public abstract class MethodRef {
       create(SharedRuntime.class, "plus", SoyValue.class, SoyValue.class).asNonNullable();
 
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER =
-      create(
-          JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, SoyValueProvider.class);
+      create(JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, Object.class);
 
   public static final MethodRef MSG_RENDERER_ESCAPE_HTML =
       create(JbcSrcRuntime.MsgRenderer.class, "escapeHtml", String.class);
@@ -380,7 +379,7 @@ public abstract class MethodRef {
           JbcSrcRuntime.MsgRenderer.class,
           "setPlaceholderAndOrdering",
           String.class,
-          SoyValueProvider.class,
+          Object.class,
           String.class);
 
   public static final MethodRef RUNTIME_STRING_EQUALS_AS_NUMBER =
