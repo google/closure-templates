@@ -30,7 +30,7 @@ import {FalsinessRenderer, IncrementalDomRenderer, isMatchingKey, patch, patchOu
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
-import {IdomTemplate, SoyTemplate, Template} from './templates';
+import {IdomTemplate, IjData, SoyTemplate, Template} from './templates';
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
@@ -213,13 +213,13 @@ function renderDynamicContent(
 /**
  * Calls an expression in case of a function or outputs it as text content.
  */
-function callDynamicAttributes<A, B>(
-    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
-    ij: B) {
+function callDynamicAttributes<TParams>(
+    incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
+    data: TParams, ij: IjData) {
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   if (type === SanitizedContentKind.ATTRIBUTES) {
-    (expr as IdomTemplate<A, B>)(incrementaldom, data, ij);
+    (expr as IdomTemplate<TParams>)(incrementaldom, data, ij);
   } else {
     let val: string|SanitizedHtmlAttribute;
     if (type === SanitizedContentKind.HTML) {
@@ -227,10 +227,10 @@ function callDynamicAttributes<A, B>(
       // This can be removed if Soy decides to treat attribute printing
       // and attribute names differently.
       val = soy.$$filterHtmlAttributes(htmlToString(() => {
-        (expr as IdomTemplate<A, B>)(defaultIdomRenderer, data, ij);
+        (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
       }));
     } else {
-      val = (expr as SoyTemplate<A, B>)(data, ij) as SanitizedHtmlAttribute;
+      val = (expr as SoyTemplate<TParams>)(data, ij) as SanitizedHtmlAttribute;
     }
     printDynamicAttr(incrementaldom, val);
   }
@@ -267,35 +267,35 @@ function printDynamicAttr(
 /**
  * Calls an expression in case of a function or outputs it as text content.
  */
-function callDynamicHTML<A, B>(
-    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
-    ij: B) {
+function callDynamicHTML<TParams>(
+    incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
+    data: TParams, ij: IjData) {
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   if (type === SanitizedContentKind.HTML) {
-    (expr as IdomTemplate<A, B>)(incrementaldom, data, ij);
+    (expr as IdomTemplate<TParams>)(incrementaldom, data, ij);
   } else if (type === SanitizedContentKind.ATTRIBUTES) {
     const val = attributesToString(() => {
-      (expr as IdomTemplate<A, B>)(defaultIdomRenderer, data, ij);
+      (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
     });
     incrementaldom.text(val);
   } else {
-    const val = (expr as SoyTemplate<A, B>)(data, ij);
+    const val = (expr as SoyTemplate<TParams>)(data, ij);
     incrementaldom.text(String(val));
   }
 }
 
-function callDynamicCss<A, B>(
-    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
-    ij: B) {
-  const val = callDynamicText<A, B>(expr, data, ij, soy.$$filterCssValue);
+function callDynamicCss<TParams>(
+    incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
+    data: TParams, ij: IjData) {
+  const val = callDynamicText<TParams>(expr, data, ij, soy.$$filterCssValue);
   incrementaldom.text(String(val));
 }
 
-function callDynamicJs<A, B>(
-    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
-    ij: B) {
-  const val = callDynamicText<A, B>(expr, data, ij, soy.$$escapeJsValue);
+function callDynamicJs<TParams>(
+    incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
+    data: TParams, ij: IjData) {
+  const val = callDynamicText<TParams>(expr, data, ij, soy.$$escapeJsValue);
   incrementaldom.text(String(val));
 }
 
@@ -303,22 +303,23 @@ function callDynamicJs<A, B>(
  * Calls an expression and coerces it to a string for cases where an IDOM
  * function needs to be concatted to a string.
  */
-function callDynamicText<A, B>(
-    expr: Template<A, B>, data: A, ij: B, escFn?: (i: string) => string) {
+function callDynamicText<TParams>(
+    expr: Template<TParams>, data: TParams, ij: IjData,
+    escFn?: (i: string) => string) {
   const transformFn = escFn ? escFn : (a: string) => a;
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   let val: string|SanitizedContent;
   if (type === SanitizedContentKind.HTML) {
     val = transformFn(htmlToString(() => {
-      (expr as IdomTemplate<A, B>)(defaultIdomRenderer, data, ij);
+      (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
     }));
   } else if (type === SanitizedContentKind.ATTRIBUTES) {
     val = transformFn(attributesToString(() => {
-      (expr as IdomTemplate<A, B>)(defaultIdomRenderer, data, ij);
+      (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
     }));
   } else {
-    val = (expr as SoyTemplate<A, B>)(data, ij);
+    val = (expr as SoyTemplate<TParams>)(data, ij);
   }
   return val;
 }
