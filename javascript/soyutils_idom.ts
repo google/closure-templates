@@ -30,6 +30,7 @@ import {FalsinessRenderer, IncrementalDomRenderer, isMatchingKey, patch, patchOu
 import {splitAttributes} from './attributes';
 import {IdomFunction, PatchFunction, SoyElement} from './element_lib_idom';
 import {getSoyUntyped} from './global';
+import {IdomTemplate, SoyTemplate, Template} from './templates';
 
 // Declare properties that need to be applied not as attributes but as
 // actual DOM properties.
@@ -37,11 +38,7 @@ const {attributes, currentContext} = incrementaldom;
 
 const defaultIdomRenderer = new IncrementalDomRenderer();
 
-type IdomTemplate<A, B> =
-    (idom: IncrementalDomRenderer, params: A, ijData: B) => void;
-type SoyTemplate<A, B> = (params: A, ijData: B) => string|SanitizedContent;
 type LetFunction = (idom: IncrementalDomRenderer) => void;
-type Template<A, B> = IdomTemplate<A, B>|SoyTemplate<A, B>;
 
 // tslint:disable-next-line:no-any
 attributes['checked'] = (el: Element, name: string, value: any) => {
@@ -217,9 +214,8 @@ function renderDynamicContent(
  * Calls an expression in case of a function or outputs it as text content.
  */
 function callDynamicAttributes<A, B>(
-    incrementaldom: IncrementalDomRenderer,
-    // tslint:disable-next-line:no-any
-    expr: Template<A, B>, data: A, ij: B) {
+    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
+    ij: B) {
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   if (type === SanitizedContentKind.ATTRIBUTES) {
@@ -252,7 +248,6 @@ function printDynamicAttr(
     expr: SanitizedHtmlAttribute|string|boolean|IdomFunction) {
   if ((expr as IdomFunction).isInvokableFn &&
       (expr as IdomFunction).contentKind === SanitizedContentKind.ATTRIBUTES) {
-    // tslint:disable-next-line:no-any
     (expr as IdomFunction).invoke(incrementaldom);
     return;
   }
@@ -291,16 +286,14 @@ function callDynamicHTML<A, B>(
 }
 
 function callDynamicCss<A, B>(
-    // tslint:disable-next-line:no-any Attaching  attributes to function.
-    incrementaldom: IncrementalDomRenderer, expr: (a: A, b: B) => any, data: A,
+    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
     ij: B) {
   const val = callDynamicText<A, B>(expr, data, ij, soy.$$filterCssValue);
   incrementaldom.text(String(val));
 }
 
 function callDynamicJs<A, B>(
-    // tslint:disable-next-line:no-any Attaching attributes to function.
-    incrementaldom: IncrementalDomRenderer, expr: (a: A, b: B) => any, data: A,
+    incrementaldom: IncrementalDomRenderer, expr: Template<A, B>, data: A,
     ij: B) {
   const val = callDynamicText<A, B>(expr, data, ij, soy.$$escapeJsValue);
   incrementaldom.text(String(val));
@@ -311,7 +304,6 @@ function callDynamicJs<A, B>(
  * function needs to be concatted to a string.
  */
 function callDynamicText<A, B>(
-    // tslint:disable-next-line:no-any
     expr: Template<A, B>, data: A, ij: B, escFn?: (i: string) => string) {
   const transformFn = escFn ? escFn : (a: string) => a;
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
