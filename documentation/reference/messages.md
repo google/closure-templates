@@ -295,6 +295,8 @@ attribute to restore access for all translators.
 
 ### Alternate IDs
 
+NOTE: This feature is not fully supported yet. Stay tuned for Soy announcement.
+
 If you migrate from another message management scheme to Soy, that will likely
 cause all your message IDs to change. In this case, use the `alternateId`
 attribute to leverage the existing translated message. Unlike the `fallbackmsg`
