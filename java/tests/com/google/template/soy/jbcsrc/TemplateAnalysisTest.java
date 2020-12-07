@@ -266,25 +266,6 @@ public final class TemplateAnalysisTest {
   @Test
   public void testForeach_literalList() {
     // test literal lists
-    // empty list
-    runTest(
-        "{call .loop data=\"all\"}",
-        "  {param list: [] /}",
-        "{/call}",
-        "{/template}",
-        "",
-        "{template .loop}",
-        "{@param list: list<?>}",
-        "{@param p: ?}",
-        "{@param p2: ?}",
-        "{for $item in $list}",
-        "  {$p}",
-        "{ifempty}",
-        "  {$p2}",
-        "{/for}",
-        "{notrefed($p)}",
-        "{refed($p2)}");
-
     // nonempty list
     runTest(
         "{@param p: ?}",
