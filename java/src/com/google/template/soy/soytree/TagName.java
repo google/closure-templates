@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.TemplateContentKind;
+import com.google.template.soy.exprtree.FunctionNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateType;
@@ -246,6 +248,13 @@ public final class TagName {
 
   public boolean isStatic() {
     return node instanceof RawTextNode;
+  }
+
+  public boolean isLegacyDynamicTagName() {
+    return !isStatic()
+        && getDynamicTagName().getExpr().getRoot() instanceof FunctionNode
+        && ((FunctionNode) getDynamicTagName().getExpr().getRoot()).getSoyFunction()
+            == BuiltinFunction.LEGACY_DYNAMIC_TAG;
   }
 
   /**

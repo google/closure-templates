@@ -33,6 +33,10 @@ public abstract class CallParamNode extends AbstractCommandNode {
   /** The param key. */
   private final Identifier key;
 
+  // This parameter may be synthetically generated from an HTML attribute. Within velogging,
+  // we need to reconstruct the original name.
+  private String originalName = null;
+
   protected CallParamNode(int id, SourceLocation sourceLocation, Identifier key) {
     super(id, sourceLocation, "param");
     this.key = checkNotNull(key);
@@ -46,11 +50,20 @@ public abstract class CallParamNode extends AbstractCommandNode {
   protected CallParamNode(CallParamNode orig, CopyState copyState) {
     super(orig, copyState);
     this.key = orig.key;
+    this.originalName = orig.originalName;
   }
 
   /** Returns the param key. */
   public Identifier getKey() {
     return key;
+  }
+
+  public String getOriginalName() {
+    return originalName;
+  }
+
+  public void setOriginalName(String originalName) {
+    this.originalName = originalName;
   }
 
   @Override
