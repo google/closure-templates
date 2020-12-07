@@ -340,15 +340,26 @@ public final class SoyExpression extends Expression {
     if (delegate.isNonNullable()) {
       return coerceNonNullableReferenceTypeToBoolean();
     } else {
-      // we know it isn't a primitive, so we only have a few other options.
-      if (isBoxed()) {
-        return forBool(MethodRef.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate));
-      }
-      if (soyRuntimeType.isKnownString()) {
-        return forBool(MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN.invoke(delegate));
-      }
-      // All other types are always truthy unless null
-      return BytecodeUtils.isNonNull(delegate);
+      // If we are potentially nullable, then map null to false and run the normal logic recursively
+      // for the non-nullable branch.
+      final Label end = new Label();
+      return withSource(
+              new Expression(delegate.resultType(), delegate.features()) {
+                @Override
+                protected void doGen(CodeBuilder adapter) {
+                  delegate.gen(adapter);
+                  adapter.dup();
+                  Label nonNull = new Label();
+                  adapter.ifNonNull(nonNull);
+                  adapter.pop();
+                  adapter.pushBoolean(false);
+                  adapter.goTo(end);
+                  adapter.mark(nonNull);
+                }
+              })
+          .asNonNullable()
+          .coerceToBoolean()
+          .labelEnd(end);
     }
   }
 

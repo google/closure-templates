@@ -294,12 +294,6 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_COERCE_TO_STRING =
       create(JbcSrcRuntime.class, "coerceToString", SoyValue.class).asNonNullable();
 
-  public static final MethodRef RUNTIME_COERCE_TO_BOOLEAN =
-      create(JbcSrcRuntime.class, "coerceToBoolean", SoyValue.class);
-
-  public static final MethodRef RUNTIME_COERCE_STRING_TO_BOOLEAN =
-      create(JbcSrcRuntime.class, "coerceToBoolean", String.class);
-
   public static final MethodRef RUNTIME_EQUAL =
       create(SharedRuntime.class, "equal", SoyValue.class, SoyValue.class);
 
