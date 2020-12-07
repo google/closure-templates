@@ -1124,7 +1124,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             .invoke(
                 MethodRef.COMPILED_TEMPLATE_RENDER, appendable, parameterLookup.getRenderContext())
             .withSourceLocation(node.getSourceLocation());
-    Statement callCallee = detachState.detachForCall(callRender);
+    Statement callCallee = detachState.detachForRender(callRender);
     Statement clearCallee =
         currentCalleeField.putInstanceField(
             thisVar, BytecodeUtils.constantNull(COMPILED_TEMPLATE_TYPE));

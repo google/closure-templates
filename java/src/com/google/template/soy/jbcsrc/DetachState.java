@@ -189,9 +189,6 @@ final class DetachState implements ExpressionDetacher.Factory {
    * }
    * }</pre>
    *
-   * <p>NOTE: {@code call} statements should use {@link #detachForCall} which has an optimization
-   * for the fact that calls are simpler
-   *
    * @param render an Expression that can generate code to call a render method that returns a
    *     RenderResult
    */
@@ -219,86 +216,6 @@ final class DetachState implements ExpressionDetacher.Factory {
         saveState.gen(adapter);
         adapter.returnValue();
         adapter.mark(end);
-        adapter.pop(); // Stack:
-      }
-    };
-  }
-
-  /**
-   * Generate detach logic for calls.
-   *
-   * <p>Calls are a little different due to a desire to minimize the cost of detaches. We assume
-   * that if a given call site detaches once, it is more likely to detach multiple times. So we
-   * generate code that looks like:
-   *
-   * <pre>{@code
-   * RenderResult initialResult = template.render(appendable, renderContext);
-   * if (!initialResult.isDone()) {
-   *   // save all fields
-   *   state = REATTACH_RENDER;
-   *   return initialResult;
-   * } else {
-   *   goto END;
-   * }
-   * REATTACH_RENDER:
-   * // restore nothing!
-   * RenderResult secondResult = template.render(appendable, renderContext);
-   * if (!secondResult.isDone()) {
-   *   // saveFields
-   *   state = REATTACH_RENDER;
-   *   return secondResult;
-   * } else {
-   *   // restore all fields
-   *   goto END;
-   * }
-   * END:
-   * }</pre>
-   *
-   * <p>With this technique we save re-running the save-restore logic for multiple detaches from the
-   * same call site. This should be especially useful for top level templates.
-   *
-   * <p>A consequence of this technique is that the callRender expression cannot depend on any
-   * variables that are controlled by the restore logic.
-   *
-   * @param callRender an Expression that can generate code to call the render method, should be
-   *     safe to generate more than once. And should not rely on any state that is managed by the
-   *     save restore logic.
-   */
-  Statement detachForCall(final Expression callRender) {
-    checkArgument(callRender.resultType().equals(RENDER_RESULT_TYPE));
-    final Label reattachRender = new Label();
-    final SaveRestoreState saveRestoreState = variables.saveRestoreState();
-    // We pass NULL statement for the restore logic since we handle that ourselves below
-    int state = addState(reattachRender, Statement.NULL_STATEMENT);
-    final Statement saveState =
-        getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
-    return new Statement() {
-      @Override
-      protected void doGen(CodeBuilder adapter) {
-        // Legend: RR = RenderResult, Z = boolean
-        callRender.gen(adapter); // Stack: RR
-        adapter.dup(); // Stack: RR, RR
-        MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
-        // if isDone goto Done
-        Label end = new Label();
-        adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
-
-        saveRestoreState.save().gen(adapter);
-        saveState.gen(adapter);
-        adapter.returnValue();
-
-        adapter.mark(reattachRender);
-        callRender.gen(adapter); // Stack: RR
-        adapter.dup(); // Stack: RR, RR
-        MethodRef.RENDER_RESULT_IS_DONE.invokeUnchecked(adapter); // Stack: RR, Z
-        // if isDone goto restore
-        Label restore = new Label();
-        adapter.ifZCmp(Opcodes.IFNE, restore); // Stack: RR
-        // no need to save or restore anything
-        adapter.returnValue();
-        adapter.mark(restore); // Stack: RR
-        saveRestoreState.restore().gen(adapter);
-        adapter.mark(end); // Stack: RR
         adapter.pop(); // Stack:
       }
     };
