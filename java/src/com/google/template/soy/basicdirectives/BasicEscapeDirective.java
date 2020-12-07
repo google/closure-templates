@@ -232,7 +232,7 @@ public abstract class BasicEscapeDirective
 
   /** Implements the |escapeHtmlAttribute directive. */
   @SoyPurePrintDirective
-  static final class EscapeHtmlAttribute extends BasicEscapeDirective {
+  static final class EscapeHtmlAttribute extends BasicEscapeDirective implements Streamable {
 
     EscapeHtmlAttribute() {
       super("|escapeHtmlAttribute");
@@ -241,6 +241,11 @@ public abstract class BasicEscapeDirective
     @Override
     protected String escape(SoyValue value) {
       return Sanitizers.escapeHtmlAttribute(value);
+    }
+
+    @Override
+    public boolean isCloseable() {
+      return true;
     }
   }
 
@@ -260,7 +265,7 @@ public abstract class BasicEscapeDirective
 
   /** Implements the |escapeHtmlAttributeNospace directive. */
   @SoyPurePrintDirective
-  static final class EscapeHtmlAttributeNospace extends BasicEscapeDirective {
+  static final class EscapeHtmlAttributeNospace extends BasicEscapeDirective implements Streamable {
 
     EscapeHtmlAttributeNospace() {
       super("|escapeHtmlAttributeNospace");
@@ -269,6 +274,11 @@ public abstract class BasicEscapeDirective
     @Override
     protected String escape(SoyValue value) {
       return Sanitizers.escapeHtmlAttributeNospace(value);
+    }
+
+    @Override
+    public boolean isCloseable() {
+      return true;
     }
   }
 
