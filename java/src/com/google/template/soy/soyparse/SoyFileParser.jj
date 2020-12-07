@@ -72,7 +72,6 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FloatNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.IntegerNode;
 import com.google.template.soy.exprtree.ItemAccessNode;
 import com.google.template.soy.exprtree.ListLiteralNode;
@@ -738,6 +737,19 @@ public class SoyFileParser {
     return comments.build();
   }
 
+  private CommandTagAttribute newTag(
+      Identifier id, QuoteStyle quoteStyle, ImmutableList<ExprNode> exprList, SourceLocation loc) {
+    if (id.identifier().equals("data")
+        && exprList.size() == 1
+        && exprList.get(0).toSourceString().equals("all")) {
+      SourceLocation valueLoc = exprList.get(0).getSourceLocation();
+      SourceLocation withQuotes = new SourceLocation(
+          valueLoc.getFilePath(), valueLoc.getBeginPoint().offset(0, -1), valueLoc.getEndPoint().offset(0, 1));
+      return new CommandTagAttribute(id, quoteStyle, "all", withQuotes, loc);
+    }
+    return new CommandTagAttribute(id, quoteStyle, exprList, loc);
+  }
+
   // An error that can be thrown to abort parsing.  This is useful if an error has been reported
   // and it is known that parsing cannot continue.
   private static final class AbortParsingError extends Error {}
@@ -1324,7 +1336,6 @@ TOKEN_MGR_DECLS: {
 
 <EXPR, EXPR_NO_DOUBLE_QUOTE, EXPR_NO_SINGLE_QUOTE, DEFAULT> TOKEN: {
   < IDENT: <RAW_IDENT> >
-| < DOLLAR_IDENT: "$" <IDENT> >
 | < ATTR_IDENT: "@" <RAW_IDENT_WITH_DASH> >
 }
 
@@ -1349,7 +1360,7 @@ TOKEN_MGR_DECLS: {
 
 <*> TOKEN: {
   < #WS: [" ", "\t", "\n", "\r"] | "\r\n" >
-| < #RAW_IDENT: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
+| < #RAW_IDENT: ( ["$"] )? ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9"] )* >
 | < #RAW_IDENT_WITH_DASH: ["a"-"z","A"-"Z","_"] ( ["a"-"z","A"-"Z","_","0"-"9", "-"] )* >
 | < #DEC_DIGITS: ( ["0"-"9"] )+ >
 | < #HEX_DIGIT: ["0"-"9","A"-"F","a"-"f"] >
@@ -1732,10 +1743,7 @@ private CommandTagAttribute Attribute() :
         errorReporter.report(createSrcLoc(qToken), PARSER_ERROR, qToken.image, "an expression");
         exprList = ImmutableList.of(errorExpr(qToken));
       }
-      return new CommandTagAttribute(
-          Identifier.create(name.identifier(), name.location()),
-          quoteStyle,
-          exprList, createSrcLoc(nameToken, qToken));
+      return newTag(name, quoteStyle, exprList, createSrcLoc(nameToken, qToken));
     }
   |
     // Non-expression attributes
@@ -1751,8 +1759,8 @@ private CommandTagAttribute Attribute() :
       { quoteStyle = QuoteStyle.SINGLE; }
     )
     {
-      return new CommandTagAttribute(name, quoteStyle, value.image, createSrcLoc(startValue, value),
-          createSrcLoc(nameToken, value));
+      return new CommandTagAttribute(name, quoteStyle, value.image,
+          createSrcLoc(startValue, value), createSrcLoc(nameToken, value));
     }
   )
 }
@@ -2961,7 +2969,7 @@ private LetNode LetStmt() :
   tagBegin = <CMD_BEGIN_LET>
 
   try {
-    nameTok = <DOLLAR_IDENT>
+    nameTok = <IDENT>
   } catch (ParseException e) {
     tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
     SourceLocation loc = createSrcLoc(tagBegin, tagClose);
@@ -3246,10 +3254,10 @@ private ForNode ForStmt() :
 {
   tagBegin = <CMD_BEGIN_FOR>
   try {
-    nameTok = <DOLLAR_IDENT>
+    nameTok = <IDENT>
     [
       <COMMA>
-      indexTok = <DOLLAR_IDENT>
+      indexTok = <IDENT>
     ]
     {
         nameId = Identifier.create(nameTok.image, createSrcLoc(nameTok));
@@ -3362,18 +3370,6 @@ private CallNode CallStmt() :
         calleeExpr = new TemplateLiteralNode(
             calleeName,
             calleeName.location(),
-            true /* isSynthetic */);
-      } else if (calleeExpr.getKind() == ExprNode.Kind.GLOBAL_NODE) {
-        // De-alias the identifier in the global node, since we want to run the normal validation
-        // for template aliasing.
-        // See SoyFileParserTest.testCalleeNameExpansion() for an example that fails without this.
-        GlobalNode calleeAsGlobalNode = (GlobalNode) calleeExpr;
-        Identifier originalIdentifier = Identifier.create(
-            calleeAsGlobalNode.getIdentifier().originalName(),
-            calleeAsGlobalNode.getIdentifier().location());
-        calleeExpr = new TemplateLiteralNode(
-            originalIdentifier,
-            calleeExpr.getSourceLocation(),
             true /* isSynthetic */);
       }
       CallBasicNode node = new CallBasicNode(
@@ -3634,11 +3630,7 @@ private CallArgs CallArgs() :
       paramIds = new ArrayList<Identifier>();
 
       // Parsed this as an ExprNode but it must actually be an identifier.
-      // TODO(user): Remove check for GlobalNode once the parser is no longer
-      // producing them.
-      String firstId = val instanceof GlobalNode
-          ? ((GlobalNode) val).getIdentifier().identifier()
-          : val.toSourceString();
+      String firstId = val.toSourceString();
       if (BaseUtils.isDottedIdentifier(firstId)) {
         paramName = Identifier.create(firstId, val.getSourceLocation());
       } else {
@@ -4122,7 +4114,7 @@ private ExprNode PrecExpr9() :
 
 
 /**
- * Primary -> "(" Expr ")" | VarRef | GlobalOrFunctionCallLike | List | Primitive
+ * Primary -> "(" Expr ")" | VarRef | VarRefOrFunctionCallLike | List | Primitive
  */
 private ExprNode Primary() :
 {
@@ -4133,9 +4125,7 @@ private ExprNode Primary() :
   (
     primary = GroupNode()
   |
-    primary = VarRef()
-  |
-    primary = GlobalOrFunctionCallLike()
+    primary = VarRefOrFunctionCallLike()
   |
     primary = List()
   |
@@ -4162,58 +4152,42 @@ private GroupNode GroupNode() :
 
 
 /**
- * VarRef -> DollarIdent
- */
-private VarRefNode VarRef() :
-{
-  Token ident;
-}
-{
-  ident = <DOLLAR_IDENT>
-  { return new VarRefNode(ident.image, createSrcLoc(ident), null); }
-}
-
-
-/**
  * Parses a global, a function call, a proto init call, a record literal, or a map literal.
  * These share a production because they share a common prefix.
  *
- * GlobalOrFunctionCallLike ->
+ * VarRefOrFunctionCallLike ->
  *     Identifier [ "(" [ Expr ( ( "," Expr )* | ":" Expr ( "," Ident ":" Expr )* ) ] ")" ]
  *     | "map(" [ Expr ":" Expr ("," Expr ":" Expr)* ] ")"
  */
-private ExprNode GlobalOrFunctionCallLike() :
+private ExprNode VarRefOrFunctionCallLike() :
 {
+  Token identToken;
   Identifier ident;
   Token openParen = null, closeParen = null;
   CallArgs callArgs;
 }
 {
-  ident = Identifier()
+  identToken = <IDENT>
   {
-    boolean isRecord = "record".equals(ident.identifier());
+    ident = Identifier.create(identToken.image, createSrcLoc(identToken));
+    boolean isRecord = "record".equals(identToken.image);
   }
 
   [
     openParen = <LPAREN>
-    // A simple approach to parsing map literals would be to parse a sequence of comma-delimited
-    // Expr <COLON> Exprs. At the end, if ident is "map", it's a map literal, otherwise it's a proto
-    // init or record literal. Proto init and record literals require simple identifiers as keys,
-    // while map literals allow any expression. Parsing them using the same rules makes the error
-    // messages for malformed proto init and record literals confusing. So use a lookahead to parse
-    // the map literals separately.
+
     (
-      LOOKAHEAD( {ident.identifier().equals("map")} )
+      LOOKAHEAD( {identToken.image.equals("map")} )
       {
         return MapLiteral(ident);
       }
     |
-      LOOKAHEAD( {ident.identifier().equals("ve")} )
+      LOOKAHEAD( {identToken.image.equals("ve")} )
       {
         return VeLiteral(ident);
       }
     |
-      LOOKAHEAD( {ident.identifier().equals("template")} )
+      LOOKAHEAD( {identToken.image.equals("template")} )
       {
         // Alternately we could not special case this here in the parser and
         // just define a built-in function called "template".
@@ -4256,10 +4230,9 @@ private ExprNode GlobalOrFunctionCallLike() :
       }
     )
   ]
-
   {
-    // If we did not find parens, this is a global node
-    return new GlobalNode(ident);
+    // We did not find parens, this is a var ref node
+    return new VarRefNode(identToken.image, createSrcLoc(identToken), null);
   }
 }
 
@@ -4363,10 +4336,10 @@ private ExprNode ListComprehension(Token begin, ExprNode itemExpr) :
   // "[Expr" has already been matched. Now try to match " for $var, $index in Expr]".
   <FOR>
   try {
-    listIterVar = <DOLLAR_IDENT>
+    listIterVar = <IDENT>
     [
       <COMMA>
-      indexVar = <DOLLAR_IDENT>
+      indexVar = <IDENT>
     ]
     <IN>
     listExpr = Expr()

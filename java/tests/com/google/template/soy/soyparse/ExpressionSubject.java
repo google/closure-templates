@@ -25,7 +25,6 @@ import com.google.common.truth.Subject;
 import com.google.common.truth.Truth;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.VarRefNode;
 
 /**
@@ -70,13 +69,6 @@ final class ExpressionSubject extends Subject {
     }
   }
 
-  void isNotValidGlobal() {
-    ExprNode expr = parseExpression();
-    if (expr instanceof GlobalNode && !errorReporter.hasErrors()) {
-      failWithActual(simpleFact("expected to be an invalid global"));
-    }
-  }
-
   void isNotValidVar() {
     ExprNode expr = parseExpression();
     if (expr instanceof VarRefNode && !errorReporter.hasErrors()) {
@@ -90,23 +82,6 @@ final class ExpressionSubject extends Subject {
       failWithActual("expected to be a valid expression", errorReporter.getErrors());
     }
     return expr;
-  }
-
-  void isValidGlobal() {
-    ExprNode expr = parseExpression();
-    if (errorReporter.hasErrors()) {
-      failWithActual("expected to be a valid global", errorReporter.getErrors());
-    }
-    check("parseExpression()").that(expr).isInstanceOf(GlobalNode.class);
-  }
-
-  void isValidGlobalNamed(String name) {
-    GlobalNode globalNode = (GlobalNode) parseExpression();
-    if (errorReporter.hasErrors()) {
-      failWithActual("expected to be valid global", errorReporter.getErrors());
-    }
-    check("parseExpression().getName()").that(globalNode.getName()).isEqualTo(name);
-    check("parseExpression().toSourceString()").that(globalNode.toSourceString()).isEqualTo(name);
   }
 
   void isValidVar() {

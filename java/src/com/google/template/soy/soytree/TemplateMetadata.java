@@ -122,7 +122,12 @@ public abstract class TemplateMetadata {
         builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
         switch (call.getKind()) {
           case CALL_BASIC_NODE:
-            builder.setDelCall(false).setTemplateName(((CallBasicNode) call).getCalleeName());
+            builder.setDelCall(false);
+            if (((CallBasicNode) call).isStaticCall()) {
+              builder.setTemplateName(((CallBasicNode) call).getCalleeName());
+            } else {
+              builder.setTemplateName("$error");
+            }
             break;
           case CALL_DELEGATE_NODE:
             builder.setDelCall(true).setTemplateName(((CallDelegateNode) call).getDelCalleeName());

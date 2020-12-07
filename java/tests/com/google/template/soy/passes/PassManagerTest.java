@@ -82,6 +82,7 @@ public final class PassManagerTest {
             "CheckEscapingSanityFile",
             "ResolveProtoImports",
             "ResolveTemplateImports",
+            "RestoreGlobals",
             "ResolveTemplateFunctions",
             "ResolveTemplateNames",
             "ResolveTemplateParamTypes",
@@ -104,6 +105,7 @@ public final class PassManagerTest {
             "CheckEscapingSanityFile",
             "ResolveProtoImports",
             "ResolveTemplateImports",
+            "RestoreGlobals",
             "ResolveTemplateFunctions",
             "ResolveTemplateNames",
             "ResolveTemplateParamTypes")
@@ -158,6 +160,7 @@ public final class PassManagerTest {
             NullSafeAccessPass.class,
             OptimizationPass.class,
             ResolveExpressionTypesPass.class,
+            RestoreGlobalsPass.class,
             ResolveNamesPass.class,
             ResolvePackageRelativeCssNamesPass.class,
             ResolvePluginsPass.class,

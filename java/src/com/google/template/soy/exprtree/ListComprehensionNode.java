@@ -18,6 +18,7 @@ package com.google.template.soy.exprtree;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyType;
@@ -78,6 +79,12 @@ public final class ListComprehensionNode extends AbstractParentExprNode {
     if (orig.indexVar != null) {
       copyState.updateRefs(orig.indexVar, this.indexVar);
     }
+  }
+
+  public ImmutableList<? extends AbstractLocalVarDefn<?>> getVars() {
+    return indexVar == null
+        ? ImmutableList.of(listIterVar)
+        : ImmutableList.of(listIterVar, indexVar);
   }
 
   @Override

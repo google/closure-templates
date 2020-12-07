@@ -393,6 +393,7 @@ public final class PassManager {
       addPass(
           new ResolveTemplateImportsPass(options, errorReporter),
           partialTemplateRegistryPassesBuilder);
+      addPass(new RestoreGlobalsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       if (astRewrites.atLeast(AstRewrites.KYTHE)) {
         addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
       }

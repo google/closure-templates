@@ -39,16 +39,8 @@ import com.google.template.soy.types.SoyType;
  */
 public abstract class AbstractLocalVarDefn<T extends Node> extends AbstractVarDefn {
 
-  /**
-   * {@link VarDefn#name()} expects the name without the dollar sign, but local var names are
-   * declared with the dollar sign.
-   */
-  private static String checkAndFixName(String name) {
-    checkArgument(name.charAt(0) == '$');
-    return name.substring(1);
-  }
-
   private final T declaringNode;
+  private final String originalName;
 
   /**
    * @param name The variable name.
@@ -57,8 +49,9 @@ public abstract class AbstractLocalVarDefn<T extends Node> extends AbstractVarDe
    */
   public AbstractLocalVarDefn(
       String name, SourceLocation nameLocation, T declaringNode, SoyType type) {
-    super(checkAndFixName(name), nameLocation, type);
+    super(name.startsWith("$") ? name.substring(1) : name, nameLocation, type);
     this.declaringNode = declaringNode;
+    this.originalName = name;
   }
 
   /** Copy constructor for when the declaring node is being cloned. */
@@ -66,11 +59,16 @@ public abstract class AbstractLocalVarDefn<T extends Node> extends AbstractVarDe
     super(localVar);
     checkArgument(localVar.declaringNode != declaringNode);
     this.declaringNode = declaringNode;
+    this.originalName = localVar.originalName;
   }
 
   @Override
   public String refName() {
     return "$" + name();
+  }
+
+  public String getOriginalName() {
+    return originalName;
   }
 
   /**

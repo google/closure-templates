@@ -29,12 +29,10 @@ import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprRootNode;
-import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.SplitLevelTopNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyNode.StatementNode;
@@ -119,14 +117,12 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
       switch (name) {
         case "data":
-          ExprRootNode dataExpr = attr.valueAsExpr(reporter);
-          if ((dataExpr.getRoot() instanceof GlobalNode)
-              && ((GlobalNode) dataExpr.getRoot()).getName().equals("all")) {
+          if (!attr.hasExprValue() && "all".equals(attr.getValue())) {
             this.isPassingAllData = true;
             this.dataExpr = null;
           } else {
             this.isPassingAllData = false;
-            this.dataExpr = dataExpr;
+            this.dataExpr = attr.valueAsExpr(reporter);
           }
           break;
         case "key":
@@ -262,12 +258,19 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
-    if (dataExpr == null && keyExpr == null) {
-      return ImmutableList.of();
-    } else if (dataExpr != null && keyExpr != null) {
-      return ImmutableList.of(dataExpr, keyExpr);
+    ImmutableList.Builder<ExprRootNode> list = ImmutableList.builder();
+    if (dataExpr != null) {
+      list.add(dataExpr);
     }
-    return (dataExpr != null) ? ImmutableList.of(dataExpr) : ImmutableList.of(keyExpr);
+    if (keyExpr != null) {
+      list.add(keyExpr);
+    }
+    for (CommandTagAttribute attribute : attributes) {
+      if (attribute.hasExprValue()) {
+        list.addAll(attribute.valueAsExprList());
+      }
+    }
+    return list.build();
   }
 
   @SuppressWarnings("unchecked")
@@ -283,7 +286,6 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
 
   /** Returns the location of the callee name in the source code. */
   public abstract SourceLocation getSourceCalleeLocation();
-
 
   /**
    * Returns the escaping directives, applied from left to right.

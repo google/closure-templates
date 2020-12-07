@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -38,14 +37,12 @@ import java.util.List;
  *
  */
 public final class CallBasicNode extends CallNode {
-  private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
-      SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
 
   /**
    * The callee expression. Usually this will contain a single node corresponding to the template to
    * be called.
    */
-  private final ExprRootNode calleeExpr;
+  private ExprRootNode calleeExpr;
 
   public CallBasicNode(
       int id,
@@ -77,9 +74,6 @@ public final class CallBasicNode extends CallNode {
               "call",
               ImmutableList.of("data", "key", PHNAME_ATTR, PHEX_ATTR));
       }
-    }
-    if (isPassingData() && !isStaticCall()) {
-      errorReporter.report(openTagLocation, DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS);
     }
   }
 
@@ -122,6 +116,10 @@ public final class CallBasicNode extends CallNode {
     return calleeExpr;
   }
 
+  public void setCalleeExpr(ExprRootNode calleeExpr) {
+    this.calleeExpr = calleeExpr;
+  }
+
   @Override
   public ImmutableList<ExprRootNode> getExprList() {
     ImmutableList.Builder<ExprRootNode> allExprs = ImmutableList.builder();
@@ -129,7 +127,6 @@ public final class CallBasicNode extends CallNode {
     allExprs.addAll(super.getExprList());
     return allExprs.build();
   }
-
 
   @Override
   public String getCommandText() {

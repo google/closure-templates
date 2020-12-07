@@ -172,8 +172,6 @@ final class Tokens {
       case SoyFileParserConstants.SINGLE_QUOTE:
       case SoyFileParserConstants.DOUBLE_QUOTE:
         return "string";
-      case SoyFileParserConstants.DOLLAR_IDENT:
-        return "variable";
       case SoyFileParserConstants.FOR:
         return "\'for\'";
       case SoyFileParserConstants.IN:
