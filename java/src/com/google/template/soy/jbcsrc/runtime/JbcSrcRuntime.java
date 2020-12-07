@@ -689,6 +689,14 @@ public final class JbcSrcRuntime {
     return v != 0.0 & !Double.isNaN(v);
   }
 
+  public static boolean coerceToBoolean(@Nullable SoyValue v) {
+    return v != null && v.coerceToBoolean();
+  }
+
+  public static boolean coerceToBoolean(@Nullable String v) {
+    return v != null && !v.isEmpty();
+  }
+
   public static String coerceToString(@Nullable SoyValue v) {
     return v == null ? "null" : v.coerceToString();
   }
