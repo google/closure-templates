@@ -62,7 +62,6 @@ public final class StreamingAttributeEscaper extends LoggingAdvisingAppendable {
   }
 
   private Appendable getAppendable() {
-    new Exception().printStackTrace();
     if (getSanitizedContentKind() == ContentKind.HTML) {
       if (buffer == null) {
         buffer = new StringBuilder();
