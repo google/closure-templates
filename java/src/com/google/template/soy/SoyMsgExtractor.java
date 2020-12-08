@@ -35,14 +35,13 @@ import org.kohsuke.args4j.Option;
 public final class SoyMsgExtractor extends AbstractSoyCompiler {
 
   @Option(
-    name = "--allowExternalCalls",
-    usage =
-        "Whether to allow external calls. New projects should set this to false, and"
-            + " existing projects should remove existing external calls and then set this"
-            + " to false. It will save you a lot of headaches. Currently defaults to true"
-            + " for backward compatibility."
-  )
-  private boolean allowExternalCalls = true;
+      name = "--allowExternalCalls",
+      usage =
+          "Whether to allow external calls. New projects should set this to false, and"
+              + " existing projects should remove existing external calls and then set this"
+              + " to false. It will save you a lot of headaches. Currently defaults to true"
+              + " for backward compatibility.")
+  private boolean allowExternalCalls = false;
 
   @Option(
     name = "--outputFile",
