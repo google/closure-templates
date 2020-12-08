@@ -53,6 +53,7 @@ import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -556,12 +557,10 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   static Optional<HtmlOpenTagNode> getElementOpen(TemplateNode node) {
-    List<HtmlOpenTagNode> openTags =
-        SoyTreeUtils.getAllMatchingNodesOfType(
-            node, HtmlOpenTagNode.class, HtmlOpenTagNode::isElementRoot);
-    if (openTags.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(openTags.get(0));
+    // TODO(user): Dedupe logic with SoyElementPass?
+    return node.getChildren().stream()
+        .filter(n -> n.getKind() == Kind.HTML_OPEN_TAG_NODE)
+        .map(HtmlOpenTagNode.class::cast)
+        .findFirst();
   }
 }

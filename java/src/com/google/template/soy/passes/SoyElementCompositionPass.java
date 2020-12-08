@@ -287,7 +287,6 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                 call,
                 conditional);
         if (param != null) {
-          param.setOriginalName(attrNode.getStaticKey());
           call.addChild(param);
         }
         return;

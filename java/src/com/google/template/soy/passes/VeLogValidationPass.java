@@ -232,11 +232,6 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       return;
     }
 
-    if (!firstTag.getTagName().isStatic() && !firstTag.getTagName().isLegacyDynamicTagName()) {
-      node.setNeedsSyntheticVelogNode(true);
-      return;
-    }
-
     // If the first child is self-closing or is a void tag, output a synthetic VE log node if we see
     // anything after it. If it is the only thing, we don't need a synthetic VE log node.
     if (firstTag.isSelfClosing() || firstTag.getTagName().isDefinitelyVoid()) {
@@ -301,7 +296,11 @@ final class VeLogValidationPass implements CompilerFileSetPass {
         VeType veType = (VeType) veExpr.getType();
         SoyType dataType = dataExpr.getType();
         if (!veType.getDataType().isPresent()) {
-          reporter.report(dataExpr.getSourceLocation(), UNEXPECTED_DATA, veType, dataType);
+          reporter.report(
+              dataExpr.getSourceLocation(),
+              UNEXPECTED_DATA,
+              veType,
+              dataType);
         } else {
           SoyType veDataType =
               typeRegistry.getProtoRegistry().getProtoType(veType.getDataType().get());
