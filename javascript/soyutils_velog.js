@@ -245,10 +245,16 @@ function visit(element, logger) {
   }
   replaceFunctionAttributes(element, logger);
   if (element.children) {
-    const children = Array.from(element.children);
+    let children = Array.from(element.children);
     for (let i = 0; i < children.length; i++) {
       const newChildren = visit(children[i], logger);
-      replaceChild(element, children[i], newChildren);
+      // VEATTR nodes only have one children and are a direct replacement.
+      if (children[i].tagName === 'VEATTR') {
+        replaceChild(
+            element, children[i], visit(children[i].children[0], logger));
+      } else {
+        replaceChild(element, children[i], newChildren);
+      }
     }
   }
   if (logIndex === -1) {
@@ -301,9 +307,21 @@ function replaceFunctionAttributes(element, logger) {
   const attributeMap = {};
   // Iterates from the end to the beginning, since we are removing attributes
   // in place.
+  let elementWithAttribute = element;
+  if (element.tagName === 'VEATTR') {
+    // The attribute being replaced belongs on the direct child.
+    elementWithAttribute = element.firstElementChild;
+  }
   for (let i = element.attributes.length - 1; i >= 0; --i) {
     const attributeName = element.attributes[i].name;
     if (startsWith(attributeName, FUNCTION_ATTR)) {
+      // Delay evaluation of the attributes until we reach the element itself.
+      if (elementWithAttribute.hasAttribute(ELEMENT_ATTR) &&
+          element.tagName === 'VEATTR') {
+        elementWithAttribute.setAttribute(
+            attributeName, element.attributes[i].value);
+        continue;
+      }
       const funcIndex = parseInt(element.attributes[i].value, 10);
       assert(
           !Number.isNaN(funcIndex) && funcIndex < metadata.functions.length,
@@ -312,11 +330,12 @@ function replaceFunctionAttributes(element, logger) {
       const attr = attributeName.substring(FUNCTION_ATTR.length);
       attributeMap[attr] =
           logger.evalLoggingFunction(funcMetadata.name, funcMetadata.args);
-      element.removeAttribute(attributeName);
+      elementWithAttribute.removeAttribute(attributeName);
     }
   }
   for (const attributeName in attributeMap) {
-    element.setAttribute(attributeName, attributeMap[attributeName]);
+    elementWithAttribute.setAttribute(
+        attributeName, attributeMap[attributeName]);
   }
 }
 
