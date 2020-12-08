@@ -83,6 +83,7 @@ public final class PassManagerTest {
             "ResolveProtoImports",
             "ResolveTemplateImports",
             "RestoreGlobals",
+            "RestoreCompilerChecks",
             "ResolveTemplateFunctions",
             "ResolveTemplateNames",
             "ResolveTemplateParamTypes",
@@ -106,6 +107,7 @@ public final class PassManagerTest {
             "ResolveProtoImports",
             "ResolveTemplateImports",
             "RestoreGlobals",
+            "RestoreCompilerChecks",
             "ResolveTemplateFunctions",
             "ResolveTemplateNames",
             "ResolveTemplateParamTypes")
