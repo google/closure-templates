@@ -226,23 +226,25 @@ function isIdom<TParams>(template: Template<TParams>):
 function callDynamicAttributes<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
-  // TODO(djjeck): Use the isIdom function.
-  // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-  const type = (expr as any as IdomFunction).contentKind;
-  if (type === SanitizedContentKind.ATTRIBUTES) {
-    (expr as IdomTemplate<TParams>)(incrementaldom, data, ij);
-  } else {
-    let val: string|SanitizedHtmlAttribute;
-    if (type === SanitizedContentKind.HTML) {
-      // This effectively negates the value of splitting a string. However,
-      // This can be removed if Soy decides to treat attribute printing
-      // and attribute names differently.
-      val = soy.$$filterHtmlAttributes(htmlToString(() => {
-        (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
-      }));
-    } else {
-      val = (expr as SoyTemplate<TParams>)(data, ij) as SanitizedHtmlAttribute;
+  if (isIdom(expr)) {
+    switch ((expr as unknown as IdomFunction).contentKind) {
+      case SanitizedContentKind.ATTRIBUTES:
+        expr(incrementaldom, data, ij);
+        break;
+      case SanitizedContentKind.HTML:
+        // This effectively negates the value of splitting a string. However,
+        // This can be removed if Soy decides to treat attribute printing
+        // and attribute names differently.
+        const val = soy.$$filterHtmlAttributes(htmlToString(() => {
+          expr(defaultIdomRenderer, data, ij);
+        }));
+        printDynamicAttr(incrementaldom, val);
+        break;
+      default:
+        throw new Error('Bad content kind');
     }
+  } else {
+    const val = expr(data, ij) as SanitizedHtmlAttribute;
     printDynamicAttr(incrementaldom, val);
   }
 }
@@ -281,18 +283,22 @@ function printDynamicAttr(
 function callDynamicHTML<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
-  // TODO(djjeck): Use the isIdom function.
-  // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-  const type = (expr as any as IdomFunction).contentKind;
-  if (type === SanitizedContentKind.HTML) {
-    (expr as IdomTemplate<TParams>)(incrementaldom, data, ij);
-  } else if (type === SanitizedContentKind.ATTRIBUTES) {
-    const val = attributesToString(() => {
-      (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
-    });
-    incrementaldom.text(val);
+  if (isIdom(expr)) {
+    switch ((expr as unknown as IdomFunction).contentKind) {
+      case SanitizedContentKind.HTML:
+        expr(incrementaldom, data, ij);
+        break;
+      case SanitizedContentKind.ATTRIBUTES:
+        const val = attributesToString(() => {
+          expr(defaultIdomRenderer, data, ij);
+        });
+        incrementaldom.text(val);
+        break;
+      default:
+        throw new Error('Bad content kind');
+    }
   } else {
-    const val = (expr as SoyTemplate<TParams>)(data, ij);
+    const val = expr(data, ij);
     incrementaldom.text(String(val));
   }
 }
@@ -319,22 +325,22 @@ function callDynamicText<TParams>(
     expr: Template<TParams>, data: TParams, ij: IjData,
     escFn?: (i: string) => string) {
   const transformFn = escFn ? escFn : (a: string) => a;
-  // TODO(djjeck): Use the isIdom function.
-  // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
-  const type = (expr as any as IdomFunction).contentKind;
-  let val: string|SanitizedContent;
-  if (type === SanitizedContentKind.HTML) {
-    val = transformFn(htmlToString(() => {
-      (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
-    }));
-  } else if (type === SanitizedContentKind.ATTRIBUTES) {
-    val = transformFn(attributesToString(() => {
-      (expr as IdomTemplate<TParams>)(defaultIdomRenderer, data, ij);
-    }));
+  if (isIdom(expr)) {
+    switch ((expr as unknown as IdomFunction).contentKind) {
+      case SanitizedContentKind.HTML:
+        return transformFn(htmlToString(() => {
+          expr(defaultIdomRenderer, data, ij);
+        }));
+      case SanitizedContentKind.ATTRIBUTES:
+        return transformFn(attributesToString(() => {
+          expr(defaultIdomRenderer, data, ij);
+        }));
+      default:
+        throw new Error('Bad content kind');
+    }
   } else {
-    val = (expr as SoyTemplate<TParams>)(data, ij);
+    return expr(data, ij);
   }
-  return val;
 }
 
 declare global {
