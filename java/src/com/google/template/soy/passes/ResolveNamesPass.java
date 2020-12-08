@@ -16,122 +16,31 @@
 
 package com.google.template.soy.passes;
 
-import static java.util.stream.Collectors.toList;
-
-import com.google.common.base.Preconditions;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
-import com.google.template.soy.exprtree.ExprNode;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
-import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
-import com.google.template.soy.soytree.ForNonemptyNode;
-import com.google.template.soy.soytree.LetContentNode;
-import com.google.template.soy.soytree.LetValueNode;
-import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.passes.LocalVariablesNodeVisitor.ExprVisitor;
+import com.google.template.soy.passes.LocalVariablesNodeVisitor.LocalVariables;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyNode.BlockNode;
-import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
-import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
-import com.google.template.soy.soytree.TemplateNode;
-import com.google.template.soy.soytree.defn.LocalVar;
-import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.UndeclaredVar;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Visitor which resolves all variable and parameter references to point to the corresponding
  * declaration object.
- *
  */
 public final class ResolveNamesPass implements CompilerFilePass {
+
   private static final SoyErrorKind GLOBAL_MATCHES_VARIABLE =
       SoyErrorKind.of(
           "Found global reference aliasing a local variable ''{0}'', did you mean ''${0}''?");
 
-  private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
-      SoyErrorKind.of("Variable ''{0}'' already defined{1}.");
   private static final SoyErrorKind UKNOWN_VARIABLE =
       SoyErrorKind.of("Unknown variable.{0}", StyleAllowance.NO_PUNCTUATION);
-
-  /**
-   * Manages the set of active variable names.
-   *
-   * <p>Ensures that no two active variabes have the same name
-   */
-  private final class LocalVariables {
-    private final Deque<Map<String, VarDefn>> currentScope = new ArrayDeque<>();
-
-    /**
-     * Enters a new scope. Variables {@link #define defined} will have a lifetime that extends until
-     * a matching call to {@link #exitScope()}.
-     */
-    void enterScope() {
-      currentScope.push(new LinkedHashMap<>());
-    }
-
-    /** Exits the current scope. */
-    void exitScope() {
-      currentScope.pop();
-    }
-
-    /**
-     * Returns the {@link VarDefn} associated with the given name by searching through the current
-     * scope and all parent scopes.
-     */
-    VarDefn lookup(String name) {
-      for (Map<String, VarDefn> scope : currentScope) {
-        VarDefn defn = scope.get(name);
-        if (defn != null) {
-          return defn;
-        }
-      }
-      return null;
-    }
-
-    /** Defines a variable. */
-    boolean define(VarDefn defn, Node definingNode) {
-      String refName = defn.refName();
-      // Search for the name to see if it is being redefined.
-      VarDefn preexisting = lookup(refName);
-      if (preexisting != null) {
-        Optional<SourceLocation> preexistingSourceLocation = forVarDefn(preexisting);
-        SourceLocation defnSourceLocation =
-            defn.nameLocation() == null ? definingNode.getSourceLocation() : defn.nameLocation();
-        String location =
-            preexistingSourceLocation.isPresent()
-                ? " at line " + preexistingSourceLocation.get().getBeginLine()
-                : "";
-        errorReporter.report(defnSourceLocation, VARIABLE_ALREADY_DEFINED, refName, location);
-        return false;
-      }
-      currentScope.peek().put(refName, defn);
-      return true;
-    }
-
-    List<String> allVariablesInScope() {
-      return currentScope.stream().flatMap(map -> map.keySet().stream()).collect(toList());
-    }
-  }
-
-  /** Scope for injected params. */
-  private LocalVariables localVariables;
 
   private final ErrorReporter errorReporter;
 
@@ -141,113 +50,22 @@ public final class ResolveNamesPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    new Visitor().exec(file);
+    new LocalVariablesNodeVisitor(new Visitor()).exec(file);
   }
 
-  private final class Visitor extends AbstractSoyNodeVisitor<Void> {
+  private final class Visitor extends LocalVariablesNodeVisitor.NodeVisitor {
+
+    private final ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
+
     @Override
-    protected void visitTemplateNode(TemplateNode node) {
-      // Create a scope for all parameters.
-      localVariables = new LocalVariables();
-      localVariables.enterScope();
-      ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
-      // Add all header params to the param scope.
-      for (TemplateHeaderVarDefn param : node.getHeaderParams()) {
-        if (param.defaultValue() != null) {
-          exprVisitor.exec(param.defaultValue());
-        }
-        localVariables.define(param, node);
-      }
-
-      visitSoyNode(node);
-      localVariables.exitScope();
-
-      localVariables = null;
+    protected ExprVisitor getExprVisitor() {
+      return exprVisitor;
     }
 
     @Override
-    protected void visitPrintNode(PrintNode node) {
-      visitSoyNode(node);
+    protected ErrorReporter getErrorReporter() {
+      return errorReporter;
     }
-
-    @Override
-    protected void visitLetValueNode(LetValueNode node) {
-      visitExpressions(node);
-      // Now after the let-block is complete, define the new variable
-      // in the current scope.
-      localVariables.define(node.getVar(), node);
-    }
-
-    @Override
-    protected void visitLetContentNode(LetContentNode node) {
-      localVariables.enterScope();
-      visitChildren(node);
-      localVariables.exitScope();
-      // TODO(lukes): should local variables claim their name prior to the scope?  we wouldn't want
-      // lookups to succeed but its weird that you could redefine this variable.  See
-      // ResolveNamesPassTest.testLetContentNameLifetime() for a demonstration.
-      localVariables.define(node.getVar(), node);
-    }
-
-    @Override
-    protected void visitForNonemptyNode(ForNonemptyNode node) {
-      // Visit the foreach iterator expression
-      visitExpressions(node.getParent());
-
-      // Create a scope to hold the iteration variable
-      localVariables.enterScope();
-      localVariables.define(node.getVar(), node);
-      if (node.getIndexVar() != null) {
-        localVariables.define(node.getIndexVar(), node);
-      }
-
-      // Visit the node body
-      visitChildren(node);
-      localVariables.exitScope();
-    }
-
-    @Override
-    protected void visitSoyNode(SoyNode node) {
-      if (node instanceof ExprHolderNode) {
-        visitExpressions((ExprHolderNode) node);
-      }
-
-      if (node instanceof ParentSoyNode<?>) {
-        if (node instanceof BlockNode) {
-          localVariables.enterScope();
-          visitChildren((BlockNode) node);
-          localVariables.exitScope();
-        } else {
-          visitChildren((ParentSoyNode<?>) node);
-        }
-      }
-    }
-
-    private void visitExpressions(ExprHolderNode node) {
-      ResolveNamesExprVisitor exprVisitor = new ResolveNamesExprVisitor();
-      for (ExprRootNode expr : node.getExprList()) {
-        exprVisitor.exec(expr);
-      }
-    }
-  }
-
-  private static Optional<SourceLocation> forVarDefn(VarDefn varDefn) {
-    switch (varDefn.kind()) {
-      case PARAM:
-      case STATE:
-      case IMPORT_VAR:
-        return Optional.of(varDefn.nameLocation());
-      case LOCAL_VAR:
-        return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
-      case COMPREHENSION_VAR:
-        return Optional.of(
-            ((ListComprehensionNode.ComprehensionVarDefn) varDefn)
-                .declaringNode()
-                .getSourceLocation());
-      case UNDECLARED:
-        return Optional.empty();
-    }
-    throw new AssertionError(varDefn.kind());
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -257,48 +75,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
    * Visitor which resolves all variable and parameter references in expressions to point to the
    * corresponding declaration object.
    */
-  private final class ResolveNamesExprVisitor extends AbstractExprNodeVisitor<Void> {
-
-    @Override
-    public Void exec(ExprNode node) {
-      Preconditions.checkArgument(node instanceof ExprRootNode);
-      visit(node);
-      return null;
-    }
-
-    @Override
-    protected void visitExprRootNode(ExprRootNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
-      }
-    }
-
-    @Override
-    protected void visitListComprehensionNode(ListComprehensionNode node) {
-      // Visit the list expr.
-      visit(node.getListExpr());
-
-      // Define the list item variable.
-      localVariables.enterScope();
-      localVariables.define(node.getListIterVar(), node);
-
-      // Define the optional index variable.
-      if (node.getIndexVar() != null) {
-        localVariables.define(node.getIndexVar(), node);
-      }
-
-      // Now we can visit the list item map and filter expressions.
-      if (node.getFilterExpr() != null) {
-        visit(node.getFilterExpr());
-      }
-      visit(node.getListItemTransformExpr());
-      localVariables.exitScope();
-    }
+  private final class ResolveNamesExprVisitor extends LocalVariablesNodeVisitor.ExprVisitor {
 
     @Override
     protected void visitGlobalNode(GlobalNode node) {
@@ -310,6 +87,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
       // Note.  This also makes it impossible for a global to share the same name as a local.  This
       // should be fine since global names are typically qualified strings.
       String globalName = node.getName();
+      LocalVariables localVariables = getLocalVariables();
       VarDefn varDefn = localVariables.lookup("$" + globalName);
       if (varDefn != null) {
         node.suppressUnknownGlobalErrors();
@@ -326,6 +104,7 @@ public final class ResolveNamesPass implements CompilerFilePass {
         // defns.
         return;
       }
+      LocalVariables localVariables = getLocalVariables();
       VarDefn varDefn = localVariables.lookup(varRef.getName());
       if (varDefn == null) {
         errorReporter.report(
