@@ -54,14 +54,9 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SO
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.EMPTY_OBJECT_LITERAL;
 import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_EMPTY_STRING;
-import static com.google.template.soy.jssrc.dsl.Expression.LITERAL_TRUE;
-import static com.google.template.soy.jssrc.dsl.Expression.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.stringLiteral;
-import static com.google.template.soy.jssrc.dsl.Statement.assign;
-import static com.google.template.soy.jssrc.dsl.Statement.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statement.returnValue;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_STRING_UNESCAPE_ENTITIES;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SOY_ESCAPE_HTML;
@@ -311,17 +306,6 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       getJsCodeBuilder().append(generateClassForSoyElement(elementName, elementAccessor, element));
       getJsCodeBuilder().append(generateExportsForSoyElement(elementName));
     }
-
-    // Flag the function as iDom, for use in debug code.
-    getJsCodeBuilder()
-        .append(
-            ifStatement(
-                    GOOG_DEBUG,
-                    assign(
-                        dottedIdNoRequire(alias).dotAccess("isIdom"),
-                        LITERAL_TRUE,
-                        JsDoc.builder().addParameterizedAnnotation("type", "boolean").build()))
-                .build());
   }
 
   @Override

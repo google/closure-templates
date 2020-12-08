@@ -210,12 +210,23 @@ function renderDynamicContent(
   }
 }
 
+/** Determines whether the template is idom */
+function isIdom<TParams>(template: Template<TParams>):
+    template is IdomTemplate<TParams> {
+  const contentKind = (template as unknown as IdomFunction).contentKind;
+  return contentKind &&
+      // idom generates regular templates for all other content kinds.
+      (contentKind === SanitizedContentKind.HTML ||
+       contentKind === SanitizedContentKind.ATTRIBUTES);
+}
+
 /**
  * Calls an expression in case of a function or outputs it as text content.
  */
 function callDynamicAttributes<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
+  // TODO(djjeck): Use the isIdom function.
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   if (type === SanitizedContentKind.ATTRIBUTES) {
@@ -270,6 +281,7 @@ function printDynamicAttr(
 function callDynamicHTML<TParams>(
     incrementaldom: IncrementalDomRenderer, expr: Template<TParams>,
     data: TParams, ij: IjData) {
+  // TODO(djjeck): Use the isIdom function.
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   if (type === SanitizedContentKind.HTML) {
@@ -307,6 +319,7 @@ function callDynamicText<TParams>(
     expr: Template<TParams>, data: TParams, ij: IjData,
     escFn?: (i: string) => string) {
   const transformFn = escFn ? escFn : (a: string) => a;
+  // TODO(djjeck): Use the isIdom function.
   // tslint:disable-next-line:no-any Attaching arbitrary attributes to function.
   const type = (expr as any as IdomFunction).contentKind;
   let val: string|SanitizedContent;
@@ -398,6 +411,7 @@ function isTruthy(expr: unknown): boolean {
 export {
   SoyTemplate as $SoyTemplate,
   SoyElement as $SoyElement,
+  isIdom as $$isIdom,
   isTruthy as $$isTruthy,
   print as $$print,
   htmlToString as $$htmlToString,
