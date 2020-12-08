@@ -14,6 +14,7 @@ ESCAPING_SRCS = [
     "EscapingConventions.java",
     "Sanitizers.java",
     "StreamingEscaper.java",
+    "StreamingAttributeEscaper.java",
     "TagWhitelist.java",
 ]
 

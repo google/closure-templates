@@ -99,6 +99,8 @@ public final class InternalPluginsTest {
     assertThat(streamingPrintDirectives.build())
         .containsExactly(
             "|escapeHtml",
+            "|escapeHtmlAttribute",
+            "|escapeHtmlAttributeNospace",
             "|escapeCssString",
             "|normalizeHtml",
             "|escapeJsString",
@@ -136,12 +138,8 @@ public final class InternalPluginsTest {
             "|filterImageDataUri",
             "|filterSipUri",
             "|filterTelUri",
-            // This is used only with escapeHtmlAttribute* which are not streaming.
+            // This can be migrated since  escapeHtmlAttribute* is streaming.
             "|escapeHtmlHtmlAttribute",
-            // These two could be made streaming, it would require some refactoring of the
-            // Sanitizers.stripHtmlTags method but it is probably a good idea.
-            "|escapeHtmlAttribute",
-            "|escapeHtmlAttributeNospace",
             // Could be made streaming, but it would be a bit tricky and is unlikely to be
             // important.  See comment on definition.
             "|filterHtmlScriptPhrasingData");

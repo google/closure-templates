@@ -329,6 +329,11 @@ public final class Sanitizers {
     return escapeHtmlAttribute(value.coerceToString());
   }
 
+  public static LoggingAdvisingAppendable escapeHtmlAttributeStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingAttributeEscaper.create(appendable, EscapingConventions.EscapeHtml.INSTANCE);
+  }
+
   /**
    * Converts plain text to HTML by entity escaping so the result can safely be embedded in an HTML
    * attribute value.
@@ -364,6 +369,12 @@ public final class Sanitizers {
       return stripHtmlTags(value.coerceToString(), null, false);
     }
     return escapeHtmlAttributeNospace(value.coerceToString());
+  }
+
+  public static LoggingAdvisingAppendable escapeHtmlAttributeNospaceStreaming(
+      LoggingAdvisingAppendable appendable) {
+    return StreamingAttributeEscaper.create(
+        appendable, EscapingConventions.EscapeHtmlNospace.INSTANCE);
   }
 
   /**
@@ -944,8 +955,8 @@ public final class Sanitizers {
    * @param rawSpacesAllowed true if spaces are allowed in the output unescaped as is the case when
    *     the output is embedded in a regular text node, or in a quoted attribute.
    */
-  @VisibleForTesting
-  static String stripHtmlTags(String value, TagWhitelist safeTags, boolean rawSpacesAllowed) {
+  public static String stripHtmlTags(
+      String value, TagWhitelist safeTags, boolean rawSpacesAllowed) {
     EscapingConventions.CrossLanguageStringXform normalizer =
         rawSpacesAllowed
             ? EscapingConventions.NormalizeHtml.INSTANCE
