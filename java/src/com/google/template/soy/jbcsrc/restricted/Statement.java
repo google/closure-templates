@@ -169,6 +169,20 @@ public abstract class Statement extends BytecodeProducer {
     };
   }
 
+  /**
+   * Returns a new statement identical to this one but with the given label applied at the start of
+   * the statement.
+   */
+  public final Statement labelEnd(final Label label) {
+    return new Statement() {
+      @Override
+      protected void doGen(CodeBuilder adapter) {
+        Statement.this.gen(adapter);
+        adapter.mark(label);
+      }
+    };
+  }
+
   /** Returns a new {@link Statement} with the source location attached. */
   public final Statement withSourceLocation(SourceLocation location) {
     checkNotNull(location);

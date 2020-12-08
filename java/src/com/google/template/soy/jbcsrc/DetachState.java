@@ -32,11 +32,11 @@ import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.TableSwitchGenerator;
 
 /**
  * An object that manages generating the logic to save and restore execution state to enable
@@ -131,11 +131,11 @@ final class DetachState implements ExpressionDetacher.Factory {
     return new ExpressionDetacher.BasicDetacher(
         () -> {
           SaveRestoreState saveRestoreState = variables.saveRestoreState();
-          Statement restore = saveRestoreState.restore();
-          int state = addState(reattachPoint, restore);
+          int state = addState(reattachPoint, saveRestoreState.restore());
           Statement saveState =
               getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
-          return Statement.concat(saveRestoreState.save(), saveState);
+          return Statement.concat(
+              saveRestoreState.save().orElse(Statement.NULL_STATEMENT), saveState);
         });
   }
 
@@ -150,8 +150,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     final Label reattachPoint = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
 
-    Statement restore = saveRestoreState.restore();
-    int state = addState(reattachPoint, restore);
+    int state = addState(reattachPoint, saveRestoreState.restore());
     final Expression isSoftLimited = appendable.softLimitReached();
     final Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
     final Statement saveState =
@@ -162,7 +161,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         isSoftLimited.gen(adapter);
         adapter.ifZCmp(Opcodes.IFEQ, reattachPoint); // if !softLimited
         // ok we were limited, save state and return
-        saveRestoreState.save().gen(adapter); // save locals
+        saveRestoreState.save().orElse(Statement.NULL_STATEMENT).gen(adapter); // save locals
         saveState.gen(adapter); // save the state field
         returnLimited.gen(adapter);
         // Note, the reattach point for 'limited' is _after_ the check.  That means we do not
@@ -197,8 +196,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     final Label reattachPoint = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();
 
-    Statement restore = saveRestoreState.restore();
-    int state = addState(reattachPoint, restore);
+    int state = addState(reattachPoint, saveRestoreState.restore());
     final Statement saveState =
         getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
@@ -212,7 +210,7 @@ final class DetachState implements ExpressionDetacher.Factory {
         // if isDone goto Done
         Label end = new Label();
         adapter.ifZCmp(Opcodes.IFNE, end); // Stack: RR
-        saveRestoreState.save().gen(adapter);
+        saveRestoreState.save().orElse(Statement.NULL_STATEMENT).gen(adapter);
         saveState.gen(adapter);
         adapter.returnValue();
         adapter.mark(end);
@@ -220,6 +218,7 @@ final class DetachState implements ExpressionDetacher.Factory {
       }
     };
   }
+
 
   /**
    * Returns a statement that generates the reattach jump table.
@@ -236,55 +235,59 @@ final class DetachState implements ExpressionDetacher.Factory {
           "inconsistent state, never generated a state but has reattach logic.");
     }
     final Expression readField = getStateField().accessor(thisExpr);
-    final Statement defaultCase =
-        Statement.throwExpression(MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(readField));
-    return new Statement() {
-      @Override
-      protected void doGen(final CodeBuilder adapter) {
-        // add 1 so that state 0 is the initial state
-        int[] keys = new int[reattaches.size() + 1];
-        for (int i = 0; i < keys.length; i++) {
-          keys[i] = i;
-        }
-        readField.gen(adapter);
-        // Generate a switch table.  Note, while it might be preferable to just 'goto state', Java
-        // doesn't allow computable gotos (probably because it makes verification impossible).  So
-        // instead we emulate that with a jump table.  And anyway we still need to execute 'restore'
-        // logic to repopulate the local variable tables, so the 'case' statements are a natural
-        // place for that logic to live.
-        adapter.tableSwitch(
-            keys,
-            new TableSwitchGenerator() {
+    // Generate a switch table.  Note, while it might be preferable to just 'goto state', Java
+    // doesn't allow computable gotos (probably because it makes verification impossible).  So
+    // instead we emulate that with a jump table.  And anyway we still need to execute 'restore'
+    // logic to repopulate the local variable tables, so the 'case' statements are a natural
+    // place for that logic to live.
+    // add 1 so that state 0 is the initial state
+    Label unexpectedState = new Label();
+    Label end = new Label();
+    List<Label> caseLabels = new ArrayList<>();
+    List<Statement> casesToGen = new ArrayList<>();
+    // handle case 0
+    caseLabels.add(end);
+    for (ReattachState reattachState : reattaches) {
+      if (reattachState.restoreStatement().isPresent()) {
+        Label caseLabel = new Label();
+        Statement caseBody =
+            Statement.concat(
+                    reattachState.restoreStatement().get(),
+                    new Statement() {
+                      @Override
+                      protected void doGen(CodeBuilder cb) {
+                        cb.goTo(reattachState.reattachPoint());
+                      }
+                    })
+                .labelStart(caseLabel);
+        casesToGen.add(caseBody);
+        caseLabels.add(caseLabel);
+      } else {
+        caseLabels.add(reattachState.reattachPoint());
+      }
+    }
+    casesToGen.add(
+        Statement.throwExpression(
+                MethodRef.RUNTIME_UNEXPECTED_STATE_ERROR.invoke(getStateField().accessor(thisExpr)))
+            .labelStart(unexpectedState));
+    return Statement.concat(
+            new Statement() {
               @Override
-              public void generateCase(int key, Label end) {
-                if (key == 0) {
-                  // State 0 is special, it means initial state, so we just jump to the very end
-                  adapter.goTo(end);
-                  return;
-                }
-                // subtract 1 for the index of the state
-                ReattachState reattachState = reattaches.get(key - 1);
-                // restore and jump!
-                reattachState.restoreStatement().gen(adapter);
-                adapter.goTo(reattachState.reattachPoint());
-              }
-
-              @Override
-              public void generateDefault() {
-                defaultCase.gen(adapter);
+              protected void doGen(final CodeBuilder adapter) {
+                readField.gen(adapter);
+                adapter.visitTableSwitchInsn(
+                    /* min=*/ 0,
+                    /* max=*/ reattaches.size(),
+                    /*dflt=*/ unexpectedState,
+                    caseLabels.toArray(new Label[0]));
               }
             },
-            // Use tableswitch instead of lookupswitch.  TableSwitch is appropriate because our case
-            // labels are sequential integers in the range [0, N).  This means that switch is O(1)
-            // and
-            // there are no 'holes' meaning that it is compact in the bytecode.
-            true);
-      }
-    };
+            Statement.concat(casesToGen))
+        .labelEnd(end);
   }
 
   /** Add a new state item and return the state. */
-  private int addState(Label reattachPoint, Statement restore) {
+  private int addState(Label reattachPoint, Optional<Statement> restore) {
     ReattachState create = ReattachState.create(reattachPoint, restore);
     reattaches.add(create);
     // the index of the ReattachState in the list + 1, 0 is reserved for 'initial state'.
@@ -294,7 +297,7 @@ final class DetachState implements ExpressionDetacher.Factory {
 
   @AutoValue
   abstract static class ReattachState {
-    static ReattachState create(Label reattachPoint, Statement restore) {
+    static ReattachState create(Label reattachPoint, Optional<Statement> restore) {
       return new AutoValue_DetachState_ReattachState(reattachPoint, restore);
     }
 
@@ -302,7 +305,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     abstract Label reattachPoint();
 
     /** The statement that restores the state of local variables so we can resume execution. */
-    abstract Statement restoreStatement();
+    abstract Optional<Statement> restoreStatement();
   }
 
   /** Returns the number of unique detach/reattach points. */

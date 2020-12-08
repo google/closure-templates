@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -364,9 +365,9 @@ final class TemplateVariableManager implements LocalVariableManager {
   /** Statements for saving and restoring local variables in class fields. */
   @AutoValue
   abstract static class SaveRestoreState {
-    abstract Statement save();
+    abstract Optional<Statement> save();
 
-    abstract Statement restore();
+    abstract Optional<Statement> restore();
   }
 
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
@@ -379,6 +380,7 @@ final class TemplateVariableManager implements LocalVariableManager {
       restores.add(var.restore());
     }
     return new AutoValue_TemplateVariableManager_SaveRestoreState(
-        Statement.concat(saves), Statement.concat(restores));
+        saves.isEmpty() ? Optional.empty() : Optional.of(Statement.concat(saves)),
+        restores.isEmpty() ? Optional.empty() : Optional.of(Statement.concat(restores)));
   }
 }
