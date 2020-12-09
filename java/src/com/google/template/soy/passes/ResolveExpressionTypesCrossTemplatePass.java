@@ -54,6 +54,7 @@ import com.google.template.soy.soytree.TemplateMetadata;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
+import com.google.template.soy.types.ImportType;
 import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
@@ -657,6 +658,11 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
 
     @Override
     public SoyType visit(MessageType type) {
+      return type;
+    }
+
+    @Override
+    public SoyType visit(ImportType type) {
       return type;
     }
   }

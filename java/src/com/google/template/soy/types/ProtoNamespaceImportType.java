@@ -15,32 +15,26 @@
  */
 package com.google.template.soy.types;
 
-/** Visitor for {@link SoyType}. */
-public interface SoyTypeVisitor<T> {
+import com.google.auto.value.AutoValue;
+import com.google.protobuf.Descriptors.FileDescriptor;
 
-  T visit(LegacyObjectMapType type);
+/** Representing an imported proto namespace/file type. */
+@AutoValue
+public abstract class ProtoNamespaceImportType extends ImportType {
 
-  T visit(ListType type);
+  public static ProtoNamespaceImportType create(FileDescriptor descriptor) {
+    return new AutoValue_ProtoNamespaceImportType(descriptor);
+  }
 
-  T visit(MapType type);
+  public abstract FileDescriptor getDescriptor();
 
-  T visit(NamedTemplateType type);
+  @Override
+  public final String toString() {
+    return getDescriptor().getFullName();
+  }
 
-  T visit(PrimitiveType type);
-
-  T visit(RecordType type);
-
-  T visit(SoyProtoEnumType type);
-
-  T visit(SoyProtoType type);
-
-  T visit(TemplateType type);
-
-  T visit(UnionType type);
-
-  T visit(VeType type);
-
-  T visit(MessageType type);
-
-  T visit(ImportType type);
+  @Override
+  public Kind getKind() {
+    return Kind.PROTO_NAMESPACE;
+  }
 }

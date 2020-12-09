@@ -44,27 +44,9 @@ public final class ImportNode extends AbstractSoyNode {
 
   /** Only Proto is supported right now. */
   public enum ImportType {
-    PROTO {
-      @Override
-      public boolean requiresSymbols() {
-        return true;
-      }
-    },
-    TEMPLATE {
-      @Override
-      public boolean requiresSymbols() {
-        return true;
-      }
-    },
+    PROTO,
+    TEMPLATE,
     UNKNOWN;
-
-    public boolean allowsSymbols() {
-      return true;
-    }
-
-    public boolean requiresSymbols() {
-      return false;
-    }
   }
 
   public ImportNode(int id, SourceLocation location, StringNode path, List<ImportedVar> defns) {
@@ -111,10 +93,6 @@ public final class ImportNode extends AbstractSoyNode {
       return ImportType.TEMPLATE;
     }
     return ImportType.UNKNOWN;
-  }
-
-  public StringNode getPathNode() {
-    return path;
   }
 
   public String getPath() {

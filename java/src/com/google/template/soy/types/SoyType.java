@@ -112,6 +112,11 @@ public abstract class SoyType {
     UNION,
     VE,
     VE_DATA,
+    // Imported symbol types
+    PROTO_TYPE,
+    PROTO_ENUM_TYPE,
+    PROTO_EXTENSION,
+    PROTO_NAMESPACE,
     ;
 
     private static final ImmutableSet<Kind> STRING_KINDS =

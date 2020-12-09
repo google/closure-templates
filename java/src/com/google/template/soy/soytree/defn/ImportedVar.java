@@ -19,6 +19,7 @@ package com.google.template.soy.soytree.defn;
 import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.exprtree.AbstractVarDefn;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
 
@@ -69,5 +70,9 @@ public final class ImportedVar extends AbstractVarDefn {
 
   public boolean isModuleImport() {
     return MODULE_IMPORT.equals(symbol);
+  }
+
+  public void setType(SoyType type) {
+    this.type = type;
   }
 }

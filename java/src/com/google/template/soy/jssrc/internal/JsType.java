@@ -477,6 +477,10 @@ public final class JsType {
           return builder.build();
         }
       case NAMED_TEMPLATE:
+      case PROTO_TYPE:
+      case PROTO_ENUM_TYPE:
+      case PROTO_EXTENSION:
+      case PROTO_NAMESPACE:
     }
     throw new AssertionError("unhandled soytype: " + soyType);
   }

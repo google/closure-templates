@@ -1868,6 +1868,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE:
         case VE_DATA:
         case MESSAGE:
+        case PROTO_TYPE:
+        case PROTO_ENUM_TYPE:
+        case PROTO_EXTENSION:
+        case PROTO_NAMESPACE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }
@@ -1972,6 +1976,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE:
         case VE_DATA:
         case MESSAGE:
+        case PROTO_TYPE:
+        case PROTO_ENUM_TYPE:
+        case PROTO_EXTENSION:
+        case PROTO_NAMESPACE:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }

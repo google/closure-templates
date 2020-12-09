@@ -166,6 +166,10 @@ final class KeyCommandPass implements CompilerFilePass {
           isSupportedType = false;
           break;
         case UNION:
+        case PROTO_TYPE:
+        case PROTO_ENUM_TYPE:
+        case PROTO_EXTENSION:
+        case PROTO_NAMESPACE:
           throw new AssertionError("impossible");
       }
     }

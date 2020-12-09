@@ -15,32 +15,18 @@
  */
 package com.google.template.soy.types;
 
-/** Visitor for {@link SoyType}. */
-public interface SoyTypeVisitor<T> {
+import com.google.template.soy.soytree.SoyTypeP;
 
-  T visit(LegacyObjectMapType type);
+/** Base type for all imported symbol types. */
+public abstract class ImportType extends SoyType {
 
-  T visit(ListType type);
+  @Override
+  public <T> T accept(SoyTypeVisitor<T> visitor) {
+    return visitor.visit(this);
+  }
 
-  T visit(MapType type);
-
-  T visit(NamedTemplateType type);
-
-  T visit(PrimitiveType type);
-
-  T visit(RecordType type);
-
-  T visit(SoyProtoEnumType type);
-
-  T visit(SoyProtoType type);
-
-  T visit(TemplateType type);
-
-  T visit(UnionType type);
-
-  T visit(VeType type);
-
-  T visit(MessageType type);
-
-  T visit(ImportType type);
+  @Override
+  void doToProto(SoyTypeP.Builder builder) {
+    throw new UnsupportedOperationException();
+  }
 }

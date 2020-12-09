@@ -47,10 +47,8 @@ abstract class ImportsPass {
           StyleAllowance.NO_PUNCTUATION);
   private static final SoyErrorKind UNKNOWN_SYMBOL =
       SoyErrorKind.of("Unknown symbol {0} in {1}.{2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind SYMBOLS_NOT_ALLOWED =
-      SoyErrorKind.of("Imported symbols are not allowed from import type {0}.");
   private static final SoyErrorKind SYMBOLS_REQUIRED =
-      SoyErrorKind.of("One or more imported symbols are required for import type {0}.");
+      SoyErrorKind.of("One or more imported symbols are required for import.");
 
   // Naming conflict errors:
   private static final SoyErrorKind IMPORT_COLLISION =
@@ -153,37 +151,30 @@ abstract class ImportsPass {
         return;
       }
 
-      if (node.getImportType().allowsSymbols()) {
-        if (node.getImportType().requiresSymbols() && node.getIdentifiers().isEmpty()) {
-          errorReporter.report(node.getSourceLocation(), SYMBOLS_REQUIRED, node.getImportType());
-          return;
-        }
+      if (node.getIdentifiers().isEmpty()) {
+        errorReporter.report(node.getSourceLocation(), SYMBOLS_REQUIRED);
+        return;
+      }
 
         boolean foundSymbolErrors = false;
         for (ImportedVar symbol : node.getIdentifiers()) {
           String name = symbol.name();
 
-          // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
-          // to not have a compilation error on duplicates.
-          String path = node.getPath() + "//" + symbol.getSymbol();
+        // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
+        // to not have a compilation error on duplicates.
+        String path = node.getPath() + "//" + symbol.name();
           String duplicatePath = uniqueImports.put(name, path);
           if (path.equals(duplicatePath)) {
             continue;
           }
 
-          // Import naming collisions. Report errors but continue checking the other symbols so we
-          // can report all of the errors at once.
-          if (reportErrorIfSymbolInvalid(file, name, symbol.nameLocation())) {
-            foundSymbolErrors = true;
-            continue;
-          }
+        // Import naming collisions. Report errors but continue checking the other symbols so we
+        // can report all of the errors at once.
+        if (reportErrorIfSymbolInvalid(file, name, symbol.nameLocation())) {
+          foundSymbolErrors = true;
         }
-        if (foundSymbolErrors) {
-          return;
-        }
-      } else if (!node.getIdentifiers().isEmpty()) {
-        errorReporter.report(
-            node.getIdentifiers().get(0).nameLocation(), SYMBOLS_NOT_ALLOWED, node.getImportType());
+      }
+      if (foundSymbolErrors) {
         return;
       }
 

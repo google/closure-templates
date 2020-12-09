@@ -158,6 +158,11 @@ public final class JavaTypeUtils {
       case VE_DATA:
         types = ImmutableList.of(new VeDataJavaType());
         break;
+      case PROTO_TYPE:
+      case PROTO_ENUM_TYPE:
+      case PROTO_EXTENSION:
+      case PROTO_NAMESPACE:
+        throw new UnsupportedOperationException();
       case NULL:
         break;
     }
