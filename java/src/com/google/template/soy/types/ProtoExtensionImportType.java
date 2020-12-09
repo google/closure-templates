@@ -17,6 +17,7 @@ package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.template.soy.internal.proto.Field;
 
 /** Representing an imported proto extension type. */
 @AutoValue
@@ -36,5 +37,9 @@ public abstract class ProtoExtensionImportType extends ImportType {
   @Override
   public Kind getKind() {
     return Kind.PROTO_EXTENSION;
+  }
+
+  public String getFieldName() {
+    return Field.computeSoyFullyQualifiedName(getDescriptor());
   }
 }

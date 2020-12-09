@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.ImportsContext.ImportsTypeRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.UnknownType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -127,20 +128,25 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
         Descriptor messageDesc = messages.get(name);
         if (messageDesc != null) {
           putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
+          symbol.setType(typeRegistry.getProtoImportType(messageDesc));
           continue;
         }
 
         EnumDescriptor enumDesc = enums.get(name);
         if (enumDesc != null) {
           putDistinct(msgAndEnumLocalToFqn, symbol.name(), fullName);
+          symbol.setType(typeRegistry.getProtoImportType(enumDesc));
           continue;
         }
 
         FieldDescriptor extDesc = extensions.get(name);
         if (extDesc != null) {
           putDistinct(this.extLocalToFqn, symbol.name(), fullName);
+          symbol.setType(typeRegistry.getProtoImportType(extDesc));
           continue;
         }
+
+        symbol.setType(UnknownType.getInstance());
 
         reportUnknownSymbolError(
             symbol.nameLocation(),
@@ -157,6 +163,7 @@ final class ResolveProtoImportsPass extends ImportsPass implements CompilerFileP
       }
 
       FileDescriptor fd = pathToDescriptor.get(node.getPath());
+      node.getIdentifiers().get(0).setType(typeRegistry.getProtoImportType(fd));
 
       // Add a mapping from "moduleName.ExtensionName" -> fqn, for every top-level extension in the
       // file.

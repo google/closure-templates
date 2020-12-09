@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.types.RecordType.Member;
 import java.util.Collection;
@@ -111,6 +112,21 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   @Override
   public SoyType getOrCreateElementType(String tagName) {
     return delegate.getOrCreateElementType(tagName);
+  }
+
+  @Override
+  public ImportType getProtoImportType(GenericDescriptor descriptor) {
+    return delegate.getProtoImportType(descriptor);
+  }
+
+  @Override
+  public SoyType getProtoImportType(FileDescriptor descriptor, String member) {
+    return delegate.getProtoImportType(descriptor, member);
+  }
+
+  @Override
+  public SoyType getProtoImportType(Descriptor descriptor, String member) {
+    return delegate.getProtoImportType(descriptor, member);
   }
 
   @Override

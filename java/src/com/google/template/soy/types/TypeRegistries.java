@@ -26,9 +26,13 @@ import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.internal.proto.Field;
 import com.google.template.soy.types.RecordType.Member;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.ElementType;
@@ -106,6 +110,9 @@ public final class TypeRegistries {
     private final Map<String, SoyProtoType> protoTypes = new ConcurrentHashMap<>();
     private final Interner<SoyProtoEnumType> enumTypes = Interners.newStrongInterner();
     private final Interner<ElementType> elementTypes = Interners.newStrongInterner();
+    private final Map<GenericDescriptor, ImmutableMap<String, GenericDescriptor>>
+        protoMembersCache = new ConcurrentHashMap<>();
+    private final Map<GenericDescriptor, ImportType> protoImportTypes = new ConcurrentHashMap<>();
 
     public TypeInternerImpl() {
       // Register the special number type so == comparisons work
@@ -227,6 +234,67 @@ public final class TypeRegistries {
     public SoyType getOrCreateElementType(String tagName) {
       return elementTypes.intern(ElementType.getInstance(tagName));
     }
+
+    @Override
+    public ImportType getProtoImportType(GenericDescriptor descriptor) {
+      return protoImportTypes.computeIfAbsent(
+          descriptor,
+          d -> {
+            if (d instanceof FileDescriptor) {
+              return ProtoNamespaceImportType.create((FileDescriptor) d);
+            }
+            if (d instanceof Descriptor) {
+              return ProtoImportType.create((Descriptor) d);
+            }
+            if (d instanceof EnumDescriptor) {
+              return ProtoEnumImportType.create((EnumDescriptor) d);
+            }
+            if (d instanceof FieldDescriptor && ((FieldDescriptor) d).isExtension()) {
+              return ProtoExtensionImportType.create((FieldDescriptor) d);
+            }
+            throw new ClassCastException(d.getClass().getName());
+          });
+    }
+
+    @Override
+    public SoyType getProtoImportType(FileDescriptor descriptor, String member) {
+      return getProtoImportType(
+          protoMembersCache.computeIfAbsent(descriptor, TypeInternerImpl::buildMemberIndex),
+          member);
+    }
+
+    @Override
+    public SoyType getProtoImportType(Descriptor descriptor, String member) {
+      return getProtoImportType(
+          protoMembersCache.computeIfAbsent(descriptor, TypeInternerImpl::buildMemberIndex),
+          member);
+    }
+
+    private SoyType getProtoImportType(Map<String, GenericDescriptor> index, String member) {
+      GenericDescriptor d = index.get(member);
+      if (d != null) {
+        return getProtoImportType(d);
+      }
+      return UnknownType.getInstance();
+    }
+
+    private static ImmutableMap<String, GenericDescriptor> buildMemberIndex(GenericDescriptor d) {
+      ImmutableMap.Builder<String, GenericDescriptor> index = ImmutableMap.builder();
+      if (d instanceof FileDescriptor) {
+        FileDescriptor fileDescriptor = (FileDescriptor) d;
+        fileDescriptor.getMessageTypes().forEach(t -> index.put(t.getName(), t));
+        fileDescriptor.getEnumTypes().forEach(t -> index.put(t.getName(), t));
+        fileDescriptor.getExtensions().forEach(t -> index.put(Field.computeSoyName(t), t));
+      } else if (d instanceof Descriptor) {
+        Descriptor descriptor = (Descriptor) d;
+        descriptor.getNestedTypes().forEach(t -> index.put(t.getName(), t));
+        descriptor.getEnumTypes().forEach(t -> index.put(t.getName(), t));
+        descriptor.getExtensions().forEach(t -> index.put(Field.computeSoyName(t), t));
+      } else {
+        throw new AssertionError(d.getClass().getName());
+      }
+      return index.build();
+    }
   }
 
   private static final class BuiltinTypeRegistry implements TypeRegistry {
@@ -340,6 +408,21 @@ public final class TypeRegistries {
     @Override
     public SoyType getOrCreateElementType(String tagName) {
       return typeInterner.getOrCreateElementType(tagName);
+    }
+
+    @Override
+    public ImportType getProtoImportType(GenericDescriptor descriptor) {
+      return typeInterner.getProtoImportType(descriptor);
+    }
+
+    @Override
+    public SoyType getProtoImportType(FileDescriptor descriptor, String member) {
+      return typeInterner.getProtoImportType(descriptor, member);
+    }
+
+    @Override
+    public SoyType getProtoImportType(Descriptor descriptor, String member) {
+      return typeInterner.getProtoImportType(descriptor, member);
     }
   }
 }

@@ -18,6 +18,8 @@ package com.google.template.soy.types;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -48,4 +50,10 @@ public interface TypeInterner {
   SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor);
 
   SoyType getOrCreateElementType(String tagName);
+
+  ImportType getProtoImportType(GenericDescriptor descriptor);
+
+  SoyType getProtoImportType(FileDescriptor descriptor, String member);
+
+  SoyType getProtoImportType(Descriptor descriptor, String member);
 }
