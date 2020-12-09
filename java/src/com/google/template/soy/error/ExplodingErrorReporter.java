@@ -65,6 +65,11 @@ final class ExplodingErrorReporter extends ErrorReporter {
   }
 
   @Override
+  int getCurrentNumberOfReports() {
+    return 0;
+  }
+
+  @Override
   public void copyTo(ErrorReporter other) {}
 
   @Override

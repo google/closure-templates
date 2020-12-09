@@ -126,12 +126,20 @@ public abstract class ErrorReporter {
     return getCurrentNumberOfErrors() != 0;
   }
 
+  /** Returns true if any errors or warnings have been reported. */
+  public final boolean hasErrorsOrWarnings() {
+    return getCurrentNumberOfReports() != 0;
+  }
+
   /**
    * Returns the current number of reported errors. Useful for detecting if an error has been
    * reported.
    */
   @ForOverride
   abstract int getCurrentNumberOfErrors();
+
+  @ForOverride
+  abstract int getCurrentNumberOfReports();
 
   /** Returns all the errors reported so far. */
   public abstract ImmutableList<SoyError> getErrors();

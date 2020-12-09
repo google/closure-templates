@@ -90,6 +90,11 @@ final class ErrorReporterImpl extends ErrorReporter {
   }
 
   @Override
+  int getCurrentNumberOfReports() {
+    return reports.size();
+  }
+
+  @Override
   public String toString() {
     return MoreObjects.toStringHelper(getClass())
         .add("errors", errorCount)
