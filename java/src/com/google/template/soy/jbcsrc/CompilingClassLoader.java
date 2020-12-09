@@ -74,7 +74,8 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
 
   @Override
   protected ClassData getClassData(String name) {
-    ClassData classDef = classesByName.get(name);
+    // Remove because ClassLoader itself maintains a cache so we don't need it after loading
+    ClassData classDef = classesByName.remove(name);
     if (classDef != null) {
       return classDef;
     }
