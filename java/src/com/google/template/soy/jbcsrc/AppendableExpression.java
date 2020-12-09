@@ -126,7 +126,7 @@ final class AppendableExpression extends Expression {
     delegate.checkAssignableTo(LOGGING_ADVISING_APPENDABLE_TYPE);
     checkArgument(
         delegate.isNonNullable(),
-        "advising appendable expressions should always be non null: %s",
+        "advising appendable expressions should always be non nullable: %s",
         delegate);
     this.delegate = delegate;
     this.hasSideEffects = hasSideEffects;
