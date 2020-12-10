@@ -226,4 +226,55 @@ public class SoyExpressionTest {
     assertThatExpression(secretNullProto.unboxAsMessage())
         .throwsException(NullPointerException.class);
   }
+
+  @Test
+  public void testCoerceToBoolean_strings() {
+    assertThatExpression(SoyExpression.forString(constant("foo")).coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_nullableStrings() {
+    assertThatExpression(SoyExpression.forString(constant("foo")).asNullable().coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).asNullable().coerceToBoolean())
+        .evaluatesTo(false);
+    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_boxed() {
+    assertThatExpression(SoyExpression.forString(constant("foo")).box().coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).box().coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_nullableBoxed() {
+    assertThatExpression(
+            SoyExpression.forString(constant("foo")).box().asNullable().coerceToBoolean())
+        .evaluatesTo(true);
+    assertThatExpression(SoyExpression.forString(constant("")).box().asNullable().coerceToBoolean())
+        .evaluatesTo(false);
+    assertThatExpression(SoyExpression.forString(constantNull(STRING_TYPE)).box().coerceToBoolean())
+        .evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_primitives_int() {
+    assertThatExpression(SoyExpression.forInt(constant(1L)).coerceToBoolean()).evaluatesTo(true);
+    assertThatExpression(SoyExpression.forInt(constant(0L)).coerceToBoolean()).evaluatesTo(false);
+  }
+
+  @Test
+  public void testCoerceToBoolean_primitives_float() {
+    assertThatExpression(SoyExpression.forFloat(constant(1D)).coerceToBoolean()).evaluatesTo(true);
+    assertThatExpression(SoyExpression.forFloat(constant(0D)).coerceToBoolean()).evaluatesTo(false);
+    assertThatExpression(SoyExpression.forFloat(constant(Double.NaN)).coerceToBoolean())
+        .evaluatesTo(false);
+  }
 }

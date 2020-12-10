@@ -21,7 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_LIST_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.logicalNot;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -337,30 +337,20 @@ public final class SoyExpression extends Expression {
     if (soyType().equals(NullType.getInstance())) {
       return FALSE;
     }
-    if (delegate.isNonNullable()) {
-      return coerceNonNullableReferenceTypeToBoolean();
-    } else {
-      // If we are potentially nullable, then map null to false and run the normal logic recursively
-      // for the non-nullable branch.
-      final Label end = new Label();
-      return withSource(
-              new Expression(delegate.resultType(), delegate.features()) {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  delegate.gen(adapter);
-                  adapter.dup();
-                  Label nonNull = new Label();
-                  adapter.ifNonNull(nonNull);
-                  adapter.pop();
-                  adapter.pushBoolean(false);
-                  adapter.goTo(end);
-                  adapter.mark(nonNull);
-                }
-              })
-          .asNonNullable()
-          .coerceToBoolean()
-          .labelEnd(end);
+    if (isBoxed()) {
+      // If we are boxed, just call the SoyValue method
+      if (delegate.isNonNullable()) {
+        return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
+      } else {
+        return forBool(MethodRef.RUNTIME_COERCE_TO_BOOLEAN.invoke(delegate));
+      }
     }
+    // unboxed non-primitive types.  This would be strings, protos or lists
+    if (resultType().equals(STRING_TYPE)) {
+      return forBool(delegate.invoke(MethodRef.RUNTIME_COERCE_STRING_TO_BOOLEAN));
+    }
+    // All other types are always truthy unless null
+    return BytecodeUtils.isNonNull(delegate);
   }
 
   private SoyExpression coercePrimitiveToBoolean() {
@@ -374,28 +364,6 @@ public final class SoyExpression extends Expression {
       throw new AssertionError(
           "resultType(): " + resultType() + " is not a valid type for a SoyExpression");
     }
-  }
-
-  private SoyExpression coerceNonNullableReferenceTypeToBoolean() {
-    if (isBoxed()) {
-      // If we are boxed, just call the SoyValue method
-      return forBool(delegate.invoke(MethodRef.SOY_VALUE_COERCE_TO_BOOLEAN));
-    }
-    // unboxed non-primitive types.  This would be strings, protos or lists
-    if (soyRuntimeType.isKnownString()) {
-      return forBool(logicalNot(delegate.invoke(MethodRef.STRING_IS_EMPTY)));
-    }
-    // All other types are always truthy, but we still need to eval the delegate in case it has
-    // side effects or contains a null exit branch.
-    return forBool(
-        new Expression(Type.BOOLEAN_TYPE, delegate.features()) {
-          @Override
-          protected void doGen(CodeBuilder adapter) {
-            delegate.gen(adapter);
-            adapter.pop();
-            adapter.pushBoolean(true);
-          }
-        });
   }
 
   /** Coerce this expression to a string value. */
