@@ -47,7 +47,8 @@ final class ResolvePluginsPass implements CompilerFilePass {
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (FunctionNode function :
-        SoyTreeUtils.getAllMatchingNodesOfType(file, FunctionNode.class, fn -> !fn.isResolved())) {
+        SoyTreeUtils.getAllMatchingNodesOfType(
+            file, FunctionNode.class, fn -> !fn.isResolved() && fn.hasStaticName())) {
 
       Identifier functionName = function.getIdentifier();
       SoyType type =
@@ -60,7 +61,9 @@ final class ResolvePluginsPass implements CompilerFilePass {
 
       function.setSoyFunction(
           resolver.lookupSoyFunction(
-              function.getFunctionName(), function.numChildren(), function.getSourceLocation()));
+              function.getStaticFunctionName(),
+              function.numChildren(),
+              function.getSourceLocation()));
     }
 
     for (PrintDirectiveNode directiveNode :

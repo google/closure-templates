@@ -37,8 +37,7 @@ final class BannedFunction extends Rule<FunctionNode> {
 
   @Override
   protected void doCheckConformance(FunctionNode node, ErrorReporter errorReporter) {
-    String functionName = node.getFunctionName();
-    if (bannedFunctions.contains(functionName)) {
+    if (bannedFunctions.contains(node.getFunctionName())) {
       errorReporter.report(node.getSourceLocation(), error);
     }
   }

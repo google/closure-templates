@@ -130,7 +130,7 @@ final class BanXidForCssObfuscation extends Rule<TemplateNode> {
     private void visitAndBanXidInExpressionValue(ExprNode node) {
       if (node instanceof FunctionNode) {
         FunctionNode fn = (FunctionNode) node;
-        if (fn.getFunctionName().equals("xid")) {
+        if ("xid".equals(fn.getFunctionName())) {
           errorReporter.report(fn.getSourceLocation(), error);
         }
       } else if (node instanceof VarRefNode) {

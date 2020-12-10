@@ -565,7 +565,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
     } else if (soyFunction instanceof SoyPythonSourceFunction) {
       return pluginValueFactory.applyFunction(
           node.getSourceLocation(),
-          node.getFunctionName(),
+          node.getStaticFunctionName(),
           (SoyPythonSourceFunction) soyFunction,
           visitChildren(node));
     } else if (soyFunction instanceof SoyPySrcFunction) {
@@ -576,7 +576,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
       return new PyStringExpr("'" + ((LoggingFunction) soyFunction).getPlaceholder() + "'");
     } else {
       errorReporter.report(
-          node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, node.getFunctionName());
+          node.getSourceLocation(), SOY_PY_SRC_FUNCTION_NOT_FOUND, node.getStaticFunctionName());
       return ERROR;
     }
   }

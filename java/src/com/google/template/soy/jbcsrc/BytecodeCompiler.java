@@ -147,7 +147,7 @@ public final class BytecodeCompiler {
               // For each function call, check if the plugin needs an instance class. If so, add an
               // entry to pluginInstances.
               if (fnNode.getSoyFunction() instanceof SoyJavaSourceFunction) {
-                if (!pluginInstances.containsKey(fnNode.getFunctionName())) {
+                if (!pluginInstances.containsKey(fnNode.getStaticFunctionName())) {
                   Set<String> instances =
                       PluginAnalyzer.analyze(
                               (SoyJavaSourceFunction) fnNode.getSoyFunction(), fnNode.numChildren())
@@ -156,17 +156,17 @@ public final class BytecodeCompiler {
                     // We guarantee there's either 0 or 1 instances required for the plugin because
                     // we already passed through PluginResolver, which checked this.
                     pluginInstances.put(
-                        fnNode.getFunctionName(),
+                        fnNode.getStaticFunctionName(),
                         PluginRuntimeInstanceInfo.builder()
-                            .setPluginName(fnNode.getFunctionName())
+                            .setPluginName(fnNode.getStaticFunctionName())
                             .setInstanceClassName(Iterables.getOnlyElement(instances)));
                   }
                 }
 
-                if (pluginInstances.containsKey(fnNode.getFunctionName())) {
+                if (pluginInstances.containsKey(fnNode.getStaticFunctionName())) {
                   // Add the source location to the list of places the function is used.
                   pluginInstances
-                      .get(fnNode.getFunctionName())
+                      .get(fnNode.getStaticFunctionName())
                       .addSourceLocation(fnNode.getSourceLocation().toString());
                 }
               }

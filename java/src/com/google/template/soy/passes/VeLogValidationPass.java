@@ -168,7 +168,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It is part of complex expression.");
       return;
     }
@@ -176,7 +176,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It isn't in a print node.");
       return;
     }
@@ -185,13 +185,13 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       reporter.report(
           printNode.getChild(0).getSourceLocation(),
           NO_PRINT_DIRECTIVES,
-          function.getFunctionName());
+          function.getStaticFunctionName());
     }
     if (holderNode.getParent().getKind() != SoyNode.Kind.HTML_ATTRIBUTE_VALUE_NODE) {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It isn't the direct child of an attribute value.");
       return;
     }
@@ -199,7 +199,7 @@ final class VeLogValidationPass implements CompilerFileSetPass {
       reporter.report(
           function.getSourceLocation(),
           INVALID_LOGGING_FUNCTION_LOCATION,
-          function.getFunctionName(),
+          function.getStaticFunctionName(),
           " It has sibling nodes in the attribute value.");
       return;
     }

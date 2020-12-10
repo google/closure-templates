@@ -92,7 +92,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   public static FunctionNode newPositional(
       Identifier name, BuiltinFunction soyFunction, SourceLocation sourceLocation) {
     FunctionNode fn =
-        new FunctionNode(sourceLocation, name, ParamsStyle.POSITIONAL, ImmutableList.of(), null);
+        new FunctionNode(
+            sourceLocation, name, null, ParamsStyle.POSITIONAL, ImmutableList.of(), null);
     fn.setSoyFunction(soyFunction);
     return fn;
   }
@@ -100,7 +101,8 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   public static FunctionNode newPositional(
       Identifier name, SoySourceFunction soyFunction, SourceLocation sourceLocation) {
     FunctionNode fn =
-        new FunctionNode(sourceLocation, name, ParamsStyle.POSITIONAL, ImmutableList.of(), null);
+        new FunctionNode(
+            sourceLocation, name, null, ParamsStyle.POSITIONAL, ImmutableList.of(), null);
     fn.setSoyFunction(soyFunction);
     return fn;
   }
@@ -110,6 +112,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     return new FunctionNode(
         sourceLocation,
         name,
+        null,
         ParamsStyle.POSITIONAL,
         ImmutableList.of(),
         commaLocations == null ? null : ImmutableList.copyOf(commaLocations));
@@ -118,10 +121,11 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   public static FunctionNode newNamed(
       Identifier name, Iterable<Identifier> paramNames, SourceLocation sourceLocation) {
     return new FunctionNode(
-        sourceLocation, name, ParamsStyle.NAMED, ImmutableList.copyOf(paramNames), null);
+        sourceLocation, name, null, ParamsStyle.NAMED, ImmutableList.copyOf(paramNames), null);
   }
 
   private final Identifier name;
+  private final ExprNode nameExpr;
   private final ParamsStyle paramsStyle;
   /** When paramsStyle is NAMED this contains the list of named parameters. Otherwise empty. */
   private final ImmutableList<Identifier> paramNames;
@@ -134,12 +138,15 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   FunctionNode(
       SourceLocation sourceLocation,
       Identifier name,
+      ExprNode nameExpr,
       ParamsStyle paramsStyle,
       ImmutableList<Identifier> paramNames,
       @Nullable ImmutableList<Point> commaLocations) {
     super(sourceLocation);
     Preconditions.checkArgument(paramNames.isEmpty() || paramsStyle == ParamsStyle.NAMED);
+    Preconditions.checkArgument((name == null) != (nameExpr == null));
     this.name = name;
+    this.nameExpr = nameExpr;
     this.paramsStyle = paramsStyle;
     this.paramNames = paramNames;
     this.commaLocations = commaLocations;
@@ -153,6 +160,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   private FunctionNode(FunctionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
+    this.nameExpr = orig.nameExpr != null ? orig.nameExpr.copy(new CopyState()) : null;
     this.paramsStyle = orig.paramsStyle;
     this.paramNames = orig.paramNames;
     this.state.function = orig.state.function;
@@ -170,9 +178,24 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
     return Kind.FUNCTION_NODE;
   }
 
+  /** Returns whether this function has a static name. */
+  public boolean hasStaticName() {
+    return name != null;
+  }
+
   /** Returns the function name. */
-  public String getFunctionName() {
+  public String getStaticFunctionName() {
     return name.identifier();
+  }
+
+  /** Returns the function name or empty string if there is no static name. */
+  public String getFunctionName() {
+    return name != null ? name.identifier() : "";
+  }
+
+  /** If this function does not have a static name then it has a name expression. */
+  public ExprNode getNameExpr() {
+    return Preconditions.checkNotNull(nameExpr);
   }
 
   @Override
@@ -240,7 +263,9 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   @Override
   public String toSourceString() {
     StringBuilder sourceSb = new StringBuilder();
-    sourceSb.append(getFunctionName()).append('(');
+    sourceSb
+        .append(hasStaticName() ? getStaticFunctionName() : nameExpr.toSourceString())
+        .append('(');
 
     if (paramsStyle == ParamsStyle.POSITIONAL) {
       boolean isFirst = true;

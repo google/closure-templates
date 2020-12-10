@@ -1527,7 +1527,7 @@ final class ExpressionCompiler {
       Expression legacyFunctionRuntimeExpr =
           parameters
               .getRenderContext()
-              .getPluginInstance(node.getFunctionName())
+              .getPluginInstance(node.getStaticFunctionName())
               .checkedCast(LegacyFunctionAdapter.class);
       Expression list = SoyExpression.asBoxedList(args);
       // Most soy functions don't have return types, but if they do we should enforce it

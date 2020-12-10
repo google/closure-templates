@@ -69,7 +69,7 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
     if (node.getSoyFunction() instanceof LoggingFunction) {
       LoggingFunction loggingNode = (LoggingFunction) node.getSoyFunction();
       return INCREMENTAL_DOM_EVAL_LOG_FN.call(
-          XID.call(Expression.stringLiteral(node.getFunctionName())),
+          XID.call(Expression.stringLiteral(node.getStaticFunctionName())),
           Expression.arrayLiteral(visitChildren(node)),
           Expression.stringLiteral(loggingNode.getPlaceholder()));
     }

@@ -134,7 +134,8 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               SourceLocation.UNKNOWN);
       FunctionNode function = getLoggingFunction(callParamContentNode);
       funcNode.addChild(
-          new StringNode(function.getFunctionName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
+          new StringNode(
+              function.getStaticFunctionName(), QuoteStyle.SINGLE, SourceLocation.UNKNOWN));
       funcNode.addChild(new ListLiteralNode(function.getChildren(), SourceLocation.UNKNOWN));
       funcNode.addChild(
           new StringNode(
@@ -243,7 +244,7 @@ final class VeLogInstrumentationVisitor extends AbstractSoyNodeVisitor<Void> {
               VeLogJsSrcLoggingFunction.INSTANCE,
               insertionLocation);
       funcNode.addChild(
-          new StringNode(function.getFunctionName(), QuoteStyle.SINGLE, insertionLocation));
+          new StringNode(function.getStaticFunctionName(), QuoteStyle.SINGLE, insertionLocation));
       funcNode.addChild(new ListLiteralNode(function.getChildren(), insertionLocation));
       StandaloneNode attributeName = node.getChild(0);
       if (attributeName instanceof RawTextNode) {

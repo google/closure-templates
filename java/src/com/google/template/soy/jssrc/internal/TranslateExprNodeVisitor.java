@@ -856,7 +856,7 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
     } else if (soyFunction instanceof SoyJavaScriptSourceFunction) {
       return javascriptValueFactory.applyFunction(
           node.getSourceLocation(),
-          node.getFunctionName(),
+          node.getStaticFunctionName(),
           (SoyJavaScriptSourceFunction) soyFunction,
           visitChildren(node),
           codeGenerator);
@@ -865,10 +865,10 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
         errorReporter.report(
             node.getSourceLocation(),
             SOY_JS_SRC_FUNCTION_NOT_FOUND,
-            node.getFunctionName(),
+            node.getStaticFunctionName(),
             soyFunction == null ? "missing implementation" : soyFunction.getClass().getName());
         // use a fake function and keep going
-        soyFunction = getUnknownFunction(node.getFunctionName(), node.numChildren());
+        soyFunction = getUnknownFunction(node.getStaticFunctionName(), node.numChildren());
       }
 
       return SoyJsPluginUtils.applySoyFunction(

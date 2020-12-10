@@ -817,7 +817,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     } else {
       throw RenderException.create(
           "Failed to find Soy function with name '"
-              + node.getFunctionName()
+              + node.getStaticFunctionName()
               + "'"
               + " (function call \""
               + node.toSourceString()

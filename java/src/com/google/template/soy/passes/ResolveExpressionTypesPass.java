@@ -1514,7 +1514,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     private void visitProtoInitFunction(FunctionNode node) {
-      String protoName = node.getFunctionName();
+      String protoName = node.getStaticFunctionName();
       SoyType type =
           TypeRegistries.getTypeOrProtoFqn(typeRegistry, errorReporter, node.getIdentifier());
 
@@ -2209,7 +2209,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           && ((LocalVar) ((VarRefNode) loopVariable).getDefnDecl()).declaringNode()
               instanceof ForNonemptyNode)) {
         errorReporter.report(
-            fn.getSourceLocation(), LOOP_VARIABLE_NOT_IN_SCOPE, fn.getFunctionName());
+            fn.getSourceLocation(), LOOP_VARIABLE_NOT_IN_SCOPE, fn.getStaticFunctionName());
       }
     }
 
@@ -2226,7 +2226,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         errorReporter.report(
             arg.getSourceLocation(),
             INCORRECT_ARG_TYPE,
-            node.getFunctionName(),
+            node.getStaticFunctionName(),
             arg.getType(),
             expectedType);
         return false;
@@ -2393,12 +2393,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       // Handle 'isNull(<expr>)' and 'isNonnull(<expr>)'.
       if (node.numChildren() != 1) {
         return;
-      } else if (node.getFunctionName().equals("isNonnull")) {
+      } else if ("isNonnull".equals(node.getFunctionName())) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(
             wrappedExpr, SoyTypes.tryRemoveNull(wrappedExpr.get().getType()));
         negativeTypeConstraints.put(wrappedExpr, NullType.getInstance());
-      } else if (node.getFunctionName().equals("isNull")) {
+      } else if ("isNull".equals(node.getFunctionName())) {
         ExprEquivalence.Wrapper wrappedExpr = exprEquivalence.wrap(node.getChild(0));
         positiveTypeConstraints.put(wrappedExpr, NullType.getInstance());
         negativeTypeConstraints.put(

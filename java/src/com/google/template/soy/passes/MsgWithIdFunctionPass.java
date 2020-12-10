@@ -140,7 +140,7 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
 
   private void badFunctionCall(FunctionNode fn, SoyErrorKind errorKind, String explanation) {
     errorReporter.report(
-        fn.getChild(0).getSourceLocation(), errorKind, fn.getFunctionName(), explanation);
+        fn.getChild(0).getSourceLocation(), errorKind, fn.getStaticFunctionName(), explanation);
 
     // this way we don't trigger a cascade of errors about incorrect types
     RecordLiteralNode recordLiteral =

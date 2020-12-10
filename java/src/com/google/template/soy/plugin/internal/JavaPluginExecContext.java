@@ -54,7 +54,8 @@ public final class JavaPluginExecContext {
   }
 
   public static JavaPluginExecContext forFunctionNode(FunctionNode node, SoyJavaSourceFunction fn) {
-    return new JavaPluginExecContext(fn, node, node.getFunctionName(), node.getAllowedParamTypes());
+    return new JavaPluginExecContext(
+        fn, node, node.getStaticFunctionName(), node.getAllowedParamTypes());
   }
 
   private final SoyJavaSourceFunction sourceFunction;

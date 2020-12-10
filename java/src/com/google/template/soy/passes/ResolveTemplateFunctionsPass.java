@@ -71,7 +71,7 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
           // Special case allowing local template .foo to be called as foo() -- without leading dot.
           convertToBind(
               fct,
-              Identifier.create("." + fct.getFunctionName(), fct.getFunctionNameLocation()),
+              Identifier.create("." + fct.getStaticFunctionName(), fct.getFunctionNameLocation()),
               fct.getFunctionNameLocation());
         }
       }
