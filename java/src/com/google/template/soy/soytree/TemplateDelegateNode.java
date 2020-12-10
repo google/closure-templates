@@ -233,6 +233,8 @@ public final class TemplateDelegateNode extends TemplateNode {
           reporter.report(in.getSourceLocation(), INVALID_VARIANT_INTEGER, in.getValue());
         }
         break;
+      case PROTO_ENUM_VALUE_NODE:
+        break;
       case GLOBAL_NODE:
         GlobalNode gn = (GlobalNode) primitiveNode;
         if (gn.isResolved()) {

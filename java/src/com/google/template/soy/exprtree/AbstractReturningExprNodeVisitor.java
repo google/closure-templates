@@ -87,6 +87,8 @@ public abstract class AbstractReturningExprNodeVisitor<R>
         return visitFloatNode((FloatNode) node);
       case STRING_NODE:
         return visitStringNode((StringNode) node);
+      case PROTO_ENUM_VALUE_NODE:
+        return visitProtoEnumValueNode((ProtoEnumValueNode) node);
 
       case LIST_LITERAL_NODE:
         return visitListLiteralNode((ListLiteralNode) node);
@@ -202,6 +204,10 @@ public abstract class AbstractReturningExprNodeVisitor<R>
   }
 
   protected R visitStringNode(StringNode node) {
+    return visitPrimitiveNode(node);
+  }
+
+  protected R visitProtoEnumValueNode(ProtoEnumValueNode node) {
     return visitPrimitiveNode(node);
   }
 

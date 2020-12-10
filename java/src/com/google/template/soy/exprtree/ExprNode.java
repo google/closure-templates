@@ -51,6 +51,7 @@ public interface ExprNode extends Node {
     INTEGER_NODE,
     FLOAT_NODE,
     STRING_NODE,
+    PROTO_ENUM_VALUE_NODE,
 
     LIST_LITERAL_NODE,
     LIST_COMPREHENSION_NODE,

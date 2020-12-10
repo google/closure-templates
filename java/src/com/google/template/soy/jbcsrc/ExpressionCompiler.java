@@ -76,6 +76,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.PlusOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.TimesOpNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -443,6 +444,11 @@ final class ExpressionCompiler {
     @Override
     protected final SoyExpression visitStringNode(StringNode node) {
       return SoyExpression.forString(constant(node.getValue(), fields));
+    }
+
+    @Override
+    protected SoyExpression visitProtoEnumValueNode(ProtoEnumValueNode node) {
+      return SoyExpression.forInt(BytecodeUtils.constant(node.getValue()));
     }
 
     @Override

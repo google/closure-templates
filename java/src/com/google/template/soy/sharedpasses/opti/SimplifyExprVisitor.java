@@ -47,6 +47,7 @@ import com.google.template.soy.exprtree.OperatorNodes.AndOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.logging.LoggingFunction;
@@ -479,6 +480,8 @@ final class SimplifyExprVisitor extends AbstractExprNodeVisitor<Void> {
         return FloatData.forValue(((FloatNode) expr).getValue());
       case STRING_NODE:
         return StringData.forValue(((StringNode) expr).getValue());
+      case PROTO_ENUM_VALUE_NODE:
+        return IntegerData.forValue(((ProtoEnumValueNode) expr).getValue());
       case GLOBAL_NODE:
         GlobalNode global = (GlobalNode) expr;
         if (global.isResolved()) {

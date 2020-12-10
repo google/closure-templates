@@ -91,6 +91,9 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
       case STRING_NODE:
         visitStringNode((StringNode) node);
         break;
+      case PROTO_ENUM_VALUE_NODE:
+        visitProtoEnumValueNode((ProtoEnumValueNode) node);
+        break;
 
       case LIST_LITERAL_NODE:
         visitListLiteralNode((ListLiteralNode) node);
@@ -254,6 +257,10 @@ public abstract class AbstractExprNodeVisitor<R> extends AbstractNodeVisitor<Exp
   }
 
   protected void visitStringNode(StringNode node) {
+    visitPrimitiveNode(node);
+  }
+
+  protected void visitProtoEnumValueNode(ProtoEnumValueNode node) {
     visitPrimitiveNode(node);
   }
 

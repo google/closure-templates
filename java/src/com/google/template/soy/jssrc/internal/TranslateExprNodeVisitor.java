@@ -90,6 +90,7 @@ import com.google.template.soy.exprtree.OperatorNodes.NotEqualOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NotOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.OperatorNodes.OrOpNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
@@ -282,6 +283,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   @Override
   protected Expression visitStringNode(StringNode node) {
     return stringLiteral(node.getValue());
+  }
+
+  @Override
+  protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    return number(node.getValue());
   }
 
   // -----------------------------------------------------------------------------------------------
