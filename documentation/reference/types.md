@@ -269,24 +269,44 @@ HTML templates, strict HTML is required for templates used in expressions.
 Parameters may be bound to template-type expressions using the
 [`.bind()`](functions.md#bind) method.
 
-Template types may be invoked using the normal `{call}` syntax, with any unset
-parameters passed as parameters.
+Template types may be invoked using a call syntax, with any unset parameters
+passed as parameters.
 
 Template type declarations consist of a list of named parameters, their
 corresponding types, and the return type of the template.
 
 For example:
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 {template .foo}
-  {@param tpl: (count: int, greeting: string) => html}
+  {@param tpl: (count: int, greeting: string, content: html) => html}
 
   {call $tpl}
     {param count: 5 /}
-    {param greeting: 'Hello!' /}
+    {param greeting: 'Hello' /}
+    {param content kind="html"}
+      World!
+    {/param}
   {/call}
 {/template}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+{template .foo}
+  {@param tpl: (count: int, greeting: string, content: html) => html<div>}
+
+  <{$tpl.bind(record(count: 5, greeting: 'Hello'))}>
+    World!
+  </>
+```
+
+</section>
 
 For more information, see
 [Passing Templates as Parameters](template-types.md#how-do-you-pass-in-a-template)
