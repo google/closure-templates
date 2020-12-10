@@ -117,7 +117,8 @@ public final class TypeNodeTest {
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "x", PARAM, TYPE_ABC)),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC)),
                     NamedTypeNode.create(SOURCE_LOCATION, "attributes"))
                 .toString())
         .isEqualTo("(x: abc) => attributes");
@@ -126,8 +127,10 @@ public final class TypeNodeTest {
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "x", PARAM, TYPE_ABC),
-                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "y", PARAM, TYPE_DEF)),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF)),
                     NamedTypeNode.create(SOURCE_LOCATION, "css"))
                 .toString())
         .isEqualTo("(x: abc, y: def) => css");
@@ -136,11 +139,14 @@ public final class TypeNodeTest {
             TemplateTypeNode.create(
                     SOURCE_LOCATION,
                     ImmutableList.of(
-                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "x", PARAM, TYPE_ABC),
-                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "y", PARAM, TYPE_DEF),
-                        TemplateTypeNode.Parameter.create(SOURCE_LOCATION, "z", PARAM, TYPE_GHI),
                         TemplateTypeNode.Parameter.create(
-                            SOURCE_LOCATION, "w", ATTRIBUTE, TYPE_JKL)),
+                            SOURCE_LOCATION, "x", "x", PARAM, TYPE_ABC),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "y", "y", PARAM, TYPE_DEF),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "z", "z", PARAM, TYPE_GHI),
+                        TemplateTypeNode.Parameter.create(
+                            SOURCE_LOCATION, "w", "@w", ATTRIBUTE, TYPE_JKL)),
                     NamedTypeNode.create(SOURCE_LOCATION, "uri"))
                 .toString())
         .isEqualTo("(\n  x: abc,\n  y: def,\n  z: ghi,\n  @w: jkl\n) => uri");

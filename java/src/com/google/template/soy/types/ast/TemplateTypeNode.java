@@ -35,13 +35,19 @@ public abstract class TemplateTypeNode extends TypeNode {
   @AutoValue
   public abstract static class Parameter {
     public static Parameter create(
-        SourceLocation nameLocation, String name, ParameterKind kind, TypeNode type) {
-      return new AutoValue_TemplateTypeNode_Parameter(nameLocation, name, kind, type);
+        SourceLocation nameLocation,
+        String name,
+        String sourceName,
+        ParameterKind kind,
+        TypeNode type) {
+      return new AutoValue_TemplateTypeNode_Parameter(nameLocation, name, sourceName, kind, type);
     }
 
     public abstract SourceLocation nameLocation();
 
     public abstract String name();
+
+    public abstract String sourceName();
 
     public abstract ParameterKind kind();
 
@@ -49,11 +55,11 @@ public abstract class TemplateTypeNode extends TypeNode {
 
     @Override
     public final String toString() {
-      return (kind() == ParameterKind.ATTRIBUTE ? "@" : "") + name() + ": " + type();
+      return sourceName() + ": " + type();
     }
 
     Parameter copy() {
-      return create(nameLocation(), name(), kind(), type().copy());
+      return create(nameLocation(), name(), sourceName(), kind(), type().copy());
     }
   }
 

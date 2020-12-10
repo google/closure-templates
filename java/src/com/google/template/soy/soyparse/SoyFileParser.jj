@@ -4710,7 +4710,7 @@ private TemplateTypeNode.Parameter TemplateParameter() :
       kind = ParameterKind.ATTRIBUTE;
       paramName = TemplateType.Parameter.attrToParamName(paramName.substring(1));
     }
-    return TemplateTypeNode.Parameter.create(createSrcLoc(parameterName), paramName, kind, parameterType);
+    return TemplateTypeNode.Parameter.create(createSrcLoc(parameterName), paramName, parameterName.image, kind, parameterType);
   }
 }
 
