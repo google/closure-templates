@@ -23,10 +23,16 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.HtmlContext;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
+import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
+import com.google.template.soy.types.SanitizedType;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.UnionType;
+import java.util.Optional;
 
 /**
  * Inserts directives into print commands by looking at the context in which a print appears, and
@@ -120,6 +126,31 @@ public final class ContextualAutoescaper {
     }
     Rewriter rewriter = new Rewriter(inferences, idGenerator, printDirectives);
     rewriter.rewrite(openTag);
+  }
+
+  public static Optional<SoyType> getRequiredTypeFromAttributeName(
+      String attrName, HtmlTagNode tagNode) {
+    Context tagContext =
+        Context.getTagNameContext(
+            tagNode, HtmlContext.HTML_PCDATA, 0, Context.HTML_PCDATA.toBuilder());
+    Context context =
+        Context.getAttrNameContext(attrName, tagContext.elType(), tagContext.toBuilder());
+    switch (context.attrType()) {
+      case SCRIPT:
+        return Optional.of(SanitizedType.JsType.getInstance());
+      case STYLE:
+        return Optional.of(SanitizedType.StyleType.getInstance());
+      case URI:
+        if (context.uriType() == Context.UriType.TRUSTED_RESOURCE) {
+          return Optional.of(SanitizedType.TrustedResourceUriType.getInstance());
+        }
+        return Optional.of(
+            UnionType.of(
+                SanitizedType.UriType.getInstance(),
+                SanitizedType.TrustedResourceUriType.getInstance()));
+      default:
+        return Optional.empty();
+    }
   }
 
   /**

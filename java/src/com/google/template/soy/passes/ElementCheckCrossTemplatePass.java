@@ -21,20 +21,28 @@ import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
 import com.google.template.soy.soytree.HtmlAttributeNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.AttrParam;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.SoyTypes;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /** Validates the contents included in the root tag of an element template. */
 @RunAfter(ResolveExpressionTypesCrossTemplatePass.class)
 public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind BAD_CONTENT_IN_ROOT_ELM =
-      SoyErrorKind.of("Only attributes and allowed inside the root element.");
+      SoyErrorKind.of("Only attributes are allowed inside the root element.");
+
+  private static final SoyErrorKind WRONG_ATTRIBUTE_TYPE =
+      SoyErrorKind.of("Expected type of attribute to be {0}.");
 
   private final ErrorReporter errorReporter;
 
@@ -47,9 +55,24 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
     for (SoyFileNode file : sourceFiles) {
       SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
           .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
-          .forEach(t -> processTemplate(t));
+          .forEach(this::processTemplate);
     }
     return Result.CONTINUE;
+  }
+
+  private void validateAttributeTypes(HtmlOpenTagNode node, Stream<AttrParam> attributes) {
+    attributes.forEach(
+        attr -> {
+          Optional<SoyType> maybeType =
+              ContextualAutoescaper.getRequiredTypeFromAttributeName(attr.getAttrName(), node);
+          if (!maybeType.isPresent()) {
+            return;
+          }
+          SoyType type = maybeType.get();
+          if (!type.isAssignableFromStrict(SoyTypes.removeNull(attr.type()))) {
+            errorReporter.report(attr.getSourceLocation(), WRONG_ATTRIBUTE_TYPE, type.toString());
+          }
+        });
   }
 
   private void processTemplate(TemplateNode template) {
@@ -59,6 +82,11 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
     }
 
     HtmlOpenTagNode openTagNode = elmOpen.get();
+    validateAttributeTypes(
+        openTagNode,
+        template.getHeaderParams().stream()
+            .filter(p -> p instanceof AttrParam)
+            .map(AttrParam.class::cast));
     openTagNode.getChildren().stream()
         .filter(p -> p.getKind() == Kind.HTML_ATTRIBUTE_NODE)
         .map(HtmlAttributeNode.class::cast)

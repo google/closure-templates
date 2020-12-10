@@ -575,7 +575,6 @@ abstract class Context {
     return true;
   }
 
-
   /** Determines the correct URI part if two branches are joined. */
   private static UriPart unionUriParts(UriPart a, UriPart b) {
     Preconditions.checkArgument(a != b);
@@ -1030,6 +1029,11 @@ abstract class Context {
     return builder.build();
   }
 
+  @CheckReturnValue
+  Context transitionToTagName(HtmlTagNode node) {
+    return getTagNameContext(node, state(), templateNestDepth(), toBuilder());
+  }
+
   /**
    * Returns a new context given the tag name.
    *
@@ -1038,12 +1042,18 @@ abstract class Context {
    * @param node The name of the tag
    */
   @CheckReturnValue
-  Context transitionToTagName(HtmlTagNode node) {
+  static Context getTagNameContext(
+      HtmlTagNode node, HtmlContext state, int templateNestDepth, Context.Builder builder) {
     // according to spec ascii case is not meaningful for tag names.
-    String tagName = node.getTagName().getStaticTagNameAsLowerCase();
-    boolean isEndTag = state() == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
+    String tagName = node.getTagName().getTagString();
+    if (tagName == null) {
+      tagName = "";
+    } else {
+      tagName = Ascii.toLowerCase(tagName);
+    }
+    boolean isEndTag = state == HtmlContext.HTML_BEFORE_CLOSE_TAG_NAME;
     Context.ElementType elType = ElementType.NORMAL;
-    int newTemplateNestDepth = templateNestDepth();
+    int newTemplateNestDepth = templateNestDepth;
     if (tagName.equals("template")) {
       newTemplateNestDepth += isEndTag ? -1 : 1;
       if (newTemplateNestDepth < 0) {
@@ -1122,7 +1132,7 @@ abstract class Context {
         default: // fall out
       }
     }
-    return toBuilder()
+    return builder
         .withState(HtmlContext.HTML_TAG_NAME)
         .withoutAttrContext()
         .withElType(elType)
@@ -1279,9 +1289,14 @@ abstract class Context {
   private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION =
       Pattern.compile("\\bur[il]|ur[il]s?$");
 
-  /** Returns a new context based on the attribute name and current element type. */
   @CheckReturnValue
   Context transitionToAttrName(String attrName) {
+    return getAttrNameContext(attrName, elType(), toBuilder());
+  }
+
+  /** Returns a new context based on the attribute name and current element type. */
+  @CheckReturnValue
+  static Context getAttrNameContext(String attrName, ElementType elType, Context.Builder builder) {
     // according to spec ascii case is not meaningful for attributes.
     attrName = Ascii.toLowerCase(attrName);
     // Get the local name so we can treat xlink:href and svg:style as per HTML.
@@ -1320,15 +1335,15 @@ abstract class Context {
       attr = Context.AttributeType.SCRIPT;
     } else if ("style".equals(localName)) {
       attr = Context.AttributeType.STYLE;
-    } else if (elType() == Context.ElementType.MEDIA
+    } else if (elType == Context.ElementType.MEDIA
         && ("src".equals(attrName) || "xlink:href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.MEDIA;
-    } else if ((elType() == ElementType.SCRIPT && "src".equals(attrName))
-        || (elType() == ElementType.IFRAME && "src".equals(attrName))
-        || (elType() == ElementType.LINK_EXECUTABLE && "href".equals(attrName))
-        || (elType() == ElementType.OBJECT && "data".equals(attrName))
-        || (elType() == ElementType.BASE && "href".equals(attrName))) {
+    } else if ((elType == ElementType.SCRIPT && "src".equals(attrName))
+        || (elType == ElementType.IFRAME && "src".equals(attrName))
+        || (elType == ElementType.LINK_EXECUTABLE && "href".equals(attrName))
+        || (elType == ElementType.OBJECT && "data".equals(attrName))
+        || (elType == ElementType.BASE && "href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
     } else if (URI_ATTR_NAMES.contains(localName)
@@ -1337,14 +1352,14 @@ abstract class Context {
         || attrName.startsWith("xmlns:")) {
       attr = Context.AttributeType.URI;
       uriType = UriType.NORMAL;
-    } else if (elType() == ElementType.META_REFRESH && "content".equals(attrName)) {
+    } else if (elType == ElementType.META_REFRESH && "content".equals(attrName)) {
       attr = AttributeType.META_REFRESH_CONTENT;
-    } else if (elType() == ElementType.IFRAME && "srcdoc".equals(attrName)) {
+    } else if (elType == ElementType.IFRAME && "srcdoc".equals(attrName)) {
       attr = Context.AttributeType.HTML;
     } else {
       attr = Context.AttributeType.PLAIN_TEXT;
     }
-    return toBuilder()
+    return builder
         .withState(HtmlContext.HTML_ATTRIBUTE_NAME)
         .withoutAttrContext()
         .withAttrType(attr)

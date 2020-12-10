@@ -262,7 +262,9 @@ public final class TagName {
    * It must also return a html<?> type.
    */
   public boolean isTemplateCall() {
-    if (isStatic() || getDynamicTagName().getExpr().getType().getKind() != SoyType.Kind.TEMPLATE) {
+    if (isStatic()
+        || isLegacyDynamicTagName()
+        || getDynamicTagName().getExpr().getType().getKind() != SoyType.Kind.TEMPLATE) {
       return false;
     }
     TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
@@ -367,6 +369,16 @@ public final class TagName {
   @Nullable
   public RcDataTagName getRcDataTagName() {
     return rcDataTagName;
+  }
+
+  public String getTagString() {
+    if (isStatic()) {
+      return getStaticTagName();
+    } else if (isTemplateCall()) {
+      TemplateType templateType = (TemplateType) getDynamicTagName().getExpr().getType();
+      return ((TemplateContentKind.ElementContentKind) templateType.getContentKind()).getTagName();
+    }
+    return null;
   }
 
   /** Returns the static name. */
