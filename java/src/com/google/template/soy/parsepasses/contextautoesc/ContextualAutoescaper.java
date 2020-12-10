@@ -23,6 +23,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
+import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
@@ -100,6 +101,27 @@ public final class ContextualAutoescaper {
     return inferences;
   }
 
+  public static void annotateAndRewriteHtmlTag(
+      HtmlOpenTagNode openTag,
+      TemplateRegistry registry,
+      IdGenerator idGenerator,
+      ErrorReporter errorReporter,
+      ImmutableList<? extends SoyPrintDirective> printDirectives) {
+    Inferences inferences = new Inferences();
+    Context startContext = Context.HTML_PCDATA;
+    inferences.setTemplateRegistry(registry);
+    try {
+      InferenceEngine.inferTemplateEndContext(openTag, startContext, inferences, errorReporter);
+    } catch (SoyAutoescapeException e) {
+      reportError(errorReporter, e);
+    }
+    if (errorReporter.hasErrors()) {
+      return;
+    }
+    Rewriter rewriter = new Rewriter(inferences, idGenerator, printDirectives);
+    rewriter.rewrite(openTag);
+  }
+
   /**
    * Rewrites the given Soy files so that dynamic output is properly escaped according to the
    * context in which it appears.
@@ -120,7 +142,7 @@ public final class ContextualAutoescaper {
   }
 
   /** Reports an autoescape exception. */
-  private void reportError(ErrorReporter errorReporter, SoyAutoescapeException e) {
+  private static void reportError(ErrorReporter errorReporter, SoyAutoescapeException e) {
     // First, get to the root cause of the exception, and assemble an error message indicating
     // the full call stack that led to the failure.
     String message = "- " + e.getOriginalMessage();

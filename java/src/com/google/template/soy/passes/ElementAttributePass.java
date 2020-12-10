@@ -61,8 +61,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SanitizedType;
-import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
-import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
@@ -117,7 +115,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
           "Attribute ''{0}'' can only be present on root elements of html<?> templates.");
 
   private static final SoyErrorKind BAD_ATTRIBUTE_TYPE =
-      SoyErrorKind.of("Attributes must be of type string, trusted_resource_uri, or uri.");
+      SoyErrorKind.of("Attributes must be of type string or a sanitized type.");
 
   private static final SoyErrorKind ROOT_TAG_KIND_MISMATCH =
       SoyErrorKind.of("Expected root tag to be {0}.");
@@ -185,10 +183,6 @@ final class ElementAttributePass implements CompilerFileSetPass {
     checkRootElementTagNames(allElementsThisCompile);
   }
 
-  private static final ImmutableSet<SoyType> ALLOWED_ATTR_TYPES =
-      ImmutableSet.of(
-          StringType.getInstance(), UriType.getInstance(), TrustedResourceUriType.getInstance());
-
   private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
     SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
         .flatMap(t -> t.getHeaderParams().stream())
@@ -197,7 +191,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
         .forEach(
             attr -> {
               SoyType type = SoyTypes.removeNull(attr.type());
-              if (!ALLOWED_ATTR_TYPES.contains(type)) {
+              if (!(type instanceof SanitizedType || type instanceof StringType)
+                  || SanitizedType.HtmlType.getInstance().isAssignableFromStrict(type)) {
                 errorReporter.report(attr.getSourceLocation(), BAD_ATTRIBUTE_TYPE);
               }
             });

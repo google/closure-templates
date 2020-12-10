@@ -34,6 +34,8 @@ import com.google.template.soy.exprtree.NullNode;
 import com.google.template.soy.exprtree.Operator;
 import com.google.template.soy.exprtree.OperatorNodes.ConditionalOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.parsepasses.contextautoesc.ContextualAutoescaper;
+import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.CallBasicNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamNode;
@@ -56,10 +58,12 @@ import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TagName;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
+import com.google.template.soy.types.SanitizedType.StyleType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
 import com.google.template.soy.types.SanitizedType.UriType;
 import com.google.template.soy.types.SoyType;
@@ -94,9 +98,12 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       SoyErrorKind.of("Attribute specified multiple times.");
 
   private final ErrorReporter errorReporter;
+  private final ImmutableList<? extends SoyPrintDirective> printDirectives;
 
-  SoyElementCompositionPass(ErrorReporter errorReporter) {
+  SoyElementCompositionPass(
+      ErrorReporter errorReporter, ImmutableList<? extends SoyPrintDirective> printDirectives) {
     this.errorReporter = errorReporter;
+    this.printDirectives = printDirectives;
   }
 
   @Override
@@ -113,12 +120,16 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     for (TemplateNode template : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
       for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(template, HtmlTagNode.class)) {
-        process(template, tagNode, nodeIdGen);
+        process(template, tagNode, nodeIdGen, file.getTemplateRegistry());
       }
     }
   }
 
-  private void process(TemplateNode template, HtmlTagNode tagNode, IdGenerator nodeIdGen) {
+  private void process(
+      TemplateNode template,
+      HtmlTagNode tagNode,
+      IdGenerator nodeIdGen,
+      TemplateRegistry registry) {
     TagName name = tagNode.getTagName();
     if (name.isStatic()) {
       return;
@@ -126,6 +137,11 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
     PrintNode printNode = name.getDynamicTagName();
     if (!tagNode.getTagName().isTemplateCall()) {
       return;
+    }
+
+    if (tagNode instanceof HtmlOpenTagNode) {
+      ContextualAutoescaper.annotateAndRewriteHtmlTag(
+          (HtmlOpenTagNode) tagNode, registry, nodeIdGen, errorReporter, printDirectives);
     }
 
     Preconditions.checkState(tagNode.getTaggedPairs().size() <= 1);
@@ -488,6 +504,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       return "trusted_resource_uri";
     } else if (UriType.getInstance().isAssignableFromStrict(attrType)) {
       return "uri";
+    } else if (StyleType.getInstance().isAssignableFromStrict(attrType)) {
+      return "css";
     } else {
       return "text";
     }

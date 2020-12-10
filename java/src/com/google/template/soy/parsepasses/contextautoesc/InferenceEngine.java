@@ -89,21 +89,18 @@ final class InferenceEngine {
    * Infer an end context for the given template and, if requested, choose escaping directives for
    * any <code>{print}</code>.
    *
-   * @param templateNode A template that is visited in {@code startContext} and no other. If a
-   *     template can be reached from multiple contexts, then it should be cloned. This class
-   *     automatically does that for called templates.
+   * @param soyNode A node that is visited in {@code startContext} and no other. If a template can
+   *     be reached from multiple contexts, then it should be cloned. This class automatically does
+   *     that for called templates.
    * @param inferences Receives all suggested changes and inferences to tn.
    * @return The end context when the given template is reached from {@code startContext}.
    */
   public static Context inferTemplateEndContext(
-      TemplateNode templateNode,
-      Context startContext,
-      Inferences inferences,
-      ErrorReporter errorReporter) {
+      SoyNode soyNode, Context startContext, Inferences inferences, ErrorReporter errorReporter) {
     InferenceEngine inferenceEngine = new InferenceEngine(inferences, errorReporter);
     // Context started off as startContext and we have propagated context through all of
-    // template's children, so now return the template's end context.
-    return inferenceEngine.infer(templateNode, startContext);
+    // soyNode's children, so now return the template's end context.
+    return inferenceEngine.infer(soyNode, startContext);
   }
 
   /**

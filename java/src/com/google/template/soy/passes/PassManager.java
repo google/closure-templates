@@ -531,7 +531,8 @@ public final class PassManager {
               new ElementCheckCrossTemplatePass(errorReporter), crossTemplateCheckingPassesBuilder);
           if (astRewrites.atLeast(AstRewrites.ALL)) {
             addPass(
-                new SoyElementCompositionPass(errorReporter), crossTemplateCheckingPassesBuilder);
+                new SoyElementCompositionPass(errorReporter, soyPrintDirectives),
+                crossTemplateCheckingPassesBuilder);
           }
         }
       }
