@@ -223,7 +223,6 @@ public final class TranslateExprNodeVisitorTest {
   public void testV1Expression() {
     String soyFile =
         ""
-            + "{namespace ns}\n"
             + "{template .foo}\n"
             + "  {@param goo: ?}\n"
             + "  {v1Expression('$goo.length()')}\n"

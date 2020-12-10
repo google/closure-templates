@@ -27,9 +27,7 @@ import com.google.template.soy.shared.restricted.SoyFunction;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.KvPair;
-import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,22 +98,18 @@ public final class ExprEquivalenceTest {
     runTest("{@param rec: [a: string, b: [a: string]]}", "{assertNotEquals($rec.a, $rec?.a)}");
   }
 
-  private static final SoyTypeRegistry TYPE_REGISTRY =
-      SharedTestUtils.importing(KvPair.getDescriptor());
-
   public void runTest(String... templateSourceLines) {
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forFileContents(
-                "{namespace ns}\n"
-                    + "{template .aaa}\n"
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                "{template .aaa}\n"
                     + "  "
                     + Joiner.on("\n   ").join(templateSourceLines)
                     + "\n"
-                    + "{/template}\n")
+                    + "{/template}\n",
+                KvPair.getDescriptor())
             .addSoyFunction(ASSERT_REFLEXIVE_FUNCTION)
             .addSoyFunction(ASSERT_EQUALS_FUNCTION)
             .addSoyFunction(ASSERT_NOT_EQUALS_FUNCTION)
-            .typeRegistry(TYPE_REGISTRY)
             .parse()
             .fileSet();
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(soyTree, FunctionNode.class)) {

@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -29,6 +30,7 @@ import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
@@ -126,7 +128,10 @@ public final class ExpressionParser {
     SoyTypeRegistry typeRegistry = SharedTestUtils.importing(protos);
 
     SoyFileSetNode fileSet =
-        SoyFileSetParserBuilder.forFileContents(SharedTestUtils.buildTestSoyFileContent(contents))
+        SoyFileSetParserBuilder.forFileAndImports(
+                "{namespace brittle.test.ns}",
+                SharedTestUtils.buildTestTemplateContent(false, contents),
+                protos.toArray(new GenericDescriptor[0]))
             .runOptimizer(true)
             .addSoySourceFunctions(functions)
             .typeRegistry(typeRegistry)
@@ -135,7 +140,8 @@ public final class ExpressionParser {
             .parse()
             .fileSet();
 
-    TemplateNode template = (TemplateNode) fileSet.getChild(0).getChild(0);
+    TemplateNode template =
+        Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(fileSet, TemplateNode.class));
     if (template.numChildren() == 0) {
       return Optional.empty();
     }

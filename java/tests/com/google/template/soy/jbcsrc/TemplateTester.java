@@ -32,6 +32,7 @@ import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.ThrowableSubject;
 import com.google.common.truth.Truth;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.css.CssRegistry;
@@ -501,12 +502,11 @@ public final class TemplateTester {
   }
 
   static CompiledTemplates compileFileWithLoggingConfig(
-      ValidatedLoggingConfig loggingConfig, SoyTypeRegistry typeRegistry, String... fileBody) {
+      ValidatedLoggingConfig loggingConfig, GenericDescriptor[] protoImports, String... fileBody) {
     String file = Joiner.on('\n').join(fileBody);
     SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(file)
+        SoyFileSetParserBuilder.forTemplateAndImports(file, protoImports)
             .setLoggingConfig(loggingConfig)
-            .typeRegistry(typeRegistry)
             .build();
     ParseResult parseResult = parser.parse();
     return BytecodeCompiler.compile(

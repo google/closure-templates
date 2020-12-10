@@ -22,6 +22,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -31,6 +33,8 @@ import com.google.template.soy.shared.internal.InternalPlugins;
 import com.google.template.soy.shared.internal.NoOpScopedData;
 import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.regex.Pattern;
@@ -209,12 +213,19 @@ public final class GenCallCodeUtilsTest {
   private static String getCallExprTextHelper(
       String callSource, ImmutableSet<String> escapingDirectives) {
 
+    GenericDescriptor[] desc =
+        new GenericDescriptor[0];
+
     SoyFileSetNode soyTree =
-        SoyFileSetParserBuilder.forTemplateContents(callSource)
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                SharedTestUtils.buildTestTemplateContent(false, callSource), desc)
             .parse()
             .fileSet();
 
-    CallNode callNode = (CallNode) SharedTestUtils.getNode(soyTree, 0);
+    CallNode callNode =
+        (CallNode)
+            Iterables.getOnlyElement(SoyTreeUtils.getAllNodesOfType(soyTree, TemplateNode.class))
+                .getChild(0);
     // Manually setting the escaping directives.
     callNode.setEscapingDirectives(
         InternalPlugins.internalDirectives(new NoOpScopedData()).stream()

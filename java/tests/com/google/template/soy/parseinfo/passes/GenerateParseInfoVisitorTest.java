@@ -216,9 +216,10 @@ public final class GenerateParseInfoVisitorTest {
       ImmutableList<GenericDescriptor> protos, String... templateLines) {
     SoyTypeRegistry typeRegistry = SharedTestUtils.importing(protos);
     ParseResult parseResult =
-        SoyFileSetParserBuilder.forFileContents(
-                SharedTestUtils.buildTestSoyFileContent(
-                    /* strictHtml= */ true, Joiner.on('\n').join(templateLines)))
+        SoyFileSetParserBuilder.forTemplateAndImports(
+                SharedTestUtils.buildTestTemplateContent(
+                    /* strictHtml= */ true, Joiner.on('\n').join(templateLines)),
+                protos.toArray(new GenericDescriptor[0]))
             .typeRegistry(typeRegistry)
             .parse();
     TemplateRegistry registry = parseResult.registry();

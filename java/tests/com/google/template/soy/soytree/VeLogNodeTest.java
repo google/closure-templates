@@ -88,8 +88,10 @@ public final class VeLogNodeTest {
   private VeLogNode parseVeLog(String veLog, ErrorReporter reporter) {
     return Iterables.getOnlyElement(
         SoyTreeUtils.getAllNodesOfType(
-            SoyFileSetParserBuilder.forTemplateContents(true, veLog)
-                .typeRegistry(SharedTestUtils.importing(Foo.getDescriptor()))
+            SoyFileSetParserBuilder.forFileAndImports(
+                    "{namespace brittle.test.ns}",
+                    SharedTestUtils.buildTestTemplateContent(true, veLog),
+                    Foo.getDescriptor())
                 .setLoggingConfig(
                     LoggingConfigs.createLoggingConfig(
                         LoggableElement.newBuilder()

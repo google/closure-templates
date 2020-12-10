@@ -22,7 +22,9 @@ import static com.google.template.soy.jbcsrc.TemplateTester.getDefaultContext;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -40,13 +42,11 @@ import com.google.template.soy.testing.ExampleExtendable;
 import com.google.template.soy.testing.KvPair;
 import com.google.template.soy.testing.ProtoMap;
 import com.google.template.soy.testing.ProtoMap.InnerMessage;
-import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SomeEmbeddedMessage;
 import com.google.template.soy.testing.SomeEnum;
 import com.google.template.soy.testing.SomeExtension;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import com.google.template.soy.testing3.Proto3Message;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.io.IOException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,19 +61,19 @@ public final class ProtoSupportTest {
 
   private static final Joiner JOINER = Joiner.on('\n');
 
-  final SoyTypeRegistry types =
-      SharedTestUtils.importing(
-          Example.getDescriptor(),
-          ExampleExtendable.getDescriptor(),
-          KvPair.getDescriptor(),
-          ProtoMap.getDescriptor(),
-          SomeEmbeddedMessage.getDescriptor(),
-          SomeEnum.getDescriptor(),
-          SomeExtension.getDescriptor(),
-          Proto3Message.getDescriptor(),
-          Example.someBoolExtension.getDescriptor(),
-          Example.someIntExtension.getDescriptor(),
-          Example.listExtension.getDescriptor());
+  private static final GenericDescriptor[] descriptors = {
+    Example.getDescriptor(),
+    ExampleExtendable.getDescriptor(),
+    KvPair.getDescriptor(),
+    ProtoMap.getDescriptor(),
+    SomeEmbeddedMessage.getDescriptor(),
+    SomeEnum.getDescriptor(),
+    SomeExtension.getDescriptor(),
+    Proto3Message.getDescriptor(),
+    Example.someBoolExtension.getDescriptor(),
+    Example.someIntExtension.getDescriptor(),
+    Example.listExtension.getDescriptor()
+  };
 
   @Test
   public void testSimpleProto() {
@@ -258,8 +258,6 @@ public final class ProtoSupportTest {
   public void testPassingManipulatedFields() {
     String file =
         JOINER.join(
-            "{namespace ns}",
-            "",
             "{template .caller}",
             "  {@param pair : KvPair}",
             "  {let $closeUrl : $pair.value /}",
@@ -272,8 +270,9 @@ public final class ProtoSupportTest {
             "    {$str}",
             "  {/if}",
             "{/template}");
-    SoyFileSetParser parser =
-        SoyFileSetParserBuilder.forFileContents(file).typeRegistry(types).build();
+    SoyFileSetParserBuilder builder =
+        SoyFileSetParserBuilder.forTemplateAndImports(file, descriptors);
+    SoyFileSetParser parser = builder.build();
     ParseResult parseResult = parser.parse();
     CompiledTemplates templates =
         BytecodeCompiler.compile(
@@ -281,7 +280,7 @@ public final class ProtoSupportTest {
                 parseResult.fileSet(),
                 ErrorReporter.exploding(),
                 parser.soyFileSuppliers(),
-                types)
+                builder.getTypeRegistry())
             .get();
     render(
         templates,
@@ -447,11 +446,18 @@ public final class ProtoSupportTest {
   }
 
   private CompiledTemplateSubject assertThatTemplateBody(String... body) {
-    StringBuilder builder = new StringBuilder();
-    builder.append("{namespace ns}\n").append("{template .foo}\n");
-    Joiner.on("\n").appendTo(builder, body);
-    builder.append("\n{/template}\n");
-    return TemplateTester.assertThatFile(builder.toString()).withTypeRegistry(types);
+    try {
+      SoyFileSetParserBuilder builder =
+          SoyFileSetParserBuilder.forTemplateAndImports(
+              "{template .foo}\n" + Joiner.on("\n").join(body) + "\n{/template}\n", descriptors);
+      return TemplateTester.assertThatFile(
+              Iterables.getOnlyElement(builder.build().soyFileSuppliers().values())
+                  .asCharSource()
+                  .read())
+          .withTypeRegistry(builder.getTypeRegistry());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private String render(CompiledTemplates templates, String name, SoyRecord params) {

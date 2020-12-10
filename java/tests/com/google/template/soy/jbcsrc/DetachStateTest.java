@@ -24,6 +24,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
@@ -39,7 +40,6 @@ import com.google.template.soy.logging.LoggableElement;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
 import com.google.template.soy.logging.testing.LoggingConfigs;
 import com.google.template.soy.testing.Foo;
-import com.google.template.soy.testing.SharedTestUtils;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Test;
@@ -328,9 +328,7 @@ public final class DetachStateTest {
     CompiledTemplates templates =
         TemplateTester.compileFileWithLoggingConfig(
             config,
-            SharedTestUtils.importing(Foo.getDescriptor()),
-            "{namespace ns}",
-            "",
+            new GenericDescriptor[] {Foo.getDescriptor()},
             "{template .t}",
             "  {@param myBool : bool}",
             "  {msg desc=\"foo\" hidden=\"true\"}",

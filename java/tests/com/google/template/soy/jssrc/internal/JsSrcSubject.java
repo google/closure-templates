@@ -28,6 +28,7 @@ import com.google.common.truth.StringSubject;
 import com.google.common.truth.Subject;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ForOverride;
+import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.error.ErrorReporter;
@@ -47,7 +48,6 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SharedTestUtils;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypeRegistryBuilder;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +62,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   private final String actual;
   SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
-  private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
+  private GenericDescriptor[] protoDescriptors = new GenericDescriptor[0];
   private ValidatedLoggingConfig loggingConfig = ValidatedLoggingConfig.EMPTY;
   private ImmutableList<String> experimentalFeatures = ImmutableList.of();
   ErrorReporter errorReporter = ErrorReporter.exploding();
@@ -79,8 +79,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   static ForFile assertThatTemplateBody(String... lines) {
     String templateBody = JOINER.join(lines);
-    return assertAbout(ForFile::new)
-        .that("{namespace ns}\n" + "{template .aaa}\n" + templateBody + "{/template}\n");
+    return assertAbout(ForFile::new).that("{template .aaa}\n" + templateBody + "{/template}\n");
   }
 
   /**
@@ -125,7 +124,7 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       } else {
         templateBody = paramDecls.toString() + "{" + exprText + "}";
       }
-      return "{namespace ns}\n" + "{template .aaa}\n" + templateBody + "\n{/template}";
+      return "{template .aaa}\n" + templateBody + "\n{/template}";
     }
   }
 
@@ -134,8 +133,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     return typedThis();
   }
 
-  T withTypeRegistry(SoyTypeRegistry typeRegistry) {
-    this.typeRegistry = typeRegistry;
+  T withProtoImports(GenericDescriptor[] descriptors) {
+    this.protoDescriptors = descriptors;
     return typedThis();
   }
 
@@ -157,10 +156,9 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
 
   private ParseResult parse() {
     SoyFileSetParserBuilder builder =
-        SoyFileSetParserBuilder.forFileContents(actual)
+        SoyFileSetParserBuilder.forTemplateAndImports(actual, protoDescriptors)
             .allowUnboundGlobals(true)
             .allowV1Expression(true)
-            .typeRegistry(typeRegistry)
             .setLoggingConfig(loggingConfig)
             .allowUnknownJsGlobals(true)
             .enableExperimentalFeatures(experimentalFeatures);

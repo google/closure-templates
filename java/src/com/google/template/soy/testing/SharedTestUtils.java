@@ -91,17 +91,15 @@ public final class SharedTestUtils {
    * @return The test Soy file's content.
    */
   public static String buildTestSoyFileContent(boolean strictHtml, String soyCode) {
-    String namespace = "brittle.test.ns";
+    return "{namespace brittle.test.ns}\n" + buildTestTemplateContent(strictHtml, soyCode);
+  }
+
+  public static String buildTestTemplateContent(boolean strictHtml, String soyCode) {
     String templateName = ".brittleTestTemplate";
 
     return String.format(
-        ""
-            + "{namespace %s}\n"
-            + "/** Test template. */\n"
-            + "{template %s%s}\n"
-            + "%s\n"
-            + "{/template}\n",
-        namespace, templateName, strictHtml ? "" : " stricthtml=\"false\"", soyCode);
+        "/** Test template. */\n" + "{template %s%s}\n" + "%s\n" + "{/template}\n",
+        templateName, strictHtml ? "" : " stricthtml=\"false\"", soyCode);
   }
 
   /**
