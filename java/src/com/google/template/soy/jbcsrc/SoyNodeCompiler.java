@@ -69,7 +69,6 @@ import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.shared.RangeArgs;
-import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.shared.restricted.SoyPrintDirective;
 import com.google.template.soy.soytree.AbstractReturningSoyNodeVisitor;
@@ -101,6 +100,7 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
 import com.google.template.soy.soytree.SoyNode.StandaloneNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
@@ -236,7 +236,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   CompiledMethodBody compile(
       RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     List<Statement> statements = new ArrayList<>();
+    if (shouldCheckForSoftLimit(node)) {
+      statements.add(detachState.detachLimited(appendableExpression));
+    }
     // Tag the content with the kind
+    // TODO(lukes): directionality is always the default, do we need to set it?
     statements.add(
         appendableExpression
             .setSanitizedContentKind(node.getContentKind())
@@ -266,9 +270,73 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
   }
 
+  /**
+   * Certain content kinds are limited in size by their nature. Skip detach logic in those cases.
+   */
+  private static boolean kindRequiresDetach(SanitizedContentKind kind) {
+    switch (kind) {
+      case TEXT:
+      case HTML:
+      case HTML_ELEMENT:
+      case CSS: // Sometimes templates include very large JS and CSS documents.
+      case JS:
+        return true;
+      case TRUSTED_RESOURCE_URI: // uris are naturally small (>2K is unlikely to work in practice)
+      case URI:
+      case ATTRIBUTES:
+        // attributes are generally small as well, though don't really share a tight bound.
+        return false;
+    }
+    throw new AssertionError("invalid kind: " + kind);
+  }
+
+  private static boolean directlyPrintingNode(SoyNode node) {
+    return node.getKind() == SoyNode.Kind.RAW_TEXT_NODE
+        || node.getKind() == SoyNode.Kind.PRINT_NODE;
+  }
+
+  /**
+   * Returns true if we should add logic for checking if we have exceeded the soft limit to the
+   * beginning of the code generated for the given node.
+   *
+   */
+  private static boolean shouldCheckForSoftLimit(RenderUnitNode node) {
+    // Only check templates
+    if (!(node instanceof TemplateNode)) {
+      return false;
+    }
+    // Only for certain content kinds
+    if (!kindRequiresDetach(node.getContentKind())) {
+      return false;
+    }
+    // Only if it contains a print node directly.  If it is just a set of call nodes (possibly with
+    // control flow) we can assume that buffer checks will be handled by our callees.
+    boolean[] containsPrintingNodeDirectly = {false};
+    SoyTreeUtils.visitAllNodes(
+        node,
+        n -> {
+          // Don't explore expr nodes or render unit nodes.  let/param nodes may contain printing
+          // nodes but it is only relevant if they themselves are printed, in which case our later
+          // check will find them.
+          if (!(n instanceof SoyNode)
+              || n instanceof LetContentNode
+              || n instanceof CallParamContentNode) {
+            return VisitDirective.SKIP_CHILDREN;
+          }
+          SoyNode soyNode = (SoyNode) n;
+          if (directlyPrintingNode(soyNode)) {
+            containsPrintingNodeDirectly[0] = true;
+            return VisitDirective.ABORT;
+          }
+          return VisitDirective.CONTINUE;
+        });
+    return containsPrintingNodeDirectly[0];
+  }
+
   @Override
   protected Statement visitTemplateNode(TemplateNode node) {
-    return visitChildrenInNewScope(node);
+    // template nodes are directly handled by compile()
+    throw new AssertionError("should not be called");
   }
 
   private Statement visitChildrenInNewScope(BlockNode node) {
@@ -614,14 +682,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     AppendableExpression renderSoyValue =
         appendableExpression.appendString(value.coerceToString()).labelStart(reattachPoint);
 
-    Statement stmt;
-    if (shouldCheckBuffer(node)) {
-      stmt = detachState.detachLimited(renderSoyValue);
-    } else {
-      stmt = renderSoyValue.toStatement();
-    }
-
-    return stmt;
+    return renderSoyValue.toStatement();
   }
 
   private Statement visitLoggingFunction(
@@ -762,39 +823,15 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return Statement.concat(initRenderee, initAppendable, doCall, clearAppendable, clearRenderee);
   }
 
-  /**
-   * Returns true if the print expression should check the rendering buffer and generate a detach.
-   *
-   * <p>We do not generate detaches for css() and xid() builtin functions, since they are typically
-   * very short.
-   */
-  private static boolean shouldCheckBuffer(PrintNode node) {
-    if (!(node.getExpr().getRoot() instanceof FunctionNode)) {
-      return true;
-    }
-
-    FunctionNode fn = (FunctionNode) node.getExpr().getRoot();
-    if (!(fn.getSoyFunction() instanceof BuiltinFunction)) {
-      return true;
-    }
-
-    BuiltinFunction bfn = (BuiltinFunction) fn.getSoyFunction();
-    if (bfn != BuiltinFunction.XID && bfn != BuiltinFunction.CSS) {
-      return true;
-    }
-
-    return false;
-  }
-
   @Override
   protected Statement visitRawTextNode(RawTextNode node) {
-    AppendableExpression render =
-        appendableExpression.appendString(constant(node.getRawText(), fields));
-    // TODO(lukes): add some heuristics about when to add this
-    // ideas:
-    // * never try to detach in certain 'contexts' (e.g. attribute context)
-    // * never detach after rendering small chunks (< 128 bytes?)
-    return detachState.detachLimited(render);
+    AppendableExpression render;
+    if (node.getRawText().length() == 1) {
+      render = appendableExpression.appendChar(constant(node.getRawText().charAt(0)));
+    } else {
+      render = appendableExpression.appendString(constant(node.getRawText(), fields));
+    }
+    return render.toStatement();
   }
 
   @Override

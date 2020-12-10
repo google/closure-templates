@@ -303,7 +303,8 @@ public class SoySauceTest {
     SettableFuture<String> p = SettableFuture.create();
     WriteContinuation continuation = tmpl.setData(ImmutableMap.of("p", p)).renderText(builder);
     assertThat(continuation.result().type()).isEqualTo(RenderResult.Type.LIMITED);
-    assertThat(builder.toString()).isEqualTo("Hello, ");
+    // we check at the beginning of the template, so we immediately pause
+    assertThat(builder.toString()).isEmpty();
     builder.softLimitReached = false;
 
     continuation = continuation.continueRender();

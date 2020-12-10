@@ -105,7 +105,7 @@ public final class RenderResult {
 
   @Override
   public String toString() {
-    return "RenderResult{ " + type + "}";
+    return "RenderResult{" + type + "}";
   }
 
   @Override

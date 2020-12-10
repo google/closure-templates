@@ -95,6 +95,10 @@ There are two kinds of asynchronous events that we handle:
     `AdvisingAppendable.softLimitedReached` method on the output stream. Users
     who want to trigger this behavior will need to supply a custom
     `AdvisingAppendable` implementation and implement this method.
+    *   **NOTE:** This mechanism is _cooperative_ and as such it depends on how
+        often the renderer calls the `softLimitReached()` method. Currently, the
+        renderer will call this method at the beginning of any `{template}` that
+        isn't a simple delegate.
 
 To handle these events the renderer will detect when it is about to evaluate an
 unfinished future or when the output buffer is full and then pause rendering to

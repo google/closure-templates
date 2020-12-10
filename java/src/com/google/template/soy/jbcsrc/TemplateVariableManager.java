@@ -16,6 +16,8 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.auto.value.AutoValue;
 import com.google.template.soy.jbcsrc.TemplateVariableManager.VarKey.Kind;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -370,6 +372,9 @@ final class TemplateVariableManager implements LocalVariableManager {
     abstract Optional<Statement> restore();
   }
 
+  void assertSaveRestoreStateIsEmpty() {
+    checkState(variablesByKey.isEmpty());
+  }
   /** Returns a {@link SaveRestoreState} for the current state of the variable set. */
   SaveRestoreState saveRestoreState() {
     List<Statement> saves = new ArrayList<>();

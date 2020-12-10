@@ -142,33 +142,26 @@ final class DetachState implements ExpressionDetacher.Factory {
   /**
    * Returns a Statement that will conditionally detach if the given {@link AdvisingAppendable} has
    * been {@link AdvisingAppendable#softLimitReached() output limited}.
+   *
+   * <p>This is only valid to call at the begining of templates. It does not allocate a save/restore
+   * block since there should be nothing to save or restore.
    */
   Statement detachLimited(AppendableExpression appendable) {
+    variables.assertSaveRestoreStateIsEmpty();
     if (!appendable.supportsSoftLimiting()) {
       return appendable.toStatement();
     }
-    final Label reattachPoint = new Label();
-    final SaveRestoreState saveRestoreState = variables.saveRestoreState();
 
-    int state = addState(reattachPoint, saveRestoreState.restore());
     final Expression isSoftLimited = appendable.softLimitReached();
     final Statement returnLimited = returnExpression(MethodRef.RENDER_RESULT_LIMITED.invoke());
-    final Statement saveState =
-        getStateField().putInstanceField(thisExpr, BytecodeUtils.constant(state));
     return new Statement() {
       @Override
       protected void doGen(CodeBuilder adapter) {
+        Label continueLabel = new Label();
         isSoftLimited.gen(adapter);
-        adapter.ifZCmp(Opcodes.IFEQ, reattachPoint); // if !softLimited
-        // ok we were limited, save state and return
-        saveRestoreState.save().orElse(Statement.NULL_STATEMENT).gen(adapter); // save locals
-        saveState.gen(adapter); // save the state field
+        adapter.ifZCmp(Opcodes.IFEQ, continueLabel); // if !softLimited
         returnLimited.gen(adapter);
-        // Note, the reattach point for 'limited' is _after_ the check.  That means we do not
-        // recheck the limit state.  So if a caller calls us back without freeing any buffer we
-        // will print more before checking again.  This is fine, because our caller is breaking the
-        // contract.
-        adapter.mark(reattachPoint);
+        adapter.mark(continueLabel);
       }
     };
   }
@@ -291,8 +284,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     ReattachState create = ReattachState.create(reattachPoint, restore);
     reattaches.add(create);
     // the index of the ReattachState in the list + 1, 0 is reserved for 'initial state'.
-    int state = reattaches.size();
-    return state;
+    return reattaches.size();
   }
 
   @AutoValue

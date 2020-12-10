@@ -175,9 +175,7 @@ final class MsgCompiler {
               parameterLookup.getPluginContext().getULocale(),
               partsAndId);
     }
-    return Statement.concat(
-        printMsg.withSourceLocation(msg.getSourceLocation()),
-        detachState.detachLimited(appendableExpression));
+    return printMsg.withSourceLocation(msg.getSourceLocation());
   }
 
   /**

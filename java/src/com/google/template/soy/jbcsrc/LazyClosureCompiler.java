@@ -136,6 +136,13 @@ import org.objectweb.asm.commons.Method;
  *   }
  * }
  * }</pre>
+ *
+ * <p>TODO(b/172970101): Now that many LetContentNodes don't directly detachLimited(), it may be
+ * possible to compile to expressions that generate StringData or SanitizedContent directly instead
+ * of creating a new lazy SoyValueProvider subclass. This case may seem weird but consider {@code
+ * {let $a kind="text"}{css('foo')} {css('bar')}{/let}} the only benefit to evaluating such a thing
+ * lazily would be to avoid allocating the String for the value because theoretically it could be
+ * streamed out.
  */
 final class LazyClosureCompiler {
   @AutoValue

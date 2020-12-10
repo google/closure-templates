@@ -49,7 +49,7 @@ import org.junit.runners.JUnit4;
 /** Tests for {@link DetachState}. */
 @RunWith(JUnit4.class)
 public final class DetachStateTest {
-  static final class TestAppendable extends AbstractLoggingAdvisingAppendable {
+  static class TestAppendable extends AbstractLoggingAdvisingAppendable {
     private final StringBuilder delegate = new StringBuilder();
     boolean softLimitReached;
 
@@ -97,121 +97,36 @@ public final class DetachStateTest {
     }
   }
 
-  @Test
-  public void testDetach_singleRawTextNode() throws IOException {
-    CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    // Basic stuff works
-    TestAppendable output = new TestAppendable();
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("hello world");
-
-    output = new TestAppendable();
-    output.softLimitReached = true;
-    // detached!!!
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
-    assertThat(output.toString()).isEqualTo("hello world");
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("hello world"); // nothing was added
-  }
-
-  @Test
-  public void testDetach_css() throws IOException {
-    CompiledTemplates templates =
-        TemplateTester.compileTemplateBody(
-            "{let $foo: 'foo'/}", "{css($foo, 'bar')}", "{css('baz')}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    // Basic stuff works
-    TestAppendable output = new TestAppendable();
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("foo-barbaz");
-
-    output = new TestAppendable();
-    output.softLimitReached = true;
-    // css() does not detach
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("foo-barbaz");
-  }
-
-  @Test
-  public void testDetach_xid() throws IOException {
-    CompiledTemplates templates = TemplateTester.compileTemplateBody("{xid('foo')}");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    // Basic stuff works
-    TestAppendable output = new TestAppendable();
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("foo_");
-
-    output = new TestAppendable();
-    output.softLimitReached = true;
-    // xid() does not detach
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("foo_");
-  }
-
-  @Test
-  public void testDetach_multipleNodes() throws IOException {
-    CompiledTemplates templates =
-        TemplateTester.compileTemplateBody(
-            "hello",
-            // this print node inserts a space character and ensures that our raw text nodes don't
-            // get merged
-            "{' '}",
-            "world");
-    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
-    RenderContext context = getDefaultContext(templates);
-    CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    // Basic stuff works
-    TestAppendable output = new TestAppendable();
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("hello world");
-
-    output = new TestAppendable();
-    output.softLimitReached = true;
-    // detached!!!
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
-    assertThat(output.toString()).isEqualTo("hello");
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
-    assertThat(output.toString()).isEqualTo("hello ");
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
-    assertThat(output.toString()).isEqualTo("hello world");
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("hello world"); // nothing was added
-  }
-
   // ensure that when we call back in, locals are restored
   @Test
   public void testDetach_saveRestore() throws IOException {
+    SettableFuture<String> future = SettableFuture.create();
+
     CompiledTemplates templates =
-        TemplateTester.compileTemplateBody("{for $i in range(10)}", "  {$i}", "{/for}");
+        TemplateTester.compileTemplateBody(
+            "{@param l : list<string>}", "{for $i in $l}", "  {$i}", "{/for}");
     CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
     RenderContext context = getDefaultContext(templates);
     CompiledTemplate template =
-        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
-    // Basic stuff works
-    TestAppendable output = new TestAppendable();
-    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEqualTo("0123456789");
+        factory.create(
+            asRecord(ImmutableMap.of("l", ImmutableList.of("a", future, "c"))),
+            ParamStore.EMPTY_INSTANCE);
 
-    output = new TestAppendable();
+    TestAppendable output = new TestAppendable();
     output.softLimitReached = true;
-    for (int i = 0; i < 10; i++) {
-      assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
-      assertThat(output.toString()).isEqualTo(String.valueOf(i));
-      output.delegate.setLength(0);
-    }
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    // we started with a limited appendable so we return immediatley without rendering.
+    assertThat(output.toString()).isEmpty();
+
+    // allow rendering to proceed
+    output.softLimitReached = false;
+
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(future));
+    assertThat(output.toString()).isEqualTo("a");
+    future.set("b");
     assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
-    assertThat(output.toString()).isEmpty(); // last render was empty
+    // we jumped back into the loop and completed it.
+    assertThat(output.toString()).isEqualTo("abc");
   }
 
   @Test
@@ -459,5 +374,78 @@ public final class DetachStateTest {
         .isEqualTo(RenderResult.done());
     assertThat(output.toString()).isEmpty();
     assertThat(template.getClass().getDeclaredFields()).hasLength(0); // no $state field
+  }
+
+  @Test
+  public void testLimitedAtTemplateEntryPoint() throws IOException {
+    CompiledTemplates templates = TemplateTester.compileTemplateBody("hello world");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.foo");
+    RenderContext context = getDefaultContext(templates);
+    CompiledTemplate template =
+        factory.create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE);
+
+    TestAppendable output = new TestAppendable();
+    output.softLimitReached = true;
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    // we started with a limited appendable so we return immediatley without rendering.
+    assertThat(output.toString()).isEmpty();
+
+    // even if we call back in we are still stuck
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+
+    // allow rendering to proceed
+    output.softLimitReached = false;
+
+    // now we actually render
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("hello world");
+  }
+
+  @Test
+  public void testLimitedAtTemplateEntryPoint_severalCalls() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "",
+            "{template .t}",
+            "{@param depth: number}",
+            "  {if $depth >0}",
+            "    {$depth}",
+            "    {call .t}{param depth: $depth-1 /}{/call}",
+            "  {/if}",
+            "{/template}",
+            "");
+    CompiledTemplate template =
+        templates
+            .getTemplateFactory("ns.t")
+            .create(asRecord(ImmutableMap.of("depth", 4)), ParamStore.EMPTY_INSTANCE);
+    TestAppendable output =
+        new TestAppendable() {
+          @Override
+          public boolean softLimitReached() {
+            boolean current = this.softLimitReached;
+            this.softLimitReached = !current;
+            return current;
+          }
+        };
+    RenderContext context = getDefaultContext(templates);
+    output.softLimitReached = true;
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEmpty();
+
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("4");
+
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("43");
+
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("432");
+
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.limited());
+    assertThat(output.toString()).isEqualTo("4321");
+
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("4321");
   }
 }
