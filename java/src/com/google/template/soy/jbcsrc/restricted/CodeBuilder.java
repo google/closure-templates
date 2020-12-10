@@ -16,6 +16,10 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
+import com.google.auto.value.AutoValue;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -42,6 +46,24 @@ import org.objectweb.asm.commons.TableSwitchGenerator;
  */
 public final class CodeBuilder extends MethodVisitor {
   private final GeneratorAdapter adapter;
+
+  @AutoValue
+  abstract static class LineNumberTableEntry implements Comparable<LineNumberTableEntry> {
+    static LineNumberTableEntry create(Label label, int lineNumber) {
+      return new AutoValue_CodeBuilder_LineNumberTableEntry(label, lineNumber);
+    }
+
+    abstract Label label();
+
+    abstract int lineNumber();
+
+    @Override
+    public int compareTo(LineNumberTableEntry other) {
+      return Integer.compare(label().getOffset(), other.label().getOffset());
+    }
+  }
+
+  private final List<LineNumberTableEntry> lineNumberTable = new ArrayList<>();
 
   public CodeBuilder(int access, Method method, MethodVisitor mv) {
     this(mv, access, method.getName(), method.getDescriptor());
@@ -317,6 +339,15 @@ public final class CodeBuilder extends MethodVisitor {
 
   /** See {@link GeneratorAdapter#endMethod()} */
   public void endMethod() {
+    Collections.sort(lineNumberTable);
+    int previousLineNumber = -1;
+    for (LineNumberTableEntry entry : lineNumberTable) {
+      if (entry.lineNumber() == previousLineNumber) {
+        continue;
+      }
+      previousLineNumber = entry.lineNumber();
+      super.visitLineNumber(entry.lineNumber(), entry.label());
+    }
     adapter.endMethod();
   }
 
@@ -328,5 +359,11 @@ public final class CodeBuilder extends MethodVisitor {
   /** See {@link GeneratorAdapter#swap()} */
   public void arrayStore(Type type) {
     adapter.arrayStore(type);
+  }
+
+  @Override
+  public void visitLineNumber(int lineNumber, Label label) {
+    // buffer all the entries so we can compress them in endMethod()
+    lineNumberTable.add(LineNumberTableEntry.create(label, lineNumber));
   }
 }
