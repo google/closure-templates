@@ -94,10 +94,6 @@ import java.util.stream.Collectors;
 @RunAfter(ResolveExpressionTypesPass.class)
 final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPass {
 
-  private static final SoyErrorKind ONLY_BASIC_TEMPLATES_ALLOWED =
-      SoyErrorKind.of(
-          "Only basic templates are allowed in expressions, but found template of kind: `{0}`.");
-
   private static final SoyErrorKind ELEMENT_CALL_TO_HTML_TEMPLATE =
       SoyErrorKind.of(
           "Expected a template with kind 'html<?>' that is completely bound or only has html"
@@ -498,11 +494,16 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       }
       correctlyPlaced.add(functionNode);
     } else if (!tagNode.getTagName().isTemplateCall()) {
-      if (printNode.getExpr().getType() == UnknownType.getInstance()
-          && exprNode.getKind() == Kind.METHOD_CALL_NODE
-          && ((MethodCallNode) exprNode).getSoyMethod() == BuiltinMethod.BIND) {
-        // Bind method + unknown type indicates an error already reported here.
-        return;
+      if (printNode.getExpr().getType() == UnknownType.getInstance()) {
+        if (exprNode instanceof MethodCallNode
+            && ((MethodCallNode) exprNode).getSoyMethod() == BuiltinMethod.BIND) {
+          // Bind method + unknown type indicates an error already reported here.
+          return;
+        }
+        // Same for template literal node. This is a Soy element in the root of an element.
+        if (exprNode instanceof TemplateLiteralNode) {
+          return;
+        }
       }
       errorReporter.report(printNode.getExpr().getSourceLocation(), NEED_WRAP);
     }
@@ -572,17 +573,6 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
         return UnknownType.getInstance();
       }
       TemplateType templateType = basicTemplateOrElement.getTemplateType();
-      if (templateType.getTemplateKind() != TemplateType.TemplateKind.BASIC && !isSynthetic) {
-        // Only report errors for template literal nodes, to avoid reporting errors multiple times
-        // (ie., once for everywhere the 'named' template type has propagated in the expression
-        // tree).
-        invalidTemplateNames.add(type.getTemplateName());
-        if (isTemplateLiteral) {
-          errorReporter.report(ONLY_BASIC_TEMPLATES_ALLOWED, templateType.getTemplateKind());
-          reportedInvalidTemplateNames.add(type.getTemplateName());
-        }
-        return UnknownType.getInstance();
-      }
       if (templateType.getContentKind().getSanitizedContentKind().isHtml()
           && !templateType.isStrictHtml()
           && !isSynthetic) {

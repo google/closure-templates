@@ -72,9 +72,6 @@ public final class SoyElementPass implements CompilerFileSetPass {
           "The root node of Soy elements must not have a key. "
               + "Instead, consider wrapping the Soy element in a keyed tag node.");
 
-  private static final SoyErrorKind ROOT_IS_DYNAMIC_TAG =
-      SoyErrorKind.of("The root node of Soy elements must not be a dynamic HTML tag.");
-
   private static final SoyErrorKind SOY_ELEMENT_OPEN_TAG_CLOSE_AMBIGUOUS =
       SoyErrorKind.of("Soy element open tags must map to exactly one close tag.");
 
@@ -227,8 +224,11 @@ public final class SoyElementPass implements CompilerFileSetPass {
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
               : tryGetDelegateTagName(delegateTemplate, templatesInLibrary, registry);
-      if (tagName.equals(DYNAMIC_ELEMENT_TAG) && isSoyElement) {
-        errorReporter.report(openTag.getSourceLocation(), ROOT_IS_DYNAMIC_TAG);
+      if (!openTag.getTagName().isStatic()
+          && !openTag.getTagName().isLegacyDynamicTagName()
+          && calleeMightBeASoyElement(delegateTemplate, templatesInLibrary, registry)
+          && isSoyElement) {
+        errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_WRAP_SOY_ELEMENT);
       }
       if (hasSkipNode && template instanceof TemplateElementNode) {
         errorReporter.report(openTag.getSourceLocation(), SOYELEMENT_CANNOT_BE_SKIPPED);
@@ -246,7 +246,20 @@ public final class SoyElementPass implements CompilerFileSetPass {
     return info;
   }
 
-  private String tryGetDelegateTagName(
+  private static boolean calleeMightBeASoyElement(
+      String delegateName, Map<String, TemplateNode> templates, ImportsTemplateRegistry registry) {
+    if (delegateName.isEmpty()) {
+      return true;
+    }
+
+    TemplateNode callee = templates.get(delegateName);
+    if (callee != null) {
+      return callee instanceof TemplateElementNode;
+    }
+    return registry.getBasicTemplateOrElement(delegateName).getSoyElement().getIsSoyElement();
+  }
+
+  private static String tryGetDelegateTagName(
       String delegateName, Map<String, TemplateNode> templates, ImportsTemplateRegistry registry) {
     if (delegateName.isEmpty()) {
       return DYNAMIC_ELEMENT_TAG;
@@ -280,6 +293,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
     }
     PrintNode printNode = tagName.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
+    if (exprNode instanceof TemplateLiteralNode) {
+      return ((TemplateLiteralNode) exprNode).getResolvedName();
+    }
     if (!(exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
         && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind"))) {
       return "";

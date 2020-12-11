@@ -21,7 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.TemplateNode.SoyFileHeaderInfo;
@@ -51,7 +50,6 @@ public final class TemplateElementNodeBuilder
   public TemplateElementNodeBuilder(
       SoyFileHeaderInfo soyFileHeaderInfo, ErrorReporter errorReporter) {
     super(soyFileHeaderInfo, errorReporter);
-    setContentKind(ElementContentKind.WILDCARD);
   }
 
   @Override
