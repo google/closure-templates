@@ -19,7 +19,9 @@ package com.google.template.soy.soytree;
 import static com.google.template.soy.soytree.CommandTagAttribute.UNSUPPORTED_ATTRIBUTE_KEY;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHEX_ATTR;
 import static com.google.template.soy.soytree.MessagePlaceholder.PHNAME_ATTR;
+import static com.google.template.soy.soytree.TemplateDelegateNode.VARIANT_ATTR;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.BaseUtils;
@@ -31,6 +33,7 @@ import com.google.template.soy.exprtree.ExprNode.PrimitiveNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.StringNode;
 import java.util.List;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -51,14 +54,20 @@ public final class CallDelegateNode extends CallNode {
   /** The name of the delegate template being called. */
   private final String delCalleeName;
 
-  /** The variant expression for the delegate being called, or null. */
-  @Nullable private final ExprRootNode variantExpr;
-
   /**
    * User-specified attribute to determine whether this delegate call defaults to empty string if
    * there is no active implementation. Default is false.
    */
   private final boolean allowEmptyDefault;
+
+  private final Supplier<ExprRootNode> memoizedVariantExpr =
+      Suppliers.memoize(
+          () ->
+              getAttributes().stream()
+                  .filter(a -> VARIANT_ATTR.equals(a.getName().identifier()) && a.hasExprValue())
+                  .findFirst()
+                  .map(a -> a.valueAsExprList().get(0))
+                  .orElse(null));
 
   public CallDelegateNode(
       int id,
@@ -71,7 +80,6 @@ public final class CallDelegateNode extends CallNode {
     super(id, location, openTagLocation, "delcall", attributes, selfClosing, errorReporter);
     this.delCalleeName = delCalleeName.identifier();
     this.sourceDelCalleeName = delCalleeName;
-    ExprRootNode variantExpr = null;
     boolean allowEmptyDefault = false;
 
     for (CommandTagAttribute attr : attributes) {
@@ -97,7 +105,6 @@ public final class CallDelegateNode extends CallNode {
             // Variant should not be other primitives (boolean, number, etc.)
             errorReporter.report(location, INVALID_VARIANT_EXPRESSION, value.toSourceString());
           }
-          variantExpr = value;
           break;
         case "allowemptydefault":
           allowEmptyDefault = attr.valueAsEnabled(errorReporter);
@@ -113,7 +120,6 @@ public final class CallDelegateNode extends CallNode {
       }
     }
 
-    this.variantExpr = variantExpr;
     this.allowEmptyDefault = allowEmptyDefault;
   }
 
@@ -126,7 +132,6 @@ public final class CallDelegateNode extends CallNode {
     super(orig, copyState);
     this.delCalleeName = orig.delCalleeName;
     this.sourceDelCalleeName = orig.sourceDelCalleeName;
-    this.variantExpr = (orig.variantExpr != null) ? orig.variantExpr.copy(copyState) : null;
     this.allowEmptyDefault = orig.allowEmptyDefault;
   }
 
@@ -148,7 +153,7 @@ public final class CallDelegateNode extends CallNode {
   /** Returns the variant expression for the delegate being called, or null if it's a string. */
   @Nullable
   public ExprRootNode getDelCalleeVariantExpr() {
-    return variantExpr;
+    return memoizedVariantExpr.get();
   }
 
   /** Returns whether this delegate call defaults to empty string if there's no active impl. */
@@ -171,6 +176,7 @@ public final class CallDelegateNode extends CallNode {
     getPlaceholder()
         .example()
         .ifPresent(phex -> commandText.append(" phex=\"").append(phex).append('"'));
+    ExprRootNode variantExpr = getDelCalleeVariantExpr();
     if (variantExpr != null) {
       commandText.append(" variant=\"").append(variantExpr.toSourceString()).append('"');
     }
@@ -179,16 +185,6 @@ public final class CallDelegateNode extends CallNode {
     }
 
     return commandText.toString();
-  }
-
-  @Override
-  public ImmutableList<ExprRootNode> getExprList() {
-    ImmutableList.Builder<ExprRootNode> allExprs = ImmutableList.builder();
-    if (variantExpr != null) {
-      allExprs.add(variantExpr);
-    }
-    allExprs.addAll(super.getExprList());
-    return allExprs.build();
   }
 
   @Override
