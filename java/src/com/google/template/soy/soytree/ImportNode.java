@@ -63,7 +63,15 @@ public final class ImportNode extends AbstractSoyNode {
    */
   private ImportNode(ImportNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.identifiers = orig.identifiers.stream().map(ImportedVar::clone).collect(toImmutableList());
+    this.identifiers =
+        orig.identifiers.stream()
+            .map(
+                prev -> {
+                  ImportedVar next = prev.clone();
+                  copyState.updateRefs(prev, next);
+                  return next;
+                })
+            .collect(toImmutableList());
     this.path = orig.path.copy(copyState);
     this.importType = orig.importType;
   }

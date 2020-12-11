@@ -108,7 +108,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.isRequired = defaultValue == null && !optional && !isNullable;
   }
 
-  protected TemplateParam(TemplateParam param) {
+  protected TemplateParam(TemplateParam param, CopyState copyState) {
     super(param);
     this.typeNode = param.typeNode == null ? null : param.typeNode.copy();
     this.isRequired = param.isRequired;
@@ -117,8 +117,7 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
     this.sourceLocation = param.sourceLocation;
     this.desc = param.desc;
     this.isExplicitlyOptional = param.isExplicitlyOptional;
-    this.defaultValue =
-        param.defaultValue == null ? null : param.defaultValue.copy(new CopyState());
+    this.defaultValue = param.defaultValue == null ? null : param.defaultValue.copy(copyState);
     this.originalTypeNode = param.originalTypeNode == null ? null : param.originalTypeNode.copy();
   }
 
@@ -207,6 +206,6 @@ public class TemplateParam extends AbstractVarDefn implements TemplateHeaderVarD
 
   @Override
   public TemplateParam copy(CopyState copyState) {
-    return new TemplateParam(this);
+    return new TemplateParam(this, copyState);
   }
 }

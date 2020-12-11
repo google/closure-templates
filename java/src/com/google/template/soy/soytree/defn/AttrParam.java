@@ -51,8 +51,8 @@ public final class AttrParam extends TemplateParam implements TemplateHeaderVarD
     this.originalAttributeName = name;
   }
 
-  private AttrParam(AttrParam old) {
-    super(old);
+  private AttrParam(AttrParam old, CopyState copyState) {
+    super(old, copyState);
     this.originalAttributeName = old.originalAttributeName;
   }
 
@@ -62,6 +62,6 @@ public final class AttrParam extends TemplateParam implements TemplateHeaderVarD
 
   @Override
   public AttrParam copy(CopyState copyState) {
-    return new AttrParam(this);
+    return new AttrParam(this, copyState);
   }
 }

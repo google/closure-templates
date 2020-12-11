@@ -160,7 +160,7 @@ public final class FunctionNode extends AbstractParentExprNode implements ExprNo
   private FunctionNode(FunctionNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.nameExpr = orig.nameExpr != null ? orig.nameExpr.copy(new CopyState()) : null;
+    this.nameExpr = orig.nameExpr != null ? orig.nameExpr.copy(copyState) : null;
     this.paramsStyle = orig.paramsStyle;
     this.paramNames = orig.paramNames;
     this.state.function = orig.state.function;

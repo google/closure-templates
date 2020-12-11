@@ -101,11 +101,22 @@ public final class CopyState {
    * copying small parts of the AST (anything below a template).
    */
   public void checkAllListenersFired() {
+    boolean any = false;
+    StringBuilder sb = new StringBuilder();
     for (Map.Entry<Object, Object> entry : mappings.entrySet()) {
       if (entry.getValue() instanceof Listener) {
-        throw new IllegalStateException(
-            "Listener for " + entry.getKey() + " never fired: " + entry.getValue());
+        if (any) {
+          sb.append("\n");
+        }
+        sb.append("Listener for ")
+            .append(entry.getKey())
+            .append(" never fired: ")
+            .append(entry.getValue());
+        any = true;
       }
+    }
+    if (any) {
+      throw new IllegalStateException(sb.toString());
     }
   }
 
