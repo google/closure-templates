@@ -21,6 +21,9 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.truth.StringSubject;
+import com.google.template.soy.logging.LoggingFunction;
+import com.google.template.soy.shared.restricted.Signature;
+import com.google.template.soy.shared.restricted.SoyFunctionSignature;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgNode;
 import com.google.template.soy.soytree.MsgPlaceholderNode;
@@ -197,6 +200,19 @@ public class SimplifyVisitorTest {
   }
 
   @Test
+  public void testCallParamWithLoggingFunctionNotRewritten() {
+    assertSimplification(
+            "<{t2()} data-ved=\"{currentVed()}\"></>",
+            "{/template}",
+            "{template .t2 kind=\"html<?>\"}",
+            "  {@attribute? data-ved: string}",
+            "  <div @data-ved></div>")
+        .isEqualTo(
+            "{call .t2}{param dataVed kind=\"text\"}{currentVed()"
+                + " |escapeHtmlAttribute}{/param}{/call}");
+  }
+
+  @Test
   public void testCallBind() {
     assertSimplification(
             "{@param tpl: (a: string, b: string) => html<?>}",
@@ -287,6 +303,8 @@ public class SimplifyVisitorTest {
     return SoyFileSetParserBuilder.forFileContents(
             join("{namespace ns}", "{template .t}", input, "{/template}"))
         .runOptimizer(false)
+        .addSoySourceFunction(new CurrentVedFunction())
+        .enableExperimentalFeatures(ImmutableList.of("enableTemplateElementKind"))
         .parse()
         .fileSet();
   }
@@ -314,5 +332,14 @@ public class SimplifyVisitorTest {
       simplifyVisitor.simplify(file);
     }
     return fileSet;
+  }
+
+  @SoyFunctionSignature(name = "currentVed", value = @Signature(returnType = "string"))
+  private static final class CurrentVedFunction implements LoggingFunction {
+
+    @Override
+    public String getPlaceholder() {
+      return "";
+    }
   }
 }

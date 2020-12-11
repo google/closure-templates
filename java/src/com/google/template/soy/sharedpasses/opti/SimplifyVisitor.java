@@ -41,6 +41,7 @@ import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.logging.LoggingFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.sharedpasses.render.RenderException;
@@ -542,9 +543,19 @@ public final class SimplifyVisitor {
       }
     }
 
+    private boolean containsLoggingFunction(RenderUnitNode node) {
+      return SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class).stream()
+          .anyMatch(n -> n.getSoyFunction() instanceof LoggingFunction);
+    }
+
     @Nullable
     private ExprNode rewriteContentNodeAsExpression(RenderUnitNode renderUnitNode) {
       if (renderUnitNode.getContentKind() != SanitizedContentKind.TEXT) {
+        return null;
+      }
+      // Logging functions don't work properly unless they are a direct child of a PrintNode. So,
+      // any content node containing a logging function cannot be rewritten to an expression.
+      if (containsLoggingFunction(renderUnitNode)) {
         return null;
       }
       // collect as list and then concat at the end.  Adding a node as a child of the PlusOpNode
