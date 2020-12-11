@@ -75,7 +75,7 @@ public final class Continuations {
 
     @Override
     public final T get() {
-      throw new IllegalStateException("Rendering is not complete");
+      throw new IllegalStateException("Rendering is not complete: " + delegate.result());
     }
 
     @Override
