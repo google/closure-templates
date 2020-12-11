@@ -435,6 +435,8 @@ public final class PassManager {
           new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter),
           partialTemplateRegistryPassesBuilder);
       addPass(new ResolveNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(
+          new ValidateVariantExpressionsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to be after ResolveNames and MsgsPass
       if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);

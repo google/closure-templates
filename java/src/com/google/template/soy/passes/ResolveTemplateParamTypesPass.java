@@ -20,7 +20,6 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateElementNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.AttrParam;
@@ -74,10 +73,6 @@ final class ResolveTemplateParamTypesPass implements CompilerFilePass {
             state.setType(converter.getOrCreateType(state.getTypeNode()));
           }
         }
-      }
-
-      if (template instanceof TemplateDelegateNode) {
-        ((TemplateDelegateNode) template).validateVariantExpression(errorReporter);
       }
     }
   }
