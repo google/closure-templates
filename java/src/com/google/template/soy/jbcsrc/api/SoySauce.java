@@ -86,7 +86,7 @@ public interface SoySauce {
    *
    * @return `true` if the template is valid and `false` if it is unrecognized.
    */
-  Boolean hasTemplate(String template);
+  boolean hasTemplate(String template);
 
   /** A Renderer can configure rendering parameters and render the template. */
   interface Renderer {

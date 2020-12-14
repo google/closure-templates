@@ -115,7 +115,7 @@ public final class SoySauceImpl implements SoySauce {
   }
 
   @Override
-  public Boolean hasTemplate(String template) {
+  public boolean hasTemplate(String template) {
     try {
       templates.getTemplateFactory(template);
       return true;
