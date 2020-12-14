@@ -16,26 +16,34 @@
 
 package com.google.template.soy.exprtree;
 
-import com.google.template.soy.base.SourceLocation;
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.SoyProtoEnumType;
 
 /** Node representing a proto enum value. */
 public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
 
+  private final Identifier id;
   private final SoyProtoEnumType type;
   private final int enumNumber;
 
-  public ProtoEnumValueNode(SourceLocation sourceLocation, SoyProtoEnumType type, int enumNumber) {
-    super(sourceLocation);
+  public ProtoEnumValueNode(Identifier id, SoyProtoEnumType type, int enumNumber) {
+    super(id.location());
+    this.id = id;
     this.type = type;
     this.enumNumber = enumNumber;
   }
 
   private ProtoEnumValueNode(ProtoEnumValueNode orig, CopyState copyState) {
     super(orig, copyState);
+    this.id = orig.id;
     this.type = orig.type;
     this.enumNumber = orig.enumNumber;
+  }
+
+  public Identifier getIdentifier() {
+    return id;
   }
 
   @Override
@@ -53,9 +61,13 @@ public final class ProtoEnumValueNode extends AbstractPrimitiveNode {
     return enumNumber;
   }
 
+  public EnumValueDescriptor getEnumValueDescriptor() {
+    return type.getDescriptor().findValueByNumber(enumNumber);
+  }
+
   @Override
   public String toSourceString() {
-    return type.getDescriptor().findValueByNumber(enumNumber).getFullName();
+    return id.identifier();
   }
 
   @Override
