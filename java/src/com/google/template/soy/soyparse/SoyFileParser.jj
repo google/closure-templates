@@ -4400,7 +4400,12 @@ private ExprNode ListLiteral(Token begin, ExprNode firstItem) :
         commaLocations.add(createSrcLoc(comma).getBeginPoint());
       }
     )*
-    [ <COMMA> ]  // trailing comma
+    [
+      comma = <COMMA>
+      {
+        commaLocations.add(createSrcLoc(comma).getBeginPoint());
+      }
+    ]
     end = <RBRACKET>
     { return new ListLiteralNode(items, createSrcLoc(begin, end), commaLocations); }
   )
