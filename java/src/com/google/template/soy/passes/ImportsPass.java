@@ -156,17 +156,19 @@ abstract class ImportsPass {
         return;
       }
 
-        boolean foundSymbolErrors = false;
-        for (ImportedVar symbol : node.getIdentifiers()) {
-          String name = symbol.name();
+      boolean foundSymbolErrors = false;
+      for (ImportedVar symbol : node.getIdentifiers()) {
+        String name = symbol.name();
 
-        // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
-        // to not have a compilation error on duplicates.
-        String path = node.getPath() + "//" + symbol.name();
+        if (node.getImportType() != ImportType.PROTO) {
+          // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
+          // to not have a compilation error on duplicates.
+          String path = node.getPath() + "//" + symbol.name();
           String duplicatePath = uniqueImports.put(name, path);
           if (path.equals(duplicatePath)) {
             continue;
           }
+        }
 
         // Import naming collisions. Report errors but continue checking the other symbols so we
         // can report all of the errors at once.
