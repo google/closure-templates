@@ -160,9 +160,10 @@ abstract class ImportsPass {
       for (ImportedVar symbol : node.getIdentifiers()) {
         String name = symbol.name();
 
-        if (node.getImportType() != ImportType.PROTO) {
-          // Ignore duplicate imports. The formatter will dedupe these and it's more convenient
-          // to not have a compilation error on duplicates.
+        if (node.getImportType() == ImportType.TEMPLATE) {
+          // Allow duplicate template imports while migrating away from FQNs (makes tricorder
+          // multipass more flexible). There are also plenty of duplicates in the wild that need to
+          // be fixed before this check can be removed.
           String path = node.getPath() + "//" + symbol.name();
           String duplicatePath = uniqueImports.put(name, path);
           if (path.equals(duplicatePath)) {
