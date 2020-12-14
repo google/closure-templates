@@ -483,16 +483,17 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     TagName name = tagNode.getTagName();
     PrintNode printNode = name.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
-    if (exprNode.getKind() == Kind.FUNCTION_NODE
-        && ((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
-      FunctionNode functionNode = (FunctionNode) exprNode;
-      if (functionNode.numChildren() == 1) {
-        printNode.getExpr().clearChildren();
-        printNode.getExpr().addChild(functionNode.getChild(0));
-      } else {
-        // ResolvePluginsPass will tag this as an error since function arity is 1.
+    boolean needsWrap = true;
+    if (exprNode.getKind() == Kind.FUNCTION_NODE) {
+      needsWrap = false;
+      if (((FunctionNode) exprNode).getSoyFunction() == BuiltinFunction.LEGACY_DYNAMIC_TAG) {
+        FunctionNode functionNode = (FunctionNode) exprNode;
+        if (functionNode.numChildren() == 1) {
+          printNode.getExpr().clearChildren();
+          printNode.getExpr().addChild(functionNode.getChild(0));
+        }
+        correctlyPlaced.add(functionNode);
       }
-      correctlyPlaced.add(functionNode);
     } else if (!tagNode.getTagName().isTemplateCall()) {
       if (printNode.getExpr().getType() == UnknownType.getInstance()) {
         if (exprNode instanceof MethodCallNode
@@ -505,7 +506,9 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
           return;
         }
       }
-      errorReporter.report(printNode.getExpr().getSourceLocation(), NEED_WRAP);
+      if (needsWrap) {
+        errorReporter.report(printNode.getExpr().getSourceLocation(), NEED_WRAP);
+      }
     }
   }
 

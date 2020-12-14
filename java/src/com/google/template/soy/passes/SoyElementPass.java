@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.common.collect.ImmutableList;
@@ -224,7 +225,8 @@ public final class SoyElementPass implements CompilerFileSetPass {
           openTag.getTagName().isStatic()
               ? openTag.getTagName().getStaticTagName()
               : tryGetDelegateTagName(delegateTemplate, templatesInLibrary, registry);
-      if (!openTag.getTagName().isStatic()
+      if (delegateTemplate != null
+          && !openTag.getTagName().isStatic()
           && !openTag.getTagName().isLegacyDynamicTagName()
           && calleeMightBeASoyElement(delegateTemplate, templatesInLibrary, registry)
           && isSoyElement) {
@@ -240,7 +242,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
             .setTag(tagName)
             .setIsVelogged(veLogNode != null)
             .setIsSkip(hasSkipNode)
-            .setDelegateElement(delegateTemplate)
+            .setDelegateElement(nullToEmpty(delegateTemplate))
             .build();
     template.setHtmlElementMetadata(info);
     return info;
@@ -261,7 +263,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
 
   private static String tryGetDelegateTagName(
       String delegateName, Map<String, TemplateNode> templates, ImportsTemplateRegistry registry) {
-    if (delegateName.isEmpty()) {
+    if (delegateName == null) {
       return DYNAMIC_ELEMENT_TAG;
     }
 
@@ -289,7 +291,7 @@ public final class SoyElementPass implements CompilerFileSetPass {
     // The normal TagName.isTemplateCall() doesn't work before ResolveExpressionTypesPass.
     TagName tagName = openTag.getTagName();
     if (tagName.isStatic()) {
-      return "";
+      return null;
     }
     PrintNode printNode = tagName.getDynamicTagName();
     ExprNode exprNode = printNode.getExpr().getRoot();
@@ -298,12 +300,12 @@ public final class SoyElementPass implements CompilerFileSetPass {
     }
     if (!(exprNode.getKind() == ExprNode.Kind.METHOD_CALL_NODE
         && ((MethodCallNode) exprNode).getMethodName().identifier().equals("bind"))) {
-      return "";
+      return null;
     }
 
     MethodCallNode bind = (MethodCallNode) exprNode;
     if (bind.getChild(0).getKind() != ExprNode.Kind.TEMPLATE_LITERAL_NODE) {
-      return "";
+      return null;
     }
 
     return ((TemplateLiteralNode) bind.getChild(0)).getResolvedName();
