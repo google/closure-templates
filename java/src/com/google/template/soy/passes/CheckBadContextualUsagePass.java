@@ -38,6 +38,7 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.types.AnyType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyType;
+import java.util.List;
 import java.util.Optional;
 
 /** Checks if HTML is printed only from HTML context. */
@@ -69,6 +70,13 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
           "Printing CSS from non-CSS context is not allowed. You likely need to change the type to "
               + "string (kind=\"text\").");
 
+  // TODO(jakubvrana): Move to InferenceEngine and apply for other filter directives.
+  private static final SoyErrorKind PRINTS_NON_TRU_FROM_TRU =
+      SoyErrorKind.of("In trusted_resource_uri context, only trusted_resource_uri can be printed.");
+
+  private static final SoyErrorKind CALLS_NON_TRU_FROM_TRU =
+      SoyErrorKind.of("In trusted_resource_uri context, only trusted_resource_uri can be called.");
+
   private final ErrorReporter errorReporter;
 
   CheckBadContextualUsagePass(ErrorReporter errorReporter) {
@@ -78,22 +86,27 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode fileNode : sourceFiles) {
+      TemplateRegistry registry = fileNode.getTemplateRegistry();
       for (TemplateNode template : fileNode.getTemplates()) {
         for (CallNode node : getAllNodesOfType(template, CallNode.class)) {
-          checkCallNode(
-              node,
-              fileNode.getTemplateRegistry(),
-              SanitizedContentKind.HTML,
-              CALLS_HTML_FROM_NON_HTML);
-          checkCallNode(
-              node,
-              fileNode.getTemplateRegistry(),
-              SanitizedContentKind.CSS,
-              CALLS_CSS_FROM_NON_CSS);
+          checkCallNode(node, registry, SanitizedContentKind.HTML, CALLS_HTML_FROM_NON_HTML);
+          checkCallNode(node, registry, SanitizedContentKind.CSS, CALLS_CSS_FROM_NON_CSS);
+          Optional<SanitizedContentKind> calleeContentKind = registry.getCallContentKind(node);
+          if (isTrustedResourceUri(node.getEscapingDirectives())
+              && calleeContentKind.isPresent()
+              && calleeContentKind.get() != SanitizedContentKind.TRUSTED_RESOURCE_URI) {
+            errorReporter.report(node.getSourceLocation(), CALLS_NON_TRU_FROM_TRU);
+          }
         }
         for (PrintNode node : getAllNodesOfType(template, PrintNode.class)) {
           checkPrintNode(node, SanitizedContentKind.HTML, PRINTS_HTML_FROM_NON_HTML);
           checkPrintNode(node, SanitizedContentKind.CSS, PRINTS_CSS_FROM_NON_CSS);
+          if (isTrustedResourceUri(
+                  Lists.transform(node.getChildren(), PrintDirectiveNode::getPrintDirective))
+              && !SanitizedType.TrustedResourceUriType.getInstance()
+                  .isAssignableFromLoose(node.getExpr().getType())) {
+            errorReporter.report(node.getSourceLocation(), PRINTS_NON_TRU_FROM_TRU);
+          }
         }
       }
     }
@@ -138,7 +151,7 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
     }
   }
 
-  private ContentKind getContentKindOfPrintDirectives(PrintNode node) {
+  private static ContentKind getContentKindOfPrintDirectives(PrintNode node) {
     for (PrintDirectiveNode printDirectiveNode : Lists.reverse(node.getChildren())) {
       if (!printDirectiveNode.isSynthetic()) {
         SoyPrintDirective printDirective = printDirectiveNode.getPrintDirective();
@@ -148,5 +161,14 @@ final class CheckBadContextualUsagePass implements CompilerFileSetPass {
       }
     }
     return null;
+  }
+
+  private static boolean isTrustedResourceUri(List<SoyPrintDirective> printDirectives) {
+    for (SoyPrintDirective printDirectiveNode : Lists.reverse(printDirectives)) {
+      if (printDirectiveNode.getName().equals("|filterTrustedResourceUri")) {
+        return true;
+      }
+    }
+    return false;
   }
 }
