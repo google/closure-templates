@@ -164,12 +164,18 @@ compiler.
 
 #### Contextual data available to plugins
 
-For Java, JavaPluginContext provides some contextual data.
+For Java,
+[`JavaPluginContext`](https://github.com/google/closure-templates/blob/master/java/src/com/google/template/soy/plugin/java/restricted/JavaPluginContext.java)
+provides some contextual data.
 
-*   getULocale
+*   JavaPluginContext#getULocale
 
     Provides the current locale being used for rendering, as a
     `com.ibm.icu.util.ULocale`.
+
+In JavaScript, you can use the Closure API
+[goog.LOCALE](https://google.github.io/closure-library/api/goog.locale.html) to
+get the same information.
 
 ### 3. Register your plugin with the compiler
 
