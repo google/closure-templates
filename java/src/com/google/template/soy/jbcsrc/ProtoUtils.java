@@ -20,12 +20,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.getFieldName;
 import static com.google.template.soy.internal.proto.JavaQualifiedNames.underscoresToCamelCase;
+import static com.google.template.soy.internal.proto.ProtoUtils.getContainingOneof;
 import static com.google.template.soy.internal.proto.ProtoUtils.getJsType;
 import static com.google.template.soy.internal.proto.ProtoUtils.hasJsType;
 import static com.google.template.soy.internal.proto.ProtoUtils.isUnsigned;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.MAP_ENTRY_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.compare;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.isPrimitive;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.numericConversion;
@@ -323,8 +325,7 @@ final class ProtoUtils {
         final BytecodeProducer hasCheck;
 
         // if oneof, check the value of getFooCase() enum
-        OneofDescriptor containingOneof =
-            descriptor.getContainingOneof();
+        OneofDescriptor containingOneof = getContainingOneof(descriptor);
         if (containingOneof != null) {
           final MethodRef getCaseRef = getOneOfCaseMethod(containingOneof);
           final Expression fieldNumber = constant(descriptor.getNumber());
@@ -763,6 +764,32 @@ final class ProtoUtils {
     }
 
     private SoyExpression handleNormalField(SoyExpression typedBaseExpr) {
+      if (descriptor.getFile().getSyntax() == Syntax.PROTO3
+          && descriptor.getJavaType() != JavaType.MESSAGE
+          && getContainingOneof(descriptor) != null) {
+        // In proto3 Java there aren't hassers for primitive fields inside oneofs.
+
+        MethodRef getCaseRef = getOneOfCaseMethod(descriptor.getContainingOneof());
+        Expression fieldNumber = constant(descriptor.getNumber());
+        // this basically just calls getFooCase().getNumber() == field_number
+        return SoyExpression.forBool(
+            compare(
+                Opcodes.IFEQ,
+                new Expression(Type.INT_TYPE) {
+                  @Override
+                  protected void doGen(CodeBuilder adapter) {
+                    typedBaseExpr.gen(adapter);
+                    getCaseRef.invokeUnchecked(adapter);
+                    adapter.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        getCaseRef.returnType().getInternalName(),
+                        "getNumber",
+                        "()I",
+                        false /* not an interface */);
+                  }
+                },
+                fieldNumber));
+      }
       MethodRef hasMethodRef = getHasserMethod(descriptor);
       return SoyExpression.forBool(typedBaseExpr.invoke(hasMethodRef));
     }

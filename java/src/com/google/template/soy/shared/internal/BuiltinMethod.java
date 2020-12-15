@@ -121,7 +121,13 @@ public enum BuiltinMethod implements SoyMethod {
     }
 
     private boolean acceptFieldDescriptor(FieldDescriptor fd) {
-      if (fd.isExtension() || fd.isRepeated() || fd.getJavaType() == JavaType.MESSAGE) {
+      if (fd.isExtension() || fd.isRepeated()) {
+        return false;
+      }
+      if (ProtoUtils.getContainingOneof(fd) != null) {
+        return true;
+      }
+      if (fd.getJavaType() == JavaType.MESSAGE) {
         return false;
       }
       if (fd.getFile().getSyntax() == Syntax.PROTO3) {

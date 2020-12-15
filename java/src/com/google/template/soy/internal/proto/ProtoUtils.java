@@ -35,6 +35,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor.Type;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor.Syntax;
 import com.google.protobuf.Descriptors.GenericDescriptor;
+import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.ExtensionRegistry;
 import javax.annotation.Nullable;
 
@@ -213,4 +214,8 @@ public final class ProtoUtils {
   }
 
 
+  public static OneofDescriptor getContainingOneof(FieldDescriptor fd) {
+    return
+    fd.getContainingOneof();
+  }
 }

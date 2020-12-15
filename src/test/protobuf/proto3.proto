@@ -61,3 +61,20 @@ message Proto3MessageUnion {
 message SameName {
   string name3 = 1;
 }
+
+message HasOneOf {
+  message Msg1 {
+    string s = 1;
+  }
+
+  message Msg2 {
+    string s = 1;
+  }
+
+  oneof grouping {
+    Msg1 message = 1;
+    Msg2 another = 2;
+    int32 number = 3;
+    string s = 4;
+  }
+}

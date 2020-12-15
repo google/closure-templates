@@ -441,7 +441,9 @@ final class NullSafeAccumulator {
       if (desc.isExtension() && Type.HAS == prefix) {
         // JSPB doesn't have hasExtension().
         throw new IllegalArgumentException("hasExtension() not implemented");
-      } else if (Type.HAS == prefix && desc.getType() == FieldDescriptor.Type.MESSAGE) {
+      } else if (Type.HAS == prefix
+          && desc.getType() == FieldDescriptor.Type.MESSAGE
+          && ProtoUtils.getContainingOneof(desc) == null) {
         // JSPB doesn't have hassers for submessages.
         throw new IllegalArgumentException("Submessage hasser not implemented");
       } else if (Type.GET == prefix) {

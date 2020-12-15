@@ -153,6 +153,19 @@ message MessageField {
   optional Foo foo = 1;
 }
 
+message HasOneOf {
+  oneof grouping {
+    MessageField message = 1;
+    AnotherMessage another = 2;
+    int32 number = 3;
+    string s = 4;
+  }
+}
+
+message AnotherMessage {
+  optional Foo foo = 1;
+}
+
 
 message Extendable {
   optional int32 unscoped_collision = 1;
