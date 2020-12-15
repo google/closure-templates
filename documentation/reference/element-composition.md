@@ -140,7 +140,7 @@ parameters must be provided with the
 {/template}
 ```
 
-#### Pass `html` parameters as <parameter>. {#param}
+#### Pass `html` parameters as `<parameter>`. {#param}
 
 Parameters of type `html` can be passed in as a `<parameter>` node.
 
