@@ -84,6 +84,14 @@ public final class SharedRuntime {
     // Note that this *will* lose precision for longs.
     return operand0.numberValue() / operand1.numberValue();
   }
+  /** Performs the {@code %} operator on the two values. */
+  public static NumberData mod(SoyValue operand0, SoyValue operand1) {
+    if (operand0 instanceof IntegerData && operand1 instanceof IntegerData) {
+      return IntegerData.forValue(operand0.longValue() % operand1.longValue());
+    } else {
+      return FloatData.forValue(operand0.numberValue() % operand1.numberValue());
+    }
+  }
 
   /** Performs the {@code <} operator on the two values. */
   public static boolean lessThan(SoyValue left, SoyValue right) {

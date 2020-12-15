@@ -816,11 +816,20 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitModOpNode(ModOpNode node) {
-      // If the underlying expression is not an int, then this will throw a SoyDataExpression at
-      // runtime.  This is how the current tofu works.
-      // If the expression is known not to be an int, then this will throw an exception at compile
-      // time.  This should generally be handled by the type checker. See b/19833234
-      return applyBinaryIntOperator(Opcodes.LREM, visit(node.getChild(0)), visit(node.getChild(1)));
+      SoyExpression left = visit(node.getChild(0));
+      SoyExpression right = visit(node.getChild(1));
+      // They are both definitely numbers
+      if (left.assignableToNullableNumber() && right.assignableToNullableNumber()) {
+        if (left.assignableToNullableInt() && right.assignableToNullableInt()) {
+          return applyBinaryIntOperator(Opcodes.LREM, left, right);
+        }
+        // if either is definitely a float, then we are definitely coercing so just do it now
+        if (left.assignableToNullableFloat() || right.assignableToNullableFloat()) {
+          return applyBinaryFloatOperator(Opcodes.DREM, left, right);
+        }
+      }
+      return SoyExpression.forSoyValue(
+          SoyTypes.NUMBER_TYPE, MethodRef.RUNTIME_MOD.invoke(left.box(), right.box()));
     }
 
     private static SoyExpression applyBinaryIntOperator(

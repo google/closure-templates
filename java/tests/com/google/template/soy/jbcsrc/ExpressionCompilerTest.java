@@ -20,7 +20,6 @@ import static com.google.template.soy.jbcsrc.TemplateTester.assertThatTemplateBo
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
-import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -161,18 +160,17 @@ public class ExpressionCompilerTest {
   public void testModOpNode() {
     assertExpression("3 % 2").evaluatesTo(1L);
     assertExpression("5 % 3").evaluatesTo(2L);
-    // TODO(b/19833234): the soy type checker should flag this, but it doesn't.
-    try {
-      compileExpression("5.0 % 3.0");
-      fail();
-    } catch (Exception expected) {
-    }
+    assertExpression("5.0 % 3.0").evaluatesTo(2D);
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forInt(constant(3L))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forInt(constant(2L))));
-    assertExpression("$foo % $bar").evaluatesTo(1L);
+    assertExpression("$foo % $bar").evaluatesTo(IntegerData.forValue(1));
 
     variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(3.0))));
+    variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
+    assertExpression("$foo % $bar").evaluatesTo(FloatData.forValue(1));
+
+    variables.put("foo", untypedBoxedSoyExpression(SoyExpression.forString(constant("foo"))));
     variables.put("bar", untypedBoxedSoyExpression(SoyExpression.forFloat(constant(2.0))));
     assertExpression("$foo % $bar").throwsException(SoyDataException.class);
   }

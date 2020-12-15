@@ -23,6 +23,7 @@ import static com.google.template.soy.shared.internal.SharedRuntime.equal;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThan;
 import static com.google.template.soy.shared.internal.SharedRuntime.lessThanOrEqual;
 import static com.google.template.soy.shared.internal.SharedRuntime.minus;
+import static com.google.template.soy.shared.internal.SharedRuntime.mod;
 import static com.google.template.soy.shared.internal.SharedRuntime.negative;
 import static com.google.template.soy.shared.internal.SharedRuntime.plus;
 import static com.google.template.soy.shared.internal.SharedRuntime.soyServerKey;
@@ -656,7 +657,7 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
 
     SoyValue operand0 = visit(node.getChild(0));
     SoyValue operand1 = visit(node.getChild(1));
-    return convertResult(operand0.longValue() % operand1.longValue());
+    return mod(operand0, operand1);
   }
 
   @Override
