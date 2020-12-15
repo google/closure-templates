@@ -92,7 +92,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
     assertInjected(
         join(
             "{template .foo}\n",
-            "  {@param jsUrls: list<string>}\n",
+            "  {@param jsUrls: list<trusted_resource_uri>}\n",
             DEFN,
             "{for $jsUrl in $jsUrls}",
             "<script type=\"text/javascript\" ",
@@ -102,7 +102,7 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
             "{/template}"),
         join(
             "{template .foo}\n",
-            "  {@param jsUrls: list<string>}\n",
+            "  {@param jsUrls: list<trusted_resource_uri>}\n",
             "{for $jsUrl in $jsUrls}\n",
             "<script type=\"text/javascript\" src='{$jsUrl}'></script>\n",
             "{/for}\n",
