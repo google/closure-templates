@@ -29,6 +29,10 @@ use the type of the template being passed in. For example:
 To call a passed-in template, use a `call` statement with the name of the
 parameter to which the template was passed. For example:
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 {template .foo}
   {@param renderer: (s:string)=>html} // Accept a template as a parameter
@@ -37,6 +41,18 @@ parameter to which the template was passed. For example:
   {/call}
 {/template}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+{template .foo}
+  {@param renderer: (s:string)=> html<?>} // Accept a template as a parameter
+
+  <{$renderer.bind(record(s: 'hello'))} /> // See below for info on .bind()
+{/template}
+```
+
+</section>
 
 Note that the call uses the same parameter names as the template type. For
 example, the template type declares a parameter named `s` and the call uses a
@@ -48,6 +64,10 @@ To pass a template as a parameter, directly use a template as a value. If a
 template is locally declared in the file, wrap the reference in a `template()`
 call.
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 {template foo}
   {@param content: html}
@@ -56,6 +76,9 @@ call.
 
 {template bar}
   {@param tpl: (content:html) => html}
+  {call $tpl}
+    {param}<div></div>{/param}
+  {/call}
 {/template}
 
 {template baz}
@@ -65,13 +88,41 @@ call.
 {/template}
 ```
 
+###### Element Composition {.pg-tab}
+
+```soy
+{template foo}
+  {@param content: html}
+  {$content}
+{/template}
+
+{template bar kind="html<?>"}
+  {@param tpl: (content:html) => html}
+ <{$tpl}>
+    <parameter slot="content">
+      <div></div>
+    </parameter>
+  </>
+{/template}
+
+{template baz}
+  <{bar(tpl: template(foo))} />
+{/template}
+```
+
+</section>
+
 If a template is imported, use the value directly
+
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
 
 ```soy
 import {foo} from '<PATH>';
 
 {template bar}
-  {@param tpl: (content:html) => html}
+  {@param tpl: (content: html) => html}
 {/template}
 
 {template baz}
@@ -80,6 +131,22 @@ import {foo} from '<PATH>';
   {/call}
 {/template}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+import {foo} from '<PATH>';
+
+{template bar}
+  {@param tpl: (content: html) => html}
+{/template}
+
+{template baz}
+  <{bar(tpl: $foo)} />
+{/template}
+```
+
+</section>
 
 A template can be bound to a template type so long as all of its required
 parameters appear in the type. In short the following templates can be bound to
@@ -120,6 +187,10 @@ returns a template whose type depends on the unbound parameters.
 In the following example, the type of the template returned by `bind` is
 `(s:string)=>html`. As a result, this template can be passed to `.foo`.
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 {template .bar}
   {call .foo}
@@ -133,6 +204,22 @@ In the following example, the type of the template returned by `bind` is
   ...
 {/template}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+{template .bar}
+  <{foo(input: template(.input2).bind(record(s2:'world')))} />
+{/template}
+
+{template .input2}
+  {@param s: string}
+  {@param s2: string}
+  ...
+{/template}
+```
+
+</section>
 
 <br>
 

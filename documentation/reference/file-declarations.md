@@ -43,6 +43,10 @@ import {button, render as fooRender} from 'path/to/soy/file/foo.soy'
 You can also import all templates from other soy files using `*` and grouping
 them with a name.
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 import * as fooMagic from 'path/to/soy/file/foo.soy';
 ...
@@ -50,6 +54,16 @@ import * as fooMagic from 'path/to/soy/file/foo.soy';
   ...
 {/call}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+import * as fooMagic from 'path/to/soy/file/foo.soy';
+...
+<{fooMagic.button()} />
+```
+
+</section>
 
 Import statements should be sorted by path.
 
@@ -73,10 +87,23 @@ In the above example, `'foo.soy'` needs to contain:
 
 The syntax for calling imported templates is:
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 {call button /}
 {call fooRender /}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+<{button()} />
+<{fooRender()} />
+```
+
+</section>
 
 
 ## alias (DEPRECATED; will be deleted soon) {#alias}

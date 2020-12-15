@@ -458,6 +458,10 @@ parameter record must be a record literal, and each member must match the name
 and type of an unbound parameter in the template-type expression. Parameters
 already bound to the template type may not be bound again.
 
+<section class="polyglot">
+
+###### Call Command {.pg-tab}
+
 ```soy
 {template foo}
   {@param fn: (a:string) => html}
@@ -474,6 +478,26 @@ already bound to the template type may not be bound again.
   {/call}
 {/template}
 ```
+
+###### Element Composition {.pg-tab}
+
+```soy
+{template foo kind="html<div>"}
+  {@param fn: (a:string) => html}
+  <div></div>
+{/template}
+
+{template bar}
+  {@param a: string}
+  {@param i2: string}
+{/template}
+
+{template example}
+  <{foo(fn: template(bar).bind(record(i2: 'Hello')))} />
+{/template}
+```
+
+</section>
 
 
 ## Localization (l10n) Functions
