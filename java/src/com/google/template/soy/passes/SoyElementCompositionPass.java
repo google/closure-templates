@@ -61,7 +61,6 @@ import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.types.NullType;
-import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SanitizedType.AttributesType;
 import com.google.template.soy.types.SanitizedType.StyleType;
 import com.google.template.soy.types.SanitizedType.TrustedResourceUriType;
@@ -185,7 +184,7 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
       HtmlTagNode closeTag = tagNode.getTaggedPairs().get(0);
       List<String> params =
           templateType.getParameters().stream()
-              .filter(p -> SanitizedType.HtmlType.getInstance().isAssignableFromStrict(p.getType()))
+              .filter(p -> SoyTypes.transitivelyContainsKind(p.getType(), SoyType.Kind.HTML))
               .map(Parameter::getName)
               .collect(toCollection(ArrayList::new));
       StandaloneNode next = (StandaloneNode) SoyTreeUtils.nextSibling(tagNode);
