@@ -18,6 +18,7 @@ package com.google.template.soy.passes;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSortedSet.toImmutableSortedSet;
 import static com.google.template.soy.passes.CheckTemplateCallsPass.ARGUMENT_TYPE_MISMATCH;
 import static com.google.template.soy.types.SoyTypes.SAFE_PROTO_TO_SANITIZED_TYPE;
@@ -58,6 +59,7 @@ import com.google.template.soy.error.SoyErrors;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
+import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
@@ -130,6 +132,7 @@ import com.google.template.soy.soytree.SwitchCaseNode;
 import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
@@ -165,6 +168,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
@@ -291,6 +295,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Could not find logging configuration for this element.{0}",
           StyleAllowance.NO_PUNCTUATION);
+  private static final SoyErrorKind VE_CONFLICTS_WITH_TYPE =
+      SoyErrorKind.of("VE name conflicts with import on line {0}.");
   private static final SoyErrorKind TEMPLATE_TYPE_PARAMETERS_CANNOT_USE_INFERRED_TYPES =
       SoyErrorKind.of(
           "Template type parameters cannot be inferred. Instead, explicitly declare the type.");
@@ -313,6 +319,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private SoyTypeRegistry typeRegistry;
   private TypeNodeConverter pluginTypeConverter;
   private final PluginResolver.Mode pluginResolutionMode;
+  private ImmutableMap<String, ImportedVar> importIndex;
 
   ResolveExpressionTypesPass(
       ErrorReporter errorReporter,
@@ -334,6 +341,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     substitutions = null; // make sure substitutions don't leak across files
     exprEquivalence = new ExprEquivalence();
     typeRegistry = file.getSoyTypeRegistry();
+    importIndex =
+        file.getImports().stream()
+            .flatMap(i -> i.getIdentifiers().stream())
+            .collect(toImmutableMap(AbstractVarDefn::name, Function.identity(), (e1, e2) -> e1));
     pluginTypeConverter =
         TypeNodeConverter.builder(errorReporter)
             .setTypeRegistry(typeRegistry)
@@ -1667,6 +1678,13 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
                 loggingConfig.allKnownIdentifiers(), node.getName().identifier()));
         type = UnknownType.getInstance();
       } else {
+        if (importIndex.containsKey(node.getName().identifier())) {
+          errorReporter.report(
+              node.getName().location(),
+              VE_CONFLICTS_WITH_TYPE,
+              importIndex.get(node.getName().identifier()).nameLocation().getBeginLine());
+        }
+
         if (config.getProtoName().isPresent()) {
           type = typeRegistry.getOrCreateVeType(config.getProtoName().get());
         } else {

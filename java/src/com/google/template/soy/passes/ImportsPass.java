@@ -275,7 +275,6 @@ abstract class ImportsPass {
             globalPrefixToFullNameMap.get(prefix));
       }
 
-      // TODO(b/161005145): Add VE naming collision check.
       return foundErrors;
     }
 
