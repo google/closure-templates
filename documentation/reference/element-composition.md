@@ -268,6 +268,6 @@ except `class`.
 
 ```soy
 {template caller kind="html<div>"}
-  <{caller()} data-foo="3"></div>
+  <{example()} data-foo="3"></>
 {/template}
 ```
