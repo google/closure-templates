@@ -20,10 +20,13 @@ import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
 import java.util.Map;
+import java.util.Optional;
 
 /** Registry of known css symbols provided by the --cssSummaries flag. */
 @Immutable
@@ -32,6 +35,8 @@ public abstract class CssRegistry {
   public abstract ImmutableSet<String> providedSymbols();
 
   abstract ImmutableMap<String, String> filePathToSymbol();
+
+  abstract Optional<ImmutableListMultimap<String, String>> classMap();
 
   @Memoized
   public ImmutableMap<String, String> symbolToFilePath() {
@@ -47,8 +52,16 @@ public abstract class CssRegistry {
     return filePathToSymbol().get(filePath);
   }
 
+  public ImmutableList<String> allowedSymbolsToUse(String nsOrPath) {
+    return classMap().get().get(nsOrPath);
+  }
+
+  public boolean containsClassMap() {
+    return classMap().isPresent();
+  }
+
   public static CssRegistry create(
       ImmutableSet<String> providedSymbols, ImmutableMap<String, String> filePathToSymbol) {
-    return new AutoValue_CssRegistry(providedSymbols, filePathToSymbol);
+    return new AutoValue_CssRegistry(providedSymbols, filePathToSymbol, Optional.empty());
   }
 }
