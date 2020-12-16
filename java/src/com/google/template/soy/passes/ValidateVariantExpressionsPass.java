@@ -24,7 +24,7 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
  * Calls {@link TemplateDelegateNode#validateVariantExpression(ErrorReporter)} on every such node in
  * the AST.
  */
-@RunAfter(ResolveNamesPass.class)
+@RunAfter(ResolveDottedImportsPass.class)
 final class ValidateVariantExpressionsPass implements CompilerFilePass {
 
   private final ErrorReporter errorReporter;
