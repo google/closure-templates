@@ -339,6 +339,21 @@ public interface SoyTofu {
     String render();
 
     /**
+     * Renders the template using the data, injected data, and message bundle previously set into
+     * the given Appendable.
+     *
+     * <p>Checks the content kind of the template. kind="html" templates are allowed, unless
+     * setContentKind was called. The goal is to prevent accidental rendering of unescaped
+     * kind="text" in contexts where that could XSS.
+     *
+     * @deprecated Use {@link #renderHtml(Appendable)}, {@link #renderCss(Appendable)}, etc.
+     *     instead.
+     * @throws SoyTofuException if an error occurs during rendering.
+     */
+    @Deprecated
+    SanitizedContent.ContentKind render(Appendable out);
+
+    /**
      * Renders the template as a SanitizedContent object, which can be used as an input to another
      * Soy template, or used to verify that the output type is correct.
      *
@@ -353,21 +368,6 @@ public interface SoyTofu {
      */
     @Deprecated
     SanitizedContent renderStrict();
-
-    /**
-     * Renders the template using the data, injected data, and message bundle previously set into
-     * the given Appendable.
-     *
-     * <p>Checks the content kind of the template. kind="html" templates are allowed, unless
-     * setContentKind was called. The goal is to prevent accidental rendering of unescaped
-     * kind="text" in contexts where that could XSS.
-     *
-     * @deprecated Use {@link #renderHtml(Appendable)}, {@link #renderCss(Appendable)}, etc.
-     *     instead.
-     * @throws SoyTofuException if an error occurs during rendering.
-     */
-    @Deprecated
-    SanitizedContent.ContentKind render(Appendable out);
   }
 
   /**
