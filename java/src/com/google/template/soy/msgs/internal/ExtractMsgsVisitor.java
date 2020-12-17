@@ -21,6 +21,8 @@ import static java.util.Comparator.comparing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.msgs.internal.MsgUtils.MsgPartsAndIds;
 import com.google.template.soy.msgs.restricted.SoyMsg;
@@ -35,6 +37,9 @@ import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Visitor for extracting messages from a Soy parse tree.
@@ -46,11 +51,21 @@ import java.util.List;
  *
  */
 public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundle> {
+  private static final SoyErrorKind MISMATCHED_MSG_ATTRIBUTE =
+      SoyErrorKind.of(
+          "This message has the same id as a message @{0}, but they have inconsistent ''{1}''"
+              + " properties.");
 
   /** List of messages collected during the pass. */
   private List<SoyMsg> msgs;
 
   private String currentTemplate;
+
+  private final ErrorReporter errorReporter;
+
+  public ExtractMsgsVisitor(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   /**
    * Returns a SoyMsgBundle containing all messages extracted from the given SoyFileSetNode or
@@ -66,9 +81,42 @@ public final class ExtractMsgsVisitor extends AbstractSoyNodeVisitor<SoyMsgBundl
     // messages gain extra source locations when merged together in a bundle.
     Collections.sort(
         msgs, comparing(m -> Iterables.getOnlyElement(m.getSourceLocations()).sourceLocation()));
-    return new SoyMsgBundleImpl(null, msgs);
+    return new SoyMsgBundleImpl(null, msgs, this::merge);
   }
 
+  private Optional<SoyMsg> merge(SoyMsg m1, SoyMsg m2) {
+    if (m1.isHidden() != m2.isHidden()) {
+      errorReporter.report(
+          m1.getExampleSourceLocation(),
+          MISMATCHED_MSG_ATTRIBUTE,
+          m2.getExampleSourceLocation(),
+          "hidden");
+      return Optional.empty();
+    }
+    // TODO(b/173828073): consider comparing things like contentType
+    return Optional.of(
+        m1.toBuilder()
+            .setHasFallback(m1.hasFallback() && m2.hasFallback())
+            .setDesc(m1.getDesc() + extractAttributes(m2))
+            .addAllSourceLocations(m2.getSourceLocations())
+            .build());
+  }
+
+  /** Regex pattern for extracting message attributes from the message description. */
+  private static final Pattern MESSAGE_ATTRIBUTE_PATTERN = Pattern.compile("\\[[^\\[\\]]*\\]");
+
+  /**
+   * Extracts message attributes from the message description. Returns an empty {@link String} if
+   * the description doesn't contain any message attribute.
+   */
+  private static String extractAttributes(SoyMsg msg) {
+    StringBuilder attributes = new StringBuilder();
+    Matcher matcher = MESSAGE_ATTRIBUTE_PATTERN.matcher(msg.getDesc());
+    while (matcher.find()) {
+      attributes.append(matcher.group());
+    }
+    return attributes.toString();
+  }
   // -----------------------------------------------------------------------------------------------
   // Implementations for specific nodes.
 

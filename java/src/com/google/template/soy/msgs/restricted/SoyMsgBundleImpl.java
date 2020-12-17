@@ -28,8 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 /**
@@ -48,9 +48,23 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
   /** Map from unique message id to message. Iteration order is sorted order of message id. */
   private final ImmutableMap<Long, SoyMsg> msgMap;
 
-  /** Regex pattern for extracting message attributes from the message description. */
-  private static final Pattern MESSAGE_ATTRIBUTE_PATTERN = Pattern.compile("\\[[^\\[\\]]*\\]");
-
+  /**
+   * Note: If there exist duplicate message ids in the {@code msgs} list, an exception will be
+   * thrown. If this is not desired, call the constructor that takes a merging policy.
+   *
+   * @param localeString The language/locale string of this bundle of messages, or null if unknown.
+   *     Should only be null for bundles newly extracted from source files. Should always be set for
+   *     bundles parsed from message files/resources.
+   * @param msgs The list of messages. List order will become the iteration order.
+   */
+  public SoyMsgBundleImpl(@Nullable String localeString, List<SoyMsg> msgs) {
+    this(
+        localeString,
+        msgs,
+        (m1, m2) -> {
+          throw new IllegalStateException("Found 2 messages with id: " + m1.getId());
+        });
+  }
   /**
    * Note: If there exist duplicate message ids in the {@code msgs} list, the first one wins.
    * However, the source paths from subsequent duplicates will be added to the source paths for the
@@ -60,8 +74,12 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
    *     Should only be null for bundles newly extracted from source files. Should always be set for
    *     bundles parsed from message files/resources.
    * @param msgs The list of messages. List order will become the iteration order.
+   * @param merger A function that describes how to merge messages with identical ids.
    */
-  public SoyMsgBundleImpl(@Nullable String localeString, List<SoyMsg> msgs) {
+  public SoyMsgBundleImpl(
+      @Nullable String localeString,
+      List<SoyMsg> msgs,
+      BiFunction<SoyMsg, SoyMsg, Optional<SoyMsg>> merger) {
 
     this.localeString = localeString;
     this.locale = localeString == null ? null : new ULocale(localeString);
@@ -77,31 +95,14 @@ public class SoyMsgBundleImpl extends SoyMsgBundle {
       if (existingMsg == null) { // new message id
         tempMsgMap.put(msgId, msg);
 
-      } else { // duplicate message id
-        SoyMsg.Builder mergedMessage =
-            existingMsg.toBuilder()
-                .setHasFallback(existingMsg.hasFallback() && msg.hasFallback())
-                .setDesc(existingMsg.getDesc() + extractAttributes(msg))
-                .addAllSourceLocations(msg.getSourceLocations());
-        tempMsgMap.put(msgId, mergedMessage.build());
+      } else { // duplicate message id, delegate to merging algorithm
+        merger.apply(existingMsg, msg).ifPresent(merged -> tempMsgMap.put(msgId, merged));
       }
     }
 
     msgMap = ImmutableMap.copyOf(tempMsgMap);
   }
 
-  /**
-   * Extracts message attributes from the message description. Returns an empty {@link String} if
-   * the description doesn't contain any message attribute.
-   */
-  private String extractAttributes(SoyMsg msg) {
-    StringBuilder attributes = new StringBuilder();
-    Matcher matcher = MESSAGE_ATTRIBUTE_PATTERN.matcher(msg.getDesc());
-    while (matcher.find()) {
-      attributes.append(matcher.group());
-    }
-    return attributes.toString();
-  }
 
   @Override
   public String getLocaleString() {

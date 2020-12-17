@@ -883,7 +883,7 @@ public final class SoyFileSet {
                 SoyTypeRegistry.DEFAULT_UNKNOWN)
             .fileSet();
     throwIfErrorsPresent();
-    SoyMsgBundle bundle = new ExtractMsgsVisitor().exec(soyTree);
+    SoyMsgBundle bundle = new ExtractMsgsVisitor(errorReporter).exec(soyTree);
     throwIfErrorsPresent();
     return bundle;
   }
