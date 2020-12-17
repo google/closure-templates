@@ -77,12 +77,6 @@ abstract class ImportsPass {
     private final SoyGeneralOptions options;
     final ErrorReporter errorReporter;
     private final ImmutableSet<ImportType> importTypesToVisit;
-    /**
-     * Map from unique imported symbol (aliasOrName) to "path//name". Used to determine whether
-     * imported symbol collisions are real collisions or just duplicates.
-     */
-    private final Map<String, String> uniqueImports = new HashMap<>();
-
     private Map<String, String> globalPrefixToFullNameMap = null;
 
     ImportVisitor(
@@ -156,22 +150,9 @@ abstract class ImportsPass {
 
       boolean foundSymbolErrors = false;
       for (ImportedVar symbol : node.getIdentifiers()) {
-        String name = symbol.name();
-
-        if (node.getImportType() == ImportType.TEMPLATE) {
-          // Allow duplicate template imports while migrating away from FQNs (makes tricorder
-          // multipass more flexible). There are also plenty of duplicates in the wild that need to
-          // be fixed before this check can be removed.
-          String path = node.getPath() + "//" + symbol.name();
-          String duplicatePath = uniqueImports.put(name, path);
-          if (path.equals(duplicatePath)) {
-            continue;
-          }
-        }
-
         // Import naming collisions. Report errors but continue checking the other symbols so we
         // can report all of the errors at once.
-        if (reportErrorIfSymbolInvalid(file, name, symbol.nameLocation())) {
+        if (reportErrorIfSymbolInvalid(file, symbol.name(), symbol.nameLocation())) {
           foundSymbolErrors = true;
         }
       }
