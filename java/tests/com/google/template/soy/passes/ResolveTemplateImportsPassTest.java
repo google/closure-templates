@@ -144,43 +144,6 @@ public final class ResolveTemplateImportsPassTest {
   }
 
   @Test
-  public void testImport_symbolsCollide() throws Exception {
-    CompilationUnitAndKind dependencyCompilationUnit =
-        parseDep(
-            Joiner.on("\n")
-                .join("{namespace dep.namespace}", "{template .aTemplate}", " hi!", "{/template}"),
-            SourceFilePath.create("foo.soy"));
-
-    parseFilesWithDeps(
-        ImmutableList.of(
-            createSoyFileSupplier(
-                Joiner.on("\n")
-                    .join(
-                        "{namespace my.namespace}",
-                        // Template from dep
-                        "import {aTemplate} from 'foo.soy';",
-                        // Template from same file set.
-                        "import {myOtherTemplate as aTemplate} from 'siblingFile.soy';",
-                        "{template .mainTemplate}",
-                        " hi!",
-                        "{/template}"),
-                SourceFilePath.create("main.soy")),
-            createSoyFileSupplier(
-                Joiner.on("\n")
-                    .join(
-                        "{namespace my.namespace}",
-                        "{template .myOtherTemplate}",
-                        " hi!",
-                        "{/template}"),
-                SourceFilePath.create("siblingFile.soy"))),
-        ImmutableList.of(dependencyCompilationUnit));
-
-    assertThat(errorReporter.getErrors()).hasSize(1);
-    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .contains("Imported symbol aTemplate conflicts with previously imported symbol.");
-  }
-
-  @Test
   public void testImport_unknownPath() throws Exception {
     parseFiles(
         ImmutableList.of(

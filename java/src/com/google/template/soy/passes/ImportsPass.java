@@ -51,8 +51,6 @@ abstract class ImportsPass {
       SoyErrorKind.of("One or more imported symbols are required for import.");
 
   // Naming conflict errors:
-  private static final SoyErrorKind IMPORT_COLLISION =
-      SoyErrorKind.of("Imported symbol {0} conflicts with previously imported symbol.");
   private static final SoyErrorKind IMPORT_CONFLICTS_WITH_GLOBAL =
       SoyErrorKind.of("Import ''{0}'' conflicts with a global of the same name.");
   private static final SoyErrorKind IMPORT_CONFLICTS_WITH_GLOBAL_PREFIX =
@@ -128,7 +126,7 @@ abstract class ImportsPass {
     /**
      * Visits an import node. First, validates that the import path exists and the symbol names
      * and/or optional aliases do not collide with other import symbols. Then, delegates to the
-     * abstract {@link #visitImportNodeWithValidPathAndSymbol}.
+     * abstract {@link #processImportedModule} and {@link #processImportedSymbols}.
      */
     private void visit(ImportNode node) {
       if (!importTypesToVisit.contains(node.getImportType()) || !shouldVisit(node)) {
@@ -244,7 +242,7 @@ abstract class ImportsPass {
 
       // Name collides with another import symbol.
       if (!file.getImportsContext().addImportedSymbol(importSymbolName)) {
-        errorReporter.report(nameLocation, IMPORT_COLLISION, importSymbolName);
+        // Don't report here. A better error message is generated later in ResolveNamesPass.
         foundErrors = true;
       }
 

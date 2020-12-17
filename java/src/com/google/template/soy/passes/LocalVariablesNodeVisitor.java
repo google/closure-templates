@@ -24,6 +24,7 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
+import com.google.template.soy.exprtree.DelegatingVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -50,7 +51,9 @@ import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 /**
@@ -100,20 +103,25 @@ final class LocalVariablesNodeVisitor {
      * scope and all parent scopes.
      */
     VarDefn lookup(String name) {
-      for (Map<String, VarDefn> scope : currentScope) {
-        VarDefn defn = scope.get(name);
-        if (defn != null) {
-          return defn;
-        }
-      }
-      return null;
+      return lookupInternal(name, defn -> defn != null && !(defn instanceof ReservedVarDefn));
     }
 
-    /** Defines a variable. */
-    boolean define(VarDefn defn, Node definingNode) {
+    private VarDefn lookupWithReserved(String name) {
+      return lookupInternal(name, Objects::nonNull);
+    }
+
+    private VarDefn lookupInternal(String name, Predicate<VarDefn> filter) {
+      return currentScope.stream()
+          .map(scope -> scope.get(name))
+          .filter(filter)
+          .findFirst()
+          .orElse(null);
+    }
+
+    private boolean check(VarDefn defn, Node definingNode) {
       String refName = defn.refName();
       // Search for the name to see if it is being redefined.
-      VarDefn preexisting = lookup(refName);
+      VarDefn preexisting = lookupWithReserved(refName);
       if (preexisting != null) {
         Optional<SourceLocation> preexistingSourceLocation = forVarDefn(preexisting);
         SourceLocation defnSourceLocation =
@@ -127,12 +135,33 @@ final class LocalVariablesNodeVisitor {
         }
         return false;
       }
-      currentScope.peek().put(refName, defn);
       return true;
+    }
+
+    /** Defines a variable. */
+    void define(VarDefn defn, Node definingNode) {
+      if (check(defn, definingNode)) {
+        currentScope.peek().put(defn.refName(), defn);
+      }
+    }
+
+    /**
+     * Reserves the name of a variable without affecting what is returned by {@link #lookup}. For
+     * use while fixing b/175405629.
+     */
+    void reserve(VarDefn defn, Node definingNode) {
+      define(new ReservedVarDefn(defn), definingNode);
     }
 
     List<String> allVariablesInScope() {
       return currentScope.stream().flatMap(map -> map.keySet().stream()).collect(toList());
+    }
+  }
+
+  /** Marked type for use while fixing b/175405629. */
+  private static final class ReservedVarDefn extends DelegatingVarDefn {
+    public ReservedVarDefn(VarDefn delegate) {
+      super(delegate);
     }
   }
 
@@ -160,12 +189,15 @@ final class LocalVariablesNodeVisitor {
       localVariables.enterScope();
       for (ImportNode imp : node.getImports()) {
         if (imp.getImportType() == ImportType.TEMPLATE) {
-          // TODO(b/175405629): Support templates too.
-          continue;
-        }
-
-        for (ImportedVar var : imp.getIdentifiers()) {
-          localVariables.define(var, node);
+          // TODO(b/175405629): As a step towards supporting templates, we verify that there are no
+          // collisions here.
+          for (ImportedVar var : imp.getIdentifiers()) {
+            localVariables.reserve(var, node);
+          }
+        } else {
+          for (ImportedVar var : imp.getIdentifiers()) {
+            localVariables.define(var, node);
+          }
         }
       }
 
