@@ -16,67 +16,48 @@
 
 package com.google.template.soy.passes;
 
-import com.google.common.base.Preconditions;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.SourceLocation.Point;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.Kind;
-import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
-import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FieldAccessNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.VarRefNode;
+import com.google.template.soy.passes.LocalVariablesNodeVisitor.ExprVisitor;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 
 /**
- * Converts certain AST nodes back to globals, simulating earlier versions of the parser, which
- * distinguished between dollar idents and non-dollar idents.
+ * Converts any VARREF node whose name does not exist in variable scope back into a global node.
+ * This simulates earlier versions of the parser, which distinguished between dollar idents and
+ * non-dollar idents.
  */
 public final class RestoreGlobalsPass implements CompilerFilePass {
 
-  @Override
-  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    Visitor visitor = new Visitor();
-    SoyTreeUtils.visitAllNodes(
-        file,
-        node -> {
-          if (node instanceof ExprRootNode) {
-            visitor.exec((ExprRootNode) node);
-            return VisitDirective.SKIP_CHILDREN;
-          }
-          return VisitDirective.CONTINUE;
-        });
+  private final LocalVariablesNodeVisitor nodeVisitor;
+
+  public RestoreGlobalsPass() {
+    Visitor exprVisitor = new Visitor();
+    nodeVisitor =
+        new LocalVariablesNodeVisitor(
+            new LocalVariablesNodeVisitor.NodeVisitor() {
+              @Override
+              protected ExprVisitor getExprVisitor() {
+                return exprVisitor;
+              }
+            });
   }
 
-  private static class Visitor extends AbstractExprNodeVisitor<Void> {
+  @Override
+  public void run(SoyFileNode file, IdGenerator nodeIdGen) {
+    nodeVisitor.exec(file);
+  }
 
-    @Override
-    public Void exec(ExprNode node) {
-      Preconditions.checkArgument(node instanceof ExprRootNode);
-      visit(node);
-      return null;
-    }
-
-    @Override
-    protected void visitExprRootNode(ExprRootNode node) {
-      visitChildren(node);
-    }
-
-    @Override
-    protected void visitExprNode(ExprNode node) {
-      if (node instanceof ParentExprNode) {
-        visitChildren((ParentExprNode) node);
-      }
-    }
-
+  private static class Visitor extends LocalVariablesNodeVisitor.ExprVisitor {
     @Override
     protected void visitMethodCallNode(MethodCallNode node) {
       visitChildrenAllowingConcurrentModification(node);
@@ -98,7 +79,11 @@ public final class RestoreGlobalsPass implements CompilerFilePass {
         return;
       }
 
-      // Turn all VAR_REF + (FIELD_ACCESS)* without a "$" prefix back into global nodes.
+      if (getLocalVariables().lookup(varRef.getName()) != null) {
+        return;
+      }
+
+      // Turn all unresolved VAR_REF + (FIELD_ACCESS)* back into global nodes.
       ExprNode node = varRef;
       while (node.getParent() != null) {
         if (node.getParent().getKind() == Kind.FIELD_ACCESS_NODE

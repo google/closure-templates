@@ -31,6 +31,8 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ForNonemptyNode;
+import com.google.template.soy.soytree.ImportNode;
+import com.google.template.soy.soytree.ImportNode.ImportType;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
@@ -40,6 +42,7 @@ import com.google.template.soy.soytree.SoyNode.BlockNode;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
+import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
@@ -150,10 +153,31 @@ final class LocalVariablesNodeVisitor {
     }
 
     @Override
-    protected void visitTemplateNode(TemplateNode node) {
+    protected void visitSoyFileNode(SoyFileNode node) {
       // Create a scope for all parameters.
       localVariables = new LocalVariables();
       localVariables.errorReporter = getErrorReporter();
+      localVariables.enterScope();
+      for (ImportNode imp : node.getImports()) {
+        if (imp.getImportType() == ImportType.TEMPLATE) {
+          // TODO(b/175405629): Support templates too.
+          continue;
+        }
+
+        for (ImportedVar var : imp.getIdentifiers()) {
+          localVariables.define(var, node);
+        }
+      }
+
+      super.visitSoyFileNode(node);
+      localVariables.exitScope();
+
+      localVariables = null;
+    }
+
+    @Override
+    protected void visitTemplateNode(TemplateNode node) {
+      // Create a scope for all parameters.
       localVariables.enterScope();
       // Add all header params to the param scope.
       for (TemplateHeaderVarDefn param : node.getHeaderParams()) {
@@ -165,7 +189,6 @@ final class LocalVariablesNodeVisitor {
 
       super.visitTemplateNode(node);
       localVariables.exitScope();
-      localVariables = null;
     }
 
     @Override

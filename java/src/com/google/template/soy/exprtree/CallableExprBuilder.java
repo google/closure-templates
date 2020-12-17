@@ -24,7 +24,12 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
 import java.util.List;
 
-/** Builds {@link MethodCallNode} and {@link FunctionNode} and converts between the two. */
+/**
+ * Builds {@link MethodCallNode} and {@link FunctionNode} and converts between the two.
+ *
+ * <p>Note that calling {@link #buildFunction()} or {@link #buildMethod()} will mutate the nodes
+ * passed to {@link #builder(FunctionNode)} or {@link #builder(MethodCallNode)}.
+ */
 public final class CallableExprBuilder {
 
   private Identifier identifier;

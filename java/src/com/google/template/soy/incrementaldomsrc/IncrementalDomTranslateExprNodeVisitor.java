@@ -20,6 +20,7 @@ import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.IN
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.SOY_IDOM_IS_TRUTHY;
 import static com.google.template.soy.incrementaldomsrc.IncrementalDomRuntime.STATE_PREFIX;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
+import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsRuntime.BIND_TEMPLATE_PARAMS_FOR_IDOM;
 import static com.google.template.soy.jssrc.internal.JsRuntime.XID;
 
@@ -31,6 +32,7 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.GlobalNode;
+import com.google.template.soy.exprtree.ProtoEnumValueNode;
 import com.google.template.soy.jssrc.dsl.Expression;
 import com.google.template.soy.jssrc.internal.JavaScriptValueFactoryImpl;
 import com.google.template.soy.jssrc.internal.JsType;
@@ -96,16 +98,16 @@ public class IncrementalDomTranslateExprNodeVisitor extends TranslateExprNodeVis
   @Override
   protected Expression visitGlobalNode(GlobalNode node) {
     if (node.isResolved()) {
-      // If the types don't match this means this is a proto enum.  Add a cast to ensure the js
-      // compiler knows the type
-      // TODO(b/128869068) Ensure that a hard require is added for this type.
-      if (!node.getType().equals(node.getValue().getType())) {
-        JsType type = JsType.forJsSrcStrict(SoyTypes.removeNull(node.getType()));
-        return visit(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
-      }
       return visit(node.getValue());
     }
     return super.visit(node);
+  }
+
+  @Override
+  protected Expression visitProtoEnumValueNode(ProtoEnumValueNode node) {
+    // TODO(b/128869068) Ensure that a hard require is added for this type.
+    JsType type = JsType.forJsSrcStrict(SoyTypes.removeNull(node.getType()));
+    return number(node.getValue()).castAs(type.typeExpr(), type.getGoogRequires());
   }
 
   /** Types that might possibly be idom function callbacks, which always need custom truthiness. */

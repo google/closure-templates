@@ -57,7 +57,7 @@ public class NullSafeAccessNodeTest {
                 .withProto(com.google.template.soy.testing.Test.boolField.getDescriptor())
                 .parse()
                 .toSourceString())
-        .isEqualTo("$extendable?.getExtension(\"soy.test.boolField\")");
+        .isEqualTo("$extendable?.getExtension(boolField)");
   }
 
   @Test
@@ -142,8 +142,8 @@ public class NullSafeAccessNodeTest {
                 .parse()
                 .toSourceString())
         .isEqualTo(
-            "$extendable?.getExtension(\"soy.test.fooRepeatedList\")"
-                + "?[$extendable?.getExtension(\"soy.test.intRepeatedList\")?[0]]");
+            "$extendable?.getExtension(fooRepeatedList)"
+                + "?[$extendable?.getExtension(intRepeatedList)?[0]]");
   }
 
   @Test

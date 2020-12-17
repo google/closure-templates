@@ -79,6 +79,11 @@ public final class ExprEquivalenceTest {
         "  KvPair(key: 'a', value: 'b'),",
         "  KvPair(value: 'b', key: 'a')",
         ")}");
+    runTest(
+        "{assertNotEquals(",
+        "  KvPair(key: 'a', value: 'b'),",
+        "  KvPair(key: 'b', value: 'b')",
+        ")}");
     // TODO(b/78775420): randomInt isn't a pure function so it shouldn't ever be equivalent :/
     // fixing this behavior requires a cleanup.
     runTest("{assertEquals(randomInt(10), randomInt(10))}");
@@ -99,6 +104,20 @@ public final class ExprEquivalenceTest {
   }
 
   public void runTest(String... templateSourceLines) {
+    runTestForNormal(templateSourceLines);
+    runTestForXmbGen(templateSourceLines);
+  }
+
+  public void runTestForNormal(String... templateSourceLines) {
+    runTestInternal(/* disableAllTypeChecking= */ false, templateSourceLines);
+  }
+
+  public void runTestForXmbGen(String... templateSourceLines) {
+    // XMB generation runs with disableAllTypeChecking but depends heavily on ExprEquivalence.
+    runTestInternal(/* disableAllTypeChecking= */ true, templateSourceLines);
+  }
+
+  public void runTestInternal(boolean disableAllTypeChecking, String... templateSourceLines) {
     SoyFileSetNode soyTree =
         SoyFileSetParserBuilder.forTemplateAndImports(
                 "{template .aaa}\n"
@@ -110,6 +129,7 @@ public final class ExprEquivalenceTest {
             .addSoyFunction(ASSERT_REFLEXIVE_FUNCTION)
             .addSoyFunction(ASSERT_EQUALS_FUNCTION)
             .addSoyFunction(ASSERT_NOT_EQUALS_FUNCTION)
+            .disableAllTypeChecking(disableAllTypeChecking)
             .parse()
             .fileSet();
     for (FunctionNode fn : SoyTreeUtils.getAllNodesOfType(soyTree, FunctionNode.class)) {

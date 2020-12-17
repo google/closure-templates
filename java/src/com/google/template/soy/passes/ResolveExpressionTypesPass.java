@@ -60,6 +60,7 @@ import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
 import com.google.template.soy.exprtree.AbstractOperatorNode;
 import com.google.template.soy.exprtree.AbstractParentExprNode;
 import com.google.template.soy.exprtree.AbstractVarDefn;
+import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.exprtree.ExprNode;
@@ -144,6 +145,7 @@ import com.google.template.soy.types.LegacyObjectMapType;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.NullType;
+import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SanitizedType;
 import com.google.template.soy.types.SoyProtoType;
@@ -152,7 +154,6 @@ import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.StringType;
-import com.google.template.soy.types.TypeRegistries;
 import com.google.template.soy.types.UnionType;
 import com.google.template.soy.types.UnknownType;
 import com.google.template.soy.types.VeDataType;
@@ -225,8 +226,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of("Missing Soy type for node {0}.");
   private static final SoyErrorKind NOT_PROTO_INIT =
       SoyErrorKind.of("Expected a protocol buffer for the second argument.");
-  private static final SoyErrorKind NOT_A_PROTO_TYPE =
-      SoyErrorKind.of("''{0}'' is a ''{1}'', expected a protocol buffer.");
   private static final SoyErrorKind OR_OPERATOR_HAS_CONSTANT_OPERAND =
       SoyErrorKind.of(
           "Constant operand ''{0}'' used with ''or'' operator. "
@@ -242,8 +241,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
   private static final SoyErrorKind UNDEFINED_FIELD_FOR_RECORD_TYPE =
       SoyErrorKind.of(
           "Undefined field ''{0}'' for record type {1}.{2}", StyleAllowance.NO_PUNCTUATION);
-  private static final SoyErrorKind UNKNOWN_PROTO_TYPE =
-      SoyErrorKind.of("Unknown proto type ''{0}''.");
   private static final SoyErrorKind PROTO_FIELD_DOES_NOT_EXIST =
       SoyErrorKind.of(
           "Proto field ''{0}'' does not exist on {1}.{2}", StyleAllowance.NO_PUNCTUATION);
@@ -304,6 +301,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of(
           "Extensions fields in proto init functions must be imported symbols. Fully qualified"
               + " names are not allowed.");
+  private static final SoyErrorKind NOT_PROTO_MESSAGE =
+      SoyErrorKind.of("Only proto messages may be instantiated.");
 
   private final ErrorReporter errorReporter;
 
@@ -1017,8 +1016,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     private void finishMethodCallNode(MethodCallNode node, boolean nullSafe) {
-      boolean firstTime = !node.isMethodResolved();
-
       for (ExprNode child : node.getParams()) {
         visit(child);
       }
@@ -1032,21 +1029,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
 
       node.setSoyMethod(method);
-
-      if (firstTime
-          && method == BuiltinMethod.GET_EXTENSION
-          && node.getParams().size() == 1
-          && node.getParams().get(0).getKind() == ExprNode.Kind.GLOBAL_NODE) {
-        GlobalNode param = (GlobalNode) node.getParams().get(0);
-        Identifier resolvedName = typeRegistry.resolve(param.getIdentifier());
-        if (resolvedName != null) {
-          if (!resolvedName.equals(param.getIdentifier())) {
-            param.setName(resolvedName.identifier());
-          }
-        } else {
-          errorReporter.report(param.getSourceLocation(), PROTO_EXT_FQN);
-        }
-      }
 
       if (method instanceof BuiltinMethod) {
         node.setType(((BuiltinMethod) method).getReturnType(node, typeRegistry, errorReporter));
@@ -1525,33 +1507,28 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     }
 
     private void visitProtoInitFunction(FunctionNode node) {
-      String protoName = node.getStaticFunctionName();
-      SoyType type =
-          TypeRegistries.getTypeOrProtoFqn(typeRegistry, errorReporter, node.getIdentifier());
-
-      if (type == null) {
-        errorReporter.report(node.getSourceLocation(), UNKNOWN_PROTO_TYPE, protoName);
+      SoyType soyType = node.getNameExpr().getType();
+      if (soyType.getKind() != Kind.PROTO_TYPE) {
+        errorReporter.report(node.getNameExpr().getSourceLocation(), NOT_PROTO_MESSAGE);
         node.setType(UnknownType.getInstance());
         return;
       }
-      if (type.getKind() != SoyType.Kind.PROTO) {
-        errorReporter.report(node.getSourceLocation(), NOT_A_PROTO_TYPE, protoName, type);
-        node.setType(UnknownType.getInstance());
-        return;
-      }
-      if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(type.toString())) {
+      ProtoImportType type = (ProtoImportType) node.getNameExpr().getType();
+      String protoFqn = type.toString();
+      if (SAFE_PROTO_TO_SANITIZED_TYPE.containsKey(protoFqn)) {
         errorReporter.report(
             node.getSourceLocation(),
             TypeNodeConverter.SAFE_PROTO_TYPE,
-            SAFE_PROTO_TO_SANITIZED_TYPE.get(protoName),
-            protoName);
+            SAFE_PROTO_TO_SANITIZED_TYPE.get(protoFqn),
+            protoFqn);
         node.setType(UnknownType.getInstance());
         return;
       }
 
-      node.setType(type);
+      SoyProtoType protoType =
+          (SoyProtoType) typeRegistry.getProtoRegistry().getProtoType(protoFqn);
+      node.setType(protoType);
 
-      SoyProtoType protoType = (SoyProtoType) type;
       // TODO(user): Consider writing a soyProtoTypeImpl.getRequiredFields()
       Set<String> givenParams = new HashSet<>();
       ImmutableSet<String> fields = protoType.getFieldNames();
@@ -1595,11 +1572,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       // Replace the proto init node to have a list of the resolved param names.
       if (hasAliasedParams) {
         FunctionNode resolvedNode =
-            FunctionNode.newNamed(
-                node.getIdentifier(), resolvedIdentifiers, node.getSourceLocation());
+            CallableExprBuilder.builder(node).setParamNames(resolvedIdentifiers).buildFunction();
         resolvedNode.setSoyFunction(node.getSoyFunction());
         resolvedNode.setType(node.getType());
-        resolvedNode.addChildren(node.getChildren());
         node.getParent().replaceChild(node, resolvedNode);
         node = resolvedNode;
       }
@@ -1886,12 +1861,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE:
         case VE_DATA:
         case MESSAGE:
-        case PROTO_TYPE:
-        case PROTO_ENUM_TYPE:
-        case PROTO_EXTENSION:
-        case PROTO_NAMESPACE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
+        case PROTO_EXTENSION:
+        case PROTO_TYPE:
+        case PROTO_NAMESPACE:
+        case PROTO_ENUM_TYPE:
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
     }

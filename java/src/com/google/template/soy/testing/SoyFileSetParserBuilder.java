@@ -93,6 +93,7 @@ public final class SoyFileSetParserBuilder {
   // the order of the nodes in the AST.
   private boolean addHtmlAttributesForDebugging = false;
   private final PassManager.Builder passManager = new PassManager.Builder();
+  private boolean disableAllTypeChecking = false;
 
   public static SoyFileSetParserBuilder forTemplateAndImports(
       String contents, GenericDescriptor... descriptors) {
@@ -329,6 +330,11 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
+  public SoyFileSetParserBuilder disableAllTypeChecking(boolean disableAllTypeChecking) {
+    this.disableAllTypeChecking = disableAllTypeChecking;
+    return this;
+  }
+
   public static final SourceFilePath FILE_PATH = SourceFilePath.create("no-path");
 
   private static List<SoyFileSupplier> buildTestSoyFileSuppliers(String... soyFileContents) {
@@ -381,7 +387,9 @@ public final class SoyFileSetParserBuilder {
         .setCssRegistry(cssRegistry)
         .setPluginResolver(
             new PluginResolver(
-                PluginResolver.Mode.REQUIRE_DEFINITIONS,
+                disableAllTypeChecking
+                    ? PluginResolver.Mode.ALLOW_UNDEFINED
+                    : PluginResolver.Mode.REQUIRE_DEFINITIONS,
                 soyPrintDirectives.build(),
                 soyFunctions.build(),
                 sourceFunctions.build(),
@@ -399,6 +407,9 @@ public final class SoyFileSetParserBuilder {
     }
     if (allowV1Expression) {
       passManager.allowV1Expression();
+    }
+    if (disableAllTypeChecking) {
+      passManager.allowUnknownGlobals().disableAllTypeChecking();
     }
     return SoyFileSetParser.newBuilder()
         .setCache(astCache)
