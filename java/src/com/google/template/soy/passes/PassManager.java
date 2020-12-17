@@ -425,7 +425,7 @@ public final class PassManager {
       // Run before the RewriteGlobalsPass as it removes some globals.
       addPass(new VeRewritePass(), partialTemplateRegistryPassesBuilder);
       addPass(
-          new RewriteGlobalsPass(options.getCompileTimeGlobals()),
+          new RewriteGlobalsPass(options.getCompileTimeGlobals(), errorReporter),
           partialTemplateRegistryPassesBuilder);
       addPass(new XidPass(errorReporter), partialTemplateRegistryPassesBuilder);
       addPass(
@@ -436,14 +436,7 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
       addPass(new ResolveNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       addPass(
-          new ResolveDottedImportsPass(errorReporter, registry),
-          partialTemplateRegistryPassesBuilder);
-      if (!disableAllTypeChecking) {
-        // Without type checking proto enums in variant expressions are not resolved.
-        addPass(
-            new ValidateVariantExpressionsPass(errorReporter),
-            partialTemplateRegistryPassesBuilder);
-      }
+          new ValidateVariantExpressionsPass(errorReporter), partialTemplateRegistryPassesBuilder);
       // needs to be after ResolveNames and MsgsPass
       if (astRewrites.atLeast(AstRewrites.ALL)) {
         addPass(new MsgWithIdFunctionPass(errorReporter), partialTemplateRegistryPassesBuilder);

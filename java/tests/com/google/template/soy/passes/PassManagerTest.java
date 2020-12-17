@@ -165,6 +165,7 @@ public final class PassManagerTest {
             RestoreGlobalsPass.class,
             ResolveNamesPass.class,
             ResolvePackageRelativeCssNamesPass.class,
+            ResolvePluginsPass.class,
             ResolveTemplateParamTypesPass.class,
             RewriteGenderMsgsPass.class,
             SimplifyAssertNonNullPass.class,

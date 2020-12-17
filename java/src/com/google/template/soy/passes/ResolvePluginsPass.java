@@ -16,29 +16,29 @@
 
 package com.google.template.soy.passes;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.exprtree.CallableExprBuilder;
-import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.FunctionNode;
-import com.google.template.soy.exprtree.VarDefn;
-import com.google.template.soy.exprtree.VarRefNode;
-import com.google.template.soy.passes.LocalVariablesNodeVisitor.ExprVisitor;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.SoyFileNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TypeRegistries;
 import java.util.Optional;
 
 /**
- * Populates the {@link FunctionNode} and {@link PrintDirectiveNode} with their plugin instances
- * based on a registry of such names. Also resolves functions that are imported symbols (e.g. for
- * proto init).
+ * Populates the {@link FunctionNode} and {@link PrintDirectiveNode} with their plugin instances and
+ * identifies some ambiguous function nodes as {@link BuiltinFunction#PROTO_INIT}.
  */
-@RunBefore(SoyConformancePass.class)
 final class ResolvePluginsPass implements CompilerFilePass {
 
   private final PluginResolver resolver;
+  // Proto FQN will be warned in ResolveExpressionTypesPass.
+  private final ErrorReporter ignoreFqnWarnings = ErrorReporter.create(ImmutableMap.of());
 
   ResolvePluginsPass(PluginResolver resolver) {
     this.resolver = resolver;
@@ -46,67 +46,28 @@ final class ResolvePluginsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    new LocalVariablesNodeVisitor(new Visitor()).exec(file);
-  }
+    for (FunctionNode function :
+        SoyTreeUtils.getAllMatchingNodesOfType(
+            file, FunctionNode.class, fn -> !fn.isResolved() && fn.hasStaticName())) {
 
-  private class Visitor extends LocalVariablesNodeVisitor.NodeVisitor {
+      Identifier functionName = function.getIdentifier();
+      SoyType type =
+          TypeRegistries.getTypeOrProtoFqn(
+              file.getSoyTypeRegistry(), ignoreFqnWarnings, functionName);
+      if (type != null && type.getKind() == SoyType.Kind.PROTO) {
+        function.setSoyFunction(BuiltinFunction.PROTO_INIT);
+        continue;
+      }
 
-    private final LocalVariablesNodeVisitor.ExprVisitor exprVisitor =
-        new LocalVariablesNodeVisitor.ExprVisitor() {
-          @Override
-          protected void visitFunctionNode(FunctionNode node) {
-            visitChildren(node);
-
-            if (node.isResolved()) {
-              return;
-            }
-
-            // If the function name is an expression then attempt to set the soy function field.
-            if (!node.hasStaticName()) {
-              setSoyFunctionForNameExpr(node);
-              return;
-            }
-
-            // If the name of the function is resolvable to a var def then replace the function
-            // identifier with a function name expression. Currently only proto message types are
-            // represented as VarDefn and all other symbols have been turned back into GlobalNodes
-            // by RestoreGlobalsPass. But eventually this could be modified to have built-in/plug-in
-            // functions imported as well.
-            // Note that this only handles non-nested proto types. Nested proto types appear at this
-            // stage as METHOD_CALL(VARREF) and await handling in ResolveDottedImportsPass.
-            VarDefn varDefn = getLocalVariables().lookup(node.getStaticFunctionName());
-            if (varDefn != null) {
-              FunctionNode newFunct =
-                  CallableExprBuilder.builder(node)
-                      .setIdentifier(null)
-                      .setFunctionExpr(
-                          new VarRefNode(
-                              node.getStaticFunctionName(),
-                              node.getIdentifier().location(),
-                              varDefn))
-                      .buildFunction();
-              // Set the soy function field to "resolve" the function.
-              setSoyFunctionForNameExpr(newFunct);
-              if (newFunct.isResolved()) {
-                node.getParent().replaceChild(node, newFunct);
-                return;
-              }
-            }
-
-            node.setSoyFunction(
-                resolver.lookupSoyFunction(
-                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation()));
-          }
-        };
-
-    @Override
-    protected ExprVisitor getExprVisitor() {
-      return exprVisitor;
+      function.setSoyFunction(
+          resolver.lookupSoyFunction(
+              function.getStaticFunctionName(),
+              function.numChildren(),
+              function.getSourceLocation()));
     }
 
-    @Override
-    protected void visitPrintDirectiveNode(PrintDirectiveNode directiveNode) {
-      super.visitPrintDirectiveNode(directiveNode);
+    for (PrintDirectiveNode directiveNode :
+        SoyTreeUtils.getAllNodesOfType(file, PrintDirectiveNode.class)) {
       String name = directiveNode.getName();
 
       // If a template uses a print directive that doesn't exist, check if a function with the same
@@ -121,18 +82,6 @@ final class ResolvePluginsPass implements CompilerFilePass {
             resolver.lookupPrintDirective(
                 name, directiveNode.getExprList().size(), directiveNode.getSourceLocation()));
       }
-    }
-  }
-
-  /**
-   * For a function without a static name, calls {@link FunctionNode#setSoyFunction} with an
-   * appropriate value based on the function's name expression. Setting the soy function makes
-   * various code constructs more convenient (switch statements, visitors, etc).
-   */
-  static void setSoyFunctionForNameExpr(FunctionNode function) {
-    ExprNode expr = function.getNameExpr();
-    if (expr.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
-      function.setSoyFunction(BuiltinFunction.PROTO_INIT);
     }
   }
 }
