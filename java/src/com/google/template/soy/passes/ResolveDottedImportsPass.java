@@ -39,7 +39,7 @@ import com.google.template.soy.soytree.defn.ImportedVar;
 import com.google.template.soy.types.ImportType;
 import com.google.template.soy.types.ProtoEnumImportType;
 import com.google.template.soy.types.ProtoImportType;
-import com.google.template.soy.types.ProtoNamespaceImportType;
+import com.google.template.soy.types.ProtoModuleImportType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TypeInterner;
@@ -168,10 +168,10 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
 
     SoyType nestedType = null;
 
-    if (type.getKind() == SoyType.Kind.PROTO_NAMESPACE) {
+    if (type.getKind() == SoyType.Kind.PROTO_MODULE) {
       nestedType =
           typeRegistry.getProtoImportType(
-              ((ProtoNamespaceImportType) type).getDescriptor(), fieldName);
+              ((ProtoModuleImportType) type).getDescriptor(), fieldName);
     } else if (type.getKind() == SoyType.Kind.PROTO_TYPE) {
       nestedType =
           typeRegistry.getProtoImportType(((ProtoImportType) type).getDescriptor(), fieldName);

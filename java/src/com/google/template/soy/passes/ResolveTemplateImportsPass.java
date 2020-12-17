@@ -22,11 +22,11 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
-import com.google.template.soy.passes.CompilerFileSetPass.Result;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
@@ -38,6 +38,10 @@ import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplatesPerFile;
 import com.google.template.soy.soytree.TemplatesPerFile.TemplateName;
 import com.google.template.soy.soytree.defn.ImportedVar;
+import com.google.template.soy.types.SoyTypeRegistry;
+import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateModuleImportType;
+import com.google.template.soy.types.UnknownType;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -82,7 +86,8 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
 
   @Override
   TemplateImportVisitor createImportVisitorForFile(SoyFileNode file) {
-    return new TemplateImportVisitor(file, templateNameRegistry, options, errorReporter);
+    return new TemplateImportVisitor(
+        file, templateNameRegistry, options, errorReporter, file.getSoyTypeRegistry());
   }
 
   static final class TemplateImportVisitor extends ImportVisitor {
@@ -92,12 +97,14 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     // Map of imported symbols to full template names.
     final Map<String, TemplateName> symbolsToTemplatesMap = new LinkedHashMap<>();
     private final ImmutableMap<String, String> symbolToTemplateName;
+    private final SoyTypeRegistry typeRegistry;
 
     TemplateImportVisitor(
         SoyFileNode file,
         TemplateNameRegistry templateNameRegistry,
         SoyGeneralOptions options,
-        ErrorReporter errorReporter) {
+        ErrorReporter errorReporter,
+        SoyTypeRegistry typeRegistry) {
       super(file, ImmutableSet.of(ImportType.TEMPLATE), options, errorReporter);
 
       this.templateNameRegistry = templateNameRegistry;
@@ -109,6 +116,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
                       TemplateNode::getLocalTemplateSymbol,
                       TemplateNode::getPartialTemplateName,
                       (existing, replacement) -> existing));
+      this.typeRegistry = typeRegistry;
     }
 
     /**
@@ -130,6 +138,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
               name,
               node.getPath(),
               /* validSymbols= */ templatesPerFile.getUnqualifiedTemplateNames());
+          symbol.setType(UnknownType.getInstance());
           continue;
         }
 
@@ -138,12 +147,16 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
         if (partialTemplateName != null) {
           errorReporter.report(
               symbol.nameLocation(), IMPORT_CONFLICTS_WITH_TEMPLATE, partialTemplateName);
+          symbol.setType(UnknownType.getInstance());
           continue;
         }
 
         // Needs to be able to handle duplicates, since the formatter fixes them, but it's not a
         // compiler error (if they have the same path).
-        symbolsToTemplatesMap.put(symbol.name(), templatesPerFile.getFullTemplateName(name));
+        TemplateName templateName = templatesPerFile.getFullTemplateName(name);
+        symbolsToTemplatesMap.put(symbol.name(), templateName);
+        symbol.setType(
+            typeRegistry.intern(TemplateImportType.create(templateName.fullyQualifiedName())));
       }
     }
 
@@ -157,6 +170,15 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
     void processImportedModule(ImportNode node) {
       TemplatesPerFile templatesPerFile =
           templateNameRegistry.getTemplatesForFile(SourceFilePath.create(node.getPath()));
+      Iterables.getOnlyElement(node.getIdentifiers())
+          .setType(
+              typeRegistry.intern(
+                  TemplateModuleImportType.create(
+                      templatesPerFile.getNamespace(),
+                      templatesPerFile.getFilePath(),
+                      templatesPerFile.getTemplateNames().stream()
+                          .map(TemplateName::unqualifiedName)
+                          .collect(toImmutableSet()))));
       // For each template, add a mapping from "ModuleName.templateName" -> templateFqn.
       templatesPerFile
           .getUnqualifiedTemplateNames()

@@ -18,12 +18,9 @@ package com.google.template.soy.types;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.EnumDescriptor;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.base.internal.Identifier;
-import com.google.template.soy.types.RecordType.Member;
-import java.util.Collection;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -59,54 +56,14 @@ public abstract class DelegatingSoyTypeRegistry implements SoyTypeRegistry {
   }
 
   @Override
-  public ListType getOrCreateListType(SoyType elementType) {
-    return delegate.getOrCreateListType(elementType);
-  }
-
-  @Override
-  public LegacyObjectMapType getOrCreateLegacyObjectMapType(SoyType keyType, SoyType valueType) {
-    return delegate.getOrCreateLegacyObjectMapType(keyType, valueType);
-  }
-
-  @Override
-  public MapType getOrCreateMapType(SoyType keyType, SoyType valueType) {
-    return delegate.getOrCreateMapType(keyType, valueType);
-  }
-
-  @Override
-  public SoyType getOrCreateUnionType(Collection<SoyType> members) {
-    return delegate.getOrCreateUnionType(members);
-  }
-
-  @Override
-  public SoyType getOrCreateUnionType(SoyType... members) {
-    return delegate.getOrCreateUnionType(members);
-  }
-
-  @Override
-  public RecordType getOrCreateRecordType(Iterable<Member> members) {
-    return delegate.getOrCreateRecordType(members);
-  }
-
-  @Override
-  public TemplateType internTemplateType(TemplateType typeToIntern) {
-    return delegate.internTemplateType(typeToIntern);
-  }
-
-  @Override
-  public VeType getOrCreateVeType(String dataType) {
-    return delegate.getOrCreateVeType(dataType);
+  public <T extends SoyType> T intern(T type) {
+    return delegate.intern(type);
   }
 
   @Override
   public SoyProtoType getOrComputeProtoType(
       Descriptor descriptor, Function<? super String, ? extends SoyProtoType> mapper) {
     return delegate.getOrComputeProtoType(descriptor, mapper);
-  }
-
-  @Override
-  public SoyProtoEnumType getOrCreateProtoEnumType(EnumDescriptor descriptor) {
-    return delegate.getOrCreateProtoEnumType(descriptor);
   }
 
   @Override

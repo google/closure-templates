@@ -1865,8 +1865,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           return UnknownType.getInstance();
         case PROTO_EXTENSION:
         case PROTO_TYPE:
-        case PROTO_NAMESPACE:
+        case PROTO_MODULE:
         case PROTO_ENUM_TYPE:
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
     }
@@ -1972,7 +1974,9 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case PROTO_TYPE:
         case PROTO_ENUM_TYPE:
         case PROTO_EXTENSION:
-        case PROTO_NAMESPACE:
+        case PROTO_MODULE:
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
           errorReporter.report(baseLocation, BRACKET_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
       }

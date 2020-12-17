@@ -16,25 +16,24 @@
 package com.google.template.soy.types;
 
 import com.google.auto.value.AutoValue;
-import com.google.protobuf.Descriptors.FileDescriptor;
 
-/** Representing an imported proto namespace/file type. */
+/** Representing an imported template. */
 @AutoValue
-public abstract class ProtoNamespaceImportType extends ImportType {
+public abstract class TemplateImportType extends ImportType {
 
-  public static ProtoNamespaceImportType create(FileDescriptor descriptor) {
-    return new AutoValue_ProtoNamespaceImportType(descriptor);
+  public static TemplateImportType create(String fqn) {
+    return new AutoValue_TemplateImportType(fqn);
   }
 
-  public abstract FileDescriptor getDescriptor();
+  public abstract String getName();
 
   @Override
   public final String toString() {
-    return getDescriptor().getFullName();
+    return getName();
   }
 
   @Override
   public Kind getKind() {
-    return Kind.PROTO_NAMESPACE;
+    return Kind.TEMPLATE_TYPE;
   }
 }

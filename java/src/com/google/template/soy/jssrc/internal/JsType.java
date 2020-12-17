@@ -480,7 +480,9 @@ public final class JsType {
       case PROTO_TYPE:
       case PROTO_ENUM_TYPE:
       case PROTO_EXTENSION:
-      case PROTO_NAMESPACE:
+      case PROTO_MODULE:
+      case TEMPLATE_TYPE:
+      case TEMPLATE_MODULE:
     }
     throw new AssertionError("unhandled soytype: " + soyType);
   }

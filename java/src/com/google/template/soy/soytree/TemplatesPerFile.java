@@ -19,8 +19,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,6 +45,11 @@ public final class TemplatesPerFile {
   /** The file path for this registry. */
   public SourceFilePath getFilePath() {
     return filePath;
+  }
+
+  public String getNamespace() {
+    Preconditions.checkState(!templates.isEmpty());
+    return Iterables.getFirst(templates, null).getNamespace();
   }
 
   public ImmutableSet<TemplateName> getTemplateNames() {
@@ -133,5 +140,13 @@ public final class TemplatesPerFile {
     public abstract String fullyQualifiedName();
 
     public abstract String unqualifiedName();
+
+    public String getNamespace() {
+      if (fullyQualifiedName().equals(unqualifiedName())) {
+        return "";
+      }
+      return fullyQualifiedName()
+          .substring(0, fullyQualifiedName().length() - (1 + unqualifiedName().length()));
+    }
   }
 }
