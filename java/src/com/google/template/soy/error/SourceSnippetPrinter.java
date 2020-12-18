@@ -87,6 +87,11 @@ public final class SourceSnippetPrinter {
         // The SourceLocation does not include this line, no highlighting necessary.
         return "";
       }
+      // NOTE: The logic here attempts to use whitespace to align a 'highlight' with another line of
+      // text.  This is a fundamentally font dependent operation.  Assuming a monospace font, this
+      // should work out since this is the whole point of monospace fonts.  However, even in
+      // monospace fonts some characters display as wider than others.  This means the logic here
+      // will fail.   ¯\_(ツ)_/¯
       // This is 0-based (unlike SourceLocation, which is 1-based).
       int highlightFrom =
           getLineNumber() == location.getBeginLine() ? location.getBeginColumn() - 1 : 0;
@@ -111,10 +116,11 @@ public final class SourceSnippetPrinter {
   }
 
   /** The maximum number of lines that should be printed. */
-  private final Optional<Integer> maxLines;
+  private final int maxLines;
 
   public SourceSnippetPrinter() {
-    this.maxLines = Optional.empty();
+    this.maxLines = Integer.MAX_VALUE;
+    ;
   }
 
   /**
@@ -125,7 +131,7 @@ public final class SourceSnippetPrinter {
    */
   public SourceSnippetPrinter(int maxLines) {
     checkArgument(maxLines > 1, "maxLines must be at least 2");
-    this.maxLines = Optional.of(maxLines);
+    this.maxLines = maxLines;
   }
 
   /**
@@ -159,19 +165,17 @@ public final class SourceSnippetPrinter {
       return Optional.empty();
     }
 
-    if (this.maxLines.isPresent()) {
-      int locationLines = snippetLines.size();
-      if (locationLines > this.maxLines.get()) {
-        // If maxLines is an odd number, show the extra line before the ellipsis.
-        int linesAtTop = (this.maxLines.get() + 1) / 2;
-        int linesAtBottom = this.maxLines.get() - linesAtTop;
-        snippetLines =
-            ImmutableList.<Printable>builder()
-                .addAll(snippetLines.subList(0, linesAtTop))
-                .add(ELLIPSIS)
-                .addAll(snippetLines.subList(locationLines - linesAtBottom, locationLines))
-                .build();
-      }
+    int locationLines = snippetLines.size();
+    if (locationLines > this.maxLines) {
+      // If maxLines is an odd number, show the extra line before the ellipsis.
+      int linesAtTop = (this.maxLines + 1) / 2;
+      int linesAtBottom = this.maxLines - linesAtTop;
+      snippetLines =
+          ImmutableList.<Printable>builder()
+              .addAll(snippetLines.subList(0, linesAtTop))
+              .add(ELLIPSIS)
+              .addAll(snippetLines.subList(locationLines - linesAtBottom, locationLines))
+              .build();
     }
 
     return Optional.of(
