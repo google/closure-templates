@@ -62,7 +62,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.SoyLogger;
-import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.shared.internal.SharedRuntime;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import java.io.Closeable;
@@ -381,8 +380,11 @@ public abstract class MethodRef {
       create(
           JbcSrcRuntime.MsgRenderer.class, "setPlaceholder", String.class, SoyValueProvider.class);
 
-  public static final MethodRef MSG_RENDERER_ESCAPE_HTML =
-      create(JbcSrcRuntime.MsgRenderer.class, "escapeHtml", String.class);
+  public static final MethodRef HANDLE_BASIC_TRANSLATION =
+      create(JbcSrcRuntime.class, "handleBasicTranslation", List.class).asNonNullable();
+  public static final MethodRef HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML =
+      create(JbcSrcRuntime.class, "handleBasicTranslationAndEscapeHtml", List.class)
+          .asNonNullable();
 
   public static final MethodRef MSG_RENDERER_SET_PLACEHOLDER_AND_ORDERING =
       create(
@@ -410,9 +412,6 @@ public abstract class MethodRef {
 
   public static final MethodRef SOY_MAP_IMPL_AS_JAVA_MAP =
       create(SoyMap.class, "asJavaMap").asNonNullable();
-
-  public static final MethodRef SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT =
-      create(SoyMsgRawTextPart.class, "getRawText").asCheap().asNonNullable();
 
   public static final MethodRef SOY_PROTO_VALUE_GET_PROTO =
       create(SoyProtoValue.class, "getProto").asCheap().asNonNullable();

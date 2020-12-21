@@ -254,15 +254,12 @@ final class MsgCompiler {
     // this becomes: renderContext.getSoyMessge(<id>).getParts().get(0).getRawText()
     SoyExpression text =
         SoyExpression.forString(
-            soyMsgParts
-                .invoke(MethodRef.LIST_GET, constant(0))
-                .checkedCast(SoyMsgRawTextPart.class)
-                .invoke(MethodRef.SOY_MSG_RAW_TEXT_PART_GET_RAW_TEXT));
+            (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML
+                    ? MethodRef.HANDLE_BASIC_TRANSLATION_AND_ESCAPE_HTML
+                    : MethodRef.HANDLE_BASIC_TRANSLATION)
+                .invoke(soyMsgParts));
     // Note: there is no point in trying to stream here, since we are starting with a constant
     // string.
-    if (msg.getEscapingMode() == EscapingMode.ESCAPE_HTML) {
-      text = SoyExpression.forString(MethodRef.MSG_RENDERER_ESCAPE_HTML.invoke(text));
-    }
     for (SoyPrintDirective directive : escapingDirectives) {
       text = parameterLookup.getRenderContext().applyPrintDirective(directive, text);
     }

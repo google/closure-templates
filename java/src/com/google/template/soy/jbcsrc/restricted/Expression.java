@@ -170,8 +170,8 @@ public abstract class Expression extends BytecodeProducer {
     checkArgument(
         size == types.size(),
         "Supplied the wrong number of parameters. Expected %s, got %s",
-        types.size(),
-        size);
+        types,
+        exprs);
     // checkIsAssignableTo is an no-op if DEBUG is false
     if (Flags.DEBUG) {
       int i = 0;

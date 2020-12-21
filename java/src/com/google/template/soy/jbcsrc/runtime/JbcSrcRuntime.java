@@ -318,6 +318,14 @@ public final class JbcSrcRuntime {
     return soyValueProvider == null ? NULL_PROVIDER : soyValueProvider;
   }
 
+  public static String handleBasicTranslation(List<SoyMsgPart> parts) {
+    return ((SoyMsgRawTextPart) parts.get(0)).getRawText();
+  }
+
+  public static String handleBasicTranslationAndEscapeHtml(List<SoyMsgPart> parts) {
+    return MsgRenderer.escapeHtml(handleBasicTranslation(parts));
+  }
+
   /**
    * A Message renderer represents a message to be rendered. It encapsulates the placeholders and
    * message parts and can dynamically render them. This manages a small state machine that allows
@@ -376,7 +384,7 @@ public final class JbcSrcRuntime {
       return this;
     }
 
-    public static String escapeHtml(String s) {
+    static String escapeHtml(String s) {
       // Note that "&" is not replaced because the translation can contain HTML entities.
       return s.replace("<", "&lt;");
     }
