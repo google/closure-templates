@@ -842,6 +842,58 @@ public final class SourceLocationTest {
   }
 
   @Test
+  public void testCreateSuperRangeWith_disjointLocation() {
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(5, 4), Point.create(5, 7));
+
+    SourceLocation expectedRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(5, 7));
+    assertThat(range1.createSuperRangeWith(range2)).isEqualTo(expectedRange);
+    assertThat(range2.createSuperRangeWith(range1)).isEqualTo(expectedRange);
+  }
+
+  @Test
+  public void testCreateSuperRangeWith_overlappingLocation() {
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 5), Point.create(5, 7));
+
+    SourceLocation expectedRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(5, 7));
+    assertThat(range1.createSuperRangeWith(range2)).isEqualTo(expectedRange);
+    assertThat(range2.createSuperRangeWith(range1)).isEqualTo(expectedRange);
+  }
+
+  @Test
+  public void testCreateSuperRangeWith_adjacentLocations() {
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(2, 3), Point.create(5, 7));
+
+    SourceLocation expectedRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(5, 7));
+    assertThat(range1.createSuperRangeWith(range2)).isEqualTo(expectedRange);
+    assertThat(range2.createSuperRangeWith(range1)).isEqualTo(expectedRange);
+  }
+
+  @Test
+  public void testCreateSuperRangeWith_subLocation() {
+    SourceLocation range1 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
+    SourceLocation range2 =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 5), Point.create(1, 8));
+
+    SourceLocation expectedRange =
+        new SourceLocation(FAKE_FILE_PATH, Point.create(1, 3), Point.create(2, 3));
+    assertThat(range1.createSuperRangeWith(range2)).isEqualTo(expectedRange);
+    assertThat(range2.createSuperRangeWith(range1)).isEqualTo(expectedRange);
+  }
+
+  @Test
   public void testUnion() throws Exception {
     String template =
         JOINER.join(

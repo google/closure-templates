@@ -246,6 +246,17 @@ public final class SourceLocation implements Comparable<SourceLocation> {
   }
 
   /**
+   * Creates a source location that fully spans the two source locations. They do not need to be
+   * adjacent locations. You probably don't want to use this unless you're doing something in the
+   * formatter with reordering.
+   */
+  public SourceLocation createSuperRangeWith(SourceLocation other) {
+    Point begin = this.begin.isBefore(other.begin) ? this.begin : other.begin;
+    Point end = this.end.isAfter(other.end) ? this.end : other.end;
+    return new SourceLocation(filePath, begin, end);
+  }
+
+  /**
    * Returns a new SourceLocation that covers the union of the two points. If the two locations are
    * not adjacent or overlapping, throws an error.
    */
