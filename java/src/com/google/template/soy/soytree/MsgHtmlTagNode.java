@@ -28,20 +28,17 @@ import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.basetree.CopyState;
-import com.google.template.soy.basetree.Node;
-import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.ExprEquivalence;
 import com.google.template.soy.soytree.SoyNode.MsgPlaceholderInitialNode;
-import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
 /**
  * Node representing an HTML tag within a {@code msg} statement/block.
  *
- * <p> Important: Do not use outside of Soy code (treat as superpackage-private).
+ * <p>Important: Do not use outside of Soy code (treat as superpackage-private).
  *
  */
 public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceholderInitialNode {
@@ -124,29 +121,17 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
    */
   @Nullable
   private static String getFullTagText(HtmlTagNode openTagNode) {
-    class Visitor implements NodeVisitor<Node, VisitDirective> {
-      boolean isConstantContent = true;
-
-      @Override
-      public VisitDirective exec(Node node) {
-        if (node instanceof RawTextNode
-            || node instanceof HtmlAttributeNode
-            || node instanceof HtmlAttributeValueNode
-            || node instanceof HtmlOpenTagNode
-            || node instanceof HtmlCloseTagNode) {
-          return VisitDirective.CONTINUE;
-        }
-        isConstantContent = false;
-        return VisitDirective.ABORT;
-      }
-    }
-    Visitor visitor = new Visitor();
-    SoyTreeUtils.visitAllNodes(openTagNode, visitor);
-    if (visitor.isConstantContent) {
-      // toSourceString is lame, but how this worked before
-      return openTagNode.toSourceString();
-    }
-    return null;
+    return SoyTreeUtils.allNodes(openTagNode)
+            .anyMatch(
+                node ->
+                    !(node instanceof RawTextNode
+                        || node instanceof HtmlAttributeNode
+                        || node instanceof HtmlAttributeValueNode
+                        || node instanceof HtmlOpenTagNode
+                        || node instanceof HtmlCloseTagNode))
+        ? null
+        // toSourceString is lame, but how this worked before
+        : openTagNode.toSourceString();
   }
 
   /**
@@ -244,9 +229,9 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     addChild(child);
   }
 
-
   /**
    * Copy constructor.
+   *
    * @param orig The node to copy.
    */
   private MsgHtmlTagNode(MsgHtmlTagNode orig, CopyState copyState) {
@@ -259,11 +244,10 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     copyState.updateRefs(orig, this);
   }
 
-
-  @Override public Kind getKind() {
+  @Override
+  public Kind getKind() {
     return Kind.MSG_HTML_TAG_NODE;
   }
-
 
   /** Returns the lower-case HTML tag name (includes '/' for end tags). */
   public String getLcTagName() {
@@ -343,7 +327,8 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     abstract VeLogNode.SamenessKey logKey();
   }
 
-  @Override public String toSourceString() {
+  @Override
+  public String toSourceString() {
 
     StringBuilder sb = new StringBuilder();
 
@@ -369,13 +354,13 @@ public final class MsgHtmlTagNode extends AbstractBlockNode implements MsgPlaceh
     return sb.toString();
   }
 
-
-  @Override public BlockNode getParent() {
+  @Override
+  public BlockNode getParent() {
     return (BlockNode) super.getParent();
   }
 
-
-  @Override public MsgHtmlTagNode copy(CopyState copyState) {
+  @Override
+  public MsgHtmlTagNode copy(CopyState copyState) {
     return new MsgHtmlTagNode(this, copyState);
   }
 }

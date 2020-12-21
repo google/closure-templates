@@ -45,6 +45,7 @@ import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -58,6 +59,33 @@ public final class SoyTreeUtilsTest {
 
   // -----------------------------------------------------------------------------------------------
   // Tests for executing an ExprNode visitor on all expressions in a Soy tree.
+
+  @Test
+  public void testBfs() {
+    String testFileContent =
+        "{namespace boo}\n"
+            + "{template .foo}\n"
+            + "  {1}\n"
+            + "{/template}\n"
+            + "{template .bar}\n"
+            + "  {2 + 3}\n"
+            + "{/template}\n";
+
+    ErrorReporter boom = ErrorReporter.exploding();
+    SoyFileNode soyTree =
+        SoyFileSetParserBuilder.forFileContents(testFileContent)
+            .errorReporter(boom)
+            .parse()
+            .fileSet()
+            .getChild(0);
+
+    List<Node> bfs = SoyTreeUtils.allNodes(soyTree).collect(Collectors.toList());
+    assertThat(bfs).hasSize(11);
+    assertThat(bfs.get(1)).isInstanceOf(TemplateBasicNode.class);
+    assertThat(bfs.get(2)).isInstanceOf(TemplateBasicNode.class);
+    assertThat(bfs.get(3)).isInstanceOf(PrintNode.class);
+    assertThat(bfs.get(4)).isInstanceOf(PrintNode.class);
+  }
 
   @Test
   public void testVisitAllExprs() {

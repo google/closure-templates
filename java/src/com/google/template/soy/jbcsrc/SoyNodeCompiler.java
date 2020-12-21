@@ -36,6 +36,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.Converters;
@@ -290,9 +291,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     throw new AssertionError("invalid kind: " + kind);
   }
 
-  private static boolean directlyPrintingNode(SoyNode node) {
-    return node.getKind() == SoyNode.Kind.RAW_TEXT_NODE
-        || node.getKind() == SoyNode.Kind.PRINT_NODE;
+  private static boolean directlyPrintingNode(Node node) {
+    if (node instanceof SoyNode) {
+      SoyNode.Kind kind = ((SoyNode) node).getKind();
+      return kind == SoyNode.Kind.RAW_TEXT_NODE || kind == SoyNode.Kind.PRINT_NODE;
+    }
+    return false;
   }
 
   /**
@@ -311,26 +315,20 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     }
     // Only if it contains a print node directly.  If it is just a set of call nodes (possibly with
     // control flow) we can assume that buffer checks will be handled by our callees.
-    boolean[] containsPrintingNodeDirectly = {false};
-    SoyTreeUtils.visitAllNodes(
-        node,
-        n -> {
-          // Don't explore expr nodes or render unit nodes.  let/param nodes may contain printing
-          // nodes but it is only relevant if they themselves are printed, in which case our later
-          // check will find them.
-          if (!(n instanceof SoyNode)
-              || n instanceof LetContentNode
-              || n instanceof CallParamContentNode) {
-            return VisitDirective.SKIP_CHILDREN;
-          }
-          SoyNode soyNode = (SoyNode) n;
-          if (directlyPrintingNode(soyNode)) {
-            containsPrintingNodeDirectly[0] = true;
-            return VisitDirective.ABORT;
-          }
-          return VisitDirective.CONTINUE;
-        });
-    return containsPrintingNodeDirectly[0];
+    return SoyTreeUtils.allNodes(
+            node,
+            n -> {
+              // Don't explore expr nodes or render unit nodes.  let/param nodes may contain
+              // printing nodes but it is only relevant if they themselves are printed, in which
+              // case our later check will find them.
+              if (!(n instanceof SoyNode)
+                  || n instanceof LetContentNode
+                  || n instanceof CallParamContentNode) {
+                return VisitDirective.SKIP_CHILDREN;
+              }
+              return VisitDirective.CONTINUE;
+            })
+        .anyMatch(SoyNodeCompiler::directlyPrintingNode);
   }
 
   @Override

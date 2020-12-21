@@ -18,12 +18,9 @@ package com.google.template.soy.conformance;
 
 import com.google.common.collect.ImmutableList;
 import com.google.template.soy.base.SourceFilePath;
-import com.google.template.soy.basetree.Node;
-import com.google.template.soy.basetree.NodeVisitor;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,17 +60,12 @@ public final class SoyConformance {
     if (rulesForFile.isEmpty()) {
       return;
     }
-    SoyTreeUtils.visitAllNodes(
-        file,
-        new NodeVisitor<Node, VisitDirective>() {
-          @Override
-          public VisitDirective exec(Node node) {
-            for (Rule<?> rule : rulesForFile) {
-              rule.checkConformance(node, errorReporter);
-            }
-            // always visit all children
-            return VisitDirective.CONTINUE;
-          }
-        });
+    SoyTreeUtils.allNodes(file)
+        .forEach(
+            node -> {
+              for (Rule<?> rule : rulesForFile) {
+                rule.checkConformance(node, errorReporter);
+              }
+            });
   }
 }
