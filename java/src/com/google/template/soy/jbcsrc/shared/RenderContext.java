@@ -24,7 +24,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.internal.i18n.BidiGlobalDir;
@@ -47,19 +46,10 @@ import javax.annotation.Nullable;
  * single instance of this object and it will be propagated throughout the render tree.
  */
 public final class RenderContext {
-  private static final CompiledTemplate EMPTY_TEMPLATE =
-      new CompiledTemplate() {
-        @Override
-        public RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context) {
-          return RenderResult.done();
-        }
-
-        @Override
-        public ContentKind kind() {
-          // The kind doesn't really matter, since the empty string can always be safely escaped
-          return ContentKind.TEXT;
-        }
-      };
+  private static RenderResult emptyTemplate(
+      LoggingAdvisingAppendable appendable, RenderContext context) {
+    return RenderResult.done();
+  }
 
   // TODO(lukes):  within this object most of these fields are constant across all renders while
   // some are expected to change frequently (the renaming maps, msgBundle and activeDelPackages).
@@ -177,7 +167,7 @@ public final class RenderContext {
         templates.selectDelTemplate(calleeName, variant, activeDelPackageSelector);
     if (callee == null) {
       if (allowEmpty) {
-        return EMPTY_TEMPLATE;
+        return RenderContext::emptyTemplate;
       }
       throw new IllegalArgumentException(
           "Found no active impl for delegate call to \""

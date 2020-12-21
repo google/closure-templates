@@ -271,8 +271,7 @@ public class BytecodeCompilerTest {
                 .create(ParamStore.EMPTY_INSTANCE, ParamStore.EMPTY_INSTANCE)
                 .render(builder, context))
         .isEqualTo(RenderResult.done());
-    String string = builder.toString();
-    return string;
+    return builder.toString();
   }
 
   @Test
@@ -1259,15 +1258,13 @@ public class BytecodeCompilerTest {
   private CompiledTemplates compileFiles(String... soyFileContents) {
     SoyFileSetParser parser = SoyFileSetParserBuilder.forFileContents(soyFileContents).build();
     ParseResult parseResult = parser.parse();
-    CompiledTemplates templates =
-        BytecodeCompiler.compile(
-                parseResult.registry(),
-                parseResult.fileSet(),
-                ErrorReporter.exploding(),
-                parser.soyFileSuppliers(),
-                parser.typeRegistry())
-            .get();
-    return templates;
+    return BytecodeCompiler.compile(
+            parseResult.registry(),
+            parseResult.fileSet(),
+            ErrorReporter.exploding(),
+            parser.soyFileSuppliers(),
+            parser.typeRegistry())
+        .get();
   }
 
   @Test

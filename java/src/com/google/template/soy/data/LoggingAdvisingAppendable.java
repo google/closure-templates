@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
+import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -362,6 +363,14 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
       String value = delegate.toString();
       delegate.setLength(0);
       return value;
+    }
+
+    public SoyValue getAsSoyValue() {
+      // Null will happen for default empty deltemplates.
+      return (getSanitizedContentKind() == ContentKind.TEXT || getSanitizedContentKind() == null)
+          ? StringData.forValue(toString())
+          : SanitizedContent.create(
+              toString(), getSanitizedContentKind(), getSanitizedContentDirectionality());
     }
 
     @Override

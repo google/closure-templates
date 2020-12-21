@@ -35,6 +35,7 @@ import com.google.protobuf.GeneratedMessage.ExtendableMessage;
 import com.google.template.soy.data.AbstractLoggingAdvisingAppendable;
 import com.google.template.soy.data.LogStatement;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.LoggingAdvisingAppendable.BufferingAppendable;
 import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.ProtoFieldInterpreter;
 import com.google.template.soy.data.SanitizedContent;
@@ -69,7 +70,6 @@ import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
 import com.google.template.soy.msgs.restricted.SoyMsgSelectPart;
-import com.google.template.soy.shared.internal.ShortCircuitables;
 import com.google.template.soy.shared.restricted.SoyJavaPrintDirective;
 import com.ibm.icu.util.ULocale;
 import java.io.IOException;
@@ -240,13 +240,7 @@ public final class JbcSrcRuntime {
   public static CompiledTemplate applyEscapers(
       CompiledTemplate delegate, ImmutableList<SoyJavaPrintDirective> directives) {
     checkState(!directives.isEmpty());
-    ContentKind kind = delegate.kind();
-    directives = ShortCircuitables.filterDirectivesForKind(kind, directives);
-    if (directives.isEmpty()) {
-      // everything was filtered, common for for delcalls from compatible contexts (html -> html)
-      return delegate;
-    }
-    return new EscapedCompiledTemplate(delegate, directives, kind);
+    return new EscapedCompiledTemplate(delegate, directives);
   }
 
   public static SoyValue getSoyListItem(List<SoyValueProvider> list, long index) {
@@ -713,17 +707,14 @@ public final class JbcSrcRuntime {
   private static final class EscapedCompiledTemplate implements CompiledTemplate {
     private final CompiledTemplate delegate;
     private final ImmutableList<SoyJavaPrintDirective> directives;
-    private final ContentKind kind;
 
     // Note: render() may be called multiple times as part of a render operation that detaches
     // halfway through.  So we need to store the buffer in a field, but we never need to reset it.
-    private final LoggingAdvisingAppendable buffer = LoggingAdvisingAppendable.buffering();
+    private final BufferingAppendable buffer = LoggingAdvisingAppendable.buffering();
 
-    EscapedCompiledTemplate(
-        CompiledTemplate delegate, List<SoyJavaPrintDirective> directives, ContentKind kind) {
+    EscapedCompiledTemplate(CompiledTemplate delegate, List<SoyJavaPrintDirective> directives) {
       this.delegate = checkNotNull(delegate);
       this.directives = ImmutableList.copyOf(directives);
-      this.kind = checkNotNull(kind);
     }
 
     @Override
@@ -731,21 +722,13 @@ public final class JbcSrcRuntime {
         throws IOException {
       RenderResult result = delegate.render(buffer, context);
       if (result.isDone()) {
-        SoyValue resultData =
-            kind == ContentKind.TEXT
-                ? StringData.forValue(buffer.toString())
-                : UnsafeSanitizedContentOrdainer.ordainAsSafe(buffer.toString(), kind);
+        SoyValue resultData = buffer.getAsSoyValue();
         for (SoyJavaPrintDirective directive : directives) {
           resultData = directive.applyForJava(resultData, ImmutableList.of());
         }
         appendable.append(resultData.coerceToString());
       }
       return result;
-    }
-
-    @Override
-    public ContentKind kind() {
-      return kind;
     }
   }
 

@@ -18,7 +18,6 @@ package com.google.template.soy.jbcsrc.shared;
 
 import com.google.errorprone.annotations.Immutable;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyAbstractValue;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.jbcsrc.api.RenderResult;
@@ -108,8 +107,4 @@ public interface CompiledTemplate {
   RenderResult render(LoggingAdvisingAppendable appendable, RenderContext context)
       throws IOException;
 
-  /**
-   * The content kind of the compiled template, used for making runtime content escaping decisions.
-   */
-  ContentKind kind();
 }

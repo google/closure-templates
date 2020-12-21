@@ -53,8 +53,6 @@ abstract class CompiledTemplateMetadata {
    */
   private static final Method RENDER_METHOD;
 
-  /** The {@link Method} signature of the {@link CompiledTemplate#kind()} method. */
-  private static final Method KIND_METHOD;
 
   /**
    * The {@link Method} signature of the {@code static CompiledTemplate.Factory factory()} method.
@@ -68,7 +66,6 @@ abstract class CompiledTemplateMetadata {
           Method.getMethod(
               CompiledTemplate.class.getMethod(
                   "render", LoggingAdvisingAppendable.class, RenderContext.class));
-      KIND_METHOD = Method.getMethod(CompiledTemplate.class.getMethod("kind"));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new RuntimeException(e);
     }
@@ -80,7 +77,6 @@ abstract class CompiledTemplateMetadata {
     return new AutoValue_CompiledTemplateMetadata(
         ConstructorRef.create(type, GENERATED_CONSTRUCTOR),
         MethodRef.createInstanceMethod(type, RENDER_METHOD).asNonNullable(),
-        MethodRef.createInstanceMethod(type, KIND_METHOD).asCheap(),
         MethodRef.createStaticMethod(type, FACTORY_METHOD).asCheap(),
         type,
         kind);
@@ -96,9 +92,6 @@ abstract class CompiledTemplateMetadata {
 
   /** The {@link CompiledTemplate#render(AdvisingAppendable, RenderContext)} method. */
   abstract MethodRef renderMethod();
-
-  /** The {@link CompiledTemplate#kind()} method. */
-  abstract MethodRef kindMethod();
 
   /** The {@code static CompiledTemplate.Factory factory()} method. */
   abstract MethodRef factoryMethod();

@@ -25,7 +25,6 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.NULLARY_IN
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.OBJECT;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_CONTEXT_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
-import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantSanitizedContentKindAsContentKind;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
 import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
@@ -202,7 +201,6 @@ final class TemplateCompiler {
             soyTypeRegistry,
             registry);
     generateTemplateMetadata();
-    generateKindMethod();
 
     generateRenderMethod(constantCompiler);
 
@@ -219,13 +217,6 @@ final class TemplateCompiler {
     classes.addAll(innerClasses.getInnerClassData());
     writer = null;
     return classes;
-  }
-
-  private void generateKindMethod() {
-    Statement.returnExpression(
-            constantSanitizedContentKindAsContentKind(templateNode.getContentKind()))
-        .writeMethod(
-            Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, template.kindMethod().method(), writer);
   }
 
   private static final Handle METAFACTORY_HANDLE =
