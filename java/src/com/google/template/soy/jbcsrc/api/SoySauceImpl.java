@@ -126,16 +126,15 @@ public final class SoySauceImpl implements SoySauce {
 
   @Override
   public RendererImpl renderTemplate(String template) {
-    CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
-    return new RendererImpl(template, factory, templates.getTemplateContentKind(template), null);
+    CompiledTemplates.TemplateData data = templates.getTemplateData(template);
+    return new RendererImpl(template, data.factory(), data.kind(), null);
   }
 
   @Override
   public RendererImpl newRenderer(SoyTemplate params) {
     String template = params.getTemplateName();
-    CompiledTemplate.Factory factory = templates.getTemplateFactory(template);
-    return new RendererImpl(
-        template, factory, templates.getTemplateContentKind(template), params.getParamsAsMap());
+    CompiledTemplates.TemplateData data = templates.getTemplateData(template);
+    return new RendererImpl(template, data.factory(), data.kind(), params.getParamsAsMap());
   }
 
   final class RendererImpl implements Renderer {

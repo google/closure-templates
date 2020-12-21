@@ -91,11 +91,6 @@ public class CompiledTemplates {
     return loader;
   }
 
-  /** Returns the strict content type of the template. */
-  public ContentKind getTemplateContentKind(String name) {
-    return getTemplateData(name).kind;
-  }
-
   /** Returns a factory for the given fully qualified template name. */
   public CompiledTemplate.Factory getTemplateFactory(String name) {
     return getTemplateData(name).factory();
@@ -161,7 +156,6 @@ public class CompiledTemplates {
     return selectedTemplate.factory();
   }
 
-  @VisibleForTesting
   public TemplateData getTemplateData(String name) {
     checkNotNull(name);
     TemplateData template = templateNameToFactory.get(name);
@@ -254,7 +248,6 @@ public class CompiledTemplates {
 
   /** This is mostly a copy of the {@link TemplateMetadata} annotation. */
   @Immutable
-  @VisibleForTesting
   public static final class TemplateData {
     final Class<? extends CompiledTemplate> templateClass;
     // lazily initialized since it is not always needed
@@ -276,7 +269,7 @@ public class CompiledTemplates {
     // general this is only needed for relatively few templates.
     @LazyInit ImmutableSortedSet<String> transitiveIjParams;
 
-    TemplateData(Class<? extends CompiledTemplate> template) {
+    public TemplateData(Class<? extends CompiledTemplate> template) {
       this.templateClass = template;
       // We pull the content kind off the templatemetadata eagerly since the parsing+reflection each
       // time is expensive.
@@ -305,7 +298,16 @@ public class CompiledTemplates {
       return templateClass;
     }
 
-    CompiledTemplate.Factory factory() {
+    public ContentKind kind() {
+      return kind;
+    }
+
+    @VisibleForTesting
+    public void setFactory(CompiledTemplate.Factory factory) {
+      this.factory = factory;
+    }
+
+    public CompiledTemplate.Factory factory() {
       CompiledTemplate.Factory local = factory;
       if (local == null) {
         Method method;

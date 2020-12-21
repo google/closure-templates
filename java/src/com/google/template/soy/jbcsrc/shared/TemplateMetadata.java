@@ -39,16 +39,16 @@ public @interface TemplateMetadata {
   /**
    * Returns the list of injected params, both {@code $ij.foo} variables and {@code @inject} params
    */
-  String[] injectedParams();
+  String[] injectedParams() default {};
 
   /** The required css for this template, plus all file level requiredcss. */
-  String[] requiredCssNames();
+  String[] requiredCssNames() default {};
 
   /** Returns the fully qualified names of all the basic templates called by this template. */
-  String[] callees();
+  String[] callees() default {};
 
   /** Returns the fully qualified names of all the delegate templates called by this template. */
-  String[] delCallees();
+  String[] delCallees() default {};
 
   /**
    * Returns metadata for deltemplates. If this is not a deltemplate it will have an empty {@link

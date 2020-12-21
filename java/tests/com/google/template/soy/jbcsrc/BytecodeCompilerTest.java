@@ -929,7 +929,6 @@ public class BytecodeCompilerTest {
 
     TemplateMetadata templateMetadata = templateClass.getAnnotation(TemplateMetadata.class);
     assertThat(templateMetadata.contentKind()).isEqualTo(ContentKind.HTML);
-    assertThat(templateInstance.kind()).isEqualTo(ContentKind.HTML);
     assertThat(templateMetadata.injectedParams()).isEmpty();
     assertThat(templateMetadata.callees()).isEmpty();
     assertThat(templateMetadata.delCallees()).isEmpty();
@@ -963,7 +962,7 @@ public class BytecodeCompilerTest {
     } catch (IllegalArgumentException expected) {
     }
     // we can still access metadata
-    assertThat(templates.getTemplateContentKind("ns.foo")).isEqualTo(ContentKind.HTML);
+    assertThat(templates.getTemplateData("ns.foo").kind()).isEqualTo(ContentKind.HTML);
   }
 
   @Test
