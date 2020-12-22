@@ -34,7 +34,6 @@ import static org.objectweb.asm.commons.GeneratorAdapter.EQ;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
-import com.google.template.soy.base.internal.FixedIdGenerator;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
@@ -93,6 +92,7 @@ import com.google.template.soy.soytree.LogNode;
 import com.google.template.soy.soytree.MsgFallbackGroupNode;
 import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
 import com.google.template.soy.soytree.PrintDirectiveNode;
 import com.google.template.soy.soytree.PrintNode;
 import com.google.template.soy.soytree.RawTextNode;
@@ -1330,6 +1330,12 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
               StandaloneNode node,
               ExtraCodeCompiler prefix,
               ExtraCodeCompiler suffix) {
+            // We want to use the LazyClosureCompiler to optionally produce a new class for this
+            // node.  To do this we create a synthetic `let` variable.
+            // We need to take `node` and reparent it as the child of the `let`, we also need to
+            // insert this let into the AST in the original location.  This is because the
+            // LazyClosureCompiler makes code generation decisions by querying ancestors, so it
+            // needs to be part of the main tree.
             LetContentNode fakeLet =
                 LetContentNode.forVariable(
                     /*id=*/ -1,
@@ -1337,12 +1343,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
                     "$" + phname,
                     node.getSourceLocation(),
                     SanitizedContentKind.TEXT);
-            // copy the node so we don't end up removing it from the parent as a side effect.
-            fakeLet.addChild(SoyTreeUtils.cloneWithNewIds(node, new FixedIdGenerator(-1)));
-            fakeLet.setParent(node.getParent());
-            return lazyClosureCompiler
-                .compileLazyContent("ph", fakeLet, phname, prefix, suffix)
-                .soyValueProvider();
+            MsgPlaceholderNode placeholderParent = (MsgPlaceholderNode) node.getParent();
+            checkState(placeholderParent.numChildren() == 1);
+            fakeLet.addChild(node); // NOTE: this removes node from placeholderParent
+            placeholderParent.addChild(fakeLet);
+            Expression expression =
+                lazyClosureCompiler
+                    .compileLazyContent("ph", fakeLet, phname, prefix, suffix)
+                    .soyValueProvider();
+            placeholderParent.removeChild(fakeLet);
+            placeholderParent.addChild(node); // Restore the tree to the prior state.
+            return expression;
           }
         });
   }
