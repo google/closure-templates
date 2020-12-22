@@ -19,7 +19,7 @@ The following are valid HTML-tag templates:
 {/template}
 
 {template example2 kind="html<div>"}
-  <{example3()></> // Element composition call
+  <{example3()}></> // Element composition call
 {/template}
 ```
 
