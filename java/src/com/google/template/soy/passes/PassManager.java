@@ -484,12 +484,6 @@ public final class PassManager {
         }
       }
 
-      // Because conformance exits abruptly after this pass we must ensure that the AST is left in a
-      // complete state. Therefore this pass should come after ResolveExpressionTypesPass and
-      // others.
-      addPass(
-          new SoyConformancePass(conformanceConfig, errorReporter),
-          partialTemplateRegistryPassesBuilder);
       addPass(
           new ResolvePackageRelativeCssNamesPass(errorReporter),
           partialTemplateRegistryPassesBuilder);
@@ -521,6 +515,12 @@ public final class PassManager {
       // use.
       ImmutableList.Builder<CompilerFileSetPass> crossTemplateCheckingPassesBuilder =
           ImmutableList.builder();
+      // Because conformance exits abruptly after this pass we must ensure that the AST is left in a
+      // complete state. Therefore this pass should come after ResolveExpressionTypesPass and
+      // others.
+      addPass(
+          new SoyConformancePass(conformanceConfig, errorReporter),
+          crossTemplateCheckingPassesBuilder);
 
       addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
