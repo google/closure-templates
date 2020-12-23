@@ -23,7 +23,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -51,7 +50,6 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -129,9 +127,6 @@ public final class SoyTreeUtils {
   /**
    * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
    * node. The order of visiting is breadth first.
-   *
-   * <p>If the visitor return {@code false} from {@link NodeVisitor#exec(Node)} we will short
-   * circuit visiting.
    */
   public static void visitAllNodes(Node node, NodeVisitor<? super Node, VisitDirective> visitor) {
     long unused = allNodes(node, visitor).count();
@@ -147,56 +142,38 @@ public final class SoyTreeUtils {
    * visitor} can return {@link VisitDirective#SKIP_CHILDREN} to skip sections of the tree.
    */
   public static Stream<? extends Node> allNodes(
-      Node node, NodeVisitor<? super Node, VisitDirective> visitor) {
-
-    Function<Node, Stream<? extends Node>> getChildren =
-        n -> {
-          switch (visitor.exec(n)) {
-            case CONTINUE:
-              Stream<? extends Node> parentStream = Stream.empty();
-              Stream<? extends Node> exprHolderStream = Stream.empty();
-              if (n instanceof ParentNode<?>) {
-                parentStream = ((ParentNode<?>) n).getChildren().stream();
-              }
-              if (n instanceof ExprHolderNode) {
-                exprHolderStream = ((ExprHolderNode) n).getExprList().stream();
-              }
-              return Streams.concat(parentStream, exprHolderStream);
-            case SKIP_CHILDREN:
-              return Stream.empty();
-          }
-          throw new AssertionError();
-        };
-
-    return bfsInternal(node, getChildren);
-  }
-
-  /** Generic BFS on tree -> Stream API. */
-  private static <T> Stream<? extends T> bfsInternal(
-      T node, Function<? super T, Stream<? extends T>> childrenGenerator) {
-    Deque<Stream<? extends T>> generations = new ArrayDeque<>();
-    generations.add(Stream.of(node));
-
-    Spliterator<Stream<? extends T>> spliterator =
-        new AbstractSpliterator<Stream<? extends T>>(-1, Spliterator.ORDERED) {
+      Node root, NodeVisitor<? super Node, VisitDirective> visitor) {
+    Deque<Node> generations = new ArrayDeque<>();
+    generations.add(root);
+    return StreamSupport.stream(
+        new AbstractSpliterator<Node>(
+            // Our Baseclass says to pass MAX_VALUE for unsized streams
+            Long.MAX_VALUE,
+            // The order is meaningfull and every item returned is unique.
+            Spliterator.ORDERED | Spliterator.DISTINCT) {
           @Override
-          public boolean tryAdvance(Consumer<? super Stream<? extends T>> action) {
-            if (generations.isEmpty()) {
+          public boolean tryAdvance(Consumer<? super Node> action) {
+            Node next = generations.poll();
+            if (next == null) {
               return false;
-            } else {
-              action.accept(generations.remove());
-              return true;
             }
+            switch (visitor.exec(next)) {
+              case SKIP_CHILDREN:
+                break;
+              case CONTINUE:
+                if (next instanceof ParentNode<?>) {
+                  generations.addAll(((ParentNode<?>) next).getChildren());
+                }
+                if (next instanceof ExprHolderNode) {
+                  generations.addAll(((ExprHolderNode) next).getExprList());
+                }
+                break;
+            }
+            action.accept(next);
+            return true;
           }
-        };
-
-    Stream<? extends T> singleStream =
-        StreamSupport.stream(spliterator, /* parallel= */ false).flatMap(Function.identity());
-    return singleStream.peek(
-        n -> {
-          Stream<? extends T> next = childrenGenerator.apply(n);
-          generations.add(next);
-        });
+        },
+        /* parallel= */ false);
   }
 
   /**
