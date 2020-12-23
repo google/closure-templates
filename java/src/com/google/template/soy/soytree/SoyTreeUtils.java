@@ -137,6 +137,19 @@ public final class SoyTreeUtils {
     return allNodes(node, SoyTreeUtils::visitAll);
   }
 
+  public static <T extends Node> Stream<T> allNodesOfType(Node rootSoyNode, Class<T> classObject) {
+    // optimization to avoid navigating into expr trees if we can't possibly match anything
+    boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
+    return allNodes(
+            rootSoyNode,
+            exploreExpressions
+                ? SoyTreeUtils::visitAll
+                : n ->
+                    n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE)
+        .filter(classObject::isInstance)
+        .map(classObject::cast);
+  }
+
   /**
    * Returns a breadth-first stream traversal of the AST tree starting at {@code node}. {@code
    * visitor} can return {@link VisitDirective#SKIP_CHILDREN} to skip sections of the tree.
@@ -195,29 +208,18 @@ public final class SoyTreeUtils {
    */
   public static <T extends Node> ImmutableList<T> getAllMatchingNodesOfType(
       Node rootSoyNode, Class<T> classObject, Predicate<T> filter) {
-    // optimization to avoid navigating into expr trees if we can't possibly match anything
-    boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
-    return allNodes(
-            rootSoyNode,
-            exploreExpressions
-                ? SoyTreeUtils::visitAll
-                : n ->
-                    n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE)
-        .filter(classObject::isInstance)
-        .map(classObject::cast)
-        .filter(filter)
-        .collect(toImmutableList());
+    return allNodesOfType(rootSoyNode, classObject).filter(filter).collect(toImmutableList());
   }
 
   /**
    * Returns all {@link FunctionNode}s in a tree that are calls of the given {@link SoyFunction}.
    */
   public static ImmutableList<FunctionNode> getAllFunctionInvocations(
-      Node rootSoyNode, final SoyFunction functionToMatch) {
+      Node rootSoyNode, SoyFunction functionToMatch) {
     return getAllMatchingNodesOfType(
         rootSoyNode,
         FunctionNode.class,
-        function -> functionToMatch.equals(function.getSoyFunction()));
+        function -> function.isResolved() && functionToMatch.equals(function.getSoyFunction()));
   }
 
   /**
