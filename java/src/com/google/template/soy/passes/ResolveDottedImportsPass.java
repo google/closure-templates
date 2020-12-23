@@ -79,7 +79,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
     SoyTreeUtils.getAllNodesOfType(file, VarRefNode.class).stream()
         .filter(
             v -> {
-              if (v.getDefnDecl() == null || !v.getDefnDecl().hasType()) {
+              if (!v.hasType()) {
                 return false;
               }
               return v.getDefnDecl().type() instanceof ImportType;

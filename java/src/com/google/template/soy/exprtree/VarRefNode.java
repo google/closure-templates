@@ -43,7 +43,7 @@ public final class VarRefNode extends AbstractExprNode {
    * For cases where we are able to infer a stronger type than the variable, this will contain the
    * stronger type which overrides the variable's type.
    */
-  private SoyType subtituteType;
+  private SoyType substituteType;
 
   /**
    * @param name The name of the variable.
@@ -59,7 +59,7 @@ public final class VarRefNode extends AbstractExprNode {
   private VarRefNode(VarRefNode orig, CopyState copyState) {
     super(orig, copyState);
     this.name = orig.name;
-    this.subtituteType = orig.subtituteType;
+    this.substituteType = orig.substituteType;
     if (orig.defn != null) {
       if (orig.defn instanceof ImmutableVarDefn) {
         this.defn = orig.defn;
@@ -81,7 +81,11 @@ public final class VarRefNode extends AbstractExprNode {
   public SoyType getType() {
     // We won't know the type until we know the variable declaration.
     Preconditions.checkState(defn != null);
-    return subtituteType != null ? subtituteType : defn.type();
+    return substituteType != null ? substituteType : defn.type();
+  }
+
+  public boolean hasType() {
+    return defn != null && (substituteType != null || defn.hasType());
   }
 
   /** Returns the source of the variable reference, possibly with leading "$". */
@@ -133,7 +137,7 @@ public final class VarRefNode extends AbstractExprNode {
    * @param type The overridden type value.
    */
   public void setSubstituteType(SoyType type) {
-    subtituteType = type;
+    substituteType = type;
   }
 
   @Override
