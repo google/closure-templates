@@ -99,7 +99,7 @@ public final class MethodCallNode extends DataAccessNode implements ExprNode.Cal
   }
 
   public SoyMethod getSoyMethod() {
-    checkState(method != null, "setSoyMethod() hasn't been called yet");
+    checkState(method != null, "setSoyMethod() hasn't been called yet at " + getSourceLocation());
     return method;
   }
 

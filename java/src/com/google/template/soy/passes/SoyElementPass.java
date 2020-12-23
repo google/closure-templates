@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -272,8 +273,9 @@ public final class SoyElementPass implements CompilerFileSetPass {
     if (callee != null) {
       calleeKind = callee.getTemplateContentKind();
     } else {
-      calleeKind =
-          registry.getBasicTemplateOrElement(delegateName).getTemplateType().getContentKind();
+      TemplateMetadata metadata = registry.getBasicTemplateOrElement(delegateName);
+      Preconditions.checkNotNull(metadata, "No metadata for %s", delegateName);
+      calleeKind = metadata.getTemplateType().getContentKind();
     }
 
     if (calleeKind instanceof ElementContentKind) {
