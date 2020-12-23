@@ -774,6 +774,7 @@ public final class SoyFileSet {
                     .allowV1Expression()
                     .desugarHtmlAndStateNodes(false)
                     .optimize(false)
+                    .astRewrites(AstRewrites.TRICORDER)
                     .addHtmlAttributesForDebugging(false)
                     // TODO(lukes): kill the pass continuation mechanism
                     .addPassContinuationRule(
