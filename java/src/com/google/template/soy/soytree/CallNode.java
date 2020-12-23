@@ -225,6 +225,10 @@ public abstract class CallNode extends AbstractParentCommandNode<CallParamNode>
     return keyExpr;
   }
 
+  public void setKeyExpr(ExprRootNode expr) {
+    this.keyExpr = expr;
+  }
+
   public boolean getIsPcData() {
     return isPcData;
   }

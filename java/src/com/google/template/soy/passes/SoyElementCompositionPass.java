@@ -48,9 +48,11 @@ import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfNode;
+import com.google.template.soy.soytree.KeyNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.SkipNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
@@ -95,6 +97,9 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DUPLICATE_ATTRIBUTE =
       SoyErrorKind.of("Attribute specified multiple times.");
+
+  private static final SoyErrorKind SKIP_NODE_NOT_ALLOWED =
+      SoyErrorKind.of("Skip nodes are not allowed on this template call.");
 
   private final ErrorReporter errorReporter;
   private final ImmutableList<? extends SoyPrintDirective> printDirectives;
@@ -261,6 +266,10 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                       attributesNode,
                       Optional.of(ref));
                 }
+              } else if (c instanceof KeyNode) {
+                call.setKeyExpr(((KeyNode) c).getExpr().copy(new CopyState()));
+              } else if (c instanceof SkipNode) {
+                errorReporter.report(c.getSourceLocation(), SKIP_NODE_NOT_ALLOWED);
               } else {
                 maybeConsumeAttribute(
                     c,
