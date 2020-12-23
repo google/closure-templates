@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.TriState;
 import com.google.template.soy.conformance.ValidatedConformanceConfig;
@@ -38,7 +39,7 @@ import com.google.template.soy.soytree.TemplateNameRegistry;
 import com.google.template.soy.soytree.TemplateRegistry;
 import com.google.template.soy.soytree.TemplatesPerFile;
 import com.google.template.soy.types.SoyTypeRegistry;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -167,15 +168,14 @@ public final class PassManager {
               + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
     }
     ImmutableList<Class<? extends CompilerPass>> shouldNotHaveAlreadyRun = pass.runBefore();
-    if (!Collections.disjoint(executed, shouldNotHaveAlreadyRun)) {
+    Set<Class<? extends CompilerPass>> ranButShouldntHave =
+        Sets.intersection(new HashSet<>(shouldNotHaveAlreadyRun), executed);
+    if (!ranButShouldntHave.isEmpty()) {
       throw new IllegalStateException(
           "Attempted to execute pass "
               + pass.name()
               + " but it should always run before ("
-              + shouldNotHaveAlreadyRun.stream()
-                  .filter(dep -> !executed.contains(dep))
-                  .map(Class::getSimpleName)
-                  .collect(joining(", "))
+              + ranButShouldntHave.stream().map(Class::getSimpleName).collect(joining(", "))
               + ").\n Passes executed so far: "
               + executed.stream().map(Class::getSimpleName).collect(joining(", ")));
     }

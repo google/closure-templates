@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.passes.PassManager.AstRewrites;
@@ -76,19 +77,12 @@ public final class PassManagerTest {
             .addPassContinuationRule(ResolvePluginsPass.class, PassContinuationRule.STOP_AFTER_PASS)
             .build();
 
+    ImmutableList<String> passes = names(manager.partialTemplateRegistryPasses);
+    assertThat(Iterables.getLast(passes)).isEqualTo("ResolvePlugins");
+
+    // CheckNonEmptyMsgNodesPass is a pass installed right after ResolvePluginsPass.
     assertThat(names(manager.partialTemplateRegistryPasses))
-        .containsExactly(
-            "ContentSecurityPolicyNonceInjection",
-            "CheckEscapingSanityFile",
-            "ResolveProtoImports",
-            "ResolveTemplateImports",
-            "RestoreGlobals",
-            "RestoreCompilerChecks",
-            "ResolveTemplateFunctions",
-            "ResolveTemplateNames",
-            "ResolveTemplateParamTypes",
-            "ResolvePlugins")
-        .inOrder();
+        .doesNotContain("CheckNonEmptyMsgNodes");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
@@ -100,18 +94,7 @@ public final class PassManagerTest {
                 ResolvePluginsPass.class, PassContinuationRule.STOP_BEFORE_PASS)
             .build();
 
-    assertThat(names(manager.partialTemplateRegistryPasses))
-        .containsExactly(
-            "ContentSecurityPolicyNonceInjection",
-            "CheckEscapingSanityFile",
-            "ResolveProtoImports",
-            "ResolveTemplateImports",
-            "RestoreGlobals",
-            "RestoreCompilerChecks",
-            "ResolveTemplateFunctions",
-            "ResolveTemplateNames",
-            "ResolveTemplateParamTypes")
-        .inOrder();
+    assertThat(names(manager.partialTemplateRegistryPasses)).doesNotContain("ResolvePlugins");
     assertThat(names(manager.crossTemplateCheckingPasses)).isEmpty();
   }
 
