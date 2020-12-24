@@ -464,6 +464,8 @@ public final class PassManager {
         // and before ResolveExpressionTypesPass (since we insert expressions).
         addPass(new AddDebugAttributesPass(), partialTemplateRegistryPassesBuilder);
       }
+      addPass(
+          new CheckAllFunctionsResolvedPass(pluginResolver), partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {
         addPass(new CheckDeclaredTypesPass(errorReporter), partialTemplateRegistryPassesBuilder);
         // Run before ResolveExpressionTypesPass since this makes type analysis on null safe

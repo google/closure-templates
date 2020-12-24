@@ -33,6 +33,7 @@ import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
 import com.google.template.soy.error.SoyErrors;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.plugin.java.internal.PluginAnalyzer;
 import com.google.template.soy.plugin.java.restricted.SoyJavaSourceFunction;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /** Encapsulates the logic for looking up plugins. */
 public final class PluginResolver {
@@ -123,7 +125,6 @@ public final class PluginResolver {
   private static final ImmutableSet<String> COLLISION_WHITELIST =
       ImmutableSet.<String>builder()
           .build();
-
 
   private static final SoySourceFunction ERROR_PLACEHOLDER_FUNCTION = new SoySourceFunction() {};
 
@@ -323,11 +324,11 @@ public final class PluginResolver {
    * <p>An error will be reported according to the current {@link Mode} and a placeholder function
    * will be returned if it cannot be found.
    */
+  @Nullable
   public Object lookupSoyFunction(String name, int numArgs, SourceLocation location) {
     Object soyFunction = functions.get(name);
     if (soyFunction == null) {
-      reportMissing(location, "function", name, functions.keySet());
-      return ERROR_PLACEHOLDER_FUNCTION;
+      return null;
     }
     Set<Integer> validArgsSize = getValidArgsSizes(soyFunction);
     checkNumArgs("function", validArgsSize, numArgs, location);
@@ -347,9 +348,31 @@ public final class PluginResolver {
     return methods.keySet();
   }
 
+  public void reportUnresolved(FunctionNode fct) {
+    Preconditions.checkArgument(!fct.isResolved());
+    if (fct.hasStaticName()) {
+      reportMissing(
+          fct.getFunctionNameLocation(),
+          "function",
+          fct.getStaticFunctionName(),
+          functions.keySet());
+    } else {
+      reportMissing(
+          fct.getNameExpr().getSourceLocation(),
+          "function",
+          fct.getNameExpr().toSourceString(),
+          "");
+    }
+    fct.setSoyFunction(ERROR_PLACEHOLDER_FUNCTION);
+  }
+
   private void reportMissing(
       SourceLocation location, String type, String name, Set<String> alternatives) {
     String didYouMean = SoyErrors.getDidYouMeanMessage(alternatives, name);
+    reportMissing(location, type, name, didYouMean);
+  }
+
+  private void reportMissing(SourceLocation location, String type, String name, String didYouMean) {
     switch (mode) {
       case REQUIRE_DEFINITIONS:
         reporter.report(location, UNKNOWN_PLUGIN, type, name, didYouMean);

@@ -67,6 +67,15 @@ final class ResolvePluginsPass implements CompilerFilePass {
               return;
             }
 
+            // Built-in and plug-in functions take precedence over var refs.
+            Object impl =
+                resolver.lookupSoyFunction(
+                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation());
+            if (impl != null) {
+              node.setSoyFunction(impl);
+              return;
+            }
+
             // If the name of the function is resolvable to a var def then replace the function
             // identifier with a function name expression. Currently only proto message types are
             // represented as VarDefn and all other symbols have been turned back into GlobalNodes
@@ -89,13 +98,8 @@ final class ResolvePluginsPass implements CompilerFilePass {
                 // Set the soy function field to "resolve" the function.
                 newFunct.setSoyFunction(soyFunction);
                 node.getParent().replaceChild(node, newFunct);
-                return;
               }
             }
-
-            node.setSoyFunction(
-                resolver.lookupSoyFunction(
-                    node.getStaticFunctionName(), node.numChildren(), node.getSourceLocation()));
           }
         };
 
