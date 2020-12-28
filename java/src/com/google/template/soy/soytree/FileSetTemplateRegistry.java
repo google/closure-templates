@@ -122,7 +122,11 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
           // Case 1: Basic Template or Element node
           TemplateMetadata prev =
               basicTemplatesOrElementsMap.put(template.getTemplateName(), template);
-          if (prev != null) {
+          if (prev != null
+              && !prev.getSourceLocation()
+                  .getFileName()
+                  .equals(template.getSourceLocation().getFileName())) {
+            // Collisions in the same file are reported in LocalVariables.
             errorReporter.report(
                 template.getSourceLocation(),
                 DUPLICATE_TEMPLATES,

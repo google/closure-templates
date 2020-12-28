@@ -50,6 +50,8 @@ public interface VarDefn {
 
     // State variable
     STATE,
+    // A local template name.
+    TEMPLATE,
     // Undeclared variable reference (for legacy templates).
     UNDECLARED,
   }
