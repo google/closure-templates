@@ -41,9 +41,8 @@ final class RewriteGlobalsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(file, GlobalNode.class)) {
-      resolveGlobal(file, global);
-    }
+    SoyTreeUtils.allNodesOfType(file, GlobalNode.class)
+        .forEach(global -> resolveGlobal(file, global));
   }
 
   private void resolveGlobal(SoyFileNode file, GlobalNode global) {

@@ -66,17 +66,17 @@ final class BasicHtmlValidationPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (HtmlTagNode node : SoyTreeUtils.getAllNodesOfType(file, HtmlTagNode.class)) {
-      checkForDuplicateAttributes(node);
-      if (node instanceof HtmlCloseTagNode) {
-        checkCloseTagChildren((HtmlCloseTagNode) node);
-      }
-    }
-    for (RenderUnitNode unit : SoyTreeUtils.getAllNodesOfType(file, RenderUnitNode.class)) {
-      if (unit.getContentKind() == SanitizedContentKind.ATTRIBUTES) {
-        checkForDuplicateAttributes(unit);
-      }
-    }
+    SoyTreeUtils.allNodesOfType(file, HtmlTagNode.class)
+        .forEach(
+            node -> {
+              checkForDuplicateAttributes(node);
+              if (node instanceof HtmlCloseTagNode) {
+                checkCloseTagChildren((HtmlCloseTagNode) node);
+              }
+            });
+    SoyTreeUtils.allNodesOfType(file, RenderUnitNode.class)
+        .filter(unit -> unit.getContentKind() == SanitizedContentKind.ATTRIBUTES)
+        .forEach(this::checkForDuplicateAttributes);
   }
 
   /**

@@ -38,7 +38,7 @@ final class GetExtensionRewriteParamPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    SoyTreeUtils.getAllNodesOfType(file, MethodCallNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, MethodCallNode.class)
         .filter(MethodCallNode::isMethodResolved)
         .filter(
             n -> {

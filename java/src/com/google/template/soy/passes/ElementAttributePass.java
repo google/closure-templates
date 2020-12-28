@@ -146,7 +146,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
     Map<String, TemplateNode> allElementsThisCompile = new HashMap<>();
 
     // Rewrite all @attribute values in root elements.
-    SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
         .filter(
             t ->
                 t.getTemplateContentKind() instanceof ElementContentKind
@@ -158,13 +158,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
             });
 
     // All other @attributes (outside of root elements) are illegal.
-    SoyTreeUtils.getAllMatchingNodesOfType(
-            file,
-            TemplateNode.class,
-            t -> t.getHtmlElementMetadata() != null && getDelegateCall(t).isEmpty())
+    SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
+        .filter(t -> t.getHtmlElementMetadata() != null && getDelegateCall(t).isEmpty())
         .forEach(
             t -> {
-              SoyTreeUtils.getAllNodesOfType(t, HtmlAttributeNode.class).stream()
+              SoyTreeUtils.allNodesOfType(t, HtmlAttributeNode.class)
                   .map(HtmlAttributeNode.class::cast)
                   .filter(HtmlAttributeNode::isSoyAttr)
                   .forEach(
@@ -184,7 +182,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   private <T extends Node> void checkAttributeTypes(SoyFileNode file) {
-    SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, TemplateNode.class)
         .flatMap(t -> t.getHeaderParams().stream())
         .filter(p -> p instanceof AttrParam)
         .map(AttrParam.class::cast)
@@ -225,9 +223,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
             pluginResolver.lookupSoyFunction("isNonnull", 1, SourceLocation.UNKNOWN);
     ImmutableSet.Builder<String> foundNormalAttr = ImmutableSet.builder();
 
-    SoyTreeUtils.getAllMatchingNodesOfType(
-            openTagNode, HtmlAttributeNode.class, attr -> attr.getStaticKey() != null)
-        .stream()
+    SoyTreeUtils.allNodesOfType(openTagNode, HtmlAttributeNode.class)
+        .filter(attr -> attr.getStaticKey() != null)
         .forEach(
             attrNode -> {
               String attrKey = attrNode.getStaticKey();
@@ -538,7 +535,7 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private void checkAttributeRefs(TemplateNode templateNode, Set<AttrParam> attrs) {
     // No standard var refs to @attribute params are allowed.
-    SoyTreeUtils.getAllNodesOfType(templateNode, VarRefNode.class).stream()
+    SoyTreeUtils.allNodesOfType(templateNode, VarRefNode.class)
         .filter(ref -> attrs.contains(ref.getDefnDecl()))
         .forEach(
             attrRef ->
@@ -551,12 +548,8 @@ final class ElementAttributePass implements CompilerFileSetPass {
   }
 
   static Optional<HtmlOpenTagNode> getElementOpen(TemplateNode node) {
-    List<HtmlOpenTagNode> openTags =
-        SoyTreeUtils.getAllMatchingNodesOfType(
-            node, HtmlOpenTagNode.class, HtmlOpenTagNode::isElementRoot);
-    if (openTags.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(openTags.get(0));
+    return SoyTreeUtils.allNodesOfType(node, HtmlOpenTagNode.class)
+        .filter(HtmlOpenTagNode::isElementRoot)
+        .findFirst();
   }
 }

@@ -183,7 +183,7 @@ final class RewriteGenderMsgsPass implements CompilerFilePass {
 
   private static List<MsgPlaceholderNode> allPlaceholders(List<StandaloneNode> nodes) {
     return nodes.stream()
-        .flatMap(node -> SoyTreeUtils.getAllNodesOfType(node, MsgPlaceholderNode.class).stream())
+        .flatMap(node -> SoyTreeUtils.allNodesOfType(node, MsgPlaceholderNode.class))
         .collect(toList());
   }
 

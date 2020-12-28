@@ -235,13 +235,12 @@ public final class SimplifyVisitor {
      */
     private List<RefAndHolder> getAllRefs(TemplateNode template) {
       List<RefAndHolder> refs = new ArrayList<>();
-      for (ExprHolderNode holder : SoyTreeUtils.getAllNodesOfType(template, ExprHolderNode.class)) {
-        for (ExprRootNode root : holder.getExprList()) {
-          for (VarRefNode ref : SoyTreeUtils.getAllNodesOfType(root, VarRefNode.class)) {
-            refs.add(new RefAndHolder(ref, holder));
-          }
-        }
-      }
+      SoyTreeUtils.allNodesOfType(template, ExprHolderNode.class)
+          .forEach(
+              holder ->
+                  holder.getExprList().stream()
+                      .flatMap(root -> SoyTreeUtils.allNodesOfType(root, VarRefNode.class))
+                      .forEach(ref -> refs.add(new RefAndHolder(ref, holder))));
       return refs;
     }
 
@@ -544,7 +543,7 @@ public final class SimplifyVisitor {
     }
 
     private boolean containsLoggingFunction(RenderUnitNode node) {
-      return SoyTreeUtils.getAllNodesOfType(node, FunctionNode.class).stream()
+      return SoyTreeUtils.allNodesOfType(node, FunctionNode.class)
           .anyMatch(n -> n.getSoyFunction() instanceof LoggingFunction);
     }
 

@@ -18,6 +18,7 @@ package com.google.template.soy.jbcsrc;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.template.soy.jbcsrc.StandardNames.IJ_FIELD;
 import static com.google.template.soy.jbcsrc.StandardNames.PARAMS_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
@@ -27,10 +28,9 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.RENDER_CON
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_RECORD_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createLocal;
 import static com.google.template.soy.jbcsrc.restricted.LocalVariable.createThisVar;
-import static com.google.template.soy.soytree.SoyTreeUtils.getAllNodesOfType;
+import static com.google.template.soy.soytree.SoyTreeUtils.allNodesOfType;
 
 import com.google.auto.value.AutoAnnotation;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
@@ -66,7 +66,6 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
 import com.google.template.soy.soytree.LetValueNode;
 import com.google.template.soy.soytree.SoyNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.Visibility;
@@ -81,7 +80,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -150,16 +148,9 @@ final class TemplateCompiler {
   }
 
   private static boolean hasVeMetadataDefault(TemplateParam param) {
-    if (param.hasDefault()) {
-      List<VeLiteralNode> veChildren =
-          SoyTreeUtils.getAllNodesOfType(param.defaultValue(), VeLiteralNode.class);
-      for (VeLiteralNode ve : veChildren) {
-        if (ve.getLoggableElement().hasMetadata()) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return param.hasDefault()
+        && allNodesOfType(param.defaultValue(), VeLiteralNode.class)
+            .anyMatch(ve -> ve.getLoggableElement().hasMetadata());
   }
 
   /**
@@ -277,23 +268,21 @@ final class TemplateCompiler {
         Converters.contentKindfromSanitizedContentKind(templateNode.getContentKind());
 
     // using linked hash sets below for determinism
-    Set<String> uniqueIjs = new LinkedHashSet<>();
-    for (VarRefNode var : getAllNodesOfType(templateNode, VarRefNode.class)) {
-      if (var.isInjected()) {
-        uniqueIjs.add(var.getNameWithoutLeadingDollar());
-      }
-    }
+    Set<String> uniqueIjs =
+        allNodesOfType(templateNode, VarRefNode.class)
+            .filter(VarRefNode::isInjected)
+            .map(VarRefNode::getNameWithoutLeadingDollar)
+            .collect(toImmutableSet());
 
-    Set<String> callees = new LinkedHashSet<>();
-    for (TemplateLiteralNode templateLiteralNode :
-        getAllNodesOfType(templateNode, TemplateLiteralNode.class)) {
-      callees.add(Preconditions.checkNotNull(templateLiteralNode.getResolvedName()));
-    }
+    Set<String> callees =
+        allNodesOfType(templateNode, TemplateLiteralNode.class)
+            .map(TemplateLiteralNode::getResolvedName)
+            .collect(toImmutableSet());
 
-    Set<String> delCallees = new LinkedHashSet<>();
-    for (CallDelegateNode call : getAllNodesOfType(templateNode, CallDelegateNode.class)) {
-      delCallees.add(Preconditions.checkNotNull(call.getDelCalleeName()));
-    }
+    Set<String> delCallees =
+        allNodesOfType(templateNode, CallDelegateNode.class)
+            .map(CallDelegateNode::getDelCalleeName)
+            .collect(toImmutableSet());
 
     TemplateMetadata.DelTemplateMetadata deltemplateMetadata;
     if (templateNode.getKind() == SoyNode.Kind.TEMPLATE_DELEGATE_NODE) {

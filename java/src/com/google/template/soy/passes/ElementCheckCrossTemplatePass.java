@@ -52,11 +52,10 @@ public final class ElementCheckCrossTemplatePass implements CompilerFileSetPass 
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
-    for (SoyFileNode file : sourceFiles) {
-      SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class).stream()
-          .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
-          .forEach(this::processTemplate);
-    }
+    sourceFiles.stream()
+        .flatMap(file -> SoyTreeUtils.allNodesOfType(file, TemplateNode.class))
+        .filter(t -> t.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind)
+        .forEach(this::processTemplate);
     return Result.CONTINUE;
   }
 

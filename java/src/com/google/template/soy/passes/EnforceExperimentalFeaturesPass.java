@@ -74,17 +74,17 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
     }
 
     if (!features.contains("enableTemplateElementKind")) {
-      for (HtmlCloseTagNode closeTagNode :
-          SoyTreeUtils.getAllNodesOfType(file, HtmlCloseTagNode.class)) {
-        if (closeTagNode.getTagName().isWildCard()) {
-          reporter.report(closeTagNode.getSourceLocation(), WILDCARD_CLOSE_TAG_NOT_GA);
-        }
-      }
-      for (HtmlTagNode tagNode : SoyTreeUtils.getAllNodesOfType(file, HtmlTagNode.class)) {
-        if (tagNode.getTagName().isTemplateCall()) {
-          reporter.report(tagNode.getSourceLocation(), SOY_ELEMENT_COMPOSITION_NOT_GA);
-        }
-      }
+      SoyTreeUtils.allNodesOfType(file, HtmlCloseTagNode.class)
+          .filter(closeTagNode -> closeTagNode.getTagName().isWildCard())
+          .forEach(
+              closeTagNode ->
+                  reporter.report(closeTagNode.getSourceLocation(), WILDCARD_CLOSE_TAG_NOT_GA));
+
+      SoyTreeUtils.allNodesOfType(file, HtmlTagNode.class)
+          .filter(tagNode -> tagNode.getTagName().isTemplateCall())
+          .forEach(
+              tagNode ->
+                  reporter.report(tagNode.getSourceLocation(), SOY_ELEMENT_COMPOSITION_NOT_GA));
 
       for (TemplateNode tmplNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
         if (tmplNode.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind

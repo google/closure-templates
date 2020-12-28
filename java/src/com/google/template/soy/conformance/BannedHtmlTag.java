@@ -71,7 +71,7 @@ final class BannedHtmlTag extends Rule<HtmlOpenTagNode> {
     return this.bannedPossiblyPresentAttributes.stream()
         .allMatch(
             bannedAttrName ->
-                SoyTreeUtils.getAllNodesOfType(node, HtmlAttributeNode.class).stream()
+                SoyTreeUtils.allNodesOfType(node, HtmlAttributeNode.class)
                     .anyMatch(attr -> attr.definitelyMatchesAttributeName(bannedAttrName)));
   }
 }

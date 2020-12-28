@@ -16,6 +16,7 @@
 package com.google.template.soy.soytree;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -111,34 +112,37 @@ public abstract class TemplateMetadata {
 
   private static ImmutableList<DataAllCallSituation> dataAllCallSituationFromTemplate(
       TemplateNode node) {
-    ImmutableSet.Builder<DataAllCallSituation> calls = ImmutableSet.builder();
-    for (CallNode call : SoyTreeUtils.getAllNodesOfType(node, CallNode.class)) {
-      if (call.isPassingAllData()) {
-        DataAllCallSituation.Builder builder = DataAllCallSituation.builder();
-        ImmutableSet.Builder<String> explicitlyPassedParams = ImmutableSet.builder();
-        for (CallParamNode param : call.getChildren()) {
-          explicitlyPassedParams.add(param.getKey().identifier());
-        }
-        builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
-        switch (call.getKind()) {
-          case CALL_BASIC_NODE:
-            builder.setDelCall(false);
-            if (((CallBasicNode) call).isStaticCall()) {
-              builder.setTemplateName(((CallBasicNode) call).getCalleeName());
-            } else {
-              builder.setTemplateName("$error");
-            }
-            break;
-          case CALL_DELEGATE_NODE:
-            builder.setDelCall(true).setTemplateName(((CallDelegateNode) call).getDelCalleeName());
-            break;
-          default:
-            throw new AssertionError("unexpected call kind: " + call.getKind());
-        }
-        calls.add(builder.build());
-      }
-    }
-    return calls.build().asList();
+    return SoyTreeUtils.allNodesOfType(node, CallNode.class)
+        .filter(CallNode::isPassingAllData)
+        .map(
+            call -> {
+              DataAllCallSituation.Builder builder = DataAllCallSituation.builder();
+              ImmutableSet.Builder<String> explicitlyPassedParams = ImmutableSet.builder();
+              for (CallParamNode param : call.getChildren()) {
+                explicitlyPassedParams.add(param.getKey().identifier());
+              }
+              builder.setExplicitlyPassedParameters(explicitlyPassedParams.build());
+              switch (call.getKind()) {
+                case CALL_BASIC_NODE:
+                  builder.setDelCall(false);
+                  if (((CallBasicNode) call).isStaticCall()) {
+                    builder.setTemplateName(((CallBasicNode) call).getCalleeName());
+                  } else {
+                    builder.setTemplateName("$error");
+                  }
+                  break;
+                case CALL_DELEGATE_NODE:
+                  builder
+                      .setDelCall(true)
+                      .setTemplateName(((CallDelegateNode) call).getDelCalleeName());
+                  break;
+                default:
+                  throw new AssertionError("unexpected call kind: " + call.getKind());
+              }
+              return builder.build();
+            })
+        .collect(toImmutableSet())
+        .asList();
   }
 
   public abstract SoyFileKind getSoyFileKind();

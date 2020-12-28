@@ -41,10 +41,10 @@ final class CheckGlobalsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    for (GlobalNode global : SoyTreeUtils.getAllNodesOfType(file, GlobalNode.class)) {
-      if (!global.isResolved() && !global.shouldSuppressUnknownGlobalErrors()) {
-        errorReporter.report(global.getSourceLocation(), UNBOUND_GLOBAL, global.getName());
-      }
-    }
+    SoyTreeUtils.allNodesOfType(file, GlobalNode.class)
+        .filter(global -> !global.isResolved() && !global.shouldSuppressUnknownGlobalErrors())
+        .forEach(
+            global ->
+                errorReporter.report(global.getSourceLocation(), UNBOUND_GLOBAL, global.getName()));
   }
 }

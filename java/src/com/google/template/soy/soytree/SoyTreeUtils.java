@@ -488,15 +488,11 @@ public final class SoyTreeUtils {
     while (node.getParent() != null) {
       node = node.getParent();
     }
+    Node nodeRoot = node;
     // compare against all reachable expr roots.
-    for (ExprHolderNode holder : getAllNodesOfType(ancestor, ExprHolderNode.class)) {
-      for (ExprRootNode root : holder.getExprList()) {
-        if (root == node) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return allNodesOfType(ancestor, ExprHolderNode.class)
+        .flatMap(holder -> holder.getExprList().stream())
+        .anyMatch(root -> root == nodeRoot);
   }
 
   private static boolean doIsDescendantOf(Node node, Node ancestor) {

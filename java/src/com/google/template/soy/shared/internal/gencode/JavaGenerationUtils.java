@@ -291,7 +291,7 @@ public final class JavaGenerationUtils {
 
     return Streams.concat(
             fromImports,
-            SoyTreeUtils.getAllNodesOfType(node, TemplateNode.class).stream()
+            SoyTreeUtils.allNodesOfType(node, TemplateNode.class)
                 .flatMap(template -> getProtoTypes(template, typeRegistry)))
         .collect(toSet());
   }
@@ -307,7 +307,7 @@ public final class JavaGenerationUtils {
 
     // Add references for return types of getExtension method.
     Stream<String> fromCall =
-        SoyTreeUtils.getAllNodesOfType(template, MethodCallNode.class).stream()
+        SoyTreeUtils.allNodesOfType(template, MethodCallNode.class)
             .filter(MethodCallNode::isMethodResolved)
             .filter(n -> n.getSoyMethod() instanceof BuiltinMethod)
             .flatMap(
@@ -321,13 +321,13 @@ public final class JavaGenerationUtils {
     // referenced.  If we were to do this it would trigger strict deps issues.
     // Add enums
     Stream<String> fromGlobal =
-        SoyTreeUtils.getAllNodesOfType(template, GlobalNode.class).stream()
+        SoyTreeUtils.allNodesOfType(template, GlobalNode.class)
             .filter(global -> global.isResolved() && global.getType().getKind() == Kind.PROTO_ENUM)
             .map(global -> ((SoyProtoEnumType) global.getType()).getDescriptorExpression());
 
     // Add proto init
     Stream<String> fromProtoInit =
-        SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class).stream()
+        SoyTreeUtils.allNodesOfType(template, FunctionNode.class)
             .filter(fctNode -> fctNode.getSoyFunction() == BuiltinFunction.PROTO_INIT)
             .filter(fctNode -> fctNode.getType().getKind() == Kind.PROTO)
             .flatMap(
