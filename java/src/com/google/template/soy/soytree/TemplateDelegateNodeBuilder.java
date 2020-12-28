@@ -129,10 +129,6 @@ public class TemplateDelegateNodeBuilder extends TemplateNodeBuilder<TemplateDel
     return "__deltemplate_" + delPackageTemplateAndVariantStr;
   }
 
-  public static boolean isDeltemplateTemplateName(String templateName) {
-    return templateName.startsWith("__deltemplate_");
-  }
-
   @Override
   public TemplateDelegateNode build() {
     Preconditions.checkState(id != null && cmdText != null);

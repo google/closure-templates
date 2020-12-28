@@ -2160,7 +2160,6 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
           case LOCAL_VAR:
           case COMPREHENSION_VAR:
           case IMPORT_VAR:
-          case TEMPLATE:
           case UNDECLARED:
             throw new AssertionError("unexpected var kind: " + param.kind());
           }

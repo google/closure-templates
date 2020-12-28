@@ -142,17 +142,17 @@ public final class ResolveNamesPassTest {
   @Test
   public void testVariableNameRedefinition() {
     assertResolveNamesFails(
-        "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
+        "Variable '$la' already defined at line 4.",
         constructTemplateSource("{let $la: 1 /}", "{let $la: $la /}"));
     assertResolveNamesFails(
-        "Local variable '$pa' conflicts with symbol defined at 4:11-4:12.",
+        "Variable '$pa' already defined at line 4.",
         constructTemplateSource("{@param pa: bool}", "{let $pa: not $pa /}"));
     assertResolveNamesFails(
-        "Local variable '$la' conflicts with symbol defined at 4:8-4:10.",
+        "Variable '$la' already defined at line 4.",
         constructTemplateSource(
             "{let $la: 1 /}", "{for $item in ['a', 'b']}", "  {let $la: $la /}", "{/for}"));
     assertResolveNamesFails(
-        "Local variable '$group' conflicts with symbol defined at 4:11-4:15.",
+        "Variable '$group' already defined at line 4.",
         constructTemplateSource(
             "{@param group: string}", "{for $group in ['a', 'b']}", "  {$group}", "{/for}"));
     // valid, $item and $la are defined in non-overlapping scopes
@@ -222,12 +222,12 @@ public final class ResolveNamesPassTest {
   public void testUnknownVariable_v1Expression() {
     assertResolveNamesFails(
         "Unknown variable.",
-        "{namespace ns}{template .foo}{v1Expression('$gxo.moo1()')}{/template}");
+        "{namespace ns}{template .foo}{v1Expression('$goo.moo1()')}{/template}");
   }
 
   @Test
   public void testUnknownVariable() {
-    assertResolveNamesFails("Unknown variable.", "{namespace ns}{template .foo}{$ggg}{/template}");
+    assertResolveNamesFails("Unknown variable.", "{namespace ns}{template .foo}{$goo}{/template}");
   }
 
   private void runPass(SoyFileSetNode soyTree) {
