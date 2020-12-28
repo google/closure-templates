@@ -122,21 +122,20 @@ Template Type             | JavaScript Type
 `map<K, V>`               | `Map`, `jspb.Map`
 `legacy_object_map<K, V>` | `Object`
 
-[Maps](../reference/types#map) and [legacy object
-maps](../reference/types#legacy_object_map) are distinct types in Soy's type
-system, and generate different JS code. Maps must be rendered with JavaScript
-`Map` or `jspb.Map` instances; legacy object maps must be rendered with plain
-JavaScript `Object` instances. Rendering a template with a `map` parameter using
-a plain JavaScript `Object`, or vice versa, will cause a runtime error. This
-means that when you change a template parameter from `legacy_object_map` to
-`map`, you must also change the JavaScript value used to render it from a plain
-`Object` to a `Map`.
+**Warning:** [Maps](../reference/types#map) and
+[legacy object maps](../reference/types#legacy_object_map) are distinct types in
+Soy's type system, and generate different JS code. Maps must be rendered with
+JavaScript `Map` or `jspb.Map` instances; legacy object maps must be rendered
+with plain JavaScript `Object` instances. Rendering a template with a `map`
+parameter using a plain JavaScript `Object`, or vice versa, will cause a runtime
+error. This means that when you change a template parameter from
+`legacy_object_map` to `map`, you must also change the JavaScript value used to
+render it from a plain `Object` to a `Map`.
 
-TIP: If you are using Closure Compiler, there is an `@typedef` generated for the
-parameters of a template that may be useful. If the template is called `foo.bar`
-the parameters will be `foo.bar.Params`. This may be useful for annotating
-locals or specifying method parameter types.
-
+**Tip:** If you are using Closure Compiler, there is an `@typedef` generated for
+the parameters of a template that may be useful. If the template is called
+`foo.bar` the parameters will be `foo.bar.Params`. This may be useful for
+annotating locals or specifying method parameter types.
 
 <!-- References -->
 
