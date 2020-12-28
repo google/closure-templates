@@ -1863,8 +1863,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case MESSAGE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
-        case PROTO_EXTENSION:
         case PROTO_TYPE:
+          // May not be erased if other errors are present.
+          return UnknownType.getInstance();
+        case PROTO_EXTENSION:
         case PROTO_MODULE:
         case PROTO_ENUM_TYPE:
         case TEMPLATE_TYPE:
