@@ -19,8 +19,13 @@ package com.google.template.soy.jbcsrc;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.joining;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.exprtree.AbstractExprNodeVisitor;
@@ -52,7 +57,6 @@ import com.google.template.soy.msgs.internal.MsgUtils;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPart.Case;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
-import com.google.template.soy.msgs.restricted.SoyMsgPluralCaseSpec;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPluralRemainderPart;
 import com.google.template.soy.msgs.restricted.SoyMsgRawTextPart;
@@ -91,6 +95,7 @@ import com.google.template.soy.soytree.SwitchDefaultNode;
 import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -132,13 +137,21 @@ final class TemplateAnalysis {
 
   static TemplateAnalysis analyze(TemplateNode node) {
     AccessGraph templateGraph = new PseudoEvaluatorVisitor().evaluate(node);
-    return new TemplateAnalysis(templateGraph.getResolvedExpressions());
+    return new TemplateAnalysis(templateGraph);
   }
 
+  private final AccessGraph templateGraph;
   private final ImmutableSet<ExprNode> resolvedExpressions;
 
-  private TemplateAnalysis(Set<ExprNode> definitelyAccessedRefs) {
-    this.resolvedExpressions = ImmutableSet.copyOf(definitelyAccessedRefs);
+  private TemplateAnalysis(AccessGraph templateGraph) {
+    this.templateGraph = templateGraph;
+    this.resolvedExpressions = ImmutableSet.copyOf(templateGraph.getResolvedExpressions());
+  }
+
+  /** Prints the access graph in .dot format */
+  @VisibleForTesting
+  String dumpGraph() {
+    return templateGraph.toString();
   }
 
   /**
@@ -169,15 +182,8 @@ final class TemplateAnalysis {
 
     AccessGraph evaluate(TemplateNode node) {
       Block start = new Block();
-      Block finalNode = exec(start, node);
-      checkState(finalNode.successors.isEmpty());
-      // annotate the graph with predecessor links
-      addPredecessors(start);
-      // TODO(lukes): due to the way we build the graph we may have lots of either empty nodes or
-      // nodes with unconditional branches.  We could reduce the size of the graph by trying to
-      // eliminate such nodes.  This may be worth it if we end up doing many traversals instead of
-      // the current 1.
-      return new AccessGraph(start, finalNode, exprEquivalence);
+      Block end = exec(start, node);
+      return AccessGraph.create(start, end, exprEquivalence);
     }
 
     /**
@@ -298,7 +304,7 @@ final class TemplateAnalysis {
       for (StandaloneNode child : node.getChildren()) {
         block = exec(block, child);
       }
-      AccessGraph letStatement = new AccessGraph(startBlock, block, exprEquivalence);
+      AccessGraph letStatement = AccessGraph.create(startBlock, block, exprEquivalence);
       letNodes.put(node.getVar(), letStatement);
       this.current.successors.add(letStatement.start);
       this.current = this.current.addBranch();
@@ -309,7 +315,7 @@ final class TemplateAnalysis {
       // see visitLetContentNode
       Block start = new Block();
       Block end = exprVisitor.eval(start, node.getExpr());
-      AccessGraph letStatement = new AccessGraph(start, end, exprEquivalence);
+      AccessGraph letStatement = AccessGraph.create(start, end, exprEquivalence);
       letNodes.put(node.getVar(), letStatement);
       this.current.successors.add(letStatement.start);
       this.current = this.current.addBranch();
@@ -494,37 +500,77 @@ final class TemplateAnalysis {
     /**
      * Visits all the placeholders of a {msg} in the same order that the MsgCompiler generates code.
      */
-    private void evaluateMsgParts(MsgNode msgNode, Iterable<? extends SoyMsgPart> parts) {
+    private void evaluateMsgParts(MsgNode msgNode, ImmutableList<? extends SoyMsgPart> parts) {
       // Note:  The same placeholder may show up multiple times.  In the MsgCompiler we use a
       // separate data structure to dedup so we don't generate the same code for the same
       // placeholder multiple times.  This isn't a concern here because our 'pseudo evaluation'
       // process is idempotent.
+      List<SoyNode> placeholders = new ArrayList<>();
       for (SoyMsgPart part : parts) {
         if (part instanceof SoyMsgRawTextPart || part instanceof SoyMsgPluralRemainderPart) {
           // raw text and plural remainders don't have associated expressions
           continue;
         }
         if (part instanceof SoyMsgPluralPart) {
+          checkState(parts.size() == 1); // sanity test
           SoyMsgPluralPart plural = (SoyMsgPluralPart) part;
+          // plural variables are always evaluated prior to the case
           evalInline(msgNode.getRepPluralNode(plural.getPluralVarName()).getExpr());
           // Recursively visit plural cases
-          for (Case<SoyMsgPluralCaseSpec> caseOrDefault : plural.getCases()) {
-            evaluateMsgParts(msgNode, caseOrDefault.parts());
-          }
+          // cases act like control flow, so we need to branch to and from each branch, like a
+          // switch, this is confusing because the conditions are actually translator controlled,
+          // but the cases are not, so it is still like some control flow is jumping to/from each
+          // case.
+          evalPlrSelCases(msgNode, plural.getCases());
         } else if (part instanceof SoyMsgSelectPart) {
+          checkState(parts.size() == 1); // sanity test
           SoyMsgSelectPart select = (SoyMsgSelectPart) part;
+          // select variables are always evaluated prior to the selected case
           evalInline(msgNode.getRepSelectNode(select.getSelectVarName()).getExpr());
           // Recursively visit select cases
-          for (Case<String> caseOrDefault : select.getCases()) {
-            evaluateMsgParts(msgNode, caseOrDefault.parts());
-          }
+          evalPlrSelCases(msgNode, select.getCases());
         } else if (part instanceof SoyMsgPlaceholderPart) {
           SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) part;
-          visitChildren(msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName()));
+          placeholders.add(msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName()));
         } else {
           throw new AssertionError("unexpected part: " + part);
         }
       }
+      // Individual placeholders within a message are only conditionally evaluated and the
+      // evaluation order is undefined, since a very reasonable thing to do is to reorder
+      // placeholders.  A less common, but reasonable thing is to remove a placeholder.  For
+      // example, some inflected languages like polish will inflect proper names, so a simple
+      // message like `Hello {$name}!` is actually not grammatically translatable, so a translator
+      // may provide a translation that drops the placeholder.
+      // Of course there are some ordering constraints, for example placeholders derived from html
+      // tags should remained ordered according to open and close and the runtime for messages
+      // enforces this.  However, this ordering constraint isn't interesting since placeholders
+      // derived from html close tags are always trivial and contain no interesting subexpressions.
+      //
+      //
+      // To model this, we evaluate every placeholder in a dead end branch.  This is very similar to
+      // how Lets are defined.
+      Block previous = this.current;
+      List<Block> ends = new ArrayList<>();
+      for (SoyNode placeholder : placeholders) {
+        Block nodeBlock = previous.addBranch();
+        ends.add(exec(nodeBlock, placeholder));
+      }
+      // this means there is a branch that bypasses all of the placeholders.
+      ends.add(previous.addBranch());
+      this.current = Block.merge(ends);
+    }
+
+    private void evalPlrSelCases(MsgNode msgNode, ImmutableList<? extends Case<?>> cases) {
+      List<Block> branchEnds = new ArrayList<>();
+      Block previous = this.current;
+      for (Case<?> caseOrDefault : cases) {
+        Block caseBlockStart = previous.addBranch();
+        this.current = caseBlockStart;
+        evaluateMsgParts(msgNode, caseOrDefault.parts());
+        branchEnds.add(this.current);
+      }
+      this.current = Block.merge(branchEnds);
     }
 
     @Override
@@ -867,6 +913,51 @@ final class TemplateAnalysis {
     }
   }
 
+  private static void eliminateUnconditionalBranches(Block current, Set<Block> visited) {
+    if (!visited.add(current)) {
+      return;
+    }
+    // recursively visit successors.
+    for (Block successor : new ArrayList<>(current.successors)) {
+      eliminateUnconditionalBranches(successor, visited);
+    }
+    if (current.predecessors.size() == 1) {
+      Block predecessor = Iterables.getOnlyElement(current.predecessors);
+      if (predecessor.successors.size() == 1) {
+        // in this case the node is a single unconditional link, merge its successor into it
+        predecessor.exprs.addAll(current.exprs);
+        predecessor.successors.clear();
+        predecessor.successors.addAll(current.successors);
+        for (Block successor : current.successors) {
+          successor.predecessors.remove(current);
+          successor.predecessors.add(predecessor);
+        }
+      }
+    }
+  }
+
+  private static void eliminateEmptyNodes(Block current, Set<Block> visited) {
+    if (!visited.add(current)) {
+      return;
+    }
+    // recursively visit successors.  Make a copy to prevent concurrentmodification exception
+    for (Block successor : new ArrayList<>(current.successors)) {
+      eliminateEmptyNodes(successor, visited);
+    }
+    if (current.exprs.isEmpty() && !current.predecessors.isEmpty()) {
+      // This node has no exprs and it isn't the start node, so we can just merge all of its
+      // successors into its predecessors and cut it out of the graph.
+      for (Block pred : current.predecessors) {
+        pred.successors.remove(current);
+        pred.successors.addAll(current.successors);
+      }
+      for (Block succ : current.successors) {
+        succ.predecessors.remove(current);
+        succ.predecessors.addAll(current.predecessors);
+      }
+    }
+  }
+
   /**
    * A graph of {@link Block blocks} for a given template showing how control flows through the
    * expressions of the template.
@@ -888,6 +979,28 @@ final class TemplateAnalysis {
     final Block start;
     final Block end;
     final ExprEquivalence exprEquivalence;
+
+    static AccessGraph create(Block start, Block end, ExprEquivalence exprEquivalence) {
+      // annotate the graph with predecessor links
+      addPredecessors(start);
+      // check basic constraints.
+      checkState(start.predecessors.isEmpty());
+      checkState(end.successors.isEmpty());
+      // Due to the way we build the graph we may have lots of either empty nodes or
+      // nodes with unconditional branches.  Here wereduce the size of the graph by trying to
+      // eliminate such nodes.  These are O(N) passes and the analysis performed by AccessGraph is
+      // O(N+M) so this may or may not be a performance optimization, but because there are also
+      // scenarios where whole AccessGraph objects are copied, this should be beneficial.
+      // Additionally, it makes visualizing the graph simpler.
+      Set<Block> visited = Sets.newIdentityHashSet();
+      // ensure our simplification doens't modify the sink
+      visited.add(end);
+      eliminateEmptyNodes(start, visited);
+      visited.clear();
+      visited.add(end);
+      eliminateUnconditionalBranches(start, visited);
+      return new AccessGraph(start, end, exprEquivalence);
+    }
 
     AccessGraph(Block start, Block end, ExprEquivalence exprEquivalence) {
       this.start = start;
@@ -925,38 +1038,31 @@ final class TemplateAnalysis {
       Set<ExprNode> resolvedExprs = Sets.newIdentityHashSet();
       IdentityHashMap<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs =
           new IdentityHashMap<>();
-      Set<ExprNode> seenExprs = Sets.newHashSet();
-      List<Block> ordered = getTopologicalOrdering();
-      for (Block current : ordered) {
+      for (Block current : getTopologicalOrdering()) {
         // First calculate the set of exprs that were definitely accessed prior to this node
         Set<ExprEquivalence.Wrapper> currentBlockSet =
             mergePredecessors(blockToAccessedExprs, current);
         // Then figure out which nodes in this block were _already_ accessed.
         for (ExprNode expr : current.exprs) {
-          // In some cases e.g. msg plural conditions, the AST contains different nodes which have
-          // references to the same expression. If we see the same exact expression, assume it
-          // refers to the same code and discard it, so that it does not cause itself to be marked
-          // as already resolved.
-          if (!seenExprs.add(expr)) {
-            continue;
-          }
           ExprEquivalence.Wrapper wrapped = exprEquivalence.wrap(expr);
           if (!currentBlockSet.add(wrapped)) {
             resolvedExprs.add(expr);
           }
         }
-        blockToAccessedExprs.put(current, currentBlockSet);
+        // no need to store the result if we are in a dead end branch.
+        if (!current.successors.isEmpty()) {
+          blockToAccessedExprs.put(current, currentBlockSet);
+        }
       }
       return resolvedExprs;
     }
 
-    static Set<ExprEquivalence.Wrapper> mergePredecessors(
-        IdentityHashMap<Block, Set<ExprEquivalence.Wrapper>> blockToAccessedExprs, Block current) {
-      Set<ExprEquivalence.Wrapper> currentBlockSet = null;
+    static <T> Set<T> mergePredecessors(Map<Block, Set<T>> blockToAccessedExprs, Block current) {
+      Set<T> currentBlockSet = null;
       for (Block predecessor : current.predecessors) {
-        Set<ExprEquivalence.Wrapper> predecessorBlockSet = blockToAccessedExprs.get(predecessor);
+        Set<T> predecessorBlockSet = blockToAccessedExprs.get(predecessor);
         if (currentBlockSet == null) {
-          currentBlockSet = new HashSet<>(predecessorBlockSet);
+          currentBlockSet = new HashSet<T>(predecessorBlockSet);
         } else {
           currentBlockSet.retainAll(predecessorBlockSet);
         }
@@ -967,21 +1073,19 @@ final class TemplateAnalysis {
       return currentBlockSet;
     }
 
-    private List<Block> getTopologicalOrdering() {
-      List<Block> ordering = new ArrayList<>();
-      Set<Block> visited = Sets.newIdentityHashSet();
-      Set<Block> discoveredButNotVisited = Sets.newIdentityHashSet();
+    private Collection<Block> getTopologicalOrdering() {
+      Set<Block> ordering = new LinkedHashSet<>();
+      Set<Block> discoveredButNotVisited = new LinkedHashSet<>();
       discoveredButNotVisited.add(start);
       while (!discoveredButNotVisited.isEmpty()) {
         Optional<Block> firstVisitedAllPredecessors =
             discoveredButNotVisited.stream()
                 // If we have already visited all predecessors
-                .filter(block -> visited.containsAll(block.predecessors))
+                .filter(block -> ordering.containsAll(block.predecessors))
                 .findFirst();
         if (firstVisitedAllPredecessors.isPresent()) {
           Block notVisited = firstVisitedAllPredecessors.get();
           discoveredButNotVisited.remove(notVisited);
-          visited.add(notVisited);
           discoveredButNotVisited.addAll(notVisited.successors);
           ordering.add(notVisited);
         } else {
@@ -1014,6 +1118,59 @@ final class TemplateAnalysis {
       }
       return copy;
     }
+
+    @Override
+    public String toString() {
+      SetMultimap<Block, Block> adjacencyMatrix =
+          MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+      ArrayDeque<Block> toVisit = new ArrayDeque<>();
+      Set<Block> visited = new LinkedHashSet<>();
+      toVisit.add(start);
+      Block current;
+      while ((current = toVisit.poll()) != null) {
+        if (visited.add(current)) {
+          adjacencyMatrix.putAll(current, current.successors);
+          toVisit.addAll(current.successors);
+        }
+      }
+      StringBuilder graph = new StringBuilder().append("digraph AccessGraph {");
+      // Draw nodes
+      int id = 0;
+      IdentityHashMap<Block, Integer> nodeIds = new IdentityHashMap<>();
+      for (Block node : visited) {
+        graph.append("\n ").append(id).append(" [label=\"");
+        if (node == start) {
+          graph.append("START ");
+        }
+        if (node == end) {
+          graph.append("END ");
+        }
+        graph
+            .append(
+                node.exprs.stream()
+                    .map(
+                        e ->
+                            e.toSourceString()
+                                + "@"
+                                + e.getSourceLocation().getBeginLine()
+                                + ":"
+                                + e.getSourceLocation().getBeginColumn())
+                    .collect(joining(" ,", "[", "]")))
+            .append("\"];");
+        nodeIds.put(node, id);
+        id++;
+      }
+      // Draw edges id->id
+      for (Map.Entry<Block, Block> entry : adjacencyMatrix.entries()) {
+        graph
+            .append("\n  ")
+            .append(nodeIds.get(entry.getKey()))
+            .append(" -> ")
+            .append(nodeIds.get(entry.getValue()))
+            .append(";");
+      }
+      return graph.append("\n}").toString();
+    }
   }
 
   /**
@@ -1042,8 +1199,8 @@ final class TemplateAnalysis {
     // This list will contain either DataAccessNode or VarRefNodes, eventually we may want to add
     // all 'leaf' nodes.
     final List<ExprNode> exprs = new ArrayList<>();
-    final Collection<Block> successors = new LinkedHashSet<>();
-    final Collection<Block> predecessors = new LinkedHashSet<>();
+    final Set<Block> successors = new LinkedHashSet<>();
+    final Set<Block> predecessors = new LinkedHashSet<>();
 
     void add(VarRefNode var) {
       exprs.add(var);

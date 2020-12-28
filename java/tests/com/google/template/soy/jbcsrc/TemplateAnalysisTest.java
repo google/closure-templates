@@ -22,17 +22,24 @@ import static org.junit.Assert.fail;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.basetree.Node;
 import com.google.template.soy.exprtree.DataAccessNode;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.NullSafeAccessNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.restricted.SoyFunction;
+import com.google.template.soy.soytree.MsgNode;
+import com.google.template.soy.soytree.MsgPlaceholderNode;
+import com.google.template.soy.soytree.MsgPluralNode;
+import com.google.template.soy.soytree.MsgSelectNode;
 import com.google.template.soy.soytree.PrintNode;
+import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
+import com.google.template.soy.soytree.SoyNode.MsgSubstUnitNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
-import java.util.Set;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -338,8 +345,16 @@ public final class TemplateAnalysisTest {
 
   @Test
   public void testMsg() {
-    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{refed($p)}");
+    // Our analysis treats message placeholders as only conditionally evaluated.
+    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {$p}", "{/msg}", "{notrefed($p)}");
+    // they do respect the incoming references
+    runTest("{@param p : ?}", "{$p}", "{msg desc=\"\"}", "  Hello {refed($p)}", "{/msg}");
 
+    // Order within messages ignored.  One of these 2 placeholders will be second but it isn't
+    // predictable because translators have an opportunity to reorder them.
+    runTest("{@param p : ?}", "{msg desc=\"\"}", "  Hello {notrefed($p)} {notrefed($p)}", "{/msg}");
+
+    // these cases aren't really interested because of how we model placeholders
     runTest(
         "{@param p : ?}",
         "{msg desc=\"\"}",
@@ -356,11 +371,62 @@ public final class TemplateAnalysisTest {
         "{fallbackmsg desc=\"\"}",
         "  Hello old {$p}",
         "{/msg}",
-        "{refed($p)}");
+        "{notrefed($p)}");
   }
 
   @Test
-  public void testMsgPlural() {
+  public void testFallbackCreatesABranch() {
+    // Fallbacks are an implicit control flow structure so `$gender` is only evaluated if the
+    // translation exists.  We used gendered messages here because gender expressions are always
+    // evaluated.
+    runTest(
+        "{@param gender2 : ?}",
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello",
+        "{fallbackmsg desc='...'  genders='$gender2'}",
+        "  Goodbye",
+        "{/msg}",
+        "{notrefed($gender)}",
+        "{notrefed($gender2)}");
+    runTest(
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello",
+        "{fallbackmsg desc='...'  genders='$gender'}",
+        "  Goodbye",
+        "{/msg}",
+        "{refed($gender)}");
+  }
+
+  @Test
+  public void testPluralSelectIsEvaluated() {
+    runTest(
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello {refed($gender)}",
+        "{/msg}");
+
+    runTest(
+        "{@param gender: ?}",
+        "{msg desc='...' genders='$gender'}",
+        "   Hello",
+        "{/msg}",
+        "{refed($gender)}");
+
+    runTest(
+        "{@param num: ?}",
+        "{msg desc='...'}",
+        "{plural $num}",
+        "{default}",
+        "   Hello {refed($num)}",
+        "{/plural}",
+        "{/msg}",
+        "{refed($num)}");
+  }
+
+  @Test
+  public void testMsgPlural_syntheticPlaceholder() {
     // There are multiple references to the same expression in this case. Test the deduplication
     // logic such that the single $p.foo does not mark itself as resolved.
     runTest(
@@ -404,28 +470,67 @@ public final class TemplateAnalysisTest {
   void runTest(String... lines) {
     TemplateNode template = parseTemplate(lines);
     TemplateAnalysis analysis = TemplateAnalysis.analyze(template);
-    for (FunctionNode node : SoyTreeUtils.getAllNodesOfType(template, FunctionNode.class)) {
-      if (node.getSoyFunction() == NOT_REFED_FUNCTION) {
-        checkNotReferenced(analysis, node.getChild(0));
-      } else if (node.getSoyFunction() == REFED_FUNCTION) {
-        checkReferenced(analysis, node.getChild(0));
+    // Due to how MsgNodes are compiled and analyzed, we only want to look at representative nodes
+    // so we need a complex query
+    // first look at all assertions that aren't in a placeholder.
+    SoyTreeUtils.allNodes(
+            template,
+            n ->
+                n instanceof MsgPlaceholderNode
+                    ? VisitDirective.SKIP_CHILDREN
+                    : VisitDirective.CONTINUE)
+        .forEach(n -> runTestOnLeafNode(analysis, n));
+
+    // then look at all the message placeholders.  Normalize them
+    for (MsgNode msg : SoyTreeUtils.getAllNodesOfType(template, MsgNode.class)) {
+      for (MsgSubstUnitNode placeholder : msg.getVarNameToRepNodeMap().values()) {
+        if (placeholder instanceof MsgSelectNode || placeholder instanceof MsgPluralNode) {
+          // only run on the direct exprs of select/plural, we will find their children as other
+          // placeholders.
+          for (ExprNode expr : ((ExprHolderNode) placeholder).getExprList()) {
+            SoyTreeUtils.allNodes(expr).forEach(n -> runTestOnLeafNode(analysis, n));
+          }
+        } else {
+          // everything else is a normal placeholder
+          SoyTreeUtils.allNodes(placeholder).forEach(n -> runTestOnLeafNode(analysis, n));
+        }
       }
     }
   }
 
-  private void checkNotReferenced(TemplateAnalysis analysis, ExprNode child) {
+  private static void runTestOnLeafNode(TemplateAnalysis analysis, Node n) {
+    if (n instanceof FunctionNode) {
+      FunctionNode functionNode = (FunctionNode) n;
+      if (functionNode.getSoyFunction() == NOT_REFED_FUNCTION) {
+        checkNotReferenced(analysis, functionNode.getChild(0));
+      } else if (functionNode.getSoyFunction() == REFED_FUNCTION) {
+        checkReferenced(analysis, functionNode.getChild(0));
+      }
+    }
+  }
+
+  private static void checkNotReferenced(TemplateAnalysis analysis, ExprNode child) {
     if (hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
-      fail("Expected reference to " + format(child) + " to have not been definitely referenced.");
+      fail(
+          "Expected reference to "
+              + format(child)
+              + " to have not been definitely referenced.\n\n"
+              + analysis.dumpGraph());
     }
   }
 
-  private void checkReferenced(TemplateAnalysis analysis, ExprNode child) {
+  private static void checkReferenced(TemplateAnalysis analysis, ExprNode child) {
     if (!hasDefinitelyAlreadyBeenAccessed(analysis, child)) {
-      fail("Expected reference to " + format(child) + " to have been definitely referenced.");
+      fail(
+          "Expected reference to "
+              + format(child)
+              + " to have been definitely referenced.\n\n"
+              + analysis.dumpGraph());
     }
   }
 
-  private boolean hasDefinitelyAlreadyBeenAccessed(TemplateAnalysis analysis, ExprNode child) {
+  private static boolean hasDefinitelyAlreadyBeenAccessed(
+      TemplateAnalysis analysis, ExprNode child) {
     if (child instanceof VarRefNode) {
       return analysis.isResolved((VarRefNode) child);
     }
@@ -435,7 +540,7 @@ public final class TemplateAnalysisTest {
     return false;
   }
 
-  private String format(ExprNode child) {
+  private static String format(ExprNode child) {
     SourceLocation sourceLocation = child.getSourceLocation();
     // subtract 2 from the line number since the boilerplate adds 2 lines above the user content
     return child.toSourceString()
@@ -478,7 +583,7 @@ public final class TemplateAnalysisTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };
@@ -491,7 +596,7 @@ public final class TemplateAnalysisTest {
         }
 
         @Override
-        public Set<Integer> getValidArgsSizes() {
+        public ImmutableSet<Integer> getValidArgsSizes() {
           return ImmutableSet.of(1);
         }
       };
