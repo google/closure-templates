@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.GlobalNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
+import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -45,6 +46,9 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
   private static final SoyErrorKind MUST_BE_DOLLAR_IDENT =
       SoyErrorKind.of("Name must begin with a ''$''.");
 
+  private static final SoyErrorKind MUST_NOT_BE_DOLLAR_IDENT =
+      SoyErrorKind.of("Name must not begin with a ''$''.");
+
   private static final SoyErrorKind MUST_BE_CONSTANT =
       SoyErrorKind.of("Expected constant identifier.");
 
@@ -58,7 +62,7 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     // Turn unresolved global nodes into template literal nodes. This previously happened
     // in the parser but now must happen after Visitor runs.
-    SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
         .filter(callNode -> callNode.getCalleeExpr().getRoot().getKind() == Kind.GLOBAL_NODE)
         .forEach(
             callNode -> {
@@ -73,7 +77,7 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
 
     // Validate CallBasicNode data="expr". This previously happened in the CallBasicNode
     // constructor but now must happen after Visitor runs.
-    SoyTreeUtils.getAllNodesOfType(file, CallBasicNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
         .filter(callNode -> callNode.isPassingData() && !callNode.isStaticCall())
         .forEach(
             callNode ->
@@ -81,10 +85,10 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
                     callNode.getOpenTagLocation(), DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS));
 
     // Enforce certain symbols start with $, to match previous parser rules.
-    SoyTreeUtils.getAllNodesOfType(file, LetNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, LetNode.class)
         .map(LetNode::getVar)
         .forEach(this::checkDollarIdent);
-    SoyTreeUtils.getAllNodesOfType(file, ForNonemptyNode.class)
+    SoyTreeUtils.allNodesOfType(file, ForNonemptyNode.class)
         .forEach(
             forNode -> {
               checkDollarIdent(forNode.getVar());
@@ -92,7 +96,7 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
                 checkDollarIdent(forNode.getIndexVar());
               }
             });
-    SoyTreeUtils.getAllNodesOfType(file, ListComprehensionNode.class)
+    SoyTreeUtils.allNodesOfType(file, ListComprehensionNode.class)
         .forEach(
             listNode -> {
               checkDollarIdent(listNode.getListIterVar());
@@ -101,8 +105,16 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
               }
             });
 
+    // Enforce record keys do not start with $, to match previous parser rules. No explicit check
+    // here for named function (proto init) parameter names. Those will trigger errors for "no such
+    // proto field" etc.
+    SoyTreeUtils.allNodesOfType(file, RecordLiteralNode.class)
+        .flatMap(r -> r.getKeys().stream())
+        .filter(k -> k.identifier().startsWith("$"))
+        .forEach(k -> errorReporter.report(k.location(), MUST_NOT_BE_DOLLAR_IDENT));
+
     // ve(...) will now parse if ... starts with "$". But that's an error.
-    SoyTreeUtils.getAllNodesOfType(file, VeLiteralNode.class)
+    SoyTreeUtils.allNodesOfType(file, VeLiteralNode.class)
         .forEach(
             veNode -> {
               if (veNode.getName().identifier().startsWith("$")) {

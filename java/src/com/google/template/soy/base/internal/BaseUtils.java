@@ -43,7 +43,7 @@ public final class BaseUtils {
   public static final ImmutableSet<String> ILLEGAL_PLUGIN_NAMES = ImmutableSet.of("map", "record");
 
   /** Regular expression for an identifier. */
-  public static final String IDENT_RE = "[a-zA-Z_][a-zA-Z_0-9]*";
+  public static final String IDENT_RE = "\\$?[a-zA-Z_][a-zA-Z_0-9]*";
 
   /** Pattern for an identifier. */
   private static final Pattern IDENT_PATTERN = Pattern.compile(IDENT_RE);

@@ -263,6 +263,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       SoyErrorKind.of("Using arithmetic operators on the Soy type ''{0}'' is illegal.");
   private static final SoyErrorKind INCORRECT_ARG_TYPE =
       SoyErrorKind.of("Function ''{0}'' called with incorrect arg type {1} (expected {2}).");
+  private static final SoyErrorKind INCORRECT_ARG_STYLE =
+      SoyErrorKind.of("Function called with incorrect arg style (positional or named).");
   private static final SoyErrorKind LOOP_VARIABLE_NOT_IN_SCOPE =
       SoyErrorKind.of("Function ''{0}'' must have a loop variable as its argument.");
   private static final SoyErrorKind STRING_LITERAL_REQUIRED =
@@ -1430,6 +1432,10 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
       }
       if (matchedSignature == null) {
         node.setType(UnknownType.getInstance());
+        return;
+      }
+      if (node.getParamsStyle() == ParamsStyle.NAMED) {
+        errorReporter.report(node.getFunctionNameLocation(), INCORRECT_ARG_STYLE);
         return;
       }
       for (int i = 0; i < node.numChildren(); ++i) {
