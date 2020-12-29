@@ -76,9 +76,9 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
   public static final String CSP_NONCE_VARIABLE_NAME = "csp_nonce";
   public static final String FILTER_NAME = "|filterCspNonceValue";
 
-  private static final SoyErrorKind CSP_NONCE_REFERENCE =
+  private static final SoyErrorKind IJ_CSP_NONCE_REFERENCE =
       SoyErrorKind.of(
-          "Found a use of the parameter ''csp_nonce''. This parameter is reserved "
+          "Found a use of the injected parameter ''csp_nonce''. This parameter is reserved "
               + "by the Soy compiler for Content Security Policy support.");
 
   private static final SoyErrorKind MANUAL_NONCE =
@@ -99,19 +99,13 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
     // Search for injected params named 'csp_nonce'.
     for (TemplateNode template : file.getTemplates()) {
       for (TemplateParam param : template.getAllParams()) {
-        if (param.name().substring(1).equals(CSP_NONCE_VARIABLE_NAME)) {
-          errorReporter.report(param.nameLocation(), CSP_NONCE_REFERENCE);
+        if (param.isInjected() && param.name().equals(CSP_NONCE_VARIABLE_NAME)) {
+          errorReporter.report(param.nameLocation(), IJ_CSP_NONCE_REFERENCE);
         }
       }
     }
     for (TemplateNode template : file.getTemplates()) {
       TemplateParam defn = null;
-      for (VarRefNode varRefNode :
-          SoyTreeUtils.getAllNodesOfType(template, VarRefNode.class)) {
-        if (varRefNode.getNameWithoutLeadingDollar().equals(CSP_NONCE_VARIABLE_NAME)) {
-          errorReporter.report(varRefNode.getSourceLocation(), CSP_NONCE_REFERENCE);
-        }
-      }
       for (HtmlOpenTagNode openTag :
           SoyTreeUtils.getAllNodesOfType(template, HtmlOpenTagNode.class)) {
         if (isTagNonceable(openTag)) {
