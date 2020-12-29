@@ -182,7 +182,7 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "\n"
             + "/** Template 1 */\n"
             + "{template .foo1}\n"
-            + "  {v1Expression('$goo1.moo1()')}\n"
+            + "  {v1Expression('$gxo1.moo1()')}\n"
             + "{/template}\n";
 
     String fileContent2 =
@@ -190,7 +190,7 @@ public final class CheckTemplateHeaderVarsPassTest {
             + "\n"
             + "/** Template 2 */\n"
             + "{template .foo2}\n"
-            + "  {$goo2.moo2}\n"
+            + "  {$gxo2.moo2}\n"
             + "{/template}\n";
 
     ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent1, fileContent2);

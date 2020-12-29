@@ -32,7 +32,9 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.AbstractVarDefn;
 import com.google.template.soy.exprtree.ExprRootNode;
+import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.soytree.CommandTagAttribute.CommandTagAttributesHolder;
 import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
@@ -40,6 +42,8 @@ import com.google.template.soy.soytree.defn.AttrParam;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.soytree.defn.TemplateStateVar;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -695,5 +699,29 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         /* methodName= */ partialTemplateName.identifier().substring(1),
         srcLocation.getFileName(),
         srcLocation.getBeginLine());
+  }
+
+  public VarDefn asVarDefn() {
+    return new TemplateVarDefn(
+        getLocalTemplateSymbol(),
+        getTemplateNameLocation(),
+        TemplateImportType.create(getTemplateName()));
+  }
+
+  private static class TemplateVarDefn extends AbstractVarDefn {
+    public TemplateVarDefn(
+        String name, @Nullable SourceLocation nameLocation, @Nullable SoyType type) {
+      super(name, nameLocation, type);
+    }
+
+    @Override
+    public Kind kind() {
+      return Kind.TEMPLATE;
+    }
+
+    @Override
+    public boolean isInjected() {
+      return false;
+    }
   }
 }

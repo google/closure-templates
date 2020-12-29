@@ -210,7 +210,7 @@ public final class TemplateRegistryTest {
     SoyFileSetParserBuilder.forFileContents(file).errorReporter(errorReporter).parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
-        .isEqualTo("Template/element 'ns.foo' already defined at no-path:3:1-4:11.");
+        .isEqualTo("Template name 'foo' conflicts with symbol defined at 3:11-3:14.");
   }
 
   @Test

@@ -26,7 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.shared.SoyGeneralOptions;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.ImportNode.ImportType;
@@ -53,9 +52,6 @@ import java.util.Map;
   ResolveTemplateNamesPass.class,
 })
 public final class ResolveTemplateImportsPass extends ImportsPass implements CompilerFileSetPass {
-
-  private static final SoyErrorKind IMPORT_CONFLICTS_WITH_TEMPLATE =
-      SoyErrorKind.of("Import conflicts with local template ''{0}''.");
 
   private TemplateNameRegistry templateNameRegistry;
   private final SoyGeneralOptions options;
@@ -145,8 +141,7 @@ public final class ResolveTemplateImportsPass extends ImportsPass implements Com
         // Consider moving this to ImportsPass.
         String partialTemplateName = symbolToTemplateName.get(symbol.name());
         if (partialTemplateName != null) {
-          errorReporter.report(
-              symbol.nameLocation(), IMPORT_CONFLICTS_WITH_TEMPLATE, partialTemplateName);
+          // Error will be reported in LocalVariables.
           symbol.setType(UnknownType.getInstance());
           continue;
         }

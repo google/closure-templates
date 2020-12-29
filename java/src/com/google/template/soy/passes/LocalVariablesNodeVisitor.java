@@ -16,6 +16,7 @@
 
 package com.google.template.soy.passes;
 
+import static com.google.template.soy.soytree.TemplateDelegateNodeBuilder.isDeltemplateTemplateName;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.Preconditions;
@@ -30,6 +31,7 @@ import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.VarDefn;
+import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
@@ -44,7 +46,6 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.ImportedVar;
-import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -52,7 +53,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -80,7 +80,7 @@ final class LocalVariablesNodeVisitor {
   static final class LocalVariables {
 
     private static final SoyErrorKind VARIABLE_ALREADY_DEFINED =
-        SoyErrorKind.of("Variable ''{0}'' already defined{1}.");
+        SoyErrorKind.of("{0} ''{1}'' conflicts with symbol defined at {2}.");
 
     private ErrorReporter errorReporter;
     private final Deque<Map<String, VarDefn>> currentScope = new ArrayDeque<>();
@@ -123,15 +123,15 @@ final class LocalVariablesNodeVisitor {
       // Search for the name to see if it is being redefined.
       VarDefn preexisting = lookupWithReserved(refName);
       if (preexisting != null) {
-        Optional<SourceLocation> preexistingSourceLocation = forVarDefn(preexisting);
-        SourceLocation defnSourceLocation =
-            defn.nameLocation() == null ? definingNode.getSourceLocation() : defn.nameLocation();
-        String location =
-            preexistingSourceLocation.isPresent()
-                ? " at line " + preexistingSourceLocation.get().getBeginLine()
-                : "";
-        if (errorReporter != null) {
-          errorReporter.report(defnSourceLocation, VARIABLE_ALREADY_DEFINED, refName, location);
+        if (errorReporter != null && !shouldSkipError(defn, preexisting)) {
+          SourceLocation defnSourceLocation =
+              defn.nameLocation() == null ? definingNode.getSourceLocation() : defn.nameLocation();
+          errorReporter.report(
+              defnSourceLocation,
+              VARIABLE_ALREADY_DEFINED,
+              englishName(defn),
+              refName,
+              preexisting.nameLocation().toLineColumnString());
         }
         return false;
       }
@@ -192,13 +192,16 @@ final class LocalVariablesNodeVisitor {
           // TODO(b/175405629): As a step towards supporting templates, we verify that there are no
           // collisions here.
           for (ImportedVar var : imp.getIdentifiers()) {
-            localVariables.reserve(var, node);
+            localVariables.reserve(var, imp);
           }
         } else {
           for (ImportedVar var : imp.getIdentifiers()) {
-            localVariables.define(var, node);
+            localVariables.define(var, imp);
           }
         }
+      }
+      for (TemplateNode template : node.getTemplates()) {
+        localVariables.reserve(template.asVarDefn(), template);
       }
 
       super.visitSoyFileNode(node);
@@ -288,21 +291,29 @@ final class LocalVariablesNodeVisitor {
     }
   }
 
-  private static Optional<SourceLocation> forVarDefn(VarDefn varDefn) {
+  /** Better error messages exist for deltemplate duplicates. */
+  private static boolean shouldSkipError(VarDefn defn, VarDefn preexisting) {
+    return defn.kind() == Kind.TEMPLATE
+        && preexisting.kind() == Kind.TEMPLATE
+        && isDeltemplateTemplateName(defn.name())
+        && isDeltemplateTemplateName(preexisting.name());
+  }
+
+  private static String englishName(VarDefn varDefn) {
     switch (varDefn.kind()) {
       case PARAM:
+        return "Parameter";
       case STATE:
+        return "State parameter";
       case IMPORT_VAR:
-        return Optional.of(varDefn.nameLocation());
+        return "Imported symbol";
       case LOCAL_VAR:
-        return Optional.of(((LocalVar) varDefn).declaringNode().getSourceLocation());
       case COMPREHENSION_VAR:
-        return Optional.of(
-            ((ListComprehensionNode.ComprehensionVarDefn) varDefn)
-                .declaringNode()
-                .getSourceLocation());
+        return "Local variable";
+      case TEMPLATE:
+        return "Template name";
       case UNDECLARED:
-        return Optional.empty();
+        return "Symbol";
     }
     throw new AssertionError(varDefn.kind());
   }
