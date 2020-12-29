@@ -150,10 +150,8 @@ final class RewriteRemaindersPass implements CompilerFilePass {
       }
       if (node instanceof ExprHolderNode) {
         for (ExprNode expr : ((ExprHolderNode) node).getExprList()) {
-          for (FunctionNode functionNode :
-              SoyTreeUtils.getAllFunctionInvocations(expr, BuiltinFunction.REMAINDER)) {
-            rewriteRemainder(functionNode);
-          }
+          SoyTreeUtils.allFunctionInvocations(expr, BuiltinFunction.REMAINDER)
+              .forEach(this::rewriteRemainder);
         }
       }
     }

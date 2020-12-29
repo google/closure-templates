@@ -19,7 +19,11 @@ package com.google.template.soy.exprtree;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+import com.google.template.soy.exprtree.ExprNode.ParentExprNode;
 import com.google.template.soy.exprtree.testing.ExpressionParser;
+import com.google.template.soy.soytree.SoyNode;
+import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.testing.Extendable;
 import com.google.template.soy.testing.Foo;
@@ -154,7 +158,7 @@ public class NullSafeAccessNodeTest {
             .withParam("foo", "Foo")
             .parse();
     String exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+        buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -173,7 +177,7 @@ public class NullSafeAccessNodeTest {
             .withParam("foo", "Foo")
             .parse();
     String exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+        buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -195,8 +199,7 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -213,8 +216,7 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -231,8 +233,7 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -249,8 +250,7 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -270,8 +270,7 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -291,8 +290,7 @@ public class NullSafeAccessNodeTest {
             .withProto(Foo.getDescriptor())
             .withParam("foo", "Foo")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -316,7 +314,7 @@ public class NullSafeAccessNodeTest {
             .withExperimentalFeatures("enableNonNullAssertionOperator")
             .parse();
     String exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+        buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -333,8 +331,7 @@ public class NullSafeAccessNodeTest {
             .withParam("foo", "Foo")
             .withExperimentalFeatures("enableNonNullAssertionOperator")
             .parse();
-    exprString =
-        SoyTreeUtils.buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
+    exprString = buildAstStringWithPreview(expr.getParent(), 0, new StringBuilder()).toString();
     assertThat(exprString)
         .isEqualTo(
             NEWLINE.join(
@@ -344,5 +341,43 @@ public class NullSafeAccessNodeTest {
                 "  FIELD_ACCESS_NODE: DO_NOT_USE__NULL_SAFE_ACCESS.foo",
                 "    GLOBAL_NODE: DO_NOT_USE__NULL_SAFE_ACCESS",
                 ""));
+  }
+
+  /**
+   * Similar to {@link SoyTreeUtils#buildAstString}, but also print the source string for debug
+   * usages.
+   */
+  private static StringBuilder buildAstStringWithPreview(
+      ParentSoyNode<?> node, int indent, StringBuilder sb) {
+    for (SoyNode child : node.getChildren()) {
+      sb.append(Strings.repeat("  ", indent))
+          .append(child.getKind())
+          .append(": ")
+          .append(child.toSourceString())
+          .append('\n');
+      if (child instanceof ParentSoyNode) {
+        SoyTreeUtils.buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
+      }
+    }
+    return sb;
+  }
+
+  /**
+   * Similar to {@link SoyTreeUtils#buildAstString}, but for ExprNodes and also prints the source
+   * string for debug usages.
+   */
+  private static StringBuilder buildAstStringWithPreview(
+      ParentExprNode node, int indent, StringBuilder sb) {
+    for (ExprNode child : node.getChildren()) {
+      sb.append(Strings.repeat("  ", indent))
+          .append(child.getKind())
+          .append(": ")
+          .append(child.toSourceString())
+          .append('\n');
+      if (child instanceof ParentExprNode) {
+        buildAstStringWithPreview((ParentExprNode) child, indent + 1, sb);
+      }
+    }
+    return sb;
   }
 }

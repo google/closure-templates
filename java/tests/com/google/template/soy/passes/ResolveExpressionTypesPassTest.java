@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.error.ErrorReporter;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.exprtree.VeLiteralNode;
 import com.google.template.soy.logging.LoggableElement;
@@ -1064,12 +1063,14 @@ public final class ResolveExpressionTypesPassTest {
 
   /** Traverses the tree and checks all the calls to {@code assertType} */
   private void assertTypes(SoyNode node) {
-    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, ASSERT_TYPE_FUNCTION)) {
-      StringNode expected = (StringNode) fn.getChild(0);
-      SoyType actualType = fn.getChild(1).getType();
-      assertWithMessage("assertion @ " + fn.getSourceLocation())
-          .that(actualType.toString())
-          .isEqualTo(expected.getValue());
-    }
+    SoyTreeUtils.allFunctionInvocations(node, ASSERT_TYPE_FUNCTION)
+        .forEach(
+            fn -> {
+              StringNode expected = (StringNode) fn.getChild(0);
+              SoyType actualType = fn.getChild(1).getType();
+              assertWithMessage("assertion @ " + fn.getSourceLocation())
+                  .that(actualType.toString())
+                  .isEqualTo(expected.getValue());
+            });
   }
 }

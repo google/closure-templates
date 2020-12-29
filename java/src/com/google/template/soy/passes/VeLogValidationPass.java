@@ -132,10 +132,8 @@ final class VeLogValidationPass implements CompilerFileSetPass {
   }
 
   private void run(TemplateNode template) {
-    for (FunctionNode node :
-        SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.VE_DATA)) {
-      validateVeDataFunctionNode(node);
-    }
+    SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.VE_DATA)
+        .forEach(this::validateVeDataFunctionNode);
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(template, VeLogNode.class)) {
       if (template.isStrictHtml()) {
         validateVelogElementStructure(node);

@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import com.google.common.base.Joiner;
 import com.google.common.truth.StringSubject;
 import com.google.template.soy.soytree.SoyFileNode;
-import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.testing.SoyFileSetParserBuilder;
 import org.junit.Test;
@@ -54,7 +53,7 @@ public final class DesugarStateNodesPassTest {
             .parse()
             .fileSet()
             .getChild(0);
-    assertThat(SoyTreeUtils.hasHtmlNodes(node)).isFalse();
+    assertThat(DesugarHtmlNodesPassTest.hasHtmlNodes(node)).isFalse();
     StringBuilder sb = new StringBuilder();
     ((TemplateNode) node.getChild(0)).appendSourceStringForChildren(sb);
     return sb.toString();

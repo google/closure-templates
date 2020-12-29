@@ -22,7 +22,6 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.collect.Iterables;
 import com.google.template.soy.css.CssMetadata;
 import com.google.template.soy.css.CssRegistry;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.CallBasicNode;
@@ -127,9 +126,9 @@ final class SoyHeaderCompiler extends AbstractSoyCompiler {
       }
     }
     Set<String> cssClassNames = new LinkedHashSet<>();
-    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(fileSet, BuiltinFunction.CSS)) {
-      cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue());
-    }
+    SoyTreeUtils.allFunctionInvocations(fileSet, BuiltinFunction.CSS)
+        .forEach(
+            fn -> cssClassNames.add(((StringNode) Iterables.getLast(fn.getChildren())).getValue()));
     return CssMetadata.newBuilder()
         .addAllRequireCssNames(requiredCssNames)
         .addAllRequireCssPaths(requiredCssPaths)

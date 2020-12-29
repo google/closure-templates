@@ -16,6 +16,7 @@ java_library(
         "//java/src/com/google/template/soy:impl",
         "//java/src/com/google/template/soy/base",
         "//java/src/com/google/template/soy/base/internal",
+        "//java/src/com/google/template/soy/basetree",
         "//java/src/com/google/template/soy/css",
         "//java/src/com/google/template/soy/error:error_reporter",
         "//java/src/com/google/template/soy/exprtree",

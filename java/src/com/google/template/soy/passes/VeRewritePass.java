@@ -43,10 +43,8 @@ final class VeRewritePass implements CompilerFilePass {
     for (VeLogNode node : SoyTreeUtils.getAllNodesOfType(file, VeLogNode.class)) {
       maybeRewriteVeLogNode(node);
     }
-    for (FunctionNode node :
-        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.VE_DATA)) {
-      maybeRewriteVeDataNode(node);
-    }
+    SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.VE_DATA)
+        .forEach(this::maybeRewriteVeDataNode);
   }
 
   private void maybeRewriteVeLogNode(VeLogNode node) {

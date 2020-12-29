@@ -275,35 +275,35 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
   private void handleDynamicTagAndCheckForLegacyDynamicTags(SoyFileNode file) {
     Set<FunctionNode> correctlyPlaced = new HashSet<>();
     Set<HtmlTagNode> allowedSlots = new HashSet<>();
-    for (HtmlTagNode tagNode :
-        SoyTreeUtils.getAllMatchingNodesOfType(
-            file, HtmlTagNode.class, (tag) -> !tag.getTagName().isStatic())) {
-      SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
-      if (type.isAssignableFromStrict(StringType.getInstance())) {
-        handleDynamicTag(tagNode, correctlyPlaced);
-      } else if (!tagNode.getTagName().isTemplateCall()
-          && !type.isAssignableFromStrict(UnknownType.getInstance())) {
-        errorReporter.report(
-            tagNode.getSourceLocation(),
-            ELEMENT_CALL_TO_HTML_TEMPLATE,
-            tagNode.getTagName().getDynamicTagName().getExpr().getType());
-      } else {
-        validateTemplateCall((HtmlOpenTagNode) tagNode, allowedSlots::add);
-      }
-    }
+    SoyTreeUtils.allNodesOfType(file, HtmlTagNode.class)
+        .filter(tag -> !tag.getTagName().isStatic())
+        .forEach(
+            tagNode -> {
+              SoyType type = tagNode.getTagName().getDynamicTagName().getExpr().getType();
+              if (type.isAssignableFromStrict(StringType.getInstance())) {
+                handleDynamicTag(tagNode, correctlyPlaced);
+              } else if (!tagNode.getTagName().isTemplateCall()
+                  && !type.isAssignableFromStrict(UnknownType.getInstance())) {
+                errorReporter.report(
+                    tagNode.getSourceLocation(),
+                    ELEMENT_CALL_TO_HTML_TEMPLATE,
+                    tagNode.getTagName().getDynamicTagName().getExpr().getType());
+              } else {
+                validateTemplateCall((HtmlOpenTagNode) tagNode, allowedSlots::add);
+              }
+            });
+
     // No other uses of legacyDynamicTag are allowed.
-    for (FunctionNode fn :
-        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.LEGACY_DYNAMIC_TAG)) {
-      if (!correctlyPlaced.contains(fn)) {
-        errorReporter.report(fn.getSourceLocation(), ILLEGAL_USE);
-      }
-    }
-    for (HtmlTagNode tagNode :
-        SoyTreeUtils.getAllMatchingNodesOfType(
-            file, HtmlOpenTagNode.class, (tag) -> tag.isSlot() && !allowedSlots.contains(tag))) {
-      errorReporter.report(
-          tagNode.getSourceLocation(), SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL);
-    }
+    SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.LEGACY_DYNAMIC_TAG)
+        .filter(fn -> !correctlyPlaced.contains(fn))
+        .forEach(fn -> errorReporter.report(fn.getSourceLocation(), ILLEGAL_USE));
+
+    SoyTreeUtils.allNodesOfType(file, HtmlOpenTagNode.class)
+        .filter((tag) -> tag.isSlot() && !allowedSlots.contains(tag))
+        .forEach(
+            tagNode ->
+                errorReporter.report(
+                    tagNode.getSourceLocation(), SLOTS_ONLY_DIRECT_DESCENDENTS_OF_TEMPLATE_CALL));
   }
 
   private void validateTemplateCall(HtmlOpenTagNode openTagNode, Consumer<HtmlTagNode> consumer) {

@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators.AbstractSpliterator;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -80,17 +79,6 @@ public final class SoyTreeUtils {
               }
               return false;
             });
-  }
-
-  /** Returns true if the given {@code node} contains any children that are HTML nodes. */
-  public static boolean hasHtmlNodes(Node node) {
-    return hasNodesOfType(
-        node,
-        HtmlOpenTagNode.class,
-        HtmlCloseTagNode.class,
-        HtmlCommentNode.class,
-        HtmlAttributeNode.class,
-        HtmlAttributeValueNode.class);
   }
 
   /** Returns the next sibling of {@code node} or {@code null} if none exists. */
@@ -124,6 +112,10 @@ public final class SoyTreeUtils {
     return VisitDirective.CONTINUE;
   }
 
+  private static VisitDirective visitNonExpr(Node n) {
+    return n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE;
+  }
+
   /**
    * Runs the visitor on all nodes (including {@link ExprNode expr nodes}) reachable from the given
    * node. The order of visiting is breadth first.
@@ -141,11 +133,7 @@ public final class SoyTreeUtils {
     // optimization to avoid navigating into expr trees if we can't possibly match anything
     boolean exploreExpressions = ExprNode.class.isAssignableFrom(classObject);
     return allNodes(
-            rootSoyNode,
-            exploreExpressions
-                ? SoyTreeUtils::visitAll
-                : n ->
-                    n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE)
+            rootSoyNode, exploreExpressions ? SoyTreeUtils::visitAll : SoyTreeUtils::visitNonExpr)
         .filter(classObject::isInstance)
         .map(classObject::cast);
   }
@@ -199,27 +187,14 @@ public final class SoyTreeUtils {
    */
   public static <T extends Node> ImmutableList<T> getAllNodesOfType(
       Node rootSoyNode, final Class<T> classObject) {
-    return getAllMatchingNodesOfType(rootSoyNode, classObject, arg -> true);
+    return allNodesOfType(rootSoyNode, classObject).collect(toImmutableList());
   }
 
-  /**
-   * Retrieves all nodes in a tree that are an instance of a particular class and match the given
-   * predicate.
-   */
-  public static <T extends Node> ImmutableList<T> getAllMatchingNodesOfType(
-      Node rootSoyNode, Class<T> classObject, Predicate<T> filter) {
-    return allNodesOfType(rootSoyNode, classObject).filter(filter).collect(toImmutableList());
-  }
-
-  /**
-   * Returns all {@link FunctionNode}s in a tree that are calls of the given {@link SoyFunction}.
-   */
-  public static ImmutableList<FunctionNode> getAllFunctionInvocations(
+  public static Stream<FunctionNode> allFunctionInvocations(
       Node rootSoyNode, SoyFunction functionToMatch) {
-    return getAllMatchingNodesOfType(
-        rootSoyNode,
-        FunctionNode.class,
-        function -> function.isResolved() && functionToMatch.equals(function.getSoyFunction()));
+    return allNodesOfType(rootSoyNode, FunctionNode.class)
+        .filter(
+            function -> function.isResolved() && functionToMatch.equals(function.getSoyFunction()));
   }
 
   /**
@@ -276,41 +251,6 @@ public final class SoyTreeUtils {
     return ifNode;
   }
 
-  /** Similar to {@link #buildAstString}, but also print the source string for debug usages. */
-  public static StringBuilder buildAstStringWithPreview(
-      ParentSoyNode<?> node, int indent, StringBuilder sb) {
-    for (SoyNode child : node.getChildren()) {
-      sb.append(Strings.repeat("  ", indent))
-          .append(child.getKind())
-          .append(": ")
-          .append(child.toSourceString())
-          .append('\n');
-      if (child instanceof ParentSoyNode) {
-        buildAstString((ParentSoyNode<?>) child, indent + 1, sb);
-      }
-    }
-    return sb;
-  }
-
-  /**
-   * Similar to {@link #buildAstString}, but for ExprNodes and also prints the source string for
-   * debug usages.
-   */
-  public static StringBuilder buildAstStringWithPreview(
-      ParentExprNode node, int indent, StringBuilder sb) {
-    for (ExprNode child : node.getChildren()) {
-      sb.append(Strings.repeat("  ", indent))
-          .append(child.getKind())
-          .append(": ")
-          .append(child.toSourceString())
-          .append('\n');
-      if (child instanceof ParentExprNode) {
-        buildAstStringWithPreview((ParentExprNode) child, indent + 1, sb);
-      }
-    }
-    return sb;
-  }
-
   // -----------------------------------------------------------------------------------------------
   // Utils for executing an ExprNode visitor on all expressions in a Soy tree.
 
@@ -326,9 +266,7 @@ public final class SoyTreeUtils {
    */
   public static <R> void execOnAllV2Exprs(
       SoyNode node, final AbstractNodeVisitor<ExprNode, R> exprNodeVisitor) {
-    allNodes(
-            node,
-            n -> n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE)
+    allNodes(node, SoyTreeUtils::visitNonExpr)
         .filter(n -> n instanceof ExprHolderNode)
         .map(ExprHolderNode.class::cast)
         .flatMap(n -> n.getExprList().stream())

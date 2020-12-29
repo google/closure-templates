@@ -54,28 +54,30 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
             .map(TemplateNode::getLocalTemplateSymbol)
             .collect(Collectors.toSet());
 
-    for (HtmlOpenTagNode tag :
-        SoyTreeUtils.getAllMatchingNodesOfType(
-            file, HtmlOpenTagNode.class, tag -> !tag.getTagName().isStatic())) {
-
-      for (FunctionNode fct :
-          SoyTreeUtils.getAllMatchingNodesOfType(
-              tag.getTagName().getDynamicTagName(),
-              FunctionNode.class,
-              fct ->
-                  fct.getParamsStyle() == ParamsStyle.NONE
-                      || fct.getParamsStyle() == ParamsStyle.NAMED)) {
-        if (templateRegistry.getImportedSymbols().contains(fct.getFunctionName())) {
-          convertToBind(fct, fct.getIdentifier(), fct.getFunctionNameLocation());
-        } else if (localTemplateNames.contains(fct.getFunctionName())) {
-          // Special case allowing local template .foo to be called as foo() -- without leading dot.
-          convertToBind(
-              fct,
-              Identifier.create("." + fct.getStaticFunctionName(), fct.getFunctionNameLocation()),
-              fct.getFunctionNameLocation());
-        }
-      }
-    }
+    SoyTreeUtils.allNodesOfType(file, HtmlOpenTagNode.class)
+        .filter(tag -> !tag.getTagName().isStatic())
+        .flatMap(
+            tag ->
+                SoyTreeUtils.allNodesOfType(
+                    tag.getTagName().getDynamicTagName(), FunctionNode.class))
+        .filter(
+            fct ->
+                fct.getParamsStyle() == ParamsStyle.NONE
+                    || fct.getParamsStyle() == ParamsStyle.NAMED)
+        .forEach(
+            fct -> {
+              if (templateRegistry.getImportedSymbols().contains(fct.getFunctionName())) {
+                convertToBind(fct, fct.getIdentifier(), fct.getFunctionNameLocation());
+              } else if (localTemplateNames.contains(fct.getFunctionName())) {
+                // Special case allowing local template .foo to be called as foo() -- without
+                // leading dot.
+                convertToBind(
+                    fct,
+                    Identifier.create(
+                        "." + fct.getStaticFunctionName(), fct.getFunctionNameLocation()),
+                    fct.getFunctionNameLocation());
+              }
+            });
   }
 
   private static void convertToBind(

@@ -45,6 +45,7 @@ import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.defn.LocalVar;
+import java.util.stream.Collectors;
 
 /**
  * Implements the {@code msgWithId} and {@code msgId} functions.
@@ -89,7 +90,8 @@ final class MsgWithIdFunctionPass implements CompilerFilePass {
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     outer:
     for (FunctionNode fn :
-        SoyTreeUtils.getAllFunctionInvocations(file, BuiltinFunction.MSG_WITH_ID)) {
+        SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.MSG_WITH_ID)
+            .collect(Collectors.toList())) {
       if (fn.numChildren() != 1) {
         // if it isn't == 1, then an error has already been reported
         continue;

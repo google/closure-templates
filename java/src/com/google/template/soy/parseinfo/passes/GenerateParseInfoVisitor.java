@@ -41,7 +41,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IndentedLinesBuilder;
-import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.StringNode;
 import com.google.template.soy.invocationbuilders.passes.SoyFileNodeTransformer;
 import com.google.template.soy.passes.IndirectParamsCalculator;
@@ -724,10 +723,12 @@ public final class GenerateParseInfoVisitor
 
   private static SortedSet<String> collectCssNames(SoyNode node) {
     SortedSet<String> cssNames = new TreeSet<>();
-    for (FunctionNode fn : SoyTreeUtils.getAllFunctionInvocations(node, BuiltinFunction.CSS)) {
-      String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
-      cssNames.add(selector);
-    }
+    SoyTreeUtils.allFunctionInvocations(node, BuiltinFunction.CSS)
+        .forEach(
+            fn -> {
+              String selector = ((StringNode) Iterables.getLast(fn.getChildren())).getValue();
+              cssNames.add(selector);
+            });
 
     return cssNames;
   }

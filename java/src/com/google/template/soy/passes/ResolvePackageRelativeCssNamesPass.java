@@ -71,10 +71,9 @@ final class ResolvePackageRelativeCssNamesPass implements CompilerFilePass {
       if (template.getCssBaseNamespace() != null) {
         packagePrefix = toCamelCase(template.getCssBaseNamespace());
       }
-      for (FunctionNode fn :
-          SoyTreeUtils.getAllFunctionInvocations(template, BuiltinFunction.CSS)) {
-        resolveSelector(template, fn, packagePrefix);
-      }
+      String finalPackagePrefix = packagePrefix;
+      SoyTreeUtils.allFunctionInvocations(template, BuiltinFunction.CSS)
+          .forEach(fn -> resolveSelector(template, fn, finalPackagePrefix));
     }
   }
 

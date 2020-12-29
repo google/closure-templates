@@ -196,13 +196,11 @@ final class Rewriter {
       if (!param.type().getKind().isKnownSanitizedContent()) {
         return null; // only care about sanitized types
       }
-      if (!SoyTreeUtils.getAllMatchingNodesOfType(
-              template.getParent(),
-              TemplateLiteralNode.class,
+      if (SoyTreeUtils.allNodesOfType(template.getParent(), TemplateLiteralNode.class)
+          .anyMatch(
               (templateLiteral) ->
                   !templateLiteral.isSynthetic()
-                      && templateLiteral.getResolvedName().equals(template.getTemplateName()))
-          .isEmpty()) {
+                      && templateLiteral.getResolvedName().equals(template.getTemplateName()))) {
         // If a template is passed around into other templates, we cannot be sure of the trusted
         // content kind.
         return null;
