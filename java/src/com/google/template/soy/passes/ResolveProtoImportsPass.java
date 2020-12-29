@@ -49,8 +49,7 @@ import java.util.Map;
 @RunBefore({
   // Basically anything that needs types...
   ResolveExpressionTypesPass.class,
-  // Need proto imports to distinguish empty proto inits from function calls.
-  ResolvePluginsPass.class,
+  ResolvePluginsPass.class, // Needs all local variables in scope.
   ResolveTemplateParamTypesPass.class,
   ResolveExpressionTypesPass.class, // To resolve extensions.
   RewriteGlobalsPass.class, // To resolve extensions.
