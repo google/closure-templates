@@ -79,7 +79,11 @@ public final class SoyValueConverter {
   private final TypeMap expensiveConverterMap = new TypeMap();
 
   private SoyValueConverter() {
-    cheapConverterMap.put(SoyValueProvider.class, input -> input);
+    cheapConverterMap.put(
+        SoyValueProvider.class,
+        input -> {
+          throw new AssertionError("shouldn't get here.");
+        });
     cheapConverterMap.put(String.class, StringData::forValue);
     cheapConverterMap.put(Boolean.class, BooleanData::forValue);
     cheapConverterMap.put(Integer.class, input -> IntegerData.forValue(input.longValue()));
@@ -316,6 +320,9 @@ public final class SoyValueConverter {
   private SoyValueProvider convertCheap(@Nullable Object obj) {
     if (obj == null) {
       return NullData.INSTANCE;
+    }
+    if (obj instanceof SoyValueProvider) {
+      return (SoyValueProvider) obj;
     }
     return cheapConverterMap.convert(obj);
   }
