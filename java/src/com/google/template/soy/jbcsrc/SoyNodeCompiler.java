@@ -38,7 +38,6 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.internal.Converters;
 import com.google.template.soy.data.internal.ParamStore;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
@@ -240,10 +239,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     // TODO(lukes): directionality is always the default, do we need to set it?
     statements.add(
         appendableExpression
-            .setSanitizedContentKind(node.getContentKind())
-            .setSanitizedContentDirectionality(
-                Converters.contentKindfromSanitizedContentKind(node.getContentKind())
-                    .getDefaultDir())
+            .setSanitizedContentKindAndDirectionality(node.getContentKind())
             .toStatement());
     statements.add(prefix.compile(exprCompiler, appendableExpression, detachState));
     statements.add(visitChildrenInNewScope(node));

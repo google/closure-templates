@@ -30,8 +30,8 @@ import javax.annotation.Nullable;
  * <p>This tracks the {@code activeAppendable}, or the appendable {@code append} calls should be
  * sent to, based on the content kind. The active appendable starts out as the appendable that does
  * the escaping (the {@code escapingAppendable} constructor param). Subclasses can overwrite the
- * {@code activeAppendable} field in the {@link #notifyContentKind(ContentKind)} method based on the
- * content kind.
+ * {@code activeAppendable} field in the {@link #notifyKindAndDirectionality(ContentKind,Dir)}
+ * method based on the content kind.
  */
 public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppendable {
 
@@ -73,12 +73,8 @@ public abstract class AbstractStreamingHtmlEscaper extends LoggingAdvisingAppend
    * content kind.
    */
   @Override
-  protected abstract void notifyContentKind(ContentKind kind) throws IOException;
-
-  @Override
-  protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
-    delegate.setSanitizedContentDirectionality(contentDir);
-  }
+  protected abstract void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
+      throws IOException;
 
   @Override
   public void flushBuffers(int depth) throws IOException {

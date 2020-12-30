@@ -203,10 +203,7 @@ public class SanitizedContent extends SoyData {
 
   @Override
   public void render(LoggingAdvisingAppendable appendable) throws IOException {
-    appendable
-        .setSanitizedContentKind(getContentKind())
-        .setSanitizedContentDirectionality(getContentDirection())
-        .append(content);
+    appendable.setKindAndDirectionality(getContentKind(), getContentDirection()).append(content);
   }
 
   /**

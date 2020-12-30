@@ -162,15 +162,10 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
-      delegate.setSanitizedContentKind(kind);
-      buffer.setSanitizedContentKind(kind);
-    }
-
-    @Override
-    protected void notifyContentDirectionality(@Nullable Dir contentDir) throws IOException {
-      delegate.setSanitizedContentDirectionality(contentDir);
-      buffer.setSanitizedContentDirectionality(contentDir);
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir contentDir)
+        throws IOException {
+      delegate.setKindAndDirectionality(kind, contentDir);
+      buffer.setKindAndDirectionality(kind, contentDir);
     }
 
     @Override

@@ -29,6 +29,7 @@ import com.google.template.soy.data.restricted.NullData;
 import com.google.template.soy.shared.internal.AbstractStreamingHtmlEscaper;
 import com.google.template.soy.shared.internal.EscapingConventions;
 import java.io.IOException;
+import javax.annotation.Nullable;
 
 /** Runtime functions for implementing the directives in this package. */
 public final class CoreDirectivesRuntime {
@@ -67,10 +68,12 @@ public final class CoreDirectivesRuntime {
     }
 
     @Override
-    protected void notifyContentKind(ContentKind kind) throws IOException {
+    protected void notifyKindAndDirectionality(ContentKind kind, @Nullable Dir dir)
+        throws IOException {
       if (isInHtml()) {
         activeAppendable = delegate;
       }
+      delegate.setKindAndDirectionality(kind, dir);
     }
 
     @Override
@@ -105,4 +108,6 @@ public final class CoreDirectivesRuntime {
       return this;
     }
   }
+
+  private CoreDirectivesRuntime() {}
 }
