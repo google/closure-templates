@@ -617,6 +617,7 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         return NONE;
       case MSG_WITH_ID:
       case REMAINDER:
+      case TEMPLATE:
         // should have been removed earlier in the compiler
         throw new AssertionError();
       case PROTO_INIT:

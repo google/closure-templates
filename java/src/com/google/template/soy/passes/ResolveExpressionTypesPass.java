@@ -2088,6 +2088,11 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case PROTO_INIT:
           visitProtoInitFunction(node);
           break;
+        case TEMPLATE:
+          // Any TEMPLATE that reaches here without having been rewritten to TemplateLiteralNode has
+          // had some error reported already.
+          node.setType(UnknownType.getInstance());
+          break;
       }
     }
 

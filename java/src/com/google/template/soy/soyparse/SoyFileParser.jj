@@ -4188,13 +4188,6 @@ private ExprNode VarRefOrFunctionCallLike() :
         return VeLiteral(ident);
       }
     |
-      LOOKAHEAD( {identToken.image.equals("template")} )
-      {
-        // Alternately we could not special case this here in the parser and
-        // just define a built-in function called "template".
-        return TemplateLiteral(ident);
-      }
-    |
       callArgs = CallArgs()
       {
         SourceLocation loc = ident.location().extend(createSrcLoc(callArgs.close));
@@ -4488,23 +4481,6 @@ private StringNode StringLiteral() :
   }
 }
 
-private TemplateLiteralNode TemplateLiteral(Identifier ident) :
-{
-    Identifier templateName;
-    Token closeParen;
-}
-{
-  (
-    templateName = Identifier()
-  )
-  closeParen = <RPAREN>
-  {
-    return new TemplateLiteralNode(
-        templateName,
-        ident.location().extend(createSrcLoc(closeParen)),
-        false /* isSynthetic */);
-  }
-}
 
 private Identifier PartialTemplateNameInExpression() :
 {

@@ -16,9 +16,15 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.error.SoyErrorKind;
+import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
@@ -30,13 +36,22 @@ import java.util.Optional;
 /** Resolves template names in calls, checking against template names & imports. */
 @RunAfter({
   ResolveTemplateImportsPass.class,
+  ResolvePluginsPass.class, // Needs TEMPLATE function resolved.
 })
 @RunBefore({
   SoyElementPass.class, // Needs {@link CallBasicNode#getCalleeName} to be resolved.
 })
 public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
 
-  public ResolveTemplateNamesPass() {}
+  private static final SoyErrorKind INVALID_TEMPLATE_FUNCT_PARAM =
+      SoyErrorKind.of(
+          "The template() function must have a single argument that is a dotted identifier.");
+
+  private final ErrorReporter errorReporter;
+
+  public ResolveTemplateNamesPass(ErrorReporter errorReporter) {
+    this.errorReporter = errorReporter;
+  }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
@@ -50,9 +65,31 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
   }
 
   private void visitFile(SoyFileNode file, Optional<ImportsTemplateRegistry> templateRegistry) {
-    for (TemplateLiteralNode node :
-        SoyTreeUtils.getAllNodesOfType(file, TemplateLiteralNode.class)) {
-      resolveTemplateName(node, templateRegistry, file.getHeaderInfo());
+    SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.TEMPLATE)
+        .forEach(this::resolveTemplateFunction);
+
+    SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
+        .forEach(node -> resolveTemplateName(node, templateRegistry, file.getHeaderInfo()));
+  }
+
+  private void resolveTemplateFunction(FunctionNode functionNode) {
+    if (functionNode.getParams().size() != 1) {
+      // Error reported elsewhere.
+      return;
+    }
+
+    ExprNode param = functionNode.getParams().get(0);
+    // TODO(b/175405629): This is temporary code until template imports are proper var refs.
+    String paramSrc = param.toSourceString();
+    if (BaseUtils.isDottedIdentifier(paramSrc)) {
+      TemplateLiteralNode literal =
+          new TemplateLiteralNode(
+              Identifier.create(paramSrc, param.getSourceLocation()),
+              functionNode.getSourceLocation(),
+              /* isSynthetic= */ false);
+      functionNode.getParent().replaceChild(functionNode, literal);
+    } else {
+      errorReporter.report(param.getSourceLocation(), INVALID_TEMPLATE_FUNCT_PARAM);
     }
   }
 

@@ -41,6 +41,7 @@ public enum BuiltinFunction implements SoyFunction {
    */
   CSS("css"),
   XID("xid"),
+  TEMPLATE("template"),
   SOY_SERVER_KEY("$soyServerKey"),
   V1_EXPRESSION("v1Expression"),
   UNKNOWN_JS_GLOBAL("unknownJsGlobal"),
@@ -113,6 +114,7 @@ public enum BuiltinFunction implements SoyFunction {
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
+      case TEMPLATE:
         return ImmutableSet.of(1);
       case PROTO_INIT:
         throw new UnsupportedOperationException();
@@ -136,6 +138,7 @@ public enum BuiltinFunction implements SoyFunction {
       case VE_DATA:
       case TO_FLOAT:
       case PROTO_INIT:
+      case TEMPLATE:
         return true;
       case IS_FIRST: // implicitly depends on loop index
       case IS_LAST: // implicitly depends on loop index

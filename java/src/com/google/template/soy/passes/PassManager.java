@@ -398,7 +398,6 @@ public final class PassManager {
       if (astRewrites.atLeast(AstRewrites.KYTHE)) {
         addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
       }
-      addPass(new ResolveTemplateNamesPass(), partialTemplateRegistryPassesBuilder);
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(
@@ -407,6 +406,7 @@ public final class PassManager {
 
       // needs to come before SoyConformancePass
       addPass(new ResolvePluginsPass(pluginResolver), partialTemplateRegistryPassesBuilder);
+      addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       // Must come after ResolvePluginsPass.
       if (astRewrites.atLeast(AstRewrites.ALL)) {
