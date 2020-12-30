@@ -174,6 +174,12 @@ public abstract class SoyMsg {
     }
 
     public SoyMsg build() {
+      // An alternate ID that points to itself is a no-op, so just omit it.
+      // A tricorder warning suggests eliminating such tags if they're added manually, but we need
+      // to allow it for generated code.
+      if (alternateId.isPresent() && (alternateId.getAsLong() == id)) {
+        alternateId = OptionalLong.empty();
+      }
       return new AutoValue_SoyMsg(
           localeString,
           id,
