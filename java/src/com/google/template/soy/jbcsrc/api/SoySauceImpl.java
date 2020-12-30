@@ -127,7 +127,7 @@ public final class SoySauceImpl implements SoySauce {
   @Override
   public RendererImpl renderTemplate(String template) {
     CompiledTemplates.TemplateData data = templates.getTemplateData(template);
-    return new RendererImpl(template, data.factory(), data.kind(), null);
+    return new RendererImpl(template, data.factory(), data.kind(), /* data=*/ null);
   }
 
   @Override
@@ -141,18 +141,11 @@ public final class SoySauceImpl implements SoySauce {
     private final String templateName;
     private final CompiledTemplate.Factory templateFactory;
     private final ContentKind contentKind;
-    private Predicate<String> activeDelegatePackages = arg -> false;
-    private SoyMsgBundle msgs = SoyMsgBundle.EMPTY;
-    private SoyLogger logger = SoyLogger.NO_OP;
     private final RenderContext.Builder contextBuilder =
-        new RenderContext.Builder()
-            .withCompiledTemplates(templates)
-            .withSoyPrintDirectives(printDirectives)
-            .withPluginInstances(SoySauceImpl.this.pluginInstances);
+        new RenderContext.Builder(templates, printDirectives, SoySauceImpl.this.pluginInstances);
 
-    private SoyRecord data = ParamStore.EMPTY_INSTANCE;
-    private SoyRecord ij = ParamStore.EMPTY_INSTANCE;
-    private Map<String, Supplier<Object>> perRenderPluginInstances = null;
+    private SoyRecord data;
+    private SoyRecord ij;
     private boolean dataSetInConstructor;
 
     RendererImpl(
@@ -165,6 +158,7 @@ public final class SoySauceImpl implements SoySauce {
       this.contentKind = contentKind;
       if (data != null) {
         this.data = soyValueProviderMapAsParamStore(data);
+        // TODO(lukes): eliminate this and just use the nullness of data to enforce this.
         this.dataSetInConstructor = true;
       }
     }
@@ -207,7 +201,12 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setPluginInstances(Map<String, Supplier<Object>> pluginInstances) {
-      this.perRenderPluginInstances = checkNotNull(pluginInstances);
+      contextBuilder.withPluginInstances(
+          ImmutableMap.<String, Supplier<Object>>builderWithExpectedSize(
+                  SoySauceImpl.this.pluginInstances.size() + pluginInstances.size())
+              .putAll(SoySauceImpl.this.pluginInstances)
+              .putAll(pluginInstances)
+              .build());
       return this;
     }
 
@@ -223,7 +222,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setActiveDelegatePackageSelector(Predicate<String> active) {
-      this.activeDelegatePackages = checkNotNull(active);
+      contextBuilder.withActiveDelPackageSelector(checkNotNull(active));
       return this;
     }
 
@@ -241,7 +240,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setMsgBundle(SoyMsgBundle msgs) {
-      this.msgs = checkNotNull(msgs);
+      contextBuilder.withMessageBundle(msgs);
       return this;
     }
 
@@ -253,7 +252,7 @@ public final class SoySauceImpl implements SoySauce {
 
     @Override
     public RendererImpl setSoyLogger(SoyLogger logger) {
-      this.logger = checkNotNull(logger);
+      contextBuilder.withLogger(logger);
       return this;
     }
 
@@ -346,26 +345,14 @@ public final class SoySauceImpl implements SoySauce {
     private <T> WriteContinuation startRender(AdvisingAppendable out, ContentKind contentKind)
         throws IOException {
       enforceContentKind(contentKind);
-      return startRender(OutputAppendable.create(out, logger));
-    }
+      RenderContext context = contextBuilder.build();
 
-    private <T> WriteContinuation startRender(OutputAppendable out) throws IOException {
-      if (perRenderPluginInstances != null) {
-        contextBuilder.withPluginInstances(
-            ImmutableMap.<String, Supplier<Object>>builder()
-                .putAll(SoySauceImpl.this.pluginInstances)
-                .putAll(perRenderPluginInstances)
-                .build());
-      }
-      RenderContext context =
-          contextBuilder
-              .withMessageBundle(msgs)
-              .withActiveDelPackageSelector(activeDelegatePackages)
-              .withLogger(logger)
-              .build();
-      Scoper scoper = new Scoper(apiCallScope, BidiGlobalDir.forStaticIsRtl(msgs.isRtl()));
-      CompiledTemplate template = templateFactory.create(data, ij);
-      return doRender(template, scoper, out, context);
+      Scoper scoper = new Scoper(apiCallScope, context.getBidiGlobalDir());
+      CompiledTemplate template =
+          templateFactory.create(
+              data == null ? ParamStore.EMPTY_INSTANCE : data,
+              ij == null ? ParamStore.EMPTY_INSTANCE : ij);
+      return doRender(template, scoper, OutputAppendable.create(out, context.getLogger()), context);
     }
 
     private void enforceContentKind(ContentKind expectedContentKind) {

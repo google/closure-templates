@@ -52,7 +52,6 @@ import com.google.template.soy.jbcsrc.shared.CompiledTemplates;
 import com.google.template.soy.jbcsrc.shared.LegacyFunctionAdapter;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.ValidatedLoggingConfig;
-import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.plugin.restricted.SoySourceFunction;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
@@ -76,7 +75,6 @@ import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,13 +84,13 @@ import javax.annotation.CheckReturnValue;
 /** Utilities for testing compiled soy templates. */
 public final class TemplateTester {
 
-  private static RenderContext.Builder createDefaultBuilder() {
-    return new RenderContext.Builder()
-        .withSoyPrintDirectives(
-            InternalPlugins.internalDirectives(new SoySimpleScope()).stream()
-                .filter(e -> e instanceof SoyJavaPrintDirective)
-                .collect(
-                    toImmutableMap(SoyPrintDirective::getName, d -> (SoyJavaPrintDirective) d)));
+  private static RenderContext.Builder createDefaultBuilder(CompiledTemplates templates) {
+    return new RenderContext.Builder(
+        templates,
+        InternalPlugins.internalDirectives(new SoySimpleScope()).stream()
+            .filter(e -> e instanceof SoyJavaPrintDirective)
+            .collect(toImmutableMap(SoyPrintDirective::getName, d -> (SoyJavaPrintDirective) d)),
+        ImmutableMap.of());
   }
 
   static RenderContext getDefaultContext(CompiledTemplates templates) {
@@ -108,9 +106,8 @@ public final class TemplateTester {
       CompiledTemplates templates,
       Predicate<String> activeDelPackages,
       boolean debugSoyTemplateInfo) {
-    return createDefaultBuilder()
+    return createDefaultBuilder(templates)
         .withActiveDelPackageSelector(activeDelPackages)
-        .withCompiledTemplates(templates)
         .withDebugSoyTemplateInfo(debugSoyTemplateInfo)
         .build();
   }
@@ -159,12 +156,13 @@ public final class TemplateTester {
     private final String actual;
     private final List<SoyFunction> soyFunctions = new ArrayList<>();
     private final List<SoySourceFunction> soySourceFunctions = new ArrayList<>();
-    private final RenderContext.Builder defaultContextBuilder = createDefaultBuilder();
 
     private Iterable<ClassData> classData;
     private CompiledTemplate.Factory factory;
     private SoyTypeRegistry typeRegistry = SoyTypeRegistryBuilder.create();
     private ImmutableList<String> experimentalFeatures = ImmutableList.of();
+    private SoyCssRenamingMap cssRenamingMap = SoyCssRenamingMap.EMPTY;
+    private SoyIdRenamingMap xidRenamingMap = SoyCssRenamingMap.EMPTY;
     private RenderContext defaultContext;
 
     private CompiledTemplateSubject(FailureMetadata failureMetadata, String subject) {
@@ -199,12 +197,12 @@ public final class TemplateTester {
     }
 
     CompiledTemplateSubject withCssRenamingMap(SoyCssRenamingMap renamingMap) {
-      this.defaultContextBuilder.withCssRenamingMap(renamingMap);
+      this.cssRenamingMap = renamingMap;
       return this;
     }
 
     CompiledTemplateSubject withXidRenamingMap(SoyIdRenamingMap renamingMap) {
-      this.defaultContextBuilder.withXidRenamingMap(renamingMap);
+      this.xidRenamingMap = renamingMap;
       return this;
     }
 
@@ -364,7 +362,7 @@ public final class TemplateTester {
                 .parse();
         SoyFileSetNode fileSet = parseResult.fileSet();
 
-        Map<String, Supplier<Object>> pluginInstances = new LinkedHashMap<>();
+        ImmutableMap.Builder<String, Supplier<Object>> pluginInstances = ImmutableMap.builder();
         for (FunctionNode fnNode : SoyTreeUtils.getAllNodesOfType(fileSet, FunctionNode.class)) {
           if (fnNode.getSoyFunction() instanceof SoyJavaFunction) {
             pluginInstances.put(
@@ -402,10 +400,10 @@ public final class TemplateTester {
                 new MemoryClassLoader(classData));
         factory = compiledTemplates.getTemplateFactory(templateName);
         defaultContext =
-            defaultContextBuilder
-                .withPluginInstances(pluginInstances)
-                .withCompiledTemplates(compiledTemplates)
-                .withMessageBundle(SoyMsgBundle.EMPTY)
+            createDefaultBuilder(compiledTemplates)
+                .withPluginInstances(pluginInstances.build())
+                .withCssRenamingMap(cssRenamingMap)
+                .withXidRenamingMap(xidRenamingMap)
                 .build();
       }
     }
