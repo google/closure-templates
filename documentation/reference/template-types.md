@@ -194,7 +194,7 @@ In the following example, the type of the template returned by `bind` is
 ```soy
 {template .bar}
   {call .foo}
-    {param input: template(.input2).bind(record(s2:'world')) /}
+    {param input: template(input2).bind(record(s2:'world')) /}
   {/call}
 {/template}
 
@@ -209,7 +209,7 @@ In the following example, the type of the template returned by `bind` is
 
 ```soy
 {template .bar}
-  <{foo(input: template(.input2).bind(record(s2:'world')))} />
+  <{foo(input: template(input2).bind(record(s2:'world')))} />
 {/template}
 
 {template .input2}

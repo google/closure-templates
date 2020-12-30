@@ -4495,8 +4495,6 @@ private TemplateLiteralNode TemplateLiteral(Identifier ident) :
 }
 {
   (
-    templateName = PartialTemplateNameInExpression()
-  |
     templateName = Identifier()
   )
   closeParen = <RPAREN>

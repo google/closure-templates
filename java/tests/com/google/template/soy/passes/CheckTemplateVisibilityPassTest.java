@@ -84,7 +84,7 @@ public final class CheckTemplateVisibilityPassTest {
             "{namespace ns}\n"
                 + "/** Public template. */\n"
                 + "{template .bar}\n"
-                + "{let $foo: template(.foo) /}\n"
+                + "{let $foo: template(foo) /}\n"
                 + "{call $foo /}\n"
                 + "{/template}")
         .errorReporter(errorReporter)
