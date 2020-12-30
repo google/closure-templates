@@ -16,6 +16,9 @@
 
 package com.google.template.soy.jbcsrc.restricted;
 
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.comparingInt;
+
 import com.google.auto.value.AutoValue;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +51,7 @@ public final class CodeBuilder extends MethodVisitor {
   private final GeneratorAdapter adapter;
 
   @AutoValue
-  abstract static class LineNumberTableEntry implements Comparable<LineNumberTableEntry> {
+  abstract static class LineNumberTableEntry {
     static LineNumberTableEntry create(Label label, int lineNumber) {
       return new AutoValue_CodeBuilder_LineNumberTableEntry(label, lineNumber);
     }
@@ -56,11 +59,6 @@ public final class CodeBuilder extends MethodVisitor {
     abstract Label label();
 
     abstract int lineNumber();
-
-    @Override
-    public int compareTo(LineNumberTableEntry other) {
-      return Integer.compare(label().getOffset(), other.label().getOffset());
-    }
   }
 
   private final List<LineNumberTableEntry> lineNumberTable = new ArrayList<>();
@@ -339,14 +337,33 @@ public final class CodeBuilder extends MethodVisitor {
 
   /** See {@link GeneratorAdapter#endMethod()} */
   public void endMethod() {
-    Collections.sort(lineNumberTable);
-    int previousLineNumber = -1;
-    for (LineNumberTableEntry entry : lineNumberTable) {
-      if (entry.lineNumber() == previousLineNumber) {
-        continue;
+    if (!lineNumberTable.isEmpty()) {
+      // There may be a lot of redundancy in our lineNumberTable due to how annotations are added.
+      // Rather than changing callsites to be more careful it is easier to compress things here..
+      // sort by bytecode offset and then filter out redundant annotations.  An annotation is
+      // redundant if either:
+      // 1. It has the same line number as the previous entry, in which case it is not needed.  When
+      //    finding line numbers for instructions the jvm looks for the latest entry that is <= the
+      //    index of the instruction we care about.
+      // 2. There are multiple annotations at a single location and the other annotation has a
+      //    greater line number.
+      Collections.sort(
+          lineNumberTable,
+          // sort by increasing bytecode offset and then by decreasing line number.  This ordering
+          // means that when looking at an element we can decide whether we should write an entry
+          // just by looking at the previous item.
+          comparing((LineNumberTableEntry entry) -> entry.label().getOffset())
+              .thenComparing(comparingInt(LineNumberTableEntry::lineNumber).reversed()));
+      LineNumberTableEntry previous = lineNumberTable.get(0);
+      super.visitLineNumber(previous.lineNumber(), previous.label());
+      for (int i = 1; i < lineNumberTable.size(); i++) {
+        LineNumberTableEntry current = lineNumberTable.get(i);
+        if (current.lineNumber() != previous.lineNumber()
+            && current.label().getOffset() != previous.label().getOffset()) {
+          super.visitLineNumber(current.lineNumber(), current.label());
+          previous = current;
+        }
       }
-      previousLineNumber = entry.lineNumber();
-      super.visitLineNumber(entry.lineNumber(), entry.label());
     }
     adapter.endMethod();
   }
