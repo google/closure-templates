@@ -39,9 +39,9 @@ public abstract class DetachableSoyValueProvider implements SoyValueProvider {
 
   @Override
   public final SoyValue resolve() {
+    checkState(status().isDone(), "called resolve() before status() returned ready.");
     SoyValue local = resolvedValue;
-    checkState(
-        local != TombstoneValue.INSTANCE, "called resolve() before status() returned ready.");
+    checkState(local != TombstoneValue.INSTANCE, "doResolve didn't replace tombstone");
     return local;
   }
 

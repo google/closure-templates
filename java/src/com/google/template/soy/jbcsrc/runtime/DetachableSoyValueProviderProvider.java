@@ -39,11 +39,8 @@ public abstract class DetachableSoyValueProviderProvider implements SoyValueProv
 
   @Override
   public final SoyValue resolve() {
-    SoyValueProvider local = resolvedValueProvider;
-    checkState(
-        local != null && local.status().isDone(),
-        "called resolve() before status() returned ready.");
-    return local.resolve();
+    checkState(status().isDone(), "called resolve() before status() returned ready.");
+    return resolvedValueProvider.resolve();
   }
 
   @Override

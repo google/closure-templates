@@ -16,6 +16,7 @@
 
 package com.google.template.soy.jbcsrc;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jbcsrc.StandardNames.COMPILED_TEMPLATE;
 import static com.google.template.soy.jbcsrc.StandardNames.RENDER_CONTEXT_FIELD;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
@@ -60,6 +61,7 @@ import com.google.template.soy.jbcsrc.runtime.DetachableContentProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProvider;
 import com.google.template.soy.jbcsrc.runtime.DetachableSoyValueProviderProvider;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
+import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -68,6 +70,9 @@ import com.google.template.soy.soytree.MsgHtmlTagNode;
 import com.google.template.soy.soytree.RawTextNode;
 import com.google.template.soy.soytree.SoyNode;
 import com.google.template.soy.soytree.SoyNode.RenderUnitNode;
+import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
+import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
@@ -147,10 +152,15 @@ import org.objectweb.asm.commons.Method;
 final class LazyClosureCompiler {
   @AutoValue
   abstract static class LazyClosure {
-    static LazyClosure create(String name, Expression soyValueProvider, boolean isTrivial) {
+    static LazyClosure create(
+        String name,
+        Expression soyValueProvider,
+        boolean isTrivial,
+        boolean requiresDetachLogicToResolve) {
       soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
 
-      return new AutoValue_LazyClosureCompiler_LazyClosure(name, soyValueProvider, isTrivial);
+      return new AutoValue_LazyClosureCompiler_LazyClosure(
+          name, soyValueProvider, isTrivial, requiresDetachLogicToResolve);
     }
 
     abstract String name();
@@ -158,6 +168,8 @@ final class LazyClosureCompiler {
     abstract Expression soyValueProvider();
 
     abstract boolean isTrivial();
+
+    abstract boolean requiresDetachLogicToResolve();
   }
 
   // All our lazy closures are package private.  They should only be referenced by their parent
@@ -229,6 +241,28 @@ final class LazyClosureCompiler {
     this.typeRegistry = typeRegistry;
   }
 
+  /** Returns true if evaluating the RenderUnitNode will require generating detach logic. */
+  private boolean requiresDetachLogic(RenderUnitNode root) {
+    checkState(!(root instanceof TemplateNode)); // this logic isn't correct for templates
+    return SoyTreeUtils.allNodes(
+            root,
+            n -> n instanceof ExprNode ? VisitDirective.SKIP_CHILDREN : VisitDirective.CONTINUE)
+        .anyMatch(
+            node -> {
+              if (node instanceof ExprNode) {
+                return ExpressionCompiler.requiresDetach(analysis, (ExprNode) node);
+              }
+              // Call nodes always require detach logic.  This is important for encapsulation
+              // reasons.  A template may occasionally require no detach states, but we don't know
+              // that statically because it isn't part of the signature.  We could potentially
+              // break encapsulation for private templates.
+              if (node instanceof CallNode) {
+                return true;
+              }
+              return false;
+            });
+  }
+
   LazyClosure compileLazyExpression(
       String namePrefix, SoyNode declaringNode, String varName, ExprRootNode exprNode) {
     if (ExpressionCompiler.canCompileToConstant(exprNode)) {
@@ -239,14 +273,18 @@ final class LazyClosureCompiler {
               .addStaticField(
                   getProposedName(namePrefix, varName), expression.boxAsSoyValueProvider())
               .accessor(),
-          /* isTrivial=*/ true);
+          /* isTrivial=*/ true,
+          /* requiresDetachLogicToResolve=*/ false);
     }
     Optional<Expression> asSoyValueProvider =
         expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
     if (asSoyValueProvider.isPresent()) {
       Expression svp = asSoyValueProvider.get();
       return LazyClosure.create(
-          varName, svp, /* isTrivial=*/ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE);
+          varName,
+          svp,
+          /* isTrivial=*/ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE,
+          /* requiresDetachLogicToResolve=*/ ExpressionCompiler.requiresDetach(analysis, exprNode));
     }
 
     TypeInfo type =
@@ -268,7 +306,12 @@ final class LazyClosureCompiler {
       innerClasses.registerAsInnerClass(writer, type);
       writer.visitEnd();
       innerClasses.add(writer.toClassData());
-      return LazyClosure.create(varName, asSoyValueProviderProvider.get(), /* isTrivial=*/ false);
+      return LazyClosure.create(
+          varName,
+          asSoyValueProviderProvider.get(),
+          /* isTrivial=*/ false,
+          // must be true, otherwise we would have been able to `compileAvoidingDetaches` above
+          /* requiresDetachLogicToResolve=*/ true);
     }
 
     writer =
@@ -284,7 +327,12 @@ final class LazyClosureCompiler {
     innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
     innerClasses.add(writer.toClassData());
-    return LazyClosure.create(varName, expr, /* isTrivial=*/ false);
+    return LazyClosure.create(
+        varName,
+        expr,
+        /* isTrivial=*/ false,
+        // this must be true, otherwise one of our earlier cases would have triggered.
+        /* requiresDetachLogicToResolve=*/ true);
   }
 
   LazyClosure compileLazyContent(String namePrefix, RenderUnitNode renderUnit, String varName) {
@@ -306,7 +354,8 @@ final class LazyClosureCompiler {
             ? asRawTextOnly(proposedName, renderUnit)
             : Optional.empty();
     if (asRawText.isPresent()) {
-      return LazyClosure.create(varName, asRawText.get(), /*isTrivial=*/ true);
+      return LazyClosure.create(
+          varName, asRawText.get(), /*isTrivial=*/ true, /* requiresDetachLogicToResolve=*/ false);
     }
     // TODO(b/172970101): add a case for when these nodes can be compiled without detaches. A simple
     // example would be composing some css class names.
@@ -325,7 +374,13 @@ final class LazyClosureCompiler {
     innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
     innerClasses.add(writer.toClassData());
-    return LazyClosure.create(varName, expr, /* isTrivial=*/ false);
+    return LazyClosure.create(
+        varName,
+        expr,
+        /* isTrivial=*/ false,
+        /* requiresDetachLogicToResolve=*/ requiresDetachLogic(renderUnit)
+            || prefix.requiresDetachLogic(analysis)
+            || suffix.requiresDetachLogic(analysis));
   }
 
   /**

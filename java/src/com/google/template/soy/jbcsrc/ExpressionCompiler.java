@@ -349,13 +349,21 @@ final class ExpressionCompiler {
     return exec.withSource(exec.labelStart(reattachPoint));
   }
 
+  static boolean requiresDetach(TemplateAnalysis analysis, ExprNode node) {
+    return new RequiresDetachVisitor(analysis).exec(node);
+  }
+
+  boolean requiresDetach(ExprNode node) {
+    return requiresDetach(analysis, node);
+  }
+
   /**
    * Compiles the given expression tree to a sequence of bytecode if it can be done without
    * generating any detach operations.
    */
   Optional<SoyExpression> compileWithNoDetaches(ExprNode node) {
     checkNotNull(node);
-    if (new RequiresDetachVisitor(analysis).exec(node)) {
+    if (requiresDetach(node)) {
       return Optional.empty();
     }
     return Optional.of(

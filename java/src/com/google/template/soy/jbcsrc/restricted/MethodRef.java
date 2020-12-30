@@ -119,6 +119,9 @@ public abstract class MethodRef {
   public static final MethodRef FLOAT_DATA_FOR_VALUE =
       create(FloatData.class, "forValue", double.class).asNonNullable();
 
+  public static final MethodRef RENDER_RESULT_ASSERT_DONE =
+      create(RenderResult.class, "assertDone");
+
   /** a list of all the ImmutableList.of overloads, indexed by arity. */
   public static final ImmutableList<MethodRef> IMMUTABLE_LIST_OF;
 

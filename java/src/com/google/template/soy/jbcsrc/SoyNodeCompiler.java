@@ -230,10 +230,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     abstract int numberOfDetachStates();
   }
 
-  CompiledMethodBody compile(RenderUnitNode node) {
-    return compile(node, ExtraCodeCompiler.NO_OP, ExtraCodeCompiler.NO_OP);
-  }
-
   CompiledMethodBody compile(
       RenderUnitNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
     List<Statement> statements = new ArrayList<>();
@@ -668,7 +664,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
           expressionToSoyValueProviderCompiler.compileToSoyValueProviderIfUsefulToPreserveStreaming(
               expr, detachState.createExpressionDetacher(reattachPoint));
       if (asSoyValueProvider.isPresent()) {
-        return renderIncrementally(asSoyValueProvider.get(), node.getChildren(), reattachPoint);
+        boolean requiresDetachLogic =
+            exprCompiler.requiresDetach(expr)
+                || node.getChildren().stream()
+                    .flatMap(pdn -> pdn.getExprList().stream())
+                    .anyMatch(exprCompiler::requiresDetach);
+        return renderIncrementally(
+            asSoyValueProvider.get(), node.getChildren(), reattachPoint, requiresDetachLogic);
       }
     }
 
@@ -765,7 +767,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    * @return a statement for the full render.
    */
   private Statement renderIncrementally(
-      Expression soyValueProvider, List<PrintDirectiveNode> directives, Label reattachPoint) {
+      Expression soyValueProvider,
+      List<PrintDirectiveNode> directives,
+      Label reattachPoint,
+      boolean requiresDetachLogic) {
     // In this case we want to render the SoyValueProvider via renderAndResolve which will
     // enable incremental rendering of parameters for lazy transclusions!
     // This actually ends up looking a lot like how calls work so we use the same strategy.
@@ -817,7 +822,10 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             // the isLast param
             // TODO(lukes): pass a real value here when we have expression use analysis.
             constant(false));
-    Statement doCall = detachState.detachForRender(callRenderAndResolve);
+    Statement doCall =
+        requiresDetachLogic
+            ? detachState.detachForRender(callRenderAndResolve)
+            : detachState.assertFullyRenderered(callRenderAndResolve);
     return Statement.concat(initRenderee, initAppendable, doCall, clearAppendable, clearRenderee);
   }
 
@@ -1093,7 +1101,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   /**
    * Renders a {@link com.google.template.soy.jbcsrc.shared.CompiledTemplate} incrementally.
    *
-   * <p>Similar to {@link #renderIncrementally(Expression, List, Label)}, we need to:
+   * <p>Similar to {@link #renderIncrementally(Expression, List, Label, boolean)}, we need to:
    *
    * <ul>
    *   <li>Stash the CompiledTemplate in a field {@code $currentCallee}, so that if we detach
@@ -1319,13 +1327,14 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         appendableExpression,
         new PlaceholderCompiler() {
           @Override
-          public Expression compileToSoyValueProvider(
-              ExprRootNode node, ExpressionDetacher expressionDetatcher) {
-            return expressionToSoyValueProviderCompiler.compile(node, expressionDetatcher);
+          public Placeholder compile(ExprRootNode node, ExpressionDetacher expressionDetatcher) {
+            return Placeholder.create(
+                expressionToSoyValueProviderCompiler.compile(node, expressionDetatcher),
+                exprCompiler.requiresDetach(node));
           }
 
           @Override
-          public Expression compileToSoyValueProvider(
+          public Placeholder compile(
               String phname,
               StandaloneNode node,
               ExtraCodeCompiler prefix,
@@ -1347,13 +1356,13 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
             checkState(placeholderParent.numChildren() == 1);
             fakeLet.addChild(node); // NOTE: this removes node from placeholderParent
             placeholderParent.addChild(fakeLet);
-            Expression expression =
-                lazyClosureCompiler
-                    .compileLazyContent("ph", fakeLet, phname, prefix, suffix)
-                    .soyValueProvider();
+
+            LazyClosureCompiler.LazyClosure closure =
+                lazyClosureCompiler.compileLazyContent("ph", fakeLet, phname, prefix, suffix);
             placeholderParent.removeChild(fakeLet);
             placeholderParent.addChild(node); // Restore the tree to the prior state.
-            return expression;
+            return Placeholder.create(
+                closure.soyValueProvider(), closure.requiresDetachLogicToResolve());
           }
         });
   }

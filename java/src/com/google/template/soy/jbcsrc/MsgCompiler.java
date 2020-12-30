@@ -21,6 +21,7 @@ import static com.google.template.soy.jbcsrc.PrintDirectives.applyStreamingEscap
 import static com.google.template.soy.jbcsrc.PrintDirectives.areAllPrintDirectivesStreamable;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.LOGGING_ADVISING_APPENDABLE_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_STRING_TYPE;
+import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.SOY_VALUE_PROVIDER_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.STRING_TYPE;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constant;
 import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.constantNull;
@@ -93,29 +94,37 @@ final class MsgCompiler {
   private static final ConstructorRef SOY_MSG_PLURAL_CASE_SPEC_LONG =
       ConstructorRef.create(SoyMsgPluralCaseSpec.class, long.class);
 
-  private static Statement exitLoggableElement(
-      ExpressionCompiler exprCompiler, AppendableExpression appendable, DetachState detachState) {
-    return appendable.exitLoggableElement().toStatement();
-  }
 
   /**
    * A helper interface that allows the MsgCompiler to interact with the SoyNodeCompiler in a
    * limited way.
    */
   interface PlaceholderCompiler {
+    @AutoValue
+    abstract static class Placeholder {
+      static Placeholder create(Expression soyValueProvider, boolean requiresDetachLogicToResolve) {
+        soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+        return new AutoValue_MsgCompiler_PlaceholderCompiler_Placeholder(
+            soyValueProvider, requiresDetachLogicToResolve);
+      }
+
+      abstract Expression soyValueProvider();
+
+      abstract boolean requiresDetachLogicToResolve();
+    }
     /**
      * Compiles the expression to a {@link SoyValueProvider} valued expression.
      *
      * <p>If the node requires detach logic, it should use the given label as the reattach point.
      */
-    Expression compileToSoyValueProvider(ExprRootNode node, ExpressionDetacher detacher);
+    Placeholder compile(ExprRootNode node, ExpressionDetacher detacher);
 
     /**
      * Compiles the given node to a statement that writes the result into the given appendable.
      *
      * <p>The statement is guaranteed to be written to a location with a stack depth of zero.
      */
-    Expression compileToSoyValueProvider(
+    Placeholder compile(
         String phname, StandaloneNode node, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix);
   }
 
@@ -283,11 +292,13 @@ final class MsgCompiler {
             locale,
             constant(msg.getVarNameToRepNodeMap().size()),
             constant(msg.getEscapingMode() == EscapingMode.ESCAPE_HTML));
+    boolean requiresDetachLogic = false;
     for (Map.Entry<String, MsgSubstUnitNode> entry : msg.getVarNameToRepNodeMap().entrySet()) {
       String phName = entry.getKey();
       PlaceholderAndEndTag placeholder =
           compilePlaceholder(
               msg, phName, entry.getValue(), detachState.createExpressionDetacher(reattachPoint));
+      requiresDetachLogic = requiresDetachLogic || placeholder.requiresDetachLogic();
       if (placeholder.endTagToMatch().isPresent()) {
         renderer =
             renderer.invoke(
@@ -329,28 +340,36 @@ final class MsgCompiler {
                   clearAppendable);
         }
       }
+      Expression callRenderAndResolve =
+          fields
+              .getCurrentRenderee()
+              .accessor(thisVar)
+              .invoke(
+                  MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
+                  appendable,
+                  // set the isLast field to true since we know this will only be rendered
+                  // once.
+                  /* isLast */ constant(true));
       render =
           Statement.concat(
               initAppendable,
-              detachState.detachForRender(
-                  fields
-                      .getCurrentRenderee()
-                      .accessor(thisVar)
-                      .invoke(
-                          MethodRef.SOY_VALUE_PROVIDER_RENDER_AND_RESOLVE,
-                          appendable,
-                          // set the isLast field to true since we know this will only be rendered
-                          // once.
-                          /* isLast */ constant(true))),
+              requiresDetachLogic
+                  ? detachState.detachForRender(callRenderAndResolve)
+                  : detachState.assertFullyRenderered(callRenderAndResolve),
               clearAppendable);
     } else {
       Label start = new Label();
       SoyExpression value =
           SoyExpression.forSoyValue(
               StringType.getInstance(),
-              detachState
-                  .createExpressionDetacher(start)
-                  .resolveSoyValueProvider(fields.getCurrentRenderee().accessor(thisVar))
+              (requiresDetachLogic
+                      ? detachState
+                          .createExpressionDetacher(start)
+                          .resolveSoyValueProvider(fields.getCurrentRenderee().accessor(thisVar))
+                      : fields
+                          .getCurrentRenderee()
+                          .accessor(thisVar)
+                          .invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE))
                   .checkedCast(SOY_STRING_TYPE));
       for (SoyPrintDirective directive : escapingDirectives) {
         value = parameterLookup.getRenderContext().applyPrintDirective(directive, value);
@@ -371,16 +390,21 @@ final class MsgCompiler {
 
   @AutoValue
   abstract static class PlaceholderAndEndTag {
-    static PlaceholderAndEndTag create(Expression placeholderValue) {
-      return create(placeholderValue, Optional.empty());
+    static PlaceholderAndEndTag create(PlaceholderCompiler.Placeholder placeholder) {
+      return create(placeholder, Optional.empty());
     }
 
     static PlaceholderAndEndTag create(
-        Expression placeholderValue, Optional<String> matchingEndTag) {
-      return new AutoValue_MsgCompiler_PlaceholderAndEndTag(placeholderValue, matchingEndTag);
+        PlaceholderCompiler.Placeholder placeholder, Optional<String> matchingEndTag) {
+      return new AutoValue_MsgCompiler_PlaceholderAndEndTag(
+          placeholder.soyValueProvider(),
+          placeholder.requiresDetachLogicToResolve(),
+          matchingEndTag);
     }
 
     abstract Expression expression();
+
+    abstract boolean requiresDetachLogic();
 
     abstract Optional<String> endTagToMatch();
   }
@@ -392,11 +416,11 @@ final class MsgCompiler {
       ExpressionDetacher expressionDetacher) {
     if (substUnitNode instanceof MsgPluralNode) {
       return PlaceholderAndEndTag.create(
-          placeholderCompiler.compileToSoyValueProvider(
+          placeholderCompiler.compile(
               ((MsgPluralNode) substUnitNode).getExpr(), expressionDetacher));
     } else if (substUnitNode instanceof MsgSelectNode) {
       return PlaceholderAndEndTag.create(
-          placeholderCompiler.compileToSoyValueProvider(
+          placeholderCompiler.compile(
               ((MsgSelectNode) substUnitNode).getExpr(), expressionDetacher));
     } else if (substUnitNode instanceof MsgPlaceholderNode) {
       return compileNormalPlaceholder(
@@ -412,7 +436,9 @@ final class MsgCompiler {
       // special case for when a placeholder magically compiles to the empty string
       // the CombineConsecutiveRawTextNodesPass will just delete it, so we end up with an empty
       // placeholder.
-      return PlaceholderAndEndTag.create(FieldRef.EMPTY_STRING_DATA.accessor());
+      return PlaceholderAndEndTag.create(
+          PlaceholderCompiler.Placeholder.create(
+              FieldRef.EMPTY_STRING_DATA.accessor(), /* requiresDetachLogicToResolve= */ false));
     }
     ExtraCodeCompiler prefix = ExtraCodeCompiler.NO_OP;
     ExtraCodeCompiler suffix = ExtraCodeCompiler.NO_OP;
@@ -431,6 +457,11 @@ final class MsgCompiler {
         // enterLoggableElement(LogStatement) call.  This may also require additional detaches.
         prefix =
             new ExtraCodeCompiler() {
+              @Override
+              public boolean requiresDetachLogic(TemplateAnalysis analysis) {
+                return ExpressionCompiler.requiresDetach(analysis, veLogNode.getVeDataExpression());
+              }
+
               @Override
               public Statement compile(
                   ExpressionCompiler exprCompiler,
@@ -475,7 +506,12 @@ final class MsgCompiler {
     }
 
     return PlaceholderAndEndTag.create(
-        placeholderCompiler.compileToSoyValueProvider(placeholderName, initialNode, prefix, suffix),
+        placeholderCompiler.compile(placeholderName, initialNode, prefix, suffix),
         closeTagPlaceholderNameToMatch);
+  }
+
+  private static Statement exitLoggableElement(
+      ExpressionCompiler exprCompiler, AppendableExpression appendable, DetachState detachState) {
+    return appendable.exitLoggableElement().toStatement();
   }
 }

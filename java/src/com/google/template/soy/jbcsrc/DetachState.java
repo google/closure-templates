@@ -167,6 +167,17 @@ final class DetachState implements ExpressionDetacher.Factory {
   }
 
   /**
+   * Evaluates the given render expression and asserts that it is complete.
+   *
+   * <p>This is a sanity check for the compiler that is theoretically optional. We could only
+   * generate this code in debug mode and the rest of the time emit a single {@code pop}
+   * instruction.
+   */
+  Statement assertFullyRenderered(final Expression render) {
+    return render.invokeVoid(MethodRef.RENDER_RESULT_ASSERT_DONE);
+  }
+
+  /**
    * Generate detach logic for render operations (like SoyValueProvider.renderAndResolve).
    *
    * <p>This is simple

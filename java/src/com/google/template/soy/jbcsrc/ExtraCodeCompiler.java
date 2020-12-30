@@ -18,22 +18,18 @@ package com.google.template.soy.jbcsrc;
 import com.google.template.soy.jbcsrc.restricted.Statement;
 
 /**
- * A simple way to add an extra statement to the SoyNodeCompiler.
+ * A simple way to add an extra statement to the beginning or end of a RenderUnitNode
  *
  * <p>TODO(lukes): this is a pretty terrible name...
  */
 interface ExtraCodeCompiler {
-  ExtraCodeCompiler NO_OP =
-      new ExtraCodeCompiler() {
-        @Override
-        public Statement compile(
-            ExpressionCompiler exprCompiler,
-            AppendableExpression appendable,
-            DetachState detachState) {
-          return Statement.NULL_STATEMENT;
-        }
-      };
+  ExtraCodeCompiler NO_OP = (exprCompiler, appendable, detachState) -> Statement.NULL_STATEMENT;
 
   Statement compile(
       ExpressionCompiler exprCompiler, AppendableExpression appendable, DetachState detachState);
+
+  /** Returns true if the generated statement will contain detach logic. */
+  default boolean requiresDetachLogic(TemplateAnalysis exprCompiler) {
+    return false;
+  }
 }
