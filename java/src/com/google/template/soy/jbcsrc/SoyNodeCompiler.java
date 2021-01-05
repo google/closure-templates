@@ -148,8 +148,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     DetachState detachState = new DetachState(variables, thisVar, fields);
     ExpressionCompiler expressionCompiler =
-        ExpressionCompiler.create(
-            analysis, parameterLookup, variables, fields, javaSourceFunctionCompiler);
+        ExpressionCompiler.create(analysis, parameterLookup, variables, javaSourceFunctionCompiler);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(
             analysis, variables, expressionCompiler, parameterLookup);
@@ -821,7 +820,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     if (node.getRawText().length() == 1) {
       render = appendableExpression.appendChar(constant(node.getRawText().charAt(0)));
     } else {
-      render = appendableExpression.appendString(constant(node.getRawText(), fields));
+      render = appendableExpression.appendString(constant(node.getRawText()));
     }
     return render.toStatement();
   }

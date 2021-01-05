@@ -179,7 +179,6 @@ final class TemplateCompiler {
         ExpressionCompiler.createConstantCompiler(
             analysis,
             new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
-            fields,
             javaSourceFunctionCompiler);
     generateTemplateMetadata();
 

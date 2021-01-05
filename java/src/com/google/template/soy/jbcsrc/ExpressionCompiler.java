@@ -147,16 +147,10 @@ final class ExpressionCompiler {
         TemplateAnalysis analysis,
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
-        FieldManager fields,
         JavaSourceFunctionCompiler sourceFunctionCompiler) {
       this.compilerVisitor =
           new CompilerVisitor(
-              analysis,
-              parameters,
-              varManager,
-              fields,
-              BasicDetacher.INSTANCE,
-              sourceFunctionCompiler);
+              analysis, parameters, varManager, BasicDetacher.INSTANCE, sourceFunctionCompiler);
     }
 
     private BasicExpressionCompiler(CompilerVisitor visitor) {
@@ -188,16 +182,14 @@ final class ExpressionCompiler {
       TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
-      FieldManager fields,
       JavaSourceFunctionCompiler sourceFunctionCompiler) {
     return new ExpressionCompiler(
-        analysis, checkNotNull(parameters), varManager, fields, sourceFunctionCompiler);
+        analysis, checkNotNull(parameters), varManager, sourceFunctionCompiler);
   }
 
   static BasicExpressionCompiler createConstantCompiler(
       TemplateAnalysis analysis,
       LocalVariableManager varManager,
-      FieldManager fields,
       JavaSourceFunctionCompiler sourceFunctionCompiler) {
     return new BasicExpressionCompiler(
         new CompilerVisitor(
@@ -244,7 +236,6 @@ final class ExpressionCompiler {
               }
             },
             varManager,
-            fields,
             ExpressionDetacher.NullDetatcher.INSTANCE,
             sourceFunctionCompiler));
   }
@@ -259,10 +250,8 @@ final class ExpressionCompiler {
       TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
-      FieldManager fields,
       JavaSourceFunctionCompiler sourceFunctionCompiler) {
-    return new BasicExpressionCompiler(
-        analysis, parameters, varManager, fields, sourceFunctionCompiler);
+    return new BasicExpressionCompiler(analysis, parameters, varManager, sourceFunctionCompiler);
   }
 
   /**
@@ -276,19 +265,16 @@ final class ExpressionCompiler {
   private final TemplateAnalysis analysis;
   private final TemplateParameterLookup parameters;
   private final LocalVariableManager varManager;
-  private final FieldManager fields;
   private final JavaSourceFunctionCompiler sourceFunctionCompiler;
 
   private ExpressionCompiler(
       TemplateAnalysis analysis,
       TemplateParameterLookup parameters,
       LocalVariableManager varManager,
-      FieldManager fields,
       JavaSourceFunctionCompiler sourceFunctionCompiler) {
     this.analysis = analysis;
     this.parameters = checkNotNull(parameters);
     this.varManager = checkNotNull(varManager);
-    this.fields = checkNotNull(fields);
     this.sourceFunctionCompiler = checkNotNull(sourceFunctionCompiler);
   }
 
@@ -340,12 +326,7 @@ final class ExpressionCompiler {
     }
     return Optional.of(
         new CompilerVisitor(
-                analysis,
-                parameters,
-                varManager,
-                fields,
-                /* detacher=*/ null,
-                sourceFunctionCompiler)
+                analysis, parameters, varManager, /* detacher=*/ null, sourceFunctionCompiler)
             .exec(node));
   }
 
@@ -355,8 +336,7 @@ final class ExpressionCompiler {
    */
   BasicExpressionCompiler asBasicCompiler(ExpressionDetacher detacher) {
     return new BasicExpressionCompiler(
-        new CompilerVisitor(
-            analysis, parameters, varManager, fields, detacher, sourceFunctionCompiler));
+        new CompilerVisitor(analysis, parameters, varManager, detacher, sourceFunctionCompiler));
   }
 
   private static final class CompilerVisitor
@@ -366,21 +346,18 @@ final class ExpressionCompiler {
     final TemplateAnalysis analysis;
     final TemplateParameterLookup parameters;
     final LocalVariableManager varManager;
-    final FieldManager fields;
     private final JavaSourceFunctionCompiler sourceFunctionCompiler;
 
     CompilerVisitor(
         TemplateAnalysis analysis,
         TemplateParameterLookup parameters,
         LocalVariableManager varManager,
-        FieldManager fields,
         ExpressionDetacher detacher,
         JavaSourceFunctionCompiler sourceFunctionCompiler) {
       this.analysis = analysis;
       this.detacher = detacher;
       this.parameters = parameters;
       this.varManager = varManager;
-      this.fields = fields;
       this.sourceFunctionCompiler = sourceFunctionCompiler;
     }
 
@@ -408,7 +385,7 @@ final class ExpressionCompiler {
 
     @Override
     protected final SoyExpression visitStringNode(StringNode node) {
-      return SoyExpression.forString(constant(node.getValue(), fields));
+      return SoyExpression.forString(constant(node.getValue()));
     }
 
     @Override

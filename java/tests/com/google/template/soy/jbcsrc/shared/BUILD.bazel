@@ -10,8 +10,10 @@ java_library(
     srcs = glob(["*.java"]),
     resources = glob(["*.soy"]),
     deps = [
+        "//java/src/com/google/template/soy/jbcsrc/shared",
         "//java/src/com/google/template/soy/jbcsrc/shared:names",
         "@maven//:junit_junit",
+        "@maven//:com_google_truth_truth",
     ],
 )
 

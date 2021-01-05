@@ -238,8 +238,7 @@ final class MsgCompiler {
       return SOY_MSG_PLURAL_REMAINDER_PART.construct(
           constant(((SoyMsgPluralRemainderPart) part).getPluralVarName()));
     } else if (part instanceof SoyMsgRawTextPart) {
-      return SOY_MSG_RAW_TEXT_PART_OF.invoke(
-          constant(((SoyMsgRawTextPart) part).getRawText(), fields));
+      return SOY_MSG_RAW_TEXT_PART_OF.invoke(constant(((SoyMsgRawTextPart) part).getRawText()));
     } else if (part instanceof SoyMsgSelectPart) {
       SoyMsgSelectPart selectPart = (SoyMsgSelectPart) part;
       List<Expression> caseExprs = new ArrayList<>(selectPart.getCases().size());

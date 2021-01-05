@@ -25,7 +25,6 @@ import com.google.auto.value.AutoValue;
 import com.google.template.soy.base.internal.UniqueNameGenerator;
 import com.google.template.soy.jbcsrc.internal.JbcSrcNameGenerators;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.ClassFieldManager;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.Statement;
@@ -38,7 +37,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 /** Manages registering fields for a given class. */
-final class FieldManager implements ClassFieldManager {
+final class FieldManager {
   private final UniqueNameGenerator fieldNames = JbcSrcNameGenerators.forFieldNames();
   private final TypeInfo owner;
   private final List<FieldRef> fields = new ArrayList<>();
@@ -87,8 +86,7 @@ final class FieldManager implements ClassFieldManager {
     return field;
   }
 
-  @Override
-  public FieldRef addStaticField(String proposedName, Expression initializer) {
+  FieldRef addStaticField(String proposedName, Expression initializer) {
     return addStaticField(
         proposedName, initializer, Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_PRIVATE);
   }

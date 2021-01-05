@@ -27,6 +27,8 @@ import static com.google.template.soy.jbcsrc.restricted.BytecodeUtils.ternary;
 import static com.google.template.soy.jbcsrc.restricted.testing.ExpressionSubject.assertThatExpression;
 import static org.junit.Assert.assertThrows;
 
+import com.google.common.base.Strings;
+import com.google.common.base.Utf8;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.junit.Test;
@@ -239,5 +241,28 @@ public class BytecodeUtilsTest {
             Type.getType(IllegalStateException.class), "shouldn't have called me");
       }
     };
+  }
+
+  @Test
+  public void testLargeStringConstant() {
+    String large = Strings.repeat("a", 1 << 20);
+    // 65336 is the maximum size of a string constant.
+    assertThat(Utf8.encodedLength(large)).isGreaterThan(65335);
+    assertThatExpression(constant(large)).evaluatesTo(large);
+  }
+
+  @Test
+  public void testLargeStringConstant_surrogates() {
+    assertThat("🤦‍♀️").hasLength(5);
+    String large = Strings.repeat("🤦‍♀️", 1 << 20);
+    // 65336 is the maximum size of a string constant.
+    assertThat(Utf8.encodedLength(large)).isGreaterThan(65335);
+    // prefix with single byte encoding characters so that the split points will be guaranteed to
+    // fall between all bytes of the multibyte character
+    assertThatExpression(constant(large)).evaluatesTo(large);
+    assertThatExpression(constant('a' + large)).evaluatesTo('a' + large);
+    assertThatExpression(constant("aa" + large)).evaluatesTo("aa" + large);
+    assertThatExpression(constant("aaa" + large)).evaluatesTo("aaa" + large);
+    assertThatExpression(constant("aaaa" + large)).evaluatesTo("aaaa" + large);
   }
 }

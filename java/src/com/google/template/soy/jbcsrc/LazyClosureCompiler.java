@@ -400,7 +400,7 @@ final class LazyClosureCompiler {
       }
     }
 
-    Expression value = constant(builder == null ? "" : builder.toString(), parentFields);
+    Expression value = constant(builder == null ? "" : builder.toString());
     SanitizedContentKind kind = renderUnit.getContentKind();
     if (kind == SanitizedContentKind.TEXT) {
       value = MethodRef.STRING_DATA_FOR_VALUE.invoke(value);
@@ -450,7 +450,7 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
-                  analysis, lookup, variableSet, fields, javaSourceFunctionCompiler)
+                  analysis, lookup, variableSet, javaSourceFunctionCompiler)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -494,8 +494,7 @@ final class LazyClosureCompiler {
       LazyClosureParameterLookup lookup =
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       ExpressionCompiler expressionCompiler =
-          ExpressionCompiler.create(
-              analysis, lookup, variableSet, fields, javaSourceFunctionCompiler);
+          ExpressionCompiler.create(analysis, lookup, variableSet, javaSourceFunctionCompiler);
       Optional<Expression> expr =
           ExpressionToSoyValueProviderCompiler.create(
                   analysis, variableSet, expressionCompiler, lookup)
@@ -551,7 +550,6 @@ final class LazyClosureCompiler {
           ExpressionCompiler.createConstantCompiler(
               analysis,
               new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
-              fields,
               javaSourceFunctionCompiler);
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RENDER);

@@ -17,9 +17,7 @@
 package com.google.template.soy.jbcsrc.restricted;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.base.Utf8;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -48,10 +46,13 @@ import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.restricted.Expression.Feature;
 import com.google.template.soy.jbcsrc.restricted.Expression.Features;
 import com.google.template.soy.jbcsrc.shared.CompiledTemplate;
+import com.google.template.soy.jbcsrc.shared.LargeStringConstantFactory;
 import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.jbcsrc.shared.RenderContext;
 import com.google.template.soy.logging.LoggableElementMetadata;
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -69,9 +71,7 @@ import org.objectweb.asm.util.Printer;
 
 /** A set of utilities for generating simple expressions in bytecode */
 public final class BytecodeUtils {
-  private static final String LARGE_STRING_CONSTANT_NAME = "$const_string";
-
-  // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4.7
+  // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.11
   private static final int MAX_CONSTANT_STRING_LENGTH = 65535;
 
   public static final TypeInfo OBJECT = TypeInfo.create(Object.class);
@@ -166,7 +166,10 @@ public final class BytecodeUtils {
                           return Optional.empty();
                         }
                         return Optional.of(
-                            Class.forName(className, false, BytecodeUtils.class.getClassLoader()));
+                            Class.forName(
+                                className,
+                                /*initialize=*/ false,
+                                BytecodeUtils.class.getClassLoader()));
                       } catch (ClassNotFoundException e) {
                         return Optional.empty();
                       }
@@ -298,75 +301,52 @@ public final class BytecodeUtils {
   }
 
   /** Returns an {@link Expression} that can load the given String constant. */
-  public static Expression constant(final String value) {
-    checkNotNull(value);
-    checkArgument(
-        Utf8.encodedLength(value) <= MAX_CONSTANT_STRING_LENGTH,
-        "String is too long when encoded in utf8");
-    return stringConstant(value);
-  }
-
-  /**
-   * Returns an {@link Expression} that can load the given String constant.
-   *
-   * <p>Unlike {@link #constant(String)} this can handle strings larger than 65K bytes.
-   */
-  public static Expression constant(String value, ClassFieldManager manager) {
-    int encodedLength = Utf8.encodedLength(value);
-    if (encodedLength <= MAX_CONSTANT_STRING_LENGTH) {
-      return stringConstant(value);
-    }
-    // else it is too big for a single constant pool entry so split it into a small number of
-    // entries and generate a static final field to hold the cat'ed value.
-    int startIndex = 0;
-    Expression stringExpression = null;
-    int length = value.length();
-    do {
-      int endIndex = offsetOf65KUtf8Bytes(value, startIndex, length);
-      // N.B. we may end up splitting the string at a surrogate pair, but the class format uses
-      // modified utf8 which is forgiving about such things.
-      Expression substringConstant = stringConstant(value.substring(startIndex, endIndex));
-      startIndex = endIndex;
-      if (stringExpression == null) {
-        stringExpression = substringConstant;
+  public static Expression constant(String value) {
+    // string constants use a "modified UTF8" encoding
+    // https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8
+    // and are limited by the classfile format to contain no more than 65535 bytes
+    // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.7
+    // In soy we often have large constants that can exceed these limits, which is annoying since
+    // it is difficult to predict whether a given string constant will exceed these limits (since it
+    // needs to be encoded first).
+    int previousStart = 0;
+    List<String> stringConstants = new ArrayList<>();
+    int byteCount = 0;
+    int index = 0;
+    while (index < value.length()) {
+      char c = value.charAt(index);
+      int charBytes;
+      // This algorithm is described here
+      // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.7
+      if (c >= '\001' && c <= '\177') {
+        charBytes = 1;
+      } else if (c > '\u07FF') {
+        charBytes = 3;
       } else {
-        stringExpression = stringExpression.invoke(MethodRef.STRING_CONCAT, substringConstant);
+        charBytes = 2;
       }
-    } while (startIndex < length);
-    FieldRef fieldRef = manager.addStaticField(LARGE_STRING_CONSTANT_NAME, stringExpression);
-    return fieldRef.accessor();
-  }
-
-  /**
-   * Returns the largest index between {@code startIndex} and {@code endIdex} such that the UTF8
-   * encoded bytes of {@code str.substring(startIndex, returnValue}} is less than or equal to 65K.
-   */
-  private static int offsetOf65KUtf8Bytes(String str, int startIndex, int endIndex) {
-    // This implementation is based off of Utf8.encodedLength
-    int utf8Length = 0;
-    int i = startIndex;
-    for (; i < endIndex; i++) {
-      char c = str.charAt(i);
-      utf8Length++;
-      if (c < 0x800) {
-        utf8Length += (0x7f - c) >>> 31; // branch free!
-      } else {
-        utf8Length += Character.isSurrogate(c) ? 1 : 2;
+      // does this char push us over the limit?
+      if (byteCount + charBytes > MAX_CONSTANT_STRING_LENGTH) {
+        stringConstants.add(value.substring(previousStart, index));
+        byteCount = 0;
+        previousStart = index;
       }
-      if (utf8Length == MAX_CONSTANT_STRING_LENGTH) {
-        return i + 1;
-      } else if (utf8Length > MAX_CONSTANT_STRING_LENGTH) {
-        return i;
-      }
+      byteCount += charBytes;
+      index++;
     }
-    return endIndex;
-  }
-
-  private static Expression stringConstant(final String value) {
+    stringConstants.add(value.substring(previousStart));
     return new Expression(STRING_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
       @Override
-      protected void doGen(CodeBuilder mv) {
-        mv.pushString(value);
+      protected void doGen(CodeBuilder cb) {
+        if (stringConstants.size() == 1) {
+          cb.pushString(stringConstants.get(0));
+        } else {
+          cb.visitInvokeDynamicInsn(
+              "constantString",
+              Type.getMethodDescriptor(STRING_TYPE),
+              LARGE_STRING_CONSTANT_HANDLE,
+              stringConstants.toArray());
+        }
       }
     };
   }
@@ -378,19 +358,38 @@ public final class BytecodeUtils {
         : FieldRef.enumReference(kind).accessor();
   }
 
+  /** Returns an {@link Expression} that evaluates to the given Dir, or null. */
+  public static Expression constant(@Nullable Dir dir) {
+    return (dir == null)
+        ? BytecodeUtils.constantNull(DIR_TYPE)
+        : FieldRef.enumReference(dir).accessor();
+  }
+
+  public static Expression constant(Type type) {
+    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
+      @Override
+      protected void doGen(CodeBuilder mv) {
+        mv.pushType(type);
+      }
+    };
+  }
+
+  private static final Handle LARGE_STRING_CONSTANT_HANDLE =
+      MethodRef.create(
+              LargeStringConstantFactory.class,
+              "bootstrapLargeStringConstant",
+              MethodHandles.Lookup.class,
+              String.class,
+              MethodType.class,
+              String[].class)
+          .asHandle();
+
   /**
    * Returns an {@link Expression} that evaluates to the {@link ContentKind} value that is
    * equivalent to the given {@link SanitizedContentKind}, or null.
    */
   public static Expression constantSanitizedContentKindAsContentKind(SanitizedContentKind kind) {
     return FieldRef.enumReference(Converters.contentKindfromSanitizedContentKind(kind)).accessor();
-  }
-
-  /** Returns an {@link Expression} that evaluates to the given Dir, or null. */
-  public static Expression constant(@Nullable Dir dir) {
-    return (dir == null)
-        ? BytecodeUtils.constantNull(DIR_TYPE)
-        : FieldRef.enumReference(dir).accessor();
   }
 
   /** Returns an {@link Expression} with the given type that always returns null. */
@@ -403,15 +402,6 @@ public final class BytecodeUtils {
       @Override
       protected void doGen(CodeBuilder mv) {
         mv.visitInsn(Opcodes.ACONST_NULL);
-      }
-    };
-  }
-
-  public static Expression constant(Type type) {
-    return new Expression(CLASS_TYPE, Feature.CHEAP, Feature.NON_NULLABLE) {
-      @Override
-      protected void doGen(CodeBuilder mv) {
-        mv.pushType(type);
       }
     };
   }

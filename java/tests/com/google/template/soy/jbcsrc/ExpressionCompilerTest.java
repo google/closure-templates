@@ -633,7 +633,6 @@ public class ExpressionCompilerTest {
                 LocalVariable.createThisVar(
                     TypeInfo.create(Object.class), new Label(), new Label()),
                 getRenderMethod()),
-            fields,
             new JavaSourceFunctionCompiler(
                 SoyTypeRegistryBuilder.create(), ErrorReporter.exploding()));
 
