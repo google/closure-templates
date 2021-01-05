@@ -17,8 +17,10 @@
 package com.google.template.soy.basicfunctions;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.comparingDouble;
+import static java.util.stream.Collectors.joining;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -33,7 +35,6 @@ import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.DictImpl;
-import com.google.template.soy.data.internal.ListImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
 import com.google.template.soy.data.internal.SoyRecordImpl;
@@ -64,7 +65,7 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Concatenates its arguments. */
-  public static List<SoyValueProvider> concatLists(List<SoyList> args) {
+  public static ImmutableList<SoyValueProvider> concatLists(List<SoyList> args) {
     ImmutableList.Builder<SoyValueProvider> flattened = ImmutableList.builder();
     for (SoyList soyList : args) {
       flattened.addAll(soyList.asJavaList());
@@ -82,21 +83,19 @@ public final class BasicFunctionsRuntime {
 
   /** Checks if list contains a value. */
   public static boolean listContains(SoyList list, SoyValue value) {
-    return list.asJavaList().contains(value);
+    return list.asResolvedJavaList().contains(value);
   }
 
   /** Checks if list contains a value. */
   public static int listIndexOf(SoyList list, SoyValue value) {
-    return list.asJavaList().indexOf(value);
+    return list.asResolvedJavaList().indexOf(value);
   }
 
   /** Joins the list elements by a separator. */
   public static String join(SoyList list, String separator) {
-    List<String> stringList = new ArrayList<>();
-    for (SoyValue value : list.asResolvedJavaList()) {
-      stringList.add(value.coerceToString());
-    }
-    return Joiner.on(separator).join(stringList);
+    return list.asResolvedJavaList().stream()
+        .map(SoyValue::coerceToString)
+        .collect(joining(separator));
   }
 
   public static String concatAttributeValues(SoyValue l, SoyValue r, String delimiter) {
@@ -127,7 +126,8 @@ public final class BasicFunctionsRuntime {
    * Implements JavaScript-like Array slice. Negative and out-of-bounds indexes emulate the JS
    * behavior.
    */
-  public static SoyList listSlice(SoyList list, int from, IntegerData optionalTo) {
+  public static List<? extends SoyValueProvider> listSlice(
+      SoyList list, int from, IntegerData optionalTo) {
     int length = list.length();
     if (from < 0) {
       from = length + from;
@@ -142,9 +142,9 @@ public final class BasicFunctionsRuntime {
     from = Math.max(0, Math.min(from, length));
     to = Math.max(0, Math.min(to, length));
     if (from >= to) {
-      return ListImpl.forProviderList(ImmutableList.of());
+      return ImmutableList.of();
     }
-    return ListImpl.forProviderList(list.asJavaList().subList(from, to));
+    return list.asJavaList().subList(from, to);
   }
 
   /**
@@ -152,11 +152,9 @@ public final class BasicFunctionsRuntime {
    *
    * <p>This should only be called for a list of numbers.
    */
-  public static SoyList numberListSort(SoyList list) {
-    return ListImpl.forProviderList(
-        ImmutableList.sortedCopyOf(
-            (a, b) -> Double.compare(a.resolve().numberValue(), b.resolve().numberValue()),
-            list.asJavaList()));
+  public static ImmutableList<SoyValueProvider> numberListSort(SoyList list) {
+    return ImmutableList.sortedCopyOf(
+        comparingDouble((SoyValueProvider arg) -> arg.resolve().numberValue()), list.asJavaList());
   }
 
   /**
@@ -164,11 +162,9 @@ public final class BasicFunctionsRuntime {
    *
    * <p>This should only be called for a list of strings.
    */
-  public static SoyList stringListSort(SoyList list) {
-    return ListImpl.forProviderList(
-        ImmutableList.sortedCopyOf(
-            (a, b) -> a.resolve().stringValue().compareTo(b.resolve().stringValue()),
-            list.asJavaList()));
+  public static ImmutableList<SoyValueProvider> stringListSort(SoyList list) {
+    return ImmutableList.sortedCopyOf(
+        comparing((SoyValueProvider arg) -> arg.resolve().stringValue()), list.asJavaList());
   }
 
   /**
@@ -195,7 +191,7 @@ public final class BasicFunctionsRuntime {
   }
 
   /** Returns a list of all the keys in the given map. */
-  public static List<SoyValue> mapKeys(SoyMap map) {
+  public static ImmutableList<SoyValue> mapKeys(SoyMap map) {
     return ImmutableList.copyOf(map.keys());
   }
 
@@ -295,7 +291,7 @@ public final class BasicFunctionsRuntime {
     }
     // if step does not evenly divide length add +1 to account for the fact that we always add start
     int size = length / step + (length % step == 0 ? 0 : 1);
-    List<IntegerData> list = new ArrayList<>(size);
+    ImmutableList.Builder<IntegerData> list = ImmutableList.builderWithExpectedSize(size);
     if (step > 0) {
       for (int i = start; i < end; i += step) {
         list.add(IntegerData.forValue(i));
@@ -305,7 +301,7 @@ public final class BasicFunctionsRuntime {
         list.add(IntegerData.forValue(i));
       }
     }
-    return ImmutableList.copyOf(list);
+    return list.build();
   }
 
   public static boolean strContains(SoyValue left, String right) {
@@ -351,10 +347,12 @@ public final class BasicFunctionsRuntime {
     return str.endsWith(arg);
   }
 
-  public static SoyList strSplit(String str, String sep) {
-    return ListImpl.forProviderList(
-        (sep.isEmpty() ? Splitter.fixedLength(1) : Splitter.on(sep))
-            .splitToList(str).stream().map(StringData::forValue).collect(toImmutableList()));
+  public static ImmutableList<StringData> strSplit(String str, String sep) {
+    ImmutableList.Builder<StringData> builder = ImmutableList.builder();
+    for (String string : (sep.isEmpty() ? Splitter.fixedLength(1) : Splitter.on(sep)).split(str)) {
+      builder.add(StringData.forValue(string));
+    }
+    return builder.build();
   }
 
   public static String strReplaceAll(String str, String match, String token) {
