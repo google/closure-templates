@@ -394,7 +394,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     }
     if (Parameter.isValidAttrName(name)) {
       String paramName = Parameter.attrToParamName(name);
-      if (!addAttr.apply(paramName)) {
+      if (attr.getParent() instanceof HtmlOpenTagNode && !addAttr.apply(paramName)) {
         errorReporter.report(loc, DUPLICATE_PARAM, name);
         return;
       } else if (!hasAllAttributes) {
