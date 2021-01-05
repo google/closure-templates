@@ -15,7 +15,10 @@
  */
 package com.google.template.soy.passes;
 
+import com.google.template.soy.base.SourceLocation;
+import com.google.template.soy.base.internal.BaseUtils;
 import com.google.template.soy.base.internal.IdGenerator;
+import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.base.internal.QuoteStyle;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
@@ -72,6 +75,22 @@ final class XidPass implements CompilerFilePass {
                       0,
                       new StringNode(
                           global.getName(), QuoteStyle.SINGLE, global.getSourceLocation()));
+                  break;
+                case VAR_REF_NODE:
+                case FIELD_ACCESS_NODE:
+                  // There can be collisions between the xid arg and certain in-scope symbols. Turn
+                  // any VarRef (with possibly dotted field access) back into a string. Also, these
+                  // var refs didn't get global alias expanded so do that here too.
+                  String source = child.toSourceString();
+                  if (!BaseUtils.isDottedIdentifier(source) || source.startsWith("$")) {
+                    reporter.report(child.getSourceLocation(), STRING_OR_GLOBAL_REQUIRED);
+                    break;
+                  }
+                  String expanded =
+                      file.resolveAlias(Identifier.create(source, SourceLocation.UNKNOWN))
+                          .identifier();
+                  fn.replaceChild(
+                      0, new StringNode(expanded, QuoteStyle.SINGLE, child.getSourceLocation()));
                   break;
                 case STRING_NODE:
                   break;

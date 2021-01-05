@@ -88,17 +88,14 @@ final class ResolvePluginsPass implements CompilerFilePass {
               VarRefNode functionRef =
                   new VarRefNode(
                       node.getStaticFunctionName(), node.getIdentifier().location(), varDefn);
-              Object soyFunction = getSoyFunctionForExpr(functionRef);
-              if (soyFunction != null) {
-                FunctionNode newFunct =
-                    CallableExprBuilder.builder(node)
-                        .setIdentifier(null)
-                        .setFunctionExpr(functionRef)
-                        .buildFunction();
-                // Set the soy function field to "resolve" the function.
-                newFunct.setSoyFunction(soyFunction);
-                node.getParent().replaceChild(node, newFunct);
-              }
+              FunctionNode newFunct =
+                  CallableExprBuilder.builder(node)
+                      .setIdentifier(null)
+                      .setFunctionExpr(functionRef)
+                      .buildFunction();
+              // Set the soy function field to "resolve" the function.
+              setSoyFunctionForNameExpr(newFunct);
+              node.getParent().replaceChild(node, newFunct);
             }
           }
         };
@@ -140,7 +137,7 @@ final class ResolvePluginsPass implements CompilerFilePass {
     }
   }
 
-  static Object getSoyFunctionForExpr(ExprNode expr) {
+  private static Object getSoyFunctionForExpr(ExprNode expr) {
     if (expr.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
       return BuiltinFunction.PROTO_INIT;
     }

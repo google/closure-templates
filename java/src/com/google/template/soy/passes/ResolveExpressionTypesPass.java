@@ -1867,6 +1867,8 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case VE:
         case VE_DATA:
         case MESSAGE:
+        case TEMPLATE_TYPE:
+        case TEMPLATE_MODULE:
           errorReporter.report(sourceLocation, DOT_ACCESS_NOT_SUPPORTED, baseType);
           return UnknownType.getInstance();
         case PROTO_TYPE:
@@ -1875,8 +1877,6 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
         case PROTO_EXTENSION:
         case PROTO_MODULE:
         case PROTO_ENUM_TYPE:
-        case TEMPLATE_TYPE:
-        case TEMPLATE_MODULE:
       }
       throw new AssertionError("unhandled kind: " + baseType.getKind());
     }

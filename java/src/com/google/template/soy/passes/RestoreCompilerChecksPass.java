@@ -40,9 +40,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 @RunAfter(RestoreGlobalsPass.class)
 public final class RestoreCompilerChecksPass implements CompilerFilePass {
 
-  private static final SoyErrorKind DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS =
-      SoyErrorKind.of("The `data` attribute is only allowed on static calls.");
-
   private static final SoyErrorKind MUST_BE_DOLLAR_IDENT =
       SoyErrorKind.of("Name must begin with a ''$''.");
 
@@ -74,15 +71,6 @@ public final class RestoreCompilerChecksPass implements CompilerFilePass {
                           global.getSourceLocation(),
                           /* isSynthetic= */ true)));
             });
-
-    // Validate CallBasicNode data="expr". This previously happened in the CallBasicNode
-    // constructor but now must happen after Visitor runs.
-    SoyTreeUtils.allNodesOfType(file, CallBasicNode.class)
-        .filter(callNode -> callNode.isPassingData() && !callNode.isStaticCall())
-        .forEach(
-            callNode ->
-                errorReporter.report(
-                    callNode.getOpenTagLocation(), DATA_ATTRIBUTE_ONLY_ALLOWED_ON_STATIC_CALLS));
 
     // Enforce certain symbols start with $, to match previous parser rules.
     SoyTreeUtils.allNodesOfType(file, LetNode.class)

@@ -42,6 +42,8 @@ import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.ProtoModuleImportType;
 import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
+import com.google.template.soy.types.TemplateModuleImportType;
 import com.google.template.soy.types.TypeInterner;
 import com.google.template.soy.types.UnknownType;
 import javax.annotation.Nullable;
@@ -76,7 +78,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    SoyTreeUtils.getAllNodesOfType(file, VarRefNode.class).stream()
+    SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
         .filter(
             v -> {
               if (!v.hasType()) {
@@ -107,19 +109,21 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
       // Convert:
       // FIELD_ACCESS(VAR_REF("t"), "fieldName") -> VAR_REF("t.fieldName")
       fullLocation = v.getSourceLocation().extend(parent.getSourceLocation());
-      inlined = resolveField(v, ((FieldAccessNode) parent).getFieldName(), fullLocation);
+      inlined =
+          resolveField(
+              v, parent.getKind(), ((FieldAccessNode) parent).getFieldName(), fullLocation);
     } else if (parent.getKind() == Kind.METHOD_CALL_NODE && parent.getChildIndex(v) == 0) {
       // Convert:
       // METHOD_CALL("methodName", VAR_REF("t"), ...) -> FUNCTION(VAR_REF("t.methodName"), ...)
       fullLocation =
           v.getSourceLocation().extend(((MethodCallNode) parent).getMethodName().location());
       ExprNode target =
-          resolveField(v, ((MethodCallNode) parent).getMethodName().identifier(), fullLocation);
+          resolveField(
+              v,
+              parent.getKind(),
+              ((MethodCallNode) parent).getMethodName().identifier(),
+              fullLocation);
       if (target == null) {
-        return null;
-      }
-      Object soyFunction = ResolvePluginsPass.getSoyFunctionForExpr(target);
-      if (soyFunction == null) {
         return null;
       }
       FunctionNode function =
@@ -129,7 +133,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
               .setIdentifier(null)
               .setFunctionExpr(target)
               .buildFunction();
-      function.setSoyFunction(soyFunction);
+      ResolvePluginsPass.setSoyFunctionForNameExpr(function);
       inlined = function;
     }
 
@@ -149,7 +153,8 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
    * not be resolved.
    */
   @Nullable
-  private ExprNode resolveField(VarRefNode refn, String fieldName, SourceLocation fullLocation) {
+  private ExprNode resolveField(
+      VarRefNode refn, Kind kind, String fieldName, SourceLocation fullLocation) {
     VarDefn defn = refn.getDefnDecl();
     SoyType type = defn.type();
 
@@ -166,7 +171,7 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
       }
     }
 
-    SoyType nestedType = null;
+    SoyType nestedType = UnknownType.getInstance();
 
     if (type.getKind() == SoyType.Kind.PROTO_MODULE) {
       nestedType =
@@ -175,10 +180,18 @@ public final class ResolveDottedImportsPass implements CompilerFilePass {
     } else if (type.getKind() == SoyType.Kind.PROTO_TYPE) {
       nestedType =
           typeRegistry.getProtoImportType(((ProtoImportType) type).getDescriptor(), fieldName);
+    } else if (type.getKind() == SoyType.Kind.TEMPLATE_MODULE) {
+      TemplateModuleImportType moduleType = (TemplateModuleImportType) type;
+      if (moduleType.getTemplateNames().contains(fieldName)) {
+        nestedType = typeRegistry.intern(TemplateImportType.create(moduleType, fieldName));
+      }
     }
 
     if (nestedType == UnknownType.getInstance()) {
-      errorReporter.report(fullLocation, NO_SUCH_NESTED_TYPE, fieldName, type);
+      // Unknown methods will be reported later.a
+      if (kind != Kind.METHOD_CALL_NODE) {
+        errorReporter.report(fullLocation, NO_SUCH_NESTED_TYPE, fieldName, type);
+      }
       return null;
     }
 

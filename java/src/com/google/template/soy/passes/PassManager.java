@@ -395,9 +395,6 @@ public final class PassManager {
           partialTemplateRegistryPassesBuilder);
       addPass(new RestoreGlobalsPass(), partialTemplateRegistryPassesBuilder);
       addPass(new RestoreCompilerChecksPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      if (astRewrites.atLeast(AstRewrites.KYTHE)) {
-        addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
-      }
       // needs to come early since it is necessary to create template metadata objects for
       // header compilation
       addPass(
@@ -406,7 +403,6 @@ public final class PassManager {
 
       // needs to come before SoyConformancePass
       addPass(new ResolvePluginsPass(pluginResolver), partialTemplateRegistryPassesBuilder);
-      addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       // Must come after ResolvePluginsPass.
       if (astRewrites.atLeast(AstRewrites.ALL)) {
@@ -438,6 +434,10 @@ public final class PassManager {
       addPass(
           new ResolveDottedImportsPass(errorReporter, registry),
           partialTemplateRegistryPassesBuilder);
+      if (astRewrites.atLeast(AstRewrites.KYTHE)) {
+        addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
+      }
+      addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {
         // Without type checking proto enums in variant expressions are not resolved.
         addPass(

@@ -42,7 +42,6 @@ import com.google.template.soy.types.ProtoExtensionImportType;
 import com.google.template.soy.types.RecordType;
 import com.google.template.soy.types.SoyProtoType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import com.google.template.soy.types.TemplateBindingUtil;
@@ -72,7 +71,7 @@ public enum BuiltinMethod implements SoyMethod {
       SoyProtoType protoType = (SoyProtoType) baseType;
       ExprNode param = params.get(0);
 
-      if (param.getType().getKind() != Kind.PROTO_EXTENSION) {
+      if (param.getType().getKind() != SoyType.Kind.PROTO_EXTENSION) {
         errorReporter.report(param.getSourceLocation(), GET_EXTENSION_BAD_ARG);
         return UnknownType.getInstance();
       }
@@ -161,7 +160,7 @@ public enum BuiltinMethod implements SoyMethod {
 
     @Override
     ImmutableCollection<String> expandMethodNames(SoyType baseType, List<SoyType> argTypes) {
-      if (baseType.getKind() != Kind.PROTO) {
+      if (baseType.getKind() != SoyType.Kind.PROTO) {
         return ImmutableList.of();
       }
       SoyProtoType protoType = (SoyProtoType) baseType;
@@ -178,7 +177,9 @@ public enum BuiltinMethod implements SoyMethod {
     public boolean appliesToBase(SoyType baseType) {
       Preconditions.checkArgument(!SoyTypes.isNullable(baseType));
       return SoyTypes.isKindOrUnionOfKinds(
-          baseType, ImmutableSet.of(SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE));
+          baseType,
+          ImmutableSet.of(
+              SoyType.Kind.TEMPLATE, SoyType.Kind.NAMED_TEMPLATE, SoyType.Kind.TEMPLATE_TYPE));
     }
 
     @Override

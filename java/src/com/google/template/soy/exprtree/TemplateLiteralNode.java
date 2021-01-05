@@ -22,6 +22,7 @@ import com.google.template.soy.base.internal.Identifier;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.types.NamedTemplateType;
 import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -44,6 +45,17 @@ public final class TemplateLiteralNode extends AbstractExprNode {
     this.resolvedName = Optional.empty();
     this.type = NamedTemplateType.create(templateIdentifier.identifier());
     this.isSynthetic = isSynthetic;
+  }
+
+  public TemplateLiteralNode(
+      Identifier templateIdentifier,
+      SourceLocation sourceLocation,
+      boolean isSynthetic,
+      TemplateImportType type) {
+    this(templateIdentifier, sourceLocation, isSynthetic);
+    resolveTemplateName(
+        Identifier.create(
+            type.getName(), templateIdentifier.identifier(), templateIdentifier.location()));
   }
 
   private TemplateLiteralNode(TemplateLiteralNode orig, CopyState copyState) {

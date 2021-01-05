@@ -497,6 +497,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
     } else if (!tagNode.getTagName().isTemplateCall()) {
       if (printNode.getExpr().getType() == UnknownType.getInstance()) {
         if (exprNode instanceof MethodCallNode
+            && ((MethodCallNode) exprNode).isMethodResolved()
             && ((MethodCallNode) exprNode).getSoyMethod() == BuiltinMethod.BIND) {
           // Bind method + unknown type indicates an error already reported here.
           return;

@@ -208,7 +208,7 @@ public class SimplifyVisitorTest {
             "  {@attribute? data-ved: string}",
             "  <div @data-ved></div>")
         .isEqualTo(
-            "{call .t2}{param dataVed kind=\"text\"}{currentVed()"
+            "{call t2}{param dataVed kind=\"text\"}{currentVed()"
                 + " |escapeHtmlAttribute}{/param}{/call}");
   }
 

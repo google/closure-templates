@@ -17,43 +17,40 @@
 package com.google.template.soy.passes;
 
 import static com.google.template.soy.base.SourceLocation.UNKNOWN;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.ImmutableList;
-import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
+import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprNode.CallableExpr.ParamsStyle;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.MethodCallNode;
 import com.google.template.soy.exprtree.RecordLiteralNode;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
+import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
-import com.google.template.soy.soytree.ImportsContext.ImportsTemplateRegistry;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateNode;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.google.template.soy.types.SoyType;
+import com.google.template.soy.types.TemplateImportType;
 
 /**
  * Resolves function calls to template names inside of the dynamic names of HTML open tags, where
  * such calls are allowed.
  */
-@RunAfter(ResolveTemplateImportsPass.class)
-@RunBefore({ResolvePluginsPass.class, ResolveTemplateNamesPass.class})
+@RunAfter({
+  ResolveTemplateImportsPass.class,
+  ResolveDottedImportsPass.class, // So that all names are VarRefs.
+})
+@RunBefore({ResolveTemplateNamesPass.class})
 final class ResolveTemplateFunctionsPass implements CompilerFilePass {
 
   ResolveTemplateFunctionsPass() {}
 
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
-    ImportsTemplateRegistry templateRegistry = file.getTemplateRegistry();
-    // TODO(b/170213185): Come up with a unified vision for template resolution.
-    Set<String> localTemplateNames =
-        file.getTemplates().stream()
-            .map(TemplateNode::getLocalTemplateSymbol)
-            .collect(Collectors.toSet());
-
     SoyTreeUtils.allNodesOfType(file, HtmlOpenTagNode.class)
         .filter(tag -> !tag.getTagName().isStatic())
         .flatMap(
@@ -62,26 +59,27 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
                     tag.getTagName().getDynamicTagName(), FunctionNode.class))
         .filter(
             fct ->
-                fct.getParamsStyle() == ParamsStyle.NONE
-                    || fct.getParamsStyle() == ParamsStyle.NAMED)
-        .forEach(
+                !fct.hasStaticName()
+                    && (fct.getParamsStyle() == ParamsStyle.NONE
+                        || fct.getParamsStyle() == ParamsStyle.NAMED))
+        .filter(
             fct -> {
-              if (templateRegistry.getImportedSymbols().contains(fct.getFunctionName())) {
-                convertToBind(fct, fct.getIdentifier(), fct.getFunctionNameLocation());
-              } else if (localTemplateNames.contains(fct.getFunctionName())) {
-                // Special case allowing local template .foo to be called as foo() -- without
-                // leading dot.
-                convertToBind(
-                    fct,
-                    Identifier.create(
-                        "." + fct.getStaticFunctionName(), fct.getFunctionNameLocation()),
-                    fct.getFunctionNameLocation());
+              ExprNode nameExpr = fct.getNameExpr();
+              if (nameExpr.getKind() == Kind.VAR_REF_NODE) {
+                VarRefNode varRef = (VarRefNode) nameExpr;
+                if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+                  return true;
+                }
               }
-            });
+              return false;
+            })
+        .collect(toList()) // Guard against concurrent modification.
+        .forEach(ResolveTemplateFunctionsPass::convertToBind);
   }
 
-  private static void convertToBind(
-      FunctionNode fct, Identifier templateLiteralId, SourceLocation location) {
+  private static void convertToBind(FunctionNode fct) {
+    VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
+    TemplateImportType type = (TemplateImportType) varRefNode.getType();
     // Move original function's parameters into a record() literal.
     RecordLiteralNode record =
         new RecordLiteralNode(
@@ -92,7 +90,11 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
 
     // Create a template(foo) literal from function node foo()
     TemplateLiteralNode templateLiteral =
-        new TemplateLiteralNode(templateLiteralId, location, true);
+        new TemplateLiteralNode(
+            Identifier.create(varRefNode.getName(), varRefNode.getSourceLocation()),
+            varRefNode.getSourceLocation(),
+            /* isSynthetic= */ true,
+            type);
 
     // Bind and replace.
     MethodCallNode bind =

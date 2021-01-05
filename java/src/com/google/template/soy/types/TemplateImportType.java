@@ -25,6 +25,10 @@ public abstract class TemplateImportType extends ImportType {
     return new AutoValue_TemplateImportType(fqn);
   }
 
+  public static TemplateImportType create(TemplateModuleImportType moduleType, String fieldName) {
+    return create(moduleType.getNamespace() + "." + fieldName);
+  }
+
   public abstract String getName();
 
   @Override
