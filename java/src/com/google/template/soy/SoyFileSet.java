@@ -771,6 +771,7 @@ public final class SoyFileSet {
             parse(
                 passManagerBuilder()
                     .allowUnknownJsGlobals()
+                    .astRewrites(AstRewrites.KYTHE)
                     .allowV1Expression()
                     .desugarHtmlAndStateNodes(false)
                     .optimize(false)
