@@ -994,7 +994,8 @@ final class ExpressionCompiler {
           ternary(
               condition,
               trueBranch.box().checkedCast(boxedRuntimeType),
-              falseBranch.box().checkedCast(boxedRuntimeType)));
+              falseBranch.box().checkedCast(boxedRuntimeType),
+              boxedRuntimeType));
     }
 
     @Override

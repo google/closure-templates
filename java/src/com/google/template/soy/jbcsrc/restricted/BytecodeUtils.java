@@ -680,7 +680,23 @@ public final class BytecodeUtils {
    */
   public static Expression ternary(
       Expression condition, Expression trueBranch, Expression falseBranch) {
-    return ternary(condition, trueBranch, falseBranch, trueBranch.resultType());
+    // Choose the type of the ternary as the least specific of the two options.
+    // In theory we shold really choose the least common superclass which would cover more cases,
+    // but this should be fine for now.  Mostly this is just turning (ImmutableList,List)->List.  If
+    // this isn't possible, an error will be thrown and we can re-evaluate this approach.
+    Type ternaryType;
+    Type trueType = trueBranch.resultType();
+    Type falseType = falseBranch.resultType();
+    if (isDefinitelyAssignableFrom(trueType, falseType)) {
+      ternaryType = trueType;
+    } else if (isDefinitelyAssignableFrom(falseType, trueType)) {
+      ternaryType = falseType;
+    } else {
+      throw new IllegalArgumentException(
+          String.format(
+              "true (%s) and false (%s) branches must be compatible", trueType, falseType));
+    }
+    return ternary(condition, trueBranch, falseBranch, ternaryType);
   }
 
   /**
@@ -696,8 +712,20 @@ public final class BytecodeUtils {
       final Expression trueBranch,
       final Expression falseBranch,
       Type resultType) {
-    checkArgument(condition.resultType().equals(Type.BOOLEAN_TYPE));
-    checkArgument(trueBranch.resultType().getSort() == falseBranch.resultType().getSort());
+    checkArgument(
+        condition.resultType().equals(Type.BOOLEAN_TYPE),
+        "The condition must be a boolean, got %s",
+        condition.resultType());
+    checkArgument(
+        isPossiblyAssignableFrom(resultType, trueBranch.resultType()),
+        "expected %s to be assignable to %s",
+        trueBranch.resultType(),
+        resultType);
+    checkArgument(
+        isPossiblyAssignableFrom(resultType, falseBranch.resultType()),
+        "expected %s to be assignable to %s",
+        falseBranch.resultType(),
+        resultType);
     Features features = Features.of();
     if (Expression.areAllCheap(condition, trueBranch, falseBranch)) {
       features = features.plus(Feature.CHEAP);
