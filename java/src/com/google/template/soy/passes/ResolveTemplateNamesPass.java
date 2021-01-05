@@ -82,6 +82,17 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     SoyTreeUtils.allFunctionInvocations(file, BuiltinFunction.TEMPLATE)
         .forEach(node -> resolveTemplateFunction(node, file.getHeaderInfo()));
 
+    // Change all varrefs of type TEMPLATE_TYPE to TemplateLiteralNode.
+    SoyTreeUtils.allNodesOfType(file, VarRefNode.class)
+        .forEach(
+            v -> {
+              TemplateLiteralNode converted =
+                  varRefToLiteral(v, v.getSourceLocation(), /* isSynthetic= */ false);
+              if (converted != null) {
+                v.getParent().replaceChild(v, converted);
+              }
+            });
+
     // Resolve all unresolved TemplateLiteralNodes. Remove this along with template FQN support.
     SoyTreeUtils.allNodesOfType(file, TemplateLiteralNode.class)
         .filter(n -> !n.isResolved())

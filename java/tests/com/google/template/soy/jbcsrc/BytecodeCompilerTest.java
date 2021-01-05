@@ -1455,7 +1455,7 @@ public class BytecodeCompilerTest {
                         "{template .publicTemplate}",
                         "{@param renderTemplate: bool = true}",
                         "{let $tpl: $renderTemplate ? template(loader1.publicTemplate1) :"
-                            + " template(dummyTemplate) /}",
+                            + " dummyTemplate /}",
                         "L2T",
                         "{sp}{call $tpl /}",
                         "{sp}{call $tpl /}",
