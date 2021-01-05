@@ -1387,6 +1387,15 @@ final class ExpressionCompiler {
     }
 
     @Override
+    SoyExpression visitIsSetFunction(FunctionNode node) {
+      VarRefNode varRef = (VarRefNode) node.getChild(0);
+      return SoyExpression.forBool(
+          parameters
+              .getParamsRecord()
+              .invoke(MethodRef.RUNTIME_HAS_FIELD, constant(varRef.getNameWithoutLeadingDollar())));
+    }
+
+    @Override
     SoyExpression visitIsLastFunction(FunctionNode node) {
       VarRefNode varRef = (VarRefNode) node.getChild(0);
       LocalVarNode foreach = ((LocalVar) varRef.getDefnDecl()).declaringNode();

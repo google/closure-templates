@@ -814,6 +814,8 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
 
     if (soyFunction instanceof BuiltinFunction) {
       switch ((BuiltinFunction) soyFunction) {
+        case IS_PARAM_SET:
+          return visitIsSetFunction(node);
         case IS_FIRST:
           return visitIsFirstFunction(node);
         case IS_LAST:
@@ -900,6 +902,11 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
   private Expression visitIsFirstFunction(FunctionNode node) {
     String varName = ((VarRefNode) node.getChild(0)).getName();
     return variableMappings.get(varName + "__isFirst");
+  }
+
+  private Expression visitIsSetFunction(FunctionNode node) {
+    Expression expression = visit(node.getChild(0));
+    return expression.tripleNotEquals(Expression.LITERAL_UNDEFINED);
   }
 
   private Expression visitIsLastFunction(FunctionNode node) {

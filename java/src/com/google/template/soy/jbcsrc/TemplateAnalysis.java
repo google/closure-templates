@@ -819,6 +819,7 @@ final class TemplateAnalysis {
           case TO_FLOAT:
           case VE_DATA:
           case XID:
+          case IS_PARAM_SET:
             break;
           case UNKNOWN_JS_GLOBAL:
           case V1_EXPRESSION:

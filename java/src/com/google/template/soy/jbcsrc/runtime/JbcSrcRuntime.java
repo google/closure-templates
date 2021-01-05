@@ -170,6 +170,11 @@ public final class JbcSrcRuntime {
     return handleTofuNull(record.getField(field));
   }
 
+  public static boolean hasField(SoyRecord record, String field) {
+    Preconditions.checkNotNull(record, "Attempted to access field '%s' of null", field);
+    return record.hasField(field);
+  }
+
   public static ParamStore setField(ParamStore store, String field, SoyValueProvider provider) {
     return store.setField(field, provider == null ? NullData.INSTANCE : provider);
   }

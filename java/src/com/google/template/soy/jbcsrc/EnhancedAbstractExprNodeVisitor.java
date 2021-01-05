@@ -83,6 +83,8 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
     if (function instanceof BuiltinFunction) {
       BuiltinFunction builtinFn = (BuiltinFunction) function;
       switch (builtinFn) {
+        case IS_PARAM_SET:
+          return visitIsSetFunction(node);
         case IS_FIRST:
           return visitIsFirstFunction(node);
         case IS_LAST:
@@ -139,6 +141,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
   }
 
   T visitIsFirstFunction(FunctionNode node) {
+    return visitExprNode(node);
+  }
+
+  T visitIsSetFunction(FunctionNode node) {
     return visitExprNode(node);
   }
 

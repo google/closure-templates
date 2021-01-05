@@ -583,6 +583,8 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
 
   private PyExpr visitNonPluginFunction(FunctionNode node, BuiltinFunction nonpluginFn) {
     switch (nonpluginFn) {
+      case IS_PARAM_SET:
+        return visitIsSetFunction(node);
       case IS_FIRST:
         return visitForEachFunction(node, "__isFirst");
       case IS_LAST:
@@ -630,6 +632,11 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
   private PyExpr visitForEachFunction(FunctionNode node, String suffix) {
     String varName = ((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar();
     return localVarExprs.getVariableExpression(varName + suffix);
+  }
+
+  private PyExpr visitIsSetFunction(FunctionNode node) {
+    String varName = ((VarRefNode) node.getChild(0)).getNameWithoutLeadingDollar();
+    return new PyFunctionExprBuilder("runtime.is_set").addArg(varName).addArg(DATA).asPyExpr();
   }
 
   private PyExpr assertNotNull(ExprNode node) {

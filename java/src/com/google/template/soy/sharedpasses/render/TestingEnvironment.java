@@ -56,6 +56,11 @@ public final class TestingEnvironment extends Environment {
   }
 
   @Override
+  boolean hasVar(VarDefn var) {
+    return params.hasField(var.name());
+  }
+
+  @Override
   SoyValue getVar(VarDefn var) {
     return getVarProvider(var).resolve();
   }

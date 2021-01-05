@@ -74,6 +74,9 @@ public abstract class Environment {
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValue getVar(VarDefn var);
 
+  /** Returns {@code true} if SoyRecord has a field of the given VarDefn. */
+  abstract boolean hasVar(VarDefn var);
+
   /** Returns the resolved SoyValue for the given VarDefn. Guaranteed to not return null. */
   abstract SoyValueProvider getVarProvider(VarDefn var);
 
@@ -140,6 +143,11 @@ public abstract class Environment {
     }
 
     @Override
+    boolean hasVar(VarDefn var) {
+      return data.hasField(var.name());
+    }
+
+    @Override
     boolean isLast(VarDefn var) {
       return ((LoopPosition) localVariables.get(var)).isLast;
     }
@@ -170,6 +178,11 @@ public abstract class Environment {
     @Override
     SoyValue getVar(VarDefn var) {
       return UndefinedData.INSTANCE;
+    }
+
+    @Override
+    boolean hasVar(VarDefn var) {
+      return false;
     }
 
     @Override

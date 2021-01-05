@@ -766,6 +766,8 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
     if (soyFunction instanceof BuiltinFunction) {
       BuiltinFunction nonpluginFn = (BuiltinFunction) soyFunction;
       switch (nonpluginFn) {
+        case IS_PARAM_SET:
+          return visitIsSetFunction(node);
         case IS_FIRST:
           return visitIsFirstFunction(node);
         case IS_LAST:
@@ -889,6 +891,10 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
       throw RenderException.create(
           "While computing function \"" + fnNode.toSourceString() + "\": " + e.getMessage(), e);
     }
+  }
+
+  private SoyValue visitIsSetFunction(FunctionNode node) {
+    return BooleanData.forValue(env.hasVar(((VarRefNode) node.getChild(0)).getDefnDecl()));
   }
 
   private SoyValue visitIsFirstFunction(FunctionNode node) {

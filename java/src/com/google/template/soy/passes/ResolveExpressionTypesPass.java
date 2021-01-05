@@ -2060,6 +2060,7 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
           checkArgIsStringLiteral(node, 0, builtinFunction);
           node.setType(UnknownType.getInstance());
           break;
+        case IS_PARAM_SET:
         case DEBUG_SOY_TEMPLATE_INFO:
           node.setType(BoolType.getInstance());
           break;

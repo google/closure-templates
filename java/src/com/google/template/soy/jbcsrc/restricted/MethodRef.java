@@ -311,6 +311,9 @@ public abstract class MethodRef {
   public static final MethodRef RUNTIME_COMPARE_NULLABLE_STRING =
       create(JbcSrcRuntime.class, "compareNullableString", String.class, SoyValue.class);
 
+  public static final MethodRef RUNTIME_HAS_FIELD =
+      create(JbcSrcRuntime.class, "hasField", SoyRecord.class, String.class);
+
   public static final MethodRef RUNTIME_GET_FIELD =
       create(JbcSrcRuntime.class, "getField", SoyRecord.class, String.class);
 
