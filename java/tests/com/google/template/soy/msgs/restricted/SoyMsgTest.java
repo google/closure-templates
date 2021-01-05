@@ -78,4 +78,11 @@ public final class SoyMsgTest {
                 .build())
         .isEqualTo(MSG);
   }
+
+  @Test
+  public void selfReferentialAlternateId() {
+    SoyMsg withSelfReferentialAlternateId =
+        MSG_MINIMAL.toBuilder().setAlternateId(MSG_MINIMAL.getId()).build();
+    assertThat(withSelfReferentialAlternateId).isEqualTo(MSG_MINIMAL);
+  }
 }

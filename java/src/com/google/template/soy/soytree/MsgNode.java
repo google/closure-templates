@@ -167,7 +167,10 @@ public final class MsgNode extends AbstractBlockCommandNode
   /** The EscapingMode where this message is used. */
   @Nullable private EscapingMode escapingMode = null;
 
-  /** The optional alternate id to be used if a translation for the msg id is missing. */
+  /** The optional alternate id attribute to be used if a translation for the msg id is missing. */
+  private final Optional<CommandTagAttribute> alternateIdAttribute;
+
+  /** The optional alternate id value, to be used if a translation for the msg id is missing. */
   private final OptionalLong alternateId;
 
   public MsgNode(
@@ -183,7 +186,7 @@ public final class MsgNode extends AbstractBlockCommandNode
     String desc = null;
     boolean hidden = false;
     ImmutableList<ExprRootNode> genders = null;
-    OptionalLong alternateId = OptionalLong.empty();
+    Optional<CommandTagAttribute> alternateIdAttribute = Optional.empty();
 
     this.attributes = attributes;
     this.openTagLocation = openTagLocation;
@@ -211,7 +214,7 @@ public final class MsgNode extends AbstractBlockCommandNode
           }
           break;
         case "alternateId":
-          alternateId = attr.valueAsOptionalLong(errorReporter);
+          alternateIdAttribute = Optional.of(attr);
           break;
         default:
           errorReporter.report(
@@ -233,7 +236,11 @@ public final class MsgNode extends AbstractBlockCommandNode
     this.desc = desc;
     this.isHidden = hidden;
     this.genderExprs = genders;
-    this.alternateId = alternateId;
+    this.alternateIdAttribute = alternateIdAttribute;
+    this.alternateId =
+        alternateIdAttribute.isPresent()
+            ? alternateIdAttribute.get().valueAsOptionalLong(errorReporter)
+            : OptionalLong.empty();
 
     // Calculate eagerly so we still have this even after getAndRemoveGenderExprs() is called.
     this.genderExprsString = (genders != null) ? SoyTreeUtils.toSourceString(genders) : null;
@@ -281,6 +288,10 @@ public final class MsgNode extends AbstractBlockCommandNode
     }
     this.genderExprsString = orig.genderExprsString;
     this.escapingMode = orig.escapingMode;
+    this.alternateIdAttribute =
+        orig.alternateIdAttribute.isPresent()
+            ? Optional.of(orig.alternateIdAttribute.get().copy(copyState))
+            : Optional.empty();
     this.alternateId = orig.alternateId;
   }
 
@@ -362,7 +373,12 @@ public final class MsgNode extends AbstractBlockCommandNode
     return isHidden;
   }
 
-  /** Returns the optional alternate id. */
+  /** Returns the optional alternate id attribute. */
+  public Optional<CommandTagAttribute> getAlternateIdAttribute() {
+    return alternateIdAttribute;
+  }
+
+  /** Returns the optional alternate id value. */
   public OptionalLong getAlternateId() {
     return alternateId;
   }
