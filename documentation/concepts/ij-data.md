@@ -35,11 +35,24 @@ To inject data in a template, you use the `@inject` param. For instance:
 {@inject myijdata: InjectedDataType}
 ```
 
-Which is then accessed by calling `$myijdata`.
+Which is then accessed by referencing `$myijdata`:
 
-To render a template using injected data, you use a language-specific API. See
-[Rendering a Template in JS](../dev/js.md) and [Rendering a Template in
-Java](../dev/java.md) for more information.
+```soy
+<div>
+Here is my injected data: {$myijdata}.
+</div>
+```
+
+## How do I provide injected data?
+
+The code that renders your template must provide injected data:
+
+*   In Java, use `Renderer.setIj()`. For more information, see
+    [Configuring the Renderer](../dev/java.md#configuring-the-renderer).
+*   In JavaScript, pass the data directly to the function generated from the
+    template. For more information, see
+    [Generating JavaScript functions from Soy files](../dev/js.md#generating-javascript-functions-from-soy-files).
+
 
 <br>
 
