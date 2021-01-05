@@ -38,7 +38,6 @@ import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
@@ -74,7 +73,6 @@ import com.google.template.soy.soytree.SoyTreeUtils;
 import com.google.template.soy.soytree.SoyTreeUtils.VisitDirective;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -211,34 +209,28 @@ final class LazyClosureCompiler {
   }
 
   private final TemplateAnalysis analysis;
-  private final CompiledTemplateRegistry registry;
   private final InnerClasses innerClasses;
   private final AbstractTemplateParameterLookup parentVariableLookup;
   private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
   private final BasicExpressionCompiler parentConstantCompiler;
   private final FieldManager parentFields;
-  private final ErrorReporter reporter;
-  private final SoyTypeRegistry typeRegistry;
+  private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
 
   LazyClosureCompiler(
       TemplateAnalysis analysis,
-      CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       AbstractTemplateParameterLookup parentVariableLookup,
       FieldManager parentFields,
       ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
       BasicExpressionCompiler parentConstantCompiler,
-      ErrorReporter reporter,
-      SoyTypeRegistry typeRegistry) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     this.analysis = analysis;
-    this.registry = registry;
     this.innerClasses = innerClasses;
     this.parentVariableLookup = parentVariableLookup;
     this.parentFields = parentFields;
     this.parentConstantCompiler = parentConstantCompiler;
     this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
-    this.reporter = reporter;
-    this.typeRegistry = typeRegistry;
+    this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
   }
 
   /** Returns true if evaluating the RenderUnitNode will require generating detach logic. */
@@ -458,7 +450,7 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
-                  analysis, lookup, variableSet, fields, reporter, typeRegistry, registry)
+                  analysis, lookup, variableSet, fields, javaSourceFunctionCompiler)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -503,7 +495,7 @@ final class LazyClosureCompiler {
           new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
       ExpressionCompiler expressionCompiler =
           ExpressionCompiler.create(
-              analysis, lookup, variableSet, fields, reporter, typeRegistry, registry);
+              analysis, lookup, variableSet, fields, javaSourceFunctionCompiler);
       Optional<Expression> expr =
           ExpressionToSoyValueProviderCompiler.create(
                   analysis, variableSet, expressionCompiler, lookup)
@@ -560,9 +552,7 @@ final class LazyClosureCompiler {
               analysis,
               new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
               fields,
-              reporter,
-              typeRegistry,
-              registry);
+              javaSourceFunctionCompiler);
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RENDER);
       LazyClosureParameterLookup lookup =
@@ -570,7 +560,6 @@ final class LazyClosureCompiler {
       SoyNodeCompiler soyNodeCompiler =
           SoyNodeCompiler.create(
               analysis,
-              registry,
               innerClasses,
               thisVar,
               AppendableExpression.forExpression(appendableVar),
@@ -578,8 +567,7 @@ final class LazyClosureCompiler {
               lookup,
               fields,
               constantCompiler,
-              reporter,
-              typeRegistry);
+              javaSourceFunctionCompiler);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();

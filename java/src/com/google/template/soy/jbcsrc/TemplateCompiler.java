@@ -36,7 +36,6 @@ import com.google.common.collect.Sets;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.internal.Converters;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.exprtree.VarDefn.Kind;
@@ -73,7 +72,6 @@ import com.google.template.soy.soytree.defn.TemplateHeaderVarDefn;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyType;
-import com.google.template.soy.types.SoyTypeRegistry;
 import com.google.template.soy.types.SoyTypes;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
@@ -98,7 +96,6 @@ final class TemplateCompiler {
       AnnotationRef.forType(TemplateMetadata.class);
   private static final TypeInfo TEMPLATE_TYPE = TypeInfo.create(CompiledTemplate.class);
 
-  private final CompiledTemplateRegistry registry;
   // lazily allocated
   private FieldRef paramsField;
   // lazily allocated
@@ -108,22 +105,19 @@ final class TemplateCompiler {
   private final CompiledTemplateMetadata template;
   private final TemplateNode templateNode;
   private final InnerClasses innerClasses;
-  private final ErrorReporter reporter;
-  private final SoyTypeRegistry soyTypeRegistry;
   private SoyClassWriter writer;
   private TemplateAnalysis analysis;
+  private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
 
   TemplateCompiler(
-      CompiledTemplateRegistry registry,
       CompiledTemplateMetadata template,
       TemplateNode templateNode,
-      ErrorReporter reporter,
-      SoyTypeRegistry soyTypeRegistry) {
-    this.registry = registry;
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     this.template = template;
     this.templateNode = templateNode;
     this.innerClasses = new InnerClasses(template.typeInfo());
     this.fields = new FieldManager(template.typeInfo());
+    this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
 
     ImmutableMap.Builder<String, FieldRef> builder = ImmutableMap.builder();
     for (TemplateParam param : templateNode.getAllParams()) {
@@ -135,8 +129,6 @@ final class TemplateCompiler {
               : fields.addField(name, BytecodeUtils.SOY_VALUE_PROVIDER_TYPE).asNonNull());
     }
     this.paramFields = builder.build();
-    this.reporter = reporter;
-    this.soyTypeRegistry = soyTypeRegistry;
   }
 
   private static boolean shouldResolveParamValueInConstructor(TemplateParam param) {
@@ -188,9 +180,7 @@ final class TemplateCompiler {
             analysis,
             new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
             fields,
-            reporter,
-            soyTypeRegistry,
-            registry);
+            javaSourceFunctionCompiler);
     generateTemplateMetadata();
 
     generateRenderMethod(constantCompiler);
@@ -367,7 +357,6 @@ final class TemplateCompiler {
     final CompiledMethodBody methodBody =
         SoyNodeCompiler.create(
                 analysis,
-                registry,
                 innerClasses,
                 thisVar,
                 AppendableExpression.forExpression(appendableVar),
@@ -375,8 +364,7 @@ final class TemplateCompiler {
                 variables,
                 fields,
                 constantCompiler,
-                reporter,
-                soyTypeRegistry)
+                javaSourceFunctionCompiler)
             .compile(
                 templateNode,
                 /* prefix= */ resolveDefaultValuesForTemplateParams,

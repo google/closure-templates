@@ -20,6 +20,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.truth.Fact.simpleFact;
+import static com.google.common.truth.Truth.assertAbout;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
@@ -31,7 +33,6 @@ import com.google.common.truth.FailureMetadata;
 import com.google.common.truth.IterableSubject;
 import com.google.common.truth.Subject;
 import com.google.common.truth.ThrowableSubject;
-import com.google.common.truth.Truth;
 import com.google.protobuf.Descriptors.GenericDescriptor;
 import com.google.template.soy.SoyFileSetParser;
 import com.google.template.soy.SoyFileSetParser.ParseResult;
@@ -73,7 +74,6 @@ import com.google.template.soy.types.TemplateType;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +137,7 @@ public final class TemplateTester {
   }
 
   static CompiledTemplateSubject assertThatFile(String... template) {
-    return Truth.assertAbout(CompiledTemplateSubject::new).that(Joiner.on('\n').join(template));
+    return assertAbout(CompiledTemplateSubject::new).that(Joiner.on('\n').join(template));
   }
 
   /**
@@ -264,8 +264,7 @@ public final class TemplateTester {
         failWithoutActual(
             simpleFact(
                 String.format(
-                    "Expected %s to fail to render, but it rendered '%s'.",
-                    actual, builder.toString())));
+                    "Expected %s to fail to render, but it rendered '%s'.", actual, builder)));
       } catch (Throwable t) {
         return check("failure()").that(t);
       }
@@ -375,17 +374,14 @@ public final class TemplateTester {
         // N.B. we are reproducing some of BytecodeCompiler here to make it easier to look at
         // intermediate data structures.
         TemplateRegistry registry = parseResult.registry();
-        CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
 
         TemplateNode template = SoyTreeUtils.getAllNodesOfType(fileSet, TemplateNode.class).get(0);
         String templateName = template.getTemplateName();
         classData =
             new TemplateCompiler(
-                    compilerRegistry,
-                    compilerRegistry.getBasicTemplateInfoByTemplateName(templateName),
+                    CompiledTemplateMetadata.create(templateName),
                     template,
-                    ErrorReporter.exploding(),
-                    typeRegistry)
+                    new JavaSourceFunctionCompiler(typeRegistry, ErrorReporter.exploding()))
                 .compile();
         checkClasses(classData);
         CompiledTemplates compiledTemplates =
@@ -447,7 +443,7 @@ public final class TemplateTester {
     LogCapturer() {
       this.logOutput = new ByteArrayOutputStream();
       try {
-        this.stream = new PrintStream(logOutput, true, StandardCharsets.UTF_8.name());
+        this.stream = new PrintStream(logOutput, true, UTF_8.name());
       } catch (UnsupportedEncodingException e) {
         throw new AssertionError("StandardCharsets must be supported", e);
       }
@@ -466,7 +462,7 @@ public final class TemplateTester {
 
     @Override
     public String toString() {
-      return new String(logOutput.toByteArray(), StandardCharsets.UTF_8);
+      return new String(logOutput.toByteArray(), UTF_8);
     }
   }
 
@@ -529,4 +525,6 @@ public final class TemplateTester {
             parser.typeRegistry())
         .get();
   }
+
+  private TemplateTester() {}
 }

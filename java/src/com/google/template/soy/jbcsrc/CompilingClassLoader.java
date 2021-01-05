@@ -25,6 +25,7 @@ import com.google.template.soy.error.SoyCompilationException;
 import com.google.template.soy.error.SoyError;
 import com.google.template.soy.jbcsrc.internal.AbstractMemoryClassLoader;
 import com.google.template.soy.jbcsrc.internal.ClassData;
+import com.google.template.soy.jbcsrc.shared.Names;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyFileSetNode;
 import com.google.template.soy.soytree.TemplateNode;
@@ -44,30 +45,21 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
   // would just use more memory.
   private final Map<String, ClassData> classesByName = Collections.synchronizedMap(new HashMap<>());
 
-  private final CompiledTemplateRegistry registry;
   private final ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers;
-  private final ImmutableMap<String, TemplateNode> classNameToTemplateNode;
-  private final ImmutableMap<String, CompiledTemplateMetadata> classNameToTemplateMetadata;
+  private final ImmutableMap<String, TemplateNode> templateNameToTemplateNode;
   private final SoyTypeRegistry typeRegistry;
 
   CompilingClassLoader(
-      CompiledTemplateRegistry registry,
       SoyFileSetNode fileSet,
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
-    this.registry = registry;
-    ImmutableMap.Builder<String, TemplateNode> classNameToTemplateNode = ImmutableMap.builder();
-    ImmutableMap.Builder<String, CompiledTemplateMetadata> classNameToTemplateMetadata =
-        ImmutableMap.builder();
+    ImmutableMap.Builder<String, TemplateNode> templateNameToTemplateNode = ImmutableMap.builder();
     for (SoyFileNode file : fileSet.getChildren()) {
       for (TemplateNode template : file.getTemplates()) {
-        CompiledTemplateMetadata meta = registry.getTemplateInfo(template);
-        classNameToTemplateNode.put(meta.typeInfo().className(), template);
-        classNameToTemplateMetadata.put(meta.typeInfo().className(), meta);
+        templateNameToTemplateNode.put(template.getTemplateName(), template);
       }
     }
-    this.classNameToTemplateNode = classNameToTemplateNode.build();
-    this.classNameToTemplateMetadata = classNameToTemplateMetadata.build();
+    this.templateNameToTemplateNode = templateNameToTemplateNode.build();
     this.typeRegistry = typeRegistry;
     this.filePathsToSuppliers = filePathsToSuppliers;
   }
@@ -82,17 +74,21 @@ final class CompilingClassLoader extends AbstractMemoryClassLoader {
     // We haven't already compiled it (and haven't already loaded it) so try to find the matching
     // template.
 
-    // For each template we compile there are only two 'public' classes that could be loaded prior
-    // to compiling the template. The CompiledTemplate.Factory class and the CompiledTemplate itself
-    CompiledTemplateMetadata meta = classNameToTemplateMetadata.get(name);
-    if (meta == null) {
+    // For each template we compile there is only one 'public' class that could be loaded prior
+    // to compiling the template, CompiledTemplate itself.
+    if (!name.startsWith(Names.CLASS_PREFIX)) {
       return null;
     }
+    String templateName = Names.soyTemplateNameFromJavaClassName(name);
+    TemplateNode node = templateNameToTemplateNode.get(templateName);
+    if (node == null) {
+      return null;
+    }
+    CompiledTemplateMetadata meta = CompiledTemplateMetadata.create(templateName);
     ClassData clazzToLoad = null;
     ErrorReporter reporter = ErrorReporter.create(filePathsToSuppliers);
     for (ClassData clazz :
-        new TemplateCompiler(
-                registry, meta, classNameToTemplateNode.get(name), reporter, typeRegistry)
+        new TemplateCompiler(meta, node, new JavaSourceFunctionCompiler(typeRegistry, reporter))
             .compile()) {
       String className = clazz.type().className();
       if (className.equals(name)) {

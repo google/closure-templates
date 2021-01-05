@@ -39,7 +39,6 @@ import com.google.template.soy.basetree.Node;
 import com.google.template.soy.data.SoyRecord;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.internal.ParamStore;
-import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.exprtree.ExprNode;
 import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.exprtree.FunctionNode;
@@ -107,7 +106,6 @@ import com.google.template.soy.soytree.SwitchNode;
 import com.google.template.soy.soytree.TemplateNode;
 import com.google.template.soy.soytree.VeLogNode;
 import com.google.template.soy.soytree.defn.TemplateParam;
-import com.google.template.soy.types.SoyTypeRegistry;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
@@ -140,7 +138,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
    */
   static SoyNodeCompiler create(
       TemplateAnalysis analysis,
-      CompiledTemplateRegistry registry,
       InnerClasses innerClasses,
       Expression thisVar,
       AppendableExpression appendableVar,
@@ -148,19 +145,17 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       AbstractTemplateParameterLookup parameterLookup,
       FieldManager fields,
       BasicExpressionCompiler constantCompiler,
-      ErrorReporter reporter,
-      SoyTypeRegistry typeRegistry) {
+      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
     DetachState detachState = new DetachState(variables, thisVar, fields);
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(
-            analysis, parameterLookup, variables, fields, reporter, typeRegistry, registry);
+            analysis, parameterLookup, variables, fields, javaSourceFunctionCompiler);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
         ExpressionToSoyValueProviderCompiler.create(
             analysis, variables, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
         analysis,
         thisVar,
-        registry,
         detachState,
         variables,
         parameterLookup,
@@ -170,19 +165,16 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
         soyValueProviderCompiler,
         new LazyClosureCompiler(
             analysis,
-            registry,
             innerClasses,
             parameterLookup,
             fields,
             soyValueProviderCompiler,
             constantCompiler,
-            reporter,
-            typeRegistry));
+            javaSourceFunctionCompiler));
   }
 
   private final TemplateAnalysis analysis;
   private final Expression thisVar;
-  private final CompiledTemplateRegistry registry;
   private final DetachState detachState;
   private final TemplateVariableManager variables;
   private final TemplateParameterLookup parameterLookup;
@@ -196,7 +188,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
   SoyNodeCompiler(
       TemplateAnalysis analysis,
       Expression thisVar,
-      CompiledTemplateRegistry registry,
       DetachState detachState,
       TemplateVariableManager variables,
       TemplateParameterLookup parameterLookup,
@@ -207,7 +198,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
       LazyClosureCompiler lazyClosureCompiler) {
     this.analysis = checkNotNull(analysis);
     this.thisVar = checkNotNull(thisVar);
-    this.registry = checkNotNull(registry);
     this.detachState = checkNotNull(detachState);
     this.variables = checkNotNull(variables);
     this.parameterLookup = checkNotNull(parameterLookup);
@@ -988,13 +978,11 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     Expression params = prepareParamsHelper(node, reattachPoint);
     Expression ijRecord = parameterLookup.getIjRecord();
     if (node.isStaticCall()) {
-      CompiledTemplateMetadata callee =
-          registry.getBasicTemplateInfoByTemplateName(node.getCalleeName());
       // Use invokedynamic to bind to the constructor.  This allows applications using complex
       // classloader setups to have {call} commands cross classloader boundaries.
       Expression renderContext = parameterLookup.getRenderContext();
       calleeExpression =
-          new Expression(callee.typeInfo().type()) {
+          new Expression(BytecodeUtils.COMPILED_TEMPLATE_TYPE) {
             @Override
             protected void doGen(CodeBuilder adapter) {
               renderContext.gen(adapter);
@@ -1368,7 +1356,6 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     return new SoyNodeCompiler(
         analysis,
         thisVar,
-        registry,
         detachState,
         variables,
         parameterLookup,

@@ -71,10 +71,6 @@ public final class BytecodeCompiler {
       ImmutableMap<SourceFilePath, SoyFileSupplier> filePathsToSuppliers,
       SoyTypeRegistry typeRegistry) {
     ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    if (reporter.errorsSince(checkpoint)) {
-      return Optional.empty();
-    }
-    CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
     CompiledTemplates templates =
         new CompiledTemplates(
             /* delTemplateNames=*/ registry.getAllTemplates().stream()
@@ -84,8 +80,7 @@ public final class BytecodeCompiler {
                             == TemplateType.TemplateKind.DELTEMPLATE)
                 .map(TemplateMetadata::getTemplateName)
                 .collect(toImmutableSet()),
-            new CompilingClassLoader(
-                compilerRegistry, fileSet, filePathsToSuppliers, typeRegistry));
+            new CompilingClassLoader(fileSet, filePathsToSuppliers, typeRegistry));
     if (reporter.errorsSince(checkpoint)) {
       return Optional.empty();
     }
@@ -110,14 +105,6 @@ public final class BytecodeCompiler {
       SoyTypeRegistry typeRegistry,
       ByteSink sink)
       throws IOException {
-    ErrorReporter.Checkpoint checkpoint = reporter.checkpoint();
-    if (reporter.errorsSince(checkpoint)) {
-      return;
-    }
-    CompiledTemplateRegistry compilerRegistry = new CompiledTemplateRegistry(registry);
-    if (reporter.errorsSince(checkpoint)) {
-      return;
-    }
     try (final SoyJarFileWriter writer = new SoyJarFileWriter(sink.openStream())) {
       final Set<String> delTemplates = new TreeSet<>();
 
@@ -126,7 +113,6 @@ public final class BytecodeCompiler {
       Map<String, PluginRuntimeInstanceInfo.Builder> pluginInstances = new TreeMap<>();
 
       compileTemplates(
-          compilerRegistry,
           fileSet,
           reporter,
           typeRegistry,
@@ -251,17 +237,20 @@ public final class BytecodeCompiler {
   }
 
   private static <T, E extends Throwable> T compileTemplates(
-      CompiledTemplateRegistry registry,
       SoyFileSetNode fileSet,
       ErrorReporter errorReporter,
       SoyTypeRegistry typeRegistry,
       CompilerListener<T, E> listener)
       throws E {
+    JavaSourceFunctionCompiler javaSourceFunctionCompiler =
+        new JavaSourceFunctionCompiler(typeRegistry, errorReporter);
     for (SoyFileNode file : fileSet.getChildren()) {
       for (TemplateNode template : file.getTemplates()) {
-        CompiledTemplateMetadata classInfo = registry.getTemplateInfo(template);
         TemplateCompiler templateCompiler =
-            new TemplateCompiler(registry, classInfo, template, errorReporter, typeRegistry);
+            new TemplateCompiler(
+                CompiledTemplateMetadata.create(template.getTemplateName()),
+                template,
+                javaSourceFunctionCompiler);
         for (ClassData clazz : templateCompiler.compile()) {
           if (Flags.DEBUG) {
             clazz.checkClass();
