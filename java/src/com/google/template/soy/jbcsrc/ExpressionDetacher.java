@@ -53,6 +53,9 @@ interface ExpressionDetacher {
    */
   Expression resolveSoyValueProvider(Expression soyValueProvider);
 
+  /** Returns an expression for the same SoyValueProvider, after it is resolved. */
+  Expression waitForSoyValueProvider(Expression soyValueProvider);
+
   /**
    * Given a list of SoyValueProviders, await for all members to be resolved.
    *
@@ -82,6 +85,12 @@ interface ExpressionDetacher {
     @Override
     public NullDetatcher createExpressionDetacher(Label reattachPoint) {
       return this;
+    }
+
+    @Override
+    public Expression waitForSoyValueProvider(Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
+      return soyValueProvider;
     }
 
     @Override
@@ -131,15 +140,10 @@ interface ExpressionDetacher {
     }
 
     @Override
-    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
-      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
-      // if this expression is already assignable to a SoyValue, we don't need to do
-      // anything.
-      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
-        return soyValueProvider;
-      }
+    public Expression waitForSoyValueProvider(Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(BytecodeUtils.SOY_VALUE_PROVIDER_TYPE);
       Statement saveOperation = saveOperationSupplier.get();
-      return new Expression(SOY_VALUE_TYPE) {
+      return new Expression(soyValueProvider.resultType()) {
         @Override
         protected void doGen(CodeBuilder adapter) {
           // We use a bunch of dup() operations in order to save extra field reads and method
@@ -159,9 +163,19 @@ interface ExpressionDetacher {
           adapter.returnValue();
           adapter.mark(end);
           adapter.pop(); // Stack: SVP
-          MethodRef.SOY_VALUE_PROVIDER_RESOLVE.invokeUnchecked(adapter); // Stack: SV
         }
       };
+    }
+
+    @Override
+    public Expression resolveSoyValueProvider(final Expression soyValueProvider) {
+      soyValueProvider.checkAssignableTo(SOY_VALUE_PROVIDER_TYPE);
+      // if this expression is already assignable to a SoyValue, we don't need to do
+      // anything.
+      if (BytecodeUtils.isDefinitelyAssignableFrom(SOY_VALUE_TYPE, soyValueProvider.resultType())) {
+        return soyValueProvider;
+      }
+      return waitForSoyValueProvider(soyValueProvider).invoke(MethodRef.SOY_VALUE_PROVIDER_RESOLVE);
     }
 
     @Override

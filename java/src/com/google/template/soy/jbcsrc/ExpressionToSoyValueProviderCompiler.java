@@ -28,12 +28,10 @@ import com.google.template.soy.exprtree.OperatorNodes.NullCoalescingOpNode;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
-import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
 import com.google.template.soy.jbcsrc.restricted.Expression;
 import com.google.template.soy.jbcsrc.restricted.FieldRef;
 import com.google.template.soy.jbcsrc.restricted.MethodRef;
 import com.google.template.soy.jbcsrc.restricted.SoyExpression;
-import com.google.template.soy.jbcsrc.restricted.SoyRuntimeType;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.Optional;
@@ -207,33 +205,11 @@ final class ExpressionToSoyValueProviderCompiler {
           Expression left;
           if (maybeLeft.isPresent()) {
             // If left can be compiled to a SoyValueProvider, resolve it to check if it's null.
-            final Expression leftSVP = maybeLeft.get();
-
-            // Put the SoyValueProvider on the stack twice since we'll need it later.
-            Expression leftDup =
-                new Expression(leftSVP.resultType(), leftSVP.features(), leftSVP.location()) {
-                  @Override
-                  protected void doGen(CodeBuilder cb) {
-                    leftSVP.gen(cb); // stack: SVP
-                    cb.dup(); // stack: SVP, SVP
-                  }
-                };
-            // Resolve the provider, so we can check if it's null.
-            final Expression resolved =
-                detacher
-                    .resolveSoyValueProvider(leftDup)
-                    .checkedCast(
-                        SoyRuntimeType.getBoxedType(node.getLeftChild().getType()).runtimeType());
-            // But throw away the resolved value (since it won't have logging calls in it) and
-            // instead use the extra SoyValueProvider on the stack from before.
+            Expression leftSVP = maybeLeft.get();
             left =
-                new Expression(leftSVP.resultType(), leftSVP.features(), leftSVP.location()) {
-                  @Override
-                  protected void doGen(CodeBuilder cb) {
-                    resolved.gen(cb); // stack: SVP, SV
-                    cb.pop(); // stack: SVP
-                  }
-                };
+                ExpressionCompiler.requiresDetach(analysis, node.getLeftChild())
+                    ? detacher.waitForSoyValueProvider(leftSVP)
+                    : leftSVP;
           } else {
             // If left cannot be compiled to a SoyValueProvider, compile it to a SoyValue and box it
             // into a SoyValueProvider.

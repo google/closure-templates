@@ -950,12 +950,46 @@ public class BytecodeCompilerTest {
             "{namespace ns}",
             "{template .foo}",
             "  {@param? content : string}",
-            "  {$content ?: 'empty'}",
+            "  {checkNotNull($content)}",
             "{/template}");
-    subject.rendersAs("empty");
+    subject.rendersAs("full", ImmutableMap.of("content", "full"));
+    subject.failsToRenderWith(NullPointerException.class);
     subject.failsToRenderWith(
         ClassCastException.class,
         ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
+  }
+
+  @Test
+  public void testPassHtmlAsNullableString_printNodeDoesntFail() throws Exception {
+    CompiledTemplateSubject subject =
+        TemplateTester.assertThatFile(
+            "{namespace ns}",
+            "{template .foo}",
+            "  {@param? content : string}",
+            "  {$content ?: 'empty'}",
+            "{/template}");
+    subject.rendersAs("empty");
+    subject.rendersAs("full", ImmutableMap.of("content", "full"));
+    // NOTE: we don't fail with a ClassCastException here, this is because we end up calling
+    // `renderandResolve` on the parameter as a SoyValueProvider
+    subject.rendersAs(
+        "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
+  }
+
+  @Test
+  public void testPassHtmlAsString_printNodeDoesntFail() throws Exception {
+    CompiledTemplateSubject subject =
+        TemplateTester.assertThatFile(
+            "{namespace ns}",
+            "{template .foo}",
+            "  {@param content : string}",
+            "  {$content}",
+            "{/template}");
+    subject.rendersAs("full", ImmutableMap.of("content", "full"));
+    // NOTE: we don't fail with a ClassCastException here, this is because we end up calling
+    // `renderandResolve` on the parameter as a SoyValueProvider
+    subject.rendersAs(
+        "<b>hello</b>", ImmutableMap.of("content", SanitizedContents.constantHtml("<b>hello</b>")));
   }
 
   private Object getField(String name, CompiledTemplate template) throws Exception {

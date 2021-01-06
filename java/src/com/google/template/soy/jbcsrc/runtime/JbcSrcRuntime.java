@@ -152,7 +152,7 @@ public final class JbcSrcRuntime {
   }
 
   public static SoyValueProvider soyValueProviderOrNull(SoyValueProvider provider) {
-    if (provider == null || resolveSoyValueProvider(provider) == null) {
+    if (resolveSoyValueProvider(provider) == null) {
       return null;
     }
     return provider;

@@ -655,6 +655,11 @@ public class ExpressionCompilerTest {
               }
 
               @Override
+              public Expression waitForSoyValueProvider(Expression soyValueProvider) {
+                return soyValueProvider;
+              }
+
+              @Override
               public Expression resolveSoyValueProviderList(Expression soyValueProviderList) {
                 throw new UnsupportedOperationException();
               }
