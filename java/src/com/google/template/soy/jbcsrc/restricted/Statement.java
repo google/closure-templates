@@ -198,7 +198,7 @@ public abstract class Statement extends BytecodeProducer {
   }
 
   /** Returns an Expression that evaluates this statement followed by the given expression. */
-  final Expression then(final Expression expression) {
+  public final Expression then(final Expression expression) {
     return new Expression(expression.resultType(), expression.features()) {
       @Override
       protected void doGen(CodeBuilder adapter) {

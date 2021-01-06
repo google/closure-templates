@@ -65,24 +65,30 @@ public abstract class LoggingAdvisingAppendable implements AdvisingAppendable {
    * the content to a string by dropping all the strict content directives.
    */
   public static LoggingAdvisingAppendable stringCoercing(LoggingAdvisingAppendable delegate) {
-    return new ForwardingLoggingAdvisingAppendable(delegate) {
-      @Override
-      public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
-        return this;
-      }
+    return new StringCoercingAppendable(delegate);
+  }
 
-      @Override
-      public LoggingAdvisingAppendable exitLoggableElement() {
-        return this;
-      }
+  private static final class StringCoercingAppendable extends ForwardingLoggingAdvisingAppendable {
+    StringCoercingAppendable(LoggingAdvisingAppendable delegate) {
+      super(delegate);
+    }
 
-      @Override
-      public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
-          LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
-          throws IOException {
-        return append(escapePlaceholder(funCall.placeholderValue(), escapers));
-      }
-    };
+    @Override
+    public LoggingAdvisingAppendable enterLoggableElement(LogStatement statement) {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable exitLoggableElement() {
+      return this;
+    }
+
+    @Override
+    public LoggingAdvisingAppendable appendLoggingFunctionInvocation(
+        LoggingFunctionInvocation funCall, ImmutableList<Function<String, String>> escapers)
+        throws IOException {
+      return append(escapePlaceholder(funCall.placeholderValue(), escapers));
+    }
   }
 
   // covariant overrides

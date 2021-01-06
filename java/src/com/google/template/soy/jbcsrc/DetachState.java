@@ -107,6 +107,7 @@ final class DetachState implements ExpressionDetacher.Factory {
   private final FieldManager fields;
   // lazily allocated
   @Nullable private FieldRef stateField;
+  int disabledCount;
 
   DetachState(TemplateVariableManager variables, Expression thisExpr, FieldManager fields) {
     this.variables = variables;
@@ -121,6 +122,27 @@ final class DetachState implements ExpressionDetacher.Factory {
     return stateField;
   }
 
+  interface NoNewDetaches extends AutoCloseable {
+    @Override
+    void close();
+  }
+
+  NoNewDetaches expectNoNewDetaches() {
+    disabledCount++;
+    return () -> {
+      disabledCount--;
+      if (disabledCount < 0) {
+        throw new AssertionError();
+      }
+    };
+  }
+
+  private void checkDetachesAllowed() {
+    if (disabledCount > 0) {
+      throw new IllegalStateException();
+    }
+  }
+
   /**
    * Returns a {@link ExpressionDetacher} that can be used to instrument an expression with detach
    * reattach logic.
@@ -130,6 +152,7 @@ final class DetachState implements ExpressionDetacher.Factory {
     // Lazily allocate the save restore state since it isnt always needed.
     return new ExpressionDetacher.BasicDetacher(
         () -> {
+          checkDetachesAllowed();
           SaveRestoreState saveRestoreState = variables.saveRestoreState();
           int state = addState(reattachPoint, saveRestoreState.restore());
           Statement saveState =
@@ -147,6 +170,7 @@ final class DetachState implements ExpressionDetacher.Factory {
    * block since there should be nothing to save or restore.
    */
   Statement detachLimited(AppendableExpression appendable) {
+    checkDetachesAllowed();
     variables.assertSaveRestoreStateIsEmpty();
     if (!appendable.supportsSoftLimiting()) {
       return appendable.toStatement();
@@ -196,6 +220,7 @@ final class DetachState implements ExpressionDetacher.Factory {
    *     RenderResult
    */
   Statement detachForRender(final Expression render) {
+    checkDetachesAllowed();
     checkArgument(render.resultType().equals(RENDER_RESULT_TYPE));
     final Label reattachPoint = new Label();
     final SaveRestoreState saveRestoreState = variables.saveRestoreState();

@@ -492,16 +492,10 @@ public class BytecodeCompilerTest {
             "  {/if}",
             "{/template}");
     templateClass = templates.getTemplateData("ns.msg").templateClass();
-    innerClass = Iterables.getOnlyElement(Arrays.asList(templateClass.getDeclaredClasses()));
-    assertThat(innerClass.getSimpleName()).isEqualTo("ph_FOO");
-    // The placeholder inner class doesn't require a `$state` field because `$name` is definetely
-    // already resolved.
-    assertThat(innerClass.getDeclaredFields()).hasLength(1);
-    assertThat(innerClass.getDeclaredField("$template").getType())
-        .isAssignableTo(CompiledTemplate.class);
+    // The placeholder doesn't require an inner class  because `$name` is definitely already
+    // resolved so it is evaluated inline
+    assertThat(templateClass.getDeclaredClasses()).isEmpty();
   }
-
-
 
   private static TemplateMetadata getTemplateMetadata(CompiledTemplates templates, String name) {
     return templates.getTemplateData(name).templateClass().getAnnotation(TemplateMetadata.class);

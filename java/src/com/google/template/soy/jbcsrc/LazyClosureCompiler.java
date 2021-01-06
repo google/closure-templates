@@ -44,7 +44,6 @@ import com.google.template.soy.exprtree.ExprRootNode;
 import com.google.template.soy.jbcsrc.ExpressionCompiler.BasicExpressionCompiler;
 import com.google.template.soy.jbcsrc.ExpressionDetacher.BasicDetacher;
 import com.google.template.soy.jbcsrc.SoyNodeCompiler.CompiledMethodBody;
-import com.google.template.soy.jbcsrc.internal.InnerClasses;
 import com.google.template.soy.jbcsrc.internal.SoyClassWriter;
 import com.google.template.soy.jbcsrc.restricted.BytecodeUtils;
 import com.google.template.soy.jbcsrc.restricted.CodeBuilder;
@@ -139,13 +138,6 @@ import org.objectweb.asm.commons.Method;
  *   }
  * }
  * }</pre>
- *
- * <p>TODO(b/172970101): Now that many LetContentNodes don't directly detachLimited(), it may be
- * possible to compile to expressions that generate StringData or SanitizedContent directly instead
- * of creating a new lazy SoyValueProvider subclass. This case may seem weird but consider {@code
- * {let $a kind="text"}{css('foo')} {css('bar')}{/let}} the only benefit to evaluating such a thing
- * lazily would be to avoid allocating the String for the value because theoretically it could be
- * streamed out.
  */
 final class LazyClosureCompiler {
   @AutoValue
@@ -208,29 +200,10 @@ final class LazyClosureCompiler {
     }
   }
 
-  private final TemplateAnalysis analysis;
-  private final InnerClasses innerClasses;
-  private final AbstractTemplateParameterLookup parentVariableLookup;
-  private final ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler;
-  private final BasicExpressionCompiler parentConstantCompiler;
-  private final FieldManager parentFields;
-  private final JavaSourceFunctionCompiler javaSourceFunctionCompiler;
+  private final SoyNodeCompiler parent;
 
-  LazyClosureCompiler(
-      TemplateAnalysis analysis,
-      InnerClasses innerClasses,
-      AbstractTemplateParameterLookup parentVariableLookup,
-      FieldManager parentFields,
-      ExpressionToSoyValueProviderCompiler expressionToSoyValueProviderCompiler,
-      BasicExpressionCompiler parentConstantCompiler,
-      JavaSourceFunctionCompiler javaSourceFunctionCompiler) {
-    this.analysis = analysis;
-    this.innerClasses = innerClasses;
-    this.parentVariableLookup = parentVariableLookup;
-    this.parentFields = parentFields;
-    this.parentConstantCompiler = parentConstantCompiler;
-    this.expressionToSoyValueProviderCompiler = expressionToSoyValueProviderCompiler;
-    this.javaSourceFunctionCompiler = javaSourceFunctionCompiler;
+  LazyClosureCompiler(SoyNodeCompiler parent) {
+    this.parent = parent;
   }
 
   /** Returns true if evaluating the RenderUnitNode will require generating detach logic. */
@@ -242,7 +215,7 @@ final class LazyClosureCompiler {
         .anyMatch(
             node -> {
               if (node instanceof ExprNode) {
-                return ExpressionCompiler.requiresDetach(analysis, (ExprNode) node);
+                return ExpressionCompiler.requiresDetach(parent.analysis, (ExprNode) node);
               }
               // Call nodes always require detach logic.  This is important for encapsulation
               // reasons.  A template may occasionally require no detach states, but we don't know
@@ -258,10 +231,11 @@ final class LazyClosureCompiler {
   LazyClosure compileLazyExpression(
       String namePrefix, SoyNode declaringNode, String varName, ExprRootNode exprNode) {
     if (ExpressionCompiler.canCompileToConstant(exprNode)) {
-      SoyExpression expression = parentConstantCompiler.compile(exprNode);
+      SoyExpression expression = parent.constantCompiler.compile(exprNode);
       return LazyClosure.create(
           varName,
-          parentFields
+          parent
+              .fields
               .addStaticField(
                   getProposedName(namePrefix, varName), expression.boxAsSoyValueProvider())
               .accessor(),
@@ -269,18 +243,21 @@ final class LazyClosureCompiler {
           /* requiresDetachLogicToResolve=*/ false);
     }
     Optional<Expression> asSoyValueProvider =
-        expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
+        parent.expressionToSoyValueProviderCompiler.compileAvoidingDetaches(exprNode);
     if (asSoyValueProvider.isPresent()) {
       Expression svp = asSoyValueProvider.get();
       return LazyClosure.create(
           varName,
           svp,
           /* isTrivial=*/ exprNode.getRoot().getKind() == ExprNode.Kind.VAR_REF_NODE,
-          /* requiresDetachLogicToResolve=*/ ExpressionCompiler.requiresDetach(analysis, exprNode));
+          // It is possible that even if we could compile to a SoyValueProvider while avoiding
+          // detaches, that it might still require a detach operation to resolve the expression.
+          /* requiresDetachLogicToResolve=*/ ExpressionCompiler.requiresDetach(
+              parent.analysis, exprNode));
     }
 
     TypeInfo type =
-        innerClasses.registerInnerClassWithGeneratedName(
+        parent.innerClasses.registerInnerClassWithGeneratedName(
             getProposedName(namePrefix, varName), LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
         SoyClassWriter.builder(type)
@@ -291,18 +268,22 @@ final class LazyClosureCompiler {
 
     Optional<Expression> asSoyValueProviderProvider =
         new CompilationUnit(
-                analysis, writer, type, DETACHABLE_VALUE_PROVIDER_PROVIDER_TYPE, declaringNode)
+                parent.analysis,
+                writer,
+                type,
+                DETACHABLE_VALUE_PROVIDER_PROVIDER_TYPE,
+                declaringNode)
             .compileExpressionToSoyValueProviderIfUseful(exprNode);
 
     if (asSoyValueProviderProvider.isPresent()) {
-      innerClasses.registerAsInnerClass(writer, type);
+      parent.innerClasses.registerAsInnerClass(writer, type);
       writer.visitEnd();
-      innerClasses.add(writer.toClassData());
+      parent.innerClasses.add(writer.toClassData());
       return LazyClosure.create(
           varName,
           asSoyValueProviderProvider.get(),
           /* isTrivial=*/ false,
-          // must be true, otherwise we would have been able to `compileAvoidingDetaches` above
+          // this must be true because we already failed when trying to compileAvoidingDetaches.
           /* requiresDetachLogicToResolve=*/ true);
     }
 
@@ -313,12 +294,13 @@ final class LazyClosureCompiler {
             .sourceFileName(declaringNode.getSourceLocation().getFileName())
             .build();
     Expression expr =
-        new CompilationUnit(analysis, writer, type, DETACHABLE_VALUE_PROVIDER_TYPE, declaringNode)
+        new CompilationUnit(
+                parent.analysis, writer, type, DETACHABLE_VALUE_PROVIDER_TYPE, declaringNode)
             .compileExpression(exprNode);
 
-    innerClasses.registerAsInnerClass(writer, type);
+    parent.innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
-    innerClasses.add(writer.toClassData());
+    parent.innerClasses.add(writer.toClassData());
     return LazyClosure.create(
         varName,
         expr,
@@ -349,10 +331,19 @@ final class LazyClosureCompiler {
       return LazyClosure.create(
           varName, asRawText.get(), /*isTrivial=*/ true, /* requiresDetachLogicToResolve=*/ false);
     }
-    // TODO(b/172970101): add a case for when these nodes can be compiled without detaches. A simple
-    // example would be composing some css class names.
+    if (!prefix.requiresDetachLogic(parent.analysis)
+        && !suffix.requiresDetachLogic(parent.analysis)
+        && !requiresDetachLogic(renderUnit)) {
+      // We can evaluate this inline by writing everything into a new buffer!
+      // because there are no detaches
+      return LazyClosure.create(
+          varName,
+          renderIntoBuffer(renderUnit, prefix, suffix),
+          /*isTrivial=*/ false,
+          /* requiresDetachLogicToResolve=*/ false);
+    }
     TypeInfo type =
-        innerClasses.registerInnerClassWithGeneratedName(proposedName, LAZY_CLOSURE_ACCESS);
+        parent.innerClasses.registerInnerClassWithGeneratedName(proposedName, LAZY_CLOSURE_ACCESS);
     SoyClassWriter writer =
         SoyClassWriter.builder(type)
             .setAccess(LAZY_CLOSURE_ACCESS)
@@ -360,19 +351,37 @@ final class LazyClosureCompiler {
             .sourceFileName(renderUnit.getSourceLocation().getFileName())
             .build();
     Expression expr =
-        new CompilationUnit(analysis, writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
+        new CompilationUnit(
+                parent.analysis, writer, type, DETACHABLE_CONTENT_PROVIDER_TYPE, renderUnit)
             .compileRenderable(renderUnit, prefix, suffix);
 
-    innerClasses.registerAsInnerClass(writer, type);
+    parent.innerClasses.registerAsInnerClass(writer, type);
     writer.visitEnd();
-    innerClasses.add(writer.toClassData());
+    parent.innerClasses.add(writer.toClassData());
     return LazyClosure.create(
         varName,
         expr,
         /* isTrivial=*/ false,
-        /* requiresDetachLogicToResolve=*/ requiresDetachLogic(renderUnit)
-            || prefix.requiresDetachLogic(analysis)
-            || suffix.requiresDetachLogic(analysis));
+        // because our check above failed, this must be true
+        /* requiresDetachLogicToResolve=*/ true);
+  }
+
+  private Expression renderIntoBuffer(
+      RenderUnitNode renderUnitNode, ExtraCodeCompiler prefix, ExtraCodeCompiler suffix) {
+    TemplateVariableManager.Scope scope = parent.variables.enterScope();
+    LocalVariable variable =
+        scope
+            .createTemporary("buffer", MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.returnType())
+            .asNonNullable();
+    Statement initBuffer = variable.store(MethodRef.LOGGING_ADVISING_APPENDABLE_BUFFERING.invoke());
+    Statement populateBuffer =
+        parent
+            .compilerWithNewAppendable(AppendableExpression.forExpression(variable))
+            .compileWithoutDetaches(renderUnitNode, prefix, suffix);
+
+    return Statement.concat(
+            initBuffer.labelStart(variable.start()), populateBuffer, scope.exitScope())
+        .then(MethodRef.BUFFERED_SOY_VALUE_PROVIDER_CREATE.invoke(variable));
   }
 
   /**
@@ -409,7 +418,7 @@ final class LazyClosureCompiler {
           MethodRef.ORDAIN_AS_SAFE.invoke(value, constantSanitizedContentKindAsContentKind(kind));
     }
 
-    FieldRef staticField = parentFields.addStaticField(name, value);
+    FieldRef staticField = parent.fields.addStaticField(name, value);
     return Optional.of(staticField.accessor());
   }
 
@@ -447,10 +456,10 @@ final class LazyClosureCompiler {
       TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RESOLVE);
       LazyClosureParameterLookup lookup =
-          new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
+          new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       SoyExpression compile =
           ExpressionCompiler.createBasicCompiler(
-                  analysis, lookup, variableSet, javaSourceFunctionCompiler)
+                  analysis, lookup, variableSet, parent.javaSourceFunctionCompiler)
               .compile(exprNode);
       SoyExpression expression = compile.box();
       final Statement storeExpr = RESOLVED_VALUE.putInstanceField(thisVar, expression);
@@ -492,9 +501,10 @@ final class LazyClosureCompiler {
       TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RESOLVE_DELEGATE);
       LazyClosureParameterLookup lookup =
-          new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
+          new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       ExpressionCompiler expressionCompiler =
-          ExpressionCompiler.create(analysis, lookup, variableSet, javaSourceFunctionCompiler);
+          ExpressionCompiler.create(
+              analysis, lookup, variableSet, parent.javaSourceFunctionCompiler);
       Optional<Expression> expr =
           ExpressionToSoyValueProviderCompiler.create(
                   analysis, variableSet, expressionCompiler, lookup)
@@ -550,22 +560,22 @@ final class LazyClosureCompiler {
           ExpressionCompiler.createConstantCompiler(
               analysis,
               new SimpleLocalVariableManager(BytecodeUtils.CLASS_INIT, /* isStatic=*/ true),
-              javaSourceFunctionCompiler);
+              parent.javaSourceFunctionCompiler);
       final TemplateVariableManager variableSet =
           new TemplateVariableManager(fields, thisVar, DO_RENDER);
       LazyClosureParameterLookup lookup =
-          new LazyClosureParameterLookup(this, parentVariableLookup, variableSet, thisVar);
+          new LazyClosureParameterLookup(this, parent.parameterLookup, variableSet, thisVar);
       SoyNodeCompiler soyNodeCompiler =
           SoyNodeCompiler.create(
               analysis,
-              innerClasses,
+              parent.innerClasses,
               thisVar,
               AppendableExpression.forExpression(appendableVar),
               variableSet,
               lookup,
               fields,
               constantCompiler,
-              javaSourceFunctionCompiler);
+              parent.javaSourceFunctionCompiler);
       CompiledMethodBody compileChildren = soyNodeCompiler.compile(renderUnit, prefix, suffix);
       writer.setNumDetachStates(compileChildren.numberOfDetachStates());
       final Statement nodeBody = compileChildren.body();
