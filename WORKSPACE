@@ -72,11 +72,11 @@ maven_install(
         maven.artifact(
             "junit",
             "junit",
-            "4.13",
+            "4.13.1",
             testonly = True,
         ),
         "net.java.dev.javacc:javacc:6.1.2",
-        "org.apache.ant:ant:1.10.7",
+        "org.apache.ant:ant:1.10.9",
         "org.json:json:20160212",
         maven.artifact(
             "org.mozilla",
