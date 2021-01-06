@@ -487,55 +487,53 @@ final class ExpressionCompiler {
 
       */
       return SoyExpression.forList(
-              (ListType) node.getType(),
-              new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_NULLABLE) {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  listVarInitializer.gen(adapter); //   List<?> a_list = ...;
-                  resultVarInitializer.gen(adapter); // List<?> a_result = new ArrayList<>();
-                  sizeVarInitializer.gen(adapter); //   int a_length = a_list.size();
-                  indexVarInitializer.gen(adapter); //  int a_i = 0;
+          (ListType) node.getType(),
+          new Expression(BytecodeUtils.LIST_TYPE, Feature.NON_NULLABLE) {
+            @Override
+            protected void doGen(CodeBuilder adapter) {
+              listVarInitializer.gen(adapter); //   List<?> a_list = ...;
+              resultVarInitializer.gen(adapter); // List<?> a_result = new ArrayList<>();
+              sizeVarInitializer.gen(adapter); //   int a_length = a_list.size();
+              indexVarInitializer.gen(adapter); //  int a_i = 0;
 
-                  Label loopStart = new Label();
-                  Label loopContinue = new Label();
-                  Label loopEnd = new Label();
+              Label loopStart = new Label();
+              Label loopContinue = new Label();
+              Label loopEnd = new Label();
 
-                  adapter.mark(loopStart);
+              adapter.mark(loopStart);
 
-                  indexVar.gen(adapter);
-                  sizeVar.gen(adapter);
-                  adapter.ifICmp(Opcodes.IFGE, loopEnd); // if (a_i >= a_length) break;
+              indexVar.gen(adapter);
+              sizeVar.gen(adapter);
+              adapter.ifICmp(Opcodes.IFGE, loopEnd); // if (a_i >= a_length) break;
 
-                  itemVarInitializer.gen(adapter); // Object a = a_list.get(a_i);
+              itemVarInitializer.gen(adapter); // Object a = a_list.get(a_i);
 
-                  if (userIndexVar != null) {
-                    userIndexVarInitializer.gen(adapter); // int i = a_i;
-                  }
+              if (userIndexVar != null) {
+                userIndexVarInitializer.gen(adapter); // int i = a_i;
+              }
 
-                  if (visitedFilter != null) {
-                    visitedFilter.gen(adapter);
-                    adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a,i)) continue;
-                  }
+              if (visitedFilter != null) {
+                visitedFilter.gen(adapter);
+                adapter.ifZCmp(Opcodes.IFEQ, loopContinue); // if (!filter.test(a,i)) continue;
+              }
 
-                  resultVar.gen(adapter);
-                  visitedMap.gen(adapter);
-                  MethodRef.ARRAY_LIST_ADD.invokeUnchecked(
-                      adapter); // a_result.add(map.apply(a,i));
-                  adapter.pop(); // pop boolean return value of List.add()
+              resultVar.gen(adapter);
+              visitedMap.gen(adapter);
+              MethodRef.ARRAY_LIST_ADD.invokeUnchecked(adapter); // a_result.add(map.apply(a,i));
+              adapter.pop(); // pop boolean return value of List.add()
 
-                  adapter.mark(loopContinue);
+              adapter.mark(loopContinue);
 
-                  adapter.iinc(indexVar.index(), 1); // a_i++
-                  adapter.goTo(loopStart);
+              adapter.iinc(indexVar.index(), 1); // a_i++
+              adapter.goTo(loopStart);
 
-                  adapter.mark(loopEnd);
+              adapter.mark(loopEnd);
 
-                  resultVar.gen(adapter); // "return" a_result;
-                  // exit the loop
-                  exitScope.gen(adapter);
-                }
-              })
-          .box();
+              resultVar.gen(adapter); // "return" a_result;
+              // exit the loop
+              exitScope.gen(adapter);
+            }
+          });
     }
 
     @Override
