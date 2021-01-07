@@ -304,7 +304,6 @@ public class SimplifyVisitorTest {
             join("{namespace ns}", "{template .t}", input, "{/template}"))
         .runOptimizer(false)
         .addSoySourceFunction(new CurrentVedFunction())
-        .enableExperimentalFeatures(ImmutableList.of("enableTemplateElementKind"))
         .parse()
         .fileSet();
   }
