@@ -404,8 +404,9 @@ public final class TemplateAnalysisTest {
     runTest(
         "{@param gender: ?}",
         "{msg desc='...' genders='$gender'}",
-        "   Hello {refed($gender)}",
-        "{/msg}");
+        "   Hello {notrefed($gender)}",
+        "{/msg}",
+        "{refed($gender)}");
 
     runTest(
         "{@param gender: ?}",
@@ -419,7 +420,7 @@ public final class TemplateAnalysisTest {
         "{msg desc='...'}",
         "{plural $num}",
         "{default}",
-        "   Hello {refed($num)}",
+        "   Hello {notrefed($num)}",
         "{/plural}",
         "{/msg}",
         "{refed($num)}");

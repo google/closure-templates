@@ -314,6 +314,36 @@ public final class DetachStateTest {
     assertThat(output.toString()).isEqualTo("Hello foo!");
   }
 
+  @Test
+  public void testDetach_msg_plural() throws IOException {
+    CompiledTemplates templates =
+        TemplateTester.compileFile(
+            "{namespace ns}",
+            "{template .t}",
+            "  {@param count: number}",
+            "  {msg desc='...'}",
+            "    {plural $count}",
+            "      {case 1}",
+            "        1 item in cart",
+            "      {default}",
+            "        {$count} items in cart",
+            "    {/plural}",
+            "  {/msg}",
+            "{/template}",
+            "");
+    CompiledTemplate.Factory factory = templates.getTemplateFactory("ns.t");
+    RenderContext context = getDefaultContext(templates);
+    SettableFuture<Integer> param = SettableFuture.create();
+    SoyRecord params = asRecord(ImmutableMap.of("count", param));
+    CompiledTemplate template = factory.create(params, ParamStore.EMPTY_INSTANCE);
+    BufferingAppendable output = LoggingAdvisingAppendable.buffering();
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.continueAfter(param));
+    assertThat(output.toString()).isEqualTo("");
+    param.set(2);
+    assertThat(template.render(output, context)).isEqualTo(RenderResult.done());
+    assertThat(output.toString()).isEqualTo("2 items in cart");
+  }
+
   /** Tests a ve log inside msg to make we can successfully detach in the ve_data expr. */
   @Test
   public void testDetach_veLogInsideMsg() throws IOException {

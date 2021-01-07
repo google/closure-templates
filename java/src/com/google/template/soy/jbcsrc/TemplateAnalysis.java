@@ -102,6 +102,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -499,43 +500,29 @@ final class TemplateAnalysis {
 
     /**
      * Visits all the placeholders of a {msg} in the same order that the MsgCompiler generates code.
+     *
+     * <p>The logic here is similar to a call. Each placeholder may be evaluated in an arbitrary
+     * order or not at all, much like call params. There is one exception. All plural or select
+     * variables will be evaluated. However, it is not safe to assume that a case will be evaluated
+     * definitely after a plural variable because this induces some circular logic in the compiler.
+     * For example, consider:
+     *
+     * <pre><code>
+     * {plural $num}
+     *   {default} {$num} widgets
+     * {/plural}
+     * </code></pre>
+     *
+     * <p>If we were to assume that {@code $num} is evaluated for the plural prior to the case, then
+     * we might determine that the placeholder {@code {$num}} could be evaluated inline, but inline
+     * placeholder evaluation happens <em>before</em> the message is evaluated. So we can't assume
+     * that placeholders in plural cases are evaluated after their controlling plural. Similar logic
+     * happens with lets and var refs.
      */
     private void evaluateMsgParts(MsgNode msgNode, ImmutableList<? extends SoyMsgPart> parts) {
-      // Note:  The same placeholder may show up multiple times.  In the MsgCompiler we use a
-      // separate data structure to dedup so we don't generate the same code for the same
-      // placeholder multiple times.  This isn't a concern here because our 'pseudo evaluation'
-      // process is idempotent.
-      List<SoyNode> placeholders = new ArrayList<>();
-      for (SoyMsgPart part : parts) {
-        if (part instanceof SoyMsgRawTextPart || part instanceof SoyMsgPluralRemainderPart) {
-          // raw text and plural remainders don't have associated expressions
-          continue;
-        }
-        if (part instanceof SoyMsgPluralPart) {
-          checkState(parts.size() == 1); // sanity test
-          SoyMsgPluralPart plural = (SoyMsgPluralPart) part;
-          // plural variables are always evaluated prior to the case
-          evalInline(msgNode.getRepPluralNode(plural.getPluralVarName()).getExpr());
-          // Recursively visit plural cases
-          // cases act like control flow, so we need to branch to and from each branch, like a
-          // switch, this is confusing because the conditions are actually translator controlled,
-          // but the cases are not, so it is still like some control flow is jumping to/from each
-          // case.
-          evalPlrSelCases(msgNode, plural.getCases());
-        } else if (part instanceof SoyMsgSelectPart) {
-          checkState(parts.size() == 1); // sanity test
-          SoyMsgSelectPart select = (SoyMsgSelectPart) part;
-          // select variables are always evaluated prior to the selected case
-          evalInline(msgNode.getRepSelectNode(select.getSelectVarName()).getExpr());
-          // Recursively visit select cases
-          evalPlrSelCases(msgNode, select.getCases());
-        } else if (part instanceof SoyMsgPlaceholderPart) {
-          SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) part;
-          placeholders.add(msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName()));
-        } else {
-          throw new AssertionError("unexpected part: " + part);
-        }
-      }
+      Map<SoyNode, Block> placeholderBlocks = new LinkedHashMap<>();
+      Block placeholderBranch = this.current.addBranch();
+      this.current = current.addBranch();
       // Individual placeholders within a message are only conditionally evaluated and the
       // evaluation order is undefined, since a very reasonable thing to do is to reorder
       // placeholders.  A less common, but reasonable thing is to remove a placeholder.  For
@@ -550,24 +537,69 @@ final class TemplateAnalysis {
       //
       // To model this, we evaluate every placeholder in a dead end branch.  This is very similar to
       // how Lets are defined.
-      Block previous = this.current;
-      List<Block> ends = new ArrayList<>();
-      for (SoyNode placeholder : placeholders) {
-        Block nodeBlock = previous.addBranch();
-        ends.add(exec(nodeBlock, placeholder));
-      }
-      // this means there is a branch that bypasses all of the placeholders.
-      ends.add(previous.addBranch());
-      this.current = Block.merge(ends);
+      evaluateMsgParts(msgNode, parts, placeholderBlocks);
+      // treat all the placeholders as dead end branches from the beginning  of the message.
+      placeholderBranch.successors.addAll(placeholderBlocks.values());
     }
 
-    private void evalPlrSelCases(MsgNode msgNode, ImmutableList<? extends Case<?>> cases) {
+    /** Evaluate placeholders. */
+    private void evaluateMsgParts(
+        MsgNode msgNode,
+        ImmutableList<? extends SoyMsgPart> parts,
+        Map<SoyNode, Block> placeholderBlocks) {
+      // Note:  The same placeholder may show up multiple times.  In the MsgCompiler we use a
+      // separate data structure to dedup so we don't generate the same code for the same
+      // placeholder multiple times.  This isn't a concern here because our 'pseudo evaluation'
+      // process is idempotent.
+      for (SoyMsgPart part : parts) {
+        if (part instanceof SoyMsgRawTextPart || part instanceof SoyMsgPluralRemainderPart) {
+          // raw text and plural remainders don't have associated expressions
+          continue;
+        }
+        if (part instanceof SoyMsgPluralPart) {
+          checkState(parts.size() == 1); // sanity test
+          SoyMsgPluralPart plural = (SoyMsgPluralPart) part;
+          // plural variables are always evaluated
+          evalInline(msgNode.getRepPluralNode(plural.getPluralVarName()).getExpr());
+          // Recursively visit plural cases
+          // cases act like control flow, so we need to branch to and from each branch, like a
+          // switch, this is confusing because the conditions are actually translator controlled,
+          // but the cases are not, so it is still like some control flow is jumping to/from each
+          // case.
+          evalPlrSelCases(msgNode, plural.getCases(), placeholderBlocks);
+        } else if (part instanceof SoyMsgSelectPart) {
+          checkState(parts.size() == 1); // sanity test
+          SoyMsgSelectPart select = (SoyMsgSelectPart) part;
+          // select variables are always evaluated
+          evalInline(msgNode.getRepSelectNode(select.getSelectVarName()).getExpr());
+          // Recursively visit select cases
+          evalPlrSelCases(msgNode, select.getCases(), placeholderBlocks);
+        } else if (part instanceof SoyMsgPlaceholderPart) {
+          SoyMsgPlaceholderPart placeholder = (SoyMsgPlaceholderPart) part;
+          SoyNode placeholderNode = msgNode.getRepPlaceholderNode(placeholder.getPlaceholderName());
+          placeholderBlocks.computeIfAbsent(
+              placeholderNode,
+              node -> {
+                Block placeholderBlock = new Block();
+                exec(placeholderBlock, node);
+                return placeholderBlock;
+              });
+        } else {
+          throw new AssertionError("unexpected part: " + part);
+        }
+      }
+    }
+
+    private void evalPlrSelCases(
+        MsgNode msgNode,
+        ImmutableList<? extends Case<?>> cases,
+        Map<SoyNode, Block> placeholderBlocks) {
       List<Block> branchEnds = new ArrayList<>();
       Block previous = this.current;
       for (Case<?> caseOrDefault : cases) {
         Block caseBlockStart = previous.addBranch();
         this.current = caseBlockStart;
-        evaluateMsgParts(msgNode, caseOrDefault.parts());
+        evaluateMsgParts(msgNode, caseOrDefault.parts(), placeholderBlocks);
         branchEnds.add(this.current);
       }
       this.current = Block.merge(branchEnds);
@@ -596,9 +628,12 @@ final class TemplateAnalysis {
 
     /** Evaluates the given expression in the current block. */
     void evalInline(ExprNode expr) {
-      Block begin = current;
-      Block end = exprVisitor.eval(begin, expr);
-      current = end;
+      current = evalInBlock(current, expr);
+    }
+
+    /** Evaluates the given expression in the given block. */
+    Block evalInBlock(Block begin, ExprNode expr) {
+      return exprVisitor.eval(begin, expr);
     }
   }
 
