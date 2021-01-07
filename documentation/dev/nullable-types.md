@@ -17,12 +17,14 @@ prove the parameter cannot be null it will change the expression type to be
 non-optional. For example:
 
 ```soy
+import {Person} from 'foo/bar.proto';
+
 {template .main}
-  /** Optional parameter of type (foo.bar.Person|null). */
-  {@param? person: foo.bar.Person}
+  /** Optional parameter of type (Person|null). */
+  {@param? person: Person}
   {if $person}
-    // Within this if-block, person can never be null, so the type
-    // is now ‘map’, not ‘(map|null)’
+    // Within this if-block, $person can never be null, so its type
+    // is now ‘Person’, not ‘(Person|null)’
     {$person.name}
   {else}
     // Compile-time error: $person can only be null at this point.
