@@ -62,24 +62,34 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
                 !fct.hasStaticName()
                     && (fct.getParamsStyle() == ParamsStyle.NONE
                         || fct.getParamsStyle() == ParamsStyle.NAMED))
-        .filter(
-            fct -> {
-              ExprNode nameExpr = fct.getNameExpr();
-              if (nameExpr.getKind() == Kind.VAR_REF_NODE) {
-                VarRefNode varRef = (VarRefNode) nameExpr;
-                if (varRef.hasType() && varRef.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
-                  return true;
-                }
-              }
-              return false;
-            })
+        .filter(fct -> fct.getNameExpr().getKind() == Kind.VAR_REF_NODE)
         .collect(toList()) // Guard against concurrent modification.
         .forEach(ResolveTemplateFunctionsPass::convertToBind);
   }
 
   private static void convertToBind(FunctionNode fct) {
+    ExprNode bindTarget;
     VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
-    TemplateImportType type = (TemplateImportType) varRefNode.getType();
+
+    if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
+      // If the function is a template symbol modify AST like:
+      // {tmp(...)} -> {template(tmp).bind(...)}
+      TemplateImportType type = (TemplateImportType) varRefNode.getType();
+
+      // Create a template(foo) literal from function node foo()
+      bindTarget =
+          new TemplateLiteralNode(
+              Identifier.create(varRefNode.getName(), varRefNode.getSourceLocation()),
+              varRefNode.getSourceLocation(),
+              /* isSynthetic= */ true,
+              type);
+
+    } else {
+      // Otherwise modify AST like:
+      // {$tmp(...)} -> {$tmp.bind(...)}
+      bindTarget = varRefNode;
+    }
+
     // Move original function's parameters into a record() literal.
     RecordLiteralNode record =
         new RecordLiteralNode(
@@ -88,18 +98,10 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
             fct.getSourceLocation());
     record.addChildren(fct.getChildren());
 
-    // Create a template(foo) literal from function node foo()
-    TemplateLiteralNode templateLiteral =
-        new TemplateLiteralNode(
-            Identifier.create(varRefNode.getName(), varRefNode.getSourceLocation()),
-            varRefNode.getSourceLocation(),
-            /* isSynthetic= */ true,
-            type);
-
     // Bind and replace.
     MethodCallNode bind =
         MethodCallNode.newWithPositionalArgs(
-            templateLiteral,
+            bindTarget,
             ImmutableList.of(record),
             Identifier.create("bind", UNKNOWN),
             UNKNOWN,

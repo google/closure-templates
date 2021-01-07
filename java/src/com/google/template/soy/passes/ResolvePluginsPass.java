@@ -19,6 +19,7 @@ package com.google.template.soy.passes;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.exprtree.CallableExprBuilder;
 import com.google.template.soy.exprtree.ExprNode;
+import com.google.template.soy.exprtree.ExprNode.Kind;
 import com.google.template.soy.exprtree.FunctionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
@@ -138,7 +139,9 @@ final class ResolvePluginsPass implements CompilerFilePass {
   }
 
   private static Object getSoyFunctionForExpr(ExprNode expr) {
-    if (expr.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
+    if (expr.getKind() == Kind.VAR_REF_NODE
+        && ((VarRefNode) expr).hasType()
+        && expr.getType().getKind() == SoyType.Kind.PROTO_TYPE) {
       return BuiltinFunction.PROTO_INIT;
     }
     return null;
