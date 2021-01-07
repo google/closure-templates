@@ -34,6 +34,10 @@ TEMPLATE_UTIL = [
     "SoyTemplates.java",
 ]
 
+TEMPLATE_RESTRICTED_UTIL = [
+    "SoyTemplatesRestrictedApi.java",
+]
+
 java_library(
     name = "template",
     srcs = TEMPLATE,
@@ -51,8 +55,15 @@ java_library(
     visibility = ["//visibility:public"],
     deps = [
         ":template",
+    ],
+)
+
+java_library(
+    name = "template_util_restricted",
+    srcs = TEMPLATE_RESTRICTED_UTIL,
+    deps = [
+        ":template",
         "//java/src/com/google/template/soy/parseinfo",
-        "@maven//:com_google_errorprone_error_prone_annotations",
         "@maven//:com_google_guava_guava",
     ],
 )
@@ -65,7 +76,7 @@ java_library(
             "restricted/*.java",
             "internal/*.java",
         ],
-        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + CODE_GEN_TEST_ONLY,
+        exclude = LOCKED_DOWN + ACTUAL_INTERNAL + VE + CODE_GENERATION + TEMPLATE + TEMPLATE_UTIL + TEMPLATE_RESTRICTED_UTIL + CODE_GEN_TEST_ONLY,
     ),
     visibility = ["//visibility:public"],
     exports = [

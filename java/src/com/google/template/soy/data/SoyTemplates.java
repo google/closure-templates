@@ -16,18 +16,25 @@
 
 package com.google.template.soy.data;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.template.soy.parseinfo.SoyTemplateInfo;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /** Reflective utilities related to {@link SoyTemplate}. */
 public final class SoyTemplates {
 
   private SoyTemplates() {}
+
+  /**
+   * Returns whether a template type has a default instance, that is whether it has no required
+   * parameters.
+   */
+  public static <T extends SoyTemplate> boolean hasDefaultInstance(Class<T> type) {
+    try {
+      type.getDeclaredMethod("getDefaultInstance");
+      return true;
+    } catch (NoSuchMethodException e) {
+      return false;
+    }
+  }
 
   /**
    * Reflectively obtains the default instance of a template type.
@@ -59,70 +66,6 @@ public final class SoyTemplates {
     } catch (ReflectiveOperationException e) {
       throw new RuntimeException(
           "Unexpected error while calling builder() on " + type.getName(), e);
-    }
-  }
-
-  private static final ClassValue<String> templateNameValue =
-      new ClassValue<String>() {
-        @Override
-        protected String computeValue(Class<?> type) {
-          try {
-            Field field = type.getDeclaredField("__NAME__");
-            field.setAccessible(true); // the field is private
-            return (String) field.get(null);
-          } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(
-                "Unexpected error while accessing the template name of " + type.getName(), e);
-          }
-        }
-      };
-
-  /** Returns the name of the Soy template that {@code type} renders. */
-  public static String getTemplateName(Class<? extends SoyTemplate> type) {
-    return templateNameValue.get(type);
-  }
-
-  private static final ClassValue<ImmutableSet<SoyTemplateParam<?>>> templateParamsValue =
-      new ClassValue<ImmutableSet<SoyTemplateParam<?>>>() {
-        @Override
-        @SuppressWarnings("unchecked")
-        protected ImmutableSet<SoyTemplateParam<?>> computeValue(Class<?> type) {
-          try {
-            Field field = type.getDeclaredField("__PARAMS__");
-            field.setAccessible(true); // the field is private
-            return (ImmutableSet<SoyTemplateParam<?>>) field.get(null);
-          } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(
-                "Unexpected error while accessing the template params of " + type.getName(), e);
-          }
-        }
-      };
-
-  /**
-   * Returns the set of params of the Soy template that {@code type} renders. This list will not
-   * include params unsupported by the type-safe API, like indirect proto params.
-   */
-  static ImmutableSet<SoyTemplateParam<?>> getParams(Class<? extends SoyTemplate> type) {
-    return templateParamsValue.get(type);
-  }
-
-  /** Returns a {@link SoyTemplateInfo} representation of a template class. */
-  public static SoyTemplateInfo asSoyTemplateInfo(Class<? extends SoyTemplate> type) {
-    return new SoyTemplateInfoShim(type);
-  }
-
-  private static final class SoyTemplateInfoShim extends SoyTemplateInfo {
-    SoyTemplateInfoShim(Class<? extends SoyTemplate> type) {
-      super(getTemplateName(type), paramsAsMap(SoyTemplates.getParams(type)));
-    }
-
-    private static ImmutableMap<String, ParamRequisiteness> paramsAsMap(
-        ImmutableSet<SoyTemplateParam<?>> params) {
-      return params.stream()
-          .collect(
-              toImmutableMap(
-                  SoyTemplateParam::getName,
-                  p -> p.isRequired() ? ParamRequisiteness.REQUIRED : ParamRequisiteness.OPTIONAL));
     }
   }
 }
