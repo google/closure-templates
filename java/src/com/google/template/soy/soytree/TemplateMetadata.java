@@ -71,6 +71,7 @@ public abstract class TemplateMetadata {
                     .setIdentifierForDebugging(template.getTemplateName())
                     .setInferredType(true)
                     .build())
+            .setComponent(template.getComponent())
             .setDelPackageName(template.getDelPackageName())
             .setVisibility(template.getVisibility());
     // In various conditions such as Conformance tests, this can be null.
@@ -175,6 +176,8 @@ public abstract class TemplateMetadata {
   @Nullable
   public abstract String getDelPackageName();
 
+  public abstract boolean getComponent();
+
   public abstract Builder toBuilder();
 
   /** Builder for {@link TemplateMetadata} */
@@ -199,6 +202,8 @@ public abstract class TemplateMetadata {
     public abstract Builder setDelPackageName(@Nullable String delPackageName);
 
     public abstract Builder setVisibility(Visibility visibility);
+
+    public abstract Builder setComponent(boolean isComponent);
 
     public final TemplateMetadata build() {
       TemplateMetadata built = autobuild();

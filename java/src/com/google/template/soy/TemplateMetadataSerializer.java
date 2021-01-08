@@ -150,6 +150,7 @@ public final class TemplateMetadataSerializer {
             .setTemplateType(templateType.toProto().getTemplate())
             .setDelTemplateVariant(Strings.nullToEmpty(meta.getDelTemplateVariant()))
             .setStrictHtml(templateType.isStrictHtml())
+            .setComponent(meta.getComponent())
             .addAllDataAllCallSituation(
                 protosFromCallSitatuations(templateType.getDataAllCallSituations(), fileNode));
     // This may be null because some flows such as conformance tests do not run the SoyElementPass.
@@ -230,6 +231,7 @@ public final class TemplateMetadataSerializer {
                 .build())
         .setSourceLocation(new SourceLocation(SourceFilePath.create(fileProto.getFilePath())))
         .setVisibility(VISIBILITY_CONVERTER.convert(templateProto.getVisibility()))
+        .setComponent(templateProto.getComponent())
         .build();
   }
 

@@ -311,6 +311,8 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
 
   private ImmutableSet<String> reservedAttributes;
 
+  private final boolean component;
+
   /**
    * Main constructor. This is package-private because Template*Node instances should be built using
    * the Template*NodeBuilder classes.
@@ -346,6 +348,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
     this.attributes = nodeBuilder.getAttributes();
     this.allowExtraAttributesLoc = nodeBuilder.allowExtraAttributesLoc;
     this.reservedAttributes = ImmutableSet.of();
+    this.component = nodeBuilder.getComponent();
   }
 
   /**
@@ -374,6 +377,7 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
         orig.attributes.stream().map(c -> c.copy(copyState)).collect(toImmutableList());
     this.allowExtraAttributesLoc = orig.allowExtraAttributesLoc;
     this.reservedAttributes = orig.reservedAttributes;
+    this.component = orig.component;
   }
 
   private static ImmutableList<TemplateHeaderVarDefn> copyParams(
@@ -424,6 +428,10 @@ public abstract class TemplateNode extends AbstractBlockCommandNode
   /** Returns this template's name. */
   public String getTemplateName() {
     return templateName;
+  }
+
+  public boolean getComponent() {
+    return component;
   }
 
   /** Returns the source location of the template's name (e.g. ".foo" in "{template .foo}". */

@@ -196,5 +196,7 @@ message TemplateMetadataP {
   SoyElementMetadataP soy_element = 12;
   SoyTypeP.TemplateTypeP template_type = 13;
 
+  bool component = 14;
+
   reserved 4, 7, 9, 10;
 }

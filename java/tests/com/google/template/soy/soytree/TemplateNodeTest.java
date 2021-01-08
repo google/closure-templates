@@ -18,6 +18,7 @@ package com.google.template.soy.soytree;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Joiner;
@@ -110,7 +111,7 @@ public class TemplateNodeTest {
     assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
         .isEqualTo(
             "Unsupported attribute 'autoescape' for 'template' tag, expected one of [visibility, "
-                + "kind, requirecss, cssbase, stricthtml, whitespace].");
+                + "kind, requirecss, cssbase, stricthtml, whitespace, component].");
   }
 
   @Test
@@ -139,6 +140,29 @@ public class TemplateNodeTest {
             "{namespace ns}\n"
                 + "{deltemplate namespace.boo requirecss=\"foo.boo, moo.hoo\"}{/deltemplate}");
     assertEquals(ImmutableList.of("foo.boo", "moo.hoo"), node.getRequiredCssNamespaces());
+  }
+
+  @Test
+  public void testValidIsComponent() {
+    TemplateNode node;
+    node = parse("{namespace ns}\n{template .boo component=\"true\"}{/template}");
+    assertTrue(node.getComponent());
+
+    node = parse("{namespace ns}\n{template .boo}{/template}");
+    assertFalse(node.getComponent());
+  }
+
+  @Test
+  public void testIsComponentErrors() {
+    ErrorReporter errorReporter = ErrorReporter.createForTest();
+    parse("{namespace ns}\n{template .boo component=\"false\"}{/template}", errorReporter);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("'component=\"false\"' is the default, no need to set it.");
+
+    errorReporter = ErrorReporter.createForTest();
+    parse("{namespace ns}\n{template .boo component=\"test\"}{/template}", errorReporter);
+    assertThat(Iterables.getOnlyElement(errorReporter.getErrors()).message())
+        .isEqualTo("Invalid value for attribute 'component', expected true.");
   }
 
   @Test

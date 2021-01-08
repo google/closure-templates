@@ -94,6 +94,8 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   /** Base CSS namespace for package-relative CSS selectors. */
   private String cssBaseNamespace;
 
+  private boolean component;
+
   SourceLocation allowExtraAttributesLoc = null;
 
   /**
@@ -167,7 +169,7 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
   public abstract T setCommandValues(Identifier name, List<CommandTagAttribute> attrs);
 
   protected static final ImmutableSet<String> COMMON_ATTRIBUTE_NAMES =
-      ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace");
+      ImmutableSet.of("kind", "requirecss", "cssbase", "stricthtml", "whitespace", "component");
 
   protected void setCommonCommandValues(List<CommandTagAttribute> attrs) {
     this.attributes = attrs;
@@ -198,6 +200,9 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
           break;
         case "whitespace":
           whitespaceMode = attribute.valueAsWhitespaceMode(errorReporter);
+          break;
+        case "component":
+          setComponent(attribute.valueAsEnabled(errorReporter));
           break;
         default:
           break;
@@ -306,6 +311,14 @@ public abstract class TemplateNodeBuilder<T extends TemplateNodeBuilder<T>> {
 
   protected void setCssBaseNamespace(String cssBaseNamespace) {
     this.cssBaseNamespace = cssBaseNamespace;
+  }
+
+  protected boolean getComponent() {
+    return component;
+  }
+
+  protected void setComponent(boolean component) {
+    this.component = component;
   }
 
   public static String combineNsAndName(String namespace, String templateName) {
