@@ -36,49 +36,42 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 /**
- * Soy function that concatenates two attribute values that are strings.
+ * Soy function that concatenates two css style attributes.
  *
  */
 @SoyPureFunction
 @SoyFunctionSignature(
-    name = "_concatAttributeValues",
-    value =
-        @Signature(
-            parameterTypes = {"string|null", "string|null", "string"},
-            returnType = "string"))
-public final class ConcatAttributeValuesFunction
+    name = "_concatCssValues",
+    value = {
+      @Signature(
+          parameterTypes = {"css|null", "css|null"},
+          returnType = "css"),
+    })
+public final class ConcatCssValuesFunction
     implements SoyJavaSourceFunction, SoyJavaScriptSourceFunction, SoyPythonSourceFunction {
 
   @Override
   public JavaScriptValue applyForJavaScriptSource(
       JavaScriptValueFactory factory, List<JavaScriptValue> args, JavaScriptPluginContext context) {
-    return factory.callNamespaceFunction(
-        "soy", "soy.$$concatAttributeValues", args.get(0), args.get(1), args.get(2));
+    return factory.callNamespaceFunction("soy", "soy.$$concatCssValues", args.get(0), args.get(1));
   }
 
   @Override
   public PythonValue applyForPythonSource(
       PythonValueFactory factory, List<PythonValue> args, PythonPluginContext context) {
-    return factory
-        .global("runtime.concat_attribute_values")
-        .call(args.get(0), args.get(1), args.get(2));
+    return factory.global("runtime.concat_css_values").call(args.get(0), args.get(1));
   }
 
   // lazy singleton pattern, allows other backends to avoid the work.
   private static final class Methods {
-    static final Method CONCAT_ATTRIBUTE_VALUES =
+    static final Method CONCAT_CSS_VALUES =
         JavaValueFactory.createMethod(
-            BasicFunctionsRuntime.class,
-            "concatAttributeValues",
-            SoyValue.class,
-            SoyValue.class,
-            String.class);
+            BasicFunctionsRuntime.class, "concatCssValues", SoyValue.class, SoyValue.class);
   }
 
   @Override
   public JavaValue applyForJavaSource(
       JavaValueFactory factory, List<JavaValue> args, JavaPluginContext context) {
-    return factory.callStaticMethod(
-        Methods.CONCAT_ATTRIBUTE_VALUES, args.get(0), args.get(1), args.get(2));
+    return factory.callStaticMethod(Methods.CONCAT_CSS_VALUES, args.get(0), args.get(1));
   }
 }

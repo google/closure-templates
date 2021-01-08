@@ -27,6 +27,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
+import com.google.template.soy.data.SanitizedContent;
+import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyDict;
 import com.google.template.soy.data.SoyLegacyObjectMap;
 import com.google.template.soy.data.SoyList;
@@ -34,6 +36,7 @@ import com.google.template.soy.data.SoyMap;
 import com.google.template.soy.data.SoyMaps;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
+import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
 import com.google.template.soy.data.internal.DictImpl;
 import com.google.template.soy.data.internal.RuntimeMapTypeTracker;
 import com.google.template.soy.data.internal.SoyMapImpl;
@@ -120,6 +123,11 @@ public final class BasicFunctionsRuntime {
       return "";
     }
     return lValue + delimiter + rValue;
+  }
+
+  public static SanitizedContent concatCssValues(SoyValue l, SoyValue r) {
+    return UnsafeSanitizedContentOrdainer.ordainAsSafe(
+        concatAttributeValues(l, r, ";"), ContentKind.CSS);
   }
 
   /**

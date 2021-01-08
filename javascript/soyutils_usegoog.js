@@ -1727,6 +1727,26 @@ soy.$$concatAttributeValues = function(l, r, delimiter) {
 
 
 /**
+ * Conditionally concatenates two attribute values with a delimiter if they are
+ * both non-empty.
+ *
+ * @param {string} l
+ * @param {string} r
+ * @return {!goog.soy.data.SanitizedCss|!soydata.$$EMPTY_STRING_}
+ */
+soy.$$concatCssValues = function(l, r) {
+  if (l !== soydata.$$EMPTY_STRING_.VALUE) {
+    goog.asserts.assertInstanceof(l, goog.soy.data.SanitizedCss);
+  }
+  if (r !== soydata.$$EMPTY_STRING_.VALUE) {
+    goog.asserts.assertInstanceof(r, goog.soy.data.SanitizedCss);
+  }
+  return soydata.VERY_UNSAFE.$$ordainSanitizedCssForInternalBlocks(
+      soy.$$concatAttributeValues(l, r, ';'));
+};
+
+
+/**
  * Truncates a string to a given max length (if it's currently longer),
  * optionally adding ellipsis at the end.
  *

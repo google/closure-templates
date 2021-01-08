@@ -32,6 +32,8 @@ import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.base.internal.TemplateContentKind.ElementContentKind;
 import com.google.template.soy.basetree.CopyState;
 import com.google.template.soy.basetree.Node;
+import com.google.template.soy.basicfunctions.ConcatAttributeValuesFunction;
+import com.google.template.soy.basicfunctions.ConcatCssValuesFunction;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.error.SoyErrorKind.StyleAllowance;
@@ -122,6 +124,11 @@ final class ElementAttributePass implements CompilerFileSetPass {
 
   private static final SoyErrorKind DELEGATE_KIND_MISMATCH =
       SoyErrorKind.of("Expected the called template to have root tag {0}, found {1}.");
+
+  private static final SoySourceFunction concatCssFunction = new ConcatCssValuesFunction();
+
+  private static final SoySourceFunction concatAttributesFunction =
+      new ConcatAttributeValuesFunction();
 
   private final ErrorReporter errorReporter;
   private final PluginResolver pluginResolver;
@@ -290,13 +297,16 @@ final class ElementAttributePass implements CompilerFileSetPass {
                   // we need to first put all of the default into a {let} and then pass them into
                   // a soy function called concatAttributeValues. This will possibly omit the
                   // delimiter if one of the values is nullish.
+                  boolean isCss =
+                      SanitizedType.StyleType.getInstance()
+                          .isAssignableFromStrict(SoyTypes.removeNull(attr.type()));
                   LetContentNode letContentNode =
                       LetContentNode.forVariable(
                           id.get(),
                           unknown,
                           "$__internal_soy_letContent_" + id.get(),
                           unknown,
-                          SanitizedContentKind.TEXT);
+                          isCss ? SanitizedContentKind.CSS : SanitizedContentKind.TEXT);
                   openTagNode
                       .getParent()
                       .addChild(openTagNode.getParent().getChildIndex(openTagNode), letContentNode);
@@ -306,18 +316,17 @@ final class ElementAttributePass implements CompilerFileSetPass {
                           letContentNode.getVarRefName(),
                           SourceLocation.UNKNOWN,
                           letContentNode.getVar());
+                  SoySourceFunction soyFn = isCss ? concatCssFunction : concatAttributesFunction;
                   FunctionNode fn =
                       FunctionNode.newPositional(
-                          Identifier.create("$$concatAttributeValues", unknown),
-                          (SoySourceFunction)
-                              pluginResolver.lookupSoyFunction(
-                                  "_concatAttributeValues", 3, SourceLocation.UNKNOWN),
-                          unknown);
+                          Identifier.create("$$concatAttributeValues", unknown), soyFn, unknown);
                   fn.addChild(attrExpr);
                   fn.addChild(letRef);
-                  fn.addChild(
-                      new StringNode(
-                          attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, unknown));
+                  if (!isCss) {
+                    fn.addChild(
+                        new StringNode(
+                            attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, unknown));
+                  }
                   /**
                    * In the event that the attribute value is an empty string, we should not emit
                    * the attribute. This block produces the following code: {let $value:

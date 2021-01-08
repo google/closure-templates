@@ -29,6 +29,7 @@ import re
 import sys
 
 from . import environment
+from . import sanitize
 
 import six
 
@@ -185,6 +186,22 @@ def concat_attribute_values(l, r, delimiter):
   if not r:
     return l
   return l + delimiter + r
+
+
+def concat_css_values(l, r):
+  """Merge two css values.
+
+  Args:
+    l: The css which is prefixed in the return value
+    r: The css which is suffixed in the return value
+
+  Returns:
+    The combined css separated by the delimiter.
+  """
+  return sanitize.SanitizedCss(
+      concat_attribute_values(str(l), str(r), ';'),
+      sanitize.IActuallyUnderstandSoyTypeSafetyAndHaveSecurityApproval(
+          """Internal framework code."""))
 
 
 def merge_into_dict(original, secondary):
