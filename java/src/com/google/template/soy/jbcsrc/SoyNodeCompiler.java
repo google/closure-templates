@@ -150,8 +150,7 @@ final class SoyNodeCompiler extends AbstractReturningSoyNodeVisitor<Statement> {
     ExpressionCompiler expressionCompiler =
         ExpressionCompiler.create(analysis, parameterLookup, variables, javaSourceFunctionCompiler);
     ExpressionToSoyValueProviderCompiler soyValueProviderCompiler =
-        ExpressionToSoyValueProviderCompiler.create(
-            analysis, variables, expressionCompiler, parameterLookup);
+        ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, parameterLookup);
     return new SoyNodeCompiler(
         analysis,
         thisVar,

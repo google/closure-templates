@@ -66,26 +66,22 @@ final class ExpressionToSoyValueProviderCompiler {
   /** Create an expression compiler that can implement complex detaching logic. */
   static ExpressionToSoyValueProviderCompiler create(
       TemplateAnalysis analysis,
-      TemplateVariableManager varManager,
       ExpressionCompiler exprCompiler,
       TemplateParameterLookup variables) {
-    return new ExpressionToSoyValueProviderCompiler(analysis, varManager, exprCompiler, variables);
+    return new ExpressionToSoyValueProviderCompiler(analysis, exprCompiler, variables);
   }
 
   private final TemplateAnalysis analysis;
   private final TemplateParameterLookup variables;
   private final ExpressionCompiler exprCompiler;
-  private final TemplateVariableManager varManager;
 
   private ExpressionToSoyValueProviderCompiler(
       TemplateAnalysis analysis,
-      TemplateVariableManager varManager,
       ExpressionCompiler exprCompiler,
       TemplateParameterLookup variables) {
     this.analysis = analysis;
     this.exprCompiler = exprCompiler;
     this.variables = variables;
-    this.varManager = varManager;
   }
 
   /**
@@ -132,7 +128,6 @@ final class ExpressionToSoyValueProviderCompiler {
     return new CompilerVisitor(
         analysis,
         variables,
-        varManager,
         exprCompiler,
         detacher == null ? null : this.exprCompiler.asBasicCompiler(detacher),
         detacher);
@@ -142,7 +137,6 @@ final class ExpressionToSoyValueProviderCompiler {
       extends EnhancedAbstractExprNodeVisitor<Optional<Expression>> {
     final TemplateAnalysis analysis;
     final TemplateParameterLookup variables;
-    final TemplateVariableManager varManager;
 
     // depending on the mode at most one of exprCompiler and detachingExprCompiler will be null
     @Nullable final ExpressionCompiler exprCompiler;
@@ -152,7 +146,6 @@ final class ExpressionToSoyValueProviderCompiler {
     CompilerVisitor(
         TemplateAnalysis analysis,
         TemplateParameterLookup variables,
-        TemplateVariableManager varManager,
         @Nullable ExpressionCompiler exprCompiler,
         @Nullable BasicExpressionCompiler detachingExprCompiler,
         @Nullable ExpressionDetacher detacher) {
@@ -163,7 +156,6 @@ final class ExpressionToSoyValueProviderCompiler {
       this.exprCompiler = exprCompiler;
       this.detachingExprCompiler = detachingExprCompiler;
       this.detacher = detacher;
-      this.varManager = varManager;
     }
 
     private boolean allowsBoxing() {

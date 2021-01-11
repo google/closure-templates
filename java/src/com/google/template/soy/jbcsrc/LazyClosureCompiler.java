@@ -506,8 +506,7 @@ final class LazyClosureCompiler {
           ExpressionCompiler.create(
               analysis, lookup, variableSet, parent.javaSourceFunctionCompiler);
       Optional<Expression> expr =
-          ExpressionToSoyValueProviderCompiler.create(
-                  analysis, variableSet, expressionCompiler, lookup)
+          ExpressionToSoyValueProviderCompiler.create(analysis, expressionCompiler, lookup)
               .compileToSoyValueProviderIfUsefulToPreserveStreaming(
                   exprNode, BasicDetacher.INSTANCE);
 
