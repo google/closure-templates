@@ -125,9 +125,6 @@ final class VeLogValidationPass implements CompilerFileSetPass {
         run(template);
       }
     }
-    if (reporter.hasErrors()) {
-      return Result.STOP;
-    }
     return Result.CONTINUE;
   }
 

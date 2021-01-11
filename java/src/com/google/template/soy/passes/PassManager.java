@@ -114,7 +114,7 @@ public final class PassManager {
    * @param partialTemplateRegistryWithJustDeps registry of {@link TemplatesPerFile} for just the
    *     deps (we don't have enough info yet to create the metadata for the current fileset).
    */
-  public void runPartialTemplateRegistryPasses(
+  public CompilerFileSetPass.Result runPartialTemplateRegistryPasses(
       SoyFileSetNode soyTree,
       TemplateNameRegistry templateNameRegistry,
       TemplateRegistry partialTemplateRegistryWithJustDeps) {
@@ -124,10 +124,11 @@ public final class PassManager {
       CompilerFileSetPass.Result result =
           pass.run(
               sourceFiles, idGenerator, templateNameRegistry, partialTemplateRegistryWithJustDeps);
-      if (result == CompilerFileSetPass.Result.STOP) {
-        break;
+      if (!result.equals(CompilerFileSetPass.Result.CONTINUE)) {
+        return result;
       }
     }
+    return CompilerFileSetPass.Result.CONTINUE;
   }
 
   /**

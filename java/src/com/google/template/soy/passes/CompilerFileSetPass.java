@@ -38,8 +38,20 @@ import com.google.template.soy.soytree.TemplateRegistry;
  * used to get a file-local template registry that includes imports), unless the file-set template
  * registyr is needed for the pass.
  */
-interface CompilerFileSetPass extends CompilerPass {
-  enum Result {
+public interface CompilerFileSetPass extends CompilerPass {
+
+  /**
+   * Result after running this pass, indicating whether it's "safe" to continue compiling.
+   *
+   * <p>Result.CONTINUE doesn't mean there weren't any errors, just that we think the errors (if
+   * any) were "recoverable" enough that we can keep compiling (so that we can gather and report as
+   * many errors as possible to the user at once, rather than reporting at the first error and
+   * quitting).
+   *
+   * <p>Result.STOP should be used if things are so broken that the compiler might actually crash if
+   * we continue.
+   */
+  public enum Result {
     CONTINUE,
     STOP;
   }

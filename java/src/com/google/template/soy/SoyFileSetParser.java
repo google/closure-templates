@@ -31,6 +31,7 @@ import com.google.template.soy.base.internal.SoyFileKind;
 import com.google.template.soy.base.internal.SoyFileSupplier;
 import com.google.template.soy.css.CssRegistry;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.passes.CompilerFileSetPass;
 import com.google.template.soy.passes.PassManager;
 import com.google.template.soy.shared.SoyAstCache;
 import com.google.template.soy.soyparse.SoyFileParser;
@@ -239,9 +240,14 @@ public abstract class SoyFileSetParser {
     // Run the passes that we need to finish building the template registry.
     FileSetTemplateRegistry partialRegistryForDeps = builder.build();
     soyTree.setFileSetTemplateRegistry(partialRegistryForDeps);
-    passManager()
-        .runPartialTemplateRegistryPasses(
-            soyTree, templateNamesForEachFile, partialRegistryForDeps);
+    CompilerFileSetPass.Result result =
+        passManager()
+            .runPartialTemplateRegistryPasses(
+                soyTree, templateNamesForEachFile, partialRegistryForDeps);
+
+    if (!result.equals(CompilerFileSetPass.Result.CONTINUE)) {
+      return ParseResult.create(soyTree, Optional.empty());
+    }
 
     // Now register the templates in this file set.
     for (SoyFileNode node : soyTree.getChildren()) {
