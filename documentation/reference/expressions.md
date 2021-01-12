@@ -157,7 +157,7 @@ abbreviate globals.
 
 It is an error in the compiler to reference a global that doesn't have a
 definition at compile time, however, if you are only compiling for JavaScript
-then this is allowed for backwards compatibility reasons.
+then legacy code can use [`unknownJsGlobal`](functions.md#unknownJsGlobal).
 
 ## Operators
 
