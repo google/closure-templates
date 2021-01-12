@@ -78,6 +78,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nullable;
@@ -847,6 +850,47 @@ public final class JbcSrcRuntime {
       // Internally SoyRecords.merge uses an AugmentedParamStore.  This is probably not the best
       // choice.
       return delegate.create(SoyRecords.merge(boundParams, params), ij);
+    }
+  }
+
+  /**
+   * Helper method to fully await for a {@link SoyValueProvider} to resolve. NOTE: this may induce
+   * blocking.
+   *
+   * <p>Used by the implementations of our subclasses used to implement {@code let}{@code param} and
+   * {@code msg} placeholders.
+   */
+  static void awaitProvider(SoyValueProvider provider) {
+    while (true) {
+      RenderResult result = provider.status();
+      switch (result.type()) {
+        case LIMITED:
+          // Docs on SoyValueProvider.status() call this state illegal.
+          throw new AssertionError(
+              "SoyValueProvider.status() returned a RenderResult.limited() which is out of spec");
+        case DETACH:
+          Future<?> future = result.future();
+          if (logger.isLoggable(Level.WARNING)) {
+            logger.log(
+                Level.WARNING,
+                "blocking to resolve a SoyValueProvider: " + future,
+                new Exception());
+          }
+          try {
+            future.get();
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt(); // restore interrupted bit
+            throw new RuntimeException(
+                "Interrupted while waiting on: " + future + " to complete", ie);
+          } catch (CancellationException | ExecutionException expected) {
+            // ignore these here, both of these are final states for the future.  When calling back
+            // into status() the provider should end up dereferencing the future which should ensure
+            // that an exception is thrown with the correct stack trace.
+          }
+          break;
+        case DONE:
+          return;
+      }
     }
   }
 

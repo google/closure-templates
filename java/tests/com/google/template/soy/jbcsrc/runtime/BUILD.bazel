@@ -13,6 +13,7 @@ java_library(
     ),
     deps = [
         "//java/src/com/google/template/soy/data",
+        "//java/src/com/google/template/soy/jbcsrc/api",
         "//java/src/com/google/template/soy/jbcsrc/runtime",
         "//java/src/com/google/template/soy/msgs",
         "@maven//:com_google_guava_guava",

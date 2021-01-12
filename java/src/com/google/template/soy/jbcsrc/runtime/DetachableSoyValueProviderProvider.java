@@ -16,7 +16,6 @@
 
 package com.google.template.soy.jbcsrc.runtime;
 
-import static com.google.common.base.Preconditions.checkState;
 
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SoyValue;
@@ -39,7 +38,7 @@ public abstract class DetachableSoyValueProviderProvider implements SoyValueProv
 
   @Override
   public final SoyValue resolve() {
-    checkState(status().isDone(), "called resolve() before status() returned ready.");
+    JbcSrcRuntime.awaitProvider(this);
     return resolvedValueProvider.resolve();
   }
 

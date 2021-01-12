@@ -50,7 +50,7 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
 
   @Override
   public final SoyValue resolve() {
-    checkState(status().isDone(), "called resolve() before status() returned ready.");
+    JbcSrcRuntime.awaitProvider(this);
     SoyValue local = getResolvedValue();
     checkState(
         local != TombstoneValue.INSTANCE,

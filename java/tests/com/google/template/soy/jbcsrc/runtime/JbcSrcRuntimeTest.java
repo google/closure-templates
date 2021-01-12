@@ -17,10 +17,15 @@
 package com.google.template.soy.jbcsrc.runtime;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertThrows;
 
 import com.google.common.collect.ImmutableList;
+import com.google.template.soy.data.LoggingAdvisingAppendable;
+import com.google.template.soy.data.SoyValue;
+import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.data.restricted.StringData;
+import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.runtime.JbcSrcRuntime.MsgRenderer;
 import com.google.template.soy.msgs.restricted.SoyMsgPart;
 import com.google.template.soy.msgs.restricted.SoyMsgPlaceholderPart;
@@ -151,6 +156,78 @@ public final class JbcSrcRuntimeTest {
     renderer.setPlaceholder("LINK_END", StringData.forValue("</a>"));
     // renders fine
     assertRendersAs(renderer, "<a>Hello</a><a>world.</a>");
+  }
+
+  static class FakeProvider implements SoyValueProvider {
+    RenderResult result;
+    int calls;
+
+    FakeProvider() {}
+
+    FakeProvider(RenderResult result) {
+      this.result = result;
+    }
+
+    @Override
+    public RenderResult renderAndResolve(
+        LoggingAdvisingAppendable advisingAppendable, boolean isLast) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SoyValue resolve() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RenderResult status() {
+      calls++;
+      return result;
+    }
+  }
+
+  @Test
+  public void testAwaitProvider_done() {
+    FakeProvider provider = new FakeProvider(RenderResult.done());
+    JbcSrcRuntime.awaitProvider(provider);
+    assertThat(provider.calls).isEqualTo(1);
+  }
+
+  @Test
+  public void testAwaitProvider_limited() {
+    FakeProvider provider = new FakeProvider(RenderResult.limited());
+    assertThrows(AssertionError.class, () -> JbcSrcRuntime.awaitProvider(provider));
+    assertThat(provider.calls).isEqualTo(1);
+  }
+
+  @Test
+  public void testAwaitProvider_detachOnce() {
+    FakeProvider provider =
+        new FakeProvider() {
+          @Override
+          public RenderResult status() {
+            return calls++ == 0
+                ? RenderResult.continueAfter(immediateFuture("hello"))
+                : RenderResult.done();
+          }
+        };
+    JbcSrcRuntime.awaitProvider(provider);
+    assertThat(provider.calls).isEqualTo(2);
+  }
+
+  @Test
+  public void testAwaitProvider_detachManyTimes() {
+    FakeProvider provider =
+        new FakeProvider() {
+          @Override
+          public RenderResult status() {
+            return calls++ < 19
+                ? RenderResult.continueAfter(immediateFuture("hello"))
+                : RenderResult.done();
+          }
+        };
+    JbcSrcRuntime.awaitProvider(provider);
+    assertThat(provider.calls).isEqualTo(20);
   }
 
   private void assertRendersAs(MsgRenderer renderer, String expected) {
