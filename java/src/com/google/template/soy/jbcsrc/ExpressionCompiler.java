@@ -104,11 +104,13 @@ import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
+import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.ListType;
 import com.google.template.soy.types.NullType;
 import com.google.template.soy.types.SoyProtoType;
+import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.SoyType.Kind;
 import com.google.template.soy.types.SoyTypes;
 import java.lang.invoke.MethodHandles;
@@ -969,6 +971,26 @@ final class ExpressionCompiler {
     // Let vars
 
     @Override
+    SoyExpression visitConstVar(VarRefNode varRef, ConstVar c) {
+      // TODO(b/177245767): implement
+      SoyType type = varRef.getType();
+      switch (type.getKind()) {
+        case NULL:
+          return SoyExpression.NULL;
+        case BOOL:
+          return SoyExpression.FALSE;
+        case INT:
+          return SoyExpression.forInt(BytecodeUtils.constant(0L));
+        case FLOAT:
+          return SoyExpression.forFloat(BytecodeUtils.constant(0D));
+        case STRING:
+          return SoyExpression.forString(BytecodeUtils.constant(""));
+        default:
+          return SoyExpression.NULL;
+      }
+    }
+
+    @Override
     SoyExpression visitLetNodeVar(VarRefNode varRef, LocalVar local) {
       return SoyExpression.forSoyValue(
           varRef.getType(),
@@ -1609,11 +1631,11 @@ final class ExpressionCompiler {
         case PARAM:
         case LOCAL_VAR:
         case STATE:
+        case CONST:
           return false;
         case UNDECLARED:
         case IMPORT_VAR:
         case TEMPLATE:
-        case CONST:
           break;
       }
       throw new AssertionError();

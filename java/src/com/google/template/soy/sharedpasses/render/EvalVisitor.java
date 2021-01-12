@@ -117,6 +117,8 @@ import com.google.template.soy.shared.internal.BuiltinMethod;
 import com.google.template.soy.shared.restricted.SoyJavaFunction;
 import com.google.template.soy.shared.restricted.SoyMethod;
 import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 import com.google.template.soy.types.MapType;
 import com.google.template.soy.types.SoyProtoType;
@@ -346,6 +348,9 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
   protected SoyValue visitVarRefNode(VarRefNode node) {
     if (node.getDefnDecl().kind() == VarDefn.Kind.STATE) {
       throw new AssertionError(); // should have been desugared
+    } else if (node.getDefnDecl().kind() == VarDefn.Kind.CONST) {
+      ConstNode def = env.lookupConst(((ConstVar) node.getDefnDecl()));
+      return visit(def.getExpr());
     } else {
       SoyValue value = env.getVar(node.getDefnDecl());
       if (node.getDefnDecl().kind() == VarDefn.Kind.PARAM

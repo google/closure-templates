@@ -52,6 +52,7 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
     super(orig, copyState);
     this.valueExpr = orig.valueExpr.copy(copyState);
     this.var = new ConstVar(orig.var);
+    copyState.updateRefs(orig.var, this.var);
   }
 
   public ConstVar getVar() {

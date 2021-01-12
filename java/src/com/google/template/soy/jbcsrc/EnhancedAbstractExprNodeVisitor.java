@@ -24,6 +24,7 @@ import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.shared.internal.BuiltinFunction;
 import com.google.template.soy.soytree.SoyNode.LocalVarNode;
+import com.google.template.soy.soytree.defn.ConstVar;
 import com.google.template.soy.soytree.defn.LocalVar;
 import com.google.template.soy.soytree.defn.TemplateParam;
 
@@ -67,10 +68,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
         throw new AssertionError("state should have been desugared");
       case COMPREHENSION_VAR:
         return visitListComprehensionVar(node, (ComprehensionVarDefn) defn);
-      case IMPORT_VAR:
-        throw new IllegalStateException("import vars are not implemented yet");
-      case TEMPLATE:
       case CONST:
+        return visitConstVar(node, (ConstVar) defn);
+      case IMPORT_VAR:
+      case TEMPLATE:
       case UNDECLARED:
         throw new RuntimeException(defn.kind() + " are not supported by jbcsrc");
     }
@@ -127,6 +128,10 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
 
   T visitForLoopVar(VarRefNode varRef, LocalVar local) {
     return visitExprNode(varRef);
+  }
+
+  T visitConstVar(VarRefNode node, ConstVar c) {
+    return visitExprNode(node);
   }
 
   T visitLetNodeVar(VarRefNode node, LocalVar local) {
