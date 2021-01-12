@@ -116,6 +116,9 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
         visitPrintDirectiveNode((PrintDirectiveNode) node);
         break;
 
+      case CONST_NODE:
+        visitConstNode((ConstNode) node);
+        break;
       case LET_VALUE_NODE:
         visitLetValueNode((LetValueNode) node);
         break;
@@ -318,6 +321,10 @@ public abstract class AbstractSoyNodeVisitor<R> extends AbstractNodeVisitor<SoyN
   }
 
   protected void visitPrintDirectiveNode(PrintDirectiveNode node) {
+    visitSoyNode(node);
+  }
+
+  protected void visitConstNode(ConstNode node) {
     visitSoyNode(node);
   }
 

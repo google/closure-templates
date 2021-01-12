@@ -96,6 +96,7 @@ import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
 import com.google.template.soy.soytree.CommandTagAttribute;
 import com.google.template.soy.soytree.Comment;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForIfemptyNode;
 import com.google.template.soy.soytree.ForNode;
@@ -1009,6 +1010,7 @@ TOKEN_MGR_DECLS: {
 | < NAMESPACE_OPEN: "{namespace" <WS> > : IN_CMD_TAG
 | < DELPACKAGE_OPEN: "{delpackage" <WS> > : IN_CMD_TAG
 | < IMPORT_OPEN: "import" >
+| < CONST_OPEN: "{const" <WS> > : EXPR
 | < SEMICOLON: ";"      >
 | < DEFAULT_COMMA: "," >
 | < LCURLY: "{"      >
@@ -1393,8 +1395,10 @@ private SoyFileNode SoyFile() :
   NamespaceDeclaration namespace;
   AliasDeclaration alias;
   ImportNode importNode;
+  ConstNode constant;
   ImmutableList.Builder<AliasDeclaration> aliases = new ImmutableList.Builder<AliasDeclaration>();
   ImmutableList.Builder<ImportNode> imports = new ImmutableList.Builder<ImportNode>();
+  ImmutableList.Builder<ConstNode> constants = new ImmutableList.Builder<ConstNode>();
   TemplateNode template;
   Token eof;
 }
@@ -1415,6 +1419,15 @@ private SoyFileNode SoyFile() :
     {
       if (importNode != null) {
         imports.add(importNode);
+      }
+    }
+  )*
+
+  (
+    constant = ConstStmt()
+    {
+      if (constant != null) {
+        constants.add(constant);
       }
     }
   )*
@@ -1444,6 +1457,7 @@ private SoyFileNode SoyFile() :
             SourceLocation.Point.create(eof.beginLine, eof.beginColumn)),
             namespace, headerInfo, buildComments(token_source));
     sfn.addChildren(imports.build());
+    sfn.addChildren(constants.build());
     sfn.addChildren(templates);
     return sfn;
   }
@@ -2161,6 +2175,7 @@ private RawTextNode TemplateHeader(TemplateNodeBuilder<?> templateBuilder, boole
           case COMPREHENSION_VAR:
           case IMPORT_VAR:
           case TEMPLATE:
+          case CONST:
           case UNDECLARED:
             throw new AssertionError("unexpected var kind: " + param.kind());
           }
@@ -3028,6 +3043,50 @@ private LetNode LetStmt() :
       return node;
     }
   )
+}
+
+
+/**
+ * ConstStmt -> {const ident: expr /}
+ */
+private ConstNode ConstStmt() :
+{
+  Token tagBegin, tagClose, nameTok = null, tagBeginEnd = null;
+  ExprNode valueExpr = null;
+  CommandTagAttribute attr = null;
+  List<StandaloneNode> templateBlock = ImmutableList.of();
+}
+{
+  tagBegin = <CONST_OPEN>
+
+  try {
+    nameTok = <IDENT>
+  } catch (ParseException e) {
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    SourceLocation loc = createSrcLoc(tagBegin, tagClose);
+    return new ConstNode(-1, loc, "$error", loc, errorExpr(tagBegin));
+  }
+
+  // Value expression
+  try {
+    <COLON>
+    valueExpr = Expr()
+    tagClose = <CMD_SELF_CLOSE>
+  } catch (ParseException e) {
+    tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
+    if (valueExpr == null) {
+      valueExpr = errorExpr(tagClose);
+    }
+  }
+
+  {
+    return new ConstNode(
+        nodeIdGen.genId(),
+        createSrcLoc(tagBegin, tagClose),
+        nameTok.image,
+        createSrcLoc(nameTok),
+        valueExpr);
+  }
 }
 
 

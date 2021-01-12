@@ -117,6 +117,7 @@ import com.google.template.soy.shared.restricted.SoySourceFunctionMethod;
 import com.google.template.soy.shared.restricted.TypedSoyFunction;
 import com.google.template.soy.soyparse.SoyFileParser;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.IfCondNode;
 import com.google.template.soy.soytree.IfElseNode;
@@ -458,6 +459,12 @@ public final class ResolveExpressionTypesPass implements CompilerFilePass {
     @Override
     protected void visitPrintNode(PrintNode node) {
       visitSoyNode(node);
+    }
+
+    @Override
+    protected void visitConstNode(ConstNode node) {
+      visitSoyNode(node);
+      node.getVar().setType(node.getExpr().getType());
     }
 
     @Override

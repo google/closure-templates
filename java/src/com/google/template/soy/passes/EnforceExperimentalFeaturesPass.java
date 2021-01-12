@@ -24,6 +24,7 @@ import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.HtmlCloseTagNode;
 import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -53,6 +54,9 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
 
   private static final SoyErrorKind SOY_ELEMENT_COMPOSITION_NOT_GA =
       SoyErrorKind.of("Soy element composition is not available for general use.");
+
+  private static final SoyErrorKind CONSTANT_NOT_GA =
+      SoyErrorKind.of("'{'const'}' is not available for general use.");
 
   private final ImmutableSet<String> features;
   private final ErrorReporter reporter;
@@ -92,6 +96,12 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
           reporter.report(tmplNode.getSourceLocation(), ELEMENT_TEMPLATE_KIND_NOT_GA);
         }
       }
+    }
+
+    if (!features.contains("enableConstants")) {
+      SoyTreeUtils.allNodesOfType(file, ConstNode.class)
+          .forEach(
+              closeTagNode -> reporter.report(closeTagNode.getSourceLocation(), CONSTANT_NOT_GA));
     }
   }
 }

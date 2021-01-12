@@ -31,6 +31,8 @@ message SoyFileP {
   string delpackage = 2;
   // The namespace of the file
   string namespace = 3;
+  // The exported constants in the file
+  repeated ConstantP constants = 6;
   // The templates in the file
   repeated TemplateMetadataP template = 4;
   reserved 5;
@@ -96,6 +98,14 @@ message SoyTypeP {
     bool message = 11;
     HtmlTypeP html = 12;
   }
+}
+
+// An exported constant.
+message ConstantP {
+  // The local name of the constant.
+  string name = 1;
+  // The type of the constant.
+  SoyTypeP type = 2;
 }
 
 // A single declared template parameter

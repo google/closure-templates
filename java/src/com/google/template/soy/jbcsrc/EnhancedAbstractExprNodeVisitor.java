@@ -70,6 +70,7 @@ abstract class EnhancedAbstractExprNodeVisitor<T> extends AbstractReturningExprN
       case IMPORT_VAR:
         throw new IllegalStateException("import vars are not implemented yet");
       case TEMPLATE:
+      case CONST:
       case UNDECLARED:
         throw new RuntimeException(defn.kind() + " are not supported by jbcsrc");
     }

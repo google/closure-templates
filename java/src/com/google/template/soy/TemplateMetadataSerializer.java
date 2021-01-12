@@ -31,6 +31,8 @@ import com.google.template.soy.base.internal.TemplateContentKind.ElementContentK
 import com.google.template.soy.error.ErrorReporter;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.soytree.CompilationUnit;
+import com.google.template.soy.soytree.ConstNode;
+import com.google.template.soy.soytree.ConstantP;
 import com.google.template.soy.soytree.DataAllCallSituationP;
 import com.google.template.soy.soytree.ParameterP;
 import com.google.template.soy.soytree.SoyFileNode;
@@ -103,6 +105,7 @@ public final class TemplateMetadataSerializer {
               .setNamespace(file.getNamespace())
               .setDelpackage(Strings.nullToEmpty(file.getDelPackageName()))
               .setFilePath(file.getFilePath().path());
+      file.getConstants().forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
       for (TemplateNode template : file.getTemplates()) {
         TemplateMetadata meta = registry.getMetadata(template);
         fileBuilder.addTemplate(protoFromTemplate(meta, file));
@@ -134,6 +137,13 @@ public final class TemplateMetadataSerializer {
       }
     }
     return templates.build();
+  }
+
+  private static ConstantP protoFromConstant(ConstNode node) {
+    return ConstantP.newBuilder()
+        .setName(node.getVar().name())
+        .setType(node.getVar().type().toProto())
+        .build();
   }
 
   private static TemplateMetadataP protoFromTemplate(TemplateMetadata meta, SoyFileNode fileNode) {
@@ -437,22 +447,6 @@ public final class TemplateMetadataSerializer {
         // fall-through
     }
     throw new AssertionError("unhandled typeKind: " + proto.getTypeKindCase());
-  }
-
-  private static ImmutableList<ParameterP> protosFromParameters(List<Parameter> parameterList) {
-    ImmutableList.Builder<ParameterP> builder =
-        ImmutableList.builderWithExpectedSize(parameterList.size());
-    for (Parameter parameter : parameterList) {
-      builder.add(
-          ParameterP.newBuilder()
-              .setName(parameter.getName())
-              .setKind(parameter.getKind().toProto())
-              .setType(parameter.getType().toProto())
-              .setRequired(parameter.isRequired())
-              .setImplicit(parameter.isImplicit())
-              .build());
-    }
-    return builder.build();
   }
 
   private static ImmutableList<DataAllCallSituation> callSituationsFromProto(

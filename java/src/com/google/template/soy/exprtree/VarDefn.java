@@ -41,6 +41,8 @@ public interface VarDefn {
     PARAM,
     // Local variable
     LOCAL_VAR,
+    // File-wide exportable constant.
+    CONST,
 
     // imported symbol
     IMPORT_VAR,

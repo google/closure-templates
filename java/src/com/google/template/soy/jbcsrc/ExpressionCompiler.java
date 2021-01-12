@@ -1613,6 +1613,7 @@ final class ExpressionCompiler {
         case UNDECLARED:
         case IMPORT_VAR:
         case TEMPLATE:
+        case CONST:
           break;
       }
       throw new AssertionError();

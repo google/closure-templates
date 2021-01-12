@@ -32,6 +32,7 @@ import com.google.template.soy.exprtree.ListComprehensionNode;
 import com.google.template.soy.exprtree.VarDefn;
 import com.google.template.soy.exprtree.VarDefn.Kind;
 import com.google.template.soy.soytree.AbstractSoyNodeVisitor;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
 import com.google.template.soy.soytree.ImportNode;
 import com.google.template.soy.soytree.LetContentNode;
@@ -161,11 +162,9 @@ final class LocalVariablesNodeVisitor {
       localVariables = new LocalVariables();
       localVariables.errorReporter = getErrorReporter();
       localVariables.enterScope();
-      for (ImportNode imp : node.getImports()) {
-        for (ImportedVar var : imp.getIdentifiers()) {
-          localVariables.define(var, imp);
-        }
-      }
+
+      // Define all templates in scope before visiting them so that any template can reference
+      // any other template.
       for (TemplateNode template : node.getTemplates()) {
         localVariables.define(template.asVarDefn(), template);
       }
@@ -174,6 +173,20 @@ final class LocalVariablesNodeVisitor {
       localVariables.exitScope();
 
       localVariables = null;
+    }
+
+    @Override
+    protected void visitImportNode(ImportNode node) {
+      super.visitImportNode(node);
+      for (ImportedVar var : node.getIdentifiers()) {
+        localVariables.define(var, node);
+      }
+    }
+
+    @Override
+    protected void visitConstNode(ConstNode node) {
+      super.visitConstNode(node);
+      localVariables.define(node.getVar(), node);
     }
 
     @Override
@@ -279,6 +292,7 @@ final class LocalVariablesNodeVisitor {
       case TEMPLATE:
         return "Template name";
       case UNDECLARED:
+      case CONST:
         return "Symbol";
     }
     throw new AssertionError(varDefn.kind());

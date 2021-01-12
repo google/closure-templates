@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.CallNode;
 import com.google.template.soy.soytree.CallParamContentNode;
 import com.google.template.soy.soytree.CallParamValueNode;
 import com.google.template.soy.soytree.CaseOrDefaultNode;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.soytree.DebuggerNode;
 import com.google.template.soy.soytree.ForNode;
 import com.google.template.soy.soytree.ForNonemptyNode;
@@ -1437,6 +1438,11 @@ final class HtmlRewriter {
       if (!errorReporter.errorsSince(checkPoint)) {
         edits.apply();
       }
+    }
+
+    @Override
+    protected void visitConstNode(ConstNode node) {
+      // do nothing
     }
 
     @Override
