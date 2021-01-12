@@ -36,7 +36,6 @@ import com.google.common.collect.Iterables;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.LoggingAdvisingAppendable;
 import com.google.template.soy.data.SanitizedContent;
-import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.exprtree.AbstractLocalVarDefn;
 import com.google.template.soy.exprtree.ExprNode;
@@ -168,7 +167,6 @@ final class LazyClosureCompiler {
   private static final Method DO_RESOLVE;
   private static final Method DO_RESOLVE_DELEGATE;
   private static final Method DO_RENDER;
-  private static final Method DETACHABLE_CONTENT_PROVIDER_INIT;
   private static final FieldRef RESOLVED_VALUE =
       FieldRef.instanceFieldReference(DetachableSoyValueProvider.class, "resolvedValue");
   private static final FieldRef RESOLVED_VALUE_PROVIDER =
@@ -192,9 +190,6 @@ final class LazyClosureCompiler {
           Method.getMethod(
               DetachableContentProvider.class.getDeclaredMethod(
                   "doRender", LoggingAdvisingAppendable.class));
-      DETACHABLE_CONTENT_PROVIDER_INIT =
-          Method.getMethod(
-              DetachableContentProvider.class.getDeclaredConstructor(ContentKind.class));
     } catch (NoSuchMethodException | SecurityException e) {
       throw new AssertionError(e);
     }
@@ -477,16 +472,7 @@ final class LazyClosureCompiler {
               variableSet.generateTableEntries(adapter);
             }
           };
-      Expression constructExpr =
-          generateConstructor(
-              new Statement() {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  adapter.loadThis();
-                  adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
-                }
-              },
-              lookup.getCapturedFields());
+      Expression constructExpr = generateConstructor(lookup.getCapturedFields());
 
       doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE, writer);
       fields.defineFields(writer);
@@ -529,16 +515,7 @@ final class LazyClosureCompiler {
               variableSet.generateTableEntries(adapter);
             }
           };
-      Expression constructExpr =
-          generateConstructor(
-              new Statement() {
-                @Override
-                protected void doGen(CodeBuilder adapter) {
-                  adapter.loadThis();
-                  adapter.invokeConstructor(baseClass.type(), NULLARY_INIT);
-                }
-              },
-              lookup.getCapturedFields());
+      Expression constructExpr = generateConstructor(lookup.getCapturedFields());
 
       doResolveImpl.writeMethod(Opcodes.ACC_PROTECTED, DO_RESOLVE_DELEGATE, writer);
       fields.defineFields(writer);
@@ -593,19 +570,7 @@ final class LazyClosureCompiler {
               variableSet.generateTableEntries(adapter);
             }
           };
-      SanitizedContentKind kind = renderUnit.getContentKind();
-      final Expression contentKind = constantSanitizedContentKindAsContentKind(kind);
-      Statement superClassContstructor =
-          new Statement() {
-            @Override
-            protected void doGen(CodeBuilder adapter) {
-              adapter.loadThis();
-              contentKind.gen(adapter);
-              adapter.invokeConstructor(baseClass.type(), DETACHABLE_CONTENT_PROVIDER_INIT);
-            }
-          };
-      Expression constructExpr =
-          generateConstructor(superClassContstructor, lookup.getCapturedFields());
+      Expression constructExpr = generateConstructor(lookup.getCapturedFields());
 
       fields.defineFields(writer);
       fullMethodBody.writeMethod(Opcodes.ACC_PROTECTED, DO_RENDER, writer);
@@ -619,8 +584,7 @@ final class LazyClosureCompiler {
      *
      * <p>This constructor is called by the generate factory classes.
      */
-    Expression generateConstructor(
-        final Statement superClassConstructorInvocation, Iterable<ParentCapture> captures) {
+    Expression generateConstructor(Iterable<ParentCapture> captures) {
       final Label start = new Label();
       final Label end = new Label();
       final LocalVariable thisVar = createThisVar(type, start, end);
@@ -645,7 +609,8 @@ final class LazyClosureCompiler {
             protected void doGen(CodeBuilder cb) {
               cb.mark(start);
               // call super()
-              superClassConstructorInvocation.gen(cb);
+              cb.loadThis();
+              cb.invokeConstructor(baseClass.type(), NULLARY_INIT);
               // assign params to fields
               for (Statement assignment : assignments) {
                 assignment.gen(cb);

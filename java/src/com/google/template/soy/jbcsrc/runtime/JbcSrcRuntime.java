@@ -353,9 +353,6 @@ public final class JbcSrcRuntime {
         @Nullable ULocale locale,
         int numPlaceholders,
         boolean htmlEscape) {
-      // using a TEXT content kind which will cause our base class to box the value in a StringData
-      // object
-      super(ContentKind.TEXT);
       this.msgId = msgId;
       this.msgParts = msgParts;
       this.locale = locale;

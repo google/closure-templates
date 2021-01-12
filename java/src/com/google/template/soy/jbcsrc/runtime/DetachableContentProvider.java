@@ -28,8 +28,6 @@ import com.google.template.soy.data.LoggingFunctionInvocation;
 import com.google.template.soy.data.SanitizedContent.ContentKind;
 import com.google.template.soy.data.SoyValue;
 import com.google.template.soy.data.SoyValueProvider;
-import com.google.template.soy.data.UnsafeSanitizedContentOrdainer;
-import com.google.template.soy.data.restricted.StringData;
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import java.io.IOException;
@@ -41,7 +39,6 @@ import javax.annotation.Nullable;
  * implementations.
  */
 public abstract class DetachableContentProvider implements SoyValueProvider {
-  private final ContentKind contentKind;
 
   // Will be either a SanitizedContent or a StringData.
   private SoyValue resolvedValue;
@@ -50,10 +47,6 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
   // Will be either an LoggingAdvisingAppendable.BufferingAppendable or a TeeAdvisingAppendable
   // depending on whether we are being resolved via 'status()' or via 'renderAndResolve()'
   private LoggingAdvisingAppendable builder;
-
-  protected DetachableContentProvider(ContentKind contentKind) {
-    this.contentKind = contentKind;
-  }
 
   @Override
   public final SoyValue resolve() {
@@ -127,14 +120,9 @@ public abstract class DetachableContentProvider implements SoyValueProvider {
     SoyValue local = resolvedValue;
     if (local == null) {
       if (buffer != null) {
-        String string = buffer.toString();
         // This drops logs, but that is sometimes necessary.  We should make sure this only happens
         // when it has to by making sure that renderAndResolve is used for all printing usecases
-        if (contentKind == ContentKind.TEXT) {
-          local = StringData.forValue(string);
-        } else {
-          local = UnsafeSanitizedContentOrdainer.ordainAsSafe(string, contentKind);
-        }
+        local = buffer.getAsSoyValue();
         resolvedValue = local;
       } else {
         throw new AssertionError("getResolvedValue() should only be called if the value isDone.");
