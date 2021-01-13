@@ -37,7 +37,7 @@ This command allows you to import protos and templates from other Soy files.
 Syntax:
 
 ```soy
-import {button, render as fooRender} from 'path/to/soy/file/foo.soy'
+import {button, render as fooRender} from 'path/to/soy/file/foo.soy';
 ```
 
 You can also import all templates from other soy files using `*` and grouping
