@@ -43,6 +43,7 @@ import com.google.template.soy.soytree.SoyNode.ExprHolderNode;
 import com.google.template.soy.soytree.SoyNode.Kind;
 import com.google.template.soy.soytree.SoyNode.ParentSoyNode;
 import com.google.template.soy.types.BoolType;
+import com.google.template.soy.types.UnknownType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -233,8 +234,11 @@ public final class SoyTreeUtils {
     SourceLocation unknown = node.getSourceLocation().clearRange();
     FunctionNode isNonnull =
         FunctionNode.newPositional(Identifier.create("isNonnull", unknown), isNonNullFn, unknown);
-    isNonnull.addChild(new ExprRootNode(node.copy(new CopyState())));
+    ExprRootNode exprNode = new ExprRootNode(node.copy(new CopyState()));
+    exprNode.setType(node.getType());
+    isNonnull.addChild(exprNode);
     isNonnull.setType(BoolType.getInstance());
+    isNonnull.setAllowedParamTypes(ImmutableList.of(UnknownType.getInstance()));
     return isNonnull;
   }
 
@@ -244,9 +248,11 @@ public final class SoyTreeUtils {
     IfNode ifNode = new IfNode(id.get(), unknown);
     IfCondNode ifCondNode =
         new IfCondNode(id.get(), unknown, unknown, "if", buildNotNull(node, isNonnull));
+    ifCondNode.getExpr().setType(BoolType.getInstance());
     ifNode.addChild(ifCondNode);
     PrintNode printNode =
         new PrintNode(id.get(), unknown, true, node, ImmutableList.of(), exploding());
+    printNode.getExpr().setType(node.getType());
     ifCondNode.addChild(printNode);
     return ifNode;
   }

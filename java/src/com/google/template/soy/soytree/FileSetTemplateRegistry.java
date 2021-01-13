@@ -66,7 +66,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
    * Map from basic template or element name to node, for all files in the file set & its
    * dependencies.
    */
-  private final ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap;
+  private final Map<String, TemplateMetadata> basicTemplatesOrElementsMap;
 
   private final DelTemplateSelector<TemplateMetadata> delTemplateSelector;
 
@@ -79,7 +79,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
   /** Constructor. */
   private FileSetTemplateRegistry(
       ImmutableMap<SourceFilePath, TemplatesPerFile> templatesPerFile,
-      ImmutableMap<String, TemplateMetadata> basicTemplatesOrElementsMap,
+      Map<String, TemplateMetadata> basicTemplatesOrElementsMap,
       DelTemplateSelector<TemplateMetadata> delTemplateSelector,
       ImmutableMap<String, TemplateMetadata> allTemplates) {
     this.templatesPerFile = templatesPerFile;
@@ -192,7 +192,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
       return new FileSetTemplateRegistry(
           templatesPerFileBuilder.entrySet().stream()
               .collect(toImmutableMap(Map.Entry::getKey, e -> e.getValue().build())),
-          ImmutableMap.copyOf(basicTemplatesOrElementsMap),
+          basicTemplatesOrElementsMap,
           delTemplateSelectorBuilder.build(),
           ImmutableMap.copyOf(allTemplatesBuilder));
     }
@@ -201,7 +201,7 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
   /** Returns all basic template names. */
   @Override
   public ImmutableSet<String> getBasicTemplateOrElementNames() {
-    return basicTemplatesOrElementsMap.keySet();
+    return ImmutableSet.copyOf(basicTemplatesOrElementsMap.keySet());
   }
 
   /** Look up possible targets for a call. */
@@ -227,7 +227,8 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
         return ImmutableList.of();
       } else {
         // Rely on previous passes to catch this with nice error messages.
-        throw new IllegalStateException("Unexpected type in call: " + calleeType);
+        throw new IllegalStateException(
+            "Unexpected type in call: " + calleeType.getClass() + " - " + node.toSourceString());
       }
     } else {
       String calleeName = ((CallDelegateNode) node).getDelCalleeName();
@@ -257,6 +258,11 @@ public final class FileSetTemplateRegistry implements TemplateRegistry {
   @Nullable
   public TemplateMetadata getBasicTemplateOrElement(String templateName) {
     return basicTemplatesOrElementsMap.get(templateName);
+  }
+
+  public void updateTemplate(TemplateNode templateNode) {
+    basicTemplatesOrElementsMap.put(
+        templateNode.getTemplateName(), TemplateMetadata.fromTemplate(templateNode));
   }
 
   /** Returns a multimap from delegate template name to set of keys. */

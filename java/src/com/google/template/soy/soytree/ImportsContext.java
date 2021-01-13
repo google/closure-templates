@@ -148,6 +148,10 @@ public final class ImportsContext {
       return fileSetRegistry();
     }
 
+    public void updateTemplate(TemplateNode node) {
+      fileSetRegistry().updateTemplate(node);
+    }
+
     @Override
     public TemplateMetadata getBasicTemplateOrElement(String callTmplName) {
       // If the template name matches an imported template symbol, return the symbol's corresponding

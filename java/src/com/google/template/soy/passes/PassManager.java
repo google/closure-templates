@@ -454,12 +454,6 @@ public final class PassManager {
       addPass(new StrictHtmlValidationPass(errorReporter), partialTemplateRegistryPassesBuilder);
 
       addPass(new SoyElementPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      if (astRewrites.atLeast(AstRewrites.ALL)) {
-        addPass(
-            new ElementAttributePass(errorReporter, pluginResolver),
-            partialTemplateRegistryPassesBuilder);
-      }
-
       if (addHtmlAttributesForDebugging) {
         // needs to run after MsgsPass (so we don't mess up the auto placeholder naming algorithm)
         // and before ResolveExpressionTypesPass (since we insert expressions).
@@ -521,18 +515,22 @@ public final class PassManager {
       // Because conformance exits abruptly after this pass we must ensure that the AST is left in a
       // complete state. Therefore this pass should come after ResolveExpressionTypesPass and
       // others.
+      if (astRewrites.atLeast(AstRewrites.ALL)) {
+        addPass(
+            new ElementAttributePass(errorReporter, pluginResolver),
+            crossTemplateCheckingPassesBuilder);
+      }
       addPass(
           new SoyConformancePass(conformanceConfig, errorReporter),
           crossTemplateCheckingPassesBuilder);
-
-      addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
       if (!disableAllTypeChecking) {
-        // Upgrade the "named template" placeholder types to proper template types, now that their
-        // signatures are known.
         addPass(
             new ResolveExpressionTypesCrossTemplatePass(
                 registry, errorReporter, astRewrites.atLeast(AstRewrites.ALL)),
             crossTemplateCheckingPassesBuilder);
+      }
+      addPass(new CheckTemplateHeaderVarsPass(errorReporter), crossTemplateCheckingPassesBuilder);
+      if (!disableAllTypeChecking) {
         // Needs to come after types have been set.
         addPass(
             new EnforceExperimentalFeaturesPass(options.getExperimentalFeatures(), errorReporter),
@@ -542,6 +540,7 @@ public final class PassManager {
           addPass(
               new ElementCheckCrossTemplatePass(errorReporter), crossTemplateCheckingPassesBuilder);
           if (astRewrites.atLeast(AstRewrites.ALL)) {
+
             addPass(
                 new SoyElementCompositionPass(errorReporter, soyPrintDirectives),
                 crossTemplateCheckingPassesBuilder);

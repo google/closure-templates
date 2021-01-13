@@ -68,6 +68,9 @@ import com.google.template.soy.soytree.TemplateNode;
     // So we don't need to worry about types for synthetic expressions.
     ResolveExpressionTypesPass.class)
 final class AddDebugAttributesPass implements CompilerFilePass {
+
+  public static final String DATA_DEBUG_SOY = "data-debug-soy";
+
   @Override
   public void run(SoyFileNode file, IdGenerator nodeIdGen) {
     new Visitor(nodeIdGen).exec(file);
@@ -163,7 +166,7 @@ final class AddDebugAttributesPass implements CompilerFilePass {
       HtmlAttributeNode attribute =
           new HtmlAttributeNode(
               nodeIdGen.genId(), insertionLocation, insertionLocation.getBeginPoint());
-      attribute.addChild(new RawTextNode(nodeIdGen.genId(), "data-debug-soy", insertionLocation));
+      attribute.addChild(new RawTextNode(nodeIdGen.genId(), DATA_DEBUG_SOY, insertionLocation));
       HtmlAttributeValueNode attrValue =
           new HtmlAttributeValueNode(
               nodeIdGen.genId(), insertionLocation, HtmlAttributeValueNode.Quotes.DOUBLE);
