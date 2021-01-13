@@ -8017,21 +8017,19 @@ class SafeScript {
   }
 }
 
-if (goog.DEBUG) {
-  /**
-   * Returns a string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a SafeScript, use
-   * `SafeScript.unwrap`.
-   *
-   * @return {string}
-   * @see SafeScript#unwrap
-   * @override
-   */
-  SafeScript.prototype.toString = function() {
-    return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString();
-  };
-}
+/**
+ * Returns a string-representation of this value.
+ *
+ * To obtain the actual string value wrapped in a SafeScript, use
+ * `SafeScript.unwrap`.
+ *
+ * @return {string}
+ * @see SafeScript#unwrap
+ * @override
+ */
+SafeScript.prototype.toString = function() {
+  return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString();
+};
 
 
 /**
@@ -9347,22 +9345,20 @@ goog.html.TrustedResourceUrl.prototype.cloneWithParams = function(
 };
 
 
-if (goog.DEBUG) {
-  /**
-   * Returns a string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a TrustedResourceUrl, use
-   * `goog.html.TrustedResourceUrl.unwrap`.
-   *
-   * @return {string}
-   * @see goog.html.TrustedResourceUrl#unwrap
-   * @override
-   */
-  goog.html.TrustedResourceUrl.prototype.toString = function() {
-    'use strict';
-    return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '';
-  };
-}
+/**
+ * Returns a string-representation of this value.
+ *
+ * To obtain the actual string value wrapped in a TrustedResourceUrl, use
+ * `goog.html.TrustedResourceUrl.unwrap`.
+ *
+ * @return {string}
+ * @see goog.html.TrustedResourceUrl#unwrap
+ * @override
+ */
+goog.html.TrustedResourceUrl.prototype.toString = function() {
+  'use strict';
+  return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + '';
+};
 
 
 /**
@@ -10264,22 +10260,21 @@ goog.html.SafeUrl.prototype.getDirection = function() {
 };
 
 
-if (goog.DEBUG) {
-  /**
-   * Returns a string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a SafeUrl, use
-   * `goog.html.SafeUrl.unwrap`.
-   *
-   * @return {string}
-   * @see goog.html.SafeUrl#unwrap
-   * @override
-   */
-  goog.html.SafeUrl.prototype.toString = function() {
-    'use strict';
-    return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString();
-  };
-}
+/**
+ * Returns a string-representation of this value.
+ *
+ * To obtain the actual string value wrapped in a SafeUrl, use
+ * `goog.html.SafeUrl.unwrap`.
+ *
+ * @return {string}
+ * @see goog.html.SafeUrl#unwrap
+ * @override
+ */
+goog.html.SafeUrl.prototype.toString = function() {
+  'use strict';
+  return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString();
+};
+
 
 
 /**
@@ -11116,22 +11111,20 @@ goog.html.SafeStyle.prototype.getTypedStringValue = function() {
 };
 
 
-if (goog.DEBUG) {
-  /**
-   * Returns a string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a SafeStyle, use
-   * `goog.html.SafeStyle.unwrap`.
-   *
-   * @return {string}
-   * @see goog.html.SafeStyle#unwrap
-   * @override
-   */
-  goog.html.SafeStyle.prototype.toString = function() {
-    'use strict';
-    return this.privateDoNotAccessOrElseSafeStyleWrappedValue_.toString();
-  };
-}
+/**
+ * Returns a string-representation of this value.
+ *
+ * To obtain the actual string value wrapped in a SafeStyle, use
+ * `goog.html.SafeStyle.unwrap`.
+ *
+ * @return {string}
+ * @see goog.html.SafeStyle#unwrap
+ * @override
+ */
+goog.html.SafeStyle.prototype.toString = function() {
+  'use strict';
+  return this.privateDoNotAccessOrElseSafeStyleWrappedValue_.toString();
+};
 
 
 /**
@@ -11807,21 +11800,19 @@ class SafeStyleSheet {
   }
 }
 
-if (goog.DEBUG) {
-  /**
-   * Returns a string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a SafeStyleSheet, use
-   * `SafeStyleSheet.unwrap`.
-   *
-   * @return {string}
-   * @see SafeStyleSheet#unwrap
-   * @override
-   */
-  SafeStyleSheet.prototype.toString = function() {
-    return this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_.toString();
-  };
-}
+/**
+ * Returns a string-representation of this value.
+ *
+ * To obtain the actual string value wrapped in a SafeStyleSheet, use
+ * `SafeStyleSheet.unwrap`.
+ *
+ * @return {string}
+ * @see SafeStyleSheet#unwrap
+ * @override
+ */
+SafeStyleSheet.prototype.toString = function() {
+  return this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_.toString();
+};
 
 
 /**

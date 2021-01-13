@@ -352,18 +352,18 @@ reference.
 This will compile to something like:
 
 ```js
-/** @suppress {missingRequire} */ (foo.Bar)
+/** @suppress {missingRequire} */ (some.javascript.Identifier)
 ```
 
 This pattern is provided for backwards compatibility with old versions of the
 Soy compiler that didn't require globals definitions to be provided. Users
 should consider replacing the use of this function with one of the following:
 
-*   a custom soy plugin to represent the needed functionality.
-*   a globals definition for the referenced global.
+*   a custom soy plugin to represent the needed functionality
+*   a globals definition for the referenced global
 *   representing the value as a proto enum
 
-NOTE: b/162340156 is in progress enforcing that this is used
+NOTE: b/162340156 is in progress enforcing that this is used.
 
 ### `css([baseClass,] selector)` {#css}
 
