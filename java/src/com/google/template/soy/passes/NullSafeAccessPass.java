@@ -33,7 +33,7 @@ public class NullSafeAccessPass implements CompilerFilePass {
     ImmutableList<DataAccessNode> accesses =
         SoyTreeUtils.getAllNodesOfType(file, DataAccessNode.class);
     for (DataAccessNode access : accesses.reverse()) {
-      if (access.isNullSafe()) {
+      if (access.isNullSafe() && access.getParent() != null) {
         AccessChainComponentNode accessChainRoot = findRoot(access);
         NullSafeAccessNode.createAndInsert(access, accessChainRoot);
       }
