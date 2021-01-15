@@ -3,8 +3,6 @@
 
 [TOC]
 
-NOTE: This is not generally available. Please do not use this feature yet.
-
 ## HTML-tag templates {#html-tag-templates}
 
 HTML-tag templates are templates that declare a `kind` of `html<[TAG_NAME]>`.
