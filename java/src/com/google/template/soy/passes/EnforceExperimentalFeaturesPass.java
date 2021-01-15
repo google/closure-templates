@@ -20,17 +20,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.internal.IdGenerator;
-import com.google.template.soy.base.internal.TemplateContentKind;
 import com.google.template.soy.error.ErrorReporter;
+import com.google.template.soy.soytree.ConstNode;
 import com.google.template.soy.error.SoyErrorKind;
 import com.google.template.soy.exprtree.OperatorNodes.AssertNonNullOpNode;
-import com.google.template.soy.soytree.ConstNode;
-import com.google.template.soy.soytree.HtmlCloseTagNode;
-import com.google.template.soy.soytree.HtmlTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateNode;
 
 /**
  * A pass that ensures that experimental features are only used when enabled.
@@ -45,15 +40,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
   private static final SoyErrorKind NON_NULL_ASSERTION_BANNED =
       SoyErrorKind.of(
           "Non-null assertion operator not supported, use the ''checkNotNull'' function instead.");
-
-  private static final SoyErrorKind ELEMENT_TEMPLATE_KIND_NOT_GA =
-      SoyErrorKind.of("Template ''kind=html<?>'' is not available for general use.");
-
-  private static final SoyErrorKind WILDCARD_CLOSE_TAG_NOT_GA =
-      SoyErrorKind.of("</> is not available for general use.");
-
-  private static final SoyErrorKind SOY_ELEMENT_COMPOSITION_NOT_GA =
-      SoyErrorKind.of("Soy element composition is not available for general use.");
 
   private static final SoyErrorKind CONSTANT_NOT_GA =
       SoyErrorKind.of("'{'const'}' is not available for general use.");
@@ -74,27 +60,6 @@ final class EnforceExperimentalFeaturesPass implements CompilerFilePass {
       for (AssertNonNullOpNode assertNonNullOpNode :
           SoyTreeUtils.getAllNodesOfType(file, AssertNonNullOpNode.class)) {
         reporter.report(assertNonNullOpNode.getSourceLocation(), NON_NULL_ASSERTION_BANNED);
-      }
-    }
-
-    if (!features.contains("enableTemplateElementKind")) {
-      SoyTreeUtils.allNodesOfType(file, HtmlCloseTagNode.class)
-          .filter(closeTagNode -> closeTagNode.getTagName().isWildCard())
-          .forEach(
-              closeTagNode ->
-                  reporter.report(closeTagNode.getSourceLocation(), WILDCARD_CLOSE_TAG_NOT_GA));
-
-      SoyTreeUtils.allNodesOfType(file, HtmlTagNode.class)
-          .filter(tagNode -> tagNode.getTagName().isTemplateCall())
-          .forEach(
-              tagNode ->
-                  reporter.report(tagNode.getSourceLocation(), SOY_ELEMENT_COMPOSITION_NOT_GA));
-
-      for (TemplateNode tmplNode : SoyTreeUtils.getAllNodesOfType(file, TemplateNode.class)) {
-        if (tmplNode.getTemplateContentKind() instanceof TemplateContentKind.ElementContentKind
-            && tmplNode instanceof TemplateBasicNode) {
-          reporter.report(tmplNode.getSourceLocation(), ELEMENT_TEMPLATE_KIND_NOT_GA);
-        }
       }
     }
 

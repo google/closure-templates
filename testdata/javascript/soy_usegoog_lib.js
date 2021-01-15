@@ -12530,22 +12530,20 @@ goog.html.SafeHtml.prototype.getTypedStringValue = function() {
 };
 
 
-if (goog.DEBUG) {
-  /**
-   * Returns a string-representation of this value.
-   *
-   * To obtain the actual string value wrapped in a SafeHtml, use
-   * `goog.html.SafeHtml.unwrap`.
-   *
-   * @return {string}
-   * @see goog.html.SafeHtml.unwrap
-   * @override
-   */
-  goog.html.SafeHtml.prototype.toString = function() {
-    'use strict';
-    return this.privateDoNotAccessOrElseSafeHtmlWrappedValue_.toString();
-  };
-}
+/**
+ * Returns a string-representation of this value.
+ *
+ * To obtain the actual string value wrapped in a SafeHtml, use
+ * `goog.html.SafeHtml.unwrap`.
+ *
+ * @return {string}
+ * @see goog.html.SafeHtml.unwrap
+ * @override
+ */
+goog.html.SafeHtml.prototype.toString = function() {
+  'use strict';
+  return this.privateDoNotAccessOrElseSafeHtmlWrappedValue_.toString();
+};
 
 
 /**
@@ -15512,7 +15510,7 @@ goog.dom.safe.openInWindow = function(
  * Parses the HTML as 'text/html'.
  * @param {!DOMParser} parser
  * @param {!goog.html.SafeHtml} html The HTML to be parsed.
- * @return {?Document}
+ * @return {!Document}
  */
 goog.dom.safe.parseFromStringHtml = function(parser, html) {
   'use strict';
@@ -15526,7 +15524,7 @@ goog.dom.safe.parseFromStringHtml = function(parser, html) {
  * @param {!goog.html.SafeHtml} content Note: We don't have a special type for
  *     XML or SVG supported by this function so we use SafeHtml.
  * @param {string} type
- * @return {?Document}
+ * @return {!Document}
  */
 goog.dom.safe.parseFromString = function(parser, content, type) {
   'use strict';
