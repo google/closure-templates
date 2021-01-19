@@ -655,7 +655,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                   value,
                   alias,
                   getJsTypeForParamTypeCheck(param.type()),
-                  /* declareStatic= */ false));
+                  /* declareStatic= */ false,
+                  templateTranslationContext.codeGenerator()));
     }
     // Injected params are marked as optional to account for unused templates, see:
     // We can assert the presence of the injected param if it being called.
