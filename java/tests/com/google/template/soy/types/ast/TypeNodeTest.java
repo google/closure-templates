@@ -23,7 +23,6 @@ import static com.google.template.soy.types.TemplateType.ParameterKind.PARAM;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Streams;
 import com.google.template.soy.base.SourceFilePath;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.Identifier;
@@ -238,10 +237,12 @@ public final class TypeNodeTest {
                         toImmutableMap(
                             TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
             ImmutableMap<String, TypeNode> rightArgumentMap =
-                Streams.stream(((TemplateTypeNode) right).parameters())
-                    .collect(
-                        toImmutableMap(
-                            TemplateTypeNode.Parameter::name, TemplateTypeNode.Parameter::type));
+                ((TemplateTypeNode) right)
+                    .parameters().stream()
+                        .collect(
+                            toImmutableMap(
+                                TemplateTypeNode.Parameter::name,
+                                TemplateTypeNode.Parameter::type));
             assertThat(leftArgumentMap.keySet()).isEqualTo(rightArgumentMap.keySet());
             for (String key : leftArgumentMap.keySet()) {
               assertEquals(leftArgumentMap.get(key), rightArgumentMap.get(key));
