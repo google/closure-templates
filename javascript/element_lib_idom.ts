@@ -204,11 +204,8 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
 
   /**
    * Makes idom patch calls, inside of a patch context.
-   * This returns true if the skip handler runs (after initial render) and
-   * returns true.
    */
-  abstract renderInternal(renderer: IncrementalDomRenderer, data: TData):
-      boolean;
+  abstract renderInternal(renderer: IncrementalDomRenderer, data: TData): void;
 }
 
 /**

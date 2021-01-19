@@ -32,7 +32,8 @@ interface ElementCtor<TElement extends SoyElement<{}|null, {}>> {
  * throw an Error if this is not true.
  */
 export function getSoy<TElement extends SoyElement<{}|null, {}>>(
-    node: Node, elementCtor: ElementCtor<TElement>, message: string = '') {
+    node: Node, elementCtor: ElementCtor<TElement>,
+    message: string = ''): TElement {
   assert(isDataInitialized(node), `${message}
 
 The DOM node was not rendered by idom.  If it's in a Wiz Component, make sure to
@@ -57,7 +58,8 @@ The DOM node has an {element} of type ${untypedEl!.constructor.name}.`);
 
 /** Retrieves the Soy element in a type-safe way, or null if it doesn't exist */
 export function getSoyOptional<TElement extends SoyElement<{}, {}>>(
-    node: Node, elementCtor: ElementCtor<TElement>, message?: string) {
+    node: Node, elementCtor: ElementCtor<TElement>, message?: string): TElement|
+    null {
   if (!node.__soy) return null;
   return getSoy(node, elementCtor, message);
 }

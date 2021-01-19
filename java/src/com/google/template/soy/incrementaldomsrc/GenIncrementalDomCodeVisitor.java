@@ -65,6 +65,7 @@ import com.google.common.base.Ascii;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.SanitizedContent;
@@ -144,8 +145,8 @@ import javax.annotation.Nullable;
 public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
 
   private static final String NAMESPACE_EXTENSION = ".incrementaldom";
-  private static final ImmutableList<HtmlContext> STRINGLIKE_KINDS =
-      ImmutableList.of(
+  private static final ImmutableSet<HtmlContext> STRINGLIKE_KINDS =
+      ImmutableSet.of(
           HtmlContext.URI,
           HtmlContext.TEXT,
           HtmlContext.HTML_ATTRIBUTE_NAME,
@@ -517,8 +518,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 VariableDeclaration.builder("opt_ijData")
                     .setRhs(Expression.THIS.dotAccess("ijData"))
                     .build(),
-                generateIncrementalDomRenderCalls(node, alias),
-                Statement.returnValue(Expression.LITERAL_FALSE)));
+                generateIncrementalDomRenderCalls(node, alias)));
 
     ClassExpression soyElementClass =
         ClassExpression.create(
@@ -530,18 +530,15 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .addAll(injectedParameterMethods.build())
                 .build());
     String elementAccessor = soyElementClassName + "Interface";
-    VariableDeclaration classExpression =
-        VariableDeclaration.builder(soyElementClassName)
-            .setJsDoc(
-                JsDoc.builder()
-                    .addAnnotation(
-                        "extends",
-                        "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
-                    .addParameterizedAnnotation("implements", soyElementAccessorName)
-                    .build())
-            .setRhs(soyElementClass)
-            .build();
-    return classExpression;
+    return VariableDeclaration.builder(soyElementClassName)
+        .setJsDoc(
+            JsDoc.builder()
+                .addAnnotation(
+                    "extends", "{soyIdom.$SoyElement<" + paramsType + ",!" + elementAccessor + ">}")
+                .addParameterizedAnnotation("implements", soyElementAccessorName)
+                .build())
+        .setRhs(soyElementClass)
+        .build();
   }
 
   /** Generates class expression for the given template node, provided it is a Soy element. */
@@ -569,12 +566,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
                 .addAll(parameterMethods.build())
                 .addAll(injectedParameterMethods.build())
                 .build());
-    VariableDeclaration classExpression =
-        VariableDeclaration.builder(className)
-            .setJsDoc(JsDoc.builder().addAnnotation("interface").build())
-            .setRhs(soyElementClass)
-            .build();
-    return classExpression;
+    return VariableDeclaration.builder(className)
+        .setJsDoc(JsDoc.builder().addAnnotation("interface").build())
+        .setRhs(soyElementClass)
+        .build();
   }
 
   private Statement generateExportsForSoyElement(String soyElementClassName) {
@@ -665,12 +660,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
             ? jsType.getSoyTypeAssertion(
                 value, param.name(), templateTranslationContext.codeGenerator())
             : Optional.empty();
-    MethodDeclaration getParamMethod =
-        MethodDeclaration.create(
-            "get" + accessorSuffix,
-            JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
-            Statement.returnValue(typeAssertion.orElse(value)));
-    return getParamMethod;
+    return MethodDeclaration.create(
+        "get" + accessorSuffix,
+        JsDoc.builder().addAnnotation("override").addAnnotation("public").build(),
+        Statement.returnValue(typeAssertion.orElse(value)));
   }
 
   /** Constructs template class name, e.g. converts template `ns.foo` => `$FooElement`. */
@@ -1183,7 +1176,7 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
         jsCodeBuilder.append(
             Statement.ifStatement(
                     INCREMENTAL_DOM_MAYBE_SKIP.call(INCREMENTAL_DOM, openTagExpr),
-                    Statement.returnValue(Expression.LITERAL_TRUE))
+                    Statement.returnNothing())
                 .build());
       } else {
         jsCodeBuilder.append(openTagExpr.asStatement());
