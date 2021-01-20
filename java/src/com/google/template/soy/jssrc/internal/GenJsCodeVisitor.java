@@ -539,8 +539,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    *
    * <pre>
    * var $import1 = goog.require('some.namespace');
-   * var $templateAlias1 = $import1.tmplOne;
-   * var $templateAlias2 = $import1.tmplTwo;
    * var $import2 = goog.require('other.namespace');
    * ...
    * </pre>
@@ -548,8 +546,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * @param soyFile The node we're visiting.
    */
   private void addCodeToRequireGoogModules(SoyFileNode soyFile) {
-    int counter = 1;
-
     // Get all the unique calls in the file.
     Set<String> calls = new HashSet<>();
     for (TemplateLiteralNode templateLiteralNode :
@@ -570,21 +566,12 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       }
 
       // Add a require of the module
-      String namespaceAlias = "$import" + counter++;
+      String namespaceAlias = templateAliases.getNamespaceAlias(namespace);
       String importNamespace = getGoogModuleNamespace(namespace);
       jsCodeBuilder.append(
           VariableDeclaration.builder(namespaceAlias)
               .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
               .build());
-      // Alias all the templates used from the module
-      for (String fullyQualifiedName : namespaceToTemplates.get(namespace)) {
-        String alias = templateAliases.get(fullyQualifiedName);
-        String shortName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.'));
-        jsCodeBuilder.append(
-            VariableDeclaration.builder(alias)
-                .setRhs(dottedIdNoRequire(namespaceAlias + shortName))
-                .build());
-      }
     }
   }
 

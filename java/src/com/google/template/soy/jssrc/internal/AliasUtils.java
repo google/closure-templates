@@ -16,14 +16,13 @@
 
 package com.google.template.soy.jssrc.internal;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.exprtree.TemplateLiteralNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
-import com.google.template.soy.soytree.TemplateBasicNode;
-import com.google.template.soy.soytree.TemplateElementNode;
+import com.google.template.soy.soytree.TemplateDelegateNode;
 import com.google.template.soy.soytree.TemplateNode;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,20 +34,33 @@ final class AliasUtils {
 
   private static final class Aliases implements TemplateAliases {
     final ImmutableMap<String, String> aliasMapping;
+    final ImmutableMap<String, String> namespaceAliases;
 
-    Aliases(Map<String, String> aliasMapping) {
+    Aliases(Map<String, String> aliasMapping, Map<String, String> namespaceAliases) {
       this.aliasMapping = ImmutableMap.copyOf(aliasMapping);
+      this.namespaceAliases = ImmutableMap.copyOf(namespaceAliases);
     }
 
     @Override
     public String get(String fullyQualifiedName) {
       String alias = aliasMapping.get(fullyQualifiedName);
-      Preconditions.checkState(alias != null);
-      return alias;
+      if (alias != null) {
+        return alias;
+      }
+      int lastDotPosition = fullyQualifiedName.lastIndexOf('.');
+      checkState(lastDotPosition != -1);
+      String namespace = fullyQualifiedName.substring(0, lastDotPosition);
+      String relativeName = fullyQualifiedName.substring(lastDotPosition + 1);
+      return getNamespaceAlias(namespace) + '.' + relativeName;
+    }
+
+    @Override
+    public String getNamespaceAlias(String namespace) {
+      return namespaceAliases.get(namespace);
     }
   }
 
-  private static final String TEMPLATE_ALIAS_PREFIX = "$templateAlias";
+  private static final String MODULE_ALIAS_PREFIX = "$soy$";
 
   static final TemplateAliases IDENTITY_ALIASES =
       new TemplateAliases() {
@@ -56,10 +68,15 @@ final class AliasUtils {
         public String get(String fullyQualifiedName) {
           return fullyQualifiedName;
         }
+
+        @Override
+        public String getNamespaceAlias(String namespace) {
+          throw new UnsupportedOperationException();
+        }
       };
 
   static boolean isExternalFunction(String alias) {
-    return alias.startsWith(TEMPLATE_ALIAS_PREFIX);
+    return alias.startsWith(MODULE_ALIAS_PREFIX);
   }
 
   /**
@@ -76,42 +93,46 @@ final class AliasUtils {
    */
   static TemplateAliases createTemplateAliases(SoyFileNode fileNode) {
     Map<String, String> aliasMap = new HashMap<>();
-    Set<String> localTemplates = new HashSet<>();
-    int counter = 0;
+    Set<String> allAliases = new HashSet<>();
 
-    ImmutableList.Builder<TemplateNode> templates = ImmutableList.builder();
-    templates
-        .addAll(SoyTreeUtils.getAllNodesOfType(fileNode, TemplateBasicNode.class))
-        .addAll(SoyTreeUtils.getAllNodesOfType(fileNode, TemplateElementNode.class));
     // Go through templates first and just alias them to their local name.
-    for (TemplateNode templateNode : templates.build()) {
+    for (TemplateNode templateNode : fileNode.getTemplates()) {
+      if (templateNode instanceof TemplateDelegateNode) {
+        continue;
+      }
       String partialName = templateNode.getLocalTemplateSymbol();
       String fullyQualifiedName = templateNode.getTemplateName();
-      localTemplates.add(fullyQualifiedName);
-
-      Preconditions.checkState(partialName != null, "Aliasing not supported for V1 templates");
 
       // Need to start the alias with something that cannot be a part of a reserved
       // JavaScript identifier like 'function' or 'catch'.
       String alias = "$" + partialName;
       aliasMap.put(fullyQualifiedName, alias);
+      allAliases.add(alias);
     }
 
     // Go through all call sites looking for foreign template calls and create an alias for them.
+    Map<String, String> foundNamespaces = new HashMap<>();
     for (TemplateLiteralNode templateLiteralNode :
         SoyTreeUtils.getAllNodesOfType(fileNode, TemplateLiteralNode.class)) {
       String fullyQualifiedName = templateLiteralNode.getResolvedName();
 
       // We could have either encountered the foreign fully qualified name before or it could belong
       // to a local template.
-      if (localTemplates.contains(fullyQualifiedName) || aliasMap.containsKey(fullyQualifiedName)) {
+      if (aliasMap.containsKey(fullyQualifiedName)) {
         continue;
       }
-
-      String alias = TEMPLATE_ALIAS_PREFIX + (++counter);
-      aliasMap.put(fullyQualifiedName, alias);
+      int lastDotPosition = fullyQualifiedName.lastIndexOf('.');
+      checkState(lastDotPosition != -1);
+      String namespace = fullyQualifiedName.substring(0, lastDotPosition);
+      String alias = foundNamespaces.get(namespace);
+      if (alias == null) {
+        alias = MODULE_ALIAS_PREFIX + namespace.replace('.', '$');
+        checkState(allAliases.add(alias)); // sanity check that all aliases are unique
+        foundNamespaces.put(namespace, alias);
+      }
+      aliasMap.put(fullyQualifiedName, alias + fullyQualifiedName.substring(lastDotPosition));
     }
 
-    return new Aliases(aliasMap);
+    return new Aliases(aliasMap, foundNamespaces);
   }
 }

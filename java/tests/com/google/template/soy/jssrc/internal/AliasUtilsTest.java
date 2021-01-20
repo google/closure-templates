@@ -68,7 +68,7 @@ public class AliasUtilsTest {
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
 
     String alias = templateAliases.get("other.name.space.bam");
-    assertThat(alias).isEqualTo("$templateAlias1");
+    assertThat(alias).isEqualTo("$soy$other$name$space.bam");
     assertThat(AliasUtils.isExternalFunction(alias)).isTrue();
   }
 
@@ -88,7 +88,7 @@ public class AliasUtilsTest {
     TemplateAliases templateAliases = AliasUtils.createTemplateAliases(n.getChild(0));
 
     String alias = templateAliases.get("other.name.space.bam");
-    assertThat(alias).isEqualTo("$templateAlias1");
+    assertThat(alias).isEqualTo("$soy$other$name$space.bam");
     assertThat(AliasUtils.isExternalFunction(alias)).isTrue();
   }
 }
