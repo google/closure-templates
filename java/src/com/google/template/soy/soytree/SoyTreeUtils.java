@@ -23,6 +23,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -62,6 +64,13 @@ import java.util.stream.StreamSupport;
  *
  */
 public final class SoyTreeUtils {
+
+  static final ImmutableSet<SoyNode.Kind> NODES_THAT_DONT_CONTRIBUTE_OUTPUT =
+      Sets.immutableEnumSet(
+          SoyNode.Kind.LET_CONTENT_NODE,
+          SoyNode.Kind.LET_VALUE_NODE,
+          SoyNode.Kind.DEBUGGER_NODE,
+          SoyNode.Kind.LOG_NODE);
 
   private static final Joiner COMMA_JOINER = Joiner.on(", ");
 
@@ -497,8 +506,14 @@ public final class SoyTreeUtils {
    * MsgPlaceholderNode). Otherwise, returns null.
    */
   public static HtmlTagNode getNodeAsHtmlTagNode(SoyNode node, boolean openTag) {
+    if (node == null) {
+      return null;
+    }
     SoyNode.Kind tagKind =
         openTag ? SoyNode.Kind.HTML_OPEN_TAG_NODE : SoyNode.Kind.HTML_CLOSE_TAG_NODE;
+    if (NODES_THAT_DONT_CONTRIBUTE_OUTPUT.contains(node.getKind())) {
+      return getNodeAsHtmlTagNode(nextSibling(node), openTag);
+    }
     if (node.getKind() == tagKind) {
       return (HtmlTagNode) node;
     }
