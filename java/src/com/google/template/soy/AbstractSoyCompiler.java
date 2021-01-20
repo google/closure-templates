@@ -150,18 +150,11 @@ public abstract class AbstractSoyCompiler {
   private List<File> loggingConfigs = new ArrayList<>();
 
   @Option(
-      name = "--cssSummaries",
-      aliases = "--cssSummaries",
-      usage = "List of css summary files used to check strict deps against css dependencies",
-      handler = SoyCmdLineParser.FileListOptionHandler.class)
-  private List<File> cssSummaries = new ArrayList<>();
-
-  @Option(
       name = "--cssMetadata",
       aliases = "--cssMetadata",
       usage =
           "List of css metadata files used to check strict deps against css dependencies and css()"
-              + " calls. This will eventually replace --cssSummaries",
+              + " calls.",
       handler = SoyCmdLineParser.FileListOptionHandler.class)
   private List<File> cssMetadata = new ArrayList<>();
 
