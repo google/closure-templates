@@ -266,154 +266,97 @@ final class ElementAttributePass implements CompilerFileSetPass {
               AttrParam attr = attrs.get(attrName);
               unseenParams.remove(attr);
               VarRefNode attrExpr = new VarRefNode("$" + attr.name(), unknown, attr);
-              unseenParams.remove(attr);
 
-              StandaloneNode replacementNode;
-              if (attrNode.isSoyAttr() && attrNode.hasValue()) {
-                if (attr.isRequired()) {
-                  errorReporter.report(
-                      attrNode.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, attr.getAttrName());
-                }
+              final StandaloneNode replacementNode;
+              if (attrNode.hasValue() && attr.isRequired()) {
+                errorReporter.report(
+                    attrNode.getSourceLocation(), ATTRIBUTE_NOT_REQUIRED, attr.getAttrName());
+              }
 
-                // Creates an HTML attribute containing the original name with the @ chopped off
-                HtmlAttributeNode newAttrNode =
-                    new HtmlAttributeNode(id.get(), unknown, UNKNOWN_POINT);
-                newAttrNode.addChild(((RawTextNode) attrNode.getChild(0)).substring(id.get(), 1));
+              if (!attrNode.hasValue() && iAmAnElementCallingAnElement) {
+                // Pass through and handle in SoyElementCompositionPass since we cannot encode
+                // null/absent in an HtmlAttributeNode.
+                return;
+              }
 
-                // Creates a conditional around the parameter name
-                // This should look like class="{if not isNull($foo)}{$foo}{/if}"
-                HtmlAttributeValueNode valueNode =
-                    new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
-                newAttrNode.addChild(valueNode);
-                if (attrNode.getConcatenationDelimiter() == null) {
-                  IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNonnull);
-                  valueNode.addChild(ifNode);
-                  // In the default case, we append an {else}...{/if} for the default case.
-                  IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
-                  ifNode.addChild(ifElseNode);
-                  copyChildren(attrNode, ifElseNode);
-                  replacementNode = newAttrNode;
-                } else {
-                  // In order to properly concatentate defaults and incoming attributes,
-                  // we need to first put all of the default into a {let} and then pass them into
-                  // a soy function called concatAttributeValues. This will possibly omit the
-                  // delimiter if one of the values is nullish.
-                  boolean isCss =
-                      SanitizedType.StyleType.getInstance()
-                          .isAssignableFromStrict(SoyTypes.removeNull(attr.type()));
-                  LetContentNode letContentNode =
-                      LetContentNode.forVariable(
-                          id.get(),
-                          unknown,
-                          "$__internal_soy_letContent_" + id.get(),
-                          unknown,
-                          isCss ? SanitizedContentKind.CSS : SanitizedContentKind.TEXT);
-                  openTagNode
-                      .getParent()
-                      .addChild(openTagNode.getParent().getChildIndex(openTagNode), letContentNode);
-                  copyChildren(attrNode, letContentNode);
-                  VarRefNode letRef =
-                      new VarRefNode(
-                          letContentNode.getVarRefName(),
-                          SourceLocation.UNKNOWN,
-                          letContentNode.getVar());
-                  SoySourceFunction soyFn = isCss ? concatCssFunction : concatAttributesFunction;
-                  FunctionNode fn =
-                      FunctionNode.newPositional(
-                          Identifier.create("$$concatAttributeValues", unknown), soyFn, unknown);
-                  fn.setType(
-                      isCss ? SanitizedType.StyleType.getInstance() : StringType.getInstance());
-                  fn.addChild(attrExpr);
-                  fn.addChild(letRef);
-                  if (!isCss) {
-                    fn.addChild(
-                        new StringNode(
-                            attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, unknown));
-                  }
-                  if (isCss) {
-                    fn.setAllowedParamTypes(
-                        ImmutableList.of(
-                            SoyTypes.makeNullable(SanitizedType.StyleType.getInstance()),
-                            SoyTypes.makeNullable(SanitizedType.StyleType.getInstance())));
-                  } else {
-                    fn.setAllowedParamTypes(
-                        ImmutableList.of(
-                            SoyTypes.makeNullable(StringType.getInstance()),
-                            SoyTypes.makeNullable(StringType.getInstance()),
-                            StringType.getInstance()));
-                  }
-                  /**
-                   * In the event that the attribute value is an empty string, we should not emit
-                   * the attribute. This block produces the following code: {let $value:
-                   * $$concatAttributeValues(...) /} {if $value}class="{$value}"{/if}
-                   */
-                  LetValueNode letValueNode =
-                      new LetValueNode(
-                          id.get(), unknown, "$__internal_soy_letValue_" + id.get(), unknown, fn);
-                  letValueNode.getVar().setType(fn.getType());
-                  letValueNode.getExpr().setType(fn.getType());
-                  letContentNode
-                      .getParent()
-                      .addChild(
-                          letContentNode.getParent().getChildIndex(letContentNode) + 1,
-                          letValueNode);
-                  VarRefNode valueRef =
-                      new VarRefNode(
-                          letValueNode.getVarRefName(),
-                          SourceLocation.UNKNOWN,
-                          letValueNode.getVar());
-                  IfNode wrappingIf = new IfNode(id.get(), unknown);
-                  IfCondNode wrappingIfCond =
-                      new IfCondNode(
-                          id.get(), unknown, unknown, "if", valueRef.copy(new CopyState()));
-                  wrappingIfCond.getExpr().setType(valueRef.getType());
-                  wrappingIf.addChild(wrappingIfCond);
-                  PrintNode printNode =
-                      new PrintNode(
-                          id.get(), unknown, true, valueRef, ImmutableList.of(), errorReporter);
-                  printNode.getExpr().setType(valueRef.getType());
-                  valueNode.addChild(printNode);
-                  wrappingIfCond.addChild(newAttrNode);
-                  replacementNode = wrappingIf;
-                }
-              } else if (!attrNode.hasValue()) {
-                if (iAmAnElementCallingAnElement) {
-                  // Pass through and handle in SoyElementCompositionPass since we cannot encode
-                  // null/absent in an HtmlAttributeNode.
-                  return;
-                }
+              // Creates a new HTML attribute containing the original name with the @ chopped off
+              HtmlAttributeNode newAttrNode =
+                  new HtmlAttributeNode(id.get(), unknown, UNKNOWN_POINT);
+              newAttrNode.addChild(((RawTextNode) attrNode.getChild(0)).substring(id.get(), 1));
 
-                // <... @attr ...> rewrite as: {if isNonNull($attr)}attr="{$attr}"{/if}
-                HtmlAttributeNode newAttrNode =
-                    new HtmlAttributeNode(id.get(), unknown, UNKNOWN_POINT);
-                newAttrNode.addChild(new RawTextNode(id.get(), attr.getAttrName(), unknown));
-                HtmlAttributeValueNode valueNode =
-                    new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
+              HtmlAttributeValueNode valueNode =
+                  new HtmlAttributeValueNode(id.get(), unknown, Quotes.DOUBLE);
+              newAttrNode.addChild(valueNode);
+
+              if (attrNode.getConcatenationDelimiter() == null && attr.isRequired()) {
+                // No concatenation, required param. incoming param is always non-null so use it.
+                // Generates: id="{$id}"
                 PrintNode printNode =
                     new PrintNode(
-                        id.get(), unknown, true, attrExpr, ImmutableList.of(), exploding());
+                        id.get(), unknown, true, attrExpr, ImmutableList.of(), errorReporter);
                 printNode.getExpr().setType(attrExpr.getType());
                 valueNode.addChild(printNode);
-                newAttrNode.addChild(valueNode);
-
                 replacementNode = newAttrNode;
-                if (!attr.isRequired()) {
-                  IfNode ifNode = new IfNode(id.get(), unknown);
-                  IfCondNode ifCondNode =
-                      new IfCondNode(
-                          id.get(),
-                          unknown,
-                          unknown,
-                          "if",
-                          SoyTreeUtils.buildNotNull(attrExpr, isNonnull));
-                  ifCondNode.getExpr().setType(BoolType.getInstance());
-                  ifCondNode.addChild(newAttrNode);
-                  ifNode.addChild(ifCondNode);
-                  replacementNode = ifNode;
-                }
+              } else if (attrNode.getConcatenationDelimiter() == null && attrNode.hasValue()) {
+                // No concatenation, with a default value. Use if/else to use either the default or
+                // override. Generates: id="{isNonnull($id) ? $id : $idDefault}"
+                IfNode ifNode = SoyTreeUtils.buildPrintIfNotNull(attrExpr, id, isNonnull);
+                valueNode.addChild(ifNode);
+                IfElseNode ifElseNode = new IfElseNode(id.get(), unknown, unknown);
+                ifNode.addChild(ifElseNode);
+                copyChildren(attrNode, ifElseNode);
+                replacementNode = newAttrNode;
               } else {
-                throw new IllegalArgumentException(
-                    "Unexpected attribute " + attrNode.toSourceString());
+                // In these cases, we need to conditionally suppress the entire attribute. Either
+                // a concatenating attribute, or an attribute without a default.
+                final VarRefNode outputValueExpr;
+                if (attrNode.getConcatenationDelimiter() != null && attrNode.hasValue()) {
+                  // Concatenating attribute, with a default. Concatenate the default and incoming
+                  // values together.
+                  outputValueExpr =
+                      concatAttributeValues(
+                          openTagNode,
+                          attrNode,
+                          attrExpr,
+                          SanitizedType.StyleType.getInstance()
+                              .isAssignableFromStrict(SoyTypes.removeNull(attr.type())),
+                          id,
+                          unknown);
+                } else {
+                  // No default, use incoming parameter for the attribute value. Generates
+                  // id="{$id}"
+                  outputValueExpr = attrExpr;
+                }
+                PrintNode printNode =
+                    new PrintNode(
+                        id.get(),
+                        unknown,
+                        true,
+                        outputValueExpr,
+                        ImmutableList.of(),
+                        errorReporter);
+                printNode.getExpr().setType(outputValueExpr.getType());
+                valueNode.addChild(printNode);
+                // In the event that the attribute value is an empty string/null, we should not emit
+                // the attribute at all. If the attribute is concatenating, check falsiness so that
+                // empty string will suppress the attribute; e.g. if there are multiple conditional
+                // classes that all are suppressed, suppress the entire attribute. Otherwise, check
+                // for null so that empty string could be passed in. Generates:
+                // {if $concatAttributeValues}class="{$concatAttributeValues}"{/if}
+                IfNode ifNode = new IfNode(id.get(), unknown);
+                IfCondNode ifCondNode =
+                    new IfCondNode(
+                        id.get(),
+                        unknown,
+                        unknown,
+                        "if",
+                        attrNode.getConcatenationDelimiter() == null
+                            ? SoyTreeUtils.buildNotNull(outputValueExpr, isNonnull)
+                            : outputValueExpr.copy(new CopyState()));
+                ifCondNode.getExpr().setType(BoolType.getInstance());
+                ifCondNode.addChild(newAttrNode);
+                ifNode.addChild(ifCondNode);
+                replacementNode = ifNode;
               }
 
               attrNode.getParent().replaceChild(attrNode, replacementNode);
@@ -476,6 +419,81 @@ final class ElementAttributePass implements CompilerFileSetPass {
     }
 
     warnUnusedAttributes(unseenParams);
+  }
+
+  /**
+   * Adds {let} commands before the open tag to perform attribute concatenation and returns a
+   * variable reference to the merged value. In order to properly concatentate defaults and incoming
+   * attributes, we need to first put all of the default into a {let} and then pass them into a soy
+   * function called concatAttributeValues. This will possibly omit the delimiter if one of the
+   * values is nullish. Generates
+   *
+   * <pre>
+   *   {let $__letContent_}class1 class2{/let}
+   *   {let $__letValue_: $$concatAttributeValues($class, $letContent) /}
+   * </pre>
+   *
+   * @param openTagNode The tag containing the attribute. {let}s will be inserted right before it
+   * @param attrNode The Attribute to perform concatenation
+   * @param attrExpr VarRefNode of incoming attribute
+   * @param isCss Whether the attribute is a CSS attribute
+   * @param id Id generator
+   * @param location SourceLocation to add to all synthetic nodes
+   * @return VarRefNode to the concatenated attribute value
+   */
+  private static VarRefNode concatAttributeValues(
+      HtmlOpenTagNode openTagNode,
+      HtmlAttributeNode attrNode,
+      VarRefNode attrExpr,
+      boolean isCss,
+      Supplier<Integer> id,
+      SourceLocation location) {
+    LetContentNode letContentNode =
+        LetContentNode.forVariable(
+            id.get(),
+            location,
+            "$__internal_soy_letContent_" + id.get(),
+            location,
+            isCss ? SanitizedContentKind.CSS : SanitizedContentKind.TEXT);
+    openTagNode
+        .getParent()
+        .addChild(openTagNode.getParent().getChildIndex(openTagNode), letContentNode);
+    copyChildren(attrNode, letContentNode);
+    VarRefNode letRef =
+        new VarRefNode(
+            letContentNode.getVarRefName(), SourceLocation.UNKNOWN, letContentNode.getVar());
+    SoySourceFunction soyFn = isCss ? concatCssFunction : concatAttributesFunction;
+    FunctionNode fn =
+        FunctionNode.newPositional(
+            Identifier.create("$$concatAttributeValues", location), soyFn, location);
+    fn.setType(isCss ? SanitizedType.StyleType.getInstance() : StringType.getInstance());
+    fn.addChild(attrExpr);
+    fn.addChild(letRef);
+    if (!isCss) {
+      fn.addChild(
+          new StringNode(attrNode.getConcatenationDelimiter(), QuoteStyle.SINGLE, location));
+    }
+    if (isCss) {
+      fn.setAllowedParamTypes(
+          ImmutableList.of(
+              SoyTypes.makeNullable(SanitizedType.StyleType.getInstance()),
+              SoyTypes.makeNullable(SanitizedType.StyleType.getInstance())));
+    } else {
+      fn.setAllowedParamTypes(
+          ImmutableList.of(
+              SoyTypes.makeNullable(StringType.getInstance()),
+              SoyTypes.makeNullable(StringType.getInstance()),
+              StringType.getInstance()));
+    }
+    LetValueNode letValueNode =
+        new LetValueNode(id.get(), location, "$__internal_soy_letValue_" + id.get(), location, fn);
+    letValueNode.getVar().setType(fn.getType());
+    letValueNode.getExpr().setType(fn.getType());
+    letContentNode
+        .getParent()
+        .addChild(letContentNode.getParent().getChildIndex(letContentNode) + 1, letValueNode);
+    return new VarRefNode(
+        letValueNode.getVarRefName(), SourceLocation.UNKNOWN, letValueNode.getVar());
   }
 
   private void updateReservedAttributesForDelegateCalls(
