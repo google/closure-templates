@@ -16,6 +16,7 @@
 package com.google.template.soy.jssrc.dsl;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdNoRequire;
 import static com.google.template.soy.jssrc.dsl.Expressions.dottedIdWithRequires;
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
@@ -24,6 +25,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.stringLiteral;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.Immutable;
+import javax.annotation.Nullable;
 
 /**
  * Represents a symbol that is imported via a {@code goog.require} statement or via a TypeScript
@@ -33,22 +35,87 @@ import com.google.errorprone.annotations.Immutable;
 @Immutable
 public abstract class GoogRequire implements Comparable<GoogRequire> {
 
-  private static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
-  private static final Expression GOOG_REQUIRE_TYPE = dottedIdNoRequire("goog.requireType");
-  private static final Expression GOOG_MAYBE_REQUIRE =
-      dottedIdNoRequire("goog.maybeRequireFrameworkInternalOnlyDoNotCallOrElse");
+  enum Type {
+    GOOG_REQUIRE {},
+    GOOG_REQUIRE_WITH_ALIAS,
+    GOOG_REQUIRE_TYPE,
+    GOOG_REQUIRE_TYPE_WITH_ALIAS,
+    GOOG_MAYBE_REQUIRE,
+    IMPORT;
+
+    CodeChunk getChunk(GoogRequire require) {
+      String symbol = require.symbol();
+      String alias = require.alias();
+      String path = require.path();
+      switch (this) {
+        case GOOG_REQUIRE:
+          checkArgument(symbol.equals(alias));
+          checkArgument(path == null);
+          return dottedIdNoRequire("goog.require").call(stringLiteral(symbol));
+        case GOOG_REQUIRE_WITH_ALIAS:
+          checkArgument(path == null);
+          return VariableDeclaration.builder(alias)
+              .setRhs(dottedIdNoRequire("goog.require").call(stringLiteral(symbol)))
+              .build();
+        case GOOG_REQUIRE_TYPE:
+          checkArgument(symbol.equals(alias));
+          checkArgument(path == null);
+          return dottedIdNoRequire("goog.requireType").call(stringLiteral(symbol));
+        case GOOG_REQUIRE_TYPE_WITH_ALIAS:
+          checkArgument(path == null);
+          return VariableDeclaration.builder(alias)
+              .setRhs(dottedIdNoRequire("goog.requireType").call(stringLiteral(symbol)))
+              .build();
+        case GOOG_MAYBE_REQUIRE:
+          checkArgument(symbol.equals(alias));
+          checkArgument(path == null);
+          return dottedIdNoRequire("goog.maybeRequireFrameworkInternalOnlyDoNotCallOrElse")
+              .call(stringLiteral(symbol));
+        case IMPORT:
+          return Import.symbolImport(symbol, alias, path);
+      }
+      throw new AssertionError("Unreachable");
+    }
+
+    Type toRequireType() {
+      switch (this) {
+        case GOOG_REQUIRE:
+        case GOOG_REQUIRE_TYPE:
+          return GOOG_REQUIRE_TYPE;
+        case GOOG_REQUIRE_WITH_ALIAS:
+        case GOOG_REQUIRE_TYPE_WITH_ALIAS:
+          return GOOG_REQUIRE_TYPE_WITH_ALIAS;
+        case GOOG_MAYBE_REQUIRE:
+          throw new IllegalStateException("GOOG_MAYBE_REQUIRE is not a normal require");
+        case IMPORT:
+          throw new IllegalStateException("IMPORT is not a normal require");
+      }
+      throw new AssertionError("Unreachable");
+    }
+
+    Type toRequireValue() {
+      switch (this) {
+        case GOOG_REQUIRE:
+        case GOOG_REQUIRE_TYPE:
+          return GOOG_REQUIRE;
+        case GOOG_REQUIRE_WITH_ALIAS:
+        case GOOG_REQUIRE_TYPE_WITH_ALIAS:
+          return GOOG_REQUIRE_WITH_ALIAS;
+        case GOOG_MAYBE_REQUIRE:
+          throw new IllegalStateException("GOOG_MAYBE_REQUIRE is not a normal require");
+        case IMPORT:
+          throw new IllegalStateException("IMPORT is not a normal require");
+      }
+      throw new AssertionError("Unreachable");
+    }
+  }
 
   /**
    * Creates a new {@code GoogRequire} that requires the given symbol: {@code
    * goog.require('symbol'); }
    */
   public static GoogRequire create(String symbol) {
-    return new AutoValue_GoogRequire(
-        symbol,
-        symbol,
-        GOOG_REQUIRE.call(stringLiteral(symbol)),
-        /* isTypeRequire= */ false,
-        /* isMaybeRequire= */ false);
+    return new AutoValue_GoogRequire(symbol, symbol, null, Type.GOOG_REQUIRE);
   }
 
   /**
@@ -56,12 +123,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    * goog.requireType('symbol'); }
    */
   public static GoogRequire createTypeRequire(String symbol) {
-    return new AutoValue_GoogRequire(
-        symbol,
-        symbol,
-        GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)),
-        /* isTypeRequire= */ true,
-        /* isMaybeRequire= */ false);
+    return new AutoValue_GoogRequire(symbol, symbol, null, Type.GOOG_REQUIRE_TYPE);
   }
 
   /**
@@ -70,12 +132,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire createWithAlias(String symbol, String alias) {
     CodeChunks.checkId(alias);
-    return new AutoValue_GoogRequire(
-        symbol,
-        alias,
-        VariableDeclaration.builder(alias).setRhs(GOOG_REQUIRE.call(stringLiteral(symbol))).build(),
-        /* isTypeRequire= */ false,
-        /* isMaybeRequire= */ false);
+    return new AutoValue_GoogRequire(symbol, alias, null, Type.GOOG_REQUIRE_WITH_ALIAS);
   }
 
   /**
@@ -84,23 +141,11 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
    */
   public static GoogRequire createTypeRequireWithAlias(String symbol, String alias) {
     CodeChunks.checkId(alias);
-    return new AutoValue_GoogRequire(
-        symbol,
-        alias,
-        VariableDeclaration.builder(alias)
-            .setRhs(GOOG_REQUIRE_TYPE.call(stringLiteral(symbol)))
-            .build(),
-        /* isTypeRequire= */ true,
-        /* isMaybeRequire= */ false);
+    return new AutoValue_GoogRequire(symbol, alias, null, Type.GOOG_REQUIRE_TYPE_WITH_ALIAS);
   }
 
   public static GoogRequire createMaybeRequire(String symbol) {
-    return new AutoValue_GoogRequire(
-        symbol,
-        symbol,
-        GOOG_MAYBE_REQUIRE.call(stringLiteral(symbol)),
-        /* isTypeRequire= */ false,
-        /* isMaybeRequire= */ true);
+    return new AutoValue_GoogRequire(symbol, symbol, null, Type.GOOG_MAYBE_REQUIRE);
   }
 
   public static GoogRequire createImport(String symbol, String path) {
@@ -108,12 +153,7 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
   }
 
   public static GoogRequire createImport(String symbol, String alias, String path) {
-    return new AutoValue_GoogRequire(
-        symbol,
-        alias,
-        Import.symbolImport(symbol, alias, path),
-        /* isTypeRequire= */ false,
-        /* isMaybeRequire= */ false);
+    return new AutoValue_GoogRequire(symbol, alias, path, Type.IMPORT);
   }
 
   /** The symbol to require. */
@@ -121,35 +161,46 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
 
   public abstract String alias();
 
+  @Nullable
+  abstract String path();
+
   /** A code chunk that will generate the {@code goog.require()}. */
-  abstract CodeChunk chunk();
+  abstract Type type();
 
-  abstract boolean isTypeRequire();
-
-  public GoogRequire toRequireType() {
-    if (isTypeRequire()) {
-      return this;
-    }
-    return new AutoValue_GoogRequire(
-        symbol(), alias(), chunk(), /* isTypeRequire= */ true, /* isMaybeRequire= */ false);
+  public boolean isTypeRequire() {
+    return type() == Type.GOOG_REQUIRE_TYPE || type() == Type.GOOG_REQUIRE_TYPE_WITH_ALIAS;
   }
 
-  abstract boolean isMaybeRequire();
+  public GoogRequire toRequireType() {
+    Type newType = type().toRequireType();
+    if (newType == type()) {
+      return this;
+    }
+    return new AutoValue_GoogRequire(symbol(), alias(), path(), newType);
+  }
+
+  public GoogRequire toRequireValue() {
+    Type newType = type().toRequireValue();
+    if (newType == type()) {
+      return this;
+    }
+    GoogRequire require = new AutoValue_GoogRequire(symbol(), alias(), path(), newType);
+    require.constructionLocation = null;
+    return require;
+  }
+
+  boolean isMaybeRequire() {
+    return type() == Type.GOOG_MAYBE_REQUIRE;
+  }
 
   /** Returns a code chunk that can act as a reference to the required symbol. */
   public Expression reference() {
-    if (chunk() instanceof VariableDeclaration) {
-      return id(((VariableDeclaration) chunk()).varName(), ImmutableSet.of(this));
-    } else {
-      return dottedIdWithRequires(symbol(), ImmutableSet.of(this));
-    }
+    checkState(type() == Type.GOOG_REQUIRE_WITH_ALIAS);
+    return id(alias(), ImmutableSet.of(this));
   }
 
   /** Returns a reference to the module object using {@code goog.module.get} */
   public Expression googModuleGet() {
-    if (chunk() instanceof VariableDeclaration) {
-      throw new IllegalStateException("requires with aliases shouldn't use goog.module.get");
-    }
     return dottedIdWithRequires("goog.module.get", ImmutableSet.of(this))
         .call(stringLiteral(symbol()));
   }
@@ -159,11 +210,29 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     return reference().dotAccess(ident);
   }
 
+  // DO NOT SUBMIT
+  @SuppressWarnings("Immutable")
+  private Throwable constructionLocation = new Exception();
+
   public void writeTo(StringBuilder sb) {
-    sb.append(chunk().getCode(FormatOptions.JSSRC)).append('\n');
+    if (symbol().equals("goog.soy.data.SanitizedHtml")
+        && !isTypeRequire()
+        && constructionLocation != null) {
+      throw new IllegalStateException(
+          "goog.soy.data.SanitizedHtml is not a type require", constructionLocation);
+    }
+    sb.append(type().getChunk(this).getCode(FormatOptions.JSSRC)).append('\n');
   }
 
-  /** For 2 goog requires with the same symbol. Return the perfered one. */
+  private boolean isAliasedRequire() {
+    return type() == Type.GOOG_REQUIRE_WITH_ALIAS || type() == Type.GOOG_REQUIRE_TYPE_WITH_ALIAS;
+  }
+
+  private boolean isBareRequire() {
+    return type() == Type.GOOG_REQUIRE || type() == Type.GOOG_REQUIRE_TYPE;
+  }
+
+  /** For 2 goog requires with the same symbol. Return the preferred one. */
   public GoogRequire merge(GoogRequire other) {
     checkArgument(other.symbol().equals(symbol()));
     if (other.equals(this)) {
@@ -171,32 +240,42 @@ public abstract class GoogRequire implements Comparable<GoogRequire> {
     }
     // if symbols are equal and the references are, then they must differ only by requireType or not
     // prefer the non requireType symbol
-    if ((other.chunk() instanceof VariableDeclaration
-            && chunk() instanceof VariableDeclaration
-            && ((VariableDeclaration) chunk())
-                .varName()
-                .equals(((VariableDeclaration) other.chunk()).varName()))
-        || (!(chunk() instanceof VariableReference)
-            && !(other.chunk() instanceof VariableDeclaration))) {
+    if ((other.isAliasedRequire() && this.isAliasedRequire() && other.alias().equals(this.alias()))
+        || (other.isBareRequire() && this.isBareRequire())) {
       if (other.isTypeRequire()) {
         return this;
       }
       return other;
     }
+
     // If one is a type require without a variable declaration, then use the other one.
     // Types can be referenced in a fully qualified way even in a goog.module file with an alias
     // This is unstylish but tricky to solve given the way we currently model requires and only half
     // support goog.module.
-    if (other.isTypeRequire() && !(other.chunk() instanceof VariableDeclaration)) {
+    if (other.isTypeRequire() && other.isBareRequire()) {
       return this;
     }
-    if (this.isTypeRequire() && !(this.chunk() instanceof VariableDeclaration)) {
+    if (this.isTypeRequire() && this.isBareRequire()) {
       return other;
     }
+    // If only one of the two is aliased, then use the one with the alias
+    if (other.isAliasedRequire() && this.isBareRequire()) {
+      if (other.isTypeRequire() && !this.isTypeRequire()) {
+        return other.toRequireValue();
+      }
+      return other;
+    }
+    if (this.isAliasedRequire() && other.isBareRequire()) {
+      if (!other.isTypeRequire() && this.isTypeRequire()) {
+        return this.toRequireValue();
+      }
+      return this;
+    }
+
     throw new IllegalArgumentException(
-        "Found the same namespace added as a require in multiple incompatible ways: "
+        "Found the same namespace added as a require in multiple incompatible ways:\n"
             + other
-            + " vs. "
+            + "\nvs.\n"
             + this);
   }
 

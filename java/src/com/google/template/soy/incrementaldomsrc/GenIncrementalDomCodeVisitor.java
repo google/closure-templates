@@ -31,7 +31,7 @@ import static com.google.template.soy.jssrc.dsl.Expressions.LITERAL_EMPTY_STRING
 import static com.google.template.soy.jssrc.dsl.Expressions.id;
 import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.ELEMENT_LIB_IDOM;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
+import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.soytree.SoyTreeUtils.isConstantExpr;
 
@@ -394,8 +394,8 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   /** Returns the simple type of IjData, adding requires as necessary. */
   @Override
   protected String ijDataTypeExpression(JsDoc.Builder jsDocBuilder) {
-    jsDocBuilder.addGoogRequire(GOOG_SOY_ALIAS);
-    return GOOG_SOY_ALIAS.alias() + ".IjData";
+    jsDocBuilder.addGoogRequire(GOOG_SOY);
+    return GOOG_SOY.alias() + ".IjData";
   }
 
   @Override

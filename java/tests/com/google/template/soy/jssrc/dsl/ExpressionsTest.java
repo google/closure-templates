@@ -77,4 +77,27 @@ public final class ExpressionsTest {
         Expressions.concatForceString(ImmutableList.of(number(2), number(2).plus(number(3))));
     assertThat(result.getCode(FormatOptions.JSSRC)).isEqualTo("'' + 2 + (2 + 3);");
   }
+
+  @Test
+  public void testNewDotted() {
+    assertThat(
+            Expressions.construct(Expressions.dottedIdNoRequire("foo.Bar"), stringLiteral("qux"))
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("new foo.Bar('qux');");
+  }
+
+  @Test
+  public void testNewGoogModuleGetSymbol_bug() {
+    assertThat(
+            Expressions.construct(
+                    GoogRequire.create("foo.bar").googModuleGet(), stringLiteral("qux"))
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("new goog.module.get('foo.bar')('qux');");
+    assertThat(
+            Expressions.construct(
+                    GoogRequire.create("foo.bar").googModuleGet().dotAccess("Baz"),
+                    stringLiteral("qux"))
+                .getCode(FormatOptions.JSSRC))
+        .isEqualTo("new goog.module.get('foo.bar').Baz('qux');");
+  }
 }

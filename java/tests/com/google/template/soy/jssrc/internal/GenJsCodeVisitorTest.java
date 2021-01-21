@@ -96,8 +96,8 @@ public final class GenJsCodeVisitorTest {
             + "\n"
             + "/**\n"
             + " * @fileoverview Templates in namespace boo.foo.\n"
+            + " * @suppress {missingRequire} TODO(b/152440355)\n"
             + " * @suppress {suspiciousCode}\n"
-            + " * @suppress {uselessCode}\n"
             + " * @suppress {strictMissingProperties} TODO(b/214874268): Remove"
             + " strictMissingProperties suppression after b/214427036 is fixed\n"
             + " * @requirecss {aaa.bbb.ccc}\n"
@@ -342,7 +342,6 @@ public final class GenJsCodeVisitorTest {
   // propagate the necessary requires for the ordainer functions.
   @Test
   public void testStrictLetAddsAppropriateRequires() {
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     String soyNodeCode = "{let $text kind=\"text\"}foo{/let}{let $html kind=\"html\"}foo{/let}\n";
     ParseResult parseResult = SoyFileSetParserBuilder.forTemplateContents(soyNodeCode).parse();
     String jsFilesContents =
@@ -378,7 +377,7 @@ public final class GenJsCodeVisitorTest {
             "let $tmp;",
             "if (opt_data.boo) {",
             "  $tmp = 'Blah';",
-            "} else if (!soy.$$strContains(gooData8, 'goo')) {",
+            "} else if (!goog.module.get('soy').$$strContains(gooData8, 'goo')) {",
             "  $tmp = 'Bleh';",
             "} else {",
             "  $tmp = 'Bluh';",
@@ -401,14 +400,13 @@ public final class GenJsCodeVisitorTest {
             "  Bluh",
             "{/if}");
     expectedJsCode =
-        ""
-            + "if (opt_data.boo.foo > 0) {\n"
+        "if (opt_data.boo.foo > 0) {\n"
             + "  const i5ListLen = Math.max(0, Math.ceil((4 - 0) / 1));\n"
             + "  for (let i5Index = 0; i5Index < i5ListLen; i5Index++) {\n"
             + "    const i5Data = 0 + i5Index * 1;\n"
             + "    output += i5Data + 1 + '<br>';\n"
             + "  }\n"
-            + "} else if (!soy.$$strContains(gooData8, 'goo')) {\n"
+            + "} else if (!goog.module.get('soy').$$strContains(gooData8, 'goo')) {\n"
             + "  output += 'Bleh';\n"
             + "} else {\n"
             + "  output += 'Bluh';\n"
@@ -477,7 +475,6 @@ public final class GenJsCodeVisitorTest {
 
     ParseResult parseResult = SoyFileSetParserBuilder.forFileContents(testFileContent).parse();
 
-    jsSrcOptions.setShouldProvideRequireSoyNamespaces(true);
     List<String> jsFilesContents =
         genJsCodeVisitor.gen(
             parseResult.fileSet(), parseResult.registry(), ErrorReporter.exploding());
@@ -540,7 +537,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'FORMAT': opt_data.format, "
             + "'GENDER_1': opt_data.user.gender, "
             + "'GENDER_2': opt_data.friend.gender, "
@@ -599,7 +596,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'FORMAT': opt_data.format, "
             + "'USER': opt_data.gender.user, "
             + "'FRIEND': opt_data.gender.friend, "
@@ -658,7 +655,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'FORMAT': opt_data.format, "
             + "'STATUS_1': opt_data.gender[/** @type {?} */ (0)], "
             + "'STATUS_2': opt_data.gender[/** @type {?} */ (1)], "
@@ -714,7 +711,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'STATUS': opt_data.values.gender[/** @type {?} */ (0)], "
             + "'NUM_1': opt_data.values.people[/** @type {?} */ (0)], "
             + "'NUM_2': opt_data.values.people[/** @type {?} */ (1)], "
@@ -771,7 +768,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'GENDER_0': opt_data.values.gender[/** @type {?} */ (0)], "
             + "'PERSON_0_FEMALE': opt_data.values.people[/** @type {?} */ (0)], "
             + "'PERSON_1_MALE': opt_data.values.people[/** @type {?} */ (1)], "
@@ -821,7 +818,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'PERSON_1': opt_data.gender.person, "
             + "'PERSON_2': opt_data.number.person, "
             + "'PERSON_3': opt_data.person, "
@@ -870,7 +867,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'PERSON_1': opt_data.gender.person, "
             + "'PERSON_2': opt_data.number.person, "
             + "'PERSON_3': opt_data.number.person, "
@@ -919,7 +916,7 @@ public final class GenJsCodeVisitorTest {
             + "}"
             + "}"
             + "}', {}, {html: true});\n"
-            + "const msg_s = new goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound("
+            + "const msg_s = new $MessageFormat(MSG_UNNAMED).formatIgnoringPound("
             + "{'GENDER_1': opt_data.user.gender, "
             + "'GENDER_2': opt_data.friend.gender, "
             + "'PERSON_1': opt_data.person1, "
@@ -971,7 +968,7 @@ public final class GenJsCodeVisitorTest {
             + " &rsaquo;}other{Notify {START_SPAN_2}{NUM_2}{END_SPAN} people via email"
             + " &rsaquo;}}', {}, {html: true});\n"
             + "const msg_s = new"
-            + " goog.i18n.MessageFormat(MSG_UNNAMED).formatIgnoringPound({'NUM_1': opt_data.num,"
+            + " $MessageFormat(MSG_UNNAMED).formatIgnoringPound({'NUM_1': opt_data.num,"
             + " 'START_SPAN_1': '<span class=\"' + goog.getCssName('sharebox-id-email-number') +"
             + " '\">', 'NUM_2': opt_data.num, 'END_SPAN': '</span>', 'START_SPAN_2': '<span"
             + " class=\"' + goog.getCssName('sharebox-id-email-number') + '\">'});\n"
@@ -995,13 +992,13 @@ public final class GenJsCodeVisitorTest {
     String expectedJsCode =
         "/**\n"
             + " * @param {?Object<string, *>=} opt_data\n"
-            + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData\n"
-            + " * @return {!goog.soy.data.SanitizedHtml}\n"
+            + " * @param {(?$googSoy.IjData|?Object<string, *>)=} opt_ijData\n"
+            + " * @return {!$SanitizedHtml}\n"
             + " * @private\n"
             + " * @suppress {checkTypes}\n"
             + " */\n"
             + "boo.foo.goo = function(opt_data, opt_ijData) {\n"
-            + "  const $ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
+            + "  const $ijData = /** @type {!$googSoy.IjData} */ (opt_ijData);\n"
             + "  if (goog.DEBUG && soy.$$stubsMap['boo.foo.goo']) {\n"
             + "    return soy.$$stubsMap['boo.foo.goo'](opt_data, $ijData);\n"
             + "  }\n"

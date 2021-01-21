@@ -299,7 +299,7 @@ public final class Expressions {
   }
 
   public static Expression constructMap(Expression... initializers) {
-    return New.create(id("Map", GoogRequire.create("soy.map"))).call(initializers);
+    return New.create(dottedIdNoRequire("Map")).call(initializers);
   }
 
   /**

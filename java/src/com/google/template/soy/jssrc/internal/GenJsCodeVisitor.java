@@ -31,10 +31,7 @@ import static com.google.template.soy.jssrc.dsl.Statements.assign;
 import static com.google.template.soy.jssrc.dsl.Statements.ifStatement;
 import static com.google.template.soy.jssrc.dsl.Statements.returnValue;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_DEBUG;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_MODULE_GET;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_REQUIRE;
 import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY;
-import static com.google.template.soy.jssrc.internal.JsRuntime.GOOG_SOY_ALIAS;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_DATA;
 import static com.google.template.soy.jssrc.internal.JsRuntime.OPT_VARIANT;
 import static com.google.template.soy.jssrc.internal.JsRuntime.SHOULD_STUB;
@@ -299,13 +296,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String fileOverviewDescription = "Templates in namespace " + node.getNamespace() + ".";
     JsDoc.Builder jsDocBuilder = JsDoc.builder();
     jsDocBuilder.addAnnotation("fileoverview", fileOverviewDescription);
-    if (isIncrementalDom()) {
-      jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
-    }
+    // TODO(b/73881914): type references need to be moved to use aliases
+    jsDocBuilder.addAnnotation("suppress", "{missingRequire} TODO(b/152440355)");
     jsDocBuilder.addAnnotation("suppress", "{suspiciousCode}");
-    if (!jsSrcOptions.shouldGenerateGoogModules()) {
-      jsDocBuilder.addAnnotation("suppress", "{uselessCode}");
-    }
     jsDocBuilder.addAnnotation(
         "suppress",
         "{strictMissingProperties} TODO(b/214874268): Remove strictMissingProperties suppression"
@@ -325,21 +318,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     file.append("\n\n");
 
     // Add code to define JS namespaces or add provide/require calls for Closure Library.
-    templateAliases = AliasUtils.IDENTITY_ALIASES;
+    templateAliases = AliasUtils.createTemplateAliases(node, fileSetMetadata);
     jsCodeBuilder = createCodeBuilder();
-
-    if (jsSrcOptions.shouldGenerateGoogModules()) {
-      templateAliases = AliasUtils.createTemplateAliases(node, fileSetMetadata);
-
-      addCodeToDeclareGoogModule(file, node);
-      addCodeToRequireGoogModules(node);
-    } else if (jsSrcOptions.shouldProvideRequireSoyNamespaces()) {
-      addCodeToProvideSoyNamespace(file, node);
-      file.append('\n');
-      addCodeToRequireSoyNamespaces(node);
-    } else {
-      throw new AssertionError("impossible");
-    }
+    addCodeToDeclareGoogModule(file, node);
+    addCodeToRequireGoogModules(node);
 
     // add declarations for the ijdata params
     // This takes advantage of the way '@record' types in closure are 'open'.
@@ -349,7 +331,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     // The most practical solution to that is for soy to generate its own .d.ts files.
     Map<String, SoyType> ijData = getAllIjDataParams(node);
     if (!ijData.isEmpty()) {
-      GoogRequire require = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
+      GoogRequire require = GOOG_SOY;
       jsCodeBuilder.appendLine();
       for (Map.Entry<String, SoyType> entry : ijData.entrySet()) {
         jsCodeBuilder.appendLine();
@@ -474,15 +456,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to provide Soy namespaces.
-   *
-   * @param soyFile The node we're visiting.
-   */
-  private static void addCodeToProvideSoyNamespace(StringBuilder header, SoyFileNode soyFile) {
-    header.append("goog.provide('").append(soyFile.getNamespace()).append("');\n");
-  }
-
-  /**
    * Returns the namespace to import/export templates.
    *
    * @param soyNamespace The namespace as declared by the user.
@@ -498,7 +471,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   private void addCodeToDeclareGoogModule(StringBuilder header, SoyFileNode soyFile) {
     String exportNamespace = getGoogModuleNamespace(soyFile.getNamespace());
-    header.append("goog.module('").append(exportNamespace).append("');\n\n");
+    header.append("goog.module('").append(exportNamespace).append("');\n");
+    if (jsSrcOptions.shouldDeclareLegacyNamespace()) {
+      header.append("goog.module.declareLegacyNamespace();\n");
+    }
+    header.append('\n');
   }
 
   /**
@@ -522,10 +499,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             calleeNamespace -> {
               String namespaceAlias = templateAliases.getNamespaceAlias(calleeNamespace);
               String importNamespace = getGoogModuleNamespace(calleeNamespace);
-              jsCodeBuilder.append(
-                  VariableDeclaration.builder(namespaceAlias)
-                      .setRhs(GOOG_REQUIRE.call(stringLiteral(importNamespace)))
-                      .build());
+              jsCodeBuilder.addGoogRequire(
+                  GoogRequire.createWithAlias(importNamespace, namespaceAlias));
             });
   }
 
@@ -578,20 +553,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       header.addParameterizedAnnotation("hassoydelcall", delTemplateName);
     }
   }
-  /**
-   * Helper for visitSoyFileNode(SoyFileNode) to add code to require Soy namespaces.
-   *
-   * @param soyFile The node we're visiting.
-   */
-  private void addCodeToRequireSoyNamespaces(SoyFileNode soyFile) {
-    soyFile.getImports().stream()
-        .filter(i -> i.getImportType() == ImportType.TEMPLATE)
-        .map(i -> namespaceForPath(i.getSourceFilePath()))
-        .distinct()
-        .sorted()
-        .forEach(
-            calleeNamespace -> jsCodeBuilder.addGoogRequire(GoogRequire.create(calleeNamespace)));
-  }
 
   /**
    * Returns the JavaScript type of the content generated by this template.
@@ -610,10 +571,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
               && parentType.getKind() == Kind.TEMPLATE_MODULE
               && var.type().getKind() != Kind.TEMPLATE_TYPE) {
             // This is a constant or function import.
-            String namespace = namespaceForPath(node.getSourceFilePath());
-            if (jsSrcOptions.shouldGenerateGoogModules()) {
-              namespace = templateAliases.getNamespaceAlias(namespace);
-            }
+            String namespace =
+                templateAliases.getNamespaceAlias(namespaceForPath(node.getSourceFilePath()));
+
             if (var.type().getKind() == Kind.FUNCTION) {
               Expression translation = dottedIdNoRequire(namespace + "." + var.getSymbol());
               templateTranslationContext
@@ -634,7 +594,6 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   @Override
   protected void visitConstNode(ConstNode node) {
-    SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
     ConstVar var = node.getVar();
 
     ImmutableList.Builder<Statement> declarations = ImmutableList.builder();
@@ -646,12 +605,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             .addParameterizedAnnotation(
                 "const", "function(!Object):" + varType.typeExprForFunctionReturn());
 
-    String partialName = var.name();
-    String alias =
-        jsSrcOptions.shouldGenerateGoogModules()
-            ? partialName
-            : file.getNamespace() + "." + partialName;
-    Expression aliasExp = getLocalConstantExpr(node);
+    String alias = var.name();
     Expression constantExpr =
         Expressions.group(
                 JsRuntime.SOY_CREATE_CONST.call(
@@ -662,23 +616,11 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
             // the pureOrBreakMyCode annotation says it is ok to move the call anyway.
             .prepend(JsDoc.builder().setOverviewComment("@pureOrBreakMyCode").build());
 
-    if (jsSrcOptions.shouldGenerateGoogModules()) {
-      if (node.isExported()) {
-        declarations.add(
-            assign(JsRuntime.EXPORTS.dotAccess(partialName), constantExpr, jsDoc.build()));
-      } else {
-        declarations.add(
-            VariableDeclaration.builder(alias)
-                .setJsDoc(jsDoc.build())
-                .setRhs(constantExpr)
-                .build());
-      }
+    if (node.isExported()) {
+      declarations.add(assign(JsRuntime.EXPORTS.dotAccess(alias), constantExpr, jsDoc.build()));
     } else {
       declarations.add(
-          Statements.assign(
-              aliasExp,
-              constantExpr,
-              jsDoc.addAnnotation(node.isExported() ? "public" : "private").build()));
+          VariableDeclaration.builder(alias).setJsDoc(jsDoc.build()).setRhs(constantExpr).build());
     }
 
     jsCodeBuilder.append(Statements.of(declarations.build()));
@@ -688,12 +630,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
   }
 
   private Expression getLocalConstantExpr(ConstNode node) {
-    SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
     ConstVar var = node.getVar();
     String partialName = var.name();
-    return jsSrcOptions.shouldGenerateGoogModules()
-        ? node.isExported() ? JsRuntime.EXPORTS.dotAccess(partialName) : id(partialName)
-        : dottedIdNoRequire(file.getNamespace()).dotAccess(partialName);
+    return node.isExported() ? JsRuntime.EXPORTS.dotAccess(partialName) : id(partialName);
   }
 
   private void registerLocalConstant(ConstNode node) {
@@ -804,7 +743,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     String partialName = node.getPartialTemplateName();
     String alias;
 
-    if (jsSrcOptions.shouldGenerateGoogModules() && node instanceof TemplateDelegateNode) {
+    if (node instanceof TemplateDelegateNode) {
       alias = partialName;
     } else {
       alias = templateAliases.get(templateName);
@@ -830,12 +769,8 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
         }
         Expression emptyFnCall = SOY_MAKE_EMPTY_TEMPLATE_FN.call(stringLiteral(templateName));
         JsDoc jsDoc = generateEmptyFunctionJsDoc(node);
-        if (jsSrcOptions.shouldGenerateGoogModules()) {
-          declarations.add(
-              VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
-        } else {
-          declarations.add(Statements.assign(aliasExp, emptyFnCall, jsDoc));
-        }
+        declarations.add(
+            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(emptyFnCall).build());
         declarations.add(makeRegisterDelegateFn(nodeAsDelTemplate, aliasExp));
         jsCodeBuilder.append(Statements.of(declarations.build()));
         return;
@@ -862,31 +797,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                     : generateFunctionBody(
                         node, alias, /* objectParamName= */ null, /* addStubMapLogic= */ true));
 
-        if (jsSrcOptions.shouldGenerateGoogModules()) {
-          VariableDeclaration publicDeclaration =
-              VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(publicFunction).build();
-          declarations.add(publicDeclaration);
-          VariableDeclaration positionalDeclaration =
-              VariableDeclaration.builder(alias + "$")
-                  .setJsDoc(positionalFunctionDoc)
-                  .setRhs(positionalFunction)
-                  .build();
-          declarations.add(positionalDeclaration);
-          // don't export deltemplates or private templates
-          if (!(node instanceof TemplateDelegateNode)
-              && node.getVisibility() == Visibility.PUBLIC) {
-            declarations.add(
-                assign(JsRuntime.EXPORTS.dotAccess(partialName), publicDeclaration.ref()));
-            declarations.add(
-                assign(
-                    JsRuntime.EXPORTS.dotAccess(partialName + "$"), positionalDeclaration.ref()));
-          }
-        } else {
-          declarations.add(Statements.assign(aliasExp, publicFunction, jsDoc));
+        VariableDeclaration publicDeclaration =
+            VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(publicFunction).build();
+        declarations.add(publicDeclaration);
+        VariableDeclaration positionalDeclaration =
+            VariableDeclaration.builder(alias + "$")
+                .setJsDoc(positionalFunctionDoc)
+                .setRhs(positionalFunction)
+                .build();
+        declarations.add(positionalDeclaration);
+        // don't export deltemplates or private templates
+        if (!(node instanceof TemplateDelegateNode) && node.getVisibility() == Visibility.PUBLIC) {
           declarations.add(
-              Statements.assign(
-                  dottedIdNoRequire(alias + "$"), positionalFunction, positionalFunctionDoc));
+              assign(JsRuntime.EXPORTS.dotAccess(partialName), publicDeclaration.ref()));
+          declarations.add(
+              assign(JsRuntime.EXPORTS.dotAccess(partialName + "$"), positionalDeclaration.ref()));
         }
+
       } else {
         JsDoc jsDoc =
             generateFunctionJsDoc(
@@ -910,31 +837,24 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                             0, objectParamType.length() - 1),
                         /* addStubMapLogic= */ true));
 
-        if (jsSrcOptions.shouldGenerateGoogModules()) {
           declarations.add(
               VariableDeclaration.builder(alias).setJsDoc(jsDoc).setRhs(function).build());
           // don't export deltemplates or private templates
           if (!(node instanceof TemplateDelegateNode)
               && node.getVisibility() == Visibility.PUBLIC) {
-            declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
-          }
-        } else {
-          declarations.add(Statements.assign(aliasExp, function, jsDoc));
+          declarations.add(assign(JsRuntime.EXPORTS.dotAccess(partialName), aliasExp));
         }
       }
 
-      if (!jsSrcOptions.shouldGenerateGoogModules()
+      if (!isIncrementalDom()
           && node.getContentKind() == SanitizedContentKind.HTML
           && node.getVisibility() == Visibility.PUBLIC) {
         declarations.add(
-            Statements.ifStatement(
-                    Expressions.LITERAL_FALSE,
-                    VariableDeclaration.builder(alias + "_" + StandardNames.SOY_STUB)
-                        .setJsDoc(
-                            generatePositionalFunctionJsDoc(
-                                node, /* addVariantParam= */ isModifiableWithUseVariantType(node)))
-                        .build())
-                .build());
+            aliasExp
+                .dotAccess(StandardNames.SOY_STUB)
+                .asStatement(
+                    generatePositionalFunctionJsDoc(
+                        node, /* addVariantParam= */ isModifiableWithUseVariantType(node))));
       }
 
       // ------ Add the @typedef of opt_data. ------
@@ -987,12 +907,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
                         // Strip the optional suffix character "="
                         : objectParamType.substring(0, objectParamType.length() - 1),
                     /* addStubMapLogic= */ false));
-        if (jsSrcOptions.shouldGenerateGoogModules()) {
-          declarations.add(
-              VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
-        } else {
-          declarations.add(Statements.assign(dottedIdNoRequire(defaultImplName), impl, jsDoc));
-        }
+
+        declarations.add(
+            VariableDeclaration.builder(defaultImplName).setJsDoc(jsDoc).setRhs(impl).build());
         TemplateBasicNode templateBasicNode = (TemplateBasicNode) node;
         declarations.add(
             makeRegisterDefaultFnCall(templateBasicNode, dottedIdNoRequire(defaultImplName)));
@@ -1070,7 +987,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Parameter names in positional templates are always slightly mangled and then reassigned to
    * locals with the right name.
    *
-   * <p>This helps in cases where we need to narrow types since JSC type inference cannot realiably
+   * <p>This helps in cases where we need to narrow types since JSC type inference cannot reliably
    * track reassignments to locals across function boundaries. See b/130651307
    */
   protected static String getPositionalParamName(TemplateParam param) {
@@ -1178,7 +1095,7 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
 
   /** Returns the simple type of IjData, adding requires as necessary. */
   protected String ijDataTypeExpression(JsDoc.Builder jsDocBuilder) {
-    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
+    GoogRequire googSoy = GOOG_SOY;
     jsDocBuilder.addGoogRequire(googSoy);
     return googSoy.alias() + ".IjData";
   }
@@ -1200,10 +1117,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       String alias,
       ImmutableList.Builder<Statement> bodyStatements,
       List<Expression> callParams) {
-    if (!jsSrcOptions.shouldGenerateGoogModules()
+    if (!this.isIncrementalDom()
         && templateNode.getContentKind() == SanitizedContentKind.HTML
         && templateNode.getVisibility() == Visibility.PUBLIC) {
-      Expression stub = dottedIdNoRequire(alias + "_" + StandardNames.SOY_STUB);
+      Expression stub = dottedIdNoRequire(alias + "." + StandardNames.SOY_STUB);
       Statement functionStub =
           Statements.ifStatement(
                   SHOULD_STUB.and(stub, templateTranslationContext.codeGenerator()),
@@ -1258,11 +1175,10 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    * Generates a statement that that assigns {@code opt_ijData} to {@code $ijData} to adjust types.
    */
   protected final Statement redeclareIjData() {
-    GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
     return VariableDeclaration.builder(StandardNames.DOLLAR_IJDATA)
         .setRhs(
             id(StandardNames.OPT_IJDATA)
-                .castAs("!" + googSoy.alias() + ".IjData", ImmutableSet.of(googSoy)))
+                .castAs("!" + GOOG_SOY.alias() + ".IjData", ImmutableSet.of(GOOG_SOY)))
         .build();
   }
 
@@ -1421,32 +1337,23 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
       return;
     }
 
-    GoogRequire externRequire;
-    Expression externReference;
-    if (jsSrcOptions.shouldGenerateGoogModules()) {
-      externRequire = GoogRequire.createWithAlias(node.module(), node.module().replace('.', '$'));
-      externReference = dottedIdNoRequire(externRequire.alias()).dotAccess(node.function());
-    } else {
-      externRequire = GoogRequire.create(node.module());
-      externReference =
-          GOOG_MODULE_GET.call(stringLiteral(node.module())).dotAccess(node.function());
-    }
+    GoogRequire externRequire =
+        GoogRequire.createWithAlias(node.module(), node.module().replace('.', '$'));
+    Expression externReference =
+        dottedIdNoRequire(externRequire.alias()).dotAccess(node.function());
+
     jsCodeBuilder.addGoogRequire(externRequire);
     templateTranslationContext.soyToJsVariableMappings().put(externName, externReference);
 
     if (externNode.isExported()) {
-      SoyFileNode file = node.getNearestAncestor(SoyFileNode.class);
-      Expression exportAlias =
-          jsSrcOptions.shouldGenerateGoogModules()
-              ? JsRuntime.EXPORTS
-              : dottedIdNoRequire(file.getNamespace());
-      Expression export = exportAlias.dotAccess(externName);
       jsCodeBuilder
           .appendLine()
           .appendLine()
           .append(
               Statements.assign(
-                  export, externReference, JsDoc.builder().addAnnotation("const").build()));
+                  JsRuntime.EXPORTS.dotAccess(externName),
+                  externReference,
+                  JsDoc.builder().addAnnotation("const").build()));
     }
   }
 

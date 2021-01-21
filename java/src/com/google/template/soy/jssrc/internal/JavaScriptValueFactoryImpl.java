@@ -166,13 +166,9 @@ public final class JavaScriptValueFactoryImpl extends JavaScriptValueFactory {
         googProvide,
         fullFunctionName);
     GoogRequire require = GoogRequire.create(googProvide);
-    Expression function;
-    if (fullFunctionName.length() == googProvide.length()) {
-      function = require.reference();
-    } else {
-      function =
-          chainedDotAccess(
-              require.reference(), fullFunctionName.substring(googProvide.length() + 1));
+    Expression function = require.googModuleGet();
+    if (fullFunctionName.length() > googProvide.length()) {
+      function = chainedDotAccess(function, fullFunctionName.substring(googProvide.length() + 1));
     }
     return new JavaScriptValueImpl(function.call(unwrapParams(Arrays.asList(params))));
   }

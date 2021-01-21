@@ -29,13 +29,14 @@ import com.google.common.html.types.SafeUrlProto;
 import com.google.common.html.types.TrustedResourceUrlProto;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.template.soy.base.SoyBackendKind;
 import com.google.template.soy.base.internal.SanitizedContentKind;
 import com.google.template.soy.data.internalutils.NodeContentKinds;
 import com.google.template.soy.internal.proto.ProtoUtils;
 import com.google.template.soy.jssrc.dsl.CodeChunk;
 import com.google.template.soy.jssrc.dsl.Expression;
-import com.google.template.soy.jssrc.dsl.Expressions;
 import com.google.template.soy.jssrc.dsl.GoogRequire;
+import com.google.template.soy.types.SoyProtoEnumType;
 import com.google.template.soy.types.SoyProtoType;
 
 /**
@@ -45,27 +46,29 @@ import com.google.template.soy.types.SoyProtoType;
  * exclusively with the {@link CodeChunk} api.
  */
 public final class JsRuntime {
-  private static final GoogRequire GOOG_ARRAY = GoogRequire.create("goog.array");
-  private static final GoogRequire GOOG_ASSERTS = GoogRequire.create("goog.asserts");
-  private static final GoogRequire GOOG_STRING = GoogRequire.create("goog.string");
+  private static final GoogRequire GOOG_ARRAY =
+      GoogRequire.createWithAlias("goog.array", "googArray");
+  private static final GoogRequire GOOG_ASSERTS =
+      GoogRequire.createWithAlias("goog.asserts", "googAsserts");
+  private static final GoogRequire GOOG_STRING =
+      GoogRequire.createWithAlias("goog.string", "googString");
 
-  static final GoogRequire SOY = GoogRequire.create("soy");
-  private static final GoogRequire SOY_MAP = GoogRequire.create("soy.map");
-  private static final GoogRequire SOY_NEWMAPS = GoogRequire.create("soy.newmaps");
-  public static final GoogRequire SOY_VELOG = GoogRequire.create("soy.velog");
-  public static final GoogRequire GOOG_SOY_ALIAS =
-      GoogRequire.createWithAlias("goog.soy", "$googSoy");
+  public static final GoogRequire SOY = GoogRequire.createWithAlias("soy", "soy");
+  public static final GoogRequire SOY_MAP = GoogRequire.createWithAlias("soy.map", "soyMap");
+  private static final GoogRequire SOY_NEWMAPS =
+      GoogRequire.createWithAlias("soy.newmaps", "soyNewmaps");
+  public static final GoogRequire SOY_VELOG = GoogRequire.createWithAlias("soy.velog", "soyVelog");
+  public static final GoogRequire GOOG_SOY = GoogRequire.createWithAlias("goog.soy", "$googSoy");
 
-  private static final GoogRequire SOY_TEMPLATES = GoogRequire.create("soy.templates");
-
-  public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
+  private static final GoogRequire SOY_TEMPLATES =
+      GoogRequire.createWithAlias("soy.templates", "soyTemplates");
 
   public static final Expression SOY_EMPTY_OBJECT = SOY.dotAccess("$$EMPTY_OBJECT");
   public static final Expression SOY_INTERCEPT_SOY_TEMPLATES =
       SOY.dotAccess("INTERCEPT_SOY_TEMPLATES");
   public static final Expression SOY_STUBS_MAP = SOY.dotAccess("$$stubsMap");
 
-  private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
+  private static final GoogRequire XID_REQUIRE = GoogRequire.createWithAlias("xid", "xid");
 
   private JsRuntime() {}
 
@@ -95,25 +98,29 @@ public final class JsRuntime {
   public static final Expression SOY_FILTER_AND_MAP = SOY.dotAccess("$$filterAndMap");
 
   public static final Expression GOOG_IS_OBJECT = dottedIdNoRequire("goog.isObject");
-
-  public static final Expression GOOG_REQUIRE = dottedIdNoRequire("goog.require");
-
-  public static final Expression GOOG_MODULE_GET = dottedIdNoRequire("goog.module.get");
-
+  public static final GoogRequire JSPB_MESSAGE =
+      GoogRequire.createWithAlias("jspb.Message", "$JspbMessage");
+  public static final GoogRequire SAFEVALUES =
+      GoogRequire.createWithAlias("safevalues", "safevalues");
   public static final Expression GOOG_SOY_DATA_SANITIZED_CONTENT =
-      GoogRequire.create("goog.soy.data.SanitizedContent").reference();
+      GoogRequire.createWithAlias("goog.soy.data.SanitizedContent", "$SanitizedContent")
+          .reference();
 
-  public static final Expression SAFEVALUES_SAFEHTML =
-      GoogRequire.create("safevalues").dotAccess("SafeHtml");
+  public static final Expression SAFEVALUES_SAFEHTML = SAFEVALUES.dotAccess("SafeHtml");
 
+  public static final GoogRequire GOOG_SOY_DATA_HTML =
+      GoogRequire.createTypeRequireWithAlias("goog.soy.data.SanitizedHtml", "$SanitizedHtml");
+  public static final GoogRequire GOOG_HTML_SAFE_ATTRIBUTE_REQUIRE =
+      GoogRequire.createWithAlias(
+          "goog.soy.data.SanitizedHtmlAttribute", "$SanitizedHtmlAttribute");
   public static final Expression GOOG_HTML_SAFE_ATTRIBUTE =
-      GoogRequire.create("goog.soy.data.SanitizedHtmlAttribute").reference();
+      GOOG_HTML_SAFE_ATTRIBUTE_REQUIRE.reference();
 
   public static final Expression GOOG_STRING_UNESCAPE_ENTITIES =
       GOOG_STRING.dotAccess("unescapeEntities");
 
   public static final Expression GOOG_I18N_MESSAGE_FORMAT =
-      GoogRequire.create("goog.i18n.MessageFormat").reference();
+      GoogRequire.createWithAlias("goog.i18n.MessageFormat", "$MessageFormat").reference();
 
   public static final Expression SOY_ASSERT_PARAM_TYPE = SOY.dotAccess("assertParamType");
 
@@ -157,18 +164,15 @@ public final class JsRuntime {
   public static final Expression SOY_MAP_IS_SOY_MAP = SOY_MAP.dotAccess("$$isSoyMap");
 
   public static final Expression SOY_NEWMAPS_TRANSFORM_VALUES =
-      SOY_NEWMAPS.googModuleGet().dotAccess("$$transformValues");
+      SOY_NEWMAPS.dotAccess("$$transformValues");
   public static final Expression SOY_NEWMAPS_NULL_SAFE_TRANSFORM_VALUES =
-      SOY_NEWMAPS.googModuleGet().dotAccess("$$nullSafeTransformValues");
+      SOY_NEWMAPS.dotAccess("$$nullSafeTransformValues");
   public static final Expression SOY_NEWMAPS_NULL_SAFE_ARRAY_MAP =
-      SOY_NEWMAPS.googModuleGet().dotAccess("$$nullSafeArrayMap");
+      SOY_NEWMAPS.dotAccess("$$nullSafeArrayMap");
 
-  // Explicitly group() these calls because they return constructors and the new operator has
-  // curious precedence semantics if the constructor expression contains parens.
-  public static final Expression SOY_VISUAL_ELEMENT =
-      Expressions.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElement"));
+  public static final Expression SOY_VISUAL_ELEMENT = SOY_VELOG.dotAccess("$$VisualElement");
   public static final Expression SOY_VISUAL_ELEMENT_DATA =
-      Expressions.group(SOY_VELOG.googModuleGet().dotAccess("$$VisualElementData"));
+      SOY_VELOG.dotAccess("$$VisualElementData");
 
   public static final Expression WINDOW_CONSOLE_LOG = dottedIdNoRequire("window.console.log");
 
@@ -192,15 +196,14 @@ public final class JsRuntime {
 
   public static final Expression EXPORTS = id("exports");
 
-  public static final Expression MARK_TEMPLATE =
-      SOY_TEMPLATES.googModuleGet().dotAccess("$$markTemplate");
+  public static final Expression MARK_TEMPLATE = SOY_TEMPLATES.dotAccess("$$markTemplate");
   public static final Expression BIND_TEMPLATE_PARAMS =
-      SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParams");
+      SOY_TEMPLATES.dotAccess("$$bindTemplateParams");
   public static final Expression BIND_TEMPLATE_PARAMS_FOR_IDOM =
-      SOY_TEMPLATES.googModuleGet().dotAccess("$$bindTemplateParamsForIdom");
+      SOY_TEMPLATES.dotAccess("$$bindTemplateParamsForIdom");
 
-  private static final Expression SOY_CONVERTERS =
-      GoogRequire.create("soy.converters").googModuleGet();
+  private static final GoogRequire SOY_CONVERTERS =
+      GoogRequire.createWithAlias("soy.converters", "soyConverters");
 
   /** The JavaScript method to pack a sanitized object into a safe proto. */
   public static final ImmutableMap<String, Expression> JS_TO_PROTO_PACK_FN_BASE =
@@ -230,31 +233,30 @@ public final class JsRuntime {
           .putAll(JS_TO_PROTO_PACK_FN_BASE)
           .buildOrThrow();
 
+  private static GoogRequire createProtoRequire(String protoImport) {
+    return GoogRequire.createWithAlias(protoImport, '$' + protoImport.replace('.', '$'));
+  }
+
   /** Create and reference toggle for given path, name. */
-  public static Expression getToggleRef(String path, String name, boolean googModuleSyntax) {
+  public static Expression getToggleRef(String path, String name) {
     // Translate './path/to/my.toggles' to 'google3.path.to.my$2etoggles' for ts_toggle_lib
     int extensionIndex = path.lastIndexOf(".toggles");
     if (extensionIndex != -1) {
       path = path.substring(0, extensionIndex);
     }
     String togglePathSymbol = "google3." + path.replace('/', '.') + "$2etoggles";
-    if (googModuleSyntax) {
-      // Map toggle path to unique string for toggle references
-      String uniqueTogglePathSymbol = togglePathSymbol.replace('.', '_');
-      GoogRequire ref = GoogRequire.createWithAlias(togglePathSymbol, uniqueTogglePathSymbol);
-      // Prepend 'TOGGLE_' to toggle name for ts_toggle_lib naming requirement
-      return ref.reference().dotAccess("TOGGLE_" + name);
-    } else {
-      GoogRequire ref = GoogRequire.create(togglePathSymbol);
-      return ref.googModuleGet().dotAccess("TOGGLE_" + name);
-    }
+    // Map toggle path to unique string for toggle references
+    String uniqueTogglePathSymbol = togglePathSymbol.replace('.', '_');
+    GoogRequire ref = GoogRequire.createWithAlias(togglePathSymbol, uniqueTogglePathSymbol);
+    // Prepend 'TOGGLE_' to toggle name for ts_toggle_lib naming requirement
+    return ref.reference().dotAccess("TOGGLE_" + name);
   }
 
   /** Returns the field containing the extension object for the given field descriptor. */
   public static Expression extensionField(FieldDescriptor desc) {
     String jsExtensionImport = ProtoUtils.getJsExtensionImport(desc);
     String jsExtensionName = ProtoUtils.getJsExtensionName(desc);
-    return symbolWithNamespace(jsExtensionImport, jsExtensionName);
+    return symbolWithNamespace(createProtoRequire(jsExtensionImport), jsExtensionName);
   }
 
   /** Returns a function that can 'unpack' safe proto types into sanitized content types.. */
@@ -279,9 +281,7 @@ public final class JsRuntime {
    * SanitizedContent} object with no escaping.
    */
   public static Expression sanitizedContentOrdainerFunction(SanitizedContentKind kind) {
-    return symbolWithNamespace(
-        NodeContentKinds.getJsImportForOrdainersFunctions(kind),
-        NodeContentKinds.toJsSanitizedContentOrdainer(kind));
+    return symbolWithNamespace(SOY, NodeContentKinds.toJsSanitizedContentOrdainer(kind));
   }
 
   /**
@@ -291,28 +291,32 @@ public final class JsRuntime {
   public static Expression sanitizedContentOrdainerFunctionForInternalBlocks(
       SanitizedContentKind kind) {
     return symbolWithNamespace(
-        NodeContentKinds.getJsImportForOrdainersFunctions(kind),
-        NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(kind));
+        SOY, NodeContentKinds.toJsSanitizedContentOrdainerForInternalBlocks(kind));
   }
 
   /** Returns the constructor for the proto. */
   public static Expression protoConstructor(SoyProtoType type) {
-    return GoogRequire.create(type.getJsName(ProtoUtils.MutabilityMode.MUTABLE)).reference();
+    return createProtoRequire(type.getJsName(ProtoUtils.MutabilityMode.MUTABLE)).reference();
+  }
+
+  /** Returns the constructor for the proto. */
+  public static GoogRequire readonlyProtoType(SoyProtoType type) {
+    return createProtoRequire(type.getJsName(ProtoUtils.MutabilityMode.READONLY)).toRequireType();
+  }
+
+  public static GoogRequire protoEnum(SoyProtoEnumType enumType) {
+    return createProtoRequire(enumType.getNameForBackend(SoyBackendKind.JS_SRC));
   }
 
   /** Returns an expression that constructs an empty proto. */
   public static Expression emptyProto(SoyProtoType type) {
-    return castAsReadonlyProto(
-        SOY.dotAccess("$$emptyProto")
-            .call(
-                GoogRequire.create(type.getJsName(ProtoUtils.MutabilityMode.MUTABLE)).reference()),
-        type);
+    return castAsReadonlyProto(SOY.dotAccess("$$emptyProto").call(protoConstructor(type)), type);
   }
 
   static Expression castAsReadonlyProto(Expression expr, SoyProtoType type) {
-    String readonlyName = type.getJsName(ProtoUtils.MutabilityMode.READONLY);
-    return expr.castAs(
-        "!" + readonlyName, ImmutableSet.of(GoogRequire.createTypeRequire(readonlyName)));
+    var require = readonlyProtoType(type);
+    String readonlyName = require.alias();
+    return expr.castAs("!" + readonlyName, ImmutableSet.of(require));
   }
 
   /**
@@ -328,8 +332,7 @@ public final class JsRuntime {
    * @param requireSymbol The symbol to {@code goog.require}
    * @param fullyQualifiedSymbol The symbol we want to access.
    */
-  private static Expression symbolWithNamespace(String requireSymbol, String fullyQualifiedSymbol) {
-    GoogRequire require = GoogRequire.create(requireSymbol);
+  private static Expression symbolWithNamespace(GoogRequire require, String fullyQualifiedSymbol) {
     if (fullyQualifiedSymbol.equals(require.symbol())) {
       return require.reference();
     }

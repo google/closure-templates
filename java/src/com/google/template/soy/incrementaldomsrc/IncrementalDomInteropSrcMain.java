@@ -33,7 +33,6 @@ public class IncrementalDomInteropSrcMain {
    */
   public List<String> genJsSrc(SoyFileSetNode soyTree, ErrorReporter errorReporter) {
     SoyJsSrcOptions options = new SoyJsSrcOptions();
-    options.setShouldGenerateGoogModules(true);
     return new GenIncrementalDomInteropVisitor(options, null, null, null, null, null, null, null)
         .gen(soyTree, errorReporter);
   }

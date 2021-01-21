@@ -95,7 +95,7 @@ public final class SoyIncrementalDomSrcOptions {
   SoyJsSrcOptions toJsSrcOptions() {
     SoyJsSrcOptions jsSrcOptions = new SoyJsSrcOptions();
     // Only goog.module generation supported
-    jsSrcOptions.setShouldGenerateGoogModules(true);
+    jsSrcOptions.setDeclareLegacyNamespace(false);
     jsSrcOptions.setShouldGenerateGoogMsgDefs(true);
     jsSrcOptions.setGoogMsgsAreExternal(googMsgsAreExternal);
     jsSrcOptions.setBidiGlobalDir(0);
