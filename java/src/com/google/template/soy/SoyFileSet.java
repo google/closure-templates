@@ -944,6 +944,11 @@ public final class SoyFileSet {
   public SoySauce compileTemplates() {
     return compileTemplates(ImmutableMap.of());
   }
+
+  public CssRegistry getCssRegistry() {
+    return cssRegistry.get();
+  }
+
   /**
    * Compiles this Soy file set into a set of java classes implementing the {@link SoySauce}
    * interface.
@@ -1181,6 +1186,8 @@ public final class SoyFileSet {
     /** The full parsed AST. */
     public abstract SoyFileSetNode fileSet();
 
+    public abstract CssRegistry cssRegistry();
+
     /** Compiler warnings. This will include errors if {@code treatErrorsAsWarnings} was set. */
     public abstract ImmutableList<SoyError> warnings();
   }
@@ -1223,6 +1230,7 @@ public final class SoyFileSet {
           return new AutoValue_SoyFileSet_AnalysisResult(
               result.hasRegistry() ? Optional.of(result.registry()) : Optional.empty(),
               result.fileSet(),
+              result.cssRegistry(),
               warnings);
         });
   }
