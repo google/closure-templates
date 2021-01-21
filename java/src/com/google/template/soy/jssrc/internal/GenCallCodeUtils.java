@@ -54,6 +54,7 @@ import com.google.template.soy.soytree.defn.TemplateParam;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Generates JS code for {call}s and {delcall}s.
@@ -267,30 +268,20 @@ public class GenCallCodeUtils {
       TranslateExprNodeVisitor exprTranslator) {
 
     // ------ Generate the expression for the original data to pass ------
-    Expression dataToPass;
+    Optional<Expression> dataToPass = Optional.empty();
     if (callNode.isPassingAllData()) {
-      dataToPass = JsRuntime.OPT_DATA;
+      dataToPass = Optional.of(JsRuntime.OPT_DATA);
     } else if (callNode.isPassingData()) {
-      dataToPass = exprTranslator.exec(callNode.getDataExpr());
-    } else if (callNode.numChildren() == 0) {
-      // If we're passing neither children nor indirect data, we can immediately return null.
-      return LITERAL_NULL;
-    } else {
-      dataToPass = LITERAL_NULL;
-    }
-
-    Map<String, Expression> paramDefaults = getDefaultParams(callNode, translationContext);
-    // ------ Case 1: No additional params ------
-    if (callNode.numChildren() == 0) {
-      if (!paramDefaults.isEmpty()) {
-        dataToPass = SOY_ASSIGN_DEFAULTS.call(dataToPass, Expression.objectLiteral(paramDefaults));
-      }
-      // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return dataToPass.castAs("?");
+      dataToPass = Optional.of(exprTranslator.exec(callNode.getDataExpr()));
     }
 
     // ------ Build an object literal containing the additional params ------
-    Map<String, Expression> params = paramDefaults;
+    // If the caller has default parameters and this is data="all" call, initialize with the current
+    // values for those parameters to ensure that defaults are passed along
+    Map<String, Expression> params =
+        callNode.isPassingAllData()
+            ? getDefaultParams(callNode, translationContext)
+            : new LinkedHashMap<>();
 
     for (CallParamNode child : callNode.getChildren()) {
       Expression value;
@@ -318,25 +309,25 @@ public class GenCallCodeUtils {
       params.put(child.getKey().identifier(), value);
     }
 
-    Expression paramsExp = Expression.objectLiteral(params);
-
     // ------ Cases 2 and 3: Additional params with and without original data to pass ------
-    if (callNode.isPassingData()) {
-      Expression allData = SOY_ASSIGN_DEFAULTS.call(paramsExp, dataToPass);
+    if (dataToPass.isPresent()) {
+      if (params.isEmpty()) {
+        return dataToPass.get().castAs("?");
+      }
       // No need to cast; assignDefaults already returns {?}.
-      return allData;
+      return SOY_ASSIGN_DEFAULTS.call(Expression.objectLiteral(params), dataToPass.get());
     } else {
+      if (params.isEmpty()) {
+        return LITERAL_NULL;
+      }
       // Ignore inconsistencies between Closure Compiler & Soy type systems (eg, proto nullability).
-      return paramsExp.castAs("?");
+      return Expression.objectLiteral(params).castAs("?");
     }
   }
 
   private Map<String, Expression> getDefaultParams(
       CallNode node, TranslationContext translationContext) {
     Map<String, Expression> defaultParams = new LinkedHashMap<>();
-    if (!node.isPassingAllData()) {
-      return defaultParams;
-    }
     for (TemplateParam param : node.getNearestAncestor(TemplateNode.class).getParams()) {
       if (param.hasDefault()) {
         // Just put the parameter value in here, which will be the default if the parameter is
