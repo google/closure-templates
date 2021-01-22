@@ -91,5 +91,7 @@ exports.$$bindTemplateParamsForIdom = function(fn, data) {
     fn(idomRenderer, opt_data == null ? data : {...data, ...opt_data},
        opt_ijData);
   };
+  /** @type {?} */ (boundTemplate).contentKind =
+      /** @type {?} */ (fn).contentKind;
   return exports.$$markTemplate(boundTemplate);
 };
