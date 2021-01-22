@@ -22,7 +22,6 @@ import static com.google.template.soy.exprtree.Operator.PLUS;
 import static com.google.template.soy.jssrc.dsl.Expression.id;
 import static com.google.template.soy.jssrc.dsl.Expression.number;
 import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyExpr;
-import static com.google.template.soy.jssrc.internal.JsSrcSubject.assertThatSoyFile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.template.soy.jssrc.dsl.Expression;
@@ -217,41 +216,6 @@ public final class TranslateExprNodeVisitorTest {
   @Test
   public void testXid() {
     assertThatSoyExpr("xid('foo')").generatesCode("xid('foo');");
-  }
-
-  @Test
-  public void testV1Expression() {
-    String soyFile =
-        ""
-            + "{template .foo}\n"
-            + "  {@param goo: ?}\n"
-            + "  {v1Expression('$goo.length()')}\n"
-            + "{/template}";
-    String expectedJs =
-        "/**\n"
-            + " * @param {!ns.foo.Params} opt_data\n"
-            + " * @param {(?goog.soy.IjData|?Object<string, *>)=} opt_ijData\n"
-            + " * @return {!goog.soy.data.SanitizedHtml}\n"
-            + " * @suppress {checkTypes}\n"
-            + " */\n"
-            + "ns.foo = function(opt_data, opt_ijData) {\n"
-            + "  opt_ijData = /** @type {!goog.soy.IjData} */ (opt_ijData);\n"
-            + "  /** @type {?} */\n"
-            + "  const goo = opt_data.goo;\n"
-            + "  return soydata.VERY_UNSAFE.ordainSanitizedHtml((goo.length()));\n"
-            + "};\n"
-            + "/**\n"
-            + " * @typedef {{\n"
-            + " *  goo: ?,\n"
-            + " * }}\n"
-            + " */\n"
-            + "ns.foo.Params;\n"
-            + "if (goog.DEBUG) {\n"
-            + "  /** @type {string} */\n"
-            + "  ns.foo.soyTemplateName = 'ns.foo';\n"
-            + "}\n";
-
-    assertThatSoyFile(soyFile).generatesTemplateThat().isEqualTo(expectedJs);
   }
 
   @Test

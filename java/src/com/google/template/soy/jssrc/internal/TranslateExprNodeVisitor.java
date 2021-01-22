@@ -834,8 +834,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
           return visitProtoInitFunction(node);
         case UNKNOWN_JS_GLOBAL:
           return visitUnknownJsGlobal(node);
-        case V1_EXPRESSION:
-          return visitV1ExpressionFunction(node);
         case IS_PRIMARY_MSG_IN_USE:
           return visitIsPrimaryMsgInUseFunction(node);
         case TO_FLOAT:
@@ -942,14 +940,6 @@ public class TranslateExprNodeVisitor extends AbstractReturningExprNodeVisitor<E
                 .getChild(0);
 
     return variableMappings.isPrimaryMsgInUse(msgNode);
-  }
-
-  private Expression visitV1ExpressionFunction(FunctionNode node) {
-    StringNode expr = (StringNode) node.getChild(0);
-    JsExpr jsExpr =
-        V1JsExprTranslator.translateToJsExpr(
-            expr.getValue(), expr.getSourceLocation(), variableMappings, errorReporter);
-    return Expression.fromExpr(jsExpr, ImmutableList.of());
   }
 
   private Expression visitUnknownJsGlobal(FunctionNode node) {

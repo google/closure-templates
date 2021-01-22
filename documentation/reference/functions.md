@@ -361,16 +361,6 @@ field `past_height`, it would be accessed as follows:
 ## Other Functions
 
 
-### `v1Expression(stringLiteral)` {#v1Expression}
-
-The `v1Expression` function is part of the support for deprecated V1 syntax.
-This function can only be used by the JavaScript backend in legacy exempted
-files. When used the function must take a
-[string literal](expressions.md#string-literal) that contains some pseudo Soy
-code. The JavaScript backend will perform some simple textual replacements to
-make variable references work, but otherwise emit it as is in the generated
-JavaScript.
-
 ### `legacyDynamicTag($ag)` {#legacyDynamicTag}
 
 The `legacyTagName` function is used to create an HTML tag whose name is

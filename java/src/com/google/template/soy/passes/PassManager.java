@@ -209,7 +209,6 @@ public final class PassManager {
     private SoyGeneralOptions options;
     private Optional<CssRegistry> cssRegistry;
     private boolean allowUnknownGlobals;
-    private boolean allowV1Expression;
     private boolean allowUnknownJsGlobals;
     private boolean disableAllTypeChecking;
     private boolean desugarHtmlAndStateNodes = true;
@@ -273,16 +272,6 @@ public final class PassManager {
      */
     public Builder allowUnknownGlobals() {
       this.allowUnknownGlobals = true;
-      return this;
-    }
-
-    /**
-     * Allows v1Expression().
-     *
-     * <p>This option is only available for backwards compatibility with legacy JS only templates.
-     */
-    public Builder allowV1Expression() {
-      this.allowV1Expression = true;
       return this;
     }
 
@@ -425,9 +414,6 @@ public final class PassManager {
           new RewriteGlobalsPass(options.getCompileTimeGlobals()),
           partialTemplateRegistryPassesBuilder);
       addPass(new XidPass(errorReporter), partialTemplateRegistryPassesBuilder);
-      addPass(
-          new V1ExpressionPass(allowV1Expression, errorReporter),
-          partialTemplateRegistryPassesBuilder);
       addPass(
           new UnknownJsGlobalPass(allowUnknownJsGlobals, errorReporter),
           partialTemplateRegistryPassesBuilder);

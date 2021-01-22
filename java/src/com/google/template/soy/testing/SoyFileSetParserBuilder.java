@@ -71,7 +71,6 @@ public final class SoyFileSetParserBuilder {
   private ErrorReporter errorReporter = ErrorReporter.exploding(); // See #parse for discussion.
   private boolean allowUnboundGlobals;
   private boolean allowUnknownJsGlobals;
-  private boolean allowV1Expression;
   // disable optimization by default
   private boolean runOptimizer = false;
   private final SoyScopedData scopedData;
@@ -289,11 +288,6 @@ public final class SoyFileSetParserBuilder {
     return this;
   }
 
-  public SoyFileSetParserBuilder allowV1Expression(boolean allowV1Expression) {
-    this.allowV1Expression = allowV1Expression;
-    return this;
-  }
-
   public SoyFileSetParserBuilder setConformanceConfig(ValidatedConformanceConfig config) {
     this.conformanceConfig = checkNotNull(config);
     return this;
@@ -404,9 +398,6 @@ public final class SoyFileSetParserBuilder {
     }
     if (allowUnknownJsGlobals) {
       passManager.allowUnknownJsGlobals();
-    }
-    if (allowV1Expression) {
-      passManager.allowV1Expression();
     }
     if (disableAllTypeChecking) {
       passManager.allowUnknownGlobals().disableAllTypeChecking();

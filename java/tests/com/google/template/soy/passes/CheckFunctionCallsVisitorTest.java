@@ -125,45 +125,13 @@ public final class CheckFunctionCallsVisitorTest {
         "{/template}");
   }
 
-  @Test
-  public void testV1ExpressionFunction() {
-    assertPasses(
-        /* allowV1Expression= */ true,
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $m: v1Expression('blah.length') /}",
-        "{/template}");
-
-    assertFunctionCallsInvalid(
-        /* allowV1Expression= */ true,
-        "Argument to function 'v1Expression' must be a string literal.",
-        "{namespace ns}\n",
-        "{template .foo}",
-        "  {let $blah: 'foo' /}",
-        "  {let $m: v1Expression($blah) /}",
-        "{/template}");
-  }
-
   private void assertSuccess(String... lines) {
-    assertPasses(/* allowV1Expression= */ false, lines);
-  }
-
-  private void assertPasses(boolean allowV1Expression, String... lines) {
-    SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
-        .allowV1Expression(allowV1Expression)
-        .parse()
-        .fileSet();
+    SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines)).parse().fileSet();
   }
 
   private void assertFunctionCallsInvalid(String errorMessage, String... lines) {
-    assertFunctionCallsInvalid(/* allowV1Expression= */ false, errorMessage, lines);
-  }
-
-  private void assertFunctionCallsInvalid(
-      boolean allowV1Expression, String errorMessage, String... lines) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
     SoyFileSetParserBuilder.forFileContents(Joiner.on('\n').join(lines))
-        .allowV1Expression(allowV1Expression)
         .errorReporter(errorReporter)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);

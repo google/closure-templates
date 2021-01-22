@@ -857,7 +857,6 @@ final class TemplateAnalysis {
           case IS_PARAM_SET:
             break;
           case UNKNOWN_JS_GLOBAL:
-          case V1_EXPRESSION:
             throw new UnsupportedOperationException(
                 "the "
                     + builtinFunction.getName()

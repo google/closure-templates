@@ -175,30 +175,6 @@ public final class CheckTemplateHeaderVarsPassTest {
         .isEqualTo("Call missing required param 'y'.");
   }
 
-  @Test
-  public void testV1Expression() {
-    String fileContent1 =
-        "{namespace boo1}\n"
-            + "\n"
-            + "/** Template 1 */\n"
-            + "{template .foo1}\n"
-            + "  {v1Expression('$gxo1.moo1()')}\n"
-            + "{/template}\n";
-
-    String fileContent2 =
-        "{namespace boo2}\n"
-            + "\n"
-            + "/** Template 2 */\n"
-            + "{template .foo2}\n"
-            + "  {$gxo2.moo2}\n"
-            + "{/template}\n";
-
-    ImmutableList<SoyError> errors = soyDocErrorsFor(fileContent1, fileContent2);
-    assertThat(errors).hasSize(2);
-    assertThat(errors.get(0).message()).isEqualTo("Unknown variable.");
-    assertThat(errors.get(1).message()).isEqualTo("Unknown variable.");
-  }
-
   private static ImmutableList<SoyError> paramsErrorsForTemplate(
       String params, String templateBody) {
     String testFileContent =
@@ -215,10 +191,7 @@ public final class CheckTemplateHeaderVarsPassTest {
 
   private static ImmutableList<SoyError> soyDocErrorsFor(String... soyFileContents) {
     ErrorReporter errorReporter = ErrorReporter.createForTest();
-    SoyFileSetParserBuilder.forFileContents(soyFileContents)
-        .allowV1Expression(true)
-        .errorReporter(errorReporter)
-        .parse();
+    SoyFileSetParserBuilder.forFileContents(soyFileContents).errorReporter(errorReporter).parse();
     return errorReporter.getErrors();
   }
 }

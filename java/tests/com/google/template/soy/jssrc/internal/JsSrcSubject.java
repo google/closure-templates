@@ -158,7 +158,6 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
     SoyFileSetParserBuilder builder =
         SoyFileSetParserBuilder.forTemplateAndImports(actual, protoDescriptors)
             .allowUnboundGlobals(true)
-            .allowV1Expression(true)
             .setLoggingConfig(loggingConfig)
             .allowUnknownJsGlobals(true)
             .enableExperimentalFeatures(experimentalFeatures);
@@ -221,8 +220,8 @@ abstract class JsSrcSubject<T extends Subject> extends Subject {
       }
       // if we are generating jsdoc we want to capture that too
       String templateBody;
-        int startOfJsDoc = file.substring(0, startOfFunction).lastIndexOf("/**");
-        templateBody = file.substring(startOfJsDoc, endOfFunction);
+      int startOfJsDoc = file.substring(0, startOfFunction).lastIndexOf("/**");
+      templateBody = file.substring(startOfJsDoc, endOfFunction);
       return check("generatedTemplate()").that(templateBody);
     }
 

@@ -608,7 +608,6 @@ public final class TranslateToPyExprVisitor extends AbstractReturningExprNodeVis
         // 'debugSoyTemplateInfo' is used for inpsecting soy template info from rendered pages.
         // Always resolve to false since there is no plan to support this feature in PySrc.
         return new PyExpr("False", Integer.MAX_VALUE);
-      case V1_EXPRESSION:
       case LEGACY_DYNAMIC_TAG:
       case UNKNOWN_JS_GLOBAL:
         throw new UnsupportedOperationException(

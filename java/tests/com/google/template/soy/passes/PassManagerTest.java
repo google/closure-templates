@@ -169,35 +169,30 @@ public final class PassManagerTest {
   private static void forAllPassManagers(Consumer<PassManager> consumer) {
     for (SoyGeneralOptions soyGeneralOptions : allOptions()) {
       for (boolean allowUnknownGlobals : bools()) {
-        for (boolean allowV1Expression : bools()) {
-          for (boolean allowUnknownJsGlobals : bools()) {
-            for (boolean disableAllTypeChecking : bools()) {
-              for (boolean desugarHtmlAndStateNodes : bools()) {
-                for (boolean optimize : bools()) {
-                  for (boolean insertEscapingDirectives : bools()) {
-                    for (boolean addHtmlAttributesForDebugging : bools()) {
-                      for (AstRewrites astRewrite : AstRewrites.values()) {
-                        PassManager.Builder builder =
-                            builder().setGeneralOptions(soyGeneralOptions).astRewrites(astRewrite);
-                        if (allowUnknownGlobals) {
-                          builder.allowUnknownGlobals();
-                        }
-                        if (allowV1Expression) {
-                          builder.allowV1Expression();
-                        }
-                        if (allowUnknownJsGlobals) {
-                          builder.allowUnknownJsGlobals();
-                        }
-                        if (disableAllTypeChecking) {
-                          builder.disableAllTypeChecking();
-                        }
-                        builder
-                            .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
-                            .optimize(optimize)
-                            .insertEscapingDirectives(insertEscapingDirectives)
-                            .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
-                        consumer.accept(builder.build());
+        for (boolean allowUnknownJsGlobals : bools()) {
+          for (boolean disableAllTypeChecking : bools()) {
+            for (boolean desugarHtmlAndStateNodes : bools()) {
+              for (boolean optimize : bools()) {
+                for (boolean insertEscapingDirectives : bools()) {
+                  for (boolean addHtmlAttributesForDebugging : bools()) {
+                    for (AstRewrites astRewrite : AstRewrites.values()) {
+                      PassManager.Builder builder =
+                          builder().setGeneralOptions(soyGeneralOptions).astRewrites(astRewrite);
+                      if (allowUnknownGlobals) {
+                        builder.allowUnknownGlobals();
                       }
+                      if (allowUnknownJsGlobals) {
+                        builder.allowUnknownJsGlobals();
+                      }
+                      if (disableAllTypeChecking) {
+                        builder.disableAllTypeChecking();
+                      }
+                      builder
+                          .desugarHtmlAndStateNodes(desugarHtmlAndStateNodes)
+                          .optimize(optimize)
+                          .insertEscapingDirectives(insertEscapingDirectives)
+                          .addHtmlAttributesForDebugging(addHtmlAttributesForDebugging);
+                      consumer.accept(builder.build());
                     }
                   }
                 }

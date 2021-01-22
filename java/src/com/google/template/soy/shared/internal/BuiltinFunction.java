@@ -46,7 +46,6 @@ public enum BuiltinFunction implements SoyFunction {
   XID("xid"),
   TEMPLATE("template"),
   SOY_SERVER_KEY("$soyServerKey"),
-  V1_EXPRESSION("v1Expression"),
   UNKNOWN_JS_GLOBAL("unknownJsGlobal"),
   REMAINDER("remainder"),
   MSG_WITH_ID("msgWithId"),
@@ -114,7 +113,6 @@ public enum BuiltinFunction implements SoyFunction {
       case XID:
       case UNKNOWN_JS_GLOBAL:
       case LEGACY_DYNAMIC_TAG:
-      case V1_EXPRESSION:
       case REMAINDER:
       case MSG_WITH_ID:
       case TO_FLOAT:
@@ -153,7 +151,6 @@ public enum BuiltinFunction implements SoyFunction {
       case SOY_SERVER_KEY: // Relies on call stack dependent on rendering
       case UNKNOWN_JS_GLOBAL: // this is a black box from the compiler perspective
       case LEGACY_DYNAMIC_TAG: // this is a black box from the compiler perspective
-      case V1_EXPRESSION: // this is a black box from the compiler perspective
       case REMAINDER: // implicitly depends on a plural value
       case IS_PRIMARY_MSG_IN_USE: // implicitly depends on a message bundle
       case DEBUG_SOY_TEMPLATE_INFO: // implicitly depends on a renderer param or js compiler flag

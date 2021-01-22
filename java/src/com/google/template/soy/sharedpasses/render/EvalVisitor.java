@@ -793,7 +793,6 @@ public class EvalVisitor extends AbstractReturningExprNodeVisitor<SoyValue> {
           return visitProtoInitFunction(node);
         case UNKNOWN_JS_GLOBAL:
         case LEGACY_DYNAMIC_TAG:
-        case V1_EXPRESSION:
           throw new UnsupportedOperationException(
               "the "
                   + nonpluginFn.getName()

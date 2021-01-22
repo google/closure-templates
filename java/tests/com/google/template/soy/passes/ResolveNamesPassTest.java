@@ -219,13 +219,6 @@ public final class ResolveNamesPassTest {
   }
 
   @Test
-  public void testUnknownVariable_v1Expression() {
-    assertResolveNamesFails(
-        "Unknown variable.",
-        "{namespace ns}{template .foo}{v1Expression('$gxo.moo1()')}{/template}");
-  }
-
-  @Test
   public void testUnknownVariable() {
     assertResolveNamesFails("Unknown variable.", "{namespace ns}{template .foo}{$ggg}{/template}");
   }
@@ -260,7 +253,6 @@ public final class ResolveNamesPassTest {
     SoyFileSetParserBuilder.forFileContents(fileContent)
         .errorReporter(errorReporter)
         .typeRegistry(typeRegistry)
-        .allowV1Expression(true)
         .parse();
     assertThat(errorReporter.getErrors()).hasSize(1);
     assertThat(errorReporter.getErrors().get(0).message()).isEqualTo(expectedError);
