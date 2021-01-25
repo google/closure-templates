@@ -374,6 +374,15 @@ class Logger {
   exit() {}
 
   /**
+   * Called in Incremental DOM when a Soy element is or root template is
+   * about to be rerendered. This is meant to be used to implement INSERT_DEDUPE
+   * grafting.
+   * @param {!Element} el
+   * @param {!Function} fn Used for rendering and needs to be called directly.
+   */
+  logGraft(el, fn) {}
+
+  /**
    * Called when a logging function is evaluated.
    * @param {string} name function name, as obfuscated by the `xid` function.
    * @param {!Array<?>} args List of arguments needed for the function.

@@ -93,8 +93,13 @@ export abstract class SoyElement<TData extends {}|null, TInterface extends {}> {
     this.skipHandler = null;
     try {
       patchOuter(this.node!, () => {
-        // If there are parameters, they must already be specified.
-        this.renderInternal(renderer, this.data!);
+        if (this.logger) {
+          this.logger.logGraft(this.node!, () => {
+            this.renderInternal(renderer, this.data!);
+          });
+        } else {
+          this.renderInternal(renderer, this.data!);
+        }
       });
     } finally {
       this.syncState = origSyncState;
