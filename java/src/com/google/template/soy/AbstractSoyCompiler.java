@@ -159,6 +159,13 @@ public abstract class AbstractSoyCompiler {
   private List<File> cssMetadata = new ArrayList<>();
 
   @Option(
+      name = "--check_css_list",
+      usage =
+          "Filename for list of files to exempt from checking css() calls for classes in CSS"
+              + " files.")
+  private File checkCssList = null;
+
+  @Option(
       name = "--enableExperimentalFeatures",
       usage =
           "Enable experimental features that are not generally available. "

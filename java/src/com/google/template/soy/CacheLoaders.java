@@ -19,8 +19,10 @@ package com.google.template.soy;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
+import com.google.common.io.Files;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -195,6 +197,15 @@ final class CacheLoaders {
             return new CachedDescriptorSet(
                 file, FileDescriptorSet.parseFrom(stream, ProtoUtils.REGISTRY));
           }
+        }
+      };
+
+  static final SoyInputCache.CacheLoader<ImmutableList<String>> CSS_CHECK_EXEMPTIONS =
+      new SoyInputCache.CacheLoader<ImmutableList<String>>() {
+        @Override
+        public ImmutableList<String> read(
+            File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
+          return ImmutableList.copyOf(Files.readLines(file, UTF_8));
         }
       };
 
