@@ -642,7 +642,7 @@ final class ResolveExpressionTypesCrossTemplatePass implements CompilerFileSetPa
       for (SoyType memberType : type.getMembers()) {
         memberTypes.add(memberType.accept(this));
       }
-      return typeRegistry.getOrCreateUnionType(memberTypes);
+      return SoyTypes.computeLowestCommonType(typeRegistry, memberTypes);
     }
 
     @Override
