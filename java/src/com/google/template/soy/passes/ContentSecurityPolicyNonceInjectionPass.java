@@ -176,6 +176,9 @@ public final class ContentSecurityPolicyNonceInjectionPass implements CompilerFi
     if (Ascii.equalsIgnoreCase("import", relAttrValue)) {
       return true;
     }
+    if (Ascii.equalsIgnoreCase("stylesheet", relAttrValue)) {
+      return true;
+    }
     if (Ascii.equalsIgnoreCase("preload", relAttrValue)) {
       String asAttrValue = getStaticDirectAttributeValue(tag, "as");
       if (asAttrValue == null) {

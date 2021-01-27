@@ -306,6 +306,17 @@ public final class ContentSecurityPolicyNonceInjectionPassTest {
   }
 
   @Test
+  public void testStylesheet() {
+    assertInjected(
+        join(
+            "{template .foo}\n",
+            DEFN,
+            "<link rel='stylesheet' href='foo.css'" + NONCE + ">\n",
+            "{/template}"),
+        join("{template .foo}\n", "<link rel='stylesheet' href='foo.css'>\n", "{/template}"));
+  }
+
+  @Test
   public void testPreload_as_script() {
     assertInjected(
         join(

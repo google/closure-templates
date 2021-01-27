@@ -290,6 +290,7 @@ With CSP nonces in Soy, templates get `nonce="..."` added to the following tags:
 *   `<link rel="import">`
 *   `<link rel="preload" as="script">`
 *   `<link rel="preload" as="style">`
+*   `<link rel="stylesheet">`
 
 For example:
 
