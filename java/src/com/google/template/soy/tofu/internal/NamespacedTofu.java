@@ -52,16 +52,6 @@ public final class NamespacedTofu implements SoyTofu {
     this.namespace = namespace;
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p>For objects of this class, the namespace is always nonempty.
-   */
-  @Override
-  public String getNamespace() {
-    return namespace;
-  }
-
   @Override
   public SoyTofu forNamespace(@Nullable String namespace) {
     if (namespace == null) {

@@ -45,16 +45,6 @@ import javax.annotation.Nullable;
 public interface SoyTofu {
 
   /**
-   * Gets the namespace of this SoyTofu object. The namespace is simply a convenience allowing
-   * {@code newRenderer()} to be called with a partial template name (e.g. ".fooTemplate"). Note:
-   * The namespace may be null, in which case {@code newRenderer()} must be called with the full
-   * template name.
-   *
-   * @return The namespace of this SoyTofu object, or null if no namespace.
-   */
-  String getNamespace();
-
-  /**
    * Queries the current SoyTofu instance to see if it holds a given template. If the requested
    * template is found, `true` is returned, otherwise, `false`.
    *
