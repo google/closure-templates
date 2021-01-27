@@ -17,6 +17,8 @@
 
 {namespace soy.examples.features}
 
+import * as simple from 'examples/simple.soy';
+
 
 /**
  * Demo comments.
@@ -260,7 +262,8 @@
 {template .demoCallOtherFile}
 
   // Call template defined in a different file.
-  {call soy.examples.simple.helloWorld /}<br>
+  {call simple.helloWorld /}
+  <br>
 
 {/template}
 

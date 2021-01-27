@@ -84,6 +84,7 @@
     <autovalue.version>1.7.4</autovalue.version>
     <proto.version>3.3.0</proto.version>
     <truth.version>0.45</truth.version>
+    <soy.examples.path>examples</soy.examples.path>
     <soy.examples>${project.basedir}/examples</soy.examples>
     <soy.examples.out>${project.build.directory}/examples</soy.examples.out>
   </properties>
@@ -817,7 +818,7 @@
                   ${soy.examples.out}/{INPUT_FILE_NAME_NO_EXT}_generated.js
                 </argument>
                 <argument>--srcs</argument>
-                <argument>${soy.examples}/simple.soy</argument>
+                <argument>${soy.examples.path}/simple.soy</argument>
               </arguments>
             </configuration>
             <goals>
@@ -841,7 +842,7 @@
                 <argument>--locales</argument>
                 <argument>en,x-zz</argument>
                 <argument>--messageFilePathFormat</argument>
-                <argument>${soy.examples}/examples_translated_{LOCALE}.xlf
+                <argument>${soy.examples.path}/examples_translated_{LOCALE}.xlf
                 </argument>
                 <argument>--compileTimeGlobalsFile</argument>
                 <argument>
@@ -849,7 +850,7 @@
                 </argument>
                 <argument>--srcs</argument>
                 <argument>
-                  ${soy.examples}/simple.soy,${soy.examples}/features.soy
+                  ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
                 </argument>
               </arguments>
             </configuration>
@@ -914,7 +915,9 @@
                   ${project.basedir}/javascript/examples/features-usage_globals.txt
                 </argument>
                 <argument>--srcs</argument>
-                <argument>${soy.examples}/features.soy</argument>
+                <argument>
+                  ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
+                </argument>
               </arguments>
             </configuration>
             <goals>
@@ -936,7 +939,7 @@
                 </argument>
                 <argument>--srcs</argument>
                 <argument>
-                  ${soy.examples}/simple.soy,${soy.examples}/features.soy
+                  ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
                 </argument>
               </arguments>
             </configuration>
@@ -964,7 +967,7 @@
                 </argument>
                 <argument>--srcs</argument>
                 <argument>
-                  ${soy.examples}/simple.soy,${soy.examples}/features.soy
+                  ${soy.examples.path}/simple.soy,${soy.examples.path}/features.soy
                 </argument>
               </arguments>
             </configuration>
