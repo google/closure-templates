@@ -166,6 +166,11 @@ public abstract class AbstractSoyCompiler {
   private File checkCssList = null;
 
   @Option(
+      name = "--skip_css_reference_check",
+      usage = "Whether to skip the go/css-conformance#check-css-references check.")
+  private boolean skipCssReferenceCheck = false;
+
+  @Option(
       name = "--enableExperimentalFeatures",
       usage =
           "Enable experimental features that are not generally available. "
