@@ -33,6 +33,7 @@ import com.google.template.soy.exprtree.VarRefNode;
 import com.google.template.soy.soytree.HtmlOpenTagNode;
 import com.google.template.soy.soytree.SoyFileNode;
 import com.google.template.soy.soytree.SoyTreeUtils;
+import com.google.template.soy.types.ProtoImportType;
 import com.google.template.soy.types.SoyType;
 import com.google.template.soy.types.TemplateImportType;
 
@@ -70,7 +71,9 @@ final class ResolveTemplateFunctionsPass implements CompilerFilePass {
   private static void convertToBind(FunctionNode fct) {
     ExprNode bindTarget;
     VarRefNode varRefNode = (VarRefNode) fct.getNameExpr();
-
+    if (varRefNode.hasType() && varRefNode.getType() instanceof ProtoImportType) {
+      return;
+    }
     if (varRefNode.hasType() && varRefNode.getType().getKind() == SoyType.Kind.TEMPLATE_TYPE) {
       // If the function is a template symbol modify AST like:
       // {tmp(...)} -> {template(tmp).bind(...)}
