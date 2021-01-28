@@ -105,7 +105,9 @@ public final class TemplateMetadataSerializer {
               .setNamespace(file.getNamespace())
               .setDelpackage(Strings.nullToEmpty(file.getDelPackageName()))
               .setFilePath(file.getFilePath().path());
-      file.getConstants().forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
+      file.getConstants().stream()
+          .filter(ConstNode::isExported)
+          .forEach(c -> fileBuilder.addConstants(protoFromConstant(c)));
       for (TemplateNode template : file.getTemplates()) {
         TemplateMetadata meta = registry.getMetadata(template);
         fileBuilder.addTemplate(protoFromTemplate(meta, file));

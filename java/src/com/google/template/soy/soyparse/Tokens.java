@@ -103,7 +103,7 @@ final class Tokens {
       case SoyFileParserConstants.NAMESPACE_OPEN:
         return "{namespace";
       case SoyFileParserConstants.CONST_OPEN:
-        return "{const";
+        return "{[export ]const";
       case SoyFileParserConstants.TEMPLATE_OPEN:
         return "{template";
       case SoyFileParserConstants.ELEMENT_OPEN:

@@ -1010,7 +1010,7 @@ TOKEN_MGR_DECLS: {
 | < NAMESPACE_OPEN: "{namespace" <WS> > : IN_CMD_TAG
 | < DELPACKAGE_OPEN: "{delpackage" <WS> > : IN_CMD_TAG
 | < IMPORT_OPEN: "import" >
-| < CONST_OPEN: "{const" <WS> > : EXPR
+| < CONST_OPEN: "{" ("export ")? "const" <WS> > : EXPR
 | < SEMICOLON: ";"      >
 | < DEFAULT_COMMA: "," >
 | < LCURLY: "{"      >
@@ -3055,16 +3055,20 @@ private ConstNode ConstStmt() :
   ExprNode valueExpr = null;
   CommandTagAttribute attr = null;
   List<StandaloneNode> templateBlock = ImmutableList.of();
+  boolean exported;
 }
 {
   tagBegin = <CONST_OPEN>
+  {
+    exported = tagBegin.image.startsWith("export ");
+  }
 
   try {
     nameTok = <IDENT>
   } catch (ParseException e) {
     tagClose = reportTemplateBodyErrorAndSkipTo(e, CMD_SELF_CLOSE, CMD_END);
     SourceLocation loc = createSrcLoc(tagBegin, tagClose);
-    return new ConstNode(-1, loc, "$error", loc, errorExpr(tagBegin));
+    return new ConstNode(-1, loc, "$error", loc, errorExpr(tagBegin), exported);
   }
 
   // Value expression
@@ -3085,7 +3089,8 @@ private ConstNode ConstStmt() :
         createSrcLoc(tagBegin, tagClose),
         nameTok.image,
         createSrcLoc(nameTok),
-        valueExpr);
+        valueExpr,
+        exported);
   }
 }
 

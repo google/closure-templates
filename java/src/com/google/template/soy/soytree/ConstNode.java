@@ -27,20 +27,24 @@ import com.google.template.soy.soytree.defn.ConstVar;
 /** Node representing a 'const' statement with a value expression. */
 public final class ConstNode extends AbstractCommandNode implements ExprHolderNode {
 
+  private final ConstVar var;
+
   /** The value expression that the variable is set to. */
   private final ExprRootNode valueExpr;
 
-  private final ConstVar var;
+  private final boolean exported;
 
   public ConstNode(
       int id,
       SourceLocation location,
       String varName,
       SourceLocation varNameLocation,
-      ExprNode expr) {
+      ExprNode expr,
+      boolean exported) {
     super(id, location, "const");
     this.var = new ConstVar(varName, varNameLocation, null);
     this.valueExpr = new ExprRootNode(expr);
+    this.exported = exported;
   }
 
   /**
@@ -50,13 +54,18 @@ public final class ConstNode extends AbstractCommandNode implements ExprHolderNo
    */
   private ConstNode(ConstNode orig, CopyState copyState) {
     super(orig, copyState);
-    this.valueExpr = orig.valueExpr.copy(copyState);
     this.var = new ConstVar(orig.var);
+    this.valueExpr = orig.valueExpr.copy(copyState);
+    this.exported = orig.exported;
     copyState.updateRefs(orig.var, this.var);
   }
 
   public ConstVar getVar() {
     return var;
+  }
+
+  public boolean isExported() {
+    return exported;
   }
 
   @SuppressWarnings("unchecked")
