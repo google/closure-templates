@@ -419,14 +419,15 @@ For example:
 ## Method calls
 
 Method calls consist of an expression followed by the dot or question-dot
-operator, and an identifier with a number of positional parameters:
+operator, and an identifier with a number of arguments for positional
+parameters:
 
 `<EXPR>.<IDENT>(<EXPR>,...)`
 
 For example:
 
-*   `$foo.bar($baz)` calls the `bar` method on `$foo` with a parameter of `$bar`
-*   `$foo?.bar(1, 2)` calls the `bar` method on `$foo` with the parameters `1`
+*   `$foo.bar($baz)` calls the `bar` method on `$foo` with an argument of `$baz`
+*   `$foo?.bar(1, 2)` calls the `bar` method on `$foo` with the arguments `1`
     and `2` only if `$foo` is non-`null`
 
 See the [methods reference](methods.md) for a list of all methods that are
