@@ -322,6 +322,10 @@ public abstract class AbstractSoyCompiler {
     if (disableOptimizer) {
       sfsBuilder.disableOptimizer();
     }
+
+    sfsBuilder.setRequireTemplateImports(
+        experimentalFeatures.contains("requireTemplateImports") && generatedFiles.isEmpty());
+
     compile(sfsBuilder);
     timer.stop();
     // Unless the build is faster than 1 second, issue a warning if more than half of the build is

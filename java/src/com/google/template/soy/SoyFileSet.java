@@ -394,6 +394,17 @@ public final class SoyFileSet {
     }
 
     /**
+     * Requires external templates to be imported (rather than referenced via fqn or aliased
+     * namespaces).
+     *
+     * @return This builder.
+     */
+    Builder setRequireTemplateImports(boolean requireTemplateImports) {
+      getGeneralOptions().setRequireTemplateImports(requireTemplateImports);
+      return this;
+    }
+
+    /**
      * Sets experimental features. These features are unreleased and are not generally available.
      *
      * @param experimentalFeatures

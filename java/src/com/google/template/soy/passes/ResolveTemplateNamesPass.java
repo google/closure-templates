@@ -16,6 +16,7 @@
 package com.google.template.soy.passes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.template.soy.base.SourceLocation;
 import com.google.template.soy.base.internal.IdGenerator;
 import com.google.template.soy.base.internal.Identifier;
@@ -58,18 +59,35 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
           "The argument to the template() function must be a local, imported, or global template"
               + " name.");
 
+  private static final SoyErrorKind UNIMPORTED_TEMPLATE_CALL =
+      SoyErrorKind.of("Template must be imported. See go/soy-external-calls.");
+
+  private static final ImmutableSet<String> TEMPLATE_IMPORT_EXEMPTIONS_BY_NAMESPACE =
+      ImmutableSet.of(
+          );
+
   private final ErrorReporter errorReporter;
 
-  public ResolveTemplateNamesPass(ErrorReporter errorReporter) {
+  // Whether to require external templates to be imported (rather than referenced via fqn or aliased
+  // namespaces).
+  private final boolean requireTemplateImports;
+
+  // Whether the current file should be exempted from template imports (only applies if
+  // requireTemplateImports is enabled).
+  private boolean isFileExemptedFromTemplateImports = false;
+
+  public ResolveTemplateNamesPass(ErrorReporter errorReporter, boolean requireTemplateImports) {
     this.errorReporter = errorReporter;
+    this.requireTemplateImports = requireTemplateImports;
   }
 
   @Override
   public Result run(ImmutableList<SoyFileNode> sourceFiles, IdGenerator idGenerator) {
     for (SoyFileNode file : sourceFiles) {
+      isFileExemptedFromTemplateImports = isFileExemptedFromTemplateImports(file);
       visitFile(file);
     }
-
+    isFileExemptedFromTemplateImports = false;
     return Result.CONTINUE;
   }
 
@@ -130,7 +148,9 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     if (converted != null) {
       functionNode.getParent().replaceChild(functionNode, converted);
     } else if (param.getKind() == Kind.GLOBAL_NODE) {
-      // Remove this branch along with template FQN support.
+      // Remove this branch along with template FQN support. These are template() literals that
+      // aren't imported, but #resolveTemplateName will throw an UNIMPORTED_TEMPLATE_CALL for us (if
+      // the error is enabled), so no need to report it here.
       Identifier unresolved = ((GlobalNode) param).getIdentifier();
       Identifier fqn = resolveTemplateName(((GlobalNode) param).getIdentifier(), header);
       TemplateLiteralNode template =
@@ -163,8 +183,7 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
     return null;
   }
 
-  private static Identifier resolveTemplateName(
-      Identifier unresolvedIdent, SoyFileHeaderInfo header) {
+  private Identifier resolveTemplateName(Identifier unresolvedIdent, SoyFileHeaderInfo header) {
 
     switch (unresolvedIdent.type()) {
       case SINGLE_IDENT:
@@ -178,15 +197,26 @@ public final class ResolveTemplateNamesPass implements CompilerFileSetPass {
       case DOTTED_IDENT:
         // Case 2: "foo.bar.baz" Source callee name is a proper dotted ident, which might start with
         // an alias.
+        if (requireTemplateImports && !isFileExemptedFromTemplateImports) {
+          errorReporter.report(unresolvedIdent.location(), UNIMPORTED_TEMPLATE_CALL);
+        }
         return header.resolveAlias(unresolvedIdent);
     }
     throw new AssertionError(unresolvedIdent.type());
   }
 
   /** Attempts to resolve a template name, checking against aliases & imports. */
-  private static void resolveTemplateName(
+  private void resolveTemplateName(
       TemplateLiteralNode templateLiteralNode, SoyFileHeaderInfo header) {
     templateLiteralNode.resolveTemplateName(
         resolveTemplateName(templateLiteralNode.getIdentifier(), header));
+  }
+
+  private static boolean isFileExemptedFromTemplateImports(SoyFileNode file) {
+    return TEMPLATE_IMPORT_EXEMPTIONS_BY_NAMESPACE.contains(file.getNamespace())
+        // Temporary recaptcha hack. They've got these private soy files that we can't access so we
+        // can't easily know the namespaces to exempt.
+        // TODO(user): Remove this after Jesse migrates them with his superpowers.
+        || file.getFilePath().toString().contains("recaptcha/");
   }
 }

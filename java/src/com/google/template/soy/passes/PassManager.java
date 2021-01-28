@@ -424,7 +424,9 @@ public final class PassManager {
       if (astRewrites.atLeast(AstRewrites.KYTHE)) {
         addPass(new ResolveTemplateFunctionsPass(), partialTemplateRegistryPassesBuilder);
       }
-      addPass(new ResolveTemplateNamesPass(errorReporter), partialTemplateRegistryPassesBuilder);
+      addPass(
+          new ResolveTemplateNamesPass(errorReporter, options.getRequireTemplateImports()),
+          partialTemplateRegistryPassesBuilder);
       if (!disableAllTypeChecking) {
         // Without type checking proto enums in variant expressions are not resolved.
         addPass(
