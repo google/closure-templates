@@ -1251,44 +1251,6 @@ abstract class Context {
     return builder.build();
   }
 
-  /**
-   * Lower case names of attributes whose value is a URI. This does not identify attributes like
-   * {@code <meta content>} which is conditionally a URI depending on the value of other attributes.
-   *
-   * @see <a href="http://www.w3.org/TR/html4/index/attributes.html">HTML4 attrs with type %URI</a>
-   */
-  private static final ImmutableSet<String> URI_ATTR_NAMES =
-      ImmutableSet.of(
-          "action",
-          "archive",
-          "base",
-          "background",
-          "cite",
-          "classid",
-          "codebase",
-          /**
-           * TODO: content is only a URL sometimes depending on other parameters and existing
-           * templates use content with non-URL values. Fix those templates or otherwise flag
-           * interpolations into content.
-           */
-          // "content",
-          "data",
-          "dsync",
-          "formaction",
-          "href",
-          "icon",
-          "longdesc",
-          "manifest",
-          "poster",
-          "src",
-          "usemap",
-          // Custom attributes that are reliably URLs in existing code.
-          "entity");
-
-  /** Matches lower-case attribute local names that start or end with "url" or "uri". */
-  private static final Pattern CUSTOM_URI_ATTR_NAMING_CONVENTION =
-      Pattern.compile("\\bur[il]|ur[il]s?$");
-
   @CheckReturnValue
   Context transitionToAttrName(String attrName) {
     return getAttrNameContext(attrName, elType(), toBuilder());
@@ -1346,8 +1308,8 @@ abstract class Context {
         || (elType == ElementType.BASE && "href".equals(attrName))) {
       attr = Context.AttributeType.URI;
       uriType = UriType.TRUSTED_RESOURCE;
-    } else if (URI_ATTR_NAMES.contains(localName)
-        || CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
+    } else if (Constants.URI_ATTR_NAMES.contains(localName)
+        || Constants.CUSTOM_URI_ATTR_NAMING_CONVENTION.matcher(localName).find()
         || "xmlns".equals(attrName)
         || attrName.startsWith("xmlns:")) {
       attr = Context.AttributeType.URI;
