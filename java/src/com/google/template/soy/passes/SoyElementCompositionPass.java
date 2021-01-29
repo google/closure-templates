@@ -380,11 +380,10 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             errorReporter);
     callNode.addChild(callParamContent);
     SoyNode.StandaloneNode next = (SoyNode.StandaloneNode) SoyTreeUtils.nextSibling(nextOpenTag);
-    CopyState copyState = new CopyState();
     while (next != closeTag) {
       SoyNode.StandaloneNode sibling = (SoyNode.StandaloneNode) SoyTreeUtils.nextSibling(next);
       next.getParent().removeChild(next);
-      callParamContent.addChild(next.copy(copyState));
+      callParamContent.addChild(next);
       next = sibling;
     }
     nextOpenTag.getParent().removeChild(nextOpenTag);
@@ -459,9 +458,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
                   unknown,
                   unknown),
               errorReporter);
-      CopyState copyState = new CopyState();
       for (StandaloneNode node : attrValue.getChildren()) {
-        contentNode.addChild(node.copy(copyState));
+        contentNode.addChild(node.copy(new CopyState()));
       }
       return contentNode;
     }
@@ -494,9 +492,8 @@ final class SoyElementCompositionPass implements CompilerFileSetPass {
             nodeIdGen.genId(), unknown, unknown, "if", condition.get().copy(new CopyState()));
     ifNode.addChild(ifCondNode);
     ifCondNode.getExpr().setType(condition.get().getType());
-    CopyState copyState = new CopyState();
     for (StandaloneNode node : attrValue.getChildren()) {
-      ifCondNode.addChild(node.copy(copyState));
+      ifCondNode.addChild(node.copy(new CopyState()));
     }
     VarRefNode varRef =
         new VarRefNode("$" + letContentNode.getVar().name(), unknown, letContentNode.getVar());
