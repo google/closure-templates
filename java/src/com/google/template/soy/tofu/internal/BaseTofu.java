@@ -644,37 +644,4 @@ public final class BaseTofu implements SoyTofu {
       enforceContentKind(template, expectedContentKind);
     }
   }
-
-  // -----------------------------------------------------------------------------------------------
-  // Old render methods.
-
-  @Deprecated
-  @Override
-  public String render(
-      SoyTemplateInfo templateInfo, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return new RendererImpl(this, templateInfo.getName(), null)
-        .setData(data)
-        .setMsgBundle(msgBundle)
-        .render();
-  }
-
-  @Deprecated
-  @Override
-  public String render(
-      String templateName, @Nullable Map<String, ?> data, @Nullable SoyMsgBundle msgBundle) {
-    return new RendererImpl(this, templateName, null)
-        .setData(data)
-        .setMsgBundle(msgBundle)
-        .render();
-  }
-
-  @Deprecated
-  @Override
-  public String render(
-      String templateName, @Nullable SoyRecord data, @Nullable SoyMsgBundle msgBundle) {
-    return new RendererImpl(this, templateName, null)
-        .setData(data)
-        .setMsgBundle(msgBundle)
-        .render();
-  }
 }
