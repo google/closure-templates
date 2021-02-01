@@ -19,7 +19,6 @@ package com.google.template.soy.error;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ascii;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -88,7 +87,6 @@ public final class SoyErrors {
    * @throws IllegalArgumentException if {@code wrongName} is a member of {@code allNames}
    */
   @Nullable
-  @VisibleForTesting
   public static String getClosest(Iterable<String> allNames, String wrongName) {
     // only suggest matches that are closer than this.  This magic heuristic is based on what llvm
     // and javac do

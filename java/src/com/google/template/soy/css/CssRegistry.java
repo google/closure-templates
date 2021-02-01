@@ -38,6 +38,10 @@ public abstract class CssRegistry {
 
   abstract Optional<ImmutableListMultimap<String, String>> classMap();
 
+  abstract ImmutableMap<String, String> classToFilePathMap();
+
+  abstract ImmutableMap<String, String> classToNamespaceMap();
+
   public abstract ImmutableList<String> checkCssList();
 
   public abstract boolean skipCssReferenceCheck();
@@ -60,6 +64,14 @@ public abstract class CssRegistry {
     return classMap().get().get(nsOrPath);
   }
 
+  public Optional<String> maybeGetRequireCss(String className) {
+    return Optional.ofNullable(classToNamespaceMap().getOrDefault(className, null));
+  }
+
+  public Optional<String> maybeGetRequireCssPath(String className) {
+    return Optional.ofNullable(classToFilePathMap().getOrDefault(className, null));
+  }
+
   public boolean containsClassMap() {
     return classMap().isPresent();
   }
@@ -70,6 +82,8 @@ public abstract class CssRegistry {
         providedSymbols,
         filePathToSymbol,
         Optional.empty(),
+        ImmutableMap.of(),
+        ImmutableMap.of(),
         ImmutableList.of(),
         false /* skipCssReferenceCheck */);
   }
