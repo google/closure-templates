@@ -323,8 +323,7 @@ public abstract class AbstractSoyCompiler {
       sfsBuilder.disableOptimizer();
     }
 
-    sfsBuilder.setRequireTemplateImports(
-        experimentalFeatures.contains("requireTemplateImports") && generatedFiles.isEmpty());
+    sfsBuilder.setRequireTemplateImports(experimentalFeatures.contains("requireTemplateImports") && generatedFiles.isEmpty());
 
     compile(sfsBuilder);
     timer.stop();
