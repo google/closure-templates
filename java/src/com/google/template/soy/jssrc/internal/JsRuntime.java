@@ -60,6 +60,9 @@ public final class JsRuntime {
   public static final GoogRequire GOOG_SOY = GoogRequire.create("goog.soy");
 
   public static final Expression SOY_EMPTY_OBJECT = SOY.dotAccess("$$EMPTY_OBJECT");
+  public static final Expression SOY_INTERCEPT_SOY_TEMPLATES =
+      SOY.dotAccess("INTERCEPT_SOY_TEMPLATES");
+  public static final Expression SOY_STUBS_MAP = SOY.dotAccess("$$stubsMap");
 
   private static final GoogRequire XID_REQUIRE = GoogRequire.create("xid");
 

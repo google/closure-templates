@@ -779,10 +779,27 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
     return jsDocBuilder.build();
   }
 
+  protected ImmutableList<Expression> templateArguments(TemplateNode node) {
+    return ImmutableList.of(JsRuntime.OPT_DATA, JsRuntime.OPT_IJ_DATA);
+  }
+
+  protected final Statement generateStubbingTest(TemplateNode node, String alias) {
+    return Statement.ifStatement(
+            JsRuntime.GOOG_DEBUG.and(
+                JsRuntime.SOY_STUBS_MAP.bracketAccess(stringLiteral(node.getTemplateName())),
+                templateTranslationContext.codeGenerator()),
+            Statement.returnValue(
+                JsRuntime.SOY_STUBS_MAP
+                    .bracketAccess(stringLiteral(node.getTemplateName()))
+                    .call(templateArguments(node))))
+        .build();
+  }
+
   /** Generates the function body. */
   @CheckReturnValue
   protected Statement generateFunctionBody(TemplateNode node, String alias) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    bodyStatements.add(generateStubbingTest(node, alias));
     GoogRequire googSoy = jsSrcOptions.shouldGenerateGoogModules() ? GOOG_SOY_ALIAS : GOOG_SOY;
     bodyStatements.add(
         Statement.assign(
@@ -1621,5 +1638,9 @@ public class GenJsCodeVisitor extends AbstractSoyNodeVisitor<List<String>> {
    */
   private String genParamAlias(String paramName) {
     return JsSrcUtils.isReservedWord(paramName) ? "param$" + paramName : paramName;
+  }
+
+  protected boolean isIncrementalDom() {
+    return false;
   }
 }

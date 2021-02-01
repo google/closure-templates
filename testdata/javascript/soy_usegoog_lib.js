@@ -41435,6 +41435,22 @@ soydata.VERY_UNSAFE.ordainSanitizedCss =
     soydata.$$makeSanitizedContentFactoryWithDefaultDirOnly_(
         goog.soy.data.SanitizedCss);
 
+// Utilities related to defining and stubbing soy templates
+
+
+/**
+ * A map that allows us to dynamically replace templates.
+ *
+ * The key is the fully qualified template name and the value is a replacement
+ * to call instead.
+ *
+ * @type {?Object<string, !Function>}
+ * @const
+ * @public
+ */
+soy.$$stubsMap = goog.DEBUG ? {} : null;
+
+
 // -----------------------------------------------------------------------------
 // Soy-generated utilities in the soy namespace.  Contains implementations for
 // common soyfunctions (e.g. keys()) and escaping/print directives.

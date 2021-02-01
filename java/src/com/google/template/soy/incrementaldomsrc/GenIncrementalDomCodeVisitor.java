@@ -343,8 +343,18 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
   }
 
   @Override
+  protected ImmutableList<Expression> templateArguments(TemplateNode node) {
+    SanitizedContentKind kind = node.getContentKind();
+    if (kind.isHtml() || kind == SanitizedContentKind.ATTRIBUTES) {
+      return ImmutableList.of(INCREMENTAL_DOM, JsRuntime.OPT_DATA, JsRuntime.OPT_IJ_DATA);
+    }
+    return super.templateArguments(node);
+  }
+
+  @Override
   protected Statement generateFunctionBody(TemplateNode node, String alias) {
     ImmutableList.Builder<Statement> bodyStatements = ImmutableList.builder();
+    bodyStatements.add(generateStubbingTest(node, alias));
     // Generate statement to ensure data is defined, if necessary.
     if (new ShouldEnsureDataIsDefinedVisitor().exec(node)) {
       bodyStatements.add(
@@ -1480,5 +1490,10 @@ public final class GenIncrementalDomCodeVisitor extends GenJsCodeVisitor {
       Expression toEscape = super.genGoogMsgPlaceholder(msgPhNode);
       return SOY_ESCAPE_HTML.call(toEscape);
     }
+  }
+
+  @Override
+  protected boolean isIncrementalDom() {
+    return true;
   }
 }
