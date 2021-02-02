@@ -28,7 +28,6 @@ Cons:
 *   we may not be able to delete as much code as we would hope due to how this
     works in the optimizer
 
-Details: http://doc/1OeJalQXTz5ZHXU0gvpgFv6dgobJmzuy9gU1Ekl-j4jQ
 
 ## Eliminate soy_js build rules in favor of af_soy_library
 
@@ -45,7 +44,7 @@ to `af_soy_library` you will (without intervention):
 *   break message extraction
 
 It is somewhat manageable to fix this on a project by project basis if you are
-knowledgable about translations, but there is actually no way to do it without
+knowledgeable about translations, but there is actually no way to do it without
 at least temporarily breaking translations.
 
 To actually enable migrations we need to make things easier
