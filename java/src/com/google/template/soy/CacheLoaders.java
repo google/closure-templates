@@ -22,7 +22,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
-import com.google.common.io.Files;
 import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
@@ -205,7 +204,7 @@ final class CacheLoaders {
         @Override
         public ImmutableList<String> read(
             File file, SoyCompilerFileReader reader, SoyInputCache cache) throws IOException {
-          return ImmutableList.copyOf(Files.readLines(file, UTF_8));
+          return reader.read(file).asCharSource(UTF_8).readLines();
         }
       };
 
@@ -222,4 +221,6 @@ final class CacheLoaders {
           }
         }
       };
+
+  private CacheLoaders() {}
 }

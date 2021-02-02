@@ -15,6 +15,8 @@
  */
 package com.google.template.soy;
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
@@ -53,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.CheckReturnValue;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -380,7 +381,7 @@ public abstract class AbstractSoyCompiler {
                 + entry.getValue().stream()
                     .map(c -> c.getFile().getPath())
                     .sorted()
-                    .collect(Collectors.joining(", "))
+                    .collect(joining(", "))
                 + ". Do your proto_library rules have overlapping sources?");
       }
     }
@@ -509,7 +510,6 @@ public abstract class AbstractSoyCompiler {
    *
    * @param sfsBuilder The builder, already populated with sources, globals (if set) and plugins.
    *     subclasses may set additional compilation options on the builder.
-   * @throws IOException
    */
   @ForOverride
   protected abstract void compile(SoyFileSet.Builder sfsBuilder) throws IOException;
